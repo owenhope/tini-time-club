@@ -35,6 +35,15 @@ const Layout = () => {
           }}
         />
         <Tabs.Screen
+          name="map"
+          options={{
+            title: "Map",
+            tabBarIcon: ({ size, color }) => (
+              <Ionicons name="map-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",

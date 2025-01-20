@@ -38,6 +38,7 @@ export function AppleAuth() {
               throw new Error("No identityToken.");
             }
           } catch (e: any) {
+            console.log(e);
             if (e.code === "ERR_REQUEST_CANCELED") {
               // handle that the user canceled the sign-in flow
             } else {

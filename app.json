@@ -14,6 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "config": {
+        "googleMapsApiKey": "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8"
+      },
       "supportsTablet": true,
       "bundleIdentifier": "com.ohope.tinitimeclub",
       "infoPlist": {
@@ -41,15 +44,15 @@
     "plugins": [
       "expo-router",
       [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.732397011472-41tr3sghlftkc5kcsr57v3570l9uot05"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photoPermissions": "Allow Tini Time Club to access your photos to upload an Avatar."
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.732397011472-41tr3sghlftkc5kcsr57v3570l9uot05"
         }
       ]
     ],
