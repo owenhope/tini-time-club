@@ -15,7 +15,7 @@
     },
     "ios": {
       "config": {
-        "googleMapsApiKey": "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8"
+        "googleMapsApiKey": "AIzaSyAV4ioL2mbXF0mGeJsKfDUP_wnaDsQQ2nk"
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.ohope.tinitimeclub",
@@ -34,7 +34,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ohope.tinitimeclub"
+      "package": "com.ohope.tinitimeclub",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCGBwGNvHcIKasPMV67MS_RmYOM_2hRRQg"
+        }
+      }
     },
     "web": {
       "bundler": "metro",

@@ -11,18 +11,14 @@ import {
 import { useEffect, useState, createRef } from "react";
 import { supabase } from "@/utils/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, {
-  PROVIDER_GOOGLE,
-  Region,
-  Marker,
-  Callout,
-} from "react-native-maps";
+import { PROVIDER_GOOGLE, Region, Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import { mapStyle } from "@/assets/mapStyle";
 import { markers } from "@/assets/markers";
+import MapView from "react-native-map-clustering";
 
 const INITIAL_REGION = {
   latitude: 37.33,
@@ -35,7 +31,7 @@ const Map = () => {
   const [currentLocation, setCurrentLocation] =
     useState<Location.LocationObjectCoords | null>(null);
   const [initialRegion, setInitialRegion] = useState<Region | null>(null);
-  const mapRef = createRef<MapView>();
+  const mapRef = createRef<any>();
   const [region, setRegion] = useState(INITIAL_REGION);
   useEffect(() => {
     const getLocation = async () => {
