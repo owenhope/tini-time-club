@@ -1,134 +1,184 @@
 import {
   View,
+  StyleSheet,
   Text,
   TextInput,
   Button,
   FlatList,
   ListRenderItem,
+  TouchableOpacity,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, createRef } from "react";
 import { supabase } from "@/utils/supabase";
-import { Todo } from "@/utils/interfaces";
 import { Ionicons } from "@expo/vector-icons";
-import AppleStyleSwipeableRow from "@/components/SwipeableRow";
+import { PROVIDER_GOOGLE, Region, Marker, Callout } from "react-native-maps";
+import * as Location from "expo-location";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
+import { mapStyle } from "@/assets/mapStyle";
+import { markers } from "@/assets/markers";
+import MapView from "react-native-map-clustering";
 
-const Page = () => {
-  const [todo, setTodo] = useState("");
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(false);
+const INITIAL_REGION = {
+  latitude: 37.33,
+  longitude: -122,
+  latitudeDelta: 2,
+  longitudeDelta: 2,
+};
 
+const Map = () => {
+  const [currentLocation, setCurrentLocation] =
+    useState<Location.LocationObjectCoords | null>(null);
+  const [initialRegion, setInitialRegion] = useState<Region | null>(null);
+  const mapRef = createRef<any>();
+  const [region, setRegion] = useState(INITIAL_REGION);
   useEffect(() => {
-    loadTodos();
-  }, []);
+    const getLocation = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Permission to access location was denied");
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location.coords);
 
-  const loadTodos = async () => {
-    const { data: todos, error } = await supabase
-      .from("todos")
-      .select("*")
-      .order("inserted_at", { ascending: false });
-    if (error) {
-      console.error(error);
-    } else {
-      setTodos(todos);
-    }
-
-    setLoading(false);
-  };
-
-  const addTodo = async () => {
-    setLoading(true);
-    const {
-      data: { user: User },
-    } = await supabase.auth.getUser();
-
-    const newTodo = {
-      user_id: User?.id,
-      task: todo,
+      setInitialRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
     };
 
-    const result = await supabase
-      .from("todos")
-      .insert(newTodo)
-      .select()
-      .single();
-    setTodo("");
-    setTodos([result.data, ...todos]);
-    setLoading(false);
+    getLocation();
+  }, []);
+
+  const focusMap = async () => {
+    const vancouverRegion = {
+      latitude: 49.2827,
+      longitude: -123.1207,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    };
+
+    mapRef.current?.animateToRegion(vancouverRegion, 500);
   };
 
-  const updateTodo = async (todo: Todo) => {
-    const result = await supabase
-      .from("todos")
-      .update({ is_complete: !todo.is_complete })
-      .eq("id", todo.id)
-      .select()
-      .single();
-
-    const update = todos.map((t) => (t.id === todo.id ? result.data : t));
-    setTodos(update);
-  };
-  const deleteTodo = async (todo: Todo) => {
-    await supabase.from("todos").delete().eq("id", todo.id);
-    setTodos(todos.filter((t) => t.id !== todo.id));
+  const zoomIn = async () => {
+    mapRef.current?.animateCamera({ zoom: 13 });
   };
 
-  const renderRow: ListRenderItem<Todo> = ({ item }) => {
-    return (
-      <AppleStyleSwipeableRow
-        todo={item}
-        onToggle={() => updateTodo(item)}
-        onDelete={() => deleteTodo(item)}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            padding: 12,
-            height: 44,
-            justifyContent: "space-between",
-          }}
-        >
-          <Text style={{ flex: 1 }}>{item.task}</Text>
-          {item.is_complete ? (
-            <Ionicons name="checkmark-done-outline" size={24} color="#151515" />
-          ) : null}
-        </View>
-      </AppleStyleSwipeableRow>
-    );
+  const onRegionChange = (region: Region) => {
+    console.log(region);
+  };
+
+  const onMarkerSelected = (marker: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    console.log(marker);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          gap: 10,
-          backgroundColor: "#151515",
-          padding: 6,
+      <GooglePlacesAutocomplete
+        placeholder="Search"
+        fetchDetails
+        query={{ key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
+        onFail={(error) => console.error(error)}
+        onPress={(data, detail) => {
+          const point = detail?.geometry.location;
+          if (!point) return;
+
+          setRegion({
+            latitude: point.lat,
+            longitude: point.lng,
+            latitudeDelta: 0.2,
+            longitudeDelta: 0.2,
+          });
         }}
+        styles={{
+          container: {
+            flex: 0,
+          },
+          textInput: {
+            paddingLeft: 35,
+          },
+          textInputContainer: {
+            padding: 4,
+          },
+        }}
+        renderLeftButton={() => (
+          <View
+            style={{
+              position: "absolute",
+              left: 15,
+              top: 14,
+              zIndex: 2,
+            }}
+          >
+            <Ionicons name="search-outline" size={24} />
+          </View>
+        )}
+      />
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        mapType="standard"
+        style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
+        showsUserLocation
+        showsMyLocationButton
+        rotateEnabled={false}
+        region={region}
+        onRegionChange={onRegionChange}
+        customMapStyle={mapStyle}
       >
-        <TextInput
-          placeholder="Add todo"
-          value={todo}
-          onChangeText={setTodo}
-          style={{
-            flex: 1,
-            backgroundColor: "#363636",
-            color: "#FFF",
-            padding: 8,
-            borderWidth: 1,
-            borderColor: "2b825b",
-            borderRadius: 4,
-          }}
-        />
-        <Button
-          title="Add"
-          color={"#2b825b"}
-          onPress={addTodo}
-          disabled={loading || todo === ""}
-        />
+        {markers.map((marker, index) => (
+          <Marker
+            key={index}
+            coordinate={marker}
+            title={marker.name}
+            onPress={() => onMarkerSelected(marker)}
+          >
+            <Callout>
+              <Text style={{ fontSize: 24 }}>{marker.name}</Text>
+            </Callout>
+          </Marker>
+        ))}
+      </MapView>
+      <View style={styles.btnContainer}>
+        <TouchableOpacity style={styles.btn} onPress={focusMap}>
+          <Ionicons name="location" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btn} onPress={zoomIn}>
+          <Ionicons name="earth" size={24} color="black" />
+        </TouchableOpacity>
       </View>
-      <FlatList data={todos} renderItem={renderRow} />
     </View>
   );
 };
-export default Page;
+
+const styles = StyleSheet.create({
+  btnContainer: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    gap: 10,
+    zIndex: -1,
+  },
+  btn: {
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 1,
+      height: 10,
+    },
+  },
+});
+export default Map;

@@ -14,8 +14,6 @@ const InitialLayout = () => {
   useEffect(() => {
     // Listen for changes to authentication state
     const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("supabase.auth.onAuthStateChange", event, session);
-
       setSession(session);
       setInitialized(true);
     });

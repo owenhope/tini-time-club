@@ -1,59 +1,57 @@
-import { TouchableOpacity } from "react-native";
+// app/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "@/utils/supabase";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 const Layout = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Tabs
-        screenOptions={{
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: "#FFF" },
-          headerTintColor: "#000",
-          tabBarActiveTintColor: "#000",
-          tabBarStyle: { backgroundColor: "#FFF" },
-          headerRight: () => (
-            <TouchableOpacity onPress={() => supabase.auth.signOut()}>
-              <Ionicons
-                name="log-out-outline"
-                size={24}
-                color="#000"
-                style={{ marginRight: 10 }}
-              />
-            </TouchableOpacity>
+    <Tabs
+      screenOptions={{
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: "#FFF" },
+        headerTintColor: "#000",
+        tabBarActiveTintColor: "#000",
+        tabBarStyle: { backgroundColor: "#FFF" },
+      }}
+    >
+      {/* Map Tab */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="map-outline" size={size} color={color} />
           ),
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="home-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="map"
-          options={{
-            title: "Map",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="map-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ size, color }) => (
-              <Ionicons name="person-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      </Tabs>
-    </GestureHandlerRootView>
+      />
+
+      <Tabs.Screen
+        name="review"
+        options={{
+          title: "Review",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="camera-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Profile Tab */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hide Todos Tab */}
+      <Tabs.Screen
+        name="todos"
+        options={{
+          href: null,
+        }}
+      />
+    </Tabs>
   );
 };
 
