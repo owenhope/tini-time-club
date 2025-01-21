@@ -15,6 +15,9 @@ import {
 } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { supabase } from "@/utils/supabase";
+import { decode } from "base64-arraybuffer";
+import { router } from "expo-router";
 
 export default function App() {
   const cameraRef = useRef<CameraView>(null);
@@ -57,13 +60,70 @@ export default function App() {
     setIsReviewing(false);
   };
 
-  const reviewCapture = () => {
-    uploadImage(photo!);
+  const uploadImage = async (userId: string) => {
+    // Generate a random file name for the image
+    const randomFileName = `${Math.random().toString(36).substring(2, 15)}.png`;
+
+    // Upload image to Supabase Storage
+    const filePath = `review_images/${userId}/${randomFileName}`;
+    if (!photo) {
+      console.error("No photo to upload");
+      return null;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("review_images")
+      .upload(filePath, decode(photo), {
+        contentType: "image/png",
+      });
+
+    if (error) {
+      console.error("Error uploading image:", error);
+      return null;
+    }
+
+    return data.path; // Return the image path if successful
   };
 
-  const uploadImage = (uri: string) => {
-    // Stub API upload function
-    console.log("Uploading image:", uri);
+  const createReview = async (userId: string, imageUrl: string) => {
+    const newReview = {
+      user_id: userId,
+      image_url: imageUrl,
+    };
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .insert(newReview)
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error creating review:", error);
+      return null;
+    }
+
+    return data.id;
+  };
+
+  const handleUploadAndCreateReview = async (photo: any) => {
+    const {
+      data: { user: User },
+    } = await supabase.auth.getUser();
+
+    if (!User) return;
+
+    // Step 1: Upload the image
+    const imageUrl = await uploadImage(User.id);
+    if (!imageUrl) return;
+
+    // Step 2: Create the review
+    const reviewId = await createReview(User.id, imageUrl);
+    if (!reviewId) return;
+
+    router.push({
+      pathname: `/(auth)/review/review`,
+      params: { id: reviewId },
+    });
   };
 
   const openLibrary = async () => {
@@ -109,8 +169,11 @@ export default function App() {
             />
           )}
           <View style={styles.reviewButtons}>
-            <TouchableOpacity style={styles.button} onPress={reviewCapture}>
-              <Text style={styles.text}>Review</Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleUploadAndCreateReview}
+            >
+              <Text style={styles.text}>Create Review</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={cancelCapture}>
               <Text style={styles.text}>Cancel</Text>

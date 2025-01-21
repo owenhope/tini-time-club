@@ -6,9 +6,7 @@ const ReviewLayout = () => {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFF" },
-        headerTintColor: "#000",
-        headerShadowVisible: false,
+        headerShown: false,
       }}
     >
       {/* Camera Screen */}
