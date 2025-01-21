@@ -11,11 +11,19 @@ import {
 import { useEffect, useState, createRef } from "react";
 import { supabase } from "@/utils/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, {
+  PROVIDER_GOOGLE,
+  Region,
+  Marker,
+  Callout,
+} from "react-native-maps";
 import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
+import { mapStyle } from "@/assets/mapStyle";
+import { markers } from "@/assets/markers";
+
 const INITIAL_REGION = {
   latitude: 37.33,
   longitude: -122,
@@ -67,6 +75,13 @@ const Map = () => {
 
   const onRegionChange = (region: Region) => {
     console.log(region);
+  };
+
+  const onMarkerSelected = (marker: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    console.log(marker);
   };
 
   return (
@@ -121,7 +136,21 @@ const Map = () => {
         rotateEnabled={false}
         region={region}
         onRegionChange={onRegionChange}
-      />
+        customMapStyle={mapStyle}
+      >
+        {markers.map((marker, index) => (
+          <Marker
+            key={index}
+            coordinate={marker}
+            title={marker.name}
+            onPress={() => onMarkerSelected(marker)}
+          >
+            <Callout>
+              <Text style={{ fontSize: 24 }}>{marker.name}</Text>
+            </Callout>
+          </Marker>
+        ))}
+      </MapView>
       <View style={styles.btnContainer}>
         <TouchableOpacity style={styles.btn} onPress={focusMap}>
           <Ionicons name="location" size={24} color="black" />
