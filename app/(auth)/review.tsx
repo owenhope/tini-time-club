@@ -39,6 +39,8 @@ export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
+  const [types, setTypes] = useState<any[]>([]);
+  const [spirits, setSpirits] = useState<any[]>([]);
   const opacity = useSharedValue(1);
   const { control, handleSubmit, reset, trigger, formState, watch } = useForm({
     mode: "onChange",
@@ -52,7 +54,12 @@ export default function App() {
     },
   });
   const insets = useSafeAreaInsets();
-  const watchedValues = watch(); // Watches all form fields
+  const watchedValues = watch();
+
+  useEffect(() => {
+    getTypes();
+    getSpirits();
+  }, []);
 
   interface Question {
     title: string;
@@ -62,14 +69,23 @@ export default function App() {
 
   const questions: Question[] = [
     { title: "Where are you?", key: "location", Component: LocationInput },
-    { title: "Which Spirit?", key: "spirit", Component: SpiritInput },
-    { title: "Which Type?", key: "type", Component: TypeInput },
-    { title: "How does it taste?", key: "taste", Component: TasteInput },
     {
-      title: "How is the presentation?",
+      title: "Which Spirit?",
+      key: "spirit",
+      Component: () => <SpiritInput control={control} spirits={spirits} />,
+    },
+    {
+      title: "Which Type?",
+      key: "type",
+      Component: () => <TypeInput control={control} types={types} />,
+    },
+    {
+      title: "Presentation Rating",
       key: "presentation",
       Component: PresentationInput,
     },
+    { title: "Taste Rating", key: "taste", Component: TasteInput },
+
     {
       title: "Additional notes or comments?",
       key: "notes",
@@ -77,7 +93,14 @@ export default function App() {
     },
     {
       title: "Review",
-      Component: (props) => <Review values={watchedValues} {...props} />,
+      Component: (props) => (
+        <Review
+          values={watchedValues}
+          spirits={spirits}
+          types={types}
+          {...props}
+        />
+      ),
     },
   ];
 
@@ -144,7 +167,7 @@ export default function App() {
         contentType: "image/png",
       });
 
-    if (error) {
+    if (error || !data) {
       console.error("Error uploading image:", error);
       return null;
     }
@@ -152,24 +175,87 @@ export default function App() {
     return data.path;
   };
 
+  const getTypes = async () => {
+    const { data, error } = await supabase.from("types").select("*");
+    if (error) {
+      console.error("Error getting types:", error);
+    }
+    setTypes(data || []);
+  };
+
+  const getSpirits = async () => {
+    const { data, error } = await supabase.from("spirits").select("*");
+    if (error) {
+      console.error("Error getting spirits:", error);
+    }
+    setSpirits(data || []);
+  };
+
   const createReview = async (userId: string, imageUrl: string) => {
-    const newReview = {
-      user_id: userId,
-      image_url: imageUrl,
+    const locationId = await getLocation(userId, watchedValues.location);
+    if (locationId) {
+      console.log(locationId);
+      const newReview = {
+        user_id: userId,
+        location: locationId,
+        spirit: watchedValues.spirit,
+        type: watchedValues.type,
+        taste: watchedValues.taste,
+        presentation: watchedValues.presentation,
+        comment: watchedValues.notes,
+        image_url: imageUrl,
+      };
+      const { data, error } = await supabase
+        .from("reviews")
+        .insert(newReview)
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("Error creating review:", error);
+        return null;
+      }
+
+      return data.id;
+    } else {
+      console.log("Error getting location ID");
+    }
+  };
+
+  const getLocation = async (userId: string, location: any) => {
+    const { data, error } = await supabase
+      .from("locations")
+      .select("id")
+      .eq("name", location.name)
+      .eq("address", location.address)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error getting location:", error);
+      return null;
+    } else if (data) {
+      return data.id;
+    }
+
+    const newLocation = {
+      created_by: userId,
+      name: location.name,
+      address: location.address,
+      location: `POINT(${location.coordinates.longitude} ${location.coordinates.latitude})`,
     };
 
-    const { data, error } = await supabase
-      .from("reviews")
-      .insert(newReview)
+    const { data: locationData, error: locationError } = await supabase
+      .from("locations")
+      .insert(newLocation)
       .select("id")
       .single();
 
-    if (error) {
-      console.error("Error creating review:", error);
+    if (locationError) {
+      console.error("Error creating location:", locationError);
       return null;
+    } else {
+      return locationData.id;
     }
-
-    return data.id;
   };
 
   const handleUploadAndCreateReview = async (formData: any) => {
@@ -184,8 +270,7 @@ export default function App() {
 
     const reviewId = await createReview(User.id, imageUrl);
     if (!reviewId) return;
-
-    console.log("Review data:", formData);
+    console.log("success");
   };
 
   return (
@@ -352,102 +437,84 @@ const LocationInput = ({ control }: { control: any }) => {
   );
 };
 
-const SpiritInput = ({ control }: { control: any }) => (
+const SpiritInput = ({
+  control,
+  spirits,
+}: {
+  control: any;
+  spirits: { id: number; name: string }[];
+}) => (
   <Controller
     control={control}
     name="spirit"
     rules={{
       required: true,
     }}
-    defaultValue="" // Default to no selection
+    defaultValue=""
     render={({ field: { onChange, value } }) => (
       <View style={styles.inputContainer}>
         <View style={styles.buttonGroup}>
-          {/* GIN Button */}
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              value === "GIN" && styles.selectedButton, // Highlight if selected
-            ]}
-            onPress={() => onChange("GIN")} // Update form value
-          >
-            <Text
+          {spirits.map((spirit) => (
+            <TouchableOpacity
+              key={spirit.id}
               style={[
-                styles.buttonText,
-                value === "GIN" && styles.selectedButtonText, // Highlight text if selected
+                styles.optionButton,
+                value === spirit.id && styles.selectedButton, // Highlight if selected
               ]}
+              onPress={() => onChange(spirit.id)} // Update form value
             >
-              GIN
-            </Text>
-          </TouchableOpacity>
-
-          {/* VODKA Button */}
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              value === "VODKA" && styles.selectedButton, // Highlight if selected
-            ]}
-            onPress={() => onChange("VODKA")} // Update form value
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                value === "VODKA" && styles.selectedButtonText, // Highlight text if selected
-              ]}
-            >
-              VODKA
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.buttonText,
+                  value === spirit.id && styles.selectedButtonText, // Highlight text if selected
+                ]}
+              >
+                {spirit.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     )}
   />
 );
 
-const TypeInput = ({ control }: { control: any }) => (
+const TypeInput = ({
+  control,
+  types,
+}: {
+  control: any;
+  types: { id: number; name: string }[];
+}) => (
   <Controller
     control={control}
     name="type"
     rules={{
       required: true,
     }}
-    defaultValue="" // Default to no selection
+    defaultValue=""
     render={({ field: { onChange, value } }) => (
       <View style={styles.inputContainer}>
         <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              value === "DIRTY" && styles.selectedButton, // Highlight if selected
-            ]}
-            onPress={() => onChange("DIRTY")} // Update form value
-          >
-            <Text
+          {types.map((type) => (
+            <TouchableOpacity
+              key={type.id}
               style={[
-                styles.buttonText,
-                value === "DIRTY" && styles.selectedButtonText, // Highlight text if selected
+                styles.optionButton,
+                value === type.id && styles.selectedButton, // Highlight if selected
               ]}
+              onPress={() => onChange(type.id)} // Update form value
             >
-              Dirty
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              value === "TWIST" && styles.selectedButton, // Highlight if selected
-            ]}
-            onPress={() => onChange("TWIST")} // Update form value
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                value === "TWIST" && styles.selectedButtonText, // Highlight text if selected
-              ]}
-            >
-              Twist
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.buttonText,
+                  value === type.id && styles.selectedButtonText, // Highlight text if selected
+                ]}
+              >
+                {type.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     )}
@@ -544,9 +611,16 @@ interface ReviewValues {
   notes?: string;
 }
 
-const Review = ({ values }: { values: ReviewValues }) => {
+const Review = ({
+  values,
+  spirits,
+  types,
+}: {
+  values: ReviewValues;
+  spirits: any[];
+  types: any[];
+}) => {
   const ReviewRating = ({ value, label }: { value: number; label: string }) => {
-    console.log(label);
     const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
     const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
     const OLIVE_COLOR = "#c3eb78";
@@ -571,7 +645,7 @@ const Review = ({ values }: { values: ReviewValues }) => {
         if (key === "location" && value?.name && value?.address) {
           return (
             <View key={key} style={styles.reviewItem}>
-              <Text style={styles.reviewLabel}>{key}:</Text>
+              <Text style={styles.reviewLabel}>{key}</Text>
               <Text style={styles.reviewValue}>
                 {value.name}, {value.address}
               </Text>
@@ -579,11 +653,24 @@ const Review = ({ values }: { values: ReviewValues }) => {
           );
         }
 
-        if (["spirit", "type", "notes"].includes(key)) {
+        if (["spirit", "type"].includes(key)) {
+          const dataSource = key === "spirit" ? spirits : types;
+          const item = dataSource.find((obj) => obj.id === value);
+          const displayValue = item ? item.name : "Unknown";
+
           return (
             <View key={key} style={styles.reviewItem}>
               <Text style={styles.reviewLabel}>{key}:</Text>
-              <Text style={styles.reviewValue}>{value}</Text>
+              <Text style={styles.reviewValue}>{displayValue}</Text>
+            </View>
+          );
+        }
+
+        if (["notes"].includes(key)) {
+          return (
+            <View key={key} style={styles.reviewItem}>
+              <Text style={styles.reviewLabel}>{key}:</Text>
+              <Text style={styles.reviewComment}>{value}</Text>
             </View>
           );
         }
@@ -734,6 +821,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#FFF", // Default text color
     textAlign: "center",
+    textTransform: "capitalize",
   },
   selectedButtonText: {
     color: "#fff", // Highlight text color for selected button
@@ -746,11 +834,16 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
     fontWeight: "bold",
     fontSize: 16,
-    color: "white",
+    color: "#FFF",
   },
   reviewValue: {
-    fontSize: 14,
-    color: "white",
+    fontSize: 16,
+    color: "#FFF",
+    textTransform: "capitalize",
+  },
+  reviewComment: {
+    fontSize: 16,
+    color: "#FFF",
   },
   formStateContainer: {
     padding: 10,

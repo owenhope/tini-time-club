@@ -75,7 +75,7 @@ const Map = () => {
       <GooglePlacesAutocomplete
         placeholder="Search"
         fetchDetails
-        query={{ key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
+        query={{ key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8" }}
         onFail={(error) => console.error(error)}
         onPress={(data, detail) => {
           const point = detail?.geometry.location;
