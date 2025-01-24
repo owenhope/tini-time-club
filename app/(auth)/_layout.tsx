@@ -28,6 +28,7 @@ const Layout = () => {
         name="review"
         options={{
           title: "Review",
+          headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="camera-outline" size={size} color={color} />
           ),

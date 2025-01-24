@@ -1,15 +1,5 @@
-import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  Button,
-  FlatList,
-  ListRenderItem,
-  TouchableOpacity,
-} from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useEffect, useState, createRef } from "react";
-import { supabase } from "@/utils/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { PROVIDER_GOOGLE, Region, Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
@@ -90,7 +80,6 @@ const Map = () => {
         onPress={(data, detail) => {
           const point = detail?.geometry.location;
           if (!point) return;
-
           setRegion({
             latitude: point.lat,
             longitude: point.lng,
