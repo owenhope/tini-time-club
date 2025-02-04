@@ -13,25 +13,14 @@ const Layout = () => {
       }}
     >
       <Tabs.Screen
-        name="feed"
+        name="index"
         options={{
-          title: "Feed",
+          title: "Home",
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
-      {/* Map Tab */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Map",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
       <Tabs.Screen
         name="review"
         options={{
@@ -56,6 +45,13 @@ const Layout = () => {
       {/* Hide Todos Tab */}
       <Tabs.Screen
         name="todos"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Hide Maps Tab */}
+      <Tabs.Screen
+        name="map"
         options={{
           href: null,
         }}

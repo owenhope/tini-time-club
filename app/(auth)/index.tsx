@@ -1,173 +1,292 @@
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { useEffect, useState, createRef } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { PROVIDER_GOOGLE, Region, Marker, Callout } from "react-native-maps";
-import * as Location from "expo-location";
-import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
-import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
-import { mapStyle } from "@/assets/mapStyle";
-import { markers } from "@/assets/markers";
-import MapView from "react-native-map-clustering";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
+import { supabase } from "@/utils/supabase";
+import { AirbnbRating } from "react-native-ratings";
 
-const INITIAL_REGION = {
-  latitude: 37.33,
-  longitude: -122,
-  latitudeDelta: 2,
-  longitudeDelta: 2,
-};
+// Get the device's screen width so we can set a square image
+const screenWidth = Dimensions.get("window").width;
 
-const Map = () => {
-  const [currentLocation, setCurrentLocation] =
-    useState<Location.LocationObjectCoords | null>(null);
-  const [initialRegion, setInitialRegion] = useState<Region | null>(null);
-  const mapRef = createRef<any>();
-  const [region, setRegion] = useState(INITIAL_REGION);
-  useEffect(() => {
-    const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Permission to access location was denied");
-        return;
-      }
-      let location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation(location.coords);
+// Set the number of reviews to fetch per page.
+const pageSize = 10;
 
-      setInitialRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-    };
+interface Location {
+  name: string;
+  address: string;
+}
 
-    getLocation();
-  }, []);
+interface NamedEntity {
+  name: string;
+}
 
-  const focusMap = async () => {
-    const vancouverRegion = {
-      latitude: 49.2827,
-      longitude: -123.1207,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
+interface Review {
+  id: number;
+  comment: string;
+  image_url: string;
+  inserted_at: string;
+  taste: number;
+  presentation: number;
+  location?: Location;
+  spirit?: NamedEntity;
+  type?: NamedEntity;
+  user_id: string;
+}
 
-    mapRef.current?.animateToRegion(vancouverRegion, 500);
-  };
+interface ReviewRatingProps {
+  value: number;
+  label: "taste" | "presentation";
+}
 
-  const zoomIn = async () => {
-    mapRef.current?.animateCamera({ zoom: 13 });
-  };
-
-  const onRegionChange = (region: Region) => {
-    console.log(region);
-  };
-
-  const onMarkerSelected = (marker: {
-    latitude: number;
-    longitude: number;
-  }) => {
-    console.log(marker);
-  };
+// Component to display a rating using custom images and colors.
+const ReviewRating: React.FC<ReviewRatingProps> = ({ value, label }) => {
+  const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
+  const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
+  const OLIVE_COLOR = "#c3eb78";
+  const MARTINI_COLOR = "#f3ffc6";
 
   return (
-    <View style={{ flex: 1 }}>
-      <GooglePlacesAutocomplete
-        placeholder="Search"
-        fetchDetails
-        query={{ key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8" }}
-        onFail={(error) => console.error(error)}
-        onPress={(data, detail) => {
-          const point = detail?.geometry.location;
-          if (!point) return;
-          setRegion({
-            latitude: point.lat,
-            longitude: point.lng,
-            latitudeDelta: 0.2,
-            longitudeDelta: 0.2,
-          });
-        }}
-        styles={{
-          container: {
-            flex: 0,
-          },
-          textInput: {
-            paddingLeft: 35,
-          },
-          textInputContainer: {
-            padding: 4,
-          },
-        }}
-        renderLeftButton={() => (
-          <View
-            style={{
-              position: "absolute",
-              left: 15,
-              top: 14,
-              zIndex: 2,
-            }}
-          >
-            <Ionicons name="search-outline" size={24} />
-          </View>
-        )}
-      />
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        mapType="standard"
-        style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
-        showsUserLocation
-        showsMyLocationButton
-        rotateEnabled={false}
-        region={region}
-        onRegionChange={onRegionChange}
-        customMapStyle={mapStyle}
-      >
-        {markers.map((marker, index) => (
-          <Marker
-            key={index}
-            coordinate={marker}
-            title={marker.name}
-            onPress={() => onMarkerSelected(marker)}
-          >
-            <Callout>
-              <Text style={{ fontSize: 24 }}>{marker.name}</Text>
-            </Callout>
-          </Marker>
-        ))}
-      </MapView>
-      <View style={styles.btnContainer}>
-        <TouchableOpacity style={styles.btn} onPress={focusMap}>
-          <Ionicons name="location" size={24} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btn} onPress={zoomIn}>
-          <Ionicons name="earth" size={24} color="black" />
-        </TouchableOpacity>
+    <AirbnbRating
+      starImage={label === "taste" ? OLIVE_IMAGE : MARTINI_IMAGE}
+      selectedColor={label === "taste" ? OLIVE_COLOR : MARTINI_COLOR}
+      count={5}
+      size={20}
+      reviewSize={16}
+      showRating={false}
+      ratingContainerStyle={{ alignItems: "flex-start" }}
+      defaultRating={value}
+    />
+  );
+};
+
+interface ReviewItemProps {
+  review: Review;
+}
+
+// Component to render each review row with overlay text on the image.
+const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
+  return (
+    <View style={styles.reviewContainer}>
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
+        <View style={styles.overlay}>
+          <Text style={styles.locationName}>
+            {review.location ? review.location.name : "N/A"}
+          </Text>
+          {review.location?.address ? (
+            <Text style={styles.locationAddress}>
+              {review.location.address}
+            </Text>
+          ) : null}
+          <Text style={styles.ratingLabel}>Taste</Text>
+          <ReviewRating value={review.taste} label="taste" />
+          <Text style={styles.ratingLabel}>Presentation</Text>
+          <ReviewRating value={review.presentation} label="presentation" />
+          <Text style={styles.spiritText}>
+            Spirit: {review.spirit ? review.spirit.name : "N/A"}
+          </Text>
+          <Text style={styles.typeText}>
+            Type: {review.type ? review.type.name : "N/A"}
+          </Text>
+          <Text style={styles.commentText}>Comment: {review.comment}</Text>
+        </View>
       </View>
     </View>
   );
 };
 
+const Index: React.FC = () => {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+
+  useEffect(() => {
+    loadReviews(true);
+  }, []);
+
+  /**
+   * Loads reviews from Supabase.
+   * @param refresh If true, refreshes the list (starts at page 0).
+   */
+  const loadReviews = async (refresh: boolean = false) => {
+    // If we're refreshing, start at page 0.
+    const nextPage = refresh ? 0 : page + 1;
+
+    if (refresh) {
+      setRefreshing(true);
+    } else {
+      // Prevent further calls if no more data
+      if (!hasMore) return;
+      setLoadingMore(true);
+    }
+
+    const start = nextPage * pageSize;
+    const end = start + pageSize - 1;
+
+    const { data: reviewsData, error } = await supabase
+      .from("reviews")
+      .select(
+        `
+        id,
+        comment,
+        image_url,
+        inserted_at,
+        taste,
+        presentation,
+        location:locations!reviews_location_fkey(name, address),
+        spirit:spirit(name),
+        type:type(name),
+        user_id
+      `
+      )
+      .order("inserted_at", { ascending: false })
+      .range(start, end);
+
+    if (error) {
+      console.error("Error fetching reviews:", error);
+      if (refresh) {
+        setRefreshing(false);
+      } else {
+        setLoadingMore(false);
+      }
+      return;
+    }
+
+    // Update each review with the full public URL for the image.
+    const reviewsWithFullUrl = reviewsData.map((review: any) => {
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("review_images").getPublicUrl(review.image_url);
+      return { ...review, image_url: publicUrl };
+    });
+
+    // If refreshing, replace the reviews list; otherwise, append to it.
+    if (refresh) {
+      setReviews(reviewsWithFullUrl);
+    } else {
+      setReviews((prev) => [...prev, ...reviewsWithFullUrl]);
+    }
+
+    // Update page and hasMore state
+    setPage(nextPage);
+    setHasMore(reviewsWithFullUrl.length === pageSize);
+
+    if (refresh) {
+      setRefreshing(false);
+    } else {
+      setLoadingMore(false);
+    }
+  };
+
+  // Handler for pull-to-refresh
+  const onRefresh = useCallback(() => {
+    loadReviews(true);
+  }, []);
+
+  // Handler for infinite scroll
+  const onEndReached = () => {
+    if (!loadingMore && hasMore && !refreshing) {
+      loadReviews(false);
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {loading && <Text>Loading...</Text>}
+      <FlatList
+        data={reviews}
+        renderItem={({ item }) => <ReviewItem review={item} />}
+        keyExtractor={(item) => item.id.toString()}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+      />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-  btnContainer: {
-    position: "absolute",
-    top: 60,
-    right: 20,
-    gap: 10,
-    zIndex: -1,
+  container: {
+    flex: 1,
   },
-  btn: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: {
-      width: 1,
-      height: 10,
-    },
+  reviewContainer: {
+    marginBottom: 16,
+  },
+  imageContainer: {
+    width: screenWidth,
+    height: screenWidth, // Square container
+    position: "relative",
+  },
+  reviewImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 8,
+    justifyContent: "flex-end",
+  },
+  locationName: {
+    fontWeight: "bold",
+    fontSize: 18,
+    color: "#fff",
+  },
+  locationAddress: {
+    fontSize: 14,
+    color: "#ddd",
+    marginBottom: 4,
+  },
+  ratingLabel: {
+    fontWeight: "bold",
+    marginTop: 4,
+    color: "#fff",
+  },
+  spiritText: {
+    fontWeight: "bold",
+    textTransform: "capitalize",
+    marginTop: 4,
+    color: "#fff",
+  },
+  typeText: {
+    fontWeight: "bold",
+    textTransform: "capitalize",
+    marginTop: 2,
+    color: "#fff",
+  },
+  commentText: {
+    fontWeight: "bold",
+    marginTop: 4,
+    color: "#fff",
+  },
+  footer: {
+    paddingVertical: 20,
   },
 });
-export default Map;
+
+export default Index;
