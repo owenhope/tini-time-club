@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -13,6 +12,15 @@ const Layout = () => {
         tabBarStyle: { backgroundColor: "#FFF" },
       }}
     >
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: "Feed",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
       {/* Map Tab */}
       <Tabs.Screen
         name="index"
