@@ -20,6 +20,7 @@ const Layout = () => {
           name="index"
           options={{
             title: "Home",
+            headerShown: false,
             tabBarIcon: ({ size, color }) => (
               <Ionicons name="home-outline" size={size} color={color} />
             ),

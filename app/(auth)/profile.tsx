@@ -155,7 +155,7 @@ const Profile = () => {
   };
 
   const renderReviewItem = ({ item }: { item: Review }) => (
-    <ReviewItem review={item} />
+    <ReviewItem review={item} aspectRatio={1} />
   );
 
   const renderEmpty = () => {
@@ -198,7 +198,6 @@ const Profile = () => {
               <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
-          <Text style={styles.bioText}>This is a bio placeholder.</Text>
         </View>
       </View>
 
@@ -275,7 +274,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
   },
-  // Reviews List Styles
   reviewsContainer: {
     flex: 1,
   },

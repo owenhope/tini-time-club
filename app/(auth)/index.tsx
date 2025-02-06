@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
@@ -155,11 +156,13 @@ const Index: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {loading && !refreshing && <Text>Loading...</Text>}
       <FlatList
         data={reviews}
-        renderItem={({ item }) => <ReviewItem review={item} />}
+        renderItem={({ item }) => (
+          <ReviewItem review={item} aspectRatio={9 / 16} />
+        )}
         keyExtractor={(item) => item.id.toString()}
         onRefresh={onRefresh}
         refreshing={refreshing}
@@ -195,7 +198,7 @@ const Index: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -4,18 +4,40 @@ import ReviewRating from "@/components/ReviewRating"; // Adjust the import path 
 import { Review } from "@/types/types"; // Adjust the import path as needed
 
 const screenWidth = Dimensions.get("window").width;
+
 interface ReviewItemProps {
   review: Review;
+  aspectRatio: number;
 }
 
-const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
+const ReviewItem: React.FC<ReviewItemProps> = ({ review, aspectRatio }) => {
+  const formattedDate = new Date(review.inserted_at).toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  );
+  const formattedTime = new Date(review.inserted_at).toLocaleTimeString(
+    "en-US",
+    {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    }
+  );
+
   return (
-    <View style={styles.reviewContainer}>
-      <View style={styles.imageContainer}>
+    <View>
+      <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
-        <View style={styles.userLabelContainer}>
+        <View style={styles.topBar}>
           <Text style={styles.userLabelText}>
             {review.profile?.username || "Unknown"}
+          </Text>
+          <Text style={styles.dateLabelText}>
+            {formattedDate} {formattedTime}
           </Text>
         </View>
         <View style={styles.overlay}>
@@ -46,12 +68,8 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
 };
 
 const styles = StyleSheet.create({
-  reviewContainer: {
-    marginBottom: 16,
-  },
   imageContainer: {
     width: screenWidth,
-    aspectRatio: 9 / 16,
     position: "relative",
   },
   reviewImage: {
@@ -59,17 +77,23 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "cover",
   },
-  userLabelContainer: {
+  topBar: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "black",
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     zIndex: 2,
   },
   userLabelText: {
+    color: "#fff",
+    fontSize: 18,
+  },
+  dateLabelText: {
     color: "#fff",
     fontSize: 18,
   },
@@ -79,7 +103,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     padding: 20,
     justifyContent: "flex-end",
   },
