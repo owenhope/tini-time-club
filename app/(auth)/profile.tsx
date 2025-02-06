@@ -5,7 +5,6 @@ import {
   Image,
   FlatList,
   Text,
-  Dimensions,
   TouchableOpacity,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -15,8 +14,7 @@ import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types"; // Adjust the import path as needed
 import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
-
-const GRID_GAP = 8;
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -170,52 +168,54 @@ const Profile = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Instagram-style Profile Header */}
-      <View style={styles.profileHeader}>
-        <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-          {avatar ? (
-            <Image style={styles.avatar} source={{ uri: avatar }} />
-          ) : (
-            <View style={styles.avatarPlaceholder} />
-          )}
-        </TouchableOpacity>
-        <View style={styles.userInfoContainer}>
-          <Text style={styles.usernameText}>
-            {profile?.username || "Username"}
-          </Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userReviews.length}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Following</Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.container}>
+        {/* Instagram-style Profile Header */}
+        <View style={styles.profileHeader}>
+          <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+            {avatar ? (
+              <Image style={styles.avatar} source={{ uri: avatar }} />
+            ) : (
+              <View style={styles.avatarPlaceholder} />
+            )}
+          </TouchableOpacity>
+          <View style={styles.userInfoContainer}>
+            <Text style={styles.usernameText}>
+              {profile?.username || "Username"}
+            </Text>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userReviews.length}</Text>
+                <Text style={styles.statLabel}>Reviews</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>0</Text>
+                <Text style={styles.statLabel}>Followers</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>0</Text>
+                <Text style={styles.statLabel}>Following</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      {/* Reviews List with pull-to-refresh and two-column grid */}
-      <View style={styles.reviewsContainer}>
-        <FlatList
-          data={userReviews}
-          renderItem={renderReviewItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.gridContent}
-          ListEmptyComponent={renderEmpty}
-          onRefresh={loadUserReviews}
-          refreshing={loadingReviews}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
-        />
+        {/* Reviews List with pull-to-refresh and two-column grid */}
+        <View style={styles.reviewsContainer}>
+          <FlatList
+            data={userReviews}
+            renderItem={renderReviewItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.gridContent}
+            ListEmptyComponent={renderEmpty}
+            onRefresh={loadUserReviews}
+            refreshing={loadingReviews}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+          />
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

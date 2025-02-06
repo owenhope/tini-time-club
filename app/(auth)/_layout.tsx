@@ -40,6 +40,7 @@ const Layout = () => {
           name="profile"
           options={{
             title: "Profile",
+            headerShown: false,
             tabBarIcon: ({ size, color }) => (
               <Ionicons name="person-outline" size={size} color={color} />
             ),
