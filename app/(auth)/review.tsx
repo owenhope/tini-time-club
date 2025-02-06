@@ -7,7 +7,6 @@ import {
   TouchableWithoutFeedback,
   View,
   Image,
-  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
@@ -19,13 +18,17 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { BlurView } from "@react-native-community/blur";
-import { useForm, Controller } from "react-hook-form";
-import * as Location from "expo-location";
-import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
-import { AirbnbRating } from "react-native-ratings";
+import { useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
+import LocationInput from "@/components/LocationInput";
+import TasteInput from "@/components/TasteInput";
+import PresentationInput from "@/components/PresentationInput";
+import NotesInput from "@/components/NotesInput";
+import SpiritInput from "@/components/SpiritInput";
+import TypeInput from "@/components/TypeInput";
+import Review from "@/components/Review";
 
 export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -35,7 +38,7 @@ export default function App() {
   const [spirits, setSpirits] = useState<any[]>([]);
   const opacity = useSharedValue(1);
   const router = useRouter();
-  
+
   const { control, handleSubmit, reset, trigger, formState, watch } = useForm({
     mode: "onChange",
     defaultValues: {
@@ -112,8 +115,8 @@ export default function App() {
   };
 
   const nextStep = async () => {
-    const isValid = await trigger(questions[step].key as any); // Validate current step's field
-    if (!isValid) return; // Stop navigation if validation fails
+    const isValid = await trigger(questions[step].key as any);
+    if (!isValid) return;
 
     if (step < questions.length - 1) {
       opacity.value = withTiming(0, { duration: 300 }, () => {
@@ -259,10 +262,12 @@ export default function App() {
       onPress={Keyboard.dismiss}
     >
       {!isReviewing ? (
-        <CameraComponent onCapture={(photo) => {
-          setPhoto(photo);
-          setIsReviewing(true);
-        }} />
+        <CameraComponent
+          onCapture={(photo) => {
+            setPhoto(photo);
+            setIsReviewing(true);
+          }}
+        />
       ) : (
         <View style={styles.reviewContainer}>
           <BlurView
@@ -314,392 +319,11 @@ export default function App() {
   );
 }
 
-const LocationInput = ({ control }: { control: any }) => {
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
-
-  useEffect(() => {
-    async function getCurrentLocation() {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-    }
-
-    getCurrentLocation();
-  }, []);
-
-  const query = {
-    key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8",
-    language: "en",
-    types: "restaurant|cafe|bar",
-    location: location
-      ? `${location.latitude},${location.longitude}`
-      : undefined,
-    radius: location ? 5000 : undefined, // Optional: Set a search radius in meters if location exists
-  };
-
-  return (
-    <Controller
-      control={control}
-      name="location"
-      rules={{ required: true }}
-      render={({ field: { onChange, value } }) => (
-        <View style={styles.inputContainer}>
-          <GooglePlacesAutocomplete
-            placeholder="Search Restaurants, Cafes, or Bars"
-            textInputProps={{
-              placeholderTextColor: "#AAA",
-              returnKeyType: "search",
-            }}
-            fetchDetails={true}
-            minLength={2}
-            onPress={(data, details = null) => {
-              const locationData = {
-                name: data.structured_formatting.main_text,
-                address: data.description,
-                coordinates: details
-                  ? {
-                      latitude: details.geometry.location.lat,
-                      longitude: details.geometry.location.lng,
-                    }
-                  : null,
-              };
-              onChange(locationData); // Save to form state
-            }}
-            query={query}
-            styles={{
-              container: { flex: 0, zIndex: 1 },
-              textInput: {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                height: 44,
-                borderRadius: 5,
-                paddingVertical: 5,
-                paddingHorizontal: 10,
-                fontSize: 18,
-                flex: 1,
-                color: "#FFF",
-              },
-              row: {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                paddingHorizontal: 10.5,
-              },
-              description: {
-                color: "#FFF",
-                fontSize: 14,
-              },
-              separator: {
-                display: "none",
-              },
-              poweredContainer: {
-                display: "none",
-              },
-            }}
-          />
-        </View>
-      )}
-    />
-  );
-};
-
-const SpiritInput = ({
-  control,
-  spirits,
-}: {
-  control: any;
-  spirits: { id: number; name: string }[];
-}) => (
-  <Controller
-    control={control}
-    name="spirit"
-    rules={{
-      required: true,
-    }}
-    defaultValue=""
-    render={({ field: { onChange, value } }) => (
-      <View style={styles.inputContainer}>
-        <View style={styles.buttonGroup}>
-          {spirits.map((spirit) => (
-            <TouchableOpacity
-              key={spirit.id}
-              style={[
-                styles.optionButton,
-                value === spirit.id && styles.selectedButton, // Highlight if selected
-              ]}
-              onPress={() => onChange(spirit.id)} // Update form value
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  value === spirit.id && styles.selectedButtonText, // Highlight text if selected
-                ]}
-              >
-                {spirit.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    )}
-  />
-);
-
-const TypeInput = ({
-  control,
-  types,
-}: {
-  control: any;
-  types: { id: number; name: string }[];
-}) => (
-  <Controller
-    control={control}
-    name="type"
-    rules={{
-      required: true,
-    }}
-    defaultValue=""
-    render={({ field: { onChange, value } }) => (
-      <View style={styles.inputContainer}>
-        <View style={styles.buttonGroup}>
-          {types.map((type) => (
-            <TouchableOpacity
-              key={type.id}
-              style={[
-                styles.optionButton,
-                value === type.id && styles.selectedButton, // Highlight if selected
-              ]}
-              onPress={() => onChange(type.id)} // Update form value
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  value === type.id && styles.selectedButtonText, // Highlight text if selected
-                ]}
-              >
-                {type.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    )}
-  />
-);
-
-const TasteInput = ({ control }: { control: any }) => {
-  const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
-  return (
-    <Controller
-      control={control}
-      name="taste"
-      render={({ field: { onChange, value } }) => (
-        <View style={styles.inputContainer}>
-          <AirbnbRating
-            starImage={OLIVE_IMAGE}
-            selectedColor="#c3eb78"
-            count={5}
-            size={40}
-            starContainerStyle={{ padding: 25 }}
-            reviewSize={24}
-            reviewColor="#c3eb78"
-            defaultRating={value}
-            reviews={[
-              "Absolutely undrinkable",
-              "Meh, forgettable",
-              "Decent attempt",
-              "Quite enjoyable",
-              "Utter perfection",
-            ]}
-            onFinishRating={onChange}
-          />
-        </View>
-      )}
-    />
-  );
-};
-
-const PresentationInput = ({ control }: { control: any }) => {
-  const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
-  return (
-    <Controller
-      control={control}
-      name="presentation"
-      render={({ field: { onChange, value } }) => (
-        <View style={styles.inputContainer}>
-          <AirbnbRating
-            starImage={MARTINI_IMAGE}
-            selectedColor="#f3ffc6"
-            count={5}
-            size={40}
-            starContainerStyle={{ padding: 25 }}
-            reviewSize={24}
-            defaultRating={value}
-            reviewColor="#f3ffc6"
-            reviews={[
-              "Messy disaster",
-              "Lacking effort",
-              "Acceptably plain",
-              "Elegantly simple",
-              "Artistic masterpiece",
-            ]}
-            onFinishRating={onChange}
-          />
-        </View>
-      )}
-    />
-  );
-};
-
-const NotesInput = ({ control }: { control: any }) => (
-  <Controller
-    control={control}
-    name="notes"
-    render={({ field: { onChange, value } }) => (
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textarea}
-          multiline={true}
-          onChangeText={onChange}
-          value={value}
-        />
-      </View>
-    )}
-  />
-);
-
-interface ReviewValues {
-  location?: { name: string; address: string };
-  spirit?: string;
-  type?: string;
-  taste?: number;
-  presentation?: number;
-  notes?: string;
-}
-
-const Review = ({
-  values,
-  spirits,
-  types,
-}: {
-  values: ReviewValues;
-  spirits: any[];
-  types: any[];
-}) => {
-  const ReviewRating = ({ value, label }: { value: number; label: string }) => {
-    const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
-    const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
-    const OLIVE_COLOR = "#c3eb78";
-    const MARTINI_COLOR = "#f3ffc6";
-    return (
-      <AirbnbRating
-        starImage={label === "taste" ? OLIVE_IMAGE : MARTINI_IMAGE}
-        selectedColor={label === "taste" ? OLIVE_COLOR : MARTINI_COLOR}
-        count={5}
-        size={20}
-        reviewSize={16}
-        showRating={false}
-        ratingContainerStyle={{ alignItems: "flex-start" }}
-        defaultRating={value}
-      />
-    );
-  };
-
-  return (
-    <View style={styles.inputContainer}>
-      {Object.entries(values || {}).map(([key, value]) => {
-        if (key === "location" && value?.name && value?.address) {
-          return (
-            <View key={key} style={styles.reviewItem}>
-              <Text style={styles.reviewLabel}>{key}</Text>
-              <Text style={styles.reviewValue}>
-                {value.name}, {value.address}
-              </Text>
-            </View>
-          );
-        }
-
-        if (["spirit", "type"].includes(key)) {
-          const dataSource = key === "spirit" ? spirits : types;
-          const item = dataSource.find((obj) => obj.id === value);
-          const displayValue = item ? item.name : "Unknown";
-
-          return (
-            <View key={key} style={styles.reviewItem}>
-              <Text style={styles.reviewLabel}>{key}:</Text>
-              <Text style={styles.reviewValue}>{displayValue}</Text>
-            </View>
-          );
-        }
-
-        if (["notes"].includes(key)) {
-          return (
-            <View key={key} style={styles.reviewItem}>
-              <Text style={styles.reviewLabel}>{key}:</Text>
-              <Text style={styles.reviewComment}>{value}</Text>
-            </View>
-          );
-        }
-
-        if (key === "presentation" || key === "taste") {
-          return (
-            <View key={key} style={styles.reviewItem}>
-              <Text style={styles.reviewLabel}>{key}:</Text>
-              <ReviewRating value={value} label={key} />
-            </View>
-          );
-        }
-
-        return null;
-      })}
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-  camera: {
-    flex: 1,
-    width: "100%",
-  },
-  previewImage: {
-    flex: 1,
-    width: "100%",
-  },
-  cancelButton: {
-    borderRadius: 25,
-    padding: 10,
-    position: "absolute",
-    right: 10,
-    top: 50,
-    zIndex: 100,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 20,
-    width: "100%",
-    paddingHorizontal: 20,
-  },
-  captureButton: {
-    padding: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderRadius: 50,
-    alignItems: "center",
-    justifyContent: "center",
   },
   reviewContainer: {
     flex: 1,
@@ -747,54 +371,6 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     width: "100%",
   },
-  input: {
-    fontSize: 18,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-  },
-  textarea: {
-    fontSize: 18,
-    minHeight: 100,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    color: "#FFF",
-  },
-  errorText: {
-    color: "#FFF",
-    fontSize: 14,
-    marginTop: 5,
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 10,
-  },
-  optionButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: "transparent", // Default button background
-    borderWidth: 1,
-    borderColor: "#ccc",
-    width: 100,
-  },
-  selectedButton: {
-    backgroundColor: "olive", // Highlight color for selected button
-    borderColor: "olive",
-  },
-  buttonText: {
-    fontSize: 18,
-    color: "#FFF", // Default text color
-    textAlign: "center",
-    textTransform: "capitalize",
-  },
-  selectedButtonText: {
-    color: "#fff", // Highlight text color for selected button
-  },
   reviewItem: {
     marginBottom: 10,
     gap: 5,
@@ -814,15 +390,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FFF",
   },
-  formStateContainer: {
+  cancelButton: {
+    borderRadius: 25,
     padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
-    width: "100%",
+    position: "absolute",
+    right: 10,
+    top: 50,
+    zIndex: 100,
   },
-  formStateText: {
-    fontSize: 12,
-    color: "white",
-    textAlign: "left",
+  previewImage: {
+    flex: 1,
+    width: "100%",
   },
 });
