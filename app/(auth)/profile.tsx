@@ -13,103 +13,10 @@ import * as FileSystem from "expo-file-system";
 import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
-import { AirbnbRating } from "react-native-ratings";
+import { Review } from "@/types/types"; // Adjust the import path as needed
+import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
 
-const screenWidth = Dimensions.get("window").width;
 const GRID_GAP = 8;
-
-interface Review {
-  id: number;
-  comment: string;
-  image_url: string;
-  inserted_at: string;
-  taste: number;
-  presentation: number;
-  location?: {
-    name: string;
-  };
-  type?: {
-    name: string;
-  };
-  spirit?: {
-    name: string;
-  };
-  profile?: {
-    username: string;
-  };
-}
-
-// A custom rating component using AirbnbRating.
-const ReviewRating: React.FC<{
-  value: number;
-  label: "taste" | "presentation";
-}> = ({ value, label }) => {
-  const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
-  const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
-  const OLIVE_COLOR = "#c3eb78";
-  const MARTINI_COLOR = "#f3ffc6";
-
-  return (
-    <AirbnbRating
-      starImage={label === "taste" ? OLIVE_IMAGE : MARTINI_IMAGE}
-      selectedColor={label === "taste" ? OLIVE_COLOR : MARTINI_COLOR}
-      count={5}
-      size={14}
-      reviewSize={16}
-      showRating={false}
-      ratingContainerStyle={{ alignItems: "flex-start" }}
-      defaultRating={value}
-    />
-  );
-};
-
-// The updated ReviewItem component.
-const ReviewItem: React.FC<{ review: Review }> = ({ review }) => {
-  // Determine the top left triangle color based on TYPE.
-  const getTypeColor = () => {
-    if (!review.type || !review.type.name) return "transparent";
-    const name = review.type.name.toLowerCase();
-    if (name === "twist") return "yellow";
-    if (name === "dirty") return "olive";
-    return "gray";
-  };
-
-  // Determine the top right triangle color based on SPIRIT.
-  const getSpiritColor = () => {
-    if (!review.spirit || !review.spirit.name) return "transparent";
-    const name = review.spirit.name.toLowerCase();
-    if (name === "vodka") return "silver";
-    if (name === "gin") return "blue";
-    return "gray";
-  };
-
-  return (
-    <View style={styles.reviewContainer}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
-        <View
-          style={[styles.topLeftTriangle, { borderTopColor: getTypeColor() }]}
-        />
-        <View
-          style={[styles.topRightTriangle, { borderTopColor: getSpiritColor() }]}
-        />
-        <View style={styles.overlay}>
-          <Text numberOfLines={1} style={styles.locationName}>
-            {review.location ? review.location.name : "N/A"}
-          </Text>
-          <View style={styles.ratingsContainer}>
-            <View style={styles.ratingRow}>
-              <ReviewRating value={review.taste} label="taste" />
-            </View>
-            <View style={styles.ratingRow}>
-              <ReviewRating value={review.presentation} label="presentation" />
-            </View>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-};
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -279,9 +186,7 @@ const Profile = () => {
           </Text>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {userReviews.length}
-              </Text>
+              <Text style={styles.statNumber}>{userReviews.length}</Text>
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
             <View style={styles.statItem}>
@@ -373,14 +278,12 @@ const styles = StyleSheet.create({
   // Reviews List Styles
   reviewsContainer: {
     flex: 1,
-    paddingHorizontal: GRID_GAP,
   },
   gridContent: {
     paddingBottom: 20,
   },
   columnWrapper: {
     justifyContent: "space-between",
-    marginBottom: GRID_GAP,
   },
   emptyContainer: {
     alignItems: "center",
@@ -389,71 +292,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: "#555",
-  },
-  // ReviewItem Styles
-  reviewContainer: {
-    marginBottom: 16,
-    flex: 1 / 2, // Ensures two items per row
-  },
-  imageContainer: {
-    width: "100%",
-    height: 300, // Adjust as needed
-    position: "relative",
-  },
-  reviewImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  // Diagonal triangle for top left (TYPE)
-  topLeftTriangle: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 40,
-    borderRightWidth: 40,
-    borderTopColor: "transparent", // will be overridden
-    borderRightColor: "transparent",
-  },
-  // Diagonal triangle for top right (SPIRIT)
-  topRightTriangle: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 40,
-    borderLeftWidth: 40,
-    borderTopColor: "transparent", // will be overridden
-    borderLeftColor: "transparent",
-  },
-  overlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    padding: 8,
-  },
-  locationName: {
-    fontWeight: "bold",
-    fontSize: 14,
-    color: "#fff",
-    
-  },
-  ratingsContainer: {
-    marginTop: 4,
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 2,
-  },
-  commentText: {
-    marginTop: 4,
-    color: "#fff",
   },
 });
 

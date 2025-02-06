@@ -37,7 +37,8 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review }) => {
           <Text style={styles.typeText}>
             Type: {review.type ? review.type.name : "N/A"}
           </Text>
-          <Text style={styles.commentText}>Comment: {review.comment}</Text>
+          <Text style={styles.commentTitle}>Comment:</Text>
+          <Text style={styles.commentText}>{review.comment}</Text>
         </View>
       </View>
     </View>
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: screenWidth,
-    height: screenWidth, // Square container
+    aspectRatio: 9 / 16,
     position: "relative",
   },
   reviewImage: {
@@ -60,8 +61,8 @@ const styles = StyleSheet.create({
   },
   userLabelContainer: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     backgroundColor: "rgba(0,0,0,0.6)",
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   },
   userLabelText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 18,
   },
   overlay: {
     position: "absolute",
@@ -79,38 +80,48 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: "rgba(0,0,0,0.4)",
-    padding: 8,
+    padding: 20,
     justifyContent: "flex-end",
   },
   locationName: {
     fontWeight: "bold",
-    fontSize: 18,
+    fontSize: 24,
     color: "#fff",
   },
   locationAddress: {
     fontSize: 14,
     color: "#ddd",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   ratingLabel: {
     fontWeight: "bold",
-    marginTop: 4,
+    fontSize: 16,
+    marginTop: 8,
+    marginBottom: 4,
     color: "#fff",
   },
   spiritText: {
+    fontSize: 16,
     fontWeight: "bold",
     textTransform: "capitalize",
-    marginTop: 4,
+    marginTop: 8,
     color: "#fff",
   },
   typeText: {
+    fontSize: 16,
     fontWeight: "bold",
     textTransform: "capitalize",
-    marginTop: 2,
+    marginTop: 8,
     color: "#fff",
   },
-  commentText: {
+  commentTitle: {
+    fontSize: 16,
+    marginTop: 8,
     fontWeight: "bold",
+    color: "#FFF",
+  },
+  commentText: {
+    fontSize: 16,
     marginTop: 4,
     color: "#fff",
   },
