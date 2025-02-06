@@ -155,7 +155,7 @@ export default function App() {
   const uploadImage = async (userId: string) => {
     const randomFileName = `${Math.random().toString(36).substring(2, 15)}.png`;
 
-    const filePath = `review_images/${userId}/${randomFileName}`;
+    const filePath = `${userId}/${randomFileName}`;
     if (!photo) {
       console.error("No photo to upload");
       return null;

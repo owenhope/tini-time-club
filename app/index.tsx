@@ -68,9 +68,7 @@ const Login = () => {
           <Text style={{ color: "#fff", fontSize: 20 }}>Loading...</Text>
         </View>
       )}
-
       <Text style={styles.header}>Tini Time Club</Text>
-
       <TextInput
         autoCapitalize="none"
         placeholder="Email"
