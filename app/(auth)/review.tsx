@@ -1,4 +1,4 @@
-import React, { createElement, useEffect, useRef, useState } from "react";
+import React, { createElement, useEffect, useState } from "react";
 import {
   Keyboard,
   StyleSheet,
@@ -9,13 +9,7 @@ import {
   Image,
   TextInput,
 } from "react-native";
-import {
-  CameraView,
-  CameraMode,
-  CameraType,
-  useCameraPermissions,
-} from "expo-camera";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import Animated, {
@@ -30,18 +24,18 @@ import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { AirbnbRating } from "react-native-ratings";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import CameraComponent from "@/components/CameraComponent";
 
 export default function App() {
-  const cameraRef = useRef<CameraView>(null);
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [cameraMode, setCameraMode] = useState<CameraMode>("picture");
-  const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
   const [types, setTypes] = useState<any[]>([]);
   const [spirits, setSpirits] = useState<any[]>([]);
   const opacity = useSharedValue(1);
+  const router = useRouter();
+  
   const { control, handleSubmit, reset, trigger, formState, watch } = useForm({
     mode: "onChange",
     defaultValues: {
@@ -109,20 +103,6 @@ export default function App() {
       opacity: opacity.value,
     };
   });
-
-  const capturePhoto = async () => {
-    if (cameraRef.current) {
-      const data = await cameraRef.current.takePictureAsync({
-        quality: 1,
-        exif: false,
-        base64: true,
-      });
-      if (data?.base64) {
-        setPhoto(data.base64);
-        setIsReviewing(true);
-      }
-    }
-  };
 
   const cancelCapture = () => {
     setStep(0);
@@ -270,7 +250,7 @@ export default function App() {
 
     const reviewId = await createReview(User.id, imageUrl);
     if (!reviewId) return;
-    console.log("success");
+    router.navigate("/profile");
   };
 
   return (
@@ -279,21 +259,10 @@ export default function App() {
       onPress={Keyboard.dismiss}
     >
       {!isReviewing ? (
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing={facing}
-          mode={cameraMode}
-        >
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.captureButton}
-              onPress={capturePhoto}
-            >
-              <FontAwesome6 name="martini-glass" size={40} color="white" />
-            </TouchableOpacity>
-          </View>
-        </CameraView>
+        <CameraComponent onCapture={(photo) => {
+          setPhoto(photo);
+          setIsReviewing(true);
+        }} />
       ) : (
         <View style={styles.reviewContainer}>
           <BlurView
