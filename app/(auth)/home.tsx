@@ -17,7 +17,7 @@ import { Review } from "@/types/types"; // Adjust the import path as needed
 
 const pageSize = 10;
 
-const Index: React.FC = () => {
+const Home: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -265,4 +265,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Index;
+export default Home;

@@ -24,12 +24,11 @@ const InitialLayout = () => {
 
   useEffect(() => {
     if (!initialized) return;
-
     // Check if the path/url is in the (auth) group
     const inAuthGroup = segments[0] === "(auth)";
     if (session && !inAuthGroup) {
       // Redirect authenticated users to the list page
-      router.replace("/(auth)");
+      router.replace("/(auth)/home");
     } else if (!session) {
       router.replace("/");
     }

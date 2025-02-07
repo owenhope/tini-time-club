@@ -15,6 +15,8 @@ import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types"; // Adjust the import path as needed
 import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the logout icon
+import { useRouter } from "expo-router";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -22,7 +24,7 @@ const Profile = () => {
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
   const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
   const { profile } = useProfile(); // Using the context to get the profile
-
+  const router = useRouter();
   useEffect(() => {
     loadUserAvatar();
     loadUserReviews();
@@ -43,6 +45,7 @@ const Profile = () => {
         .download(`${User.id}/avatar.png`);
       if (error) {
         if (error.message.includes("The resource was not found")) {
+          console.log("Avatar not found for user:", User.id);
           setLoadingAvatar(false);
           return;
         }
@@ -59,7 +62,7 @@ const Profile = () => {
         };
       }
     } catch (err) {
-      console.error(err);
+      console.error("Unexpected error while downloading avatar:", err);
       setLoadingAvatar(false);
     }
   };
@@ -113,7 +116,7 @@ const Profile = () => {
       setUserReviews(reviewsWithFullUrl);
       setLoadingReviews(false);
     } catch (err) {
-      console.error(err);
+      console.error("Unexpected error while fetching user reviews:", err);
       setLoadingReviews(false);
     }
   };
@@ -147,8 +150,17 @@ const Profile = () => {
           console.log("Avatar uploaded successfully");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Unexpected error while uploading avatar:", err);
       }
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error logging out:", error);
+    } else {
+      router.navigate("/");
     }
   };
 
@@ -198,6 +210,9 @@ const Profile = () => {
               </View>
             </View>
           </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={24} color="black" />
+          </TouchableOpacity>
         </View>
 
         {/* Reviews List with pull-to-refresh and two-column grid */}
@@ -273,6 +288,10 @@ const styles = StyleSheet.create({
   bioText: {
     marginTop: 8,
     fontSize: 14,
+  },
+  logoutButton: {
+    marginLeft: "auto",
+    padding: 8,
   },
   reviewsContainer: {
     flex: 1,

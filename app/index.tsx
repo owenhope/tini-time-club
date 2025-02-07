@@ -1,7 +1,6 @@
 import {
   Alert,
   View,
-  Button,
   TextInput,
   StyleSheet,
   Text,
@@ -19,7 +18,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Sign in with email and password
   const onSignInPress = async () => {
     setLoading(true);
 
@@ -89,11 +87,10 @@ const Login = () => {
       <TouchableOpacity onPress={onSignInPress} style={styles.button}>
         <Text style={{ color: "#000" }}>Sign in</Text>
       </TouchableOpacity>
-      <Button
-        onPress={onSignUpPress}
-        title="Create Account"
-        color={"#fff"}
-      ></Button>
+      <Text style={{ textAlign: "center", color: "#FFF" }}>or</Text>
+      <TouchableOpacity onPress={onSignUpPress} style={styles.button}>
+        <Text style={{ color: "#000" }}>Create Account</Text>
+      </TouchableOpacity>
       <View style={{ alignItems: "center", marginTop: 10, gap: 10 }}>
         <AppleAuth />
         <GoogleAuth />
