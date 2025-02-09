@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Controller } from "react-hook-form";
 import * as Location from "expo-location";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 
 const LocationInput = ({ control }: { control: any }) => {
@@ -30,7 +32,7 @@ const LocationInput = ({ control }: { control: any }) => {
     location: location
       ? `${location.coords.latitude},${location.coords.longitude}`
       : undefined,
-    radius: location ? 5000 : undefined, // Optional: Set a search radius in meters if location exists
+    radius: location ? 5000 : undefined,
   };
 
   return (
@@ -59,7 +61,7 @@ const LocationInput = ({ control }: { control: any }) => {
                     }
                   : null,
               };
-              onChange(locationData); // Save to form state
+              onChange(locationData);
             }}
             query={query}
             styles={{

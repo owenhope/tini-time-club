@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
-import { decode } from "base64-arraybuffer";
 import Animated, {
   runOnJS,
   useSharedValue,
@@ -31,6 +30,7 @@ import TypeInput from "@/components/TypeInput";
 import Review from "@/components/Review";
 
 export default function App() {
+  // photo now holds a URI instead of a base64 string
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
@@ -82,7 +82,6 @@ export default function App() {
       Component: PresentationInput,
     },
     { title: "Taste Rating", key: "taste", Component: TasteInput },
-
     {
       title: "Additional notes or comments?",
       key: "notes",
@@ -135,19 +134,23 @@ export default function App() {
     }
   };
 
+  // Updated uploadImage: fetches the image from its URI and converts it to a blob
   const uploadImage = async (userId: string) => {
     const randomFileName = `${Math.random().toString(36).substring(2, 15)}.png`;
-
     const filePath = `${userId}/${randomFileName}`;
     if (!photo) {
       console.error("No photo to upload");
       return null;
     }
 
+    // Fetch the file from the URI and get a blob
+    const response = await fetch(photo);
+    const blob = await response.blob();
+
     const { data, error } = await supabase.storage
       .from("review_images")
-      .upload(filePath, decode(photo), {
-        contentType: "image/png",
+      .upload(filePath, blob, {
+        contentType: blob.type,
       });
 
     if (error || !data) {
@@ -177,7 +180,6 @@ export default function App() {
   const createReview = async (userId: string, imageUrl: string) => {
     const locationId = await getLocation(userId, watchedValues.location);
     if (locationId) {
-      console.log(locationId);
       const newReview = {
         user_id: userId,
         location: locationId,
@@ -277,10 +279,7 @@ export default function App() {
             reducedTransparencyFallbackColor="white"
           >
             {photo && (
-              <Image
-                source={{ uri: `data:image/jpeg;base64,${photo}` }}
-                style={styles.previewImage}
-              />
+              <Image source={{ uri: photo }} style={styles.previewImage} />
             )}
           </BlurView>
           <TouchableOpacity style={styles.cancelButton} onPress={cancelCapture}>

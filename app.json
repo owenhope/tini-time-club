@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tini Time Club",
     "slug": "tini-time-club",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -20,18 +20,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ohope.tinitimeclub",
       "infoPlist": {
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.732397011472-41tr3sghlftkc5kcsr57v3570l9uot05"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.732397011472-41tr3sghlftkc5kcsr57v3570l9uot05"
-            ]
-          }
-        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -69,14 +57,14 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow Tini Time Club to use your location."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "cameraPermission": "Allow Tini Time Club to access your camera",
+          "microphonePermission": "Allow Tini Time Club to access your microphone",
           "recordAudioAndroid": true
         }
       ],
@@ -98,6 +86,12 @@
         "projectId": "dcaa10ce-e677-478d-bd29-90a5108a4cc9"
       }
     },
-    "owner": "hopemediahouse"
+    "owner": "hopemediahouse",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dcaa10ce-e677-478d-bd29-90a5108a4cc9"
+    }
   }
 }
