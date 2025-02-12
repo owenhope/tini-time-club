@@ -17,7 +17,7 @@ import { Review } from "@/types/types"; // Adjust the import path as needed
 
 const pageSize = 10;
 
-const Home: React.FC = () => {
+function Home() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -73,6 +73,7 @@ const Home: React.FC = () => {
         profile:profiles!user_id(username)
         `
       )
+      .eq("state", 1)
       .order("inserted_at", { ascending: false })
       .range(start, end);
 
@@ -81,6 +82,7 @@ const Home: React.FC = () => {
       refresh ? setRefreshing(false) : setLoadingMore(false);
       return;
     }
+
     const reviewsWithFullUrl = await Promise.all(
       reviewsData.map(async (review: any) => {
         const { data, error } = await supabase.storage
@@ -200,7 +202,7 @@ const Home: React.FC = () => {
       </Modal>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

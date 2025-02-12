@@ -6,6 +6,7 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -25,9 +26,63 @@ const Profile = () => {
   const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
   const { profile } = useProfile(); // Using the context to get the profile
   const router = useRouter();
+
   useEffect(() => {
     loadUserAvatar();
     loadUserReviews();
+  }, []);
+
+  // New effect: subscribe to realtime review INSERT events for the current user.
+  useEffect(() => {
+    let subscription: any;
+
+    async function subscribeToNewReviews() {
+      const {
+        data: { user: User },
+      } = await supabase.auth.getUser();
+      if (!User) return;
+
+      interface ReviewPayload {
+        new: Review;
+      }
+
+      interface SignedUrlResponse {
+        signedUrl: string;
+      }
+
+      subscription = supabase
+        .channel("public:reviews")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "reviews",
+            filter: `user_id=eq.${User.id}&state=eq.1`,
+          },
+          async (payload: ReviewPayload) => {
+            let newReview = payload.new;
+            // Get a signed URL for the review image
+            const { data, error } = await supabase.storage
+              .from("review_images")
+              .createSignedUrl(newReview.image_url, 60);
+            if (!error && data) {
+              newReview.image_url = (data as SignedUrlResponse).signedUrl;
+            }
+            // Prepend the new review to the list of reviews
+            setUserReviews((prevReviews) => [newReview, ...prevReviews]);
+          }
+        )
+        .subscribe();
+    }
+
+    subscribeToNewReviews();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const loadUserAvatar = async () => {
@@ -77,7 +132,7 @@ const Profile = () => {
       return;
     }
     try {
-      // Query to fetch additional fields required by ReviewItem.
+      // Query to fetch reviews that are in state 1
       const { data: reviewsData, error } = await supabase
         .from("reviews")
         .select(
@@ -95,6 +150,7 @@ const Profile = () => {
         `
         )
         .eq("user_id", User.id)
+        .eq("state", 1)
         .order("inserted_at", { ascending: false });
       if (error) {
         console.error("Error fetching user reviews:", error);
@@ -164,8 +220,49 @@ const Profile = () => {
     }
   };
 
+  // Update the review's state to 3 in the database and remove it from the local state.
+  const deleteReview = async (id: number) => {
+    const { error } = await supabase
+      .from("reviews")
+      .update({ state: 3 })
+      .eq("id", id);
+    if (error) {
+      console.error("Error updating review state:", error);
+    } else {
+      // Remove the deleted review from the local state so that it no longer appears in the FlatList.
+      setUserReviews((prevReviews) =>
+        prevReviews.filter((review) => review.id !== id)
+      );
+    }
+  };
+
+  // Confirm deletion with an alert prompt before actually deleting the review.
+  const confirmDeleteReview = (id: number) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete your review?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteReview(id),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Pass a callback that opens a confirmation prompt before deleting.
   const renderReviewItem = ({ item }: { item: Review }) => (
-    <ReviewItem review={item} aspectRatio={1} />
+    <ReviewItem
+      review={item}
+      aspectRatio={1}
+      onDelete={() => confirmDeleteReview(item.id)}
+    />
   );
 
   const renderEmpty = () => {

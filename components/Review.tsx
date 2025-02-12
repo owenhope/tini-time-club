@@ -66,7 +66,7 @@ const Review = ({
           );
         }
 
-        if (["notes"].includes(key)) {
+        if (["notes"].includes(key) && value) {
           return (
             <View key={key} style={styles.reviewItem}>
               <Text style={styles.reviewLabel}>{key}:</Text>

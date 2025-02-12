@@ -7,10 +7,12 @@ import {
   TouchableWithoutFeedback,
   View,
   Image,
+  ActivityIndicator,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
-import Animated, {
+import AnimatedReanimated, {
   runOnJS,
   useSharedValue,
   withTiming,
@@ -28,6 +30,8 @@ import NotesInput from "@/components/NotesInput";
 import SpiritInput from "@/components/SpiritInput";
 import TypeInput from "@/components/TypeInput";
 import Review from "@/components/Review";
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
 
 export default function App() {
   // photo now holds a URI instead of a base64 string
@@ -36,6 +40,8 @@ export default function App() {
   const [step, setStep] = useState(0);
   const [types, setTypes] = useState<any[]>([]);
   const [spirits, setSpirits] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState("");
   const opacity = useSharedValue(1);
   const router = useRouter();
 
@@ -100,16 +106,17 @@ export default function App() {
     },
   ];
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
+  // Reset the component back to the camera view and clear any submission state.
   const cancelCapture = () => {
     setStep(0);
     setPhoto(null);
     setIsReviewing(false);
+    setIsSubmitting(false);
+    setSubmissionMessage("");
     reset();
   };
 
@@ -134,31 +141,42 @@ export default function App() {
     }
   };
 
-  // Updated uploadImage: fetches the image from its URI and converts it to a blob
   const uploadImage = async (userId: string) => {
-    const randomFileName = `${Math.random().toString(36).substring(2, 15)}.png`;
-    const filePath = `${userId}/${randomFileName}`;
-    if (!photo) {
-      console.error("No photo to upload");
-      return null;
-    }
+    try {
+      const randomFileName = `${Math.random()
+        .toString(36)
+        .substring(2, 15)}.png`;
+      const filePath = `${userId}/${randomFileName}`;
+      if (!photo) {
+        console.error("No photo to upload");
+        return null;
+      }
+      console.log("Photo URI:", photo);
 
-    // Fetch the file from the URI and get a blob
-    const response = await fetch(photo);
-    const blob = await response.blob();
-
-    const { data, error } = await supabase.storage
-      .from("review_images")
-      .upload(filePath, blob, {
-        contentType: blob.type,
+      // Read the image file as a base64 string
+      const base64 = await FileSystem.readAsStringAsync(photo, {
+        encoding: FileSystem.EncodingType.Base64,
       });
+      // Decode the base64 string into an ArrayBuffer
+      const fileData = decode(base64);
 
-    if (error || !data) {
-      console.error("Error uploading image:", error);
+      // Upload the decoded file data to Supabase storage
+      const { data, error } = await supabase.storage
+        .from("review_images")
+        .upload(filePath, fileData, {
+          contentType: "image/png",
+        });
+
+      if (error || !data) {
+        console.error("Error uploading image:", error);
+        return null;
+      }
+
+      return data.path;
+    } catch (error) {
+      console.error("Exception while uploading image:", error);
       return null;
     }
-
-    return data.path;
   };
 
   const getTypes = async () => {
@@ -189,6 +207,7 @@ export default function App() {
         presentation: watchedValues.presentation,
         comment: watchedValues.notes,
         image_url: imageUrl,
+        state: 1,
       };
       const { data, error } = await supabase
         .from("reviews")
@@ -244,18 +263,47 @@ export default function App() {
   };
 
   const handleUploadAndCreateReview = async (formData: any) => {
-    const {
-      data: { user: User },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user: User },
+      } = await supabase.auth.getUser();
 
-    if (!User) return;
+      if (!User) {
+        console.error("User not found");
+        return;
+      }
 
-    const imageUrl = await uploadImage(User.id);
-    if (!imageUrl) return;
+      // Start the submission process
+      setIsSubmitting(true);
+      setSubmissionMessage("Uploading image...");
 
-    const reviewId = await createReview(User.id, imageUrl);
-    if (!reviewId) return;
-    router.navigate("/profile");
+      const imageUrl = await uploadImage(User.id);
+      if (!imageUrl) {
+        setSubmissionMessage("Failed to upload image.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      setSubmissionMessage("Creating review...");
+      const reviewId = await createReview(User.id, imageUrl);
+      if (!reviewId) {
+        setSubmissionMessage("Failed to create review.");
+        setIsSubmitting(false);
+        return;
+      }
+      setSubmissionMessage("Review created successfully!");
+      setIsSubmitting(false);
+
+      setStep(0);
+      setPhoto(null);
+      setIsReviewing(false);
+      reset();
+      router.navigate("/profile");
+    } catch (error) {
+      console.error("Exception in handleUploadAndCreateReview:", error);
+      setSubmissionMessage("An error occurred.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -266,8 +314,11 @@ export default function App() {
       {!isReviewing ? (
         <CameraComponent
           onCapture={(photo) => {
+            // When a new picture is taken, reset submission state
             setPhoto(photo);
             setIsReviewing(true);
+            setIsSubmitting(false);
+            setSubmissionMessage("");
           }}
         />
       ) : (
@@ -285,32 +336,45 @@ export default function App() {
           <TouchableOpacity style={styles.cancelButton} onPress={cancelCapture}>
             <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
-          <Animated.View style={[styles.overlay, animatedStyle]}>
+          <AnimatedReanimated.View style={[styles.overlay, animatedStyle]}>
             <Text style={styles.stepText}>{questions[step].title}</Text>
             {questions[step].Component &&
               createElement(questions[step].Component, {
                 control,
                 ...formState,
               })}
-          </Animated.View>
-          <View style={styles.reviewButtons}>
-            {step > 1 && (
-              <TouchableOpacity style={styles.button} onPress={prevStep}>
-                <Text style={styles.text}>Back</Text>
-              </TouchableOpacity>
-            )}
-            {step < questions.length - 1 ? (
-              <TouchableOpacity style={styles.button} onPress={nextStep}>
-                <Text style={styles.text}>Next</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleSubmit(handleUploadAndCreateReview)}
-              >
-                <Text style={styles.text}>Submit</Text>
-              </TouchableOpacity>
-            )}
+          </AnimatedReanimated.View>
+          <View style={styles.bottomContainer}>
+            <Animated.View
+              style={[styles.reviewButtons, { opacity: isSubmitting ? 0 : 1 }]}
+            >
+              {step > 1 && (
+                <TouchableOpacity style={styles.button} onPress={prevStep}>
+                  <Text style={styles.text}>Back</Text>
+                </TouchableOpacity>
+              )}
+              {step < questions.length - 1 ? (
+                <TouchableOpacity style={styles.button} onPress={nextStep}>
+                  <Text style={styles.text}>Next</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSubmit(handleUploadAndCreateReview)}
+                >
+                  <Text style={styles.text}>Submit</Text>
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.submitStatusContainer,
+                { opacity: isSubmitting ? 1 : 0 },
+              ]}
+            >
+              <ActivityIndicator size="large" color="white" />
+              <Text style={styles.submitStatusText}>{submissionMessage}</Text>
+            </Animated.View>
           </View>
         </View>
       )}
@@ -346,13 +410,20 @@ const styles = StyleSheet.create({
     color: "white",
     textAlign: "center",
   },
-  reviewButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
+  bottomContainer: {
     position: "absolute",
     bottom: 20,
     width: "100%",
     paddingHorizontal: 20,
+  },
+  reviewButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  submitStatusContainer: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
   },
   button: {
     marginHorizontal: 20,
@@ -366,29 +437,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
   },
-  inputContainer: {
-    marginVertical: 20,
-    width: "100%",
-  },
-  reviewItem: {
-    marginBottom: 10,
-    gap: 5,
-  },
-  reviewLabel: {
-    textTransform: "capitalize",
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#FFF",
-  },
-  reviewValue: {
-    fontSize: 16,
-    color: "#FFF",
-    textTransform: "capitalize",
-  },
-  reviewComment: {
-    fontSize: 16,
-    color: "#FFF",
-  },
   cancelButton: {
     borderRadius: 25,
     padding: 10,
@@ -400,5 +448,12 @@ const styles = StyleSheet.create({
   previewImage: {
     flex: 1,
     width: "100%",
+  },
+  submitStatusText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginTop: 10,
+    textAlign: "center",
   },
 });

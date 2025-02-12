@@ -14,8 +14,6 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
 import { FontAwesome6 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 
@@ -29,7 +27,6 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("back");
-  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     if (!permission) return;
@@ -69,29 +66,6 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
       console.error("Error taking picture:", error);
       Alert.alert("Error", "An error occurred while taking the picture.");
     }
-  };
-
-  // Function to record a video (if needed).
-  const recordVideo = async () => {
-    try {
-      if (recording) {
-        setRecording(false);
-        cameraRef.current?.stopRecording();
-        return;
-      }
-      setRecording(true);
-      const video = await cameraRef.current?.recordAsync();
-      console.log("Recorded video:", video);
-      // Optionally handle video capture here.
-    } catch (error) {
-      console.error("Error recording video:", error);
-      Alert.alert("Error", "An error occurred while recording video.");
-    }
-  };
-
-  // Toggle between picture and video modes.
-  const toggleMode = () => {
-    setMode((prev) => (prev === "picture" ? "video" : "picture"));
   };
 
   // Toggle between the front and back cameras.
@@ -152,39 +126,24 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
         mute={false}
         responsiveOrientationWhenOrientationLocked
       >
-        <View style={styles.shutterContainer}>
-          {/* Toggle between picture and video mode */}
-          <Pressable onPress={toggleMode}>
-            {mode === "picture" ? (
-              <AntDesign name="picture" size={32} color="white" />
-            ) : (
-              <Feather name="video" size={32} color="white" />
-            )}
-          </Pressable>
-          {/* Capture button: takes a picture or starts/stops video recording */}
-          <Pressable onPress={mode === "picture" ? takePicture : recordVideo}>
-            {({ pressed }) => (
-              <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
-                <View
-                  style={[
-                    styles.shutterBtnInner,
-                    {
-                      backgroundColor: mode === "picture" ? "white" : "red",
-                    },
-                  ]}
-                />
-              </View>
-            )}
-          </Pressable>
-          {/* Toggle camera facing */}
-          <Pressable onPress={toggleFacing}>
-            <FontAwesome6 name="rotate-left" size={32} color="white" />
-          </Pressable>
-          {/* Pick an image from the photo library */}
-          <Pressable onPress={pickImage}>
-            <FontAwesome6 name="image" size={32} color="white" />
-          </Pressable>
-        </View>
+        {/* Toggle camera facing button in top left */}
+        <Pressable style={styles.toggleButton} onPress={toggleFacing}>
+          <FontAwesome6 name="rotate-left" size={32} color="white" />
+        </Pressable>
+
+        {/* Capture button in the center */}
+        <Pressable style={styles.captureButton} onPress={takePicture}>
+          {({ pressed }) => (
+            <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
+              <View style={styles.shutterBtnInner} />
+            </View>
+          )}
+        </Pressable>
+
+        {/* Pick image button in bottom right */}
+        <Pressable style={styles.pickImageButton} onPress={pickImage}>
+          <FontAwesome6 name="image" size={32} color="white" />
+        </Pressable>
       </CameraView>
     );
   };
@@ -210,15 +169,21 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
-  shutterContainer: {
+  toggleButton: {
     position: "absolute",
-    bottom: 44,
-    left: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
+    top: 80,
+    left: 20,
+  },
+  captureButton: {
+    position: "absolute",
+    bottom: 0,
+    left: "50%",
+    transform: [{ translateX: -42.5 }, { translateY: -20 }],
+  },
+  pickImageButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
   },
   shutterBtn: {
     backgroundColor: "transparent",
@@ -234,6 +199,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 50,
+    backgroundColor: "#FFF",
   },
   previewContainer: {
     flex: 1,

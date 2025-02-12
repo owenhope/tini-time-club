@@ -1,5 +1,15 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import React, { useRef } from "react";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  Pressable,
+  Animated,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // or use another icon library of your choice
 import ReviewRating from "@/components/ReviewRating"; // Adjust the import path as needed
 import { Review } from "@/types/types"; // Adjust the import path as needed
 
@@ -8,9 +18,26 @@ const screenWidth = Dimensions.get("window").width;
 interface ReviewItemProps {
   review: Review;
   aspectRatio: number;
+  onDelete?: () => void;
 }
 
-const ReviewItem: React.FC<ReviewItemProps> = ({ review, aspectRatio }) => {
+const ReviewItem: React.FC<ReviewItemProps> = ({
+  review,
+  aspectRatio,
+  onDelete,
+}) => {
+  // Create an animated value for opacity (starting at 1)
+  const overlayOpacity = useRef(new Animated.Value(1)).current;
+
+  // Animate opacity to the given value over 300ms
+  const animateOpacity = (toValue: number) => {
+    Animated.timing(overlayOpacity, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const formattedDate = new Date(review.inserted_at).toLocaleDateString(
     "en-US",
     {
@@ -29,26 +56,41 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review, aspectRatio }) => {
   );
 
   return (
-    <View>
+    <Pressable
+      onLongPress={() => animateOpacity(0)}
+      onPressOut={() => animateOpacity(1)}
+    >
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
-        <View style={styles.topBar}>
+        <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
           <Text style={styles.userLabelText}>
             {review.profile?.username || "Unknown"}
           </Text>
-          <Text style={styles.dateLabelText}>
-            {formattedDate} {formattedTime}
-          </Text>
-        </View>
-        <View style={styles.overlay}>
+          <View style={styles.dateAndDeleteContainer}>
+            <Text style={styles.dateLabelText}>
+              {formattedDate} {formattedTime}
+            </Text>
+            {onDelete && (
+              <TouchableOpacity onPress={onDelete}>
+                <Ionicons
+                  name="trash"
+                  size={20}
+                  color="#fff"
+                  style={styles.deleteIcon}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <Text style={styles.locationName}>
             {review.location ? review.location.name : "N/A"}
           </Text>
-          {review.location?.address ? (
+          {review.location?.address && (
             <Text style={styles.locationAddress}>
               {review.location.address}
             </Text>
-          ) : null}
+          )}
           <Text style={styles.ratingLabel}>Taste</Text>
           <ReviewRating value={review.taste} label="taste" />
           <Text style={styles.ratingLabel}>Presentation</Text>
@@ -59,11 +101,15 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ review, aspectRatio }) => {
           <Text style={styles.typeText}>
             Type: {review.type ? review.type.name : "N/A"}
           </Text>
-          <Text style={styles.commentTitle}>Comment:</Text>
-          <Text style={styles.commentText}>{review.comment}</Text>
-        </View>
+          {review.comment && (
+            <>
+              <Text style={styles.commentTitle}>Comment:</Text>
+              <Text style={styles.commentText}>{review.comment}</Text>
+            </>
+          )}
+        </Animated.View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -93,9 +139,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
   },
+  dateAndDeleteContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   dateLabelText: {
     color: "#fff",
     fontSize: 18,
+  },
+  deleteIcon: {
+    marginLeft: 8,
   },
   overlay: {
     position: "absolute",
@@ -103,7 +156,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     padding: 20,
     justifyContent: "flex-end",
   },
