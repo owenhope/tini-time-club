@@ -128,7 +128,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase.storage
         .from("avatars")
-        .download(`${userId}/avatar.png`);
+        .download(`${userId}/avatar.jpg`);
       if (error) {
         if (
           error.message.includes("400") ||
