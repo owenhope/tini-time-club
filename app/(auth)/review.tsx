@@ -32,9 +32,10 @@ import TypeInput from "@/components/TypeInput";
 import Review from "@/components/Review";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
+import * as ImageManipulator from "expo-image-manipulator";
+import { useProfile } from "@/context/profile-context";
 
 export default function App() {
-  // photo now holds a URI instead of a base64 string
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
@@ -44,6 +45,7 @@ export default function App() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const opacity = useSharedValue(1);
   const router = useRouter();
+  const { profile } = useProfile();
 
   const { control, handleSubmit, reset, trigger, formState, watch } = useForm({
     mode: "onChange",
@@ -143,28 +145,33 @@ export default function App() {
 
   const uploadImage = async (userId: string) => {
     try {
-      const randomFileName = `${Math.random()
-        .toString(36)
-        .substring(2, 15)}.png`;
-      const filePath = `${userId}/${randomFileName}`;
       if (!photo) {
         console.error("No photo to upload");
         return null;
       }
-      console.log("Photo URI:", photo);
 
-      // Read the image file as a base64 string
-      const base64 = await FileSystem.readAsStringAsync(photo, {
+      // Compress the image using expo-image-manipulator
+      const manipResult = await ImageManipulator.manipulateAsync(photo, [], {
+        compress: 0.5,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+      const compressedUri = manipResult.uri;
+
+      const randomFileName = `${Math.random()
+        .toString(36)
+        .substring(2, 15)}.jpg`;
+      const filePath = `${userId}/${randomFileName}`;
+
+      const base64 = await FileSystem.readAsStringAsync(compressedUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      // Decode the base64 string into an ArrayBuffer
+
       const fileData = decode(base64);
 
-      // Upload the decoded file data to Supabase storage
       const { data, error } = await supabase.storage
         .from("review_images")
         .upload(filePath, fileData, {
-          contentType: "image/png",
+          contentType: "image/jpeg",
         });
 
       if (error || !data) {
@@ -298,7 +305,7 @@ export default function App() {
       setPhoto(null);
       setIsReviewing(false);
       reset();
-      router.navigate("/profile");
+      router.navigate(`/profile/${profile.username}`);
     } catch (error) {
       console.error("Exception in handleUploadAndCreateReview:", error);
       setSubmissionMessage("An error occurred.");

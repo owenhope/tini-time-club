@@ -9,23 +9,28 @@ import {
   Pressable,
   Animated,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // or use another icon library of your choice
-import ReviewRating from "@/components/ReviewRating"; // Adjust the import path as needed
-import { Review } from "@/types/types"; // Adjust the import path as needed
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import ReviewRating from "@/components/ReviewRating";
+import { Review } from "@/types/types";
 
 const screenWidth = Dimensions.get("window").width;
 
 interface ReviewItemProps {
   review: Review;
   aspectRatio: number;
-  onDelete?: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
 }
 
 const ReviewItem: React.FC<ReviewItemProps> = ({
   review,
   aspectRatio,
+  canDelete,
   onDelete,
 }) => {
+  const router = useRouter();
+
   // Create an animated value for opacity (starting at 1)
   const overlayOpacity = useRef(new Animated.Value(1)).current;
 
@@ -63,14 +68,21 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
         <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
-          <Text style={styles.userLabelText}>
-            {review.profile?.username || "Unknown"}
-          </Text>
+          <Pressable
+            onPress={() =>
+              review.profile?.username &&
+              router.push(`/profile/${review.profile.username}`)
+            }
+          >
+            <Text style={styles.userLabelText}>
+              {review.profile?.username || "Unknown"}
+            </Text>
+          </Pressable>
           <View style={styles.dateAndDeleteContainer}>
             <Text style={styles.dateLabelText}>
               {formattedDate} {formattedTime}
             </Text>
-            {onDelete && (
+            {canDelete && (
               <TouchableOpacity onPress={onDelete}>
                 <Ionicons
                   name="trash"
