@@ -92,7 +92,6 @@ const Profile = () => {
     }
   }, [displayProfile, isOwnProfile, navigation, isFriend]);
 
-  // Reset avatar when switching profiles
   useEffect(() => {
     setAvatar(null);
     if (!isOwnProfile && usernameParam) {
@@ -100,7 +99,6 @@ const Profile = () => {
     }
   }, [usernameParam, isOwnProfile]);
 
-  // Fetch the selected profile from the "profiles" table if viewing someone else’s profile.
   const fetchSelectedProfile = async (username: string) => {
     try {
       const { data, error } = await supabase
@@ -118,7 +116,6 @@ const Profile = () => {
     }
   };
 
-  // Load avatar using the provided user id.
   const loadUserAvatar = async (userId?: string) => {
     setLoadingAvatar(true);
     if (!userId) {
@@ -187,6 +184,7 @@ const Profile = () => {
         setLoadingReviews(false);
         return;
       }
+
       const reviewsWithFullUrl = await Promise.all(
         reviewsData.map(async (review: any) => {
           const { data, error } = await supabase.storage
@@ -373,8 +371,6 @@ const Profile = () => {
             }
           }}
           refreshing={loadingReviews}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
         />
       </View>
     </View>

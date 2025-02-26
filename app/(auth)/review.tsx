@@ -19,7 +19,7 @@ import AnimatedReanimated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { BlurView } from "@react-native-community/blur";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
@@ -271,20 +271,9 @@ export default function App() {
 
   const handleUploadAndCreateReview = async (formData: any) => {
     try {
-      const {
-        data: { user: User },
-      } = await supabase.auth.getUser();
-
-      if (!User) {
-        console.error("User not found");
-        return;
-      }
-
-      // Start the submission process
       setIsSubmitting(true);
       setSubmissionMessage("Uploading image...");
-
-      const imageUrl = await uploadImage(User.id);
+      const imageUrl = await uploadImage(profile.id);
       if (!imageUrl) {
         setSubmissionMessage("Failed to upload image.");
         setIsSubmitting(false);
@@ -292,7 +281,7 @@ export default function App() {
       }
 
       setSubmissionMessage("Creating review...");
-      const reviewId = await createReview(User.id, imageUrl);
+      const reviewId = await createReview(profile.id, imageUrl);
       if (!reviewId) {
         setSubmissionMessage("Failed to create review.");
         setIsSubmitting(false);
@@ -307,7 +296,6 @@ export default function App() {
       reset();
       router.navigate(`/profile/${profile.username}`);
     } catch (error) {
-      console.error("Exception in handleUploadAndCreateReview:", error);
       setSubmissionMessage("An error occurred.");
       setIsSubmitting(false);
     }
@@ -321,7 +309,6 @@ export default function App() {
       {!isReviewing ? (
         <CameraComponent
           onCapture={(photo) => {
-            // When a new picture is taken, reset submission state
             setPhoto(photo);
             setIsReviewing(true);
             setIsSubmitting(false);

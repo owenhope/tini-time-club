@@ -163,7 +163,12 @@ function Home() {
       <FlatList
         data={reviews}
         renderItem={({ item }) => (
-          <ReviewItem review={item} aspectRatio={9 / 16} />
+          <ReviewItem
+            review={item}
+            aspectRatio={9 / 16}
+            onDelete={() => {}}
+            canDelete={false}
+          />
         )}
         keyExtractor={(item) => item.id.toString()}
         onRefresh={onRefresh}
