@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Image,
-  Button,
   FlatList,
   Text,
   TouchableOpacity,
@@ -23,7 +22,6 @@ import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 interface ProfileType {
   id: string;
   username: string;
-  // add any additional fields as needed
 }
 
 const Profile = () => {
@@ -31,12 +29,10 @@ const Profile = () => {
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
   const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
-  // This state is only used if you’re viewing someone else’s profile.
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
     null
   );
-  // Friend state (for non‑own profiles)
-  const [isFriend, setIsFriend] = useState<boolean>(false);
+  const [doesFollow, setDoesFollow] = useState<boolean>(false);
 
   const { profile } = useProfile();
   const router = useRouter();
@@ -47,8 +43,56 @@ const Profile = () => {
     !usernameParam || (profile?.username && usernameParam === profile.username);
   const displayProfile = isOwnProfile ? profile : selectedProfile;
 
-  const toggleFriend = () => {
-    setIsFriend((prev) => !prev);
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (displayProfile && profile && !isOwnProfile) {
+        const { data, error } = await supabase
+          .from("followers")
+          .select("*")
+          .eq("follower_id", profile.id)
+          .eq("following_id", displayProfile.id)
+          .maybeSingle();
+        if (error) {
+          console.error("Error checking follow status:", error);
+        } else {
+          setDoesFollow(!!data);
+        }
+      }
+    };
+    checkFollowStatus();
+  }, [displayProfile, profile, isOwnProfile]);
+
+  const toggleFollow = async () => {
+    if (!profile || !displayProfile) return;
+
+    if (doesFollow) {
+      // Unfollow: delete the record from the followers table
+      const { error } = await supabase
+        .from("followers")
+        .delete()
+        .eq("follower_id", profile.id)
+        .eq("following_id", displayProfile.id);
+      if (error) {
+        console.error("Error unfollowing user:", error);
+        Alert.alert("Error", "Unable to unfollow user. Please try again.");
+      } else {
+        setDoesFollow(false);
+      }
+    } else {
+      // Follow: use upsert to insert or update the record in the followers table
+      const { error } = await supabase
+        .from("followers")
+        .insert(
+          [{ follower_id: profile.id, following_id: displayProfile.id }],
+          { upsert: true }
+        );
+      if (error) {
+        console.error("Error following user:", error);
+        Alert.alert("Error", "Unable to follow user. Please try again.");
+      } else {
+        setDoesFollow(true);
+      }
+    }
   };
 
   useEffect(() => {
@@ -56,6 +100,14 @@ const Profile = () => {
       if (isOwnProfile) {
         navigation.setOptions({
           headerTitle: displayProfile.username,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("followers")}
+              style={styles.headerButtonLeft}
+            >
+              <Ionicons name="person-add-outline" size={24} color="black" />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <TouchableOpacity
               onPress={handleLogout}
@@ -64,7 +116,6 @@ const Profile = () => {
               <Ionicons name="log-out-outline" size={24} color="black" />
             </TouchableOpacity>
           ),
-          headerLeft: undefined,
         });
       } else {
         navigation.setOptions({
@@ -79,18 +130,18 @@ const Profile = () => {
           ),
           headerRight: () => (
             <TouchableOpacity
-              onPress={toggleFriend}
+              onPress={toggleFollow}
               style={styles.headerButton}
             >
               <Text style={styles.friendText}>
-                {isFriend ? "Remove Friend" : "Add Friend"}
+                {doesFollow ? "Unfollow" : "Follow"}
               </Text>
             </TouchableOpacity>
           ),
         });
       }
     }
-  }, [displayProfile, isOwnProfile, navigation, isFriend]);
+  }, [displayProfile, isOwnProfile, navigation, doesFollow]);
 
   useEffect(() => {
     setAvatar(null);
@@ -437,9 +488,6 @@ const styles = StyleSheet.create({
   },
   gridContent: {
     paddingBottom: 20,
-  },
-  columnWrapper: {
-    justifyContent: "space-between",
   },
   emptyContainer: {
     alignItems: "center",

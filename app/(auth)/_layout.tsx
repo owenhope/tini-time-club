@@ -5,7 +5,6 @@ import { ProfileProvider, useProfile } from "@/context/profile-context";
 
 const LayoutContent = () => {
   const { profile } = useProfile();
-  // If the profile exists, build the dynamic URL; otherwise, fallback to "/profile"
   const profileHref = profile?.username
     ? `/profile/${profile.username}`
     : "/profile";
@@ -40,7 +39,6 @@ const LayoutContent = () => {
           ),
         }}
       />
-      {/* Dynamically pass the logged in username */}
       <Tabs.Screen
         name="profile/[username]"
         options={{
@@ -51,7 +49,6 @@ const LayoutContent = () => {
           ),
         }}
       />
-      {/* Hidden tabs */}
       <Tabs.Screen
         name="todos"
         options={{
@@ -60,6 +57,13 @@ const LayoutContent = () => {
       />
       <Tabs.Screen
         name="map"
+        options={{
+          title: "Followers",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="followers"
         options={{
           href: null,
         }}

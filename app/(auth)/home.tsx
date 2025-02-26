@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
 import { Review } from "@/types/types"; // Adjust the import path as needed
+import { useFocusEffect } from "@react-navigation/native";
 
 const pageSize = 10;
 
@@ -30,11 +31,11 @@ function Home() {
   const [showUsernameModal, setShowUsernameModal] = useState<boolean>(false);
   const [newUsername, setNewUsername] = useState<string>("");
 
+  // When the profile changes, load reviews and check username.
   useEffect(() => {
     loadReviews(true);
-  }, []);
+  }, [profile]);
 
-  // When the profile changes, check for a username. If none exists, show the modal.
   useEffect(() => {
     if (profile && !profile.username) {
       setShowUsernameModal(true);
@@ -43,7 +44,30 @@ function Home() {
     }
   }, [profile]);
 
+  // Refresh reviews when the Home screen regains focus.
+  useFocusEffect(
+    useCallback(() => {
+      loadReviews(true);
+    }, [profile])
+  );
+
+  // Helper: Fetch the list of user IDs that the current user follows.
+  const getFollowedUserIds = async (): Promise<string[]> => {
+    if (!profile) return [];
+    const { data, error } = await supabase
+      .from("followers")
+      .select("following_id")
+      .eq("follower_id", profile.id);
+    if (error) {
+      console.error("Error fetching followed users:", error);
+      return [];
+    }
+    return data.map((row: any) => row.following_id);
+  };
+
+  // Load reviews only from users that the current user follows plus your own reviews.
   const loadReviews = async (refresh: boolean = false) => {
+    if (!profile) return;
     const nextPage = refresh ? 0 : page + 1;
 
     if (refresh) {
@@ -55,6 +79,12 @@ function Home() {
 
     const start = nextPage * pageSize;
     const end = start + pageSize - 1;
+
+    // Get followed user IDs and include your own user id.
+    const followedUserIds = await getFollowedUserIds();
+    const queryUserIds = followedUserIds.includes(profile.id)
+      ? followedUserIds
+      : [...followedUserIds, profile.id];
 
     const { data: reviewsData, error } = await supabase
       .from("reviews")
@@ -74,6 +104,7 @@ function Home() {
         `
       )
       .eq("state", 1)
+      .in("user_id", queryUserIds)
       .order("inserted_at", { ascending: false })
       .range(start, end);
 
@@ -104,13 +135,12 @@ function Home() {
 
     setPage(nextPage);
     setHasMore(reviewsWithFullUrl.length === pageSize);
-
     refresh ? setRefreshing(false) : setLoadingMore(false);
   };
 
   const onRefresh = useCallback(() => {
     loadReviews(true);
-  }, []);
+  }, [profile]);
 
   const onEndReached = () => {
     if (!loadingMore && hasMore && !refreshing) {
@@ -118,7 +148,7 @@ function Home() {
     }
   };
 
-  // Save the username to Supabase
+  // Save the username to Supabase.
   const handleSaveUsername = async () => {
     if (!newUsername.trim()) return;
 
@@ -136,7 +166,7 @@ function Home() {
     }
   };
 
-  // Component to render when there are no reviews.
+  // Render component for empty state.
   const renderEmpty = () => {
     if (loading || refreshing) {
       return null;
