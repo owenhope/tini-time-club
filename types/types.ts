@@ -21,4 +21,5 @@ export interface Review {
   profile?: {
     username: string;
   };
+  likes_count?: number;
 }
