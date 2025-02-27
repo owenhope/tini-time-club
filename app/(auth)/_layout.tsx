@@ -1,3 +1,4 @@
+// app/_layout.tsx (or whichever file holds your Tabs layout)
 import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,6 +6,7 @@ import { ProfileProvider, useProfile } from "@/context/profile-context";
 
 const LayoutContent = () => {
   const { profile } = useProfile();
+  // If you have a username, use that to build the href, otherwise fall back to /profile.
   const profileHref = profile?.username
     ? `/profile/${profile.username}`
     : "/profile";
@@ -39,35 +41,20 @@ const LayoutContent = () => {
           ),
         }}
       />
+      {/* Single Profile tab */}
       <Tabs.Screen
-        name="profile/[username]"
+        name="profile"
         options={{
           title: "Profile",
+          headerShown: false,
           href: profileHref as any,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen
-        name="todos"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="map"
-        options={{
-          title: "Followers",
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="followers"
-        options={{
-          href: null,
-        }}
-      />
+      <Tabs.Screen name="todos" options={{ href: null }} />
+      <Tabs.Screen name="map" options={{ href: null }} />
     </Tabs>
   );
 };

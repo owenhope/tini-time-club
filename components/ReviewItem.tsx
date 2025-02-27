@@ -198,12 +198,18 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
           </TouchableOpacity> */}
         </View>
 
-        <View style={styles.captionContainer}>
+        <TouchableOpacity
+          style={styles.captionContainer}
+          onPress={() =>
+            review.profile?.username &&
+            router.push(`/profile/${review.profile.username}`)
+          }
+        >
           <Text style={styles.username}>
             {review.profile?.username || "Unknown"}
           </Text>
           <Text style={styles.captionText}> {review.comment}</Text>
-        </View>
+        </TouchableOpacity>
         <Text style={styles.timestamp}>
           {formatRelativeDate(review.inserted_at)}
         </Text>

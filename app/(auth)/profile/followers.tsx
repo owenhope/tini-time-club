@@ -127,12 +127,6 @@ const Followers = () => {
     <View style={styles.container}>
       {/* Header with back button and search bar */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back-outline" size={24} color="black" />
-        </TouchableOpacity>
         <TextInput
           style={styles.searchInput}
           placeholder="Search profiles..."

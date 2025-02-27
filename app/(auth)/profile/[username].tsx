@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Pressable,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -33,6 +34,8 @@ const Profile = () => {
     null
   );
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
 
   const { profile } = useProfile();
   const router = useRouter();
@@ -43,6 +46,7 @@ const Profile = () => {
     !usernameParam || (profile?.username && usernameParam === profile.username);
   const displayProfile = isOwnProfile ? profile : selectedProfile;
 
+  // Check follow status (for non-own profiles)
   useEffect(() => {
     const checkFollowStatus = async () => {
       if (displayProfile && profile && !isOwnProfile) {
@@ -95,32 +99,47 @@ const Profile = () => {
     }
   };
 
+  // Fetch follower and following counts from the database
+  useEffect(() => {
+    const fetchFollowCounts = async () => {
+      if (displayProfile) {
+        // Get followers count (records where following_id equals the user's id)
+        const { count: followers, error: errorFollowers } = await supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("following_id", displayProfile.id);
+        if (errorFollowers) {
+          console.error("Error fetching followers count:", errorFollowers);
+        } else {
+          setFollowersCount(followers || 0);
+        }
+        // Get following count (records where follower_id equals the user's id)
+        const { count: following, error: errorFollowing } = await supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("follower_id", displayProfile.id);
+        if (errorFollowing) {
+          console.error("Error fetching following count:", errorFollowing);
+        } else {
+          setFollowingCount(following || 0);
+        }
+      }
+    };
+
+    fetchFollowCounts();
+  }, [displayProfile]);
+
+  // Update header with custom title including follow counts
   useEffect(() => {
     if (displayProfile) {
-      if (isOwnProfile) {
-        navigation.setOptions({
-          headerTitle: displayProfile.username,
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate("followers")}
-              style={styles.headerButtonLeft}
-            >
-              <Ionicons name="person-add-outline" size={24} color="black" />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={styles.headerButton}
-            >
-              <Ionicons name="log-out-outline" size={24} color="black" />
-            </TouchableOpacity>
-          ),
-        });
-      } else {
-        navigation.setOptions({
-          headerTitle: displayProfile.username,
-          headerLeft: () => (
+      navigation.setOptions({
+        headerTitle: () => (
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>{displayProfile.username}</Text>
+          </View>
+        ),
+        headerLeft: () =>
+          !isOwnProfile && (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.headerButtonLeft}
@@ -128,7 +147,15 @@ const Profile = () => {
               <Ionicons name="arrow-back" size={24} color="black" />
             </TouchableOpacity>
           ),
-          headerRight: () => (
+        headerRight: () =>
+          isOwnProfile ? (
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.headerButton}
+            >
+              <Ionicons name="log-out-outline" size={24} color="black" />
+            </TouchableOpacity>
+          ) : (
             <TouchableOpacity
               onPress={toggleFollow}
               style={styles.headerButton}
@@ -138,10 +165,16 @@ const Profile = () => {
               </Text>
             </TouchableOpacity>
           ),
-        });
-      }
+      });
     }
-  }, [displayProfile, isOwnProfile, navigation, doesFollow]);
+  }, [
+    displayProfile,
+    isOwnProfile,
+    navigation,
+    doesFollow,
+    followersCount,
+    followingCount,
+  ]);
 
   useEffect(() => {
     setAvatar(null);
@@ -178,6 +211,7 @@ const Profile = () => {
         .from("avatars")
         .download(`${userId}/avatar.jpg`);
       if (error) {
+        console.log(error);
         if (
           error.message.includes("400") ||
           error.message.includes("The resource was not found")
@@ -224,8 +258,8 @@ const Profile = () => {
           location:locations!reviews_location_fkey(name),
           spirit:spirit(name),
           type:type(name),
-          profile:profiles(username)
-        `
+          profile:profiles!reviews_user_id_fkey1(username)
+          `
         )
         .eq("user_id", userId)
         .eq("state", 1)
@@ -390,23 +424,29 @@ const Profile = () => {
             </View>
           )}
         </TouchableOpacity>
-        {/* Display user stats */}
-        <View style={styles.userInfoContainer}>
+        <Pressable
+          style={styles.userInfoContainer}
+          onPress={() => {
+            if (isOwnProfile) {
+              navigation.navigate("followers");
+            }
+          }}
+        >
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{userReviews.length}</Text>
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{followersCount}</Text>
               <Text style={styles.statLabel}>Followers</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
-        </View>
+        </Pressable>
       </View>
       {/* Reviews List */}
       <View style={styles.reviewsContainer}>
@@ -463,10 +503,6 @@ const styles = StyleSheet.create({
   userInfoContainer: {
     flex: 1,
   },
-  usernameText: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
   statsContainer: {
     flexDirection: "row",
     marginTop: 8,
@@ -506,6 +542,17 @@ const styles = StyleSheet.create({
   friendText: {
     fontSize: 16,
     color: "#007aff",
+  },
+  headerTitleContainer: {
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "#777",
   },
 });
 

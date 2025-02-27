@@ -3,7 +3,6 @@ import { Session } from "@supabase/supabase-js";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 
-// Makes sure the user is authenticated before accessing protected pages
 const InitialLayout = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState<boolean>(false);
@@ -12,11 +11,20 @@ const InitialLayout = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Listen for changes to authentication state
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const initialize = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
       setInitialized(true);
+    };
+
+    initialize();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
+
     return () => {
       data.subscription.unsubscribe();
     };
@@ -24,15 +32,18 @@ const InitialLayout = () => {
 
   useEffect(() => {
     if (!initialized) return;
-    // Check if the path/url is in the (auth) group
+
     const inAuthGroup = segments[0] === "(auth)";
     if (session && !inAuthGroup) {
-      // Redirect authenticated users to the list page
       router.replace("/(auth)/home");
-    } else if (!session) {
+    } else if (!session && !inAuthGroup) {
       router.replace("/");
     }
   }, [session, initialized]);
+
+  if (!initialized) {
+    return null;
+  }
 
   return <Slot />;
 };
