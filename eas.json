@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 14.6.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "preview": {
+      "autoIncrement": false,
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "owen@hopemediahouse.com",
+        "ascAppId": "6741620393",
+        "appleTeamId": "AB12XYZ34S"
+      }
+    }
+  }
+}
