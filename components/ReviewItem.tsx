@@ -15,6 +15,7 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
+import * as Haptics from "expo-haptics";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -63,7 +64,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   const router = useRouter();
   const { profile } = useProfile();
 
-  // Use the same animated value as before for overlay opacity.
+  // Animated value for overlay opacity.
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const animateOpacity = (toValue: number) => {
     Animated.timing(overlayOpacity, {
@@ -76,6 +77,10 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   // Local state for likes – fetched from the Supabase "likes" table.
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+
+  // Ref to store the timestamp of the last tap
+  const lastTapRef = useRef<number>(0);
+  const DOUBLE_TAP_DELAY = 300; // in milliseconds
 
   // Fetch initial likes count and like status.
   useEffect(() => {
@@ -106,6 +111,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
     fetchLikes();
   }, [review.id, profile]);
 
+  // Toggle like/unlike when double tapped
   const handleToggleLike = async () => {
     if (!profile) return;
     if (hasLiked) {
@@ -118,6 +124,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
       if (error) {
         console.error("Error unliking:", error);
       } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setHasLiked(false);
         setLikesCount((prev) => prev - 1);
       }
@@ -129,18 +136,30 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
       if (error) {
         console.error("Error liking:", error);
       } else {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setHasLiked(true);
         setLikesCount((prev) => prev + 1);
       }
     }
   };
 
+  // Handle press events to detect double taps.
+  const handlePress = () => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      handleToggleLike();
+    }
+    lastTapRef.current = now;
+  };
+
   return (
     <Pressable
+      onPress={handlePress}
       onLongPress={() => animateOpacity(0)}
       onPressOut={() => animateOpacity(1)}
     >
-      {/* Image Container (exactly as before) */}
+      {/* Image Container */}
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
         {canDelete && (
@@ -172,7 +191,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
         </Animated.View>
       </View>
 
-      {/* Footer rendered below the image container */}
       <View style={styles.footer}>
         <View style={styles.actionRow}>
           <TouchableOpacity
@@ -186,16 +204,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
             />
             <Text style={styles.likesCount}>{likesCount} likes</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity onPress={() => {}}>
-            <Ionicons name="chatbubble-outline" size={28} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => {}}>
-            <Ionicons name="paper-plane-outline" size={28} color="#000" />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => {}}>
-            <Ionicons name="bookmark-outline" size={28} color="#000" />
-          </TouchableOpacity> */}
         </View>
 
         <TouchableOpacity
