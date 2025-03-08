@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 
 interface ProfileType {
@@ -25,7 +24,6 @@ const Followers = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { profile } = useProfile();
   const [followedIds, setFollowedIds] = useState<string[]>([]);
-  const navigation = useNavigation();
 
   // Fetch the list of profiles the current user already follows
   useEffect(() => {
@@ -125,7 +123,6 @@ const Followers = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with back button and search bar */}
       <View style={styles.header}>
         <TextInput
           style={styles.searchInput}

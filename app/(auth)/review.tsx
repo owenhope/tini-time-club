@@ -287,6 +287,17 @@ export default function App() {
         setIsSubmitting(false);
         return;
       }
+
+      const notificationBody = `${profile.username} has posted a new review from ${watchedValues.location.name}`;
+      const { data: notificationData, error: notificationError } =
+        await supabase
+          .from("notifications")
+          .insert({ user_id: profile.id, body: notificationBody });
+
+      if (notificationError) {
+        console.error("Error inserting notification:", notificationError);
+      }
+
       setSubmissionMessage("Review created successfully!");
       setIsSubmitting(false);
 
