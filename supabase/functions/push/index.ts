@@ -74,9 +74,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         to: pushToken,
-        title: "Hello",
+        title: "Tini Time Club",
         body: payload.record.body,
-        // You can add more fields like `data` if you need to pass additional info.
       }),
     }).then((res) => res.json());
   });
