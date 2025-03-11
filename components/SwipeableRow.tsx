@@ -29,7 +29,6 @@ export default class AppleStyleSwipeableRow extends Component<
       } else if (text === "Delete") {
         this.props.onDelete();
       }
-      console.log(this.props);
 
       this.close();
     };

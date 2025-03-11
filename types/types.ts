@@ -14,12 +14,17 @@ export interface Review {
   inserted_at: string;
   taste: number;
   presentation: number;
-  location?: Location;
-  spirit?: NamedEntity;
-  type?: NamedEntity;
-  user_id: string;
+  location: {
+    name: string;
+  };
+  spirit: {
+    name: string;
+  };
+  type: {
+    name: string;
+  };
   profile?: {
+    id: string;
     username: string;
   };
-  likes_count?: number;
 }

@@ -9,6 +9,7 @@ export default function ProfileLayout() {
         headerTintColor: "#000",
       }}
     >
+      <Stack.Screen name="index" />
       <Stack.Screen
         name="followers"
         options={{

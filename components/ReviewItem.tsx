@@ -10,17 +10,17 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
+import LikesSlider from "@/components/LikeSlider";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 
 const screenWidth = Dimensions.get("window").width;
 
-// Helper function to format the review date relatively
 const formatRelativeDate = (dateString: string): string => {
   const now = new Date();
   const date = new Date(dateString);
@@ -55,19 +55,18 @@ interface ReviewProfile {
 }
 
 interface ReviewItemProps {
-  review: Review & { profile?: ReviewProfile };
+  review: Review & { profile?: ReviewProfile; user_id?: string };
   aspectRatio: number;
-  onDelete: () => void;
+  onDelete?: () => void;
   canDelete: boolean;
 }
 
-const ReviewItem: React.FC<ReviewItemProps> = ({
+export default function ReviewItem({
   review,
   aspectRatio,
   canDelete,
   onDelete,
-}) => {
-  const router = useRouter();
+}: ReviewItemProps) {
   const { profile } = useProfile();
 
   const overlayOpacity = useRef(new Animated.Value(1)).current;
@@ -81,6 +80,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [showLikesSlider, setShowLikesSlider] = useState(false);
 
   const lastTapRef = useRef<number>(0);
   const DOUBLE_TAP_DELAY = 300;
@@ -113,11 +113,9 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
     fetchLikes();
   }, [review.id, profile]);
 
-  // Toggle like/unlike when double tapped
   const handleToggleLike = async () => {
     if (!profile) return;
     if (hasLiked) {
-      // Unlike: remove like record
       const { error } = await supabase
         .from("likes")
         .delete()
@@ -161,88 +159,91 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
     }
   };
 
-  // Handle press events to detect double taps.
   const handlePress = () => {
     const now = Date.now();
     if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected
       handleToggleLike();
     }
     lastTapRef.current = now;
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      onLongPress={() => animateOpacity(0)}
-      onPressOut={() => animateOpacity(1)}
-    >
-      {/* Image Container */}
-      <View style={[styles.imageContainer, { aspectRatio }]}>
-        <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
-        {canDelete && (
-          <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
-            <TouchableOpacity onPress={onDelete}>
-              <Ionicons name="trash" size={20} color="#fff" />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-          <Text style={styles.locationName}>
-            {review.location ? review.location.name : "N/A"}
-          </Text>
-          {review.location?.address && (
-            <Text style={styles.locationAddress}>
-              {review.location.address}
-            </Text>
+    <>
+      <Pressable
+        onPress={handlePress}
+        onLongPress={() => animateOpacity(0)}
+        onPressOut={() => animateOpacity(1)}
+      >
+        <View style={[styles.imageContainer, { aspectRatio }]}>
+          <Image
+            source={{ uri: review.image_url }}
+            style={styles.reviewImage}
+          />
+          {canDelete && (
+            <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+              <TouchableOpacity onPress={onDelete}>
+                <Ionicons name="trash" size={20} color="#fff" />
+              </TouchableOpacity>
+            </Animated.View>
           )}
-          <Text style={styles.spiritText}>
-            Spirit: {review.spirit ? review.spirit.name : "N/A"}
-          </Text>
-          <Text style={styles.typeText}>
-            Type: {review.type ? review.type.name : "N/A"}
-          </Text>
-          <Text style={styles.ratingLabel}>Taste</Text>
-          <ReviewRating value={review.taste} label="taste" />
-          <Text style={styles.ratingLabel}>Presentation</Text>
-          <ReviewRating value={review.presentation} label="presentation" />
-        </Animated.View>
-      </View>
-
-      <View style={styles.footer}>
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={{ flexDirection: "row", gap: 5, alignItems: "center" }}
-            onPress={handleToggleLike}
-          >
-            <Ionicons
-              name={hasLiked ? "heart" : "heart-outline"}
-              size={28}
-              color={hasLiked ? "red" : "#000"}
-            />
-            <Text style={styles.likesCount}>{likesCount} likes</Text>
-          </TouchableOpacity>
+          <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+            <Text style={styles.locationName}>
+              {review.location ? review.location.name : "N/A"}
+            </Text>
+            {review.location?.address && (
+              <Text style={styles.locationAddress}>
+                {review.location.address}
+              </Text>
+            )}
+            <Text style={styles.spiritText}>
+              Spirit: {review.spirit ? review.spirit.name : "N/A"}
+            </Text>
+            <Text style={styles.typeText}>
+              Type: {review.type ? review.type.name : "N/A"}
+            </Text>
+            <Text style={styles.ratingLabel}>Taste</Text>
+            <ReviewRating value={review.taste} label="taste" />
+            <Text style={styles.ratingLabel}>Presentation</Text>
+            <ReviewRating value={review.presentation} label="presentation" />
+          </Animated.View>
         </View>
 
-        <TouchableOpacity
-          style={styles.captionContainer}
-          onPress={() =>
-            review.profile?.username &&
-            router.push(`/profile/${review.profile.username}`)
-          }
-        >
-          <Text style={styles.username}>
-            {review.profile?.username || "Unknown"}
+        <View style={styles.footer}>
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={handleToggleLike}>
+              <Ionicons
+                name={hasLiked ? "heart" : "heart-outline"}
+                size={28}
+                color={hasLiked ? "red" : "#000"}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowLikesSlider(true)}>
+              <Text style={styles.likesCount}>{likesCount} likes</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Link href={`/${review.profile?.username}`} asChild>
+            <TouchableOpacity style={styles.captionContainer}>
+              <Text style={styles.username}>
+                {review.profile?.username || "Unknown"}
+              </Text>
+              <Text style={styles.captionText}> {review.comment}</Text>
+            </TouchableOpacity>
+          </Link>
+          <Text style={styles.timestamp}>
+            {formatRelativeDate(review.inserted_at)}
           </Text>
-          <Text style={styles.captionText}> {review.comment}</Text>
-        </TouchableOpacity>
-        <Text style={styles.timestamp}>
-          {formatRelativeDate(review.inserted_at)}
-        </Text>
-      </View>
-    </Pressable>
+        </View>
+      </Pressable>
+      {showLikesSlider && (
+        <LikesSlider
+          reviewId={review.id.toString()}
+          onClose={() => setShowLikesSlider(false)}
+        />
+      )}
+    </>
   );
-};
+}
 
 const styles = StyleSheet.create({
   imageContainer: {
@@ -315,6 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     color: "#000",
+    marginLeft: 8,
   },
   captionContainer: {
     flexDirection: "row",
@@ -334,5 +336,3 @@ const styles = StyleSheet.create({
     color: "#999",
   },
 });
-
-export default ReviewItem;

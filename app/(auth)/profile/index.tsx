@@ -18,106 +18,40 @@ import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
-
-interface ProfileType {
-  id: string;
-  username: string;
-}
+import { useRouter, useNavigation } from "expo-router";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
   const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
-  const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
-    null
-  );
-  const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
 
   const { profile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
-  const params = useLocalSearchParams();
-  const usernameParam = params.username as string | undefined;
-  const isOwnProfile =
-    !usernameParam || (profile?.username && usernameParam === profile.username);
-  const displayProfile = isOwnProfile ? profile : selectedProfile;
 
-  // Check follow status (for non-own profiles)
-  useEffect(() => {
-    const checkFollowStatus = async () => {
-      if (displayProfile && profile && !isOwnProfile) {
-        const { data, error } = await supabase
-          .from("followers")
-          .select("*")
-          .eq("follower_id", profile.id)
-          .eq("following_id", displayProfile.id)
-          .maybeSingle();
-        if (error) {
-          console.error("Error checking follow status:", error);
-        } else {
-          setDoesFollow(!!data);
-        }
-      }
-    };
-    checkFollowStatus();
-  }, [displayProfile, profile, isOwnProfile]);
+  // Always display the logged in user's profile.
+  const displayProfile = profile;
 
-  const toggleFollow = async () => {
-    if (!profile || !displayProfile) return;
-
-    if (doesFollow) {
-      // Unfollow: delete the record from the followers table
-      const { error } = await supabase
-        .from("followers")
-        .delete()
-        .eq("follower_id", profile.id)
-        .eq("following_id", displayProfile.id);
-      if (error) {
-        console.error("Error unfollowing user:", error);
-        Alert.alert("Error", "Unable to unfollow user. Please try again.");
-      } else {
-        setDoesFollow(false);
-      }
-    } else {
-      // Follow: use upsert to insert or update the record in the followers table
-      const { error } = await supabase
-        .from("followers")
-        .insert(
-          [{ follower_id: profile.id, following_id: displayProfile.id }],
-          { upsert: true }
-        );
-      if (error) {
-        console.error("Error following user:", error);
-        Alert.alert("Error", "Unable to follow user. Please try again.");
-      } else {
-        setDoesFollow(true);
-      }
-    }
-  };
-
-  // Fetch follower and following counts from the database
+  // Fetch follower and following counts for the logged in user.
   useEffect(() => {
     const fetchFollowCounts = async () => {
-      if (displayProfile) {
-        // Get followers count (records where following_id equals the user's id)
+      if (profile) {
         const { count: followers, error: errorFollowers } = await supabase
           .from("followers")
           .select("*", { count: "exact", head: true })
-          .eq("following_id", displayProfile.id);
+          .eq("following_id", profile.id);
         if (errorFollowers) {
           console.error("Error fetching followers count:", errorFollowers);
         } else {
           setFollowersCount(followers || 0);
         }
-        // Get following count (records where follower_id equals the user's id)
         const { count: following, error: errorFollowing } = await supabase
           .from("followers")
           .select("*", { count: "exact", head: true })
-          .eq("follower_id", displayProfile.id);
+          .eq("follower_id", profile.id);
         if (errorFollowing) {
           console.error("Error fetching following count:", errorFollowing);
         } else {
@@ -127,78 +61,25 @@ const Profile = () => {
     };
 
     fetchFollowCounts();
-  }, [displayProfile]);
+  }, [profile]);
 
-  // Update header with custom title including follow counts
+  // Update header with the user's username and a logout button.
   useEffect(() => {
-    if (displayProfile) {
+    if (profile) {
       navigation.setOptions({
         headerTitle: () => (
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>{displayProfile.username}</Text>
+            <Text style={styles.headerTitle}>{profile.username}</Text>
           </View>
         ),
-        headerLeft: () =>
-          !isOwnProfile && (
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.headerButtonLeft}
-            >
-              <Ionicons name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-          ),
-        headerRight: () =>
-          isOwnProfile ? (
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={styles.headerButton}
-            >
-              <Ionicons name="log-out-outline" size={24} color="black" />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={toggleFollow}
-              style={styles.headerButton}
-            >
-              <Text style={styles.friendText}>
-                {doesFollow ? "Unfollow" : "Follow"}
-              </Text>
-            </TouchableOpacity>
-          ),
+        headerRight: () => (
+          <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
+            <Ionicons name="log-out-outline" size={24} color="black" />
+          </TouchableOpacity>
+        ),
       });
     }
-  }, [
-    displayProfile,
-    isOwnProfile,
-    navigation,
-    doesFollow,
-    followersCount,
-    followingCount,
-  ]);
-
-  useEffect(() => {
-    setAvatar(null);
-    if (!isOwnProfile && usernameParam) {
-      fetchSelectedProfile(usernameParam);
-    }
-  }, [usernameParam, isOwnProfile]);
-
-  const fetchSelectedProfile = async (username: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .single();
-      if (error) {
-        console.error("Error fetching selected profile:", error);
-      } else {
-        setSelectedProfile(data);
-      }
-    } catch (err) {
-      console.error("Unexpected error fetching profile:", err);
-    }
-  };
+  }, [profile, navigation]);
 
   const loadUserAvatar = async (userId?: string) => {
     setLoadingAvatar(true);
@@ -211,7 +92,6 @@ const Profile = () => {
         .from("avatars")
         .download(`${userId}/avatar.jpg`);
       if (error) {
-        console.log(error);
         if (
           error.message.includes("400") ||
           error.message.includes("The resource was not found")
@@ -291,7 +171,6 @@ const Profile = () => {
   };
 
   const pickImage = async () => {
-    if (!isOwnProfile) return;
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -375,7 +254,7 @@ const Profile = () => {
     <ReviewItem
       review={item}
       aspectRatio={1}
-      canDelete={isOwnProfile}
+      canDelete={true}
       onDelete={() => confirmDeleteReview(item.id)}
     />
   );
@@ -392,33 +271,24 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (!isOwnProfile && usernameParam) {
-      fetchSelectedProfile(usernameParam);
+    if (profile && profile.id) {
+      loadUserAvatar(profile.id);
+      loadUserReviews(profile.id);
     }
-  }, [usernameParam, isOwnProfile]);
-
-  useEffect(() => {
-    if (displayProfile && displayProfile.id) {
-      loadUserAvatar(displayProfile.id);
-      loadUserReviews(displayProfile.id);
-    }
-  }, [displayProfile]);
+  }, [profile]);
 
   return (
     <View style={styles.container}>
       {/* Profile Content */}
       <View style={styles.profileHeader}>
-        <TouchableOpacity
-          onPress={isOwnProfile ? pickImage : undefined}
-          style={styles.avatarContainer}
-        >
+        <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
           {avatar ? (
             <Image style={styles.avatar} source={{ uri: avatar }} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitial}>
-                {displayProfile?.username
-                  ? displayProfile.username.charAt(0).toUpperCase()
+                {profile?.username
+                  ? profile.username.charAt(0).toUpperCase()
                   : "?"}
               </Text>
             </View>
@@ -426,11 +296,7 @@ const Profile = () => {
         </TouchableOpacity>
         <Pressable
           style={styles.userInfoContainer}
-          onPress={() => {
-            if (isOwnProfile) {
-              navigation.navigate("followers");
-            }
-          }}
+          onPress={() => navigation.navigate("followers")}
         >
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -457,8 +323,8 @@ const Profile = () => {
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
           onRefresh={() => {
-            if (displayProfile && displayProfile.id) {
-              loadUserReviews(displayProfile.id);
+            if (profile && profile.id) {
+              loadUserReviews(profile.id);
             }
           }}
           refreshing={loadingReviews}
@@ -536,23 +402,12 @@ const styles = StyleSheet.create({
   headerButton: {
     marginRight: 10,
   },
-  headerButtonLeft: {
-    marginLeft: 5,
-  },
-  friendText: {
-    fontSize: 16,
-    color: "#007aff",
-  },
   headerTitleContainer: {
     alignItems: "center",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: "#777",
   },
 });
 

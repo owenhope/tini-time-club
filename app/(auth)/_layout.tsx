@@ -144,18 +144,17 @@ const LayoutContent = () => {
           ),
         }}
       />
-      {/* Single Profile tab */}
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
           headerShown: false,
-          href: profileHref as any,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
+      <Tabs.Screen name="[username]" options={{ href: null }} />
       <Tabs.Screen name="todos" options={{ href: null }} />
       <Tabs.Screen name="map" options={{ href: null }} />
     </Tabs>
