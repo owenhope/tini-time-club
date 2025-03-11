@@ -16,6 +16,7 @@ import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
+import { NOTIFICATION_TYPES } from "@/utils/consts";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -48,8 +49,13 @@ const formatRelativeDate = (dateString: string): string => {
   }
 };
 
+interface ReviewProfile {
+  id: string;
+  username: string;
+}
+
 interface ReviewItemProps {
-  review: Review;
+  review: Review & { profile?: ReviewProfile };
   aspectRatio: number;
   onDelete: () => void;
   canDelete: boolean;
@@ -64,7 +70,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   const router = useRouter();
   const { profile } = useProfile();
 
-  // Animated value for overlay opacity.
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const animateOpacity = (toValue: number) => {
     Animated.timing(overlayOpacity, {
@@ -74,15 +79,12 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
     }).start();
   };
 
-  // Local state for likes – fetched from the Supabase "likes" table.
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
-  // Ref to store the timestamp of the last tap
   const lastTapRef = useRef<number>(0);
-  const DOUBLE_TAP_DELAY = 300; // in milliseconds
+  const DOUBLE_TAP_DELAY = 300;
 
-  // Fetch initial likes count and like status.
   useEffect(() => {
     const fetchLikes = async () => {
       const { count, error: countError } = await supabase
@@ -129,7 +131,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
         setLikesCount((prev) => prev - 1);
       }
     } else {
-      // Like: upsert like record
       const { error } = await supabase
         .from("likes")
         .upsert([{ review_id: review.id, user_id: profile.id }]);
@@ -139,6 +140,23 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setHasLiked(true);
         setLikesCount((prev) => prev + 1);
+        if (review && review.user_id && profile.id !== review.user_id) {
+          const notificationBody = `${
+            profile.username
+          } liked your review from ${
+            review.location?.name || "an unknown location"
+          }`;
+          const { error: notificationError } = await supabase
+            .from("notifications")
+            .insert({
+              user_id: review.user_id,
+              body: notificationBody,
+              type: NOTIFICATION_TYPES.USER,
+            });
+          if (notificationError) {
+            console.error("Error creating notification:", notificationError);
+          }
+        }
       }
     }
   };
@@ -282,17 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textTransform: "capitalize",
     marginTop: 8,
-    color: "#fff",
-  },
-  commentTitle: {
-    fontSize: 16,
-    marginTop: 8,
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  commentText: {
-    fontSize: 16,
-    marginTop: 4,
     color: "#fff",
   },
   footer: {

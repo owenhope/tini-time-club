@@ -292,7 +292,11 @@ export default function App() {
       const { data: notificationData, error: notificationError } =
         await supabase
           .from("notifications")
-          .insert({ user_id: profile.id, body: notificationBody });
+          .insert({
+            user_id: profile.id,
+            body: notificationBody,
+            type: "FOLLOWER",
+          });
 
       if (notificationError) {
         console.error("Error inserting notification:", notificationError);
