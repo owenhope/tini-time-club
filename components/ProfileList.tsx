@@ -80,7 +80,7 @@ export default function ProfileList({
           const { error: notificationError } = await supabase
             .from("notifications")
             .insert({
-              user_id: profile.id,
+              user_id: targetProfileId,
               body: notificationBody,
               type: NOTIFICATION_TYPES.USER,
             });

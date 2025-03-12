@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
 
   // Check the notification type.
   if (payload.record.type === NOTIFICATION_TYPES.FOLLOWERS) {
+    
     const { data: followersData, error: followersError } = await supabase
       .from("followers")
       .select("follower_id")
@@ -66,8 +67,8 @@ Deno.serve(async (req) => {
         { headers: { "content-type": "application/json" } }
       );
     }
-
     const notifications = profilesData.map(async (profile: any) => {
+      console.log('Sending FOLLOWER push note to:', profile.expo_push_token);
       const pushToken = profile.expo_push_token;
       if (!pushToken) return null;
       return await fetch("https://exp.host/--/api/v2/push/send", {
@@ -86,6 +87,9 @@ Deno.serve(async (req) => {
 
     // Wait for all notifications to be sent.
     const results = await Promise.all(notifications);
+    
+    console.log('Successfully sent FOLLOWER push notes');
+
     return new Response(JSON.stringify(results), {
       headers: { "content-type": "application/json" },
     });
@@ -96,6 +100,8 @@ Deno.serve(async (req) => {
       .select("expo_push_token")
       .eq("id", payload.record.user_id)
       .maybeSingle();
+
+    console.log('Sending USER push note to:', profileData.expo_push_token);
 
     if (profileError) {
       console.error("Error fetching user profile:", profileError);
@@ -126,6 +132,8 @@ Deno.serve(async (req) => {
       }),
     }).then((res) => res.json());
 
+    console.log('Successfully sent USER push note to:', profileData.expo_push_token);
+    
     return new Response(JSON.stringify(result), {
       headers: { "content-type": "application/json" },
     });
