@@ -1,7 +1,7 @@
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { useEffect, useState, useRef, createRef } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { PROVIDER_GOOGLE, Region, Marker, Callout } from "react-native-maps";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { PROVIDER_GOOGLE, Region, Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import "react-native-get-random-values";
@@ -24,6 +24,7 @@ const Map = () => {
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locations, setLocations] = useState<any[]>([]);
   const googlePlaceAutoCompleteRef = useRef(null);
+
   useEffect(() => {
     const getLocation = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -80,14 +81,6 @@ const Map = () => {
     setRegion(newRegion);
   };
 
-  const onMarkerSelected = (marker: {
-    latitude: number;
-    longitude: number;
-    name: string;
-  }) => {
-    console.log(marker);
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <GooglePlacesAutocomplete
@@ -125,9 +118,7 @@ const Map = () => {
           textInput: { paddingLeft: 20, paddingRight: 40 },
           textInputContainer: { padding: 4 },
         }}
-        textInputProps={{
-          clearButtonMode: "never",
-        }}
+        textInputProps={{ clearButtonMode: "never" }}
         renderRightButton={() => (
           <TouchableOpacity
             style={{ position: "absolute", right: 15, top: 15, zIndex: 100 }}
@@ -152,27 +143,29 @@ const Map = () => {
         customMapStyle={mapStyle}
       >
         {locations.map((loc, index) => {
-          // Our RPC function returns { id, name, lat, long }.
           if (loc.lat == null || loc.long == null) return null;
           return (
             <Marker
               key={index}
               coordinate={{ latitude: loc.lat, longitude: loc.long }}
-              title={loc.name}
-              pinColor="#2E86AB" // Replace with your preferred color
-              onPress={() =>
-                onMarkerSelected({
-                  latitude: loc.lat,
-                  longitude: loc.long,
-                  name: loc.name,
-                })
-              }
             >
-              <Callout tooltip>
-                <View style={styles.calloutContainer}>
-                  <Text style={styles.calloutText}>{loc.name}</Text>
+              <View style={styles.markerContainer}>
+                <View style={styles.bubble}>
+                  <Text style={styles.bubbleText}>{loc.name}</Text>
+                  <View style={styles.ratingCircle}>
+                    <Text style={styles.ratingCircleText}>
+                      {loc.rating ? loc.rating.toFixed(1) : "N/A"}
+                    </Text>
+                  </View>
                 </View>
-              </Callout>
+                <View style={styles.markerPin}>
+                  <FontAwesome5
+                    name="glass-martini-alt"
+                    size={20}
+                    color="silver"
+                  />
+                </View>
+              </View>
             </Marker>
           );
         })}
@@ -204,21 +197,41 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 1, height: 10 },
   },
-  calloutContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 10,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+  markerContainer: {
+    alignItems: "center",
   },
-  calloutText: {
-    fontSize: 16,
-    fontWeight: "500",
+  bubble: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#2E86AB",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginBottom: 2,
+  },
+  bubbleText: {
+    fontSize: 14,
+    fontWeight: "600",
     color: "#333",
+    marginRight: 6,
+  },
+  ratingCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#2E86AB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ratingCircleText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  markerPin: {
+    // This view wraps the icon.
   },
 });
 
