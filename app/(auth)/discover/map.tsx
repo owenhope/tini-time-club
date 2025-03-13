@@ -3,7 +3,10 @@ import { useEffect, useState, useRef, createRef } from "react";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { PROVIDER_GOOGLE, Region, Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import {
+  GooglePlacesAutocomplete,
+  GooglePlacesAutocompleteRef,
+} from "react-native-google-places-autocomplete";
 import "react-native-get-random-values";
 import { mapStyle } from "@/assets/mapStyle";
 import MapView from "react-native-map-clustering";
@@ -23,7 +26,7 @@ const Map = () => {
   const mapRef = createRef<any>();
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locations, setLocations] = useState<any[]>([]);
-  const googlePlaceAutoCompleteRef = useRef(null);
+  const googlePlaceAutoCompleteRef = useRef<GooglePlacesAutocompleteRef>(null);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -87,7 +90,16 @@ const Map = () => {
         ref={googlePlaceAutoCompleteRef}
         placeholder="Search"
         fetchDetails
-        query={{ key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8" }}
+        query={{
+          key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8",
+          language: "en",
+          location: currentLocation
+            ? `${currentLocation.latitude},${currentLocation.longitude}`
+            : "37.33,-122",
+          radius: 10000,
+          types: "establishment",
+          keyword: "restaurant|night_club|bar|hotel",
+        }}
         onFail={(error) => console.error(error)}
         onPress={(data, detail = null) => {
           if (!detail?.geometry) return;
@@ -114,9 +126,10 @@ const Map = () => {
           mapRef.current?.animateToRegion(newRegion, 1000);
         }}
         styles={{
-          container: { flex: 0 },
+          container: { flex: 0, padding: 8 },
           textInput: { paddingLeft: 20, paddingRight: 40 },
           textInputContainer: { padding: 4 },
+          poweredContainer: { display: "none" },
         }}
         textInputProps={{ clearButtonMode: "never" }}
         renderRightButton={() => (
@@ -130,6 +143,7 @@ const Map = () => {
           </TouchableOpacity>
         )}
       />
+
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -170,11 +184,6 @@ const Map = () => {
           );
         })}
       </MapView>
-      <View style={styles.btnContainer}>
-        <TouchableOpacity style={styles.btn} onPress={zoomIn}>
-          <Ionicons name="earth" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
