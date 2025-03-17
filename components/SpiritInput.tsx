@@ -51,30 +51,35 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     marginTop: 10,
   },
   optionButton: {
+    width: "48%", // Approximately 50% width with spacing
     paddingVertical: 10,
     paddingHorizontal: 20,
+    marginBottom: 10,
     borderRadius: 10,
-    backgroundColor: "transparent", // Default button background
     borderWidth: 1,
     borderColor: "#ccc",
-    width: 100,
+    backgroundColor: "transparent",
+    flexDirection: "row", // Ensures content is laid out horizontally
+    justifyContent: "center",
+    alignItems: "center",
   },
   selectedButton: {
-    backgroundColor: "olive", // Highlight color for selected button
+    backgroundColor: "olive",
     borderColor: "olive",
   },
   buttonText: {
     fontSize: 18,
-    color: "#FFF", // Default text color
+    color: "#FFF",
     textAlign: "center",
     textTransform: "capitalize",
   },
   selectedButtonText: {
-    color: "#fff", // Highlight text color for selected button
+    color: "#fff",
   },
 });
 
