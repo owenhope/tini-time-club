@@ -1,95 +1,150 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Marker as MapMarker } from "react-native-maps";
-import { FontAwesome5 } from "@expo/vector-icons";
 
 interface MapMarkerProps {
-  loc: any;
-  index: number;
+  loc: {
+    lat: number | null;
+    long: number | null;
+    name: string;
+    rating?: number;
+    total_ratings?: number;
+    taste_avg?: number;
+    presentation_avg?: number;
+    address?: string;
+  };
   isSelected: boolean;
   onPress: () => void;
+  onClose: () => void;
+  onView: () => void;
 }
 
-function Marker({ loc, index, isSelected, onPress }: MapMarkerProps) {
+function Marker({ loc, isSelected, onPress, onClose, onView }: MapMarkerProps) {
   if (loc.lat == null || loc.long == null) return null;
-  console.log(loc);
+
   return (
     <MapMarker
       coordinate={{ latitude: loc.lat, longitude: loc.long }}
+      // Adjust the anchor so the pointer tip aligns better with the coordinate
+      anchor={{ x: 0.5, y: 1 }}
       onPress={onPress}
     >
       {isSelected ? (
+        /* Expanded View */
         <View style={styles.expandedMarker}>
-          <Text style={styles.expandedName}>{loc.name}</Text>
-          <Text style={styles.expandedRating}>
-            Rating: {loc.rating ? loc.rating.toFixed(1) : "N/A"} (
-            {loc.total_ratings})
-          </Text>
-          <Text style={styles.expandedRating}>
-            Taste: {loc.taste_avg ? loc.taste_avg.toFixed(1) : "N/A"}
-          </Text>
-          <Text style={styles.expandedRating}>
-            Presentation:{" "}
-            {loc.presentation_avg ? loc.presentation_avg.toFixed(1) : "N/A"}
-          </Text>
-          <Text style={styles.expandedInfo}>{loc.address}</Text>
-        </View>
-      ) : (
-        <View style={styles.markerContainer}>
-          <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>{loc.name}</Text>
+          {/* Header: Name, total reviews, rating */}
+          <View style={styles.headerContainer}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerText}>{loc.name}</Text>
+              <Text style={styles.reviewText}>
+                ({loc.total_ratings ?? 0} reviews)
+              </Text>
+            </View>
             <View style={styles.ratingCircle}>
-              <Text style={styles.ratingCircleText}>
+              <Text style={styles.circleText}>
                 {loc.rating ? loc.rating.toFixed(1) : "N/A"}
               </Text>
             </View>
           </View>
-          <View style={styles.markerPin}>
-            <FontAwesome5 name="glass-martini-alt" size={20} color="silver" />
+
+          {/* Taste and Presentation Circles */}
+          <View style={styles.detailsContainer}>
+            <View style={styles.circleContainer}>
+              <View style={styles.tasteCircle}>
+                <Text style={styles.circleText}>
+                  {loc.taste_avg ? loc.taste_avg.toFixed(1) : "N/A"}
+                </Text>
+              </View>
+              <Text style={styles.circleLabel}>Taste</Text>
+            </View>
+            <View style={styles.circleContainer}>
+              <View style={styles.presentationCircle}>
+                <Text style={styles.circleText}>
+                  {loc.presentation_avg
+                    ? loc.presentation_avg.toFixed(1)
+                    : "N/A"}
+                </Text>
+              </View>
+              <Text style={styles.circleLabel}>Presentation</Text>
+            </View>
           </View>
+
+          {/* Address */}
+          {loc.address && <Text style={styles.addressText}>{loc.address}</Text>}
+
+          {/* Action Buttons: View & Close */}
+          <View style={styles.actionContainer}>
+            <TouchableOpacity onPress={onView}>
+              <Text style={styles.viewLink}>View</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.closeButtonTextBottom}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        /* Default Pin View */
+        <View style={styles.markerContainer}>
+          {/* The circular “pin” with pointer */}
+          <View style={styles.pin}>
+            <Text style={styles.pinText}>
+              {loc.rating ? loc.rating.toFixed(1) : "N/A"}
+            </Text>
+            <View style={styles.pinPointer} />
+          </View>
+          {/* Restaurant name off to the side */}
+          <Text style={styles.restaurantName}>{loc.name}</Text>
         </View>
       )}
     </MapMarker>
   );
 }
 
+const PIN_COLOR = "#2E86AB"; // Adjust as needed
+
 const styles = StyleSheet.create({
+  /* ----- DEFAULT (NON-EXPANDED) PIN STYLES ----- */
   markerContainer: {
-    alignItems: "center",
-  },
-  bubble: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#2E86AB",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    marginBottom: 2,
   },
-  bubbleText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginRight: 6,
-  },
-  ratingCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#2E86AB",
+  pin: {
+    position: "relative",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PIN_COLOR,
     justifyContent: "center",
     alignItems: "center",
   },
-  ratingCircleText: {
-    fontSize: 10,
-    fontWeight: "600",
+  pinText: {
     color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
-  markerPin: {
-    // This view wraps the icon.
+  pinPointer: {
+    position: "absolute",
+    bottom: -10,
+    left: "50%",
+    transform: [{ translateX: -5 }],
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 10,
+    borderStyle: "solid",
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: PIN_COLOR,
   },
+  restaurantName: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFF",
+  },
+
+  /* ----- EXPANDED MARKER STYLES ----- */
   expandedMarker: {
     backgroundColor: "#fff",
     padding: 10,
@@ -97,22 +152,99 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2E86AB",
     alignItems: "center",
-    zIndex: 1000,
-    maxWidth: 200,
+    zIndex: 9999,
+    maxWidth: 220,
   },
-  expandedName: {
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    paddingBottom: 6,
+    marginBottom: 6,
+  },
+  headerLeft: {
+    flexDirection: "column",
+  },
+  headerText: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 4,
+    color: "#333",
   },
-  expandedRating: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  expandedInfo: {
+  reviewText: {
     fontSize: 12,
     color: "#555",
+  },
+  ratingCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#2E86AB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  circleText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  detailsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginVertical: 6,
+  },
+  circleContainer: {
+    alignItems: "center",
+    width: 60,
+  },
+  tasteCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "olive",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  presentationCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "silver",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  circleLabel: {
+    fontSize: 10,
+    color: "#333",
+    marginTop: 2,
+    textAlign: "center",
+  },
+  addressText: {
+    fontSize: 12,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 6,
+  },
+  viewLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2E86AB",
+    textDecorationLine: "underline",
+  },
+  closeButtonTextBottom: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "red",
+    textDecorationLine: "underline",
   },
 });
 
