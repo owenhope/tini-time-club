@@ -1,6 +1,7 @@
 import React, { forwardRef } from "react";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import "react-native-get-random-values";
 import {
   GooglePlacesAutocomplete,
   GooglePlacesAutocompleteRef,

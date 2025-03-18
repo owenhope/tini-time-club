@@ -1,12 +1,12 @@
 import React, { useEffect, useState, createRef, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import MapView from "react-native-map-clustering";
-import { Region } from "react-native-maps";
+import { Region, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import Search from "@/components/map/search";
-import MapMarker from "@/components/map/marker";
+import LocationPin from "@/components/map/locationPin";
 
 const INITIAL_REGION: Region = {
   latitude: 37.33,
@@ -89,8 +89,9 @@ function Map() {
       />
       <MapView
         ref={mapRef}
-        provider="google"
+        provider={PROVIDER_GOOGLE}
         mapType="standard"
+        clusteringEnabled={true}
         style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
         showsUserLocation
         showsMyLocationButton
@@ -100,15 +101,24 @@ function Map() {
         customMapStyle={mapStyle}
       >
         {locations.map((loc, index) => (
-          <MapMarker
+          <Marker
             key={index}
-            loc={loc}
-            index={index}
-            isSelected={selectedMarker === index}
+            coordinate={{ latitude: loc.lat, longitude: loc.long }}
+            anchor={{ x: 0.5, y: 1 }}
             onPress={() =>
               setSelectedMarker(selectedMarker === index ? null : index)
             }
-          />
+          >
+            <LocationPin
+              loc={loc}
+              isSelected={selectedMarker === index}
+              onClose={() => setSelectedMarker(null)}
+              onView={() => {}}
+              onPress={() =>
+                setSelectedMarker(selectedMarker === index ? null : index)
+              }
+            />
+          </Marker>
         ))}
       </MapView>
     </View>

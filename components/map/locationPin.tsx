@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Marker as MapMarker } from "react-native-maps";
 
-interface MapMarkerProps {
+interface LocationPinProps {
   loc: {
     lat: number | null;
     long: number | null;
@@ -19,20 +18,20 @@ interface MapMarkerProps {
   onView: () => void;
 }
 
-function Marker({ loc, isSelected, onPress, onClose, onView }: MapMarkerProps) {
+function LocationPin({
+  loc,
+  isSelected,
+  onPress,
+  onClose,
+  onView,
+}: LocationPinProps) {
   if (loc.lat == null || loc.long == null) return null;
 
   return (
-    <MapMarker
-      coordinate={{ latitude: loc.lat, longitude: loc.long }}
-      // Adjust the anchor so the pointer tip aligns better with the coordinate
-      anchor={{ x: 0.5, y: 1 }}
-      onPress={onPress}
-    >
+    <TouchableOpacity onPress={onPress}>
       {isSelected ? (
         /* Expanded View */
         <View style={styles.expandedMarker}>
-          {/* Header: Name, total reviews, rating */}
           <View style={styles.headerContainer}>
             <View style={styles.headerLeft}>
               <Text style={styles.headerText}>{loc.name}</Text>
@@ -47,7 +46,6 @@ function Marker({ loc, isSelected, onPress, onClose, onView }: MapMarkerProps) {
             </View>
           </View>
 
-          {/* Taste and Presentation Circles */}
           <View style={styles.detailsContainer}>
             <View style={styles.circleContainer}>
               <View style={styles.tasteCircle}>
@@ -69,10 +67,8 @@ function Marker({ loc, isSelected, onPress, onClose, onView }: MapMarkerProps) {
             </View>
           </View>
 
-          {/* Address */}
           {loc.address && <Text style={styles.addressText}>{loc.address}</Text>}
 
-          {/* Action Buttons: View & Close */}
           <View style={styles.actionContainer}>
             <TouchableOpacity onPress={onView}>
               <Text style={styles.viewLink}>View</Text>
@@ -83,27 +79,23 @@ function Marker({ loc, isSelected, onPress, onClose, onView }: MapMarkerProps) {
           </View>
         </View>
       ) : (
-        /* Default Pin View */
         <View style={styles.markerContainer}>
-          {/* The circular “pin” with pointer */}
           <View style={styles.pin}>
             <Text style={styles.pinText}>
               {loc.rating ? loc.rating.toFixed(1) : "N/A"}
             </Text>
             <View style={styles.pinPointer} />
           </View>
-          {/* Restaurant name off to the side */}
           <Text style={styles.restaurantName}>{loc.name}</Text>
         </View>
       )}
-    </MapMarker>
+    </TouchableOpacity>
   );
 }
 
-const PIN_COLOR = "#2E86AB"; // Adjust as needed
+const PIN_COLOR = "#2E86AB";
 
 const styles = StyleSheet.create({
-  /* ----- DEFAULT (NON-EXPANDED) PIN STYLES ----- */
   markerContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -248,4 +240,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Marker;
+export default LocationPin;

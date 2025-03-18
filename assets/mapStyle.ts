@@ -34,6 +34,7 @@ export const mapStyle = [
   },
   {
     "featureType": "administrative.land_parcel",
+    "elementType": "labels",
     "stylers": [
       {
         "visibility": "off"
@@ -46,14 +47,6 @@ export const mapStyle = [
     "stylers": [
       {
         "color": "#64779e"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.neighborhood",
-    "stylers": [
-      {
-        "visibility": "off"
       }
     ]
   },
@@ -121,7 +114,7 @@ export const mapStyle = [
     ]
   },
   {
-    "featureType": "poi.park",
+    "featureType": "poi.business",
     "stylers": [
       {
         "visibility": "off"
@@ -152,15 +145,6 @@ export const mapStyle = [
     "stylers": [
       {
         "color": "#304a7d"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "labels",
-    "stylers": [
-      {
-        "visibility": "off"
       }
     ]
   },
@@ -228,6 +212,15 @@ export const mapStyle = [
     ]
   },
   {
+    "featureType": "road.local",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
     "featureType": "transit",
     "stylers": [
       {
@@ -277,15 +270,6 @@ export const mapStyle = [
     "stylers": [
       {
         "color": "#0e1626"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text",
-    "stylers": [
-      {
-        "visibility": "off"
       }
     ]
   },
