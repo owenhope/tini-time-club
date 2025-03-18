@@ -10,7 +10,7 @@ export default function ProfileLayout() {
       }}
     >
       <Stack.Screen
-        name="map"
+        name="index"
         options={{
           title: "Locations",
         }}

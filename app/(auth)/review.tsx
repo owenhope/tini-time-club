@@ -290,13 +290,11 @@ export default function App() {
 
       const notificationBody = `${profile.username} has posted a new review from ${watchedValues.location.name}`;
       const { data: notificationData, error: notificationError } =
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: profile.id,
-            body: notificationBody,
-            type: "FOLLOWER",
-          });
+        await supabase.from("notifications").insert({
+          user_id: profile.id,
+          body: notificationBody,
+          type: "FOLLOWER",
+        });
 
       if (notificationError) {
         console.error("Error inserting notification:", notificationError);
