@@ -15,6 +15,7 @@ export default function ProfileLayout() {
           title: "Locations",
         }}
       />
+      <Stack.Screen name="[location]" />
     </Stack>
   );
 }

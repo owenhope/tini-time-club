@@ -15,7 +15,6 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
-import LikesSlider from "@/components/LikeSlider";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 
@@ -29,7 +28,7 @@ const formatRelativeDate = (dateString: string): string => {
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
   const diffWeeks = Math.floor(diffDays / 7);
-  const diffMonths = Math.floor(diffDays / 30); // approximate
+  const diffMonths = Math.floor(diffDays / 30);
   if (diffMinutes < 60) {
     return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
   } else if (diffHours < 24) {
@@ -54,11 +53,23 @@ interface ReviewProfile {
   username: string;
 }
 
+interface ReviewLocation {
+  name: string;
+  address?: string;
+}
+
 interface ReviewItemProps {
-  review: Review & { profile?: ReviewProfile; user_id?: string };
+  review: Review & {
+    profile?: ReviewProfile;
+    user_id?: string;
+    id: string;
+    location?: ReviewLocation;
+  };
   aspectRatio: number;
   onDelete?: () => void;
   canDelete: boolean;
+  // Callback to show likes slider from Home.
+  onShowLikes: (reviewId: string) => void;
 }
 
 export default function ReviewItem({
@@ -66,6 +77,7 @@ export default function ReviewItem({
   aspectRatio,
   canDelete,
   onDelete,
+  onShowLikes,
 }: ReviewItemProps) {
   const { profile } = useProfile();
 
@@ -80,7 +92,6 @@ export default function ReviewItem({
 
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
-  const [showLikesSlider, setShowLikesSlider] = useState(false);
 
   const lastTapRef = useRef<number>(0);
   const DOUBLE_TAP_DELAY = 300;
@@ -217,7 +228,7 @@ export default function ReviewItem({
                 color={hasLiked ? "red" : "#000"}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowLikesSlider(true)}>
+            <TouchableOpacity onPress={() => onShowLikes(review.id)}>
               <Text style={styles.likesCount}>{likesCount} likes</Text>
             </TouchableOpacity>
           </View>
@@ -235,12 +246,6 @@ export default function ReviewItem({
           </Text>
         </View>
       </Pressable>
-      {showLikesSlider && (
-        <LikesSlider
-          reviewId={review.id.toString()}
-          onClose={() => setShowLikesSlider(false)}
-        />
-      )}
     </>
   );
 }

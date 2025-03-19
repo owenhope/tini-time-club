@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Animated,
   StyleSheet,
   Dimensions,
+  PanResponder,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
 
@@ -21,6 +20,7 @@ interface LikesSliderProps {
 export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
   const [likesUsers, setLikesUsers] = useState<any[]>([]);
   const [showContent, setShowContent] = useState(false);
+  // Start off-screen (below the visible area)
   const sliderAnim = useRef(new Animated.Value(screenHeight)).current;
 
   const fetchLikesUsers = async () => {
@@ -50,7 +50,6 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
 
   useEffect(() => {
     const openSlider = async () => {
-      // Hide content while animating.
       setShowContent(false);
       await fetchLikesUsers();
       Animated.timing(sliderAnim, {
@@ -64,8 +63,8 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
     openSlider();
   }, [sliderAnim, reviewId]);
 
+  // Animate the slider down and then trigger onClose.
   const closeSlider = () => {
-    // Hide content immediately on close.
     setShowContent(false);
     Animated.timing(sliderAnim, {
       toValue: screenHeight,
@@ -73,22 +72,48 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
       useNativeDriver: true,
     }).start(() => {
       onClose();
+      sliderAnim.setValue(screenHeight);
     });
   };
 
+  // PanResponder to enable swipe down to dismiss.
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dy) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          sliderAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          closeSlider();
+        } else {
+          Animated.timing(sliderAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Animated.View
+      {...panResponder.panHandlers}
       style={[styles.slider, { transform: [{ translateY: sliderAnim }] }]}
     >
       {showContent && (
         <>
+          {/* A drag indicator to signal swipe-down functionality */}
           <View style={styles.sliderHeader}>
-            <Text style={styles.sliderTitle}>Likes</Text>
-            <TouchableOpacity onPress={closeSlider}>
-              <Ionicons name="close" size={24} color="#000" />
-            </TouchableOpacity>
+            <View style={styles.dragIndicatorContainer}>
+              <View style={styles.dragIndicator} />
+            </View>
           </View>
-          {/* Render the ProfileList component without a search bar */}
+          {/* Render the list of profiles that liked the review */}
           <ProfileList profiles={likesUsers} enableSearch={false} />
         </>
       )}
@@ -114,10 +139,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   sliderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+  },
+  dragIndicatorContainer: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#ccc",
   },
   sliderTitle: {
     fontSize: 18,

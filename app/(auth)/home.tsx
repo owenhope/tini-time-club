@@ -15,6 +15,7 @@ import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem"; // Adjust the import path as needed
 import { Review } from "@/types/types"; // Adjust the import path as needed
 import { useFocusEffect } from "@react-navigation/native";
+import LikeSlider from "@/components/LikeSlider";
 
 const pageSize = 10;
 
@@ -30,6 +31,9 @@ function Home() {
   // State for the username modal
   const [showUsernameModal, setShowUsernameModal] = useState<boolean>(false);
   const [newUsername, setNewUsername] = useState<string>("");
+
+  // State for the likes slider (controlled from Home)
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
   // When the profile changes, load reviews and check username.
   useEffect(() => {
@@ -198,6 +202,8 @@ function Home() {
             aspectRatio={9 / 16}
             onDelete={() => {}}
             canDelete={false}
+            // Pass the onShowLikes callback to trigger the slider in Home.
+            onShowLikes={(id: string) => setSelectedReviewId(id)}
           />
         )}
         keyExtractor={(item) => item.id.toString()}
@@ -209,12 +215,7 @@ function Home() {
         ListFooterComponent={renderFooter}
       />
 
-      <Modal
-        visible={showUsernameModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {}}
-      >
+      <Modal visible={showUsernameModal} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Welcome to Tini Time Club</Text>
@@ -235,6 +236,14 @@ function Home() {
           </View>
         </View>
       </Modal>
+
+      {/* Render the LikesSlider on Home */}
+      {selectedReviewId && (
+        <LikeSlider
+          reviewId={selectedReviewId}
+          onClose={() => setSelectedReviewId(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
