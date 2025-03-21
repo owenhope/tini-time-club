@@ -94,10 +94,9 @@ export default function ProfileList({
     setUpdatingFollowIds((prev) => prev.filter((id) => id !== targetProfileId));
   };
 
-  // If search is enabled, filter profiles locally.
   const displayedProfiles = enableSearch
     ? profiles.filter((p) =>
-        p.username.toLowerCase().includes(searchQuery.toLowerCase())
+        (p.username || "").toLowerCase().includes(searchQuery.toLowerCase())
       )
     : profiles;
 
