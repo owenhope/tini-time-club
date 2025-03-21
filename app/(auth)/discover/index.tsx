@@ -1,20 +1,13 @@
 import React, { useEffect, useState, createRef, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  Animated,
-  TouchableOpacity,
-  Text,
-  PanResponder,
-} from "react-native";
+import { View, StyleSheet, Animated, PanResponder } from "react-native";
 import MapView from "react-native-map-clustering";
 import { Region, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import Search from "@/components/map/search";
-import { router } from "expo-router";
 import LocationPin from "@/components/map/locationPin";
+import LocationDetails from "@/components/map/locationDetails";
 
 const INITIAL_REGION: Region = {
   latitude: 37.33,
@@ -23,51 +16,7 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 2,
 };
 
-const BOTTOM_SHEET_HEIGHT = 250;
-
-function BottomLocationDetails({ loc, onView }) {
-  return (
-    <View style={styles.bottomSheetContent}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerText}>{loc.name}</Text>
-          <Text style={styles.reviewText}>
-            ({loc.total_ratings ?? 0} reviews)
-          </Text>
-        </View>
-        <View style={styles.ratingCircle}>
-          <Text style={styles.circleText}>
-            {loc.rating ? loc.rating.toFixed(1) : "N/A"}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.detailsContainer}>
-        <View style={styles.circleContainer}>
-          <View style={styles.tasteCircle}>
-            <Text style={styles.circleText}>
-              {loc.taste_avg ? loc.taste_avg.toFixed(1) : "N/A"}
-            </Text>
-          </View>
-          <Text style={styles.circleLabel}>Taste</Text>
-        </View>
-        <View style={styles.circleContainer}>
-          <View style={styles.presentationCircle}>
-            <Text style={styles.circleText}>
-              {loc.presentation_avg ? loc.presentation_avg.toFixed(1) : "N/A"}
-            </Text>
-          </View>
-          <Text style={styles.circleLabel}>Presentation</Text>
-        </View>
-      </View>
-      {loc.address && <Text style={styles.addressText}>{loc.address}</Text>}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity onPress={onView}>
-          <Text style={styles.viewLink}>View</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
+const BOTTOM_SHEET_HEIGHT = 300;
 
 function Map() {
   const [currentLocation, setCurrentLocation] = useState<{
@@ -95,13 +44,11 @@ function Map() {
     });
   };
 
-  // PanResponder for the bottom sheet swipe down gesture.
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) =>
         Math.abs(gestureState.dy) > 10,
       onPanResponderMove: (evt, gestureState) => {
-        // Only update if dragging downward.
         if (gestureState.dy > 0) {
           bottomSheetAnim.setValue(gestureState.dy);
         }
@@ -166,7 +113,6 @@ function Map() {
     fetchLocations();
   }, [region]);
 
-  // When a marker is pressed, animate the bottom sheet up.
   const handleMarkerPress = (index: number) => {
     setSelectedMarker(index);
     Animated.timing(bottomSheetAnim, {
@@ -204,7 +150,6 @@ function Map() {
         region={region}
         onRegionChangeComplete={onRegionChangeComplete}
         customMapStyle={mapStyle}
-        // Dismiss bottom sheet when tapping on the map.
         onPress={() => {
           if (selectedMarker !== null) {
             handleDismiss();
@@ -222,7 +167,6 @@ function Map() {
           </Marker>
         ))}
       </MapView>
-      {/* Bottom sheet with PanResponder for swipe down */}
       <Animated.View
         {...panResponder.panHandlers}
         style={[
@@ -230,18 +174,11 @@ function Map() {
           { transform: [{ translateY: bottomSheetAnim }] },
         ]}
       >
-        {/* Drag indicator */}
         <View style={styles.dragIndicatorContainer}>
           <View style={styles.dragIndicator} />
         </View>
         {selectedMarker !== null && locations[selectedMarker] && (
-          <BottomLocationDetails
-            loc={locations[selectedMarker]}
-            onView={() => {
-              console.log("View location:", locations[selectedMarker].id);
-              // router.push(`/discover/${locations[selectedMarker].id}`);
-            }}
-          />
+          <LocationDetails loc={locations[selectedMarker]} />
         )}
       </Animated.View>
     </View>
@@ -312,95 +249,6 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: "#ccc",
-  },
-  bottomSheetContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingBottom: 6,
-    marginBottom: 6,
-  },
-  headerLeft: {
-    flexDirection: "column",
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  reviewText: {
-    fontSize: 12,
-    color: "#555",
-  },
-  ratingCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#2E86AB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  detailsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginVertical: 6,
-  },
-  circleContainer: {
-    alignItems: "center",
-    width: 60,
-  },
-  tasteCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "olive",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  presentationCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "silver",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleLabel: {
-    fontSize: 10,
-    color: "#333",
-    marginTop: 2,
-    textAlign: "center",
-  },
-  addressText: {
-    fontSize: 12,
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  actionContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    marginTop: 6,
-  },
-  viewLink: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2E86AB",
-    textDecorationLine: "underline",
   },
 });
 

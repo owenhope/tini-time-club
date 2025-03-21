@@ -51,7 +51,6 @@ const LocationInput = ({ control }: { control: any }) => {
             fetchDetails={true}
             minLength={2}
             onPress={(data, details = null) => {
-              console.log(details);
               const locationData = {
                 name: data.structured_formatting.main_text,
                 address: data.description,

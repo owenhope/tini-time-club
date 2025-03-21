@@ -6,7 +6,6 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useLocalSearchParams, useNavigation } from "expo-router";
@@ -17,6 +16,13 @@ import { Review } from "@/types/types";
 interface LocationType {
   id: string;
   name: string;
+  address?: string;
+  lat?: number;
+  lon?: number;
+  rating?: number; // overall rating
+  taste_avg?: number;
+  presentation_avg?: number;
+  total_ratings?: number;
 }
 
 const LocationProfile = () => {
@@ -30,11 +36,12 @@ const LocationProfile = () => {
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
-  const locationParam = params.location as string | undefined; // expects ?location=LocationName
+  // expects ?location=<locationId>
+  const locationIdParam = params.location as string | undefined;
 
   const displayLocation = selectedLocation;
 
-  // Update header with custom title
+  // Update header with custom title and back button
   useEffect(() => {
     if (displayLocation) {
       navigation.setOptions({
@@ -51,25 +58,24 @@ const LocationProfile = () => {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
         ),
-        // Removed headerRight since following is not applicable for locations
       });
     }
   }, [displayLocation, navigation]);
 
-  // Fetch the selected location when locationParam is provided
+  // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
     setLocationImage(null);
-    if (locationParam) {
-      fetchSelectedLocation(locationParam);
+    if (locationIdParam) {
+      fetchSelectedLocation(locationIdParam);
     }
-  }, [locationParam]);
+  }, [locationIdParam]);
 
-  const fetchSelectedLocation = async (locationName: string) => {
+  const fetchSelectedLocation = async (locationId: string) => {
     try {
       const { data, error } = await supabase
-        .from("locations")
+        .from("location_ratings")
         .select("*")
-        .eq("name", locationName)
+        .eq("id", locationId)
         .single();
       if (error) {
         console.error("Error fetching selected location:", error);
@@ -142,7 +148,7 @@ const LocationProfile = () => {
           profile:profiles!reviews_user_id_fkey1(username)
           `
         )
-        .eq("location_id", locationId)
+        .eq("location", locationId)
         .eq("state", 1)
         .order("inserted_at", { ascending: false });
       if (error) {
@@ -177,6 +183,7 @@ const LocationProfile = () => {
       aspectRatio={1}
       canDelete={false}
       onDelete={undefined}
+      onShowLikes={() => {}}
     />
   );
 
@@ -200,32 +207,63 @@ const LocationProfile = () => {
 
   return (
     <View style={styles.container}>
-      {/* Location Header */}
       <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-          {locationImage ? (
-            <Image style={styles.avatar} source={{ uri: locationImage }} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {displayLocation?.name
-                  ? displayLocation.name.charAt(0).toUpperCase()
-                  : "?"}
-              </Text>
+        <View style={{ flexDirection: "row" }}>
+          <View style={styles.avatarContainer}>
+            {locationImage ? (
+              <Image style={styles.avatar} source={{ uri: locationImage }} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>
+                  {displayLocation?.name
+                    ? displayLocation.name.charAt(0).toUpperCase()
+                    : "?"}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.reviewCount}>
+              {displayLocation?.total_ratings ?? 0} Reviews
+            </Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.ratingsHeaderContainer}>
+              <View style={styles.ratingContainer}>
+                <View style={styles.ratingCircle}>
+                  <Text style={styles.circleText}>
+                    {displayLocation?.rating
+                      ? displayLocation.rating.toFixed(1)
+                      : "N/A"}
+                  </Text>
+                </View>
+                <Text style={styles.circleLabel}>Overall</Text>
+              </View>
+              <View style={styles.ratingContainer}>
+                <View style={styles.tasteCircle}>
+                  <Text style={styles.circleText}>
+                    {displayLocation?.taste_avg
+                      ? displayLocation.taste_avg.toFixed(1)
+                      : "N/A"}
+                  </Text>
+                </View>
+                <Text style={styles.circleLabel}>Taste</Text>
+              </View>
+              <View style={styles.ratingContainer}>
+                <View style={styles.presentationCircle}>
+                  <Text style={styles.circleText}>
+                    {displayLocation?.presentation_avg
+                      ? displayLocation.presentation_avg.toFixed(1)
+                      : "N/A"}
+                  </Text>
+                </View>
+                <Text style={styles.circleLabel}>Presentation</Text>
+              </View>
             </View>
-          )}
-        </View>
-        <View style={styles.userInfoContainer}>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{locationReviews.length}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
+            <View>
+              <Text>{displayLocation?.address}</Text>
             </View>
-            {/* You can optionally add more stat items if your location data includes extra metrics */}
           </View>
         </View>
       </View>
-      {/* Reviews List */}
       <View style={styles.reviewsContainer}>
         <FlatList
           data={locationReviews}
@@ -250,9 +288,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileHeader: {
-    flexDirection: "row",
     padding: 16,
-    alignItems: "center",
   },
   avatarContainer: {
     marginRight: 16,
@@ -277,24 +313,51 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-  userInfoContainer: {
+  ratingsHeaderContainer: {
     flex: 1,
-  },
-  statsContainer: {
     flexDirection: "row",
-    marginTop: 8,
-  },
-  statItem: {
     alignItems: "center",
-    marginRight: 16,
+    justifyContent: "space-around",
   },
-  statNumber: {
+  ratingContainer: {
+    alignItems: "center",
+  },
+  ratingCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#2E86AB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tasteCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "olive",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  presentationCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "silver",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  circleText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#fff",
   },
-  statLabel: {
-    fontSize: 14,
-    color: "#777",
+  circleLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  reviewCount: {
+    fontSize: 16,
   },
   reviewsContainer: {
     flex: 1,
