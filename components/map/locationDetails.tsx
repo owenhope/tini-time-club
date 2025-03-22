@@ -11,7 +11,9 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
     <View style={styles.bottomSheetContent}>
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerText}>{loc.name}</Text>
+          <Link href={`/discover/${loc.id}`} asChild>
+            <Text style={styles.headerText}>{loc.name}</Text>
+          </Link>
           <Text style={styles.reviewText}>
             ({loc.total_ratings ?? 0} reviews)
           </Text>
@@ -40,13 +42,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
             </Text>
           </View>
         </View>
-      </View>
-      <View style={styles.actionContainer}>
-        <Link href={`/discover/${loc.id}`} asChild>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>View {loc.name}</Text>
-          </TouchableOpacity>
-        </Link>
       </View>
     </View>
   );

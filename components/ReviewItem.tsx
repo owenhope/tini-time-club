@@ -54,6 +54,7 @@ interface ReviewProfile {
 }
 
 interface ReviewLocation {
+  id: string;
   name: string;
   address?: string;
 }
@@ -68,7 +69,6 @@ interface ReviewItemProps {
   aspectRatio: number;
   onDelete?: () => void;
   canDelete: boolean;
-  // Callback to show likes slider from Home.
   onShowLikes: (reviewId: string) => void;
 }
 
@@ -198,9 +198,11 @@ export default function ReviewItem({
             </Animated.View>
           )}
           <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-            <Text style={styles.locationName}>
-              {review.location ? review.location.name : "N/A"}
-            </Text>
+            <Link href={`/discover/${review.location.id}`} asChild>
+              <Text style={styles.locationName}>
+                {review.location ? review.location.name : "N/A"}
+              </Text>
+            </Link>
             {review.location?.address && (
               <Text style={styles.locationAddress}>
                 {review.location.address}

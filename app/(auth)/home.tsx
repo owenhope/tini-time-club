@@ -100,7 +100,7 @@ function Home() {
         inserted_at,
         taste,
         presentation,
-        location:locations!reviews_location_fkey(name, address),
+        location:locations!reviews_location_fkey(id, name, address),
         spirit:spirit(name),
         type:type(name),
         user_id,
