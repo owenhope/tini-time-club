@@ -1,4 +1,3 @@
-// app/_layout.tsx (or whichever file holds your Tabs layout)
 import React, { useEffect } from "react";
 import { Alert, Platform } from "react-native";
 import { Tabs } from "expo-router";
@@ -9,7 +8,6 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/utils/supabase";
 
-// Configure the notification handler to show alerts, play sounds, and set badges.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -19,7 +17,6 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync(): Promise<string | null> {
-  // On Android, create a notification channel
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -30,29 +27,14 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   }
 
   if (Device.isDevice) {
-    // Check for existing permissions
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== "granted") {
-      Alert.alert(
-        "Push Notifications",
-        "Permission not granted to receive push notifications!"
-      );
-      return null;
-    }
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
-    if (!projectId) {
-      Alert.alert("Push Notifications", "Project ID not found");
-      return null;
-    }
     try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+      if (!projectId) {
+        Alert.alert("Push Notifications", "Project ID not found");
+        return null;
+      }
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId,
       });
@@ -72,46 +54,43 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
 const LayoutContent = () => {
   const { profile } = useProfile();
-  // Build the profile href using the username if it exists
   const profileHref = profile?.username
     ? `/profile/${profile.username}`
     : "/profile";
 
-  // When a user logs in and if they don't already have a push token saved,
-  // ask them if they want to enable push notifications.
   useEffect(() => {
-    if (profile && !profile.expo_push_token) {
-      Alert.alert(
-        "Push Notifications",
-        "Do you want to receive push notifications?",
-        [
-          {
-            text: "No",
-            onPress: () => {},
-            style: "cancel",
-          },
-          {
-            text: "Yes",
-            onPress: async () => {
-              const token = await registerForPushNotificationsAsync();
-              if (token) {
-                const { error } = await supabase
-                  .from("profiles")
-                  .update({ expo_push_token: token })
-                  .eq("id", profile.id);
-                if (error) {
-                  Alert.alert(
-                    "Push Notifications",
-                    "Failed to update push token"
-                  );
-                }
-              }
-            },
-          },
-        ],
-        { cancelable: false }
-      );
-    }
+    const updatePushToken = async () => {
+      if (profile) {
+        // Check for existing permissions.
+        const { status: existingStatus } =
+          await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== "granted") {
+          const { status: newStatus } =
+            await Notifications.requestPermissionsAsync();
+          finalStatus = newStatus;
+        }
+        if (finalStatus === "granted") {
+          const token = await registerForPushNotificationsAsync();
+          if (token && profile.expo_push_token !== token) {
+            const { error } = await supabase
+              .from("profiles")
+              .update({ expo_push_token: token })
+              .eq("id", profile.id);
+            if (error) {
+              Alert.alert("Push Notifications", "Failed to update push token");
+            }
+          }
+        } else {
+          Alert.alert(
+            "Push Notifications",
+            "Push notification permission not granted. Existing token remains unchanged."
+          );
+        }
+      }
+    };
+
+    updatePushToken();
   }, [profile]);
 
   return (
