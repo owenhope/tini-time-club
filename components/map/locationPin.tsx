@@ -1,6 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
+import { View, Text, StyleSheet } from "react-native";
 
 interface LocationPinProps {
   loc: {
@@ -19,28 +18,33 @@ interface LocationPinProps {
 function LocationPin({ loc }: LocationPinProps) {
   if (loc.lat == null || loc.long == null) return null;
   return (
-    <View>
-      <View style={styles.markerContainer}>
+    <View style={styles.container}>
+      <View style={styles.pinWrapper}>
         <View style={styles.pin}>
           <Text style={styles.pinText}>
             {loc.rating ? loc.rating.toFixed(1) : "N/A"}
           </Text>
           <View style={styles.pinPointer} />
         </View>
-        <Text style={styles.restaurantName}>{loc.name}</Text>
       </View>
     </View>
   );
 }
 
 const PIN_COLOR = "#2E86AB";
+
 const styles = StyleSheet.create({
-  markerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  container: {
+    position: "relative",
+    width: 40, // same width as the pinWrapper
+    height: 40, // same height as the pinWrapper
+  },
+  pinWrapper: {
+    width: 40,
+    height: 40,
   },
   pin: {
-    position: "relative",
+    position: "absolute",
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -67,12 +71,6 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     borderTopColor: PIN_COLOR,
-  },
-  restaurantName: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFF",
   },
 });
 
