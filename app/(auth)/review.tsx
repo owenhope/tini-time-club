@@ -307,7 +307,7 @@ export default function App() {
       setPhoto(null);
       setIsReviewing(false);
       reset();
-      router.navigate(`/profile/${profile.username}`);
+      router.navigate(`/profile`);
     } catch (error) {
       setSubmissionMessage("An error occurred.");
       setIsSubmitting(false);
