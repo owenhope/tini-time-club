@@ -10,7 +10,7 @@ const OWNER = "hopemediahouse";
 const APP_NAME = "Tini Time Club";
 const BUNDLE_IDENTIFIER = "com.ohope.tinitimeclub";
 const PACKAGE_NAME = "com.ohope.tinitimeclub";
-const ICON = "./assets/images/icon.png";
+const ICON = "./assets/images/icon-purple.png";
 const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
 
