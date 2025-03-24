@@ -41,12 +41,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
-      // Optional: You can also include a splash configuration here if desired.
-      splash: {
-        image: "./assets/images/icon.png",
-        resizeMode: "contain",
-        backgroundColor: "#ffffff",
-      },
     },
     android: {
       adaptiveIcon: {
