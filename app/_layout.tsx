@@ -1,11 +1,16 @@
-import { supabase } from "@/utils/supabase";
+import React, { useEffect, useState } from "react";
 import { Session } from "@supabase/supabase-js";
 import { Slot, useRouter, useSegments } from "expo-router";
-import { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { supabase } from "@/utils/supabase";
+
+// Prevent the splash screen from auto-hiding.
+SplashScreen.preventAutoHideAsync();
 
 const InitialLayout = () => {
   const [session, setSession] = useState<Session | null>(null);
-  const [initialized, setInitialized] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const segments = useSegments();
   const router = useRouter();
@@ -33,17 +38,29 @@ const InitialLayout = () => {
   useEffect(() => {
     if (!initialized) return;
 
-    const inAuthGroup = segments[0] === "(auth)";
-    if (session && !inAuthGroup) {
-      router.replace("/(auth)/home");
-    } else if (!session && !inAuthGroup) {
-      router.replace("/");
-    }
-  }, [session, initialized]);
+    const navigate = async () => {
+      const inAuthGroup = segments[0] === "(auth)";
 
-  if (!initialized) {
-    return null;
-  }
+      if (session) {
+        if (!inAuthGroup || segments[1] !== "home") {
+          await router.replace("/(auth)/home");
+        }
+      } else {
+        if (inAuthGroup) {
+          await router.replace("/");
+        }
+      }
+      setReady(true);
+    };
+
+    navigate();
+  }, [session, initialized, segments, router]);
+
+  useEffect(() => {
+    if (ready) {
+      SplashScreen.hideAsync();
+    }
+  }, [ready]);
 
   return <Slot />;
 };

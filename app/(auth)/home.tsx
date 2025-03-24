@@ -21,12 +21,15 @@ const pageSize = 10;
 
 function Home() {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false); // used for initial load
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [page, setPage] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const { profile } = useProfile();
+
+  // New state to track whether the first load has completed.
+  const [firstLoadDone, setFirstLoadDone] = useState<boolean>(false);
 
   // State for the username modal
   const [showUsernameModal, setShowUsernameModal] = useState<boolean>(false);
@@ -75,6 +78,8 @@ function Home() {
     const nextPage = refresh ? 0 : page + 1;
 
     if (refresh) {
+      // For the initial load, set loading to true only when there are no reviews yet.
+      if (page === 0) setLoading(true);
       setRefreshing(true);
     } else {
       if (!hasMore) return;
@@ -115,6 +120,9 @@ function Home() {
     if (error) {
       console.error("Error fetching reviews:", error);
       refresh ? setRefreshing(false) : setLoadingMore(false);
+      setLoading(false);
+      // Even if error, mark first load as done to avoid an infinite spinner.
+      if (!firstLoadDone) setFirstLoadDone(true);
       return;
     }
 
@@ -133,13 +141,17 @@ function Home() {
 
     if (refresh) {
       setReviews(reviewsWithFullUrl);
+      setLoading(false);
+      setRefreshing(false);
+      // Mark the first load as done.
+      if (!firstLoadDone) setFirstLoadDone(true);
     } else {
       setReviews((prev) => [...prev, ...reviewsWithFullUrl]);
+      setLoadingMore(false);
     }
 
     setPage(nextPage);
     setHasMore(reviewsWithFullUrl.length === pageSize);
-    refresh ? setRefreshing(false) : setLoadingMore(false);
   };
 
   const onRefresh = useCallback(() => {
@@ -165,14 +177,14 @@ function Home() {
       console.error("Error updating username:", error);
       // Optionally, display an error message to the user.
     } else {
-      // Optionally, update your profile context here.
       setShowUsernameModal(false);
     }
   };
 
   // Render component for empty state.
   const renderEmpty = () => {
-    if (loading || refreshing) {
+    // Only display the empty state if the initial load has completed and we're not currently refreshing.
+    if (!firstLoadDone || loading || refreshing) {
       return null;
     }
     return (
@@ -182,18 +194,17 @@ function Home() {
     );
   };
 
-  const renderFooter = () => {
-    if (!loadingMore) return null;
+  // If the initial load hasn't finished, display a full-screen spinner.
+  if (!firstLoadDone) {
     return (
-      <View style={styles.footer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
       </View>
     );
-  };
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {loading && !refreshing && <Text>Loading...</Text>}
       <FlatList
         data={reviews}
         renderItem={({ item }) => (
@@ -201,7 +212,6 @@ function Home() {
             review={item}
             aspectRatio={9 / 16}
             onDelete={() => {}}
-            canDelete={false}
             // Pass the onShowLikes callback to trigger the slider in Home.
             onShowLikes={(id: string) => setSelectedReviewId(id)}
           />
@@ -248,9 +258,22 @@ function Home() {
   );
 }
 
+const renderFooter = () => {
+  return (
+    <View style={styles.footer}>
+      <ActivityIndicator size="large" color="#000" />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   footer: {
     paddingVertical: 20,
