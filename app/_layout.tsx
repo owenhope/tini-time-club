@@ -29,6 +29,7 @@ const InitialLayout = () => {
     initialize();
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      hasNavigated.current = false;
       setSession(session);
     });
 

@@ -146,7 +146,6 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen name="[username]" options={{ href: null }} />
-      <Tabs.Screen name="todos" options={{ href: null }} />
     </Tabs>
   );
 };
