@@ -4,6 +4,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "../utils/supabase";
+import { customEvent } from "vexo-analytics";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -27,9 +28,10 @@ export function GoogleAuth() {
               provider: "google",
               token: userInfo.data.idToken,
             });
-            console.log(error, data);
+            customEvent("sign_in", {
+              provider: "google",
+            });
           } else {
-            console.log("error");
             throw new Error("no ID token present!");
           }
         } catch (error: any) {

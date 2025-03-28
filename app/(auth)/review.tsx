@@ -19,7 +19,7 @@ import AnimatedReanimated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { BlurView } from "@react-native-community/blur";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
@@ -34,6 +34,7 @@ import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
+import { customEvent } from "vexo-analytics";
 
 export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -261,6 +262,16 @@ export default function App() {
       .select("id")
       .single();
 
+    try {
+      customEvent("location_created", {
+        created_by: userId,
+        name: location.name,
+        address: location.address,
+      });
+    } catch (error) {
+      console.error("Error sending event:", error);
+    }
+
     if (locationError) {
       console.error("Error creating location:", locationError);
       return null;
@@ -302,6 +313,16 @@ export default function App() {
 
       setSubmissionMessage("Review created successfully!");
       setIsSubmitting(false);
+
+      try {
+        customEvent("review_created", {
+          created_by: profile.id,
+          username: profile.username,
+          reviewId: reviewId,
+        });
+      } catch (error) {
+        console.error("Error sending event:", error);
+      }
 
       setStep(0);
       setPhoto(null);

@@ -2,6 +2,7 @@ import React from "react";
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
+import { customEvent } from "vexo-analytics";
 
 export function AppleAuth() {
   if (Platform.OS === "ios")
@@ -31,7 +32,9 @@ export function AppleAuth() {
                 token: credential.identityToken,
               });
               if (!error) {
-                // User is signed in.
+                customEvent("sign_in", {
+                  provider: "apple",
+                });
               }
             } else {
               throw new Error("No identityToken.");

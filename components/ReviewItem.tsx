@@ -17,6 +17,7 @@ import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
+import { customEvent } from "vexo-analytics";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -138,6 +139,15 @@ export default function ReviewItem({
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setHasLiked(false);
         setLikesCount((prev) => prev - 1);
+        try {
+          customEvent("unlike", {
+            created_by: profile.id,
+            username: profile.username,
+            review_id: review.id,
+          });
+        } catch (error) {
+          console.error("Error sending event:", error);
+        }
       }
     } else {
       const { error } = await supabase
@@ -165,6 +175,15 @@ export default function ReviewItem({
           if (notificationError) {
             console.error("Error creating notification:", notificationError);
           }
+        }
+        try {
+          customEvent("like", {
+            created_by: profile.id,
+            username: profile.username,
+            review_id: review.id,
+          });
+        } catch (error) {
+          console.error("Error sending event:", error);
         }
       }
     }

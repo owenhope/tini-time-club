@@ -3,9 +3,10 @@ import { Session } from "@supabase/supabase-js";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { supabase } from "@/utils/supabase";
-
+import { vexo } from "vexo-analytics";
 // Prevent the splash screen from auto-hiding.
 SplashScreen.preventAutoHideAsync();
+vexo(process.env.EXPO_PUBLIC_VEXO_API_KEY);
 
 const InitialLayout = () => {
   const [session, setSession] = useState<Session | null>(null);

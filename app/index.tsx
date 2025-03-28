@@ -11,7 +11,8 @@ import {
 import { supabase } from "@/utils/supabase";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
-
+import { vexo, customEvent } from "vexo-analytics";
+vexo(process.env.EXPO_PUBLIC_VEXO_API_KEY);
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +34,9 @@ const Login = () => {
         err.message || "An unexpected error occurred"
       );
     } finally {
+      customEvent("sign_in", {
+        email: email,
+      });
       setLoading(false);
     }
   }, [email, password]);
@@ -58,6 +62,9 @@ const Login = () => {
         err.message || "An unexpected error occurred"
       );
     } finally {
+      customEvent("sign_up", {
+        email: email,
+      });
       setLoading(false);
     }
   }, [email, password]);

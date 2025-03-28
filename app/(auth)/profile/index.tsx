@@ -18,7 +18,9 @@ import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
+import LikeSlider from "@/components/LikeSlider"; // Adjust the path as necessary
 import { useRouter, useNavigation } from "expo-router";
+import { customEvent } from "vexo-analytics";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -34,6 +36,8 @@ const Profile = () => {
 
   // Always display the logged in user's profile.
   const displayProfile = profile;
+  // State for the likes slider (controlled from Home)
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
   // Fetch follower and following counts for the logged in user.
   useEffect(() => {
@@ -203,6 +207,13 @@ const Profile = () => {
         if (error) {
           console.error("Error uploading avatar:", error);
         } else {
+          try {
+            customEvent("uploaded_avatar", {
+              user_id: User.id,
+            });
+          } catch (error) {
+            console.error("Error sending event:", error);
+          }
           console.log("Avatar uploaded successfully");
         }
       } catch (err) {
@@ -216,6 +227,13 @@ const Profile = () => {
     if (error) {
       console.error("Error logging out:", error);
     } else {
+      try {
+        customEvent("log_out", {
+          user_id: profile?.id,
+        });
+      } catch (error) {
+        console.error("Error sending event:", error);
+      }
       router.navigate("/");
     }
   };
@@ -256,6 +274,7 @@ const Profile = () => {
       aspectRatio={1}
       canDelete={true}
       onDelete={() => confirmDeleteReview(item.id)}
+      onShowLikes={(id: string) => setSelectedReviewId(id)}
     />
   );
 
@@ -330,6 +349,13 @@ const Profile = () => {
           refreshing={loadingReviews}
         />
       </View>
+      {/* Render the LikesSlider on Home */}
+      {selectedReviewId && (
+        <LikeSlider
+          reviewId={selectedReviewId}
+          onClose={() => setSelectedReviewId(null)}
+        />
+      )}
     </View>
   );
 };
