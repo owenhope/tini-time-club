@@ -3,8 +3,10 @@ import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
 import { customEvent } from "vexo-analytics";
+import { useRouter } from "expo-router";
 
 export function AppleAuth() {
+  const router = useRouter();
   if (Platform.OS === "ios")
     return (
       <AppleAuthentication.AppleAuthenticationButton
@@ -36,6 +38,7 @@ export function AppleAuth() {
                   provider: "apple",
                 });
               }
+              router.replace("/(auth)/home");
             } else {
               throw new Error("No identityToken.");
             }

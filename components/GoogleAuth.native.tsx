@@ -5,6 +5,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "../utils/supabase";
 import { customEvent } from "vexo-analytics";
+import { useRouter } from "expo-router";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -14,7 +15,7 @@ export function GoogleAuth() {
     iosClientId:
       "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
   });
-
+  const router = useRouter();
   return (
     <GoogleSigninButton
       size={GoogleSigninButton.Size.Standard}
@@ -31,6 +32,7 @@ export function GoogleAuth() {
             customEvent("sign_in", {
               provider: "google",
             });
+            router.replace("/(auth)/home");
           } else {
             throw new Error("no ID token present!");
           }

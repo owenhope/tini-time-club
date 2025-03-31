@@ -7,7 +7,9 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/utils/supabase";
+import * as SplashScreen from "expo-splash-screen";
 
+// Notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -35,10 +37,8 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
         Alert.alert("Push Notifications", "Project ID not found");
         return null;
       }
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-      return tokenData.data;
+      const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+      return data;
     } catch (error) {
       Alert.alert("Push Notifications", `Error getting push token: ${error}`);
       return null;
@@ -54,38 +54,32 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
 const LayoutContent = () => {
   const { profile } = useProfile();
-  const profileHref = profile?.username
-    ? `/profile/${profile.username}`
-    : "/profile";
+
+  // Show nothing until profile is loaded
+  if (!profile) return null;
+
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const updatePushToken = async () => {
-      if (profile) {
-        // Check for existing permissions.
-        const { status: existingStatus } =
-          await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== "granted") {
-          const { status: newStatus } =
-            await Notifications.requestPermissionsAsync();
-          finalStatus = newStatus;
-        }
-        if (finalStatus === "granted") {
-          const token = await registerForPushNotificationsAsync();
-          if (token && profile.expo_push_token !== token) {
-            const { error } = await supabase
-              .from("profiles")
-              .update({ expo_push_token: token })
-              .eq("id", profile.id);
-            if (error) {
-              Alert.alert("Push Notifications", "Failed to update push token");
-            }
-          }
-        } else {
-          Alert.alert(
-            "Push Notifications",
-            "Push notification permission not granted. Existing token remains unchanged."
-          );
+      const { status } = await Notifications.getPermissionsAsync();
+      let finalStatus = status;
+
+      if (status !== "granted") {
+        const permissionResponse =
+          await Notifications.requestPermissionsAsync();
+        finalStatus = permissionResponse.status;
+      }
+
+      if (finalStatus === "granted") {
+        const token = await registerForPushNotificationsAsync();
+        if (token && profile.expo_push_token !== token) {
+          await supabase
+            .from("profiles")
+            .update({ expo_push_token: token })
+            .eq("id", profile.id);
         }
       }
     };
