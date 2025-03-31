@@ -222,7 +222,6 @@ function Home() {
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
       />
 
       <Modal visible={showUsernameModal} transparent animationType="slide">
@@ -257,14 +256,6 @@ function Home() {
     </SafeAreaView>
   );
 }
-
-const renderFooter = () => {
-  return (
-    <View style={styles.footer}>
-      <ActivityIndicator size="large" color="#000" />
-    </View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {

@@ -35,6 +35,7 @@ import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
 import { customEvent } from "vexo-analytics";
+import { NOTIFICATION_TYPES } from "@/utils/consts";
 
 export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -299,16 +300,15 @@ export default function App() {
         return;
       }
 
-      const notificationBody = `${profile.username} has posted a new review from ${watchedValues.location.name}`;
-      const { data: notificationData, error: notificationError } =
+      try {
+        const notificationBody = `${profile.username} has posted a new review from ${watchedValues.location.name}`;
         await supabase.from("notifications").insert({
           user_id: profile.id,
           body: notificationBody,
-          type: "FOLLOWER",
+          type: NOTIFICATION_TYPES.FOLLOWERS,
         });
-
-      if (notificationError) {
-        console.error("Error inserting notification:", notificationError);
+      } catch (error) {
+        console.error("Error inserting notification:", error);
       }
 
       setSubmissionMessage("Review created successfully!");
