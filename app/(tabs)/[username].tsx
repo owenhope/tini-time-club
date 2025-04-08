@@ -18,13 +18,13 @@ import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 interface ProfileType {
   id: string;
   username: string;
+  avatar_url?: string | null;
 }
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
-  const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
     null
   );
@@ -166,48 +166,18 @@ const Profile = () => {
       if (error) {
         console.error("Error fetching selected profile:", error);
       } else {
+        if (data.avatar_url) {
+          const { data: avatarUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(data.avatar_url);
+          setAvatar(avatarUrlData?.publicUrl ?? null);
+        } else {
+          setAvatar(null);
+        }
         setSelectedProfile(data);
       }
     } catch (err) {
       console.error("Unexpected error fetching profile:", err);
-    }
-  };
-
-  const loadUserAvatar = async (userId?: string) => {
-    setLoadingAvatar(true);
-    if (!userId) {
-      setLoadingAvatar(false);
-      return;
-    }
-    try {
-      const { data, error } = await supabase.storage
-        .from("avatars")
-        .download(`${userId}/avatar.jpg`);
-      if (error) {
-        console.log(error);
-        if (
-          error.message.includes("400") ||
-          error.message.includes("The resource was not found")
-        ) {
-          setAvatar(null);
-          setLoadingAvatar(false);
-          return;
-        }
-        console.error("Avatar download error:", error);
-        setLoadingAvatar(false);
-        return;
-      }
-      if (data) {
-        const fr = new FileReader();
-        fr.readAsDataURL(data);
-        fr.onload = () => {
-          setAvatar(fr.result as string);
-          setLoadingAvatar(false);
-        };
-      }
-    } catch (err) {
-      console.error("Unexpected error while downloading avatar:", err);
-      setLoadingAvatar(false);
     }
   };
 
@@ -263,8 +233,6 @@ const Profile = () => {
     }
   };
 
-  // Delete review functionality has been removed for other users.
-  // Thus, reviews cannot be deleted on this screen.
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
@@ -287,7 +255,6 @@ const Profile = () => {
 
   useEffect(() => {
     if (displayProfile && displayProfile.id) {
-      loadUserAvatar(displayProfile.id);
       loadUserReviews(displayProfile.id);
     }
   }, [displayProfile]);

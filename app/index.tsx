@@ -11,8 +11,7 @@ import {
 import { supabase } from "@/utils/supabase";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
-import { vexo, customEvent } from "vexo-analytics";
-vexo(process.env.EXPO_PUBLIC_VEXO_API_KEY);
+import { customEvent } from "vexo-analytics";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

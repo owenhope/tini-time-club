@@ -1,45 +1,55 @@
 import { useEffect, useState } from "react";
-import { Slot, usePathname, useRouter } from "expo-router";
+import { Stack, useRouter, usePathname } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import * as SplashScreen from "expo-splash-screen";
-import { InteractionManager } from "react-native";
+import { View, Text } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
-const InitialLayout = () => {
+export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
-  const [appReady, setAppReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      InteractionManager.runAfterInteractions(() => {
-        if (session && pathname !== "/(auth)/home") {
-          setTimeout(() => router.replace("/(auth)/home"), 100);
+        if (session && pathname !== "/(tabs)/home") {
+          setTimeout(() => router.replace("/(tabs)/home"), 0); // 👈 defer until after mount
+          return;
         } else if (!session && pathname !== "/") {
-          setTimeout(() => router.replace("/"), 100);
+          setTimeout(() => router.replace("/"), 0); // 👈 defer until after mount
+          return;
         }
-
-        setAppReady(true);
-      });
+      } catch (error) {
+        console.error("[RootLayout] ❌ Error during session check:", error);
+      } finally {
+        await SplashScreen.hideAsync();
+        setReady(true);
+      }
     };
 
     init();
   }, []);
 
-  useEffect(() => {
-    if (appReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [appReady]);
+  if (!ready) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "black",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "white" }}>Loading...</Text>
+      </View>
+    );
+  }
 
-  if (!appReady) return null;
-
-  return <Slot />;
-};
-
-export default InitialLayout;
+  return <Stack screenOptions={{ headerShown: false }} />;
+}

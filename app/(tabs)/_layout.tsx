@@ -7,9 +7,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/utils/supabase";
-import * as SplashScreen from "expo-splash-screen";
 
-// Notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -55,12 +53,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 const LayoutContent = () => {
   const { profile } = useProfile();
 
-  // Show nothing until profile is loaded
   if (!profile) return null;
-
-  useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
-  }, []);
 
   useEffect(() => {
     const updatePushToken = async () => {
@@ -108,12 +101,12 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen
-        name="discover"
+        name="locations"
         options={{
-          title: "Discover",
+          title: "Locations",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="search-outline" size={size} color={color} />
+            <Ionicons name="map-outline" size={size} color={color} />
           ),
           popToTopOnBlur: true,
         }}
@@ -125,6 +118,15 @@ const LayoutContent = () => {
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="camera-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="discover"
+        options={{
+          title: "Discover",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />

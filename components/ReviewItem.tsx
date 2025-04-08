@@ -217,7 +217,7 @@ export default function ReviewItem({
             </Animated.View>
           )}
           <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-            <Link href={`/discover/${review.location.id}`} asChild>
+            <Link href={`/locations/${review.location.id}`} asChild>
               <Text style={styles.locationName}>
                 {review.location ? review.location.name : "N/A"}
               </Text>

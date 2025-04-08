@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 
 interface LocationDetailsProps {
   loc: any;
@@ -11,13 +11,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
     <View style={styles.bottomSheetContent}>
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>
-          <Link href={`/discover/${loc.id}`} asChild>
-            <Text style={styles.headerText}>{loc.name}</Text>
+          <Link href={`/locations/${loc.id}`} asChild>
+            <Text style={styles.headerText} numberOfLines={1}>
+              {loc.name}
+            </Text>
           </Link>
           <Text style={styles.reviewText}>
             ({loc.total_ratings ?? 0} reviews)
           </Text>
-          {loc.address && <Text style={styles.addressText}>{loc.address}</Text>}
         </View>
         <View style={styles.ratingCircle}>
           <Text style={styles.circleText}>
@@ -64,14 +65,15 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flexDirection: "column",
+    flex: 3,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
   },
   addressText: {
-    fontSize: 16,
+    fontSize: 14,
     marginTop: 4,
   },
   reviewText: {
@@ -80,15 +82,15 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   ratingCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#2E86AB",
     justifyContent: "center",
     alignItems: "center",
   },
   circleText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#fff",
   },
@@ -109,17 +111,17 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   tasteCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "olive",
     justifyContent: "center",
     alignItems: "center",
   },
   presentationCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "silver",
     justifyContent: "center",
     alignItems: "center",

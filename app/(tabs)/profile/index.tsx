@@ -18,56 +18,58 @@ import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
-import LikeSlider from "@/components/LikeSlider"; // Adjust the path as necessary
+import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation } from "expo-router";
 import { customEvent } from "vexo-analytics";
+import { v4 as uuidv4 } from "uuid";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
-  const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
-
   const { profile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
-
-  // Always display the logged in user's profile.
-  const displayProfile = profile;
-  // State for the likes slider (controlled from Home)
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
-  // Fetch follower and following counts for the logged in user.
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      try {
+        const publicUrl = supabase.storage
+          .from("avatars")
+          .getPublicUrl(profile.avatar_url).data.publicUrl;
+        setAvatar(publicUrl);
+        console.log("Avatar URL:", publicUrl);
+      } catch (error) {
+        console.error("Error fetching avatar URL:", error);
+      }
+    } else {
+      setAvatar(null);
+    }
+  }, [profile?.avatar_url]);
+
   useEffect(() => {
     const fetchFollowCounts = async () => {
-      if (profile) {
-        const { count: followers, error: errorFollowers } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("following_id", profile.id);
-        if (errorFollowers) {
-          console.error("Error fetching followers count:", errorFollowers);
-        } else {
-          setFollowersCount(followers || 0);
-        }
-        const { count: following, error: errorFollowing } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("follower_id", profile.id);
-        if (errorFollowing) {
-          console.error("Error fetching following count:", errorFollowing);
-        } else {
-          setFollowingCount(following || 0);
-        }
-      }
+      if (!profile) return;
+      const { count: followers } = await supabase
+        .from("followers")
+        .select("*", { count: "exact", head: true })
+        .eq("following_id", profile.id);
+
+      const { count: following } = await supabase
+        .from("followers")
+        .select("*", { count: "exact", head: true })
+        .eq("follower_id", profile.id);
+
+      setFollowersCount(followers || 0);
+      setFollowingCount(following || 0);
     };
 
     fetchFollowCounts();
   }, [profile]);
 
-  // Update header with the user's username and a logout button.
   useEffect(() => {
     if (profile) {
       navigation.setOptions({
@@ -84,43 +86,6 @@ const Profile = () => {
       });
     }
   }, [profile, navigation]);
-
-  const loadUserAvatar = async (userId?: string) => {
-    setLoadingAvatar(true);
-    if (!userId) {
-      setLoadingAvatar(false);
-      return;
-    }
-    try {
-      const { data, error } = await supabase.storage
-        .from("avatars")
-        .download(`${userId}/avatar.jpg`);
-      if (error) {
-        if (
-          error.message.includes("400") ||
-          error.message.includes("The resource was not found")
-        ) {
-          setAvatar(null);
-          setLoadingAvatar(false);
-          return;
-        }
-        console.error("Avatar download error:", error);
-        setLoadingAvatar(false);
-        return;
-      }
-      if (data) {
-        const fr = new FileReader();
-        fr.readAsDataURL(data);
-        fr.onload = () => {
-          setAvatar(fr.result as string);
-          setLoadingAvatar(false);
-        };
-      }
-    } catch (err) {
-      console.error("Unexpected error while downloading avatar:", err);
-      setLoadingAvatar(false);
-    }
-  };
 
   const loadUserReviews = async (userId?: string) => {
     setLoadingReviews(true);
@@ -143,19 +108,14 @@ const Profile = () => {
           spirit:spirit(name),
           type:type(name),
           profile:profiles!reviews_user_id_fkey1(username)
-          `
+        `
         )
         .eq("user_id", userId)
         .eq("state", 1)
         .order("inserted_at", { ascending: false });
-      if (error) {
-        console.error("Error fetching user reviews:", error);
-        setLoadingReviews(false);
-        return;
-      }
 
       const reviewsWithFullUrl = await Promise.all(
-        reviewsData.map(async (review: any) => {
+        (reviewsData || []).map(async (review: any) => {
           const { data, error } = await supabase.storage
             .from("review_images")
             .createSignedUrl(review.image_url, 60);
@@ -166,58 +126,84 @@ const Profile = () => {
           return { ...review, image_url: data.signedUrl };
         })
       );
+
       setUserReviews(reviewsWithFullUrl);
-      setLoadingReviews(false);
     } catch (err) {
-      console.error("Unexpected error while fetching user reviews:", err);
+      console.error("Unexpected error while fetching reviews:", err);
+    } finally {
       setLoadingReviews(false);
     }
   };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 1, // raw image quality
     });
+
     if (!result.canceled) {
       const originalUri = result.assets[0].uri;
+
+      // 👉 Resize and compress
       const manipResult = await ImageManipulator.manipulateAsync(
         originalUri,
-        [],
+        [{ resize: { width: 512 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
+
       const compressedUri = manipResult.uri;
-      setAvatar(compressedUri);
 
       const {
         data: { user: User },
       } = await supabase.auth.getUser();
       if (!User) return;
+
       const base64 = await FileSystem.readAsStringAsync(compressedUri, {
         encoding: "base64",
       });
-      const filePath = `${User.id}/avatar.jpg`;
+
+      const uniqueId = uuidv4();
+      const filePath = `${User.id}/avatar_${uniqueId}.jpg`;
       const contentType = "image/jpeg";
+
       try {
-        const { error } = await supabase.storage
+        // Upload new avatar
+        const { error: uploadError } = await supabase.storage
           .from("avatars")
-          .upload(filePath, decode(base64), { contentType, upsert: true });
-        if (error) {
-          console.error("Error uploading avatar:", error);
-        } else {
-          try {
-            customEvent("uploaded_avatar", {
-              user_id: User.id,
-            });
-          } catch (error) {
-            console.error("Error sending event:", error);
-          }
-          console.log("Avatar uploaded successfully");
+          .upload(filePath, decode(base64), { contentType });
+
+        if (uploadError) {
+          console.error("Error uploading avatar:", uploadError);
+          return;
         }
+
+        // Delete old avatar if one exists
+        if (profile?.avatar_url && profile.avatar_url !== filePath) {
+          await supabase.storage.from("avatars").remove([profile.avatar_url]);
+        }
+
+        // Get public URL
+        const { data: urlData, error: urlError } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+
+        if (urlError || !urlData?.publicUrl) {
+          console.error("Error getting avatar public URL:", urlError);
+          return;
+        }
+
+        // Update profile with new avatar path
+        await supabase
+          .from("profiles")
+          .update({ avatar_url: filePath })
+          .eq("id", User.id);
+
+        setAvatar(urlData.publicUrl);
+        customEvent("uploaded_avatar", { user_id: User.id });
       } catch (err) {
-        console.error("Unexpected error while uploading avatar:", err);
+        console.error("Unexpected error uploading avatar:", err);
       }
     }
   };
@@ -227,13 +213,7 @@ const Profile = () => {
     if (error) {
       console.error("Error logging out:", error);
     } else {
-      try {
-        customEvent("log_out", {
-          user_id: profile?.id,
-        });
-      } catch (error) {
-        console.error("Error sending event:", error);
-      }
+      customEvent("log_out", { user_id: profile?.id });
       router.navigate("/");
     }
   };
@@ -243,12 +223,8 @@ const Profile = () => {
       .from("reviews")
       .update({ state: 3 })
       .eq("id", id);
-    if (error) {
-      console.error("Error updating review state:", error);
-    } else {
-      setUserReviews((prevReviews) =>
-        prevReviews.filter((review) => review.id !== id)
-      );
+    if (!error) {
+      setUserReviews((prev) => prev.filter((r) => r.id !== id));
     }
   };
 
@@ -263,8 +239,7 @@ const Profile = () => {
           style: "destructive",
           onPress: () => deleteReview(id),
         },
-      ],
-      { cancelable: true }
+      ]
     );
   };
 
@@ -278,27 +253,18 @@ const Profile = () => {
     />
   );
 
-  const renderEmpty = () => {
-    if (userReviews.length === 0) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No reviews available.</Text>
-        </View>
-      );
-    }
-    return null;
-  };
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>No reviews available.</Text>
+    </View>
+  );
 
   useEffect(() => {
-    if (profile && profile.id) {
-      loadUserAvatar(profile.id);
-      loadUserReviews(profile.id);
-    }
+    if (profile?.id) loadUserReviews(profile.id);
   }, [profile]);
 
   return (
     <View style={styles.container}>
-      {/* Profile Content */}
       <View style={styles.profileHeader}>
         <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
           {avatar ? (
@@ -306,9 +272,7 @@ const Profile = () => {
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitial}>
-                {profile?.username
-                  ? profile.username.charAt(0).toUpperCase()
-                  : "?"}
+                {profile?.username?.charAt(0).toUpperCase() || "?"}
               </Text>
             </View>
           )}
@@ -333,7 +297,7 @@ const Profile = () => {
           </View>
         </Pressable>
       </View>
-      {/* Reviews List */}
+
       <View style={styles.reviewsContainer}>
         <FlatList
           data={userReviews}
@@ -341,15 +305,11 @@ const Profile = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
-          onRefresh={() => {
-            if (profile && profile.id) {
-              loadUserReviews(profile.id);
-            }
-          }}
+          onRefresh={() => profile?.id && loadUserReviews(profile.id)}
           refreshing={loadingReviews}
         />
       </View>
-      {/* Render the LikesSlider on Home */}
+
       {selectedReviewId && (
         <LikeSlider
           reviewId={selectedReviewId}
@@ -361,9 +321,7 @@ const Profile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   profileHeader: {
     flexDirection: "row",
     padding: 16,
@@ -392,49 +350,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-  userInfoContainer: {
-    flex: 1,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    marginTop: 8,
-  },
-  statItem: {
-    alignItems: "center",
-    marginRight: 16,
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  statLabel: {
-    fontSize: 14,
-    color: "#777",
-  },
-  reviewsContainer: {
-    flex: 1,
-  },
-  gridContent: {
-    paddingBottom: 20,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#555",
-  },
-  headerButton: {
-    marginRight: 10,
-  },
-  headerTitleContainer: {
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
+  userInfoContainer: { flex: 1 },
+  statsContainer: { flexDirection: "row", marginTop: 8 },
+  statItem: { alignItems: "center", marginRight: 16 },
+  statNumber: { fontSize: 16, fontWeight: "bold" },
+  statLabel: { fontSize: 14, color: "#777" },
+  reviewsContainer: { flex: 1 },
+  gridContent: { paddingBottom: 20 },
+  emptyContainer: { alignItems: "center", padding: 20 },
+  emptyText: { fontSize: 16, color: "#555" },
+  headerButton: { marginRight: 10 },
+  headerTitleContainer: { alignItems: "center" },
+  headerTitle: { fontSize: 20, fontWeight: "bold" },
 });
 
 export default Profile;
