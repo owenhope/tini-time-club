@@ -125,9 +125,11 @@ const LayoutContent = () => {
         name="discover"
         options={{
           title: "Discover",
+          headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="search-outline" size={size} color={color} />
           ),
+          popToTopOnBlur: true,
         }}
       />
       <Tabs.Screen

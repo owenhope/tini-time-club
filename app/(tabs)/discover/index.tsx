@@ -74,8 +74,8 @@ export default function SearchScreen() {
             onPress={() => {
               Keyboard.dismiss();
               type === "user"
-                ? router.navigate(`/${item.username}`)
-                : router.navigate(`/locations/${item.id}`);
+                ? router.navigate(`/discover/users/${item.username}`)
+                : router.navigate(`/discover/locations/${item.id}`);
             }}
           >
             {type === "user" ? (

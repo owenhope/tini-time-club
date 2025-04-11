@@ -21,7 +21,7 @@ interface ProfileType {
   avatar_url?: string | null;
 }
 
-const Profile = () => {
+const UserProfile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
@@ -401,4 +401,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Profile;
+export default UserProfile;

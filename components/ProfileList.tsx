@@ -124,7 +124,7 @@ export default function ProfileList({
     const isFollowing = followedIds.includes(item.id);
     const isUpdating = updatingFollowIds.includes(item.id);
     return (
-      <Link href={`/${item.username}`} asChild>
+      <Link href={`/home/users/${item.username}`} asChild>
         <TouchableOpacity style={styles.itemContainer}>
           <Text style={styles.username}>{item.username}</Text>
           {!isSelf && (

@@ -18,6 +18,7 @@ import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { customEvent } from "vexo-analytics";
+import { stripNameFromAddress } from "@/utils/helpers";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -217,14 +218,17 @@ export default function ReviewItem({
             </Animated.View>
           )}
           <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-            <Link href={`/locations/${review.location.id}`} asChild>
+            <Link href={`/home/locations/${review.location.id}`} asChild>
               <Text style={styles.locationName}>
                 {review.location ? review.location.name : "N/A"}
               </Text>
             </Link>
             {review.location?.address && (
               <Text style={styles.locationAddress}>
-                {review.location.address}
+                {stripNameFromAddress(
+                  review.location.name,
+                  review.location.address
+                )}
               </Text>
             )}
             <Text style={styles.spiritText}>
@@ -254,7 +258,7 @@ export default function ReviewItem({
             </TouchableOpacity>
           </View>
 
-          <Link href={`/${review.profile?.username}`} asChild>
+          <Link href={`/home/users/${review.profile?.username}`} asChild>
             <TouchableOpacity style={styles.captionContainer}>
               <Text style={styles.username}>
                 {review.profile?.username || "Unknown"}
@@ -300,8 +304,9 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontWeight: "bold",
-    fontSize: 24,
+    fontSize: 22,
     color: "#fff",
+    marginBottom: 4,
   },
   locationAddress: {
     fontSize: 14,

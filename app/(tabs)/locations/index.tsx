@@ -15,6 +15,7 @@ import Search from "@/components/map/search";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { customEvent } from "vexo-analytics";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const INITIAL_REGION: Region = {
   latitude: 37.33,
@@ -146,57 +147,59 @@ function Map() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <Search
-        ref={searchRef}
-        onPlaceSelected={handlePlaceSelected}
-        currentLocation={currentLocation}
-      />
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        mapType="standard"
-        clusteringEnabled={true}
-        style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
-        showsUserLocation
-        showsMyLocationButton
-        rotateEnabled={false}
-        region={region}
-        onRegionChangeComplete={onRegionChangeComplete}
-        customMapStyle={mapStyle}
-        onPress={() => {
-          Keyboard.dismiss();
-          if (selectedMarker !== null) {
-            handleDismiss();
-          }
-        }}
-      >
-        {locations.map((loc, index) => (
-          <Marker
-            key={index}
-            coordinate={{ latitude: loc.lat, longitude: loc.long }}
-            anchor={{ x: 0.5, y: 1 }}
-            onPress={() => handleMarkerPress(index)}
-          >
-            <LocationPin loc={loc} />
-          </Marker>
-        ))}
-      </MapView>
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[
-          styles.bottomSheet,
-          { transform: [{ translateY: bottomSheetAnim }] },
-        ]}
-      >
-        <View style={styles.dragIndicatorContainer}>
-          <View style={styles.dragIndicator} />
-        </View>
-        {selectedMarker !== null && locations[selectedMarker] && (
-          <LocationDetails loc={locations[selectedMarker]} />
-        )}
-      </Animated.View>
-    </View>
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <View style={{ flex: 1 }}>
+        <Search
+          ref={searchRef}
+          onPlaceSelected={handlePlaceSelected}
+          currentLocation={currentLocation}
+        />
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          mapType="standard"
+          clusteringEnabled={true}
+          style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
+          showsUserLocation
+          showsMyLocationButton
+          rotateEnabled={false}
+          region={region}
+          onRegionChangeComplete={onRegionChangeComplete}
+          customMapStyle={mapStyle}
+          onPress={() => {
+            Keyboard.dismiss();
+            if (selectedMarker !== null) {
+              handleDismiss();
+            }
+          }}
+        >
+          {locations.map((loc, index) => (
+            <Marker
+              key={index}
+              coordinate={{ latitude: loc.lat, longitude: loc.long }}
+              anchor={{ x: 0.5, y: 1 }}
+              onPress={() => handleMarkerPress(index)}
+            >
+              <LocationPin loc={loc} />
+            </Marker>
+          ))}
+        </MapView>
+        <Animated.View
+          {...panResponder.panHandlers}
+          style={[
+            styles.bottomSheet,
+            { transform: [{ translateY: bottomSheetAnim }] },
+          ]}
+        >
+          <View style={styles.dragIndicatorContainer}>
+            <View style={styles.dragIndicator} />
+          </View>
+          {selectedMarker !== null && locations[selectedMarker] && (
+            <LocationDetails loc={locations[selectedMarker]} />
+          )}
+        </Animated.View>
+      </View>
+    </SafeAreaView>
   );
 }
 
