@@ -20,7 +20,6 @@ import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation } from "expo-router";
-import { customEvent } from "vexo-analytics";
 import { v4 as uuidv4 } from "uuid";
 
 const Profile = () => {
@@ -201,7 +200,6 @@ const Profile = () => {
           .eq("id", User.id);
 
         setAvatar(urlData.publicUrl);
-        customEvent("uploaded_avatar", { user_id: User.id });
       } catch (err) {
         console.error("Unexpected error uploading avatar:", err);
       }
@@ -213,7 +211,6 @@ const Profile = () => {
     if (error) {
       console.error("Error logging out:", error);
     } else {
-      customEvent("log_out", { user_id: profile?.id });
       router.navigate("/");
     }
   };

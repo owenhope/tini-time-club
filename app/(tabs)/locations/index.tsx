@@ -14,7 +14,6 @@ import { supabase } from "@/utils/supabase";
 import Search from "@/components/map/search";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
-import { customEvent } from "vexo-analytics";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const INITIAL_REGION: Region = {
@@ -128,13 +127,6 @@ function Map() {
       duration: 300,
       useNativeDriver: true,
     }).start();
-    try {
-      customEvent("pressed_location_marker", {
-        location: locations[index].name,
-      });
-    } catch (error) {
-      console.error("Error sending event:", error);
-    }
   };
 
   const handlePlaceSelected = (newRegion: Region) => {

@@ -4,7 +4,6 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "../utils/supabase";
-import { customEvent } from "vexo-analytics";
 import { useRouter } from "expo-router";
 
 export function GoogleAuth() {
@@ -29,10 +28,7 @@ export function GoogleAuth() {
               provider: "google",
               token: userInfo.data.idToken,
             });
-            customEvent("sign_in", {
-              provider: "google",
-            });
-            router.replace("/(auth)/home");
+            router.replace("/(tabs)/home");
           } else {
             throw new Error("no ID token present!");
           }

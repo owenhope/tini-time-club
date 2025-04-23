@@ -2,7 +2,6 @@ import React from "react";
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
-import { customEvent } from "vexo-analytics";
 import { useRouter } from "expo-router";
 
 export function AppleAuth() {
@@ -33,12 +32,7 @@ export function AppleAuth() {
                 provider: "apple",
                 token: credential.identityToken,
               });
-              if (!error) {
-                customEvent("sign_in", {
-                  provider: "apple",
-                });
-              }
-              router.replace("/(auth)/home");
+              router.replace("/(tabs)/home");
             } else {
               throw new Error("No identityToken.");
             }

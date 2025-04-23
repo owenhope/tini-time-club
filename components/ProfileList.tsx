@@ -11,7 +11,6 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
-import { customEvent } from "vexo-analytics";
 export interface ProfileType {
   id: string;
   username: string;
@@ -68,15 +67,6 @@ export default function ProfileList({
         console.error("Error unfollowing:", error);
       } else {
         setFollowedIds((prev) => prev.filter((id) => id !== targetProfileId));
-        try {
-          customEvent("unfollow", {
-            created_by: profile.id,
-            username: profile.username,
-            follower: targetProfileId,
-          });
-        } catch (error) {
-          console.error("Error sending event:", error);
-        }
       }
     } else {
       const { error } = await supabase
@@ -99,15 +89,6 @@ export default function ProfileList({
           }
         }
         setFollowedIds((prev) => [...prev, targetProfileId]);
-        try {
-          customEvent("follow", {
-            created_by: profile.id,
-            username: profile.username,
-            follower: targetProfileId,
-          });
-        } catch (error) {
-          console.error("Error sending event:", error);
-        }
       }
     }
     setUpdatingFollowIds((prev) => prev.filter((id) => id !== targetProfileId));

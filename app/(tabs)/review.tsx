@@ -34,7 +34,6 @@ import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
-import { customEvent } from "vexo-analytics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 
 export default function App() {
@@ -263,16 +262,6 @@ export default function App() {
       .select("id")
       .single();
 
-    try {
-      customEvent("location_created", {
-        created_by: userId,
-        name: location.name,
-        address: location.address,
-      });
-    } catch (error) {
-      console.error("Error sending event:", error);
-    }
-
     if (locationError) {
       console.error("Error creating location:", locationError);
       return null;
@@ -313,16 +302,6 @@ export default function App() {
 
       setSubmissionMessage("Review created successfully!");
       setIsSubmitting(false);
-
-      try {
-        customEvent("review_created", {
-          created_by: profile.id,
-          username: profile.username,
-          reviewId: reviewId,
-        });
-      } catch (error) {
-        console.error("Error sending event:", error);
-      }
 
       setStep(0);
       setPhoto(null);
