@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Pressable,
   Animated,
-  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
@@ -19,6 +18,7 @@ import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
+import ReportModal from "@/components/ReportModal";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -53,9 +53,6 @@ export default function ReviewItem({
   const [likesCount, setLikesCount] = useState(0);
   const [comments, setComments] = useState<any[]>([]);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [selectedInfraction, setSelectedInfraction] = useState<string | null>(
-    null
-  );
   const lastTapRef = useRef<number>(0);
   const DOUBLE_TAP_DELAY = 300;
 
@@ -158,13 +155,16 @@ export default function ReviewItem({
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
 
-        {canDelete && (
-          <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+        <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+          {canDelete && (
             <TouchableOpacity onPress={onDelete}>
               <Ionicons name="trash" size={20} color="#fff" />
             </TouchableOpacity>
-          </Animated.View>
-        )}
+          )}
+          <TouchableOpacity onPress={() => setReportModalVisible(true)}>
+            <Ionicons name="flag-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
 
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <Link href={`/home/locations/${review.location?.id}`} asChild>
@@ -219,9 +219,6 @@ export default function ReviewItem({
         >
           <Text style={styles.likesCount}>{comments.length}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setReportModalVisible(true)}>
-          <Ionicons name="flag-outline" size={28} />
-        </TouchableOpacity>
       </View>
 
         <Link href={`/home/users/${review.profile?.username}`} asChild>
@@ -259,36 +256,12 @@ export default function ReviewItem({
         </Text>
       </View>
     </Pressable>
-    <Modal
+    <ReportModal
       visible={reportModalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setReportModalVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Report Review</Text>
-          {['Spam', 'Inappropriate', 'Harassment', 'Other'].map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.optionButton}
-              onPress={() => {
-                setSelectedInfraction(option);
-                setReportModalVisible(false);
-              }}
-            >
-              <Text style={styles.optionText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setReportModalVisible(false)}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+      title="Report Review"
+      onClose={() => setReportModalVisible(false)}
+      onSelect={(option) => console.log("report pressed", option)}
+    />
   );
 }
 
@@ -301,6 +274,8 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 10,
     zIndex: 2,
+    flexDirection: "row",
+    gap: 8,
   },
   overlay: {
     position: "absolute",
@@ -352,31 +327,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 8,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  optionButton: {
-    paddingVertical: 8,
-    alignSelf: "stretch",
-  },
-  optionText: { textAlign: "center", fontSize: 16 },
-  cancelButton: {
-    marginTop: 10,
-  },
-  cancelText: { color: "#007AFF", fontSize: 16 },
 });
