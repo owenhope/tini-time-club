@@ -23,6 +23,7 @@ import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
+import ReportModal from "@/components/ReportModal";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -49,9 +50,6 @@ export default function CommentsSlider({
   const [showContent, setShowContent] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [selectedInfraction, setSelectedInfraction] = useState<string | null>(
-    null
-  );
   const sliderAnim = useRef(new Animated.Value(screenHeight)).current;
   const flatListRef = useRef<FlatList>(null);
 
@@ -306,36 +304,12 @@ export default function CommentsSlider({
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Animated.View>
-    <Modal
+    <ReportModal
       visible={reportModalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setReportModalVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Report Comment</Text>
-          {['Spam', 'Inappropriate', 'Harassment', 'Other'].map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.optionButton}
-              onPress={() => {
-                setSelectedInfraction(option);
-                setReportModalVisible(false);
-              }}
-            >
-              <Text style={styles.optionText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setReportModalVisible(false)}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+      title="Report Comment"
+      onClose={() => setReportModalVisible(false)}
+      onSelect={(option) => console.log("report pressed", option)}
+    />
   );
 }
 
