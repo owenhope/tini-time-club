@@ -92,7 +92,7 @@ function Home() {
         spirit:spirit(name),
         type:type(name),
         user_id,
-        profile:profiles!user_id(username)
+        profile:profiles!user_id(username, avatar_url)
       `
       )
       .eq("state", 1)

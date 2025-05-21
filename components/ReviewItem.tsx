@@ -48,6 +48,8 @@ export default function ReviewItem({
   onCommentDeleted,
 }: ReviewItemProps) {
   const { profile } = useProfile();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -72,6 +74,20 @@ export default function ReviewItem({
       }
     }
   }, [review._commentPatch]);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (review.profile?.avatar_url) {
+        console.log(review.profile);
+        const { data } = await supabase.storage
+          .from("avatars")
+          .getPublicUrl(review.profile.avatar_url);
+        setAvatarUrl(data?.publicUrl ?? null);
+      }
+    };
+
+    loadAvatar();
+  }, []);
 
   const fetchLikes = async () => {
     const { count } = await supabase
@@ -147,125 +163,163 @@ export default function ReviewItem({
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      onLongPress={() => animateOpacity(0)}
-      onPressOut={() => animateOpacity(1)}
-    >
-      <View style={[styles.imageContainer, { aspectRatio }]}>
-        <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
-
-        <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+    <>
+      <Pressable
+        onPress={handlePress}
+        onLongPress={() => animateOpacity(0)}
+        onPressOut={() => animateOpacity(1)}
+      >
+        <View style={styles.header}>
+          <Link href={`/home/users/${review.profile?.username}`} asChild>
+            <View style={styles.headerProfile}>
+              {avatarUrl && (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              )}
+              <Text style={styles.headerUsername}>
+                {review.profile?.username || "Unknown"}
+              </Text>
+            </View>
+          </Link>
           {canDelete && (
             <TouchableOpacity onPress={onDelete}>
-              <Ionicons name="trash" size={20} color="#fff" />
+              <Ionicons name="trash" size={20} color="#000" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setReportModalVisible(true)}>
-            <Ionicons name="flag-outline" size={20} color="#fff" />
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-          <Link href={`/home/locations/${review.location?.id}`} asChild>
-            <Text style={styles.locationName}>
-              {review.location?.name || "N/A"}
-            </Text>
-          </Link>
-          {review.location?.address && (
-            <Text style={styles.locationAddress}>
-              {stripNameFromAddress(
-                review.location.name,
-                review.location.address
-              )}
-            </Text>
+          {profile?.id !== review.user_id && (
+            <TouchableOpacity onPress={() => setReportModalVisible(true)}>
+              <Ionicons name="flag-outline" size={20} color="#000" />
+            </TouchableOpacity>
           )}
-          <Text style={styles.spiritText}>
-            Spirit: {review.spirit?.name || "N/A"}
-          </Text>
-          <Text style={styles.typeText}>
-            Type: {review.type?.name || "N/A"}
-          </Text>
-          <Text style={styles.ratingLabel}>Taste</Text>
-          <ReviewRating value={review.taste} label="taste" />
-          <Text style={styles.ratingLabel}>Presentation</Text>
-          <ReviewRating value={review.presentation} label="presentation" />
-        </Animated.View>
-      </View>
+        </View>
 
-      <View style={styles.footer}>
-        <View style={styles.actionRow}>
-          <TouchableOpacity onPress={handleToggleLike}>
-            <Ionicons
-              name={hasLiked ? "heart" : "heart-outline"}
-              size={28}
-              color={hasLiked ? "red" : "#000"}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onShowLikes(review.id)}>
-            <Text style={styles.likesCount}>{likesCount}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              onShowComments(review.id, onCommentAdded, onCommentDeleted)
-            }
-          >
-            <Ionicons name="chatbubble-outline" size={28} />
-          </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() =>
-            onShowComments(review.id, onCommentAdded, onCommentDeleted)
-          }
-        >
-          <Text style={styles.likesCount}>{comments.length}</Text>
-        </TouchableOpacity>
-      </View>
-
-        <Link href={`/home/users/${review.profile?.username}`} asChild>
-          <TouchableOpacity style={styles.captionContainer}>
-            <Text style={styles.username}>
-              {review.profile?.username || "Unknown"}
+        <View style={[styles.imageContainer, { aspectRatio }]}>
+          <Image
+            source={{ uri: review.image_url }}
+            style={styles.reviewImage}
+          />
+          <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+            <Link href={`/home/locations/${review.location?.id}`} asChild>
+              <Text style={styles.locationName}>
+                {review.location?.name || "N/A"}
+              </Text>
+            </Link>
+            {review.location?.address && (
+              <Text style={styles.locationAddress}>
+                {stripNameFromAddress(
+                  review.location.name,
+                  review.location.address
+                )}
+              </Text>
+            )}
+            <Text style={styles.spiritText}>
+              Spirit: {review.spirit?.name || "N/A"}
             </Text>
-            <Text style={styles.captionText}> {review.comment}</Text>
-          </TouchableOpacity>
-        </Link>
-
-        {comments.slice(0, 2).map((c) => (
-          <View key={c.id} style={styles.commentRow}>
-            <Text style={styles.commentUsername}>
-              {c.profile?.username || "Unknown"}:
+            <Text style={styles.typeText}>
+              Type: {review.type?.name || "N/A"}
             </Text>
-            <Text style={styles.commentText}> {c.body}</Text>
+            <Text style={styles.ratingLabel}>Taste</Text>
+            <ReviewRating value={review.taste} label="taste" />
+            <Text style={styles.ratingLabel}>Presentation</Text>
+            <ReviewRating value={review.presentation} label="presentation" />
+          </Animated.View>
+        </View>
+        <View style={styles.footer}>
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={handleToggleLike}>
+              <Ionicons
+                name={hasLiked ? "heart" : "heart-outline"}
+                size={28}
+                color={hasLiked ? "red" : "#000"}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onShowLikes(review.id)}>
+              <Text style={styles.likesCount}>{likesCount}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                onShowComments(review.id, onCommentAdded, onCommentDeleted)
+              }
+            >
+              <Ionicons name="chatbubble-outline" size={28} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                onShowComments(review.id, onCommentAdded, onCommentDeleted)
+              }
+            >
+              <Text style={styles.likesCount}>{comments.length}</Text>
+            </TouchableOpacity>
           </View>
-        ))}
 
-        {comments.length > 2 && (
-          <TouchableOpacity
-            onPress={() =>
-              onShowComments(review.id, onCommentAdded, onCommentDeleted)
-            }
-          >
-            <Text style={styles.viewAllCommentsText}>
-              View all {comments.length} comments
-            </Text>
-          </TouchableOpacity>
-        )}
+          <Link href={`/home/users/${review.profile?.username}`} asChild>
+            <TouchableOpacity style={styles.captionContainer}>
+              <Text style={styles.username}>
+                {review.profile?.username || "Unknown"}
+              </Text>
+              <Text style={styles.captionText}> {review.comment}</Text>
+            </TouchableOpacity>
+          </Link>
 
-        <Text style={styles.timestamp}>
-          {formatRelativeDate(review.inserted_at)}
-        </Text>
-      </View>
-    </Pressable>
-    <ReportModal
-      visible={reportModalVisible}
-      title="Report Review"
-      onClose={() => setReportModalVisible(false)}
-      onSelect={(option) => console.log("report pressed", option)}
-    />
+          {comments.slice(0, 2).map((c) => (
+            <View key={c.id} style={styles.commentRow}>
+              <Text style={styles.commentUsername}>
+                {c.profile?.username || "Unknown"}:
+              </Text>
+              <Text style={styles.commentText}> {c.body}</Text>
+            </View>
+          ))}
+
+          {comments.length > 2 && (
+            <TouchableOpacity
+              onPress={() =>
+                onShowComments(review.id, onCommentAdded, onCommentDeleted)
+              }
+            >
+              <Text style={styles.viewAllCommentsText}>
+                View all {comments.length} comments
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <Text style={styles.timestamp}>
+            {formatRelativeDate(review.inserted_at)}
+          </Text>
+        </View>
+      </Pressable>
+      <ReportModal
+        visible={reportModalVisible}
+        title="Report Review"
+        onClose={() => setReportModalVisible(false)}
+        onSelect={(option) => console.log("report pressed", option)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFF",
+  },
+  headerUsername: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#000",
+  },
+  headerProfile: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
   imageContainer: { width: screenWidth, position: "relative" },
   reviewImage: { width: "100%", height: "100%", resizeMode: "cover" },
   topBar: {

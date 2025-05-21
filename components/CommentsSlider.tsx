@@ -182,135 +182,138 @@ export default function CommentsSlider({
           { transform: [{ translateY: sliderAnim }] },
         ]}
       >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={[styles.slider, isFocused && styles.sliderExpanded]}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={{ flex: 1 }}>
-            {showContent && (
-              <>
-                <View style={styles.sliderHeader}>
-                  <View style={styles.dragIndicatorContainer}>
-                    <View style={styles.dragIndicator} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={[styles.slider, isFocused && styles.sliderExpanded]}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{ flex: 1 }}>
+              {showContent && (
+                <>
+                  <View style={styles.sliderHeader}>
+                    <View style={styles.dragIndicatorContainer}>
+                      <View style={styles.dragIndicator} />
+                    </View>
                   </View>
-                </View>
 
-                {comments.length === 0 ? (
-                  <View style={styles.emptyStateContainer}>
-                    <Text style={styles.emptyTitle}>LEAVE A COMMENT</Text>
-                    <Text style={styles.emptySubtitle}>
-                      Share your thoughts and be the first to join the
-                      conversation.
-                    </Text>
-                  </View>
-                ) : (
-                  <FlatList
-                    ref={flatListRef}
-                    data={comments}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => {
-                      const username = item.profile?.username || "Unknown";
-                      const relativeDate = formatRelativeDate(item.inserted_at);
-                      const isOwnComment = profile?.id === item.user_id;
-                      const avatarUrl = item.profile?.avatar_url
-                        ? supabase.storage
-                            .from("avatars")
-                            .getPublicUrl(item.profile.avatar_url).data
-                            .publicUrl
-                        : null;
+                  {comments.length === 0 ? (
+                    <View style={styles.emptyStateContainer}>
+                      <Text style={styles.emptyTitle}>LEAVE A COMMENT</Text>
+                      <Text style={styles.emptySubtitle}>
+                        Share your thoughts and be the first to join the
+                        conversation.
+                      </Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      ref={flatListRef}
+                      data={comments}
+                      keyExtractor={(item) => item.id.toString()}
+                      renderItem={({ item }) => {
+                        const username = item.profile?.username || "Unknown";
+                        const relativeDate = formatRelativeDate(
+                          item.inserted_at
+                        );
+                        const isOwnComment = profile?.id === item.user_id;
+                        const avatarUrl = item.profile?.avatar_url
+                          ? supabase.storage
+                              .from("avatars")
+                              .getPublicUrl(item.profile.avatar_url).data
+                              .publicUrl
+                          : null;
 
-                      return (
-                        <View style={styles.commentRow}>
-                          <View style={styles.commentOuter}>
-                            <View style={styles.commentInner}>
-                              {avatarUrl ? (
-                                <Image
-                                  source={{ uri: avatarUrl }}
-                                  style={styles.avatar}
-                                />
-                              ) : (
-                                <View style={styles.avatarPlaceholder}>
-                                  <Text style={styles.avatarInitial}>
-                                    {username.charAt(0).toUpperCase()}
+                        return (
+                          <View style={styles.commentRow}>
+                            <View style={styles.commentOuter}>
+                              <View style={styles.commentInner}>
+                                {avatarUrl ? (
+                                  <Image
+                                    source={{ uri: avatarUrl }}
+                                    style={styles.avatar}
+                                  />
+                                ) : (
+                                  <View style={styles.avatarPlaceholder}>
+                                    <Text style={styles.avatarInitial}>
+                                      {username.charAt(0).toUpperCase()}
+                                    </Text>
+                                  </View>
+                                )}
+                                <View style={styles.commentContent}>
+                                  <View style={styles.commentHeaderRow}>
+                                    <Text style={styles.username}>
+                                      {username}
+                                    </Text>
+                                    <Text style={styles.timestamp}>
+                                      {" "}
+                                      · {relativeDate}
+                                    </Text>
+                                  </View>
+                                  <Text style={styles.commentBody}>
+                                    {item.body}
                                   </Text>
                                 </View>
-                              )}
-                              <View style={styles.commentContent}>
-                                <View style={styles.commentHeaderRow}>
-                                  <Text style={styles.username}>
-                                    {username}
-                                  </Text>
-                                  <Text style={styles.timestamp}>
-                                    {" "}
-                                    · {relativeDate}
-                                  </Text>
-                                </View>
-                                <Text style={styles.commentBody}>
-                                  {item.body}
-                                </Text>
                               </View>
+                              {isOwnComment ? (
+                                <TouchableOpacity
+                                  onPress={() => confirmDeleteComment(item.id)}
+                                  style={styles.deleteIcon}
+                                >
+                                  <Ionicons
+                                    name="trash-outline"
+                                    size={16}
+                                    color="#888"
+                                  />
+                                </TouchableOpacity>
+                              ) : (
+                                <TouchableOpacity
+                                  onPress={() => setReportModalVisible(true)}
+                                  style={styles.deleteIcon}
+                                >
+                                  <Ionicons
+                                    name="flag-outline"
+                                    size={16}
+                                    color="#888"
+                                  />
+                                </TouchableOpacity>
+                              )}
                             </View>
-                            {isOwnComment ? (
-                              <TouchableOpacity
-                                onPress={() => confirmDeleteComment(item.id)}
-                                style={styles.deleteIcon}
-                              >
-                                <Ionicons
-                                  name="trash-outline"
-                                  size={16}
-                                  color="#888"
-                                />
-                              </TouchableOpacity>
-                            ) : (
-                              <TouchableOpacity
-                                onPress={() => setReportModalVisible(true)}
-                                style={styles.deleteIcon}
-                              >
-                                <Ionicons
-                                  name="flag-outline"
-                                  size={16}
-                                  color="#888"
-                                />
-                              </TouchableOpacity>
-                            )}
                           </View>
-                        </View>
-                      );
-                    }}
-                    contentContainerStyle={{ paddingBottom: 100 }}
-                    keyboardShouldPersistTaps="handled"
-                  />
-                )}
+                        );
+                      }}
+                      contentContainerStyle={{ paddingBottom: 100 }}
+                      keyboardShouldPersistTaps="handled"
+                    />
+                  )}
 
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    placeholder="Add a comment..."
-                    value={commentText}
-                    onChangeText={setCommentText}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    style={styles.input}
-                    returnKeyType="send"
-                    onSubmitEditing={handleAddComment}
-                  />
-                  <TouchableOpacity onPress={handleAddComment}>
-                    <Text style={styles.sendButton}>Post</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </Animated.View>
-    <ReportModal
-      visible={reportModalVisible}
-      title="Report Comment"
-      onClose={() => setReportModalVisible(false)}
-      onSelect={(option) => console.log("report pressed", option)}
-    />
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      placeholder="Add a comment..."
+                      value={commentText}
+                      onChangeText={setCommentText}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      style={styles.input}
+                      returnKeyType="send"
+                      onSubmitEditing={handleAddComment}
+                    />
+                    <TouchableOpacity onPress={handleAddComment}>
+                      <Text style={styles.sendButton}>Post</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Animated.View>
+      <ReportModal
+        visible={reportModalVisible}
+        title="Report Comment"
+        onClose={() => setReportModalVisible(false)}
+        onSelect={(option) => console.log("report pressed", option)}
+      />
+    </>
   );
 }
 
