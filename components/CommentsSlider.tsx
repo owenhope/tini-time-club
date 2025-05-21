@@ -16,6 +16,7 @@ import {
   Platform,
   Keyboard,
   Image,
+  Modal,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -409,4 +410,26 @@ const styles = StyleSheet.create({
   },
   sendButton: { color: "#000000", fontWeight: "bold" },
   deleteIcon: { paddingLeft: 8, paddingTop: 2 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  optionButton: { paddingVertical: 8, alignSelf: "stretch" },
+  optionText: { textAlign: "center", fontSize: 16 },
+  cancelButton: { marginTop: 10 },
+  cancelText: { color: "#007AFF", fontSize: 16 },
 });
