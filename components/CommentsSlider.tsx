@@ -16,6 +16,7 @@ import {
   Platform,
   Keyboard,
   Image,
+  Modal,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -47,6 +48,10 @@ export default function CommentsSlider({
   const [commentText, setCommentText] = useState("");
   const [showContent, setShowContent] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedInfraction, setSelectedInfraction] = useState<string | null>(
+    null
+  );
   const sliderAnim = useRef(new Animated.Value(screenHeight)).current;
   const flatListRef = useRef<FlatList>(null);
 
@@ -248,13 +253,24 @@ export default function CommentsSlider({
                                 </Text>
                               </View>
                             </View>
-                            {isOwnComment && (
+                            {isOwnComment ? (
                               <TouchableOpacity
                                 onPress={() => confirmDeleteComment(item.id)}
                                 style={styles.deleteIcon}
                               >
                                 <Ionicons
                                   name="trash-outline"
+                                  size={16}
+                                  color="#888"
+                                />
+                              </TouchableOpacity>
+                            ) : (
+                              <TouchableOpacity
+                                onPress={() => setReportModalVisible(true)}
+                                style={styles.deleteIcon}
+                              >
+                                <Ionicons
+                                  name="flag-outline"
                                   size={16}
                                   color="#888"
                                 />
@@ -290,6 +306,36 @@ export default function CommentsSlider({
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Animated.View>
+    <Modal
+      visible={reportModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setReportModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Report Comment</Text>
+          {['Spam', 'Inappropriate', 'Harassment', 'Other'].map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.optionButton}
+              onPress={() => {
+                setSelectedInfraction(option);
+                setReportModalVisible(false);
+              }}
+            >
+              <Text style={styles.optionText}>{option}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => setReportModalVisible(false)}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -390,4 +436,26 @@ const styles = StyleSheet.create({
   },
   sendButton: { color: "#000000", fontWeight: "bold" },
   deleteIcon: { paddingLeft: 8, paddingTop: 2 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 8,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  optionButton: { paddingVertical: 8, alignSelf: "stretch" },
+  optionText: { textAlign: "center", fontSize: 16 },
+  cancelButton: { marginTop: 10 },
+  cancelText: { color: "#007AFF", fontSize: 16 },
 });

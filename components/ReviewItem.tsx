@@ -158,13 +158,16 @@ export default function ReviewItem({
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <Image source={{ uri: review.image_url }} style={styles.reviewImage} />
 
-        {canDelete && (
-          <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+        <Animated.View style={[styles.topBar, { opacity: overlayOpacity }]}>
+          {canDelete && (
             <TouchableOpacity onPress={onDelete}>
               <Ionicons name="trash" size={20} color="#fff" />
             </TouchableOpacity>
-          </Animated.View>
-        )}
+          )}
+          <TouchableOpacity onPress={() => setReportModalVisible(true)}>
+            <Ionicons name="flag-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
 
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <Link href={`/home/locations/${review.location?.id}`} asChild>
@@ -218,9 +221,6 @@ export default function ReviewItem({
           }
         >
           <Text style={styles.likesCount}>{comments.length}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setReportModalVisible(true)}>
-          <Ionicons name="flag-outline" size={28} />
         </TouchableOpacity>
       </View>
 
@@ -301,6 +301,8 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 10,
     zIndex: 2,
+    flexDirection: "row",
+    gap: 8,
   },
   overlay: {
     position: "absolute",
