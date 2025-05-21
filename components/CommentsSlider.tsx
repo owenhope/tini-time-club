@@ -174,13 +174,14 @@ export default function CommentsSlider({
   ).current;
 
   return (
-    <Animated.View
-      {...panResponder.panHandlers}
-      style={[
-        StyleSheet.absoluteFill,
-        { transform: [{ translateY: sliderAnim }] },
-      ]}
-    >
+    <>
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[
+          StyleSheet.absoluteFill,
+          { transform: [{ translateY: sliderAnim }] },
+        ]}
+      >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={[styles.slider, isFocused && styles.sliderExpanded]}
