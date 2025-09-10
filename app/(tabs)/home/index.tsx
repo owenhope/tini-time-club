@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
 import { Review } from "@/types/types";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
+import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 
 const pageSize = 10;
 
@@ -34,6 +35,7 @@ function Home() {
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     loadReviews(true);
@@ -47,7 +49,14 @@ function Home() {
   useFocusEffect(
     useCallback(() => {
       loadReviews(true);
-    }, [profile])
+      console.log("Setting global scrollToTop function");
+      setGlobalScrollToTop(scrollToTop);
+
+      return () => {
+        console.log("Clearing global scrollToTop function");
+        setGlobalScrollToTop(null);
+      };
+    }, [profile, scrollToTop])
   );
 
   const getFollowedUserIds = async (): Promise<string[]> => {
@@ -92,7 +101,7 @@ function Home() {
         spirit:spirit(name),
         type:type(name),
         user_id,
-        profile:profiles!user_id(username, avatar_url)
+        profile:profiles!user_id(id, username, avatar_url)
       `
       )
       .eq("state", 1)
@@ -142,6 +151,13 @@ function Home() {
     if (!loadingMore && hasMore && !refreshing) loadReviews(false);
   };
 
+  const scrollToTop = useCallback(() => {
+    console.log("scrollToTop function called");
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, []);
+
   const handleSaveUsername = async () => {
     if (!newUsername.trim()) return;
     const { error } = await supabase
@@ -171,6 +187,7 @@ function Home() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <FlatList
+        ref={flatListRef}
         data={reviews}
         renderItem={({ item }) => (
           <ReviewItem

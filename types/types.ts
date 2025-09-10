@@ -3,7 +3,7 @@ export interface NamedEntity {
 }
 
 export interface ReviewSpirit {
-  // Define the properties of ReviewSpirit here
+  name: string;
 }
 
 export interface Location {
@@ -12,16 +12,19 @@ export interface Location {
 }
 
 export interface ReviewLocation {
+  id: string;
   name: string;
   address?: string;
 }
 
 export interface ReviewType {
-  // Define the properties of ReviewType here
+  name: string;
 }
 
 export interface ReviewProfile {
-  // Define the properties of ReviewProfile here
+  id: string;
+  username: string;
+  avatar_url?: string | null;
 }
 
 export interface Review {
@@ -35,10 +38,7 @@ export interface Review {
   spirit: ReviewSpirit;
   type: ReviewType;
   user_id: string;
-  profile: {
-    id: string;
-    username: string;
-  };
+  profile: ReviewProfile;
 }
 
 

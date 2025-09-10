@@ -106,7 +106,7 @@ const Profile = () => {
           location:locations!reviews_location_fkey(name),
           spirit:spirit(name),
           type:type(name),
-          profile:profiles!reviews_user_id_fkey1(username)
+          profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
         `
         )
         .eq("user_id", userId)

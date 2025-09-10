@@ -78,7 +78,6 @@ export default function ReviewItem({
   useEffect(() => {
     const loadAvatar = async () => {
       if (review.profile?.avatar_url) {
-        console.log(review.profile);
         const { data } = await supabase.storage
           .from("avatars")
           .getPublicUrl(review.profile.avatar_url);
@@ -110,7 +109,7 @@ export default function ReviewItem({
   const fetchComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select("*, profile:profiles(id, username)")
+      .select("*, profile:profiles(id, username, avatar_url)")
       .eq("review_id", review.id)
       .order("inserted_at", { ascending: false });
     setComments(data || []);
@@ -180,16 +179,21 @@ export default function ReviewItem({
               </Text>
             </View>
           </Link>
-          {canDelete && (
-            <TouchableOpacity onPress={onDelete}>
-              <Ionicons name="trash" size={20} color="#000" />
-            </TouchableOpacity>
-          )}
-          {profile?.id !== review.user_id && (
-            <TouchableOpacity onPress={() => setReportModalVisible(true)}>
-              <Ionicons name="flag-outline" size={20} color="#000" />
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerActions}>
+            {canDelete && (
+              <TouchableOpacity onPress={onDelete} style={styles.actionButton}>
+                <Ionicons name="trash" size={20} color="#000" />
+              </TouchableOpacity>
+            )}
+            {profile?.id !== review.user_id && (
+              <TouchableOpacity
+                onPress={() => setReportModalVisible(true)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="flag-outline" size={20} color="#000" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={[styles.imageContainer, { aspectRatio }]}>
@@ -304,6 +308,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFF",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
   },
   headerUsername: {
     fontWeight: "bold",

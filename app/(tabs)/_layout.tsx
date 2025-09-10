@@ -7,6 +7,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/utils/supabase";
+import CustomTabBar from "@/components/CustomTabBar";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -89,6 +90,7 @@ const LayoutContent = () => {
         tabBarActiveTintColor: "#000",
         tabBarStyle: { backgroundColor: "#FFF" },
       }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
         name="home"
