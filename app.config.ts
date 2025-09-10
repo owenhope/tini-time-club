@@ -33,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: icon,
     scheme: scheme,
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: bundleIdentifier,
       config: {
         googleMapsApiKey: "AIzaSyAV4ioL2mbXF0mGeJsKfDUP_wnaDsQQ2nk",

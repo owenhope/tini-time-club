@@ -9,7 +9,7 @@ export function AppleAuth() {
   if (Platform.OS === "ios")
     return (
       <AppleAuthentication.AppleAuthenticationButton
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
         buttonStyle={
           AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
         }

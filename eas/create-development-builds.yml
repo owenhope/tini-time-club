@@ -1,5 +1,4 @@
 name: Create development builds
-
 on:
   push:
     branches: ["development"]

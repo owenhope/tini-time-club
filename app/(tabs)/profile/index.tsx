@@ -20,6 +20,7 @@ import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { v4 as uuidv4 } from "uuid";
 
 const Profile = () => {
@@ -259,6 +260,29 @@ const Profile = () => {
   useEffect(() => {
     if (profile?.id) loadUserReviews(profile.id);
   }, [profile]);
+
+  // Refresh follow counts when the profile screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshFollowCounts = async () => {
+        if (!profile) return;
+        const { count: followers } = await supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("following_id", profile.id);
+
+        const { count: following } = await supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("follower_id", profile.id);
+
+        setFollowersCount(followers || 0);
+        setFollowingCount(following || 0);
+      };
+
+      refreshFollowCounts();
+    }, [profile])
+  );
 
   return (
     <View style={styles.container}>

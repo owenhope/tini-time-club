@@ -9,6 +9,23 @@
       "distribution": "internal",
       "channel": "development"
     },
+
+    // Run on iOS Simulator (Xcode)
+    "ios-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "ios": { "simulator": true }
+    },
+
+    // Run on Android Emulator
+    "android-emulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "android": { "buildType": "apk" }
+    },
+
     "preview": {
       "autoIncrement": false,
       "distribution": "internal",

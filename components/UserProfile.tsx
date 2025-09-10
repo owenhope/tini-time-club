@@ -12,6 +12,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
+import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 
@@ -24,13 +25,15 @@ interface ProfileType {
 const UserProfile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+  const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
     null
   );
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
+  const [selectedCommentReview, setSelectedCommentReview] =
+    useState<Review | null>(null);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -75,6 +78,8 @@ const UserProfile = () => {
         Alert.alert("Error", "Unable to unfollow user. Please try again.");
       } else {
         setDoesFollow(false);
+        // Update follower count after unfollowing
+        setFollowersCount((prev) => Math.max(0, prev - 1));
       }
     } else {
       const { error } = await supabase
@@ -88,6 +93,8 @@ const UserProfile = () => {
         Alert.alert("Error", "Unable to follow user. Please try again.");
       } else {
         setDoesFollow(true);
+        // Update follower count after following
+        setFollowersCount((prev) => prev + 1);
       }
     }
   };
@@ -233,16 +240,54 @@ const UserProfile = () => {
     }
   };
 
+  const handleShowComments = (
+    reviewId: string,
+    onCommentAdded: any,
+    onCommentDeleted: any
+  ) => {
+    const review = userReviews.find((r) => r.id === reviewId);
+    if (review) {
+      setSelectedCommentReview(review);
+    }
+  };
+
+  const handleCommentAdded = (reviewId: string, newComment: any) => {
+    setUserReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, _commentPatch: { action: "add", data: newComment } }
+          : r
+      )
+    );
+  };
+
+  const handleCommentDeleted = (reviewId: string, commentId: number) => {
+    setUserReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, _commentPatch: { action: "delete", id: commentId } }
+          : r
+      )
+    );
+  };
+
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
       aspectRatio={1}
       canDelete={false}
       onDelete={undefined}
+      onShowLikes={() => {}} // Empty function since we don't need likes functionality here
+      onShowComments={handleShowComments}
+      onCommentAdded={handleCommentAdded}
+      onCommentDeleted={handleCommentDeleted}
     />
   );
 
   const renderEmpty = () => {
+    if (loadingReviews) {
+      return null; // Don't show empty state while loading
+    }
     if (userReviews.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -309,6 +354,15 @@ const UserProfile = () => {
           refreshing={loadingReviews}
         />
       </View>
+
+      {selectedCommentReview && (
+        <CommentsSlider
+          review={selectedCommentReview}
+          onClose={() => setSelectedCommentReview(null)}
+          onCommentAdded={handleCommentAdded}
+          onCommentDeleted={handleCommentDeleted}
+        />
+      )}
     </View>
   );
 };
@@ -380,13 +434,18 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     marginRight: 10,
+    backgroundColor: "#10B981", // Green background
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 5,
   },
   headerButtonLeft: {
     marginLeft: 5,
   },
   friendText: {
     fontSize: 16,
-    color: "#007aff",
+    color: "#fff", // White text on green background
+    fontWeight: "600",
   },
   headerTitleContainer: {
     alignItems: "center",

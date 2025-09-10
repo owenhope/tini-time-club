@@ -1,0 +1,12 @@
+name: Create iOS simulator build
+on:
+  push:
+    branches: ["development"]
+
+jobs:
+  ios_simulator_development_build:
+    name: Build iOS simulator
+    type: build
+    params:
+      platform: ios
+      profile: ios-simulator

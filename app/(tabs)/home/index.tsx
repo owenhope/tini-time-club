@@ -28,7 +28,7 @@ function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
@@ -157,10 +157,7 @@ function Home() {
 
   const handleSaveUsername = async () => {
     if (!newUsername.trim()) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username: newUsername.trim() })
-      .eq("id", profile.id);
+    const { error } = await updateProfile({ username: newUsername.trim() });
     if (!error) setShowUsernameModal(false);
   };
 
@@ -243,7 +240,7 @@ function Home() {
               style={styles.modalButton}
               onPress={handleSaveUsername}
             >
-              <Text>Save</Text>
+              <Text style={styles.modalButtonText}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -296,7 +293,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
-    backgroundColor: "#151515",
+    backgroundColor: "#fff",
     paddingVertical: 20,
     paddingHorizontal: 40,
     borderRadius: 8,
@@ -307,33 +304,38 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 12,
-    color: "#fff",
+    color: "#000",
   },
   modalSubTitle: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 12,
-    color: "#fff",
+    color: "#000",
   },
   inputField: {
     marginVertical: 4,
     height: 50,
     width: "90%",
     borderWidth: 1,
-    borderColor: "#FFF",
-    borderRadius: 4,
+    borderColor: "#10B981", // Green border like login page
+    borderRadius: 5,
     padding: 10,
-    color: "#fff",
-    backgroundColor: "#363636",
+    color: "#000",
+    backgroundColor: "#fafafa",
   },
   modalButton: {
     marginVertical: 15,
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: "#10B981", // Green background like login page
     padding: 12,
-    borderRadius: 4,
+    borderRadius: 5,
     minWidth: 100,
     fontSize: 16,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 

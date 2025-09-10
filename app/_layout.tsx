@@ -34,6 +34,25 @@ export default function RootLayout() {
     };
 
     init();
+
+    // Listen for authentication state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[RootLayout] Auth state changed:", event, !!session);
+
+      if (event === "SIGNED_IN" && session) {
+        // User just signed in, navigate to home
+        router.replace("/(tabs)/home");
+      } else if (event === "SIGNED_OUT") {
+        // User signed out, navigate to login
+        router.replace("/");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (!ready) {
