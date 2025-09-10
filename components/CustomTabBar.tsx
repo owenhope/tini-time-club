@@ -37,10 +37,6 @@ export default function CustomTabBar({
           } else if (isFocused && route.name === "home") {
             // If home tab is already focused and pressed, scroll to top
             const scrollToTop = getGlobalScrollToTop();
-            console.log(
-              "Home tab pressed while focused, scrollToTop available:",
-              !!scrollToTop
-            );
             if (scrollToTop) {
               scrollToTop();
             }

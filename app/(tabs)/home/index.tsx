@@ -49,11 +49,9 @@ function Home() {
   useFocusEffect(
     useCallback(() => {
       loadReviews(true);
-      console.log("Setting global scrollToTop function");
       setGlobalScrollToTop(scrollToTop);
 
       return () => {
-        console.log("Clearing global scrollToTop function");
         setGlobalScrollToTop(null);
       };
     }, [profile, scrollToTop])
@@ -152,7 +150,6 @@ function Home() {
   };
 
   const scrollToTop = useCallback(() => {
-    console.log("scrollToTop function called");
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
