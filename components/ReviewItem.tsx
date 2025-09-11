@@ -1,4 +1,11 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  memo,
+} from "react";
 import {
   View,
   Text,
@@ -20,7 +27,24 @@ import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
 import ReportModal from "@/components/ReportModal";
 
-const screenWidth = Dimensions.get("window").width;
+// Constants
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const DOUBLE_TAP_DELAY = 300;
+const ANIMATION_DURATION = 300;
+
+const COLORS = {
+  white: "#fff",
+  black: "#000",
+  red: "red",
+  gray: "#999",
+  lightGray: "#888",
+  overlay: "rgba(0,0,0,0.3)",
+} as const;
+
+const ICON_SIZES = {
+  small: 20,
+  medium: 28,
+} as const;
 
 interface ReviewItemProps {
   review: Review & { _commentPatch?: any };
@@ -36,264 +60,459 @@ interface ReviewItemProps {
   onCommentDeleted: (reviewId: string, commentId: number) => void;
 }
 
-export default function ReviewItem({
-  review,
-  canDelete,
-  onDelete,
-  onShowLikes,
-  onShowComments,
-  onCommentAdded,
-  onCommentDeleted,
-}: ReviewItemProps) {
-  const { profile } = useProfile();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  const overlayOpacity = useRef(new Animated.Value(1)).current;
-  const [hasLiked, setHasLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [comments, setComments] = useState<any[]>([]);
-  const [reportModalVisible, setReportModalVisible] = useState(false);
-  const lastTapRef = useRef<number>(0);
-  const DOUBLE_TAP_DELAY = 300;
-
-  useEffect(() => {
-    fetchLikes();
-    fetchComments();
-  }, [review.id]);
-
-  useEffect(() => {
-    if (review._commentPatch) {
-      if (review._commentPatch.action === "add") {
-        setComments((prev) => [...prev, review._commentPatch.data]);
-      } else if (review._commentPatch.action === "delete") {
-        setComments((prev) =>
-          prev.filter((c) => c.id !== review._commentPatch.id)
-        );
-      }
-    }
-  }, [review._commentPatch]);
+// Custom hook for avatar loading
+const useAvatar = (avatarUrl: string | null | undefined) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadAvatar = async () => {
-      if (review.profile?.avatar_url) {
+      if (!avatarUrl) {
+        setUrl(null);
+        return;
+      }
+
+      setLoading(true);
+      try {
         const { data } = await supabase.storage
           .from("avatars")
-          .getPublicUrl(review.profile.avatar_url);
-        setAvatarUrl(data?.publicUrl ?? null);
+          .getPublicUrl(avatarUrl);
+        setUrl(data?.publicUrl ?? null);
+      } catch (error) {
+        console.error("Error loading avatar:", error);
+        setUrl(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadAvatar();
+  }, [avatarUrl]);
+
+  return { url, loading };
+};
+
+// Custom hook for likes management
+const useLikes = (reviewId: string, userId: string | null) => {
+  const [hasLiked, setHasLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchLikes = useCallback(async () => {
+    try {
+      const { count } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("review_id", reviewId);
+      setLikesCount(count || 0);
+
+      if (userId) {
+        const { data } = await supabase
+          .from("likes")
+          .select("*")
+          .eq("review_id", reviewId)
+          .eq("user_id", userId)
+          .maybeSingle();
+        setHasLiked(!!data);
+      }
+    } catch (error) {
+      console.error("Error fetching likes:", error);
+    }
+  }, [reviewId, userId]);
+
+  const toggleLike = useCallback(async () => {
+    if (!userId || loading) return;
+
+    setLoading(true);
+    try {
+      if (hasLiked) {
+        await supabase
+          .from("likes")
+          .delete()
+          .eq("review_id", reviewId)
+          .eq("user_id", userId);
+        setHasLiked(false);
+        setLikesCount((prev) => prev - 1);
+      } else {
+        await supabase
+          .from("likes")
+          .upsert([{ review_id: reviewId, user_id: userId }]);
+        setHasLiked(true);
+        setLikesCount((prev) => prev + 1);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [reviewId, userId, hasLiked, loading]);
+
+  useEffect(() => {
+    fetchLikes();
+  }, [fetchLikes]);
+
+  return { hasLiked, likesCount, toggleLike, loading };
+};
+
+// Custom hook for comments management
+const useComments = (reviewId: string) => {
+  const [comments, setComments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchComments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await supabase
+        .from("comments")
+        .select("*, profile:profiles(id, username, avatar_url)")
+        .eq("review_id", reviewId)
+        .order("inserted_at", { ascending: false });
+      setComments(data || []);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [reviewId]);
+
+  const addComment = useCallback((newComment: any) => {
+    setComments((prev) => [newComment, ...prev]);
   }, []);
 
-  const fetchLikes = async () => {
-    const { count } = await supabase
-      .from("likes")
-      .select("*", { count: "exact", head: true })
-      .eq("review_id", review.id);
-    setLikesCount(count || 0);
+  const removeComment = useCallback((commentId: number) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  }, []);
 
-    if (profile) {
-      const { data } = await supabase
-        .from("likes")
-        .select("*")
-        .eq("review_id", review.id)
-        .eq("user_id", profile.id)
-        .maybeSingle();
-      setHasLiked(!!data);
-    }
-  };
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
-  const fetchComments = async () => {
-    const { data } = await supabase
-      .from("comments")
-      .select("*, profile:profiles(id, username, avatar_url)")
-      .eq("review_id", review.id)
-      .order("inserted_at", { ascending: false });
-    setComments(data || []);
-  };
+  return { comments, loading, addComment, removeComment };
+};
 
-  const handleToggleLike = async () => {
-    if (!profile) return;
-    if (hasLiked) {
-      await supabase
-        .from("likes")
-        .delete()
-        .eq("review_id", review.id)
-        .eq("user_id", profile.id);
-      setHasLiked(false);
-      setLikesCount((prev) => prev - 1);
-    } else {
-      await supabase
-        .from("likes")
-        .upsert([{ review_id: review.id, user_id: profile.id }]);
-      setHasLiked(true);
-      setLikesCount((prev) => prev + 1);
-      if (review.user_id && profile.id !== review.user_id) {
+// Reusable UI Components
+const Avatar = memo(
+  ({
+    avatarUrl,
+    username,
+  }: {
+    avatarUrl: string | null;
+    username?: string;
+  }) => {
+    const { url } = useAvatar(avatarUrl);
+
+    return (
+      <View style={styles.headerProfile}>
+        {url && <Image source={{ uri: url }} style={styles.avatar} />}
+        <Text style={styles.headerUsername}>{username || "Unknown"}</Text>
+      </View>
+    );
+  }
+);
+
+const ActionButton = memo(
+  ({
+    onPress,
+    icon,
+    color = COLORS.black,
+  }: {
+    onPress: () => void;
+    icon: string;
+    color?: string;
+  }) => (
+    <TouchableOpacity onPress={onPress} style={styles.actionButton}>
+      <Ionicons name={icon as any} size={ICON_SIZES.small} color={color} />
+    </TouchableOpacity>
+  )
+);
+
+const LikeButton = memo(
+  ({
+    hasLiked,
+    onPress,
+    disabled = false,
+  }: {
+    hasLiked: boolean;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => (
+    <TouchableOpacity onPress={onPress} disabled={disabled}>
+      <Ionicons
+        name={hasLiked ? "heart" : "heart-outline"}
+        size={ICON_SIZES.medium}
+        color={hasLiked ? COLORS.red : COLORS.black}
+      />
+    </TouchableOpacity>
+  )
+);
+
+const CommentButton = memo(
+  ({ onPress, count }: { onPress: () => void; count: number }) => (
+    <TouchableOpacity onPress={onPress}>
+      <Ionicons name="chatbubble-outline" size={ICON_SIZES.medium} />
+    </TouchableOpacity>
+  )
+);
+
+const CommentCount = memo(({ count }: { count: number }) => (
+  <Text style={styles.likesCount}>{count}</Text>
+));
+
+const ReviewOverlay = memo(
+  ({
+    review,
+    overlayOpacity,
+  }: {
+    review: Review;
+    overlayOpacity: Animated.Value;
+  }) => (
+    <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+      <Link href={`/home/locations/${review.location?.id}`} asChild>
+        <Text style={styles.locationName}>
+          {review.location?.name || "N/A"}
+        </Text>
+      </Link>
+      {review.location?.address && (
+        <Text style={styles.locationAddress}>
+          {stripNameFromAddress(review.location.name, review.location.address)}
+        </Text>
+      )}
+      <Text style={styles.spiritText}>
+        {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
+      </Text>
+      <Text style={styles.ratingLabel}>Taste</Text>
+      <ReviewRating value={review.taste} label="taste" />
+      <Text style={styles.ratingLabel}>Presentation</Text>
+      <ReviewRating value={review.presentation} label="presentation" />
+    </Animated.View>
+  )
+);
+
+const ReviewFooter = memo(
+  ({
+    review,
+    hasLiked,
+    likesCount,
+    comments,
+    onToggleLike,
+    onShowLikes,
+    onShowComments,
+    onCommentAdded,
+    onCommentDeleted,
+  }: {
+    review: Review;
+    hasLiked: boolean;
+    likesCount: number;
+    comments: any[];
+    onToggleLike: () => void;
+    onShowLikes: (reviewId: string) => void;
+    onShowComments: (
+      reviewId: string,
+      onCommentAdded: any,
+      onCommentDeleted: any
+    ) => void;
+    onCommentAdded: (reviewId: string, newComment: any) => void;
+    onCommentDeleted: (reviewId: string, commentId: number) => void;
+  }) => {
+    const handleShowComments = useCallback(() => {
+      onShowComments(review.id, onCommentAdded, onCommentDeleted);
+    }, [review.id, onShowComments, onCommentAdded, onCommentDeleted]);
+
+    const handleShowLikes = useCallback(() => {
+      onShowLikes(review.id);
+    }, [review.id, onShowLikes]);
+
+    return (
+      <View style={styles.footer}>
+        <View style={styles.actionRow}>
+          <LikeButton hasLiked={hasLiked} onPress={onToggleLike} />
+          <TouchableOpacity onPress={handleShowLikes}>
+            <CommentCount count={likesCount} />
+          </TouchableOpacity>
+          <CommentButton onPress={handleShowComments} count={comments.length} />
+          <TouchableOpacity onPress={handleShowComments}>
+            <CommentCount count={comments.length} />
+          </TouchableOpacity>
+        </View>
+
+        <Link href={`/home/users/${review.profile?.username}`} asChild>
+          <TouchableOpacity style={styles.captionContainer}>
+            <Text style={styles.username}>
+              {review.profile?.username || "Unknown"}
+            </Text>
+            <Text style={styles.captionText}> {review.comment}</Text>
+          </TouchableOpacity>
+        </Link>
+
+        {comments.slice(0, 2).map((c) => (
+          <View key={c.id} style={styles.commentRow}>
+            <Text style={styles.commentUsername}>
+              {c.profile?.username || "Unknown"}:
+            </Text>
+            <Text style={styles.commentText}> {c.body}</Text>
+          </View>
+        ))}
+
+        {comments.length > 2 && (
+          <TouchableOpacity onPress={handleShowComments}>
+            <Text style={styles.viewAllCommentsText}>
+              View all {comments.length} comments
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.timestamp}>
+          {formatRelativeDate(review.inserted_at)}
+        </Text>
+      </View>
+    );
+  }
+);
+
+const ReviewItem = memo(
+  ({
+    review,
+    canDelete,
+    onDelete,
+    onShowLikes,
+    onShowComments,
+    onCommentAdded,
+    onCommentDeleted,
+  }: ReviewItemProps) => {
+    const { profile } = useProfile();
+    const overlayOpacity = useRef(new Animated.Value(1)).current;
+    const [reportModalVisible, setReportModalVisible] = useState(false);
+    const lastTapRef = useRef<number>(0);
+
+    // Use custom hooks for data management
+    const { hasLiked, likesCount, toggleLike } = useLikes(
+      review.id,
+      profile?.id || null
+    );
+    const { comments, addComment, removeComment } = useComments(review.id);
+
+    // Handle comment patches
+    useEffect(() => {
+      if (review._commentPatch) {
+        if (review._commentPatch.action === "add") {
+          addComment(review._commentPatch.data);
+        } else if (review._commentPatch.action === "delete") {
+          removeComment(review._commentPatch.id);
+        }
+      }
+    }, [review._commentPatch, addComment, removeComment]);
+
+    // Enhanced like handler with notifications
+    const handleToggleLike = useCallback(async () => {
+      if (!profile) return;
+
+      const wasLiked = hasLiked;
+      await toggleLike();
+
+      // Send notification if user just liked someone else's review
+      if (!wasLiked && review.user_id && profile.id !== review.user_id) {
         const notificationBody = `${profile.username} liked your review from ${
           review.location?.name || "an unknown location"
         }`;
-        await supabase.from("notifications").insert({
-          user_id: review.user_id,
-          body: notificationBody,
-          type: NOTIFICATION_TYPES.USER,
-        });
+        try {
+          await supabase.from("notifications").insert({
+            user_id: review.user_id,
+            body: notificationBody,
+            type: NOTIFICATION_TYPES.USER,
+          });
+        } catch (error) {
+          console.error("Error sending notification:", error);
+        }
       }
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
+    }, [profile, hasLiked, toggleLike, review.user_id, review.location?.name]);
 
-  const handlePress = () => {
-    const now = Date.now();
-    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      handleToggleLike();
-    }
-    lastTapRef.current = now;
-  };
+    const handlePress = useCallback(() => {
+      const now = Date.now();
+      if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+        handleToggleLike();
+      }
+      lastTapRef.current = now;
+    }, [handleToggleLike]);
 
-  const animateOpacity = (toValue: number) => {
-    Animated.timing(overlayOpacity, {
-      toValue,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+    const animateOpacity = useCallback(
+      (toValue: number) => {
+        Animated.timing(overlayOpacity, {
+          toValue,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: true,
+        }).start();
+      },
+      [overlayOpacity]
+    );
 
-  return (
-    <>
-      <Pressable
-        onPress={handlePress}
-        onLongPress={() => animateOpacity(0)}
-        onPressOut={() => animateOpacity(1)}
-      >
-        <View style={styles.header}>
-          <Link href={`/home/users/${review.profile?.username}`} asChild>
-            <View style={styles.headerProfile}>
-              {avatarUrl && (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-              )}
-              <Text style={styles.headerUsername}>
-                {review.profile?.username || "Unknown"}
-              </Text>
-            </View>
-          </Link>
-          <View style={styles.headerActions}>
-            {canDelete && (
-              <TouchableOpacity onPress={onDelete} style={styles.actionButton}>
-                <Ionicons name="trash" size={20} color="#000" />
-              </TouchableOpacity>
-            )}
-            {profile?.id !== review.user_id && (
-              <TouchableOpacity
-                onPress={() => setReportModalVisible(true)}
-                style={styles.actionButton}
-              >
-                <Ionicons name="flag-outline" size={20} color="#000" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+    const handleLongPress = useCallback(
+      () => animateOpacity(0),
+      [animateOpacity]
+    );
+    const handlePressOut = useCallback(
+      () => animateOpacity(1),
+      [animateOpacity]
+    );
 
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: review.image_url }}
-            style={styles.reviewImage}
-          />
-          <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-            <Link href={`/home/locations/${review.location?.id}`} asChild>
-              <Text style={styles.locationName}>
-                {review.location?.name || "N/A"}
-              </Text>
-            </Link>
-            {review.location?.address && (
-              <Text style={styles.locationAddress}>
-                {stripNameFromAddress(
-                  review.location.name,
-                  review.location.address
-                )}
-              </Text>
-            )}
-            <Text style={styles.spiritText}>
-              {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
-            </Text>
-            <Text style={styles.ratingLabel}>Taste</Text>
-            <ReviewRating value={review.taste} label="taste" />
-            <Text style={styles.ratingLabel}>Presentation</Text>
-            <ReviewRating value={review.presentation} label="presentation" />
-          </Animated.View>
-        </View>
-        <View style={styles.footer}>
-          <View style={styles.actionRow}>
-            <TouchableOpacity onPress={handleToggleLike}>
-              <Ionicons
-                name={hasLiked ? "heart" : "heart-outline"}
-                size={28}
-                color={hasLiked ? "red" : "#000"}
+    return (
+      <>
+        <Pressable
+          onPress={handlePress}
+          onLongPress={handleLongPress}
+          onPressOut={handlePressOut}
+        >
+          <View style={styles.header}>
+            <Link href={`/home/users/${review.profile?.username}`} asChild>
+              <Avatar
+                avatarUrl={review.profile?.avatar_url || null}
+                username={review.profile?.username}
               />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onShowLikes(review.id)}>
-              <Text style={styles.likesCount}>{likesCount}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                onShowComments(review.id, onCommentAdded, onCommentDeleted)
-              }
-            >
-              <Ionicons name="chatbubble-outline" size={28} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                onShowComments(review.id, onCommentAdded, onCommentDeleted)
-              }
-            >
-              <Text style={styles.likesCount}>{comments.length}</Text>
-            </TouchableOpacity>
+            </Link>
+            <View style={styles.headerActions}>
+              {canDelete && <ActionButton onPress={onDelete!} icon="trash" />}
+              {profile?.id !== review.user_id && (
+                <ActionButton
+                  onPress={() => setReportModalVisible(true)}
+                  icon="flag-outline"
+                />
+              )}
+            </View>
           </View>
 
-          <Link href={`/home/users/${review.profile?.username}`} asChild>
-            <TouchableOpacity style={styles.captionContainer}>
-              <Text style={styles.username}>
-                {review.profile?.username || "Unknown"}
-              </Text>
-              <Text style={styles.captionText}> {review.comment}</Text>
-            </TouchableOpacity>
-          </Link>
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: review.image_url }}
+              style={styles.reviewImage}
+            />
+            <ReviewOverlay review={review} overlayOpacity={overlayOpacity} />
+          </View>
 
-          {comments.slice(0, 2).map((c) => (
-            <View key={c.id} style={styles.commentRow}>
-              <Text style={styles.commentUsername}>
-                {c.profile?.username || "Unknown"}:
-              </Text>
-              <Text style={styles.commentText}> {c.body}</Text>
-            </View>
-          ))}
+          <ReviewFooter
+            review={review}
+            hasLiked={hasLiked}
+            likesCount={likesCount}
+            comments={comments}
+            onToggleLike={handleToggleLike}
+            onShowLikes={onShowLikes}
+            onShowComments={onShowComments}
+            onCommentAdded={onCommentAdded}
+            onCommentDeleted={onCommentDeleted}
+          />
+        </Pressable>
 
-          {comments.length > 2 && (
-            <TouchableOpacity
-              onPress={() =>
-                onShowComments(review.id, onCommentAdded, onCommentDeleted)
-              }
-            >
-              <Text style={styles.viewAllCommentsText}>
-                View all {comments.length} comments
-              </Text>
-            </TouchableOpacity>
-          )}
+        <ReportModal
+          visible={reportModalVisible}
+          title="Report Review"
+          onClose={() => setReportModalVisible(false)}
+          onSelect={(option) => console.log("report pressed", option)}
+        />
+      </>
+    );
+  }
+);
 
-          <Text style={styles.timestamp}>
-            {formatRelativeDate(review.inserted_at)}
-          </Text>
-        </View>
-      </Pressable>
-      <ReportModal
-        visible={reportModalVisible}
-        title="Report Review"
-        onClose={() => setReportModalVisible(false)}
-        onSelect={(option) => console.log("report pressed", option)}
-      />
-    </>
-  );
-}
+export default ReviewItem;
 
 const styles = StyleSheet.create({
   header: {
@@ -302,7 +521,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: COLORS.white,
   },
   headerActions: {
     flexDirection: "row",
@@ -315,7 +534,7 @@ const styles = StyleSheet.create({
   headerUsername: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#000",
+    color: COLORS.black,
   },
   headerProfile: {
     flexDirection: "row",
@@ -328,8 +547,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   imageContainer: {
-    width: screenWidth,
-    height: screenWidth, // Instagram-style 1:1 aspect ratio
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH, // Instagram-style 1:1 aspect ratio
     position: "relative",
   },
   reviewImage: {
@@ -352,14 +571,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: COLORS.overlay,
     padding: 20,
     justifyContent: "flex-end",
   },
   locationName: {
     fontWeight: "bold",
     fontSize: 22,
-    color: "#fff",
+    color: COLORS.white,
     marginBottom: 4,
   },
   locationAddress: {
@@ -372,37 +591,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 8,
     marginBottom: 4,
-    color: "#fff",
+    color: COLORS.white,
   },
   spiritText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: COLORS.white,
     textTransform: "capitalize",
   },
   typeText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#fff",
+    color: COLORS.white,
     textTransform: "capitalize",
   },
-  footer: { backgroundColor: "#fff", padding: 10 },
+  footer: {
+    backgroundColor: COLORS.white,
+    padding: 10,
+  },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 5,
     gap: 8,
   },
-  likesCount: { fontWeight: "bold", fontSize: 16, color: "#000" },
-  captionContainer: { flexDirection: "row", marginBottom: 5 },
-  username: { fontWeight: "bold", fontSize: 16, color: "#000" },
-  captionText: { fontSize: 16, color: "#000" },
-  timestamp: { fontSize: 12, color: "#999" },
-  commentRow: { flexDirection: "row", marginBottom: 4 },
-  commentUsername: { fontWeight: "bold", color: "#000" },
-  commentText: { color: "#000" },
+  likesCount: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  captionContainer: {
+    flexDirection: "row",
+    marginBottom: 5,
+  },
+  username: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  captionText: {
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  commentRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  commentUsername: {
+    fontWeight: "bold",
+    color: COLORS.black,
+  },
+  commentText: {
+    color: COLORS.black,
+  },
   viewAllCommentsText: {
-    color: "#888",
+    color: COLORS.lightGray,
     fontSize: 14,
     marginBottom: 4,
   },
