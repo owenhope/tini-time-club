@@ -24,7 +24,6 @@ const screenWidth = Dimensions.get("window").width;
 
 interface ReviewItemProps {
   review: Review & { _commentPatch?: any };
-  aspectRatio: number;
   canDelete: boolean;
   onDelete?: () => void;
   onShowLikes: (reviewId: string) => void;
@@ -39,7 +38,6 @@ interface ReviewItemProps {
 
 export default function ReviewItem({
   review,
-  aspectRatio,
   canDelete,
   onDelete,
   onShowLikes,
@@ -196,7 +194,7 @@ export default function ReviewItem({
           </View>
         </View>
 
-        <View style={[styles.imageContainer, { aspectRatio }]}>
+        <View style={styles.imageContainer}>
           <Image
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
@@ -216,10 +214,7 @@ export default function ReviewItem({
               </Text>
             )}
             <Text style={styles.spiritText}>
-              Spirit: {review.spirit?.name || "N/A"}
-            </Text>
-            <Text style={styles.typeText}>
-              Type: {review.type?.name || "N/A"}
+              {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
             </Text>
             <Text style={styles.ratingLabel}>Taste</Text>
             <ReviewRating value={review.taste} label="taste" />
@@ -332,8 +327,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginRight: 8,
   },
-  imageContainer: { width: screenWidth, position: "relative" },
-  reviewImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  imageContainer: {
+    width: screenWidth,
+    height: screenWidth, // Instagram-style 1:1 aspect ratio
+    position: "relative",
+  },
+  reviewImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
   topBar: {
     position: "absolute",
     top: 0,
@@ -371,8 +374,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     color: "#fff",
   },
-  spiritText: { fontSize: 16, fontWeight: "bold", color: "#fff" },
-  typeText: { fontSize: 16, fontWeight: "bold", color: "#fff" },
+  spiritText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    textTransform: "capitalize",
+  },
+  typeText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    textTransform: "capitalize",
+  },
   footer: { backgroundColor: "#fff", padding: 10 },
   actionRow: {
     flexDirection: "row",

@@ -186,7 +186,6 @@ function Home() {
         renderItem={({ item }) => (
           <ReviewItem
             review={item}
-            aspectRatio={9 / 16}
             canDelete={false}
             onShowLikes={(id: string) => setSelectedReviewId(id)}
             onShowComments={() => setSelectedCommentReview(item)}

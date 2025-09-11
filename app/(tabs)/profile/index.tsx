@@ -244,7 +244,6 @@ const Profile = () => {
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
-      aspectRatio={1}
       canDelete={true}
       onDelete={() => confirmDeleteReview(item.id)}
       onShowLikes={(id: string) => setSelectedReviewId(id)}

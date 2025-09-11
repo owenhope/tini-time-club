@@ -179,7 +179,6 @@ const Location = () => {
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
-      aspectRatio={1}
       canDelete={false}
       onDelete={undefined}
       onShowLikes={() => {}}

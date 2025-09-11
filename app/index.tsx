@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Alert,
   View,
@@ -9,210 +9,491 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+// Constants
+const COLORS = {
+  primary: "#10B981",
+  background: "#fff",
+  text: "#000",
+  textSecondary: "#666",
+  placeholder: "#999",
+  inputBackground: "#fafafa",
+  overlay: "rgba(0,0,0,0.5)",
+} as const;
 
-  const onSignInPress = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (isSignUp) {
-        // Sign up logic
+const DIMENSIONS = {
+  inputHeight: 50,
+  buttonHeight: 50,
+  borderRadius: 5,
+  logoWidth: 400,
+  logoHeight: 160,
+} as const;
+
+const MESSAGES = {
+  signUp: {
+    verification: "Please check your inbox for email verification!",
+    error: "Sign Up Error",
+    invalidEmail: "Please enter a valid email address",
+    weakPassword: "Password must be at least 6 characters",
+  },
+  signIn: {
+    error: "Sign In Error",
+    invalidEmail: "Please enter a valid email address",
+    missingPassword: "Please enter your password",
+  },
+  forgotPassword: {
+    success: "Password Reset Email Sent",
+    successMessage:
+      "Please check your email for instructions to reset your password.",
+    error: "Error",
+    emailRequired: "Please enter your email address",
+    invalidEmail: "Please enter a valid email address",
+  },
+  general: {
+    loading: "Loading...",
+    unexpectedError: "An unexpected error occurred",
+  },
+} as const;
+
+// Custom hook for form validation
+const useFormValidation = () => {
+  const validateEmail = useCallback((email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  }, []);
+
+  const validatePassword = useCallback((password: string) => {
+    return password.length >= 6;
+  }, []);
+
+  return { validateEmail, validatePassword };
+};
+
+// Custom hook for modal state management
+const useModal = (initialState = false) => {
+  const [isVisible, setIsVisible] = useState(initialState);
+
+  const show = useCallback(() => setIsVisible(true), []);
+  const hide = useCallback(() => setIsVisible(false), []);
+  const toggle = useCallback(() => setIsVisible((prev) => !prev), []);
+
+  return { isVisible, show, hide, toggle };
+};
+
+// Custom hook for form state management
+const useFormState = (initialState: { email: string; password: string }) => {
+  const [formData, setFormData] = useState(initialState);
+
+  const updateField = useCallback(
+    (field: keyof typeof initialState, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    []
+  );
+
+  const resetForm = useCallback(() => {
+    setFormData(initialState);
+  }, [initialState]);
+
+  return { formData, updateField, resetForm };
+};
+
+// Reusable UI Components
+const LoadingOverlay = ({ visible }: { visible: boolean }) => {
+  if (!visible) return null;
+
+  return (
+    <View style={styles.loadingOverlay}>
+      <ActivityIndicator size="large" color={COLORS.background} />
+      <Text style={styles.loadingText}>{MESSAGES.general.loading}</Text>
+    </View>
+  );
+};
+
+const FormInput = ({
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry = false,
+  keyboardType = "default",
+  autoComplete = "off",
+}: {
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: "default" | "email-address";
+  autoComplete?: "email" | "password" | "off";
+}) => (
+  <TextInput
+    placeholder={placeholder}
+    placeholderTextColor={COLORS.placeholder}
+    value={value}
+    onChangeText={onChangeText}
+    secureTextEntry={secureTextEntry}
+    keyboardType={keyboardType}
+    autoComplete={autoComplete}
+    style={styles.inputField}
+  />
+);
+
+const PrimaryButton = ({
+  onPress,
+  title,
+  disabled = false,
+}: {
+  onPress: () => void;
+  title: string;
+  disabled?: boolean;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={[styles.loginButton, disabled && styles.disabledButton]}
+    disabled={disabled}
+  >
+    <Text style={styles.loginButtonText}>{title}</Text>
+  </TouchableOpacity>
+);
+
+const SecondaryButton = ({
+  onPress,
+  title,
+  disabled = false,
+}: {
+  onPress: () => void;
+  title: string;
+  disabled?: boolean;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={[styles.createAccountButton, disabled && styles.disabledButton]}
+    disabled={disabled}
+  >
+    <Text style={styles.createAccountButtonText}>{title}</Text>
+  </TouchableOpacity>
+);
+
+const ForgotPasswordModal = ({
+  visible,
+  email,
+  onEmailChange,
+  onSend,
+  onCancel,
+  loading,
+}: {
+  visible: boolean;
+  email: string;
+  onEmailChange: (email: string) => void;
+  onSend: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}) => (
+  <Modal visible={visible} transparent animationType="slide">
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Reset Password</Text>
+        <Text style={styles.modalSubtitle}>
+          Enter your email address and we'll send you a link to reset your
+          password.
+        </Text>
+        <FormInput
+          placeholder="Email"
+          value={email}
+          onChangeText={onEmailChange}
+          keyboardType="email-address"
+          autoComplete="email"
+        />
+        <View style={styles.modalButtonContainer}>
+          <TouchableOpacity
+            style={styles.modalCancelButton}
+            onPress={onCancel}
+            disabled={loading}
+          >
+            <Text style={styles.modalCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.modalSendButton}
+            onPress={onSend}
+            disabled={loading}
+          >
+            <Text style={styles.modalSendText}>Send Reset Email</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+// Custom hook for auth operations
+const useAuth = () => {
+  const [loading, setLoading] = useState(false);
+  const { validateEmail, validatePassword } = useFormValidation();
+
+  const signUp = useCallback(
+    async (email: string, password: string) => {
+      if (!validateEmail(email)) {
+        Alert.alert(MESSAGES.signUp.error, MESSAGES.signUp.invalidEmail);
+        return false;
+      }
+      if (!validatePassword(password)) {
+        Alert.alert(MESSAGES.signUp.error, MESSAGES.signUp.weakPassword);
+        return false;
+      }
+
+      setLoading(true);
+      try {
         const {
           data: { session },
           error,
         } = await supabase.auth.signUp({ email, password });
+
         if (error) {
-          // If account already exists, try to sign them in instead
           if (
             error.message.includes("already registered") ||
             error.message.includes("User already registered")
           ) {
             const { error: signInError } =
-              await supabase.auth.signInWithPassword({
-                email,
-                password,
-              });
+              await supabase.auth.signInWithPassword({ email, password });
             if (signInError) {
-              Alert.alert("Sign In Error", signInError.message);
+              Alert.alert(MESSAGES.signIn.error, signInError.message);
+              return false;
             }
-            // If sign in successful, navigation will happen automatically via auth state change
-          } else {
-            Alert.alert("Sign Up Error", error.message);
+            return true;
           }
-        } else if (session) {
-          // Account created successfully and user is signed in
-          // Navigation will happen automatically via auth state change
-        } else {
-          // Account created but needs email verification
-          Alert.alert(
-            "Verification",
-            "Please check your inbox for email verification!"
-          );
+          Alert.alert(MESSAGES.signUp.error, error.message);
+          return false;
         }
-      } else {
-        // Sign in logic
+
+        if (session) {
+          return true;
+        } else {
+          Alert.alert("Verification", MESSAGES.signUp.verification);
+          return false;
+        }
+      } catch (err: any) {
+        Alert.alert(
+          MESSAGES.signUp.error,
+          err.message || MESSAGES.general.unexpectedError
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [validateEmail, validatePassword]
+  );
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      if (!validateEmail(email)) {
+        Alert.alert(MESSAGES.signIn.error, MESSAGES.signIn.invalidEmail);
+        return false;
+      }
+      if (!password.trim()) {
+        Alert.alert(MESSAGES.signIn.error, MESSAGES.signIn.missingPassword);
+        return false;
+      }
+
+      setLoading(true);
+      try {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) {
-          Alert.alert("Sign In Error", error.message);
+          Alert.alert(MESSAGES.signIn.error, error.message);
+          return false;
         }
+        return true;
+      } catch (err: any) {
+        Alert.alert(
+          MESSAGES.signIn.error,
+          err.message || MESSAGES.general.unexpectedError
+        );
+        return false;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      Alert.alert(
-        isSignUp ? "Sign Up Error" : "Sign In Error",
-        err.message || "An unexpected error occurred"
-      );
-    } finally {
-      setLoading(false);
+    },
+    [validateEmail]
+  );
+
+  const resetPassword = useCallback(
+    async (email: string) => {
+      if (!validateEmail(email)) {
+        Alert.alert(
+          MESSAGES.forgotPassword.error,
+          MESSAGES.forgotPassword.invalidEmail
+        );
+        return false;
+      }
+
+      setLoading(true);
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: "tini-time-club://reset-password",
+        });
+
+        if (error) {
+          Alert.alert(MESSAGES.forgotPassword.error, error.message);
+          return false;
+        }
+
+        Alert.alert(
+          MESSAGES.forgotPassword.success,
+          MESSAGES.forgotPassword.successMessage
+        );
+        return true;
+      } catch (err: any) {
+        Alert.alert(
+          MESSAGES.forgotPassword.error,
+          err.message || MESSAGES.general.unexpectedError
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [validateEmail]
+  );
+
+  return { loading, signUp, signIn, resetPassword };
+};
+
+const Login = () => {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { formData, updateField } = useFormState({ email: "", password: "" });
+  const forgotPasswordModal = useModal();
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+
+  const { loading, signUp, signIn, resetPassword } = useAuth();
+
+  const onSignInPress = useCallback(async () => {
+    if (isSignUp) {
+      await signUp(formData.email, formData.password);
+    } else {
+      await signIn(formData.email, formData.password);
     }
-  }, [email, password, isSignUp]);
+  }, [formData.email, formData.password, isSignUp, signUp, signIn]);
 
   const handleForgotPassword = useCallback(async () => {
-    if (!forgotPasswordEmail.trim()) {
-      Alert.alert("Error", "Please enter your email address");
-      return;
+    const success = await resetPassword(forgotPasswordEmail);
+    if (success) {
+      forgotPasswordModal.hide();
+      setForgotPasswordEmail("");
     }
+  }, [forgotPasswordEmail, resetPassword, forgotPasswordModal]);
 
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        forgotPasswordEmail,
-        {
-          redirectTo: "tini-time-club://reset-password", // Deep link for password reset
-        }
-      );
-
-      if (error) {
-        Alert.alert("Error", error.message);
-      } else {
-        Alert.alert(
-          "Password Reset Email Sent",
-          "Please check your email for instructions to reset your password."
-        );
-        setShowForgotPassword(false);
-        setForgotPasswordEmail("");
-      }
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "An unexpected error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }, [forgotPasswordEmail]);
+  // Memoized values to prevent unnecessary re-renders
+  const buttonText = useMemo(
+    () => (isSignUp ? "Create Account" : "Log In"),
+    [isSignUp]
+  );
+  const toggleButtonText = useMemo(
+    () => (isSignUp ? "Back to Log In" : "Create Account"),
+    [isSignUp]
+  );
 
   return (
-    <View style={styles.container}>
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      )}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <LoadingOverlay visible={loading} />
+
       <View style={styles.content}>
         <Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={styles.logo}
           resizeMode="contain"
         />
-        <TextInput
-          autoCapitalize="none"
+
+        <FormInput
           placeholder="Email"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.inputField}
+          value={formData.email}
+          onChangeText={(text) => updateField("email", text)}
+          keyboardType="email-address"
+          autoComplete="email"
         />
-        <TextInput
+
+        <FormInput
           placeholder="Password"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
+          value={formData.password}
+          onChangeText={(text) => updateField("password", text)}
           secureTextEntry
-          style={styles.inputField}
+          autoComplete="password"
         />
+
         <TouchableOpacity
           style={styles.forgotPasswordButton}
-          onPress={() => setShowForgotPassword(true)}
+          onPress={forgotPasswordModal.show}
         >
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onSignInPress} style={styles.loginButton}>
-          <Text style={styles.loginButtonText}>
-            {isSignUp ? "Create Account" : "Log In"}
-          </Text>
-        </TouchableOpacity>
+
+        <PrimaryButton
+          onPress={onSignInPress}
+          title={buttonText}
+          disabled={loading}
+        />
+
         <View style={styles.authContainer}>
           <AppleAuth />
           <GoogleAuth />
         </View>
       </View>
-      <TouchableOpacity
-        style={styles.createAccountButton}
-        onPress={() => setIsSignUp(!isSignUp)}
-      >
-        <Text style={styles.createAccountButtonText}>
-          {isSignUp ? "Back to Log In" : "Create Account"}
-        </Text>
-      </TouchableOpacity>
 
-      {/* Forgot Password Modal */}
-      <Modal visible={showForgotPassword} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reset Password</Text>
-            <Text style={styles.modalSubtitle}>
-              Enter your email address and we'll send you a link to reset your
-              password.
-            </Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Email"
-              placeholderTextColor="#999"
-              value={forgotPasswordEmail}
-              onChangeText={setForgotPasswordEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setShowForgotPassword(false);
-                  setForgotPasswordEmail("");
-                }}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSendButton}
-                onPress={handleForgotPassword}
-                disabled={loading}
-              >
-                <Text style={styles.modalSendText}>Send Reset Email</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
+      <SecondaryButton
+        onPress={() => setIsSignUp(!isSignUp)}
+        title={toggleButtonText}
+        disabled={loading}
+      />
+
+      <ForgotPasswordModal
+        visible={forgotPasswordModal.isVisible}
+        email={forgotPasswordEmail}
+        onEmailChange={setForgotPasswordEmail}
+        onSend={handleForgotPassword}
+        onCancel={() => {
+          forgotPasswordModal.hide();
+          setForgotPasswordEmail("");
+        }}
+        loading={loading}
+      />
+    </KeyboardAvoidingView>
   );
 };
+
+// Base styles that can be reused
+const baseInputStyle = {
+  width: "100%",
+  height: DIMENSIONS.inputHeight,
+  backgroundColor: COLORS.inputBackground,
+  borderColor: COLORS.primary,
+  borderWidth: 1,
+  borderRadius: DIMENSIONS.borderRadius,
+  paddingHorizontal: 10,
+  color: COLORS.text,
+} as const;
+
+const baseButtonStyle = {
+  width: "100%",
+  height: DIMENSIONS.buttonHeight,
+  borderRadius: DIMENSIONS.borderRadius,
+  justifyContent: "center" as const,
+  alignItems: "center" as const,
+} as const;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
     paddingHorizontal: 40,
   },
   content: {
@@ -222,43 +503,32 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: COLORS.overlay,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
   },
   loadingText: {
     marginTop: 10,
-    color: "#fff",
+    color: COLORS.background,
     fontSize: 18,
   },
   logo: {
-    width: 400,
-    height: 160,
+    width: DIMENSIONS.logoWidth,
+    height: DIMENSIONS.logoHeight,
     marginBottom: 40,
   },
   inputField: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fafafa",
-    borderColor: "#10B981", // Green border
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    ...baseInputStyle,
     marginVertical: 8,
-    color: "#000",
   },
   loginButton: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#10B981", // Green from Tini Time Club
-    borderRadius: 5,
-    justifyContent: "center",
-    alignItems: "center",
+    ...baseButtonStyle,
+    backgroundColor: COLORS.primary,
     marginVertical: 10,
   },
   loginButtonText: {
-    color: "#fff",
+    color: COLORS.background,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -269,18 +539,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   createAccountButton: {
-    width: "100%",
-    height: 50,
-    borderRadius: 5,
+    ...baseButtonStyle,
     borderWidth: 1,
-    borderColor: "#10B981", // Green border
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: COLORS.primary,
     marginBottom: 40,
     marginTop: "auto",
   },
   createAccountButtonText: {
-    color: "#10B981", // Green text
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -290,7 +556,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   forgotPasswordText: {
-    color: "#10B981", // Green text
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -298,10 +564,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: COLORS.overlay,
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
     paddingVertical: 20,
     paddingHorizontal: 40,
     borderRadius: 8,
@@ -312,25 +578,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 12,
-    color: "#000",
+    color: COLORS.text,
   },
   modalSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: COLORS.textSecondary,
     textAlign: "center",
     marginBottom: 20,
     lineHeight: 22,
   },
   modalInput: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fafafa",
-    borderColor: "#10B981",
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    ...baseInputStyle,
     marginBottom: 20,
-    color: "#000",
   },
   modalButtonContainer: {
     flexDirection: "row",
@@ -338,30 +597,33 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    height: 50,
-    borderRadius: 5,
+    height: DIMENSIONS.buttonHeight,
+    borderRadius: DIMENSIONS.borderRadius,
     borderWidth: 1,
-    borderColor: "#10B981",
+    borderColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   modalCancelText: {
-    color: "#10B981",
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: "600",
   },
   modalSendButton: {
     flex: 1,
-    height: 50,
-    backgroundColor: "#10B981",
-    borderRadius: 5,
+    height: DIMENSIONS.buttonHeight,
+    backgroundColor: COLORS.primary,
+    borderRadius: DIMENSIONS.borderRadius,
     justifyContent: "center",
     alignItems: "center",
   },
   modalSendText: {
-    color: "#fff",
+    color: COLORS.background,
     fontSize: 16,
     fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
 

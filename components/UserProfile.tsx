@@ -274,7 +274,6 @@ const UserProfile = () => {
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
-      aspectRatio={1}
       canDelete={false}
       onDelete={undefined}
       onShowLikes={() => {}} // Empty function since we don't need likes functionality here
