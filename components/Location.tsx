@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -6,13 +6,32 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import ReviewItem from "@/components/ReviewItem";
+import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress } from "@/utils/helpers";
+
+// Constants
+const COLORS = {
+  primary: "#2E86AB",
+  taste: "olive",
+  presentation: "silver",
+  white: "#fff",
+  gray: "#ccc",
+  text: "#555",
+} as const;
+
+const DIMENSIONS = {
+  avatar: 100,
+  ratingCircle: 50,
+} as const;
+
 interface LocationType {
   id: string;
   name: string;
@@ -33,6 +52,8 @@ const Location = () => {
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
+  const [selectedCommentReview, setSelectedCommentReview] =
+    useState<Review | null>(null);
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
@@ -69,7 +90,7 @@ const Location = () => {
     }
   }, [locationIdParam]);
 
-  const fetchSelectedLocation = async (locationId: string) => {
+  const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
       const { data, error } = await supabase
         .from("location_ratings")
@@ -84,9 +105,9 @@ const Location = () => {
     } catch (err) {
       console.error("Unexpected error fetching location:", err);
     }
-  };
+  }, []);
 
-  const loadLocationImage = async (locationId?: string) => {
+  const loadLocationImage = useCallback(async (locationId?: string) => {
     setLoadingImage(true);
     if (!locationId) {
       setLoadingImage(false);
@@ -122,9 +143,9 @@ const Location = () => {
       console.error("Unexpected error while downloading location image:", err);
       setLoadingImage(false);
     }
-  };
+  }, []);
 
-  const loadLocationReviews = async (locationId?: string) => {
+  const loadLocationReviews = useCallback(async (locationId?: string) => {
     setLoadingReviews(true);
     if (!locationId) {
       setLoadingReviews(false);
@@ -174,18 +195,68 @@ const Location = () => {
       console.error("Unexpected error while fetching location reviews:", err);
       setLoadingReviews(false);
     }
-  };
+  }, []);
 
-  const renderReviewItem = ({ item }: { item: Review }) => (
-    <ReviewItem
-      review={item}
-      canDelete={false}
-      onDelete={undefined}
-      onShowLikes={() => {}}
-    />
+  const handleShowComments = useCallback(
+    (reviewId: string, onCommentAdded: any, onCommentDeleted: any) => {
+      const review = locationReviews.find((r) => r.id === reviewId);
+      if (review) {
+        setSelectedCommentReview(review);
+      }
+    },
+    [locationReviews]
   );
 
-  const renderEmpty = () => {
+  const handleCommentAdded = useCallback(
+    (reviewId: string, newComment: any) => {
+      setLocationReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? { ...review, _commentPatch: { action: "add", data: newComment } }
+            : review
+        )
+      );
+    },
+    []
+  );
+
+  const handleCommentDeleted = useCallback(
+    (reviewId: string, commentId: number) => {
+      setLocationReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? { ...review, _commentPatch: { action: "delete", id: commentId } }
+            : review
+        )
+      );
+    },
+    []
+  );
+
+  const renderReviewItem = useCallback(
+    ({ item }: { item: Review }) => (
+      <ReviewItem
+        review={item}
+        canDelete={false}
+        onDelete={undefined}
+        onShowLikes={() => {}}
+        onShowComments={handleShowComments}
+        onCommentAdded={handleCommentAdded}
+        onCommentDeleted={handleCommentDeleted}
+      />
+    ),
+    [handleShowComments, handleCommentAdded, handleCommentDeleted]
+  );
+
+  const renderEmpty = useCallback(() => {
+    if (loadingReviews) {
+      return (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.emptyText}>Loading reviews...</Text>
+        </View>
+      );
+    }
     if (locationReviews.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -194,14 +265,20 @@ const Location = () => {
       );
     }
     return null;
-  };
+  }, [loadingReviews, locationReviews.length]);
+
+  const onRefresh = useCallback(() => {
+    if (displayLocation?.id) {
+      loadLocationReviews(displayLocation.id);
+    }
+  }, [displayLocation?.id]);
 
   useEffect(() => {
     if (displayLocation && displayLocation.id) {
       loadLocationImage(displayLocation.id);
       loadLocationReviews(displayLocation.id);
     }
-  }, [displayLocation]);
+  }, [displayLocation?.id]);
 
   return (
     <View style={styles.container}>
@@ -274,14 +351,25 @@ const Location = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
-          onRefresh={() => {
-            if (displayLocation && displayLocation.id) {
-              loadLocationReviews(displayLocation.id);
-            }
-          }}
-          refreshing={loadingReviews}
+          refreshControl={
+            <RefreshControl
+              refreshing={loadingReviews}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
         />
       </View>
+
+      {selectedCommentReview && (
+        <CommentsSlider
+          review={selectedCommentReview}
+          onClose={() => setSelectedCommentReview(null)}
+          onCommentAdded={handleCommentAdded}
+          onCommentDeleted={handleCommentDeleted}
+        />
+      )}
     </View>
   );
 };
@@ -298,22 +386,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#ccc",
+    width: DIMENSIONS.avatar,
+    height: DIMENSIONS.avatar,
+    borderRadius: DIMENSIONS.avatar / 2,
+    backgroundColor: COLORS.gray,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#ccc",
+    width: DIMENSIONS.avatar,
+    height: DIMENSIONS.avatar,
+    borderRadius: DIMENSIONS.avatar / 2,
+    backgroundColor: COLORS.gray,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitial: {
     fontSize: 40,
-    color: "#fff",
+    color: COLORS.white,
     fontWeight: "bold",
   },
   ratingsHeaderContainer: {
@@ -326,33 +414,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   ratingCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#2E86AB",
+    width: DIMENSIONS.ratingCircle,
+    height: DIMENSIONS.ratingCircle,
+    borderRadius: DIMENSIONS.ratingCircle / 2,
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   tasteCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "olive",
+    width: DIMENSIONS.ratingCircle,
+    height: DIMENSIONS.ratingCircle,
+    borderRadius: DIMENSIONS.ratingCircle / 2,
+    backgroundColor: COLORS.taste,
     justifyContent: "center",
     alignItems: "center",
   },
   presentationCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "silver",
+    width: DIMENSIONS.ratingCircle,
+    height: DIMENSIONS.ratingCircle,
+    borderRadius: DIMENSIONS.ratingCircle / 2,
+    backgroundColor: COLORS.presentation,
     justifyContent: "center",
     alignItems: "center",
   },
   circleText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: COLORS.white,
   },
   circleLabel: {
     fontSize: 12,
@@ -374,7 +462,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#555",
+    color: COLORS.text,
   },
   headerButtonLeft: {
     marginLeft: 5,

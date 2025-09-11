@@ -93,7 +93,7 @@ export default function CustomTabBar({
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
+    backgroundColor: "#f0f0f0",
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
     paddingBottom: 8,

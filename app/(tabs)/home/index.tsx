@@ -15,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   RefreshControl,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
@@ -359,6 +360,15 @@ function Home() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header with logo */}
+      <View style={styles.header}>
+        <Image
+          source={require("@/assets/images/tini-time-logo-2x.png")}
+          style={styles.headerLogo}
+          resizeMode="cover"
+        />
+      </View>
+
       <FlatList
         ref={flatListRef}
         data={reviews}
@@ -448,6 +458,19 @@ function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  header: {
+    shadowOffset: { width: 0, height: 0.25 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingHorizontal: 8,
+    alignItems: "flex-start",
+  },
+  headerLogo: {
+    width: 50,
+    height: 50,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

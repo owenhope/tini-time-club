@@ -88,7 +88,7 @@ const LayoutContent = () => {
         headerStyle: { backgroundColor: "#FFF" },
         headerTintColor: "#000",
         tabBarActiveTintColor: "#000",
-        tabBarStyle: { backgroundColor: "#FFF" },
+        tabBarStyle: { backgroundColor: "#f0f0f0" },
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
