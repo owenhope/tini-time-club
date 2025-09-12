@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Stack, useRouter, usePathname } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import * as SplashScreen from "expo-splash-screen";
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
+import * as TrackingTransparency from "expo-tracking-transparency";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,6 +15,26 @@ export default function RootLayout() {
   useEffect(() => {
     const init = async () => {
       try {
+        // Request tracking transparency permission on iOS
+        if (Platform.OS === "ios") {
+          try {
+            const { status } =
+              await TrackingTransparency.requestTrackingPermissionsAsync();
+            console.log("[RootLayout] 📊 Tracking permission status:", status);
+
+            if (status === "granted") {
+              console.log("[RootLayout] ✅ User granted tracking permission");
+            } else {
+              console.log("[RootLayout] ❌ User denied tracking permission");
+            }
+          } catch (trackingError) {
+            console.error(
+              "[RootLayout] ❌ Error requesting tracking permission:",
+              trackingError
+            );
+          }
+        }
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
