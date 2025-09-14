@@ -26,6 +26,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
+import EULAModal from "@/components/EULAModal";
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -44,13 +45,15 @@ const PERFORMANCE_CONFIG = {
 // Simplified state management - no custom hook to avoid re-render issues
 
 function Home() {
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, acceptEULA } = useProfile();
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [showEULAModal, setShowEULAModal] = useState(false);
+  const [eulaLoading, setEulaLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -73,8 +76,33 @@ function Home() {
   }, [profile?.id]);
 
   useEffect(() => {
-    if (profile && !profile.username) setShowUsernameModal(true);
-    else setShowUsernameModal(false);
+    if (profile) {
+      console.log("Profile loaded:", {
+        eula_accepted: profile.eula_accepted,
+        username: profile.username,
+        id: profile.id,
+      });
+
+      // Check if user needs to accept EULA (first time user or EULA not accepted)
+      // Default to showing EULA if eula_accepted field doesn't exist or is false
+      if (
+        profile.eula_accepted === undefined ||
+        profile.eula_accepted === false ||
+        profile.eula_accepted === null
+      ) {
+        console.log("Showing EULA modal - user hasn't accepted EULA");
+        setShowEULAModal(true);
+        setShowUsernameModal(false);
+      } else if (!profile.username) {
+        console.log("Showing username modal - EULA accepted but no username");
+        setShowUsernameModal(true);
+        setShowEULAModal(false);
+      } else {
+        console.log("User is fully set up - hiding all modals");
+        setShowUsernameModal(false);
+        setShowEULAModal(false);
+      }
+    }
   }, [profile]);
 
   // Memoized followed user IDs to prevent unnecessary refetches
@@ -267,6 +295,36 @@ function Home() {
     }
   }, [newUsername, updateProfile]);
 
+  const handleAcceptEULA = useCallback(async () => {
+    if (eulaLoading) return; // Prevent multiple submissions
+
+    try {
+      setEulaLoading(true);
+      console.log("User accepting EULA...");
+      const result = await acceptEULA();
+
+      if (result.error) {
+        console.error("Error accepting EULA:", result.error);
+        // Don't close modal on error, let user try again
+        return;
+      }
+
+      console.log("EULA accepted successfully");
+      setShowEULAModal(false);
+    } catch (error) {
+      console.error("Unexpected error accepting EULA:", error);
+      // Don't close modal on unexpected error
+    } finally {
+      setEulaLoading(false);
+    }
+  }, [acceptEULA, eulaLoading]);
+
+  const handleDeclineEULA = useCallback(() => {
+    // User declined EULA - they should be logged out
+    // This will be handled by the auth state change in the root layout
+    supabase.auth.signOut();
+  }, []);
+
   // Memoized empty component
   const renderEmpty = useCallback(() => {
     if (!firstLoadDone || loading || refreshing) return null;
@@ -391,6 +449,13 @@ function Home() {
         updateCellsBatchingPeriod={50}
         initialNumToRender={20}
         windowSize={15}
+      />
+
+      <EULAModal
+        visible={showEULAModal}
+        onAccept={handleAcceptEULA}
+        onDecline={handleDeclineEULA}
+        loading={eulaLoading}
       />
 
       <Modal visible={showUsernameModal} transparent animationType="slide">

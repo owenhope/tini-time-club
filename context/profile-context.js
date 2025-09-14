@@ -34,6 +34,7 @@ export const ProfileProvider = ({ children }) => {
     if (error) {
       console.error("Error fetching profile", error);
     } else {
+      console.log("Profile fetched successfully:", data);
       setProfile(data);
     }
     setLoading(false);
@@ -62,9 +63,50 @@ export const ProfileProvider = ({ children }) => {
     return { data };
   };
 
+  // Function to accept EULA
+  const acceptEULA = async () => {
+    try {
+      if (!profile) {
+        console.error("No profile found when trying to accept EULA");
+        return { error: "No profile found" };
+      }
+
+      console.log(
+        "Updating profile with EULA acceptance for user:",
+        profile.id
+      );
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({
+          eula_accepted: true,
+          eula_accepted_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error accepting EULA", error);
+        return { error };
+      }
+
+      console.log("EULA acceptance successful, updated profile:", data);
+
+      // Update the profile state with the new data
+      if (data) {
+        setProfile(data);
+      }
+
+      return { data };
+    } catch (err) {
+      console.error("Unexpected error in acceptEULA:", err);
+      return { error: err.message || "Unexpected error" };
+    }
+  };
+
   return (
     <ProfileContext.Provider
-      value={{ profile, setProfile, updateProfile, loading }}
+      value={{ profile, setProfile, updateProfile, acceptEULA, loading }}
     >
       {children}
     </ProfileContext.Provider>
