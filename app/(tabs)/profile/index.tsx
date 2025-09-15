@@ -41,7 +41,6 @@ const Profile = () => {
           .from("avatars")
           .getPublicUrl(profile.avatar_url).data.publicUrl;
         setAvatar(publicUrl);
-        console.log("Avatar URL:", publicUrl);
       } catch (error) {
         console.error("Error fetching avatar URL:", error);
       }

@@ -78,12 +78,6 @@ function Home() {
 
   useEffect(() => {
     if (profile) {
-      console.log("Profile loaded:", {
-        eula_accepted: profile.eula_accepted,
-        username: profile.username,
-        id: profile.id,
-      });
-
       // Check if user needs to accept EULA (first time user or EULA not accepted)
       // Default to showing EULA if eula_accepted field doesn't exist or is false
       if (
@@ -91,15 +85,12 @@ function Home() {
         profile.eula_accepted === false ||
         profile.eula_accepted === null
       ) {
-        console.log("Showing EULA modal - user hasn't accepted EULA");
         setShowEULAModal(true);
         setShowUsernameModal(false);
       } else if (!profile.username) {
-        console.log("Showing username modal - EULA accepted but no username");
         setShowUsernameModal(true);
         setShowEULAModal(false);
       } else {
-        console.log("User is fully set up - hiding all modals");
         setShowUsernameModal(false);
         setShowEULAModal(false);
       }

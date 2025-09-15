@@ -533,6 +533,41 @@ const ReviewItem = memo(
       [animateOpacity]
     );
 
+    const handleReportSubmit = useCallback(
+      async (reason: string, customReason?: string) => {
+        if (!profile) return;
+
+        try {
+          const reportData = {
+            reporter_id: profile.id,
+            review_id: review.id,
+            creator_id: review.profile?.id,
+            reason: customReason || reason,
+            created_at: new Date().toISOString(),
+          };
+
+          const { error } = await supabase.from("reports").insert([reportData]);
+
+          if (error) {
+            console.error("Error submitting report:", error);
+            Alert.alert("Error", "Failed to submit report. Please try again.");
+          } else {
+            Alert.alert(
+              "Report Submitted",
+              "Thank you for your report. We will review it shortly."
+            );
+          }
+        } catch (error) {
+          console.error("Unexpected error submitting report:", error);
+          Alert.alert(
+            "Error",
+            "An unexpected error occurred. Please try again."
+          );
+        }
+      },
+      [profile, review.id, review.profile?.id]
+    );
+
     return (
       <>
         <Pressable
@@ -587,7 +622,7 @@ const ReviewItem = memo(
           visible={reportModalVisible}
           title="Report Review"
           onClose={() => setReportModalVisible(false)}
-          onSelect={(option) => console.log("report pressed", option)}
+          onSelect={handleReportSubmit}
         />
       </>
     );
