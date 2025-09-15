@@ -27,6 +27,7 @@ import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
+import { getBlockedUserIds } from "@/utils/blockUtils";
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -169,9 +170,14 @@ function Home() {
         const start = nextPage * PAGE_SIZE;
         const end = start + PAGE_SIZE - 1;
         const followedIds = await followedUserIds();
+        const blockedIds = await getBlockedUserIds(profile.id);
+
+        // Filter out blocked users from the query
         const queryUserIds = followedIds.includes(profile.id)
-          ? followedIds
-          : [...followedIds, profile.id];
+          ? followedIds.filter((id) => !blockedIds.includes(id))
+          : [...followedIds, profile.id].filter(
+              (id) => !blockedIds.includes(id)
+            );
 
         const { data: reviewsDataFromDB, error } = await supabase
           .from("reviews")

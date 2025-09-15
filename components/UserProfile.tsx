@@ -34,6 +34,7 @@ const UserProfile = () => {
   const [followingCount, setFollowingCount] = useState<number>(0);
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
+  const [isBlocked, setIsBlocked] = useState<boolean>(false);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -62,6 +63,26 @@ const UserProfile = () => {
       }
     };
     checkFollowStatus();
+  }, [displayProfile, profile]);
+
+  // Check block status for the selected user
+  useEffect(() => {
+    const checkBlockStatus = async () => {
+      if (displayProfile && profile) {
+        const { data, error } = await supabase
+          .from("blocks")
+          .select("*")
+          .eq("blocker_id", profile.id)
+          .eq("blocked_id", displayProfile.id)
+          .maybeSingle();
+        if (error) {
+          console.error("Error checking block status:", error);
+        } else {
+          setIsBlocked(!!data);
+        }
+      }
+    };
+    checkBlockStatus();
   }, [displayProfile, profile]);
 
   const toggleFollow = async () => {
@@ -127,7 +148,7 @@ const UserProfile = () => {
     fetchFollowCounts();
   }, [displayProfile]);
 
-  // Update header with custom title and follow button
+  // Update header with custom title
   useEffect(() => {
     if (displayProfile) {
       navigation.setOptions({
@@ -144,16 +165,9 @@ const UserProfile = () => {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
         ),
-        headerRight: () => (
-          <TouchableOpacity onPress={toggleFollow} style={styles.headerButton}>
-            <Text style={styles.friendText}>
-              {doesFollow ? "Unfollow" : "Follow"}
-            </Text>
-          </TouchableOpacity>
-        ),
       });
     }
-  }, [displayProfile, navigation, doesFollow, followersCount, followingCount]);
+  }, [displayProfile, navigation]);
 
   // Fetch the selected profile when usernameParam is provided
   useEffect(() => {
@@ -271,6 +285,98 @@ const UserProfile = () => {
     );
   };
 
+  const handleBlockUser = async () => {
+    if (!profile || !displayProfile) return;
+
+    Alert.alert(
+      "Block User",
+      `Are you sure you want to block ${displayProfile.username}? You won't see their content and they won't be able to see yours.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Insert block record
+              const { error } = await supabase.from("blocks").insert([
+                {
+                  blocker_id: profile.id,
+                  blocked_id: displayProfile.id,
+                },
+              ]);
+
+              if (error) {
+                console.error("Error blocking user:", error);
+                Alert.alert("Error", "Unable to block user. Please try again.");
+                return;
+              }
+
+              // Also unfollow if currently following
+              if (doesFollow) {
+                await supabase
+                  .from("followers")
+                  .delete()
+                  .eq("follower_id", profile.id)
+                  .eq("following_id", displayProfile.id);
+                setDoesFollow(false);
+              }
+
+              setIsBlocked(true);
+            } catch (err) {
+              console.error("Unexpected error blocking user:", err);
+              Alert.alert(
+                "Error",
+                "An unexpected error occurred. Please try again."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnblockUser = async () => {
+    if (!profile || !displayProfile) return;
+
+    Alert.alert(
+      "Unblock User",
+      `Are you sure you want to unblock ${displayProfile.username}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unblock",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("blocks")
+                .delete()
+                .eq("blocker_id", profile.id)
+                .eq("blocked_id", displayProfile.id);
+
+              if (error) {
+                console.error("Error unblocking user:", error);
+                Alert.alert(
+                  "Error",
+                  "Unable to unblock user. Please try again."
+                );
+                return;
+              }
+
+              setIsBlocked(false);
+            } catch (err) {
+              console.error("Unexpected error unblocking user:", err);
+              Alert.alert(
+                "Error",
+                "An unexpected error occurred. Please try again."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderReviewItem = ({ item }: { item: Review }) => (
     <ReviewItem
       review={item}
@@ -335,6 +441,41 @@ const UserProfile = () => {
               <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
+          {/* Action Buttons - only show if not viewing own profile */}
+          {profile && displayProfile && profile.id !== displayProfile.id && (
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                onPress={toggleFollow}
+                style={[
+                  styles.followButton,
+                  doesFollow && styles.followingButton,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.followButtonText,
+                    doesFollow && styles.followingButtonText,
+                  ]}
+                >
+                  {doesFollow ? "Following" : "Follow"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={isBlocked ? handleUnblockUser : handleBlockUser}
+                style={[styles.blockButton, isBlocked && styles.unblockButton]}
+              >
+                <Text
+                  style={[
+                    styles.blockButtonText,
+                    isBlocked && styles.unblockButtonText,
+                  ]}
+                >
+                  {isBlocked ? "Unblock" : "Block"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
       {/* Reviews List */}
@@ -404,10 +545,12 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     marginTop: 8,
+    justifyContent: "space-between",
+    paddingHorizontal: 0,
   },
   statItem: {
     alignItems: "center",
-    marginRight: 16,
+    flex: 1,
   },
   statNumber: {
     fontSize: 16,
@@ -433,10 +576,8 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     marginRight: 10,
-    backgroundColor: "#10B981", // Green background
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   headerButtonLeft: {
     marginLeft: 5,
@@ -456,6 +597,58 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     color: "#777",
+  },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    marginTop: 12,
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  followButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  followingButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  followButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  followingButtonText: {
+    color: "#10B981",
+  },
+  blockButton: {
+    backgroundColor: "#ff4444",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  blockButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  unblockButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ff4444",
+  },
+  unblockButtonText: {
+    color: "#ff4444",
   },
 });
 

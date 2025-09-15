@@ -16,6 +16,8 @@ import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress } from "@/utils/helpers";
+import { getBlockedUserIds } from "@/utils/blockUtils";
+import { useProfile } from "@/context/profile-context";
 
 // Constants
 const COLORS = {
@@ -45,6 +47,7 @@ interface LocationType {
 }
 
 const Location = () => {
+  const { profile } = useProfile();
   const [locationImage, setLocationImage] = useState<string | null>(null);
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
@@ -145,17 +148,21 @@ const Location = () => {
     }
   }, []);
 
-  const loadLocationReviews = useCallback(async (locationId?: string) => {
-    setLoadingReviews(true);
-    if (!locationId) {
-      setLoadingReviews(false);
-      return;
-    }
-    try {
-      const { data: reviewsData, error } = await supabase
-        .from("reviews")
-        .select(
-          `
+  const loadLocationReviews = useCallback(
+    async (locationId?: string) => {
+      setLoadingReviews(true);
+      if (!locationId) {
+        setLoadingReviews(false);
+        return;
+      }
+      try {
+        // Get blocked user IDs to filter out their reviews
+        const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
+
+        const { data: reviewsData, error } = await supabase
+          .from("reviews")
+          .select(
+            `
           id,
           comment,
           image_url,
@@ -165,37 +172,45 @@ const Location = () => {
           location:locations!reviews_location_fkey(name),
           spirit:spirit(name),
           type:type(name),
+          user_id,
           profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
           `
-        )
-        .eq("location", locationId)
-        .eq("state", 1)
-        .order("inserted_at", { ascending: false });
-      if (error) {
-        console.error("Error fetching location reviews:", error);
-        setLoadingReviews(false);
-        return;
-      }
+          )
+          .eq("location", locationId)
+          .eq("state", 1)
+          .order("inserted_at", { ascending: false });
+        if (error) {
+          console.error("Error fetching location reviews:", error);
+          setLoadingReviews(false);
+          return;
+        }
 
-      const reviewsWithFullUrl = await Promise.all(
-        reviewsData.map(async (review: any) => {
-          const { data, error } = await supabase.storage
-            .from("review_images")
-            .createSignedUrl(review.image_url, 60);
-          if (error) {
-            console.error("Error creating signed URL:", error);
-            return review;
-          }
-          return { ...review, image_url: data.signedUrl };
-        })
-      );
-      setLocationReviews(reviewsWithFullUrl);
-      setLoadingReviews(false);
-    } catch (err) {
-      console.error("Unexpected error while fetching location reviews:", err);
-      setLoadingReviews(false);
-    }
-  }, []);
+        // Filter out reviews from blocked users
+        const filteredReviews = reviewsData.filter(
+          (review: any) => !blockedIds.includes(review.user_id)
+        );
+
+        const reviewsWithFullUrl = await Promise.all(
+          filteredReviews.map(async (review: any) => {
+            const { data, error } = await supabase.storage
+              .from("review_images")
+              .createSignedUrl(review.image_url, 60);
+            if (error) {
+              console.error("Error creating signed URL:", error);
+              return review;
+            }
+            return { ...review, image_url: data.signedUrl };
+          })
+        );
+        setLocationReviews(reviewsWithFullUrl);
+        setLoadingReviews(false);
+      } catch (err) {
+        console.error("Unexpected error while fetching location reviews:", err);
+        setLoadingReviews(false);
+      }
+    },
+    [profile]
+  );
 
   const handleShowComments = useCallback(
     (reviewId: string, onCommentAdded: any, onCommentDeleted: any) => {
