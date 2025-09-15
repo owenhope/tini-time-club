@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -57,12 +63,13 @@ const Location = () => {
   );
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
+  const loadedLocationIdRef = useRef<string | null>(null);
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
   const locationIdParam = params.location as string | undefined;
 
-  const displayLocation = selectedLocation;
+  const displayLocation = useMemo(() => selectedLocation, [selectedLocation]);
 
   // Update header with custom title and back button
   useEffect(() => {
@@ -148,71 +155,6 @@ const Location = () => {
     }
   }, []);
 
-  const loadLocationReviews = useCallback(
-    async (locationId?: string) => {
-      setLoadingReviews(true);
-      if (!locationId) {
-        setLoadingReviews(false);
-        return;
-      }
-      try {
-        // Get blocked user IDs to filter out their reviews
-        const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
-
-        const { data: reviewsData, error } = await supabase
-          .from("reviews")
-          .select(
-            `
-          id,
-          comment,
-          image_url,
-          inserted_at,
-          taste,
-          presentation,
-          location:locations!reviews_location_fkey(name),
-          spirit:spirit(name),
-          type:type(name),
-          user_id,
-          profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
-          `
-          )
-          .eq("location", locationId)
-          .eq("state", 1)
-          .not("profile.deleted", "eq", true)
-          .order("inserted_at", { ascending: false });
-        if (error) {
-          console.error("Error fetching location reviews:", error);
-          setLoadingReviews(false);
-          return;
-        }
-
-        // Filter out reviews from blocked users
-        const filteredReviews = reviewsData.filter(
-          (review: any) => !blockedIds.includes(review.user_id)
-        );
-
-        const reviewsWithFullUrl = await Promise.all(
-          filteredReviews.map(async (review: any) => {
-            const { data, error } = await supabase.storage
-              .from("review_images")
-              .createSignedUrl(review.image_url, 60);
-            if (error) {
-              console.error("Error creating signed URL:", error);
-              return review;
-            }
-            return { ...review, image_url: data.signedUrl };
-          })
-        );
-        setLocationReviews(reviewsWithFullUrl);
-        setLoadingReviews(false);
-      } catch (err) {
-        console.error("Unexpected error while fetching location reviews:", err);
-        setLoadingReviews(false);
-      }
-    },
-    [profile]
-  );
-
   const handleShowComments = useCallback(
     (reviewId: string, onCommentAdded: any, onCommentDeleted: any) => {
       const review = locationReviews.find((r) => r.id === reviewId);
@@ -285,16 +227,151 @@ const Location = () => {
 
   const onRefresh = useCallback(() => {
     if (displayLocation?.id) {
-      loadLocationReviews(displayLocation.id);
+      loadedLocationIdRef.current = null; // Reset to allow reload
+
+      // Load location reviews inline
+      const loadReviews = async () => {
+        setLoadingReviews(true);
+        try {
+          // Get blocked user IDs to filter out their reviews
+          const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
+
+          const { data: reviewsData, error } = await supabase
+            .from("reviews")
+            .select(
+              `
+            id,
+            comment,
+            image_url,
+            inserted_at,
+            taste,
+            presentation,
+            location:locations!reviews_location_fkey(name),
+            spirit:spirit(name),
+            type:type(name),
+            user_id,
+            profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
+            `
+            )
+            .eq("location", displayLocation.id)
+            .eq("state", 1)
+            .not("profile.deleted", "eq", true)
+            .order("inserted_at", { ascending: false });
+
+          if (error) {
+            console.error("Error fetching location reviews:", error);
+            setLoadingReviews(false);
+            return;
+          }
+
+          // Filter out reviews from blocked users
+          const filteredReviews = reviewsData.filter(
+            (review: any) => !blockedIds.includes(review.user_id)
+          );
+
+          const reviewsWithFullUrl = await Promise.all(
+            filteredReviews.map(async (review: any) => {
+              const { data, error } = await supabase.storage
+                .from("review_images")
+                .createSignedUrl(review.image_url, 60);
+              if (error) {
+                console.error("Error creating signed URL:", error);
+                return review;
+              }
+              return { ...review, image_url: data.signedUrl };
+            })
+          );
+          setLocationReviews(reviewsWithFullUrl);
+          setLoadingReviews(false);
+        } catch (err) {
+          console.error(
+            "Unexpected error while fetching location reviews:",
+            err
+          );
+          setLoadingReviews(false);
+        }
+      };
+
+      loadReviews();
     }
-  }, [displayLocation?.id]);
+  }, [displayLocation?.id, profile?.id]);
 
   useEffect(() => {
-    if (displayLocation && displayLocation.id) {
+    if (
+      displayLocation?.id &&
+      loadedLocationIdRef.current !== displayLocation.id
+    ) {
+      loadedLocationIdRef.current = displayLocation.id;
+
+      // Load location image
       loadLocationImage(displayLocation.id);
-      loadLocationReviews(displayLocation.id);
+
+      // Load location reviews inline to avoid dependency issues
+      const loadReviews = async () => {
+        setLoadingReviews(true);
+        try {
+          // Get blocked user IDs to filter out their reviews
+          const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
+
+          const { data: reviewsData, error } = await supabase
+            .from("reviews")
+            .select(
+              `
+            id,
+            comment,
+            image_url,
+            inserted_at,
+            taste,
+            presentation,
+            location:locations!reviews_location_fkey(name),
+            spirit:spirit(name),
+            type:type(name),
+            user_id,
+            profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
+            `
+            )
+            .eq("location", displayLocation.id)
+            .eq("state", 1)
+            .not("profile.deleted", "eq", true)
+            .order("inserted_at", { ascending: false });
+
+          if (error) {
+            console.error("Error fetching location reviews:", error);
+            setLoadingReviews(false);
+            return;
+          }
+
+          // Filter out reviews from blocked users
+          const filteredReviews = reviewsData.filter(
+            (review: any) => !blockedIds.includes(review.user_id)
+          );
+
+          const reviewsWithFullUrl = await Promise.all(
+            filteredReviews.map(async (review: any) => {
+              const { data, error } = await supabase.storage
+                .from("review_images")
+                .createSignedUrl(review.image_url, 60);
+              if (error) {
+                console.error("Error creating signed URL:", error);
+                return review;
+              }
+              return { ...review, image_url: data.signedUrl };
+            })
+          );
+          setLocationReviews(reviewsWithFullUrl);
+          setLoadingReviews(false);
+        } catch (err) {
+          console.error(
+            "Unexpected error while fetching location reviews:",
+            err
+          );
+          setLoadingReviews(false);
+        }
+      };
+
+      loadReviews();
     }
-  }, [displayLocation?.id]);
+  }, [displayLocation?.id, profile?.id]);
 
   return (
     <View style={styles.container}>
