@@ -15,9 +15,11 @@ import {
   TouchableOpacity,
   Pressable,
   Animated,
+  Modal,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
@@ -196,17 +198,36 @@ const Avatar = memo(
   ({
     avatarUrl,
     username,
+    isOwnReview,
   }: {
     avatarUrl: string | null;
     username?: string;
+    isOwnReview: boolean;
   }) => {
     const { url } = useAvatar(avatarUrl);
+    const router = useRouter();
 
-    return (
+    const handlePress = useCallback(() => {
+      if (!isOwnReview && username) {
+        router.push(`/home/users/${username}`);
+      }
+    }, [isOwnReview, username, router]);
+
+    const content = (
       <View style={styles.headerProfile}>
         {url && <Image source={{ uri: url }} style={styles.avatar} />}
         <Text style={styles.headerUsername}>{username || "Unknown"}</Text>
       </View>
+    );
+
+    if (isOwnReview) {
+      return content;
+    }
+
+    return (
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+        {content}
+      </TouchableOpacity>
     );
   }
 );
@@ -224,6 +245,61 @@ const ActionButton = memo(
     <TouchableOpacity onPress={onPress} style={styles.actionButton}>
       <Ionicons name={icon as any} size={ICON_SIZES.small} color={color} />
     </TouchableOpacity>
+  )
+);
+
+const MenuModal = memo(
+  ({
+    visible,
+    onClose,
+    onDelete,
+    onReport,
+    isOwnReview,
+  }: {
+    visible: boolean;
+    onClose: () => void;
+    onDelete?: () => void;
+    onReport?: () => void;
+    isOwnReview: boolean;
+  }) => (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity style={styles.modalOverlay} onPress={onClose}>
+        <View style={styles.menuModal}>
+          {isOwnReview ? (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onDelete?.();
+              }}
+            >
+              <Ionicons name="trash" size={20} color="#ff4444" />
+              <Text style={[styles.menuItemText, { color: "#ff4444" }]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onReport?.();
+              }}
+            >
+              <Ionicons name="flag" size={20} color="#ff4444" />
+              <Text style={[styles.menuItemText, { color: "#ff4444" }]}>
+                Report
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Modal>
   )
 );
 
@@ -383,7 +459,9 @@ const ReviewItem = memo(
     const { profile } = useProfile();
     const overlayOpacity = useRef(new Animated.Value(1)).current;
     const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [menuModalVisible, setMenuModalVisible] = useState(false);
     const lastTapRef = useRef<number>(0);
+    const isOwnReview = String(profile?.id) === String(review.profile?.id);
 
     // Use custom hooks for data management
     const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -463,20 +541,16 @@ const ReviewItem = memo(
           onPressOut={handlePressOut}
         >
           <View style={styles.header}>
-            <Link href={`/home/users/${review.profile?.username}`} asChild>
-              <Avatar
-                avatarUrl={review.profile?.avatar_url || null}
-                username={review.profile?.username}
-              />
-            </Link>
+            <Avatar
+              avatarUrl={review.profile?.avatar_url || null}
+              username={review.profile?.username}
+              isOwnReview={isOwnReview}
+            />
             <View style={styles.headerActions}>
-              {canDelete && <ActionButton onPress={onDelete!} icon="trash" />}
-              {profile?.id !== review.user_id && (
-                <ActionButton
-                  onPress={() => setReportModalVisible(true)}
-                  icon="flag-outline"
-                />
-              )}
+              <ActionButton
+                onPress={() => setMenuModalVisible(true)}
+                icon="ellipsis-horizontal"
+              />
             </View>
           </View>
 
@@ -500,6 +574,14 @@ const ReviewItem = memo(
             onCommentDeleted={onCommentDeleted}
           />
         </Pressable>
+
+        <MenuModal
+          visible={menuModalVisible}
+          onClose={() => setMenuModalVisible(false)}
+          onDelete={onDelete}
+          onReport={() => setReportModalVisible(true)}
+          isOwnReview={isOwnReview}
+        />
 
         <ReportModal
           visible={reportModalVisible}
@@ -652,5 +734,36 @@ const styles = StyleSheet.create({
     color: COLORS.lightGray,
     fontSize: 14,
     marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuModal: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 8,
+    minWidth: 120,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
