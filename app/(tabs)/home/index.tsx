@@ -198,6 +198,7 @@ function Home() {
           )
           .eq("state", 1)
           .in("user_id", queryUserIds)
+          .not("profile.deleted", "eq", true)
           .order("inserted_at", { ascending: false })
           .range(start, end);
 

@@ -16,6 +16,24 @@ export default function ProfileLayout() {
           title: "Followers",
         }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="terms"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="delete-account"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

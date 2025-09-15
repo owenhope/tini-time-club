@@ -79,8 +79,11 @@ const Profile = () => {
           </View>
         ),
         headerRight: () => (
-          <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
-            <Ionicons name="log-out-outline" size={24} color="black" />
+          <TouchableOpacity
+            onPress={() => navigation.navigate("settings" as never)}
+            style={styles.headerButton}
+          >
+            <Ionicons name="ellipsis-horizontal" size={24} color="black" />
           </TouchableOpacity>
         ),
       });

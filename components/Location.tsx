@@ -178,6 +178,7 @@ const Location = () => {
           )
           .eq("location", locationId)
           .eq("state", 1)
+          .not("profile.deleted", "eq", true)
           .order("inserted_at", { ascending: false });
         if (error) {
           console.error("Error fetching location reviews:", error);

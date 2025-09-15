@@ -24,11 +24,12 @@ export const ProfileProvider = ({ children }) => {
       return;
     }
 
-    // Query the "profile" table for this user’s profile
+    // Query the "profile" table for this user's profile
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
+      .eq("deleted", false)
       .single();
 
     if (error) {

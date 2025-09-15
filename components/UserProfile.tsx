@@ -183,6 +183,7 @@ const UserProfile = () => {
         .from("profiles")
         .select("*")
         .eq("username", username)
+        .eq("deleted", false)
         .single();
       if (error) {
         console.error("Error fetching selected profile:", error);
@@ -227,6 +228,7 @@ const UserProfile = () => {
         )
         .eq("user_id", userId)
         .eq("state", 1)
+        .not("profile.deleted", "eq", true)
         .order("inserted_at", { ascending: false });
       if (error) {
         console.error("Error fetching user reviews:", error);
