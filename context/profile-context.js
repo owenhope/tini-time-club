@@ -53,6 +53,7 @@ export const ProfileProvider = ({ children }) => {
       .from("profiles")
       .update(updates)
       .eq("id", profile.id)
+      .select()
       .single();
 
     if (error) {

@@ -70,36 +70,42 @@ export default function SearchScreen() {
         return (
           <TouchableOpacity
             key={`${type}-${item.id}`}
-            style={styles.resultItem}
+            style={styles.resultCard}
             onPress={() => {
               Keyboard.dismiss();
               type === "user"
                 ? router.navigate(`/discover/users/${item.username}`)
                 : router.navigate(`/discover/locations/${item.id}`);
             }}
+            activeOpacity={0.7}
           >
-            {type === "user" ? (
-              avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <View style={styles.cardContent}>
+              {type === "user" ? (
+                <View style={styles.avatarContainer}>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {item.username?.charAt(0)?.toUpperCase() || "?"}
+                    </Text>
+                  )}
+                </View>
               ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={30}
-                  color="#aaa"
-                  style={{ marginRight: 10 }}
-                />
-              )
-            ) : (
-              <Ionicons
-                name="location"
-                size={24}
-                style={{ marginRight: 10 }}
-                color="#555"
-              />
-            )}
-            <Text style={styles.resultText}>
-              {type === "user" ? item.username : item.name}
-            </Text>
+                <View style={styles.locationIconContainer}>
+                  <Ionicons name="location-outline" size={24} color="#10B981" />
+                </View>
+              )}
+              <View style={styles.textContainer}>
+                <Text style={styles.resultTitle}>
+                  {type === "user"
+                    ? item.username || "Unknown User"
+                    : item.name}
+                </Text>
+                {type === "location" && item.address && (
+                  <Text style={styles.resultSubtitle}>{item.address}</Text>
+                )}
+              </View>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -109,17 +115,17 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={20} color="#888" />
+        <Ionicons name="search-outline" size={20} color="#9ca3af" />
         <TextInput
           style={styles.input}
           placeholder="Search for people or places"
           value={query}
           onChangeText={search}
-          placeholderTextColor="#888"
+          placeholderTextColor="#9ca3af"
         />
         {query !== "" && (
-          <TouchableOpacity onPress={() => search("")}>
-            <Ionicons name="close-circle" size={20} color="#999" />
+          <TouchableOpacity onPress={() => search("")} activeOpacity={0.7}>
+            <Ionicons name="close-circle" size={20} color="#9ca3af" />
           </TouchableOpacity>
         )}
       </View>
@@ -142,48 +148,104 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f8f9fa",
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    margin: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    margin: 20,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    height: 48,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   input: {
     flex: 1,
-    height: 40,
     fontSize: 16,
-    marginLeft: 8,
-    color: "#000",
+    marginLeft: 12,
+    color: "#1a1a1a",
   },
   sectionHeader: {
     fontWeight: "600",
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    color: "#333",
+    fontSize: 18,
+    marginTop: 20,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+    color: "#1a1a1a",
   },
   resultsContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  resultItem: {
+  resultCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    padding: 12,
   },
-  resultText: {
-    fontSize: 16,
-    color: "#000",
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  avatarText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  locationIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f0fdf4",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
-    backgroundColor: "#ccc",
+  },
+  textContainer: {
+    flex: 1,
+  },
+  resultTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 1,
+  },
+  resultSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
   },
 });

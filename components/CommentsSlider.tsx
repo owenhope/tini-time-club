@@ -24,6 +24,7 @@ import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
+import { useRouter } from "expo-router";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -45,6 +46,7 @@ export default function CommentsSlider({
   onCommentAdded,
 }: CommentsSliderProps) {
   const { profile } = useProfile();
+  const router = useRouter();
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [showContent, setShowContent] = useState(false);
@@ -143,6 +145,15 @@ export default function CommentsSlider({
     ]);
   };
 
+  const navigateToUserProfile = (username: string, userId: string) => {
+    // Don't navigate if it's the current user's profile
+    if (profile?.id === userId) return;
+
+    if (username) {
+      router.push(`/home/users/${username}`);
+    }
+  };
+
   const closeSlider = () => {
     setShowContent(false);
     Animated.timing(sliderAnim, {
@@ -227,23 +238,42 @@ export default function CommentsSlider({
                           <View style={styles.commentRow}>
                             <View style={styles.commentOuter}>
                               <View style={styles.commentInner}>
-                                {avatarUrl ? (
-                                  <Image
-                                    source={{ uri: avatarUrl }}
-                                    style={styles.avatar}
-                                  />
-                                ) : (
-                                  <View style={styles.avatarPlaceholder}>
-                                    <Text style={styles.avatarInitial}>
-                                      {username.charAt(0).toUpperCase()}
-                                    </Text>
-                                  </View>
-                                )}
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    navigateToUserProfile(
+                                      username,
+                                      item.user_id
+                                    )
+                                  }
+                                >
+                                  {avatarUrl ? (
+                                    <Image
+                                      source={{ uri: avatarUrl }}
+                                      style={styles.avatar}
+                                    />
+                                  ) : (
+                                    <View style={styles.avatarPlaceholder}>
+                                      <Text style={styles.avatarInitial}>
+                                        {username.charAt(0).toUpperCase()}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </TouchableOpacity>
                                 <View style={styles.commentContent}>
                                   <View style={styles.commentHeaderRow}>
-                                    <Text style={styles.username}>
-                                      {username}
-                                    </Text>
+                                    <TouchableOpacity
+                                      onPress={() =>
+                                        navigateToUserProfile(
+                                          username,
+                                          item.user_id
+                                        )
+                                      }
+                                      activeOpacity={0.7}
+                                    >
+                                      <Text style={styles.username}>
+                                        {username}
+                                      </Text>
+                                    </TouchableOpacity>
                                     <Text style={styles.timestamp}>
                                       {" "}
                                       · {relativeDate}

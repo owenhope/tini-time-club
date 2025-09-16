@@ -105,31 +105,41 @@ export default function ProfileList({
     const isFollowing = followedIds.includes(item.id);
     const isUpdating = updatingFollowIds.includes(item.id);
     return (
-      <Link href={`/home/users/${item.username}`} asChild>
-        <TouchableOpacity style={styles.itemContainer}>
-          <Text style={styles.username}>{item.username}</Text>
-          {!isSelf && (
-            <TouchableOpacity
-              onPress={() => toggleFollow(item.id)}
-              style={[
-                styles.followButton,
-                isFollowing && styles.followingButton,
-                isUpdating && styles.disabledButton,
-              ]}
-              disabled={isUpdating}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  isFollowing && styles.followingButtonText,
-                ]}
-              >
-                {isFollowing ? "Following" : "Follow"}
+      <View style={styles.profileCard}>
+        <Link href={`/home/users/${item.username || "unknown"}`} asChild>
+          <TouchableOpacity style={styles.profileInfo} activeOpacity={0.7}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
+                {item.username?.charAt(0)?.toUpperCase() || "?"}
               </Text>
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-      </Link>
+            </View>
+            <Text style={styles.username}>
+              {item.username || "Unknown User"}
+            </Text>
+          </TouchableOpacity>
+        </Link>
+        {!isSelf && (
+          <TouchableOpacity
+            onPress={() => toggleFollow(item.id)}
+            style={[
+              styles.followButton,
+              isFollowing && styles.followingButton,
+              isUpdating && styles.disabledButton,
+            ]}
+            disabled={isUpdating}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.buttonText,
+                isFollowing && styles.followingButtonText,
+              ]}
+            >
+              {isFollowing ? "Following" : "Follow"}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
     );
   };
 
@@ -140,6 +150,7 @@ export default function ProfileList({
           <TextInput
             style={styles.searchInput}
             placeholder="Search profiles..."
+            placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -158,48 +169,99 @@ export default function ProfileList({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#f8f9fa",
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   searchContainer: {
-    marginBottom: 12,
+    marginBottom: 20,
   },
   searchInput: {
-    height: 40,
-    borderColor: "#ccc",
+    height: 48,
+    backgroundColor: "#ffffff",
+    borderColor: "#e5e7eb",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#1a1a1a",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   listContent: {
     paddingBottom: 20,
   },
-  itemContainer: {
+  profileCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomColor: "#eee",
-    borderBottomWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  profileInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  avatarText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   username: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1a1a1a",
   },
   followButton: {
-    backgroundColor: "#007aff",
+    backgroundColor: "#10B981",
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 4,
+    borderRadius: 6,
+    minWidth: 70,
+    alignItems: "center",
   },
   followingButton: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
   },
   disabledButton: {
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "600",
   },
   followingButtonText: {
-    color: "#000",
+    color: "#6b7280",
   },
 });

@@ -25,7 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: name,
-    version: "2.0.1",
+    version: "2.0.3",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
@@ -76,34 +76,30 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           backgroundColor: "#ffffff",
         },
       ],
-      // Additional plugins from your original config:
       [
         "expo-image-picker",
         {
           photoPermissions:
-            "Allow Tini Time Club to access your photos to upload an Avatar.",
+            "Allow Tini Time Club to access your photos to upload photos of your Martinis or your profile picture.",
         },
       ],
       [
         "expo-tracking-transparency", 
         { userTrackingPermission: 
-          "Allow Tini Time Club to collect app-related data that can be used for tracking you or your device."
+          "Allow Tini Time Club to collect app-related data that can be used to deliver personalized Martini reviews, and suggested user profiles to you."
         },
       ],
       [
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
-            "Allow Tini Time Club to use your location.",
+            "Allow Tini Time Club to use your location so you can find the best Martinis near you.",
         },
       ],
       [
         "expo-camera",
         {
-          cameraPermission: "Allow Tini Time Club to access your camera",
-          microphonePermission:
-            "Allow Tini Time Club to access your microphone",
-          recordAudioAndroid: true,
+          cameraPermission: "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture."
         },
       ],
       [
