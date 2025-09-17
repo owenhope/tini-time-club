@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 25,
     width: "80%",
     maxHeight: "80%",
     alignItems: "center",
@@ -158,8 +158,9 @@ const styles = StyleSheet.create({
   customInput: {
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: "top",
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff4444",
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 25,
     flex: 1,
   },
   submitButtonText: {
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 25,
     flex: 1,
   },
   backButtonText: {

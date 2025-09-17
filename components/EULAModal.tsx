@@ -250,20 +250,20 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 25,
     justifyContent: "center",
     alignItems: "center",
   },
   acceptButton: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#B6A3E2",
   },
   declineButton: {
     backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: "#10B981",
+    borderColor: "#B6A3E2",
   },
   disabledButton: {
-    backgroundColor: "#ccc",
+    opacity: 0.6,
   },
   acceptButtonText: {
     color: "#fff",
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   declineButtonText: {
-    color: "#10B981",
+    color: "#B6A3E2",
     fontSize: 16,
     fontWeight: "600",
   },

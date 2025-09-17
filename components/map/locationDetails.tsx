@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { stripNameFromAddress } from "@/utils/helpers";
 
 interface LocationDetailsProps {
   loc: any;
@@ -9,39 +10,61 @@ interface LocationDetailsProps {
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   return (
     <View style={styles.bottomSheetContent}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerLeft}>
+      {/* Header Section */}
+      <View style={styles.headerSection}>
+        <View style={styles.titleContainer}>
           <Link href={`/locations/${loc.id}`} asChild>
-            <Text style={styles.headerText} numberOfLines={1}>
-              {loc.name}
+            <Text style={styles.locationName} numberOfLines={1}>
+              {loc.name || "No name available"}
             </Text>
           </Link>
-          <Text style={styles.reviewText}>
-            ({loc.total_ratings ?? 0} reviews)
-          </Text>
-        </View>
-        <View style={styles.ratingCircle}>
-          <Text style={styles.circleText}>
-            {loc.rating ? loc.rating.toFixed(1) : "N/A"}
-          </Text>
+          {loc.address && (
+            <Text style={styles.address} numberOfLines={2}>
+              {stripNameFromAddress(loc.name, loc.address)}
+            </Text>
+          )}
+          {!loc.address && (
+            <Text style={styles.address} numberOfLines={2}>
+              No address available
+            </Text>
+          )}
         </View>
       </View>
-      <View style={styles.detailsContainer}>
-        <View style={styles.circleContainer}>
-          <Text style={styles.circleLabel}>Taste</Text>
+
+      {/* All Ratings in One Row */}
+      <View style={styles.allRatingsContainer}>
+        <View style={styles.ratingContainer}>
+          <View style={styles.overallRatingCircle}>
+            <Text style={styles.ratingText}>
+              {loc.rating ? loc.rating.toFixed(1) : "N/A"}
+            </Text>
+          </View>
+          <Text style={styles.ratingLabel}>Overall</Text>
+        </View>
+
+        <View style={styles.ratingContainer}>
           <View style={styles.tasteCircle}>
-            <Text style={styles.circleText}>
+            <Text style={styles.ratingText}>
               {loc.taste_avg ? loc.taste_avg.toFixed(1) : "N/A"}
             </Text>
           </View>
+          <Text style={styles.ratingLabel}>Taste</Text>
         </View>
-        <View style={styles.circleContainer}>
-          <Text style={styles.circleLabel}>Presentation</Text>
+
+        <View style={styles.ratingContainer}>
           <View style={styles.presentationCircle}>
-            <Text style={styles.circleText}>
+            <Text style={styles.ratingText}>
               {loc.presentation_avg ? loc.presentation_avg.toFixed(1) : "N/A"}
             </Text>
           </View>
+          <Text style={styles.ratingLabel}>Presentation</Text>
+        </View>
+
+        <View style={styles.ratingContainer}>
+          <View style={styles.reviewCircle}>
+            <Text style={styles.ratingText}>{loc.total_ratings ?? 0}</Text>
+          </View>
+          <Text style={styles.ratingLabel}>Reviews</Text>
         </View>
       </View>
     </View>
@@ -50,98 +73,107 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
 
 const styles = StyleSheet.create({
   bottomSheetContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: "#fff",
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingBottom: 6,
-    marginBottom: 6,
+
+  // Header Section
+  headerSection: {
+    marginBottom: 16,
+    minHeight: 60,
   },
-  headerLeft: {
+  titleContainer: {
     flexDirection: "column",
-    flex: 3,
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+  locationName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginBottom: 4,
   },
-  addressText: {
-    fontSize: 14,
-    marginTop: 4,
+  address: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 20,
   },
-  reviewText: {
-    fontSize: 14,
-    color: "#555",
-    marginVertical: 2,
+  allRatingsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
   },
-  ratingCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#2E86AB",
+  ratingContainer: {
+    alignItems: "center",
+    flex: 1,
+  },
+  overallRatingCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#B6A3E2",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#B6A3E2",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  circleText: {
-    fontSize: 14,
-    fontWeight: "600",
+  ratingText: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#fff",
   },
-  detailsContainer: {
-    flexDirection: "column",
-    gap: 16, // use marginBottom on children if gap is not supported
-    marginTop: 16,
+  ratingLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#666",
+    marginTop: 6,
+    textAlign: "center",
   },
-  circleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  circleLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    flex: 1,
-    textAlign: "left",
-  },
+
   tasteCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "olive",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#9E9E9E",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#9E9E9E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   presentationCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "silver",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#9E9E9E",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#9E9E9E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  actionContainer: {
-    flexDirection: "row",
+  reviewCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#9E9E9E",
     justifyContent: "center",
-    width: "100%",
-    marginTop: 16,
-  },
-  button: {
-    backgroundColor: "#000",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 4,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#9E9E9E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
 });
 

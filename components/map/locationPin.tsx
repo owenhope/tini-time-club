@@ -31,7 +31,7 @@ function LocationPin({ loc }: LocationPinProps) {
   );
 }
 
-const PIN_COLOR = "#2E86AB";
+const PIN_COLOR = "#B6A3E2";
 
 const styles = StyleSheet.create({
   container: {

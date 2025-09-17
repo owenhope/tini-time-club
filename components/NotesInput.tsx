@@ -27,8 +27,9 @@ const styles = StyleSheet.create({
   textarea: {
     fontSize: 18,
     minHeight: 100,
-    padding: 10,
-    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 25,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     color: "#FFF",
   },

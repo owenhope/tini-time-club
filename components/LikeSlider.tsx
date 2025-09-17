@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: 12,
     backgroundColor: "#ccc",
   },
   sliderTitle: {

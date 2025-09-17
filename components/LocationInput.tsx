@@ -69,9 +69,9 @@ const LocationInput = ({ control }: { control: any }) => {
               textInput: {
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
                 height: 44,
-                borderRadius: 5,
+                borderRadius: 25,
                 paddingVertical: 5,
-                paddingHorizontal: 10,
+                paddingHorizontal: 20,
                 fontSize: 18,
                 flex: 1,
                 color: "#FFF",

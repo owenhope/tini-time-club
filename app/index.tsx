@@ -12,13 +12,15 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
+import { Button, Input } from "@/components/shared";
 
 // Constants
 const COLORS = {
-  primary: "#10B981",
+  primary: "#B6A3E2",
   background: "#fff",
   text: "#000",
   textSecondary: "#666",
@@ -30,7 +32,7 @@ const COLORS = {
 const DIMENSIONS = {
   inputHeight: 50,
   buttonHeight: 50,
-  borderRadius: 5,
+  borderRadius: 25,
   logoWidth: 400,
   logoHeight: 160,
 } as const;
@@ -116,68 +118,9 @@ const LoadingOverlay = ({ visible }: { visible: boolean }) => {
   );
 };
 
-const FormInput = ({
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry = false,
-  keyboardType = "default",
-  autoComplete = "off",
-}: {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  secureTextEntry?: boolean;
-  keyboardType?: "default" | "email-address";
-  autoComplete?: "email" | "password" | "off";
-}) => (
-  <TextInput
-    placeholder={placeholder}
-    placeholderTextColor={COLORS.placeholder}
-    value={value}
-    onChangeText={onChangeText}
-    secureTextEntry={secureTextEntry}
-    keyboardType={keyboardType}
-    autoComplete={autoComplete}
-    style={styles.inputField}
-  />
-);
+// Replaced with shared Input component
 
-const PrimaryButton = ({
-  onPress,
-  title,
-  disabled = false,
-}: {
-  onPress: () => void;
-  title: string;
-  disabled?: boolean;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[styles.loginButton, disabled && styles.disabledButton]}
-    disabled={disabled}
-  >
-    <Text style={styles.loginButtonText}>{title}</Text>
-  </TouchableOpacity>
-);
-
-const SecondaryButton = ({
-  onPress,
-  title,
-  disabled = false,
-}: {
-  onPress: () => void;
-  title: string;
-  disabled?: boolean;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[styles.createAccountButton, disabled && styles.disabledButton]}
-    disabled={disabled}
-  >
-    <Text style={styles.createAccountButtonText}>{title}</Text>
-  </TouchableOpacity>
-);
+// Replaced with shared Button component
 
 const ForgotPasswordModal = ({
   visible,
@@ -202,12 +145,13 @@ const ForgotPasswordModal = ({
           Enter your email address and we'll send you a link to reset your
           password.
         </Text>
-        <FormInput
+        <Input
           placeholder="Email"
           value={email}
           onChangeText={onEmailChange}
-          keyboardType="email-address"
-          autoComplete="email"
+          type="email"
+          size="medium"
+          variant="default"
         />
         <View style={styles.modalButtonContainer}>
           <TouchableOpacity
@@ -414,20 +358,23 @@ const Login = () => {
           resizeMode="contain"
         />
 
-        <FormInput
+        <Input
           placeholder="Email"
           value={formData.email}
           onChangeText={(text) => updateField("email", text)}
-          keyboardType="email-address"
-          autoComplete="email"
+          type="email"
+          size="large"
+          variant="default"
         />
 
-        <FormInput
+        <Input
           placeholder="Password"
           value={formData.password}
           onChangeText={(text) => updateField("password", text)}
-          secureTextEntry
-          autoComplete="password"
+          type="password"
+          size="large"
+          variant="default"
+          showPasswordToggle
         />
 
         <TouchableOpacity
@@ -437,23 +384,30 @@ const Login = () => {
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <PrimaryButton
-          onPress={onSignInPress}
+        <Button
           title={buttonText}
+          onPress={onSignInPress}
           disabled={loading}
+          loading={loading}
+          variant="primary"
+          size="large"
+          fullWidth
         />
 
         <View style={styles.authContainer}>
           <AppleAuth />
           <GoogleAuth />
         </View>
-      </View>
 
-      <SecondaryButton
-        onPress={() => setIsSignUp(!isSignUp)}
-        title={toggleButtonText}
-        disabled={loading}
-      />
+        <Button
+          title={toggleButtonText}
+          onPress={() => setIsSignUp(!isSignUp)}
+          disabled={loading}
+          variant="outline"
+          size="large"
+          fullWidth
+        />
+      </View>
 
       <ForgotPasswordModal
         visible={forgotPasswordModal.isVisible}
@@ -478,7 +432,7 @@ const baseInputStyle = {
   borderColor: COLORS.primary,
   borderWidth: 1,
   borderRadius: DIMENSIONS.borderRadius,
-  paddingHorizontal: 10,
+  paddingHorizontal: 20,
   color: COLORS.text,
 } as const;
 
@@ -498,8 +452,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    paddingTop: 100,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -518,37 +473,12 @@ const styles = StyleSheet.create({
     height: DIMENSIONS.logoHeight,
     marginBottom: 40,
   },
-  inputField: {
-    ...baseInputStyle,
-    marginVertical: 8,
-  },
-  loginButton: {
-    ...baseButtonStyle,
-    backgroundColor: COLORS.primary,
-    marginVertical: 10,
-  },
-  loginButtonText: {
-    color: COLORS.background,
-    fontSize: 16,
-    fontWeight: "600",
-  },
   authContainer: {
     alignItems: "center",
     gap: 10,
     width: "100%",
     marginTop: 20,
-  },
-  createAccountButton: {
-    ...baseButtonStyle,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    marginBottom: 40,
-    marginTop: "auto",
-  },
-  createAccountButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    marginBottom: 20,
   },
   forgotPasswordButton: {
     alignSelf: "flex-end",
@@ -570,7 +500,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingVertical: 20,
     paddingHorizontal: 40,
-    borderRadius: 8,
+    borderRadius: 12,
     width: "90%",
     alignItems: "center",
   },
@@ -586,10 +516,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
     lineHeight: 22,
-  },
-  modalInput: {
-    ...baseInputStyle,
-    marginBottom: 20,
   },
   modalButtonContainer: {
     flexDirection: "row",
@@ -621,9 +547,6 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 16,
     fontWeight: "600",
-  },
-  disabledButton: {
-    opacity: 0.6,
   },
 });
 

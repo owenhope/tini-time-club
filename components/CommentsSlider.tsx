@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: 12,
     backgroundColor: "#ccc",
   },
   emptyStateContainer: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#ccc",
+    backgroundColor: "#336654",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 20,
-    paddingHorizontal: 8,
+    paddingHorizontal: 15,
     marginRight: 10,
   },
   sendButton: { color: "#000000", fontWeight: "bold" },
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     width: "80%",
     alignItems: "center",
   },

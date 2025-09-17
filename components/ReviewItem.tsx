@@ -215,7 +215,15 @@ const Avatar = memo(
 
     const content = (
       <View style={styles.headerProfile}>
-        {url && <Image source={{ uri: url }} style={styles.avatar} />}
+        {url ? (
+          <Image source={{ uri: url }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarInitial}>
+              {username?.charAt(0).toUpperCase() || "?"}
+            </Text>
+          </View>
+        )}
         <Text style={styles.headerUsername}>{username || "Unknown"}</Text>
       </View>
     );
@@ -662,6 +670,20 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     marginRight: 8,
+  },
+  avatarPlaceholder: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#336654",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  avatarInitial: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   imageContainer: {
     width: SCREEN_WIDTH,

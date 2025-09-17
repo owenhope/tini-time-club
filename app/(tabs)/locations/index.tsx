@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2E86AB",
+    backgroundColor: "#B6A3E2",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: 12,
     backgroundColor: "#ccc",
   },
 });

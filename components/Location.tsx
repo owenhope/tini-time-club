@@ -27,9 +27,9 @@ import { useProfile } from "@/context/profile-context";
 
 // Constants
 const COLORS = {
-  primary: "#2E86AB",
-  taste: "olive",
-  presentation: "silver",
+  primary: "#B6A3E2",
+  taste: "#9E9E9E",
+  presentation: "#9E9E9E",
   white: "#fff",
   gray: "#ccc",
   text: "#555",
@@ -376,65 +376,53 @@ const Location = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        <View style={{ flexDirection: "row" }}>
-          <View style={styles.avatarContainer}>
-            {locationImage ? (
-              <Image style={styles.avatar} source={{ uri: locationImage }} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {displayLocation?.name
-                    ? displayLocation.name.charAt(0).toUpperCase()
-                    : "?"}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.reviewCount}>
-              {displayLocation?.total_ratings ?? 0} Reviews
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={styles.ratingsHeaderContainer}>
-              <View style={styles.ratingContainer}>
-                <View style={styles.ratingCircle}>
-                  <Text style={styles.circleText}>
-                    {displayLocation?.rating
-                      ? displayLocation.rating.toFixed(1)
-                      : "N/A"}
-                  </Text>
-                </View>
-                <Text style={styles.circleLabel}>Overall</Text>
-              </View>
-              <View style={styles.ratingContainer}>
-                <View style={styles.tasteCircle}>
-                  <Text style={styles.circleText}>
-                    {displayLocation?.taste_avg
-                      ? displayLocation.taste_avg.toFixed(1)
-                      : "N/A"}
-                  </Text>
-                </View>
-                <Text style={styles.circleLabel}>Taste</Text>
-              </View>
-              <View style={styles.ratingContainer}>
-                <View style={styles.presentationCircle}>
-                  <Text style={styles.circleText}>
-                    {displayLocation?.presentation_avg
-                      ? displayLocation.presentation_avg.toFixed(1)
-                      : "N/A"}
-                  </Text>
-                </View>
-                <Text style={styles.circleLabel}>Presentation</Text>
-              </View>
-            </View>
-            <View>
-              <Text>
-                {stripNameFromAddress(
-                  displayLocation?.name ?? "",
-                  displayLocation?.address ?? ""
-                )}
+        <View style={styles.allRatingsContainer}>
+          <View style={styles.ratingContainer}>
+            <View style={styles.overallRatingCircle}>
+              <Text style={styles.circleText}>
+                {displayLocation?.rating
+                  ? displayLocation.rating.toFixed(1)
+                  : "N/A"}
               </Text>
             </View>
+            <Text style={styles.circleLabel}>Overall</Text>
           </View>
+          <View style={styles.ratingContainer}>
+            <View style={styles.tasteCircle}>
+              <Text style={styles.circleText}>
+                {displayLocation?.taste_avg
+                  ? displayLocation.taste_avg.toFixed(1)
+                  : "N/A"}
+              </Text>
+            </View>
+            <Text style={styles.circleLabel}>Taste</Text>
+          </View>
+          <View style={styles.ratingContainer}>
+            <View style={styles.presentationCircle}>
+              <Text style={styles.circleText}>
+                {displayLocation?.presentation_avg
+                  ? displayLocation.presentation_avg.toFixed(1)
+                  : "N/A"}
+              </Text>
+            </View>
+            <Text style={styles.circleLabel}>Presentation</Text>
+          </View>
+          <View style={styles.ratingContainer}>
+            <View style={styles.reviewCountCircle}>
+              <Text style={styles.circleText}>
+                {displayLocation?.total_ratings ?? 0}
+              </Text>
+            </View>
+            <Text style={styles.circleLabel}>Reviews</Text>
+          </View>
+        </View>
+        <View style={styles.addressRow}>
+          <Text style={styles.locationAddress}>
+            {stripNameFromAddress(
+              displayLocation?.name ?? "",
+              displayLocation?.address ?? ""
+            )}
+          </Text>
         </View>
       </View>
       <View style={styles.reviewsContainer}>
@@ -474,37 +462,34 @@ const styles = StyleSheet.create({
   profileHeader: {
     padding: 16,
   },
-  avatarContainer: {
-    marginRight: 16,
-    alignItems: "center",
-  },
-  avatar: {
-    width: DIMENSIONS.avatar,
-    height: DIMENSIONS.avatar,
-    borderRadius: DIMENSIONS.avatar / 2,
-    backgroundColor: COLORS.gray,
-  },
-  avatarPlaceholder: {
-    width: DIMENSIONS.avatar,
-    height: DIMENSIONS.avatar,
-    borderRadius: DIMENSIONS.avatar / 2,
-    backgroundColor: COLORS.gray,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: {
-    fontSize: 40,
-    color: COLORS.white,
-    fontWeight: "bold",
-  },
-  ratingsHeaderContainer: {
-    flex: 1,
+  allRatingsContainer: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-around",
+    alignItems: "center",
+  },
+  overallRatingCircle: {
+    width: DIMENSIONS.ratingCircle,
+    height: DIMENSIONS.ratingCircle,
+    borderRadius: DIMENSIONS.ratingCircle / 2,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addressRow: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  locationAddress: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 18,
+    textAlign: "center",
   },
   ratingContainer: {
     alignItems: "center",
+    flex: 1,
   },
   ratingCircle: {
     width: DIMENSIONS.ratingCircle,
@@ -530,18 +515,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  reviewCountCircle: {
+    width: DIMENSIONS.ratingCircle,
+    height: DIMENSIONS.ratingCircle,
+    borderRadius: DIMENSIONS.ratingCircle / 2,
+    backgroundColor: COLORS.taste,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   circleText: {
     fontSize: 16,
     fontWeight: "600",
     color: COLORS.white,
   },
   circleLabel: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#666",
+    marginTop: 6,
     textAlign: "center",
-  },
-  reviewCount: {
-    fontSize: 16,
   },
   reviewsContainer: {
     flex: 1,

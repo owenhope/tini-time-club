@@ -105,10 +105,7 @@ const UserProfile = () => {
     } else {
       const { error } = await supabase
         .from("followers")
-        .insert(
-          [{ follower_id: profile.id, following_id: displayProfile.id }],
-          { upsert: true }
-        );
+        .upsert([{ follower_id: profile.id, following_id: displayProfile.id }]);
       if (error) {
         console.error("Error following user:", error);
         Alert.alert("Error", "Unable to follow user. Please try again.");
@@ -526,13 +523,13 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#ccc",
+    backgroundColor: "#336654",
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#ccc",
+    backgroundColor: "#336654",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -556,11 +553,13 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "700",
   },
   statLabel: {
     fontSize: 14,
-    color: "#777",
+    fontWeight: "bold",
+    color: "#666",
+    textAlign: "center",
   },
   reviewsContainer: {
     flex: 1,
@@ -586,7 +585,7 @@ const styles = StyleSheet.create({
   },
   friendText: {
     fontSize: 16,
-    color: "#fff", // White text on green background
+    color: "#fff", // White text on purple background
     fontWeight: "600",
   },
   headerTitleContainer: {
@@ -607,10 +606,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   followButton: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#B6A3E2",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 5,
+    borderRadius: 25,
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -618,7 +617,7 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#10B981",
+    borderColor: "#B6A3E2",
   },
   followButtonText: {
     color: "#fff",
@@ -627,13 +626,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   followingButtonText: {
-    color: "#10B981",
+    color: "#B6A3E2",
   },
   blockButton: {
-    backgroundColor: "#ff4444",
+    backgroundColor: "#ff6b6b",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 5,
+    borderRadius: 25,
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -641,16 +640,16 @@ const styles = StyleSheet.create({
   blockButtonText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     textAlign: "center",
   },
   unblockButton: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ff4444",
+    borderColor: "#ff6b6b",
   },
   unblockButtonText: {
-    color: "#ff4444",
+    color: "#ff6b6b",
   },
 });
 

@@ -220,13 +220,13 @@ const styles = StyleSheet.create({
   },
   username: {
     fontWeight: "600",
-    color: "#10B981",
+    color: "#B6A3E2",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    borderRadius: 25,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: "#f9f9f9",
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: "#ff4444",
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: 25,
     alignItems: "center",
     marginTop: 20,
   },

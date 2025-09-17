@@ -17,6 +17,7 @@ import {
   RefreshControl,
   Image,
   Alert,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
@@ -32,6 +33,7 @@ import { getBlockedUserIds } from "@/utils/blockUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
+import { Button, Input } from "@/components/shared";
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -78,6 +80,7 @@ function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
+  const logoSizeAnim = useRef(new Animated.Value(60)).current;
 
   // usePerformanceMonitor(PERFORMANCE_CONFIG.enableLogging); // Disabled to prevent unnecessary renders
 
@@ -263,6 +266,27 @@ function Home() {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
   }, []);
+
+  // Handle scroll events to adjust logo size with animation
+  const handleScroll = useCallback(
+    (event: any) => {
+      const scrollY = event.nativeEvent.contentOffset.y;
+      if (scrollY > 0) {
+        Animated.timing(logoSizeAnim, {
+          toValue: 45,
+          duration: 50,
+          useNativeDriver: false,
+        }).start();
+      } else {
+        Animated.timing(logoSizeAnim, {
+          toValue: 60,
+          duration: 50,
+          useNativeDriver: false,
+        }).start();
+      }
+    },
+    [logoSizeAnim]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -479,12 +503,12 @@ function Home() {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.errorText}>Error: {error}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
+          <Button
+            title="Retry"
             onPress={() => loadReviews(true)}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+            variant="primary"
+            size="medium"
+          />
         </View>
       );
     }
@@ -505,7 +529,7 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="map-outline" size={24} color="#10B981" />
+              <Ionicons name="map-outline" size={24} color="#ffffff" />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Discover Locations</Text>
@@ -523,7 +547,7 @@ function Home() {
             <View style={styles.stepIconContainer}>
               <Image
                 source={require("@/assets/images/martini_transparent.png")}
-                style={[styles.martiniIcon, { tintColor: "#10B981" }]}
+                style={[styles.martiniIcon, { tintColor: "#ffffff" }]}
                 resizeMode="contain"
               />
             </View>
@@ -541,7 +565,7 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="camera-outline" size={24} color="#10B981" />
+              <Ionicons name="camera-outline" size={24} color="#ffffff" />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Share Your Review</Text>
@@ -557,7 +581,7 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="search-outline" size={24} color="#10B981" />
+              <Ionicons name="search-outline" size={24} color="#ffffff" />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Connect With Others</Text>
@@ -576,7 +600,7 @@ function Home() {
     if (!loadingMore) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#10B981" />
+        <ActivityIndicator size="small" color="#B6A3E2" />
         <Text style={styles.footerLoaderText}>Loading more...</Text>
       </View>
     );
@@ -634,7 +658,7 @@ function Home() {
   if (!firstLoadDone) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10B981" />
+        <ActivityIndicator size="large" color="#B6A3E2" />
         <Text style={styles.loadingText}>Loading reviews...</Text>
       </View>
     );
@@ -644,9 +668,15 @@ function Home() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header with logo */}
       <View style={styles.header}>
-        <Image
+        <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
-          style={styles.headerLogo}
+          style={[
+            styles.headerLogo,
+            {
+              width: logoSizeAnim,
+              height: logoSizeAnim,
+            },
+          ]}
           resizeMode="cover"
         />
       </View>
@@ -660,8 +690,8 @@ function Home() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#10B981"]}
-            tintColor="#10B981"
+            colors={["#B6A3E2"]}
+            tintColor="#B6A3E2"
           />
         }
         onEndReached={onEndReached}
@@ -673,6 +703,8 @@ function Home() {
         updateCellsBatchingPeriod={50}
         initialNumToRender={20}
         windowSize={15}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       />
 
       <EULAModal
@@ -686,14 +718,16 @@ function Home() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Your Username</Text>
-            <TextInput
-              style={styles.inputField}
+            <Input
               placeholder="Enter username"
               value={newUsername}
               onChangeText={(text) => {
                 setNewUsername(text);
                 validateUsernameDebounced(text);
               }}
+              type="text"
+              size="medium"
+              variant="default"
               autoCapitalize="none"
             />
 
@@ -710,29 +744,17 @@ function Home() {
               </Text>
             )}
 
-            <TouchableOpacity
-              style={[
-                styles.modalButton,
-                (!usernameValidation.isValid ||
-                  usernameValidation.isChecking) &&
-                  styles.disabledButton,
-              ]}
+            <Button
+              title={usernameValidation.isChecking ? "Checking..." : "Save"}
               onPress={handleSaveUsername}
               disabled={
                 !usernameValidation.isValid || usernameValidation.isChecking
               }
-            >
-              <Text
-                style={[
-                  styles.modalButtonText,
-                  (!usernameValidation.isValid ||
-                    usernameValidation.isChecking) &&
-                    styles.disabledButtonText,
-                ]}
-              >
-                {usernameValidation.isChecking ? "Checking..." : "Save"}
-              </Text>
-            </TouchableOpacity>
+              loading={usernameValidation.isChecking}
+              variant="primary"
+              size="medium"
+              fullWidth
+            />
           </View>
         </View>
       </Modal>
@@ -787,11 +809,11 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 4,
     paddingHorizontal: 8,
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   headerLogo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -801,7 +823,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: "#10B981",
+    color: "#B6A3E2",
     fontWeight: "500",
   },
   emptyContainer: {
@@ -820,17 +842,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
-  retryButton: {
-    backgroundColor: "#10B981",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
   footerLoader: {
     flexDirection: "row",
     justifyContent: "center",
@@ -840,7 +851,7 @@ const styles = StyleSheet.create({
   },
   footerLoaderText: {
     fontSize: 14,
-    color: "#10B981",
+    color: "#B6A3E2",
   },
   modalContainer: {
     flex: 1,
@@ -852,7 +863,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingVertical: 20,
     paddingHorizontal: 40,
-    borderRadius: 8,
+    borderRadius: 12,
     width: "90%",
     alignItems: "center",
   },
@@ -869,31 +880,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: "#000",
   },
-  inputField: {
-    marginVertical: 4,
-    height: 50,
-    width: "90%",
-    borderWidth: 1,
-    borderColor: "#10B981", // Green border like login page
-    borderRadius: 5,
-    padding: 10,
-    color: "#000",
-    backgroundColor: "#fafafa",
-  },
-  modalButton: {
-    marginVertical: 15,
-    alignItems: "center",
-    backgroundColor: "#10B981", // Green background like login page
-    padding: 12,
-    borderRadius: 5,
-    minWidth: 100,
-    fontSize: 16,
-  },
-  modalButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
   validationMessage: {
     fontSize: 14,
     color: "#ff4444",
@@ -902,7 +888,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   validationSuccess: {
-    color: "#10B981",
+    color: "#B6A3E2",
   },
   validationChecking: {
     color: "#6b7280",
@@ -923,12 +909,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 2,
   },
-  disabledButton: {
-    backgroundColor: "#ccc",
-  },
-  disabledButtonText: {
-    color: "#999",
-  },
   welcomeContainer: {
     flex: 1,
     backgroundColor: "#f8f9fa",
@@ -943,10 +923,12 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     fontSize: 15,
-    color: "#6b7280",
+    fontWeight: "600",
+    color: "#1a1a1a",
     textAlign: "center",
     lineHeight: 22,
     maxWidth: 320,
+    letterSpacing: -0.2,
   },
   stepsContainer: {
     flex: 1,
@@ -974,7 +956,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#f0fdf4",
+    backgroundColor: "#B6A3E2",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,

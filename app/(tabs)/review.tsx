@@ -290,7 +290,11 @@ export default function App() {
       }
 
       try {
-        const notificationBody = `${profile.username} has posted a new review from ${watchedValues.location.name}`;
+        const notificationBody = `${
+          profile.username
+        } has posted a new review from ${
+          (watchedValues.location as any)?.name || "a location"
+        }`;
         await supabase.from("notifications").insert({
           user_id: profile.id,
           body: notificationBody,

@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/utils/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { stripNameFromAddress } from "@/utils/helpers";
+import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
@@ -91,8 +93,10 @@ export default function SearchScreen() {
                   )}
                 </View>
               ) : (
-                <View style={styles.locationIconContainer}>
-                  <Ionicons name="location-outline" size={24} color="#10B981" />
+                <View style={styles.ratingContainer}>
+                  <Text style={styles.ratingText}>
+                    {getLocationRatingDisplay(item)}
+                  </Text>
                 </View>
               )}
               <View style={styles.textContainer}>
@@ -102,7 +106,9 @@ export default function SearchScreen() {
                     : item.name}
                 </Text>
                 {type === "location" && item.address && (
-                  <Text style={styles.resultSubtitle}>{item.address}</Text>
+                  <Text style={styles.resultSubtitle}>
+                    {stripNameFromAddress(item.name, item.address)}
+                  </Text>
                 )}
               </View>
             </View>
@@ -156,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     margin: 20,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 25,
     height: 48,
     shadowColor: "#000",
     shadowOffset: {
@@ -189,7 +195,7 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderRadius: 25,
     marginBottom: 8,
     shadowColor: "#000",
     shadowOffset: {
@@ -210,8 +216,8 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "#10B981",
+    borderRadius: 25,
+    backgroundColor: "#336654",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -219,18 +225,18 @@ const styles = StyleSheet.create({
   avatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 25,
   },
   avatarText: {
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "600",
   },
-  locationIconContainer: {
+  ratingContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f0fdf4",
+    backgroundColor: "#B6A3E2",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -247,5 +253,10 @@ const styles = StyleSheet.create({
   resultSubtitle: {
     fontSize: 13,
     color: "#6b7280",
+  },
+  ratingText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
