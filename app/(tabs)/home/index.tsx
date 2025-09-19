@@ -80,7 +80,8 @@ function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
-  const logoSizeAnim = useRef(new Animated.Value(60)).current;
+  const logoScaleAnim = useRef(new Animated.Value(1)).current;
+  const headerHeightAnim = useRef(new Animated.Value(68)).current; // Initial header height
 
   // usePerformanceMonitor(PERFORMANCE_CONFIG.enableLogging); // Disabled to prevent unnecessary renders
 
@@ -267,25 +268,26 @@ function Home() {
     }
   }, []);
 
-  // Handle scroll events to adjust logo size with animation
+  // Handle scroll events to adjust logo scale and header height in real-time
   const handleScroll = useCallback(
     (event: any) => {
       const scrollY = event.nativeEvent.contentOffset.y;
-      if (scrollY > 0) {
-        Animated.timing(logoSizeAnim, {
-          toValue: 45,
-          duration: 50,
-          useNativeDriver: false,
-        }).start();
-      } else {
-        Animated.timing(logoSizeAnim, {
-          toValue: 60,
-          duration: 50,
-          useNativeDriver: false,
-        }).start();
-      }
+      const maxScroll = 150; // Logo should be small by 150px scroll
+
+      // Calculate progress (0 to 1) based on scroll position
+      const progress = Math.min(scrollY / maxScroll, 1);
+
+      // Interpolate scale from 1 to 0.75 based on scroll progress
+      const scale = 1 - progress * 0.25; // 1 to 0.75
+
+      // Interpolate header height from 68 to 48 based on scroll progress
+      const headerHeight = 68 - progress * 20; // 68 to 48
+
+      // Update animations directly without timing for immediate response
+      logoScaleAnim.setValue(scale);
+      headerHeightAnim.setValue(headerHeight);
     },
-    [logoSizeAnim]
+    [logoScaleAnim, headerHeightAnim]
   );
 
   useFocusEffect(
@@ -667,19 +669,18 @@ function Home() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header with logo */}
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
             styles.headerLogo,
             {
-              width: logoSizeAnim,
-              height: logoSizeAnim,
+              transform: [{ scale: logoScaleAnim }],
             },
           ]}
           resizeMode="cover"
         />
-      </View>
+      </Animated.View>
 
       <FlatList
         ref={flatListRef}
@@ -704,7 +705,7 @@ function Home() {
         initialNumToRender={20}
         windowSize={15}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={1}
       />
 
       <EULAModal
@@ -807,9 +808,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 1,
     paddingTop: 4,
-    paddingBottom: 4,
+    paddingBottom: 8,
     paddingHorizontal: 8,
     alignItems: "center",
+    justifyContent: "center",
   },
   headerLogo: {
     width: 60,

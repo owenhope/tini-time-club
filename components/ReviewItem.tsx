@@ -273,7 +273,7 @@ const MenuModal = memo(
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       <TouchableOpacity style={styles.modalOverlay} onPress={onClose}>
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 8,
-    minWidth: 120,
+    minWidth: 200,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

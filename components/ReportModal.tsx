@@ -58,7 +58,7 @@ export default function ReportModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={handleClose}
     >
       <View style={styles.modalOverlay}>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 25,
-    width: "80%",
+    width: "85%",
     maxHeight: "80%",
     alignItems: "center",
   },
