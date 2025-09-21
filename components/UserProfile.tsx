@@ -14,7 +14,12 @@ import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
+import {
+  useRouter,
+  useLocalSearchParams,
+  useNavigation,
+  usePathname,
+} from "expo-router";
 
 interface ProfileType {
   id: string;
@@ -39,8 +44,18 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const navigation = useNavigation();
+  const pathname = usePathname();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
+
+  // Determine the correct navigation path based on current context
+  const getNavigationPath = (route: string) => {
+    if (pathname?.includes("/discover/")) {
+      return route; // For discover tab, use the route as-is
+    } else {
+      return route; // For home tab, use the route as-is
+    }
+  };
 
   // For this screen, we always show the other user's profile.
   const displayProfile = selectedProfile;
@@ -434,9 +449,12 @@ const UserProfile = () => {
             <TouchableOpacity
               style={styles.statItem}
               onPress={() =>
-                navigation.navigate("users/[username]/followers", {
-                  username: displayProfile?.username,
-                })
+                navigation.navigate(
+                  getNavigationPath("users/[username]/followers"),
+                  {
+                    username: displayProfile?.username,
+                  }
+                )
               }
             >
               <Text style={styles.statNumber}>{followersCount}</Text>
@@ -445,9 +463,12 @@ const UserProfile = () => {
             <TouchableOpacity
               style={styles.statItem}
               onPress={() =>
-                navigation.navigate("users/[username]/following", {
-                  username: displayProfile?.username,
-                })
+                navigation.navigate(
+                  getNavigationPath("users/[username]/following"),
+                  {
+                    username: displayProfile?.username,
+                  }
+                )
               }
             >
               <Text style={styles.statNumber}>{followingCount}</Text>
