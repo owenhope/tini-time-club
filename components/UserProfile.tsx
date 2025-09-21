@@ -431,14 +431,28 @@ const UserProfile = () => {
               <Text style={styles.statNumber}>{userReviews.length}</Text>
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() =>
+                navigation.navigate("users/[username]/followers", {
+                  username: displayProfile?.username,
+                })
+              }
+            >
               <Text style={styles.statNumber}>{followersCount}</Text>
               <Text style={styles.statLabel}>Followers</Text>
-            </View>
-            <View style={styles.statItem}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() =>
+                navigation.navigate("users/[username]/following", {
+                  username: displayProfile?.username,
+                })
+              }
+            >
               <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
-            </View>
+            </TouchableOpacity>
           </View>
           {/* Action Buttons - only show if not viewing own profile */}
           {profile && displayProfile && profile.id !== displayProfile.id && (

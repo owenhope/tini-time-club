@@ -1,4 +1,4 @@
-// app/profile/_layout.tsx
+// app/home/_layout.tsx
 import { Stack } from "expo-router";
 
 export default function HomeLayout() {
@@ -10,7 +10,15 @@ export default function HomeLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="users/[username]" />
+      <Stack.Screen name="users/[username]" options={{ headerShown: true }} />
+      <Stack.Screen
+        name="users/[username]/followers"
+        options={{ title: "Followers" }}
+      />
+      <Stack.Screen
+        name="users/[username]/following"
+        options={{ title: "Following" }}
+      />
       <Stack.Screen name="locations/[location]" />
     </Stack>
   );
