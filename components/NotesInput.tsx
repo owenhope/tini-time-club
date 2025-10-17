@@ -21,17 +21,20 @@ const NotesInput = ({ control }: { control: any }) => (
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 20,
+    marginVertical: 5,
     width: "100%",
   },
   textarea: {
-    fontSize: 18,
-    minHeight: 100,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    fontSize: 16,
+    minHeight: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    color: "#FFF",
+    backgroundColor: "#fafafa",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    color: "#000",
+    textAlignVertical: "top",
   },
 });
 

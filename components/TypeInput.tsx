@@ -46,40 +46,41 @@ const TypeInput = ({
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 20,
+    marginVertical: 5,
     width: "100%",
   },
   buttonGroup: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 10,
+    marginTop: 5,
   },
   optionButton: {
-    width: "48%", // Approximately 50% width with spacing
+    width: "48%",
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "transparent",
-    flexDirection: "row", // Ensures content is laid out horizontally
+    borderColor: "#E5E7EB",
+    backgroundColor: "#fafafa",
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
   },
   selectedButton: {
-    backgroundColor: "olive",
-    borderColor: "olive",
+    backgroundColor: "#B6A3E2",
+    borderColor: "#B6A3E2",
   },
   buttonText: {
-    fontSize: 18,
-    color: "#FFF",
+    fontSize: 16,
+    color: "#000",
     textAlign: "center",
     textTransform: "capitalize",
   },
   selectedButtonText: {
     color: "#fff",
+    fontWeight: "600",
   },
 });
 

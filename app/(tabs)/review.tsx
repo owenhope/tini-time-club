@@ -35,6 +35,7 @@ import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
+import { Button } from "@/components/shared";
 
 export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -44,7 +45,9 @@ export default function App() {
   const [spirits, setSpirits] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const opacity = useSharedValue(1);
+  const translateX = useSharedValue(0);
   const router = useRouter();
   const { profile } = useProfile();
 
@@ -92,7 +95,7 @@ export default function App() {
     },
     { title: "Taste Rating", key: "taste", Component: TasteInput },
     {
-      title: "Additional notes or comments?",
+      title: "Caption",
       key: "notes",
       Component: NotesInput,
     },
@@ -128,21 +131,35 @@ export default function App() {
     if (!isValid) return;
 
     if (step < questions.length - 1) {
-      opacity.value = withTiming(0, { duration: 300 }, () => {
+      setIsTransitioning(true);
+      // Fade out
+      opacity.value = withTiming(0, { duration: 400 }, () => {
         runOnJS(setStep)(step + 1);
-        opacity.value = withTiming(1, { duration: 300 });
       });
     }
   };
 
   const prevStep = () => {
     if (step > 1) {
-      opacity.value = withTiming(0, { duration: 300 }, () => {
+      setIsTransitioning(true);
+      // Fade out
+      opacity.value = withTiming(0, { duration: 400 }, () => {
         runOnJS(setStep)(step - 1);
-        opacity.value = withTiming(1, { duration: 300 });
       });
     }
   };
+
+  // Handle fade in when step changes
+  useEffect(() => {
+    if (isTransitioning) {
+      // Small delay to ensure content is rendered
+      const timer = setTimeout(() => {
+        opacity.value = withTiming(1, { duration: 400 });
+        setIsTransitioning(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [step, isTransitioning]);
 
   const uploadImage = async (userId: string) => {
     try {
@@ -347,34 +364,47 @@ export default function App() {
           <TouchableOpacity style={styles.cancelButton} onPress={cancelCapture}>
             <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
+
           <AnimatedReanimated.View style={[styles.overlay, animatedStyle]}>
-            <Text style={styles.stepText}>{questions[step].title}</Text>
-            {questions[step].Component &&
-              createElement(questions[step].Component, {
-                control,
-                ...formState,
-              })}
+            <View style={styles.stepContainer}>
+              <Text style={styles.stepText}>{questions[step].title}</Text>
+              {questions[step].Component &&
+                createElement(questions[step].Component, {
+                  control,
+                  ...formState,
+                })}
+            </View>
           </AnimatedReanimated.View>
+
           <View style={styles.bottomContainer}>
             <Animated.View
               style={[styles.reviewButtons, { opacity: isSubmitting ? 0 : 1 }]}
             >
               {step > 1 && (
-                <TouchableOpacity style={styles.button} onPress={prevStep}>
-                  <Text style={styles.text}>Back</Text>
-                </TouchableOpacity>
+                <Button
+                  title="Back"
+                  onPress={prevStep}
+                  variant="outline"
+                  size="medium"
+                  style={{ minWidth: 100 }}
+                />
               )}
               {step < questions.length - 1 ? (
-                <TouchableOpacity style={styles.button} onPress={nextStep}>
-                  <Text style={styles.text}>Next</Text>
-                </TouchableOpacity>
+                <Button
+                  title="Next"
+                  onPress={nextStep}
+                  variant="primary"
+                  size="medium"
+                  style={{ minWidth: 100 }}
+                />
               ) : (
-                <TouchableOpacity
-                  style={styles.button}
+                <Button
+                  title="Submit"
                   onPress={handleSubmit(handleUploadAndCreateReview)}
-                >
-                  <Text style={styles.text}>Submit</Text>
-                </TouchableOpacity>
+                  variant="primary"
+                  size="medium"
+                  style={{ minWidth: 100 }}
+                />
               )}
             </Animated.View>
             <Animated.View
@@ -392,6 +422,22 @@ export default function App() {
     </TouchableWithoutFeedback>
   );
 }
+
+// App design system constants
+const COLORS = {
+  primary: "#B6A3E2",
+  background: "#fff",
+  text: "#000",
+  textSecondary: "#666",
+  inputBackground: "#fafafa",
+  overlay: "rgba(0,0,0,0.5)",
+} as const;
+
+const DIMENSIONS = {
+  inputHeight: 50,
+  buttonHeight: 50,
+  borderRadius: 25,
+} as const;
 
 const styles = StyleSheet.create({
   container: {
@@ -415,46 +461,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
+  stepContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 20,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
   stepText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "white",
+    color: COLORS.text,
     textAlign: "center",
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 10,
+    textTransform: "capitalize",
   },
   bottomContainer: {
     position: "absolute",
     bottom: 20,
     width: "100%",
     paddingHorizontal: 20,
+    alignItems: "center",
   },
   reviewButtons: {
     flexDirection: "row",
     justifyContent: "center",
+    gap: 20,
   },
   submitStatusContainer: {
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
   },
-  button: {
-    marginHorizontal: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
-    borderRadius: 25,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
-  },
   cancelButton: {
     borderRadius: 25,
-    padding: 10,
+    padding: 12,
     position: "absolute",
-    right: 10,
-    top: 50,
+    right: 20,
+    top: 60,
     zIndex: 100,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   previewImage: {
     flex: 1,
@@ -463,7 +523,7 @@ const styles = StyleSheet.create({
   submitStatusText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "white",
+    color: COLORS.text,
     marginTop: 10,
     textAlign: "center",
   },

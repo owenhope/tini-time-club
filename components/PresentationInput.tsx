@@ -13,13 +13,14 @@ const PresentationInput = ({ control }: { control: any }) => {
         <View style={styles.inputContainer}>
           <AirbnbRating
             starImage={MARTINI_IMAGE}
-            selectedColor="#f3ffc6"
+            selectedColor="#9CA3AF"
             count={5}
-            size={40}
-            starContainerStyle={{ padding: 25 }}
-            reviewSize={24}
+            size={35}
+            starContainerStyle={{ padding: 5, width: 35, height: 35 }}
+            reviewSize={20}
             defaultRating={value}
-            reviewColor="#f3ffc6"
+            reviewColor="#9CA3AF"
+            isDisabled={false}
             reviews={[
               "Messy disaster",
               "Lacking effort",
@@ -37,7 +38,7 @@ const PresentationInput = ({ control }: { control: any }) => {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 20,
+    marginVertical: 5,
     width: "100%",
   },
 });

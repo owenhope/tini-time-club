@@ -13,13 +13,14 @@ const TasteInput = ({ control }: { control: any }) => {
         <View style={styles.inputContainer}>
           <AirbnbRating
             starImage={OLIVE_IMAGE}
-            selectedColor="#c3eb78"
+            selectedColor="#8B9A46"
             count={5}
-            size={40}
-            starContainerStyle={{ padding: 25 }}
-            reviewSize={24}
-            reviewColor="#c3eb78"
+            size={35}
+            starContainerStyle={{ padding: 5, width: 35, height: 35 }}
+            reviewSize={20}
+            reviewColor="#8B9A46"
             defaultRating={value}
+            isDisabled={false}
             reviews={[
               "Absolutely undrinkable",
               "Meh, forgettable",
@@ -37,7 +38,7 @@ const TasteInput = ({ control }: { control: any }) => {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 20,
+    marginVertical: 5,
     width: "100%",
   },
 });
