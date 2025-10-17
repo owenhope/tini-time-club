@@ -52,8 +52,81 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
     setLoading(true);
     try {
       if (!searchQuery) {
-        const { data } = await supabase.rpc("top_locations");
-        setLocations(data || []);
+        // Use direct query instead of RPC to properly filter deleted reviews
+        const { data, error } = await supabase
+          .from("locations")
+          .select(
+            `
+            id,
+            name,
+            address,
+            reviews!reviews_location_fkey(
+              taste,
+              presentation,
+              state
+            )
+          `
+          )
+          .eq("reviews.state", 1) // Only include active reviews
+          .limit(20);
+
+        if (error) {
+          console.error("Error fetching top locations:", error);
+          setLocations([]);
+          return;
+        }
+
+        // Process the data to calculate averages and format for display
+        const processedLocations =
+          data?.map((location: any) => {
+            const activeReviews = location.reviews.filter(
+              (review: any) => review.state === 1
+            );
+            const totalRatings = activeReviews.length;
+
+            if (totalRatings === 0) {
+              return {
+                id: location.id,
+                name: location.name,
+                address: location.address,
+                rating: null,
+                taste_avg: null,
+                presentation_avg: null,
+                total_ratings: 0,
+              };
+            }
+
+            const tasteSum = activeReviews.reduce(
+              (sum: number, review: any) => sum + (review.taste || 0),
+              0
+            );
+            const presentationSum = activeReviews.reduce(
+              (sum: number, review: any) => sum + (review.presentation || 0),
+              0
+            );
+
+            const taste_avg = tasteSum / totalRatings;
+            const presentation_avg = presentationSum / totalRatings;
+            const rating = (taste_avg + presentation_avg) / 2;
+
+            return {
+              id: location.id,
+              name: location.name,
+              address: location.address,
+              rating,
+              taste_avg,
+              presentation_avg,
+              total_ratings: totalRatings,
+            };
+          }) || [];
+
+        // Sort by rating and take top 20
+        const sortedLocations = processedLocations
+          .filter((loc) => loc.rating !== null)
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 20);
+
+        setLocations(sortedLocations);
       } else {
         const { data } = await supabase
           .from("locations")

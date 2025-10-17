@@ -19,6 +19,7 @@ import {
   Modal,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
+import { isDevelopmentMode } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
@@ -105,23 +106,28 @@ export default function CommentsSlider({
     onCommentAdded?.(review.id, data);
 
     if (review.user_id && profile.id !== review.user_id) {
-      const notificationBody = `${
-        profile.username
-      } commented on your review from ${
-        review.location?.name || "an unknown location"
-      }`;
-      const { error: notificationError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: review.user_id,
-          body: notificationBody,
-          type: NOTIFICATION_TYPES.USER,
-        });
-      if (notificationError) {
-        console.error(
-          "Error creating comment notification:",
-          notificationError
-        );
+      // Only send notifications if not in development mode
+      if (!isDevelopmentMode()) {
+        const notificationBody = `${
+          profile.username
+        } commented on your review from ${
+          review.location?.name || "an unknown location"
+        }`;
+        const { error: notificationError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: review.user_id,
+            body: notificationBody,
+            type: NOTIFICATION_TYPES.USER,
+          });
+        if (notificationError) {
+          console.error(
+            "Error creating comment notification:",
+            notificationError
+          );
+        }
+      } else {
+        console.log("🚧 Development mode - skipping comment notification");
       }
     }
   };

@@ -262,11 +262,13 @@ const Profile = () => {
     if (profile?.id) loadUserReviews(profile.id);
   }, [profile]);
 
-  // Refresh follow counts when the profile screen comes into focus
+  // Refresh follow counts and reviews when the profile screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      const refreshFollowCounts = async () => {
+      const refreshData = async () => {
         if (!profile) return;
+
+        // Refresh follow counts
         const { count: followers } = await supabase
           .from("followers")
           .select("*", { count: "exact", head: true })
@@ -279,9 +281,12 @@ const Profile = () => {
 
         setFollowersCount(followers || 0);
         setFollowingCount(following || 0);
+
+        // Refresh reviews
+        loadUserReviews(profile.id);
       };
 
-      refreshFollowCounts();
+      refreshData();
     }, [profile])
   );
 

@@ -44,3 +44,11 @@ export const formatRelativeDate = (dateString: string): string => {
     });
   }
 };
+
+/**
+ * Check if the app is running in development mode
+ * @returns true if EXPO_PUBLIC_DEVELOPMENT environment variable is set to "true", false otherwise
+ */
+export const isDevelopmentMode = (): boolean => {
+  return process.env.EXPO_PUBLIC_DEVELOPMENT === "true";
+};

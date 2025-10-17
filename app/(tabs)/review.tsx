@@ -10,9 +10,11 @@ import {
   ActivityIndicator,
   Animated,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
+import { isDevelopmentMode } from "@/utils/helpers";
 import AnimatedReanimated, {
   runOnJS,
   useSharedValue,
@@ -46,6 +48,8 @@ const ReviewPreview = ({
   profile,
   control,
   watch,
+  isSubmitting,
+  submissionMessage,
 }: {
   values: any;
   spirits: any[];
@@ -54,6 +58,8 @@ const ReviewPreview = ({
   profile: any;
   control: any;
   watch: any;
+  isSubmitting?: boolean;
+  submissionMessage?: string;
 }) => {
   const [isCaptionFocused, setIsCaptionFocused] = useState(false);
   const [previewCaption, setPreviewCaption] = useState("");
@@ -127,6 +133,16 @@ const ReviewPreview = ({
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
+
+  // Show loading state when submitting
+  if (isSubmitting) {
+    return (
+      <View style={styles.submitLoadingContainer}>
+        <ActivityIndicator size="large" color="#B6A3E2" />
+        <Text style={styles.submitLoadingText}>{submissionMessage}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -264,6 +280,8 @@ export default function App() {
           profile={profile}
           control={control}
           watch={watch}
+          isSubmitting={isSubmitting}
+          submissionMessage={submissionMessage}
           {...props}
         />
       ),
@@ -470,19 +488,26 @@ export default function App() {
         return;
       }
 
-      try {
-        const notificationBody = `${
-          profile.username
-        } has posted a new review from ${
-          (watchedValues.location as any)?.name || "a location"
-        }`;
-        await supabase.from("notifications").insert({
-          user_id: profile.id,
-          body: notificationBody,
-          type: NOTIFICATION_TYPES.FOLLOWERS,
-        });
-      } catch (error) {
-        console.error("Error inserting notification:", error);
+      // Only send notifications if not in development mode
+      if (!isDevelopmentMode()) {
+        try {
+          const notificationBody = `${
+            profile.username
+          } has posted a new review from ${
+            (watchedValues.location as any)?.name || "a location"
+          }`;
+          await supabase.from("notifications").insert({
+            user_id: profile.id,
+            body: notificationBody,
+            type: NOTIFICATION_TYPES.FOLLOWERS,
+          });
+        } catch (error) {
+          console.error("Error inserting notification:", error);
+        }
+      } else {
+        console.log(
+          "🚧 Development mode - skipping notification for new review"
+        );
       }
 
       setSubmissionMessage("Review created successfully!");
@@ -516,28 +541,30 @@ export default function App() {
       ) : (
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>{questions[step].title}</Text>
-            {questions[step].title !== "Preview" && (
-              <>
-                <Text style={styles.subtitle}>
-                  Step {step + 1} of {questions.length - 1}
-                </Text>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${
-                          ((step + 1) / (questions.length - 1)) * 100
-                        }%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </>
-            )}
-          </View>
+          {!isSubmitting && (
+            <View style={styles.header}>
+              <Text style={styles.title}>{questions[step].title}</Text>
+              {questions[step].title !== "Preview" && (
+                <>
+                  <Text style={styles.subtitle}>
+                    Step {step + 1} of {questions.length - 1}
+                  </Text>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${
+                            ((step + 1) / (questions.length - 1)) * 100
+                          }%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Content */}
           <AnimatedReanimated.View
@@ -555,54 +582,47 @@ export default function App() {
           </AnimatedReanimated.View>
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <Animated.View
-              style={[styles.navigation, { opacity: isSubmitting ? 0 : 1 }]}
-            >
-              <View style={styles.navLeft}>
-                {step > 1 && (
-                  <Button
-                    title="Back"
-                    onPress={prevStep}
-                    variant="outline"
-                    size="medium"
-                  />
-                )}
-              </View>
+          {!isSubmitting && (
+            <View style={styles.footer}>
+              <Animated.View style={styles.navigation}>
+                <View style={styles.navLeft}>
+                  {step > 1 && (
+                    <Button
+                      title="Back"
+                      onPress={prevStep}
+                      variant="outline"
+                      size="medium"
+                    />
+                  )}
+                </View>
 
-              <TouchableOpacity
-                style={styles.quitButton}
-                onPress={cancelCapture}
-              >
-                <Ionicons name="trash-outline" size={20} color="#ff4444" />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quitButton}
+                  onPress={cancelCapture}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ff4444" />
+                </TouchableOpacity>
 
-              <View style={styles.navRight}>
-                {step < questions.length - 1 ? (
-                  <Button
-                    title="Next"
-                    onPress={nextStep}
-                    variant="primary"
-                    size="medium"
-                  />
-                ) : (
-                  <Button
-                    title="Submit"
-                    onPress={handleSubmit(handleUploadAndCreateReview)}
-                    variant="primary"
-                    size="medium"
-                  />
-                )}
-              </View>
-            </Animated.View>
-
-            <Animated.View
-              style={[styles.submitStatus, { opacity: isSubmitting ? 1 : 0 }]}
-            >
-              <ActivityIndicator size="large" color="black" />
-              <Text style={styles.submitText}>{submissionMessage}</Text>
-            </Animated.View>
-          </View>
+                <View style={styles.navRight}>
+                  {step < questions.length - 1 ? (
+                    <Button
+                      title="Next"
+                      onPress={nextStep}
+                      variant="primary"
+                      size="medium"
+                    />
+                  ) : (
+                    <Button
+                      title="Submit"
+                      onPress={handleSubmit(handleUploadAndCreateReview)}
+                      variant="primary"
+                      size="medium"
+                    />
+                  )}
+                </View>
+              </Animated.View>
+            </View>
+          )}
         </View>
       )}
     </TouchableWithoutFeedback>
@@ -691,18 +711,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 68, 68, 0.3)",
   },
-  submitStatus: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  submitText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginTop: 10,
-    textAlign: "center",
-  },
   previewContainer: {
     flex: 1,
     width: "100%",
@@ -756,5 +764,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     fontStyle: "italic",
+  },
+  submitLoadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  submitLoadingText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.primary,
+    marginTop: 20,
+    textAlign: "center",
   },
 });
