@@ -27,8 +27,7 @@ import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
 import NotesInput from "@/components/NotesInput";
-import SpiritInput from "@/components/SpiritInput";
-import TypeInput from "@/components/TypeInput";
+import SelectableOptionsInput from "@/components/SelectableOptionsInput";
 import Review from "@/components/Review";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
@@ -41,8 +40,10 @@ export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
-  const [types, setTypes] = useState<any[]>([]);
-  const [spirits, setSpirits] = useState<any[]>([]);
+  type Option = { id: number; name: string };
+
+  const [types, setTypes] = useState<Option[]>([]);
+  const [spirits, setSpirits] = useState<Option[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -81,12 +82,24 @@ export default function App() {
     {
       title: "Which Spirit?",
       key: "spirit",
-      Component: () => <SpiritInput control={control} spirits={spirits} />,
+      Component: () => (
+        <SelectableOptionsInput
+          control={control}
+          name="spirit"
+          options={spirits}
+        />
+      ),
     },
     {
       title: "Which Type?",
       key: "type",
-      Component: () => <TypeInput control={control} types={types} />,
+      Component: () => (
+        <SelectableOptionsInput
+          control={control}
+          name="type"
+          options={types}
+        />
+      ),
     },
     {
       title: "Presentation Rating",
@@ -209,7 +222,7 @@ export default function App() {
     if (error) {
       console.error("Error getting types:", error);
     }
-    setTypes(data || []);
+    setTypes((data as Option[]) || []);
   };
 
   const getSpirits = async () => {
@@ -217,7 +230,7 @@ export default function App() {
     if (error) {
       console.error("Error getting spirits:", error);
     }
-    setSpirits(data || []);
+    setSpirits((data as Option[]) || []);
   };
 
   const createReview = async (userId: string, imageUrl: string) => {
