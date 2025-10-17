@@ -48,7 +48,6 @@ export default function App() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const opacity = useSharedValue(1);
-  const translateX = useSharedValue(0);
   const router = useRouter();
   const { profile } = useProfile();
 
@@ -94,11 +93,7 @@ export default function App() {
       title: "Which Type?",
       key: "type",
       Component: () => (
-        <SelectableOptionsInput
-          control={control}
-          name="type"
-          options={types}
-        />
+        <SelectableOptionsInput control={control} name="type" options={types} />
       ),
     },
     {
@@ -377,7 +372,6 @@ export default function App() {
           <TouchableOpacity style={styles.cancelButton} onPress={cancelCapture}>
             <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
-
           <AnimatedReanimated.View style={[styles.overlay, animatedStyle]}>
             <View style={styles.stepContainer}>
               <Text style={styles.stepText}>{questions[step].title}</Text>
@@ -388,7 +382,6 @@ export default function App() {
                 })}
             </View>
           </AnimatedReanimated.View>
-
           <View style={styles.bottomContainer}>
             <Animated.View
               style={[styles.reviewButtons, { opacity: isSubmitting ? 0 : 1 }]}
@@ -494,7 +487,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.text,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   sectionLabel: {
     fontSize: 18,

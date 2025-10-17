@@ -48,6 +48,52 @@ const ICON_SIZES = {
   medium: 28,
 } as const;
 
+// Expandable Text Component for Instagram-style captions
+const ExpandableText = ({
+  username,
+  text,
+  maxLines = 2,
+}: {
+  username?: string;
+  text: string;
+  maxLines?: number;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [shouldShowMore, setShouldShowMore] = useState(false);
+
+  const onTextLayout = useCallback(
+    (event: any) => {
+      const { lines } = event.nativeEvent;
+      setShouldShowMore(lines.length > maxLines);
+    },
+    [maxLines]
+  );
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(!isExpanded);
+  }, [isExpanded]);
+
+  return (
+    <Text style={styles.expandableText}>
+      {username && <Text style={styles.username}>{username} </Text>}
+      <Text
+        numberOfLines={isExpanded ? undefined : maxLines}
+        onTextLayout={onTextLayout}
+      >
+        {text}
+      </Text>
+      {shouldShowMore && (
+        <Text>
+          {" "}
+          <Text style={styles.moreText} onPress={toggleExpanded}>
+            {isExpanded ? "less" : "more"}
+          </Text>
+        </Text>
+      )}
+    </Text>
+  );
+};
+
 interface ReviewItemProps {
   review: Review & { _commentPatch?: any };
   canDelete: boolean;
@@ -422,19 +468,19 @@ const ReviewFooter = memo(
 
         <Link href={`/home/users/${review.profile?.username}`} asChild>
           <TouchableOpacity style={styles.captionContainer}>
-            <Text style={styles.username}>
-              {review.profile?.username || "Unknown"}
-            </Text>
-            <Text style={styles.captionText}> {review.comment}</Text>
+            <ExpandableText
+              username={review.profile?.username || "Unknown"}
+              text={review.comment}
+            />
           </TouchableOpacity>
         </Link>
 
         {comments.slice(0, 2).map((c) => (
           <View key={c.id} style={styles.commentRow}>
-            <Text style={styles.commentUsername}>
-              {c.profile?.username || "Unknown"}:
-            </Text>
-            <Text style={styles.commentText}> {c.body}</Text>
+            <ExpandableText
+              username={c.profile?.username || "Unknown"}
+              text={c.body}
+            />
           </View>
         ))}
 
@@ -760,7 +806,6 @@ const styles = StyleSheet.create({
     color: COLORS.black,
   },
   captionContainer: {
-    flexDirection: "row",
     marginBottom: 5,
   },
   username: {
@@ -768,7 +813,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
   },
-  captionText: {
+  expandableText: {
     fontSize: 16,
     color: COLORS.black,
   },
@@ -777,15 +822,16 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   commentRow: {
-    flexDirection: "row",
     marginBottom: 4,
   },
   commentUsername: {
     fontWeight: "bold",
     color: COLORS.black,
   },
-  commentText: {
-    color: COLORS.black,
+  moreText: {
+    color: COLORS.lightGray,
+    fontSize: 14,
+    marginTop: 2,
   },
   viewAllCommentsText: {
     color: COLORS.lightGray,
