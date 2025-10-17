@@ -106,6 +106,9 @@ interface ReviewItemProps {
   ) => void;
   onCommentAdded: (reviewId: string, newComment: any) => void;
   onCommentDeleted: (reviewId: string, commentId: number) => void;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
+  previewMode?: boolean;
 }
 
 // Custom hook for avatar loading
@@ -509,6 +512,9 @@ const ReviewItem = memo(
     onShowComments,
     onCommentAdded,
     onCommentDeleted,
+    hideHeader = false,
+    hideFooter = false,
+    previewMode = false,
   }: ReviewItemProps) => {
     const { profile } = useProfile();
     const overlayOpacity = useRef(new Animated.Value(1)).current;
@@ -622,27 +628,9 @@ const ReviewItem = memo(
       [profile, review.id, review.profile?.id]
     );
 
-    return (
-      <>
-        <Pressable
-          onPress={handlePress}
-          onLongPress={handleLongPress}
-          onPressOut={handlePressOut}
-        >
-          <View style={styles.header}>
-            <Avatar
-              avatarUrl={review.profile?.avatar_url || null}
-              username={review.profile?.username}
-              isOwnReview={isOwnReview}
-            />
-            <View style={styles.headerActions}>
-              <ActionButton
-                onPress={() => setMenuModalVisible(true)}
-                icon="ellipsis-horizontal"
-              />
-            </View>
-          </View>
-
+    if (previewMode) {
+      return (
+        <View style={styles.previewContainer}>
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: review.image_url }}
@@ -653,15 +641,63 @@ const ReviewItem = memo(
 
           <ReviewFooter
             review={review}
-            hasLiked={hasLiked}
-            likesCount={likesCount}
-            comments={comments}
-            onToggleLike={handleToggleLike}
-            onShowLikes={onShowLikes}
-            onShowComments={onShowComments}
-            onCommentAdded={onCommentAdded}
-            onCommentDeleted={onCommentDeleted}
+            hasLiked={false}
+            likesCount={0}
+            comments={[]}
+            onToggleLike={() => {}}
+            onShowLikes={() => {}}
+            onShowComments={() => {}}
+            onCommentAdded={() => {}}
+            onCommentDeleted={() => {}}
           />
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <Pressable
+          onPress={handlePress}
+          onLongPress={handleLongPress}
+          onPressOut={handlePressOut}
+        >
+          {!hideHeader && (
+            <View style={styles.header}>
+              <Avatar
+                avatarUrl={review.profile?.avatar_url || null}
+                username={review.profile?.username}
+                isOwnReview={isOwnReview}
+              />
+              <View style={styles.headerActions}>
+                <ActionButton
+                  onPress={() => setMenuModalVisible(true)}
+                  icon="ellipsis-horizontal"
+                />
+              </View>
+            </View>
+          )}
+
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: review.image_url }}
+              style={styles.reviewImage}
+            />
+            <ReviewOverlay review={review} overlayOpacity={overlayOpacity} />
+          </View>
+
+          {!hideFooter && (
+            <ReviewFooter
+              review={review}
+              hasLiked={hasLiked}
+              likesCount={likesCount}
+              comments={comments}
+              onToggleLike={handleToggleLike}
+              onShowLikes={onShowLikes}
+              onShowComments={onShowComments}
+              onCommentAdded={onCommentAdded}
+              onCommentDeleted={onCommentDeleted}
+            />
+          )}
         </Pressable>
 
         <MenuModal
@@ -868,5 +904,24 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  previewContainer: {
+    backgroundColor: COLORS.white,
+  },
+  previewFooter: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+  },
+  previewUsername: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  previewComment: {
+    fontSize: 14,
+    color: COLORS.black,
+    lineHeight: 18,
   },
 });

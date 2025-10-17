@@ -306,8 +306,9 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   placesContainer: {
-    maxHeight: 250,
+    maxHeight: 450,
   },
+
   placeButton: {
     backgroundColor: "#fafafa",
     borderWidth: 1,

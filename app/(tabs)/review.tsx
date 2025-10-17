@@ -1,4 +1,4 @@
-import React, { createElement, useEffect, useState } from "react";
+import React, { createElement, useEffect, useState, useMemo } from "react";
 import {
   Keyboard,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   Animated,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
@@ -18,23 +19,169 @@ import AnimatedReanimated, {
   withTiming,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { BlurView } from "@react-native-community/blur";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
 import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
-import NotesInput from "@/components/NotesInput";
 import SelectableOptionsInput from "@/components/SelectableOptionsInput";
 import Review from "@/components/Review";
+import ReviewItem from "@/components/ReviewItem";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { Button } from "@/components/shared";
+import { TextInput } from "react-native";
+
+// ReviewPreview component for showing live preview with caption input
+const ReviewPreview = ({
+  values,
+  spirits,
+  types,
+  photo,
+  profile,
+  control,
+  watch,
+}: {
+  values: any;
+  spirits: any[];
+  types: any[];
+  photo: string | null;
+  profile: any;
+  control: any;
+  watch: any;
+}) => {
+  const [isCaptionFocused, setIsCaptionFocused] = useState(false);
+  const [previewCaption, setPreviewCaption] = useState("");
+  const [inputCaption, setInputCaption] = useState("");
+
+  // Create a mock review object for the preview - memoize to prevent re-creation
+  const mockReview = useMemo(
+    () =>
+      ({
+        id: "preview",
+        user_id: profile?.id || "",
+        image_url: photo || "",
+        comment: previewCaption || "",
+        taste: values.taste || 0,
+        presentation: values.presentation || 0,
+        inserted_at: new Date().toISOString(),
+        profile: {
+          id: profile?.id || "",
+          username: profile?.username || "You",
+          avatar_url: profile?.avatar_url || null,
+        },
+        spirit: spirits.find((s) => s.id === values.spirit) || {
+          name: "Unknown",
+        },
+        type: types.find((t) => t.id === values.type) || { name: "Unknown" },
+        location: values.location
+          ? {
+              id: "preview-location",
+              name: values.location.name,
+              address: values.location.address,
+            }
+          : {
+              id: "preview-location",
+              name: "Unknown Location",
+              address: "",
+            },
+      } as any),
+    [previewCaption, values, spirits, types, photo, profile]
+  ); // Type assertion to bypass strict typing for preview
+
+  // Mock handlers for the preview (they won't do anything)
+  const mockHandlers = {
+    onDelete: () => {},
+    onShowLikes: () => {},
+    onShowComments: () => {},
+    onCommentAdded: () => {},
+    onCommentDeleted: () => {},
+  };
+
+  const scrollViewRef = React.useRef<ScrollView>(null);
+
+  const handleCaptionFocus = () => {
+    setIsCaptionFocused(true);
+    // Scroll to show the caption input when focused
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const handleCaptionBlur = () => {
+    setIsCaptionFocused(false);
+    // Update the preview caption when user finishes typing
+    setPreviewCaption(inputCaption);
+    // Update the form value
+    control._formValues.notes = inputCaption;
+  };
+
+  const openCaptionInput = () => {
+    setIsCaptionFocused(true);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  return (
+    <ScrollView
+      ref={scrollViewRef}
+      style={styles.previewContainer}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {!isCaptionFocused && (
+        <View style={styles.previewWrapper}>
+          <View style={styles.scaledReviewContainer}>
+            <ReviewItem
+              review={mockReview}
+              canDelete={false}
+              previewMode={true}
+              {...mockHandlers}
+            />
+          </View>
+        </View>
+      )}
+      <View style={styles.captionInputContainer}>
+        {!isCaptionFocused ? (
+          <TouchableOpacity
+            style={styles.captionButton}
+            onPress={openCaptionInput}
+          >
+            <Text style={styles.captionButtonText}>
+              {inputCaption ? "Edit Caption" : "Add Caption"}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <TextInput
+              style={styles.captionInput}
+              multiline={true}
+              placeholder="Write a caption..."
+              onChangeText={setInputCaption}
+              value={inputCaption}
+              maxLength={500}
+              onFocus={handleCaptionFocus}
+              onBlur={handleCaptionBlur}
+              autoFocus={true}
+            />
+            <Text style={styles.characterCount}>
+              {inputCaption?.length || 0}/500
+            </Text>
+            <Text style={styles.hintText}>
+              Press anywhere to return to preview
+            </Text>
+          </>
+        )}
+      </View>
+    </ScrollView>
+  );
+};
 
 export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -77,7 +224,11 @@ export default function App() {
   }
 
   const questions: Question[] = [
-    { title: "Where are you?", key: "location", Component: LocationInput },
+    {
+      title: "Where was this served?",
+      key: "location",
+      Component: LocationInput,
+    },
     {
       title: "Which Spirit?",
       key: "spirit",
@@ -103,17 +254,16 @@ export default function App() {
     },
     { title: "Taste Rating", key: "taste", Component: TasteInput },
     {
-      title: "Caption",
-      key: "notes",
-      Component: NotesInput,
-    },
-    {
-      title: "Review",
+      title: "Preview",
       Component: (props) => (
-        <Review
+        <ReviewPreview
           values={watchedValues}
           spirits={spirits}
           types={types}
+          photo={photo}
+          profile={profile}
+          control={control}
+          watch={watch}
           {...props}
         />
       ),
@@ -135,8 +285,14 @@ export default function App() {
   };
 
   const nextStep = async () => {
-    const isValid = await trigger(questions[step].key as any);
-    if (!isValid) return;
+    // For the preview step (last step), validate notes field
+    if (step === questions.length - 1) {
+      const isValid = await trigger("notes");
+      if (!isValid) return;
+    } else if (questions[step].key) {
+      const isValid = await trigger(questions[step].key as any);
+      if (!isValid) return;
+    }
 
     if (step < questions.length - 1) {
       setIsTransitioning(true);
@@ -358,69 +514,93 @@ export default function App() {
           }}
         />
       ) : (
-        <View style={styles.reviewContainer}>
-          <BlurView
-            style={styles.reviewContainer}
-            blurType="dark"
-            blurAmount={5}
-            reducedTransparencyFallbackColor="white"
-          >
-            {photo && (
-              <Image source={{ uri: photo }} style={styles.previewImage} />
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>{questions[step].title}</Text>
+            {questions[step].title !== "Preview" && (
+              <>
+                <Text style={styles.subtitle}>
+                  Step {step + 1} of {questions.length - 1}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${
+                          ((step + 1) / (questions.length - 1)) * 100
+                        }%`,
+                      },
+                    ]}
+                  />
+                </View>
+              </>
             )}
-          </BlurView>
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelCapture}>
-            <Ionicons name="close" size={24} color="white" />
-          </TouchableOpacity>
-          <AnimatedReanimated.View style={[styles.overlay, animatedStyle]}>
-            <View style={styles.stepContainer}>
-              <Text style={styles.stepText}>{questions[step].title}</Text>
-              {questions[step].Component &&
-                createElement(questions[step].Component, {
-                  control,
-                  ...formState,
-                })}
-            </View>
+          </View>
+
+          {/* Content */}
+          <AnimatedReanimated.View
+            style={[
+              styles.content,
+              questions[step].title === "Preview" && styles.previewContent,
+              animatedStyle,
+            ]}
+          >
+            {questions[step].Component &&
+              createElement(questions[step].Component, {
+                control,
+                ...formState,
+              })}
           </AnimatedReanimated.View>
-          <View style={styles.bottomContainer}>
+
+          {/* Footer */}
+          <View style={styles.footer}>
             <Animated.View
-              style={[styles.reviewButtons, { opacity: isSubmitting ? 0 : 1 }]}
+              style={[styles.navigation, { opacity: isSubmitting ? 0 : 1 }]}
             >
-              {step > 1 && (
-                <Button
-                  title="Back"
-                  onPress={prevStep}
-                  variant="outline"
-                  size="medium"
-                  style={{ minWidth: 100 }}
-                />
-              )}
-              {step < questions.length - 1 ? (
-                <Button
-                  title="Next"
-                  onPress={nextStep}
-                  variant="primary"
-                  size="medium"
-                  style={{ minWidth: 100 }}
-                />
-              ) : (
-                <Button
-                  title="Submit"
-                  onPress={handleSubmit(handleUploadAndCreateReview)}
-                  variant="primary"
-                  size="medium"
-                  style={{ minWidth: 100 }}
-                />
-              )}
+              <View style={styles.navLeft}>
+                {step > 1 && (
+                  <Button
+                    title="Back"
+                    onPress={prevStep}
+                    variant="outline"
+                    size="medium"
+                  />
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.quitButton}
+                onPress={cancelCapture}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ff4444" />
+              </TouchableOpacity>
+
+              <View style={styles.navRight}>
+                {step < questions.length - 1 ? (
+                  <Button
+                    title="Next"
+                    onPress={nextStep}
+                    variant="primary"
+                    size="medium"
+                  />
+                ) : (
+                  <Button
+                    title="Submit"
+                    onPress={handleSubmit(handleUploadAndCreateReview)}
+                    variant="primary"
+                    size="medium"
+                  />
+                )}
+              </View>
             </Animated.View>
+
             <Animated.View
-              style={[
-                styles.submitStatusContainer,
-                { opacity: isSubmitting ? 1 : 0 },
-              ]}
+              style={[styles.submitStatus, { opacity: isSubmitting ? 1 : 0 }]}
             >
-              <ActivityIndicator size="large" color="white" />
-              <Text style={styles.submitStatusText}>{submissionMessage}</Text>
+              <ActivityIndicator size="large" color="black" />
+              <Text style={styles.submitText}>{submissionMessage}</Text>
             </Animated.View>
           </View>
         </View>
@@ -439,98 +619,142 @@ const COLORS = {
   overlay: "rgba(0,0,0,0.5)",
 } as const;
 
-const DIMENSIONS = {
-  inputHeight: 50,
-  buttonHeight: 50,
-  borderRadius: 25,
-} as const;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  reviewContainer: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  stepContainer: {
     backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: 20,
-    width: "100%",
-    maxWidth: 400,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  stepText: {
-    fontSize: 24,
+  header: {
+    paddingTop: 70,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  title: {
+    fontSize: 28,
     fontWeight: "bold",
     color: COLORS.text,
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  sectionLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.text,
-    marginBottom: 10,
-    textTransform: "capitalize",
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: 15,
   },
-  bottomContainer: {
-    position: "absolute",
-    bottom: 20,
-    width: "100%",
+  progressBar: {
+    height: 4,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 10,
+    overflow: "hidden",
+  },
+  previewContent: {
+    paddingTop: 10, // Minimal padding for preview step
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    height: 70,
+  },
+  navigation: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-  reviewButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
+  navLeft: {
+    flex: 1,
+    alignItems: "flex-start",
   },
-  submitStatusContainer: {
+  navRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  quitButton: {
+    padding: 12,
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 68, 68, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 68, 68, 0.3)",
+  },
+  submitStatus: {
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
   },
-  cancelButton: {
-    borderRadius: 25,
-    padding: 12,
-    position: "absolute",
-    right: 20,
-    top: 60,
-    zIndex: 100,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-  },
-  previewImage: {
-    flex: 1,
-    width: "100%",
-  },
-  submitStatusText: {
+  submitText: {
     fontSize: 18,
     fontWeight: "bold",
     color: COLORS.text,
     marginTop: 10,
     textAlign: "center",
+  },
+  previewContainer: {
+    flex: 1,
+    width: "100%",
+  },
+  previewWrapper: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  scaledReviewContainer: {
+    transformOrigin: "top center",
+  },
+  captionInputContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+  },
+  captionButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    minHeight: 50,
+  },
+  captionButtonText: {
+    fontSize: 16,
+    color: "white",
+    fontWeight: "600",
+  },
+  captionInput: {
+    fontSize: 16,
+    minHeight: 60,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.inputBackground,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    color: COLORS.text,
+    textAlignVertical: "top",
+  },
+  characterCount: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: "right",
+    marginTop: 4,
+  },
+  hintText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
   },
 });
