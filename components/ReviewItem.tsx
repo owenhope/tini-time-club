@@ -43,7 +43,7 @@ const COLORS = {
   red: "red",
   gray: "#999",
   lightGray: "#888",
-  overlay: "rgba(0,0,0,0.3)",
+  overlay: "rgba(0,0,0,0.6)",
 } as const;
 
 const ICON_SIZES = {
@@ -393,15 +393,22 @@ const ReviewOverlay = memo(
   ({
     review,
     overlayOpacity,
+    onToggleOverlay,
+    isOverlayVisible,
   }: {
     review: Review;
     overlayOpacity: Animated.Value;
+    onToggleOverlay: () => void;
+    isOverlayVisible: boolean;
   }) => (
     <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
       <Link href={`/home/locations/${review.location?.id}`} asChild>
-        <Text style={styles.locationName}>
-          {review.location?.name || "N/A"}
-        </Text>
+        <View style={styles.locationLinkContainer}>
+          <Text style={styles.locationName}>
+            {review.location?.name || "N/A"}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
+        </View>
       </Link>
       {review.location?.address && (
         <Text style={styles.locationAddress}>
@@ -517,6 +524,7 @@ const ReviewItem = memo(
     const overlayOpacity = useRef(new Animated.Value(1)).current;
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [menuModalVisible, setMenuModalVisible] = useState(false);
+    const [isOverlayVisible, setIsOverlayVisible] = useState(true);
     const lastTapRef = useRef<number>(0);
     const isOwnReview = String(profile?.id) === String(review.profile?.id);
 
@@ -526,6 +534,16 @@ const ReviewItem = memo(
       profile?.id || null
     );
     const { comments, addComment, removeComment } = useComments(review.id);
+
+    // Toggle overlay visibility
+    const toggleOverlay = useCallback(() => {
+      setIsOverlayVisible(!isOverlayVisible);
+      Animated.timing(overlayOpacity, {
+        toValue: isOverlayVisible ? 0 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }, [isOverlayVisible, overlayOpacity]);
 
     // Handle comment patches
     useEffect(() => {
@@ -588,14 +606,14 @@ const ReviewItem = memo(
       [overlayOpacity]
     );
 
-    const handleLongPress = useCallback(
-      () => animateOpacity(0),
-      [animateOpacity]
-    );
-    const handlePressOut = useCallback(
-      () => animateOpacity(1),
-      [animateOpacity]
-    );
+    const handleLongPress = useCallback(() => {
+      setIsOverlayVisible(false);
+      animateOpacity(0);
+    }, [animateOpacity]);
+    const handlePressOut = useCallback(() => {
+      setIsOverlayVisible(true);
+      animateOpacity(1);
+    }, [animateOpacity]);
 
     const handleReportSubmit = useCallback(
       async (reason: string, customReason?: string) => {
@@ -640,7 +658,24 @@ const ReviewItem = memo(
               source={{ uri: review.image_url }}
               style={styles.reviewImage}
             />
-            <ReviewOverlay review={review} overlayOpacity={overlayOpacity} />
+            <ReviewOverlay
+              review={review}
+              overlayOpacity={overlayOpacity}
+              onToggleOverlay={toggleOverlay}
+              isOverlayVisible={isOverlayVisible}
+            />
+            {/* Eye icon to toggle overlay - always visible */}
+            <TouchableOpacity
+              style={styles.eyeIconContainer}
+              onPress={toggleOverlay}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isOverlayVisible ? "eye-off" : "eye"}
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
           </View>
 
           <ReviewFooter
@@ -686,7 +721,24 @@ const ReviewItem = memo(
               source={{ uri: review.image_url }}
               style={styles.reviewImage}
             />
-            <ReviewOverlay review={review} overlayOpacity={overlayOpacity} />
+            <ReviewOverlay
+              review={review}
+              overlayOpacity={overlayOpacity}
+              onToggleOverlay={toggleOverlay}
+              isOverlayVisible={isOverlayVisible}
+            />
+            {/* Eye icon to toggle overlay - always visible */}
+            <TouchableOpacity
+              style={styles.eyeIconContainer}
+              onPress={toggleOverlay}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isOverlayVisible ? "eye-off" : "eye"}
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
           </View>
 
           {!hideFooter && (
@@ -757,20 +809,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginRight: 8,
   },
-  avatarPlaceholder: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#336654",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-  },
-  avatarInitial: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
   imageContainer: {
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH, // Instagram-style 1:1 aspect ratio
@@ -800,11 +838,16 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "flex-end",
   },
+  locationLinkContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   locationName: {
     fontWeight: "bold",
     fontSize: 22,
     color: COLORS.white,
-    marginBottom: 4,
+    marginRight: 6,
   },
   locationAddress: {
     fontSize: 14,
@@ -817,6 +860,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     color: COLORS.white,
+  },
+  eyeIconContainer: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   spiritText: {
     fontSize: 16,

@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   placeholder: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#B6A3E2", // App primary color
     alignItems: "center",
     justifyContent: "center",
   },
   initials: {
     fontWeight: "600",
-    color: "#666",
+    color: "#FFFFFF", // White text for better contrast
   },
 });
 

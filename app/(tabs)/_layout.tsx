@@ -145,7 +145,6 @@ const LayoutContent = () => {
           popToTopOnBlur: true,
         }}
       />
-      <Tabs.Screen name="[username]" options={{ href: null }} />
     </Tabs>
   );
 };

@@ -128,7 +128,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
       >
         {/* Toggle camera facing button in top left */}
         <Pressable style={styles.toggleButton} onPress={toggleFacing}>
-          <FontAwesome6 name="rotate-left" size={32} color="white" />
+          <FontAwesome6 name="camera-rotate" size={32} color="white" />
         </Pressable>
 
         {/* Capture button in the center */}

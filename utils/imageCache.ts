@@ -42,8 +42,13 @@ class ImageCache {
     
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedImage;
-    if (cached && Date.now() < cached.expiresAt) {
-      return cached.url;
+    if (cached) {
+      if (Date.now() < cached.expiresAt) {
+        return cached.url;
+      } else {
+        // Remove expired cache entry
+        this.memoryCache.delete(cacheKey);
+      }
     }
     
     // Check if request is already pending
@@ -96,8 +101,13 @@ class ImageCache {
     
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
-    if (cached && Date.now() < cached.expiresAt) {
-      return cached.signedUrl;
+    if (cached) {
+      if (Date.now() < cached.expiresAt) {
+        return cached.signedUrl;
+      } else {
+        // Remove expired cache entry
+        this.memoryCache.delete(cacheKey);
+      }
     }
     
     // Check if request is already pending
@@ -155,8 +165,13 @@ class ImageCache {
     
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedImage;
-    if (cached && Date.now() < cached.expiresAt) {
-      return cached.url;
+    if (cached) {
+      if (Date.now() < cached.expiresAt) {
+        return cached.url;
+      } else {
+        // Remove expired cache entry
+        this.memoryCache.delete(cacheKey);
+      }
     }
     
     // Check if request is already pending

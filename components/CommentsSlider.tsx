@@ -397,16 +397,6 @@ const styles = StyleSheet.create({
   },
   commentInner: { flexDirection: "row", alignItems: "flex-start", flex: 1 },
   avatar: { width: 32, height: 32, borderRadius: 16, marginRight: 12 },
-  avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#336654",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  avatarInitial: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   commentContent: { flex: 1 },
   commentHeaderRow: {
     flexDirection: "row",

@@ -14,9 +14,9 @@ class AuthCache {
   private memoryCache: CachedSession | null = null;
   private pendingRequests = new Map<string, Promise<any>>();
   
-  // Cache duration (in milliseconds) - Conservative for security
-  private readonly SESSION_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes (reduced for security)
-  private readonly PROFILE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes (reduced for security)
+  // Cache duration (in milliseconds) - Persistent until explicit logout
+  private readonly SESSION_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days (persistent sessions)
+  private readonly PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (profiles cached for a day)
   
   private constructor() {}
   
@@ -29,27 +29,15 @@ class AuthCache {
   
   /**
    * Get cached session or fetch from Supabase
-   * Always validates with server for security
+   * Uses cached session for better user experience
    */
   async getSession(): Promise<any> {
     const cacheKey = 'session';
     
     // Check memory cache first
     if (this.memoryCache && Date.now() < this.memoryCache.expiresAt) {
-      // For security, always validate session with server
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error || !session) {
-          // Session invalid, clear cache
-          await this.invalidateCache();
-          return null;
-        }
-        return session;
-      } catch (error) {
-        console.error('Session validation failed:', error);
-        await this.invalidateCache();
-        return null;
-      }
+      // Return cached session for better user experience
+      return this.memoryCache.session;
     }
     
     // Check if request is already pending
@@ -223,14 +211,12 @@ class AuthCache {
   }
   
   /**
-   * Security: Clear cache on app background/foreground
+   * Handle app state changes
+   * Keep sessions persistent - only clear on explicit logout
    */
   async onAppStateChange(nextAppState: string): Promise<void> {
-    if (nextAppState === 'background') {
-      // Clear sensitive data when app goes to background
-      this.memoryCache = null;
-      await AsyncStorage.removeItem('auth_cache');
-    }
+    // Keep sessions persistent - don't clear cache on background
+    // Sessions will only be cleared on explicit logout
   }
   
   /**

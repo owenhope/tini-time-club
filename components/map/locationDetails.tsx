@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 
 interface LocationDetailsProps {
@@ -14,9 +15,12 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
       <View style={styles.headerSection}>
         <View style={styles.titleContainer}>
           <Link href={`/locations/${loc.id}`} asChild>
-            <Text style={styles.locationName} numberOfLines={1}>
-              {loc.name || "No name available"}
-            </Text>
+            <View style={styles.locationLinkContainer}>
+              <Text style={styles.locationName} numberOfLines={1}>
+                {loc.name || "No name available"}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
+            </View>
           </Link>
           {loc.address && (
             <Text style={styles.address} numberOfLines={2}>
@@ -86,11 +90,16 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: "column",
   },
+  locationLinkContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   locationName: {
     fontSize: 22,
     fontWeight: "700",
     color: "#1a1a1a",
-    marginBottom: 4,
+    marginRight: 6,
   },
   address: {
     fontSize: 15,

@@ -357,20 +357,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#336654",
-    alignItems: "center",
-    justifyContent: "center",
     marginRight: 12,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-  },
-  avatarText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
   },
   ratingContainer: {
     width: 40,

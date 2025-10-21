@@ -18,10 +18,10 @@ class DatabaseService {
   private queryCache = new Map<string, CachedQuery>();
   private pendingQueries = new Map<string, Promise<any>>();
   
-  // Default cache durations (in milliseconds)
-  private readonly DEFAULT_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  private readonly STATIC_DATA_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes (types, spirits)
-  private readonly USER_DATA_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes (profiles, reviews)
+  // Default cache durations (in milliseconds) - Persistent for better UX
+  private readonly DEFAULT_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+  private readonly STATIC_DATA_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours (types, spirits)
+  private readonly USER_DATA_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes (profiles, reviews)
   
   private constructor() {}
   

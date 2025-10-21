@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
+import { Avatar } from "@/components/shared";
 import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 export interface ProfileType {
@@ -108,11 +109,12 @@ export default function ProfileList({
       <View style={styles.profileCard}>
         <Link href={`/home/users/${item.username || "unknown"}`} asChild>
           <TouchableOpacity style={styles.profileInfo} activeOpacity={0.7}>
-            <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>
-                {item.username?.charAt(0)?.toUpperCase() || "?"}
-              </Text>
-            </View>
+            <Avatar
+              avatarPath={item.avatar_url}
+              username={item.username}
+              size={32}
+              style={styles.avatar}
+            />
             <Text style={styles.username}>
               {item.username || "Unknown User"}
             </Text>
@@ -221,19 +223,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  avatarContainer: {
+  avatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#336654",
-    alignItems: "center",
-    justifyContent: "center",
     marginRight: 10,
-  },
-  avatarText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   username: {
     fontSize: 15,
