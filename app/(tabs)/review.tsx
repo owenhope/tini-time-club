@@ -189,9 +189,12 @@ const ReviewPreview = ({
             <Text style={styles.characterCount}>
               {inputCaption?.length || 0}/500
             </Text>
-            <Text style={styles.hintText}>
-              Press anywhere to return to preview
-            </Text>
+            <TouchableOpacity
+              style={styles.saveCaptionButton}
+              onPress={handleCaptionBlur}
+            >
+              <Text style={styles.saveCaptionButtonText}>Save Caption</Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
@@ -678,11 +681,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
     overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
   previewContent: {
     paddingTop: 10, // Minimal padding for preview step
+    justifyContent: "center",
+    alignItems: "center",
   },
   footer: {
     paddingHorizontal: 20,
@@ -764,6 +770,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     fontStyle: "italic",
+  },
+  saveCaptionButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    marginTop: 12,
+    minHeight: 50,
+  },
+  saveCaptionButtonText: {
+    fontSize: 16,
+    color: "white",
+    fontWeight: "600",
   },
   submitLoadingContainer: {
     flex: 1,

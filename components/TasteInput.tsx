@@ -16,8 +16,10 @@ const TasteInput = ({ control }: { control: any }) => {
             selectedColor="#8B9A46"
             count={5}
             size={35}
-            starContainerStyle={{ padding: 5, width: 35, height: 35 }}
-            reviewSize={20}
+            reviewSize={35}
+            ratingContainerStyle={{
+              gap: 10,
+            }}
             reviewColor="#8B9A46"
             defaultRating={value}
             isDisabled={false}

@@ -16,13 +16,10 @@ const PresentationInput = ({ control }: { control: any }) => {
             selectedColor="#9CA3AF"
             count={5}
             size={35}
-            starContainerStyle={{
-              marginTop: 10,
-              padding: 5,
-              width: 35,
-              height: 35,
+            reviewSize={35}
+            ratingContainerStyle={{
+              gap: 10,
             }}
-            reviewSize={20}
             defaultRating={value}
             reviewColor="#9CA3AF"
             isDisabled={false}

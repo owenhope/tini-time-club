@@ -112,43 +112,6 @@ function Home() {
     }
   }, [profile]);
 
-  // Memoized followed user IDs to prevent unnecessary refetches
-  const followedUserIds = useCallback(async (): Promise<string[]> => {
-    if (!profile) return [];
-    const { data, error } = await supabase
-      .from("followers")
-      .select("following_id")
-      .eq("follower_id", profile.id);
-    if (error) {
-      console.error("Error fetching followed users:", error);
-      return [];
-    }
-    return data.map((row: any) => row.following_id);
-  }, [profile?.id]);
-
-  // Optimized image URL generation with caching
-  const generateImageUrls = useCallback(async (reviews: any[]) => {
-    const urlPromises = reviews.map(async (review) => {
-      try {
-        const { data } = await supabase.storage
-          .from("review_images")
-          .createSignedUrl(review.image_url, 3600); // 1 hour cache
-        return {
-          ...review,
-          image_url: data?.signedUrl || review.image_url,
-          location: review.location
-            ? { ...review.location, id: review.location.id || "" }
-            : undefined,
-        };
-      } catch (error) {
-        console.error("Error generating image URL:", error);
-        return review;
-      }
-    });
-
-    return Promise.all(urlPromises);
-  }, []);
-
   const loadReviews = useCallback(
     async (refresh = false) => {
       if (!profile) return;
@@ -175,7 +138,21 @@ function Home() {
       try {
         const start = nextPage * PAGE_SIZE;
         const end = start + PAGE_SIZE - 1;
-        const followedIds = await followedUserIds();
+
+        // Get followed user IDs
+        const followedIds = await (async (): Promise<string[]> => {
+          if (!profile) return [];
+          const { data, error } = await supabase
+            .from("followers")
+            .select("following_id")
+            .eq("follower_id", profile.id);
+          if (error) {
+            console.error("Error fetching followed users:", error);
+            return [];
+          }
+          return data.map((row: any) => row.following_id);
+        })();
+
         const blockedIds = await getBlockedUserIds(profile.id);
 
         // Filter out blocked users from the query
@@ -213,9 +190,27 @@ function Home() {
         }
 
         // Generate image URLs in parallel
-        const reviewsWithUrls = await generateImageUrls(
-          reviewsDataFromDB || []
-        );
+        const reviewsWithUrls = await (async (reviews: any[]) => {
+          const urlPromises = reviews.map(async (review) => {
+            try {
+              const { data } = await supabase.storage
+                .from("review_images")
+                .createSignedUrl(review.image_url, 3600); // 1 hour cache
+              return {
+                ...review,
+                image_url: data?.signedUrl || review.image_url,
+                location: review.location
+                  ? { ...review.location, id: review.location.id || "" }
+                  : undefined,
+              };
+            } catch (error) {
+              console.error("Error generating image URL:", error);
+              return review;
+            }
+          });
+
+          return Promise.all(urlPromises);
+        })(reviewsDataFromDB || []);
 
         // Update state
         if (refresh) {
@@ -259,7 +254,7 @@ function Home() {
         }
       }
     },
-    [profile?.id, followedUserIds, generateImageUrls]
+    [profile?.id, page, hasMore, lastRefreshTime]
   );
 
   const scrollToTop = useCallback(() => {
@@ -303,15 +298,9 @@ function Home() {
     }, [profile?.id, scrollToTop])
   );
 
-  // Optimized refresh handler with debouncing
+  // Optimized refresh handler
   const onRefresh = useCallback(() => {
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-
-    loadingTimeoutRef.current = setTimeout(() => {
-      loadReviews(true);
-    }, 100);
+    loadReviews(true);
   }, [loadReviews]);
 
   // Optimized end reached handler
