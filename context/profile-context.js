@@ -1,6 +1,7 @@
 // ProfileContext.js
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { supabase } from "@/utils/supabase";
+import authCache from "@/utils/authCache";
 
 // Create the context
 const ProfileContext = createContext();
@@ -12,33 +13,44 @@ export const ProfileProvider = ({ children }) => {
 
   // Function to fetch the current user's profile from the "profile" table
   const fetchProfile = async () => {
-    // Get the authenticated user from Supabase
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      // Use cached profile if available
+      const cachedProfile = await authCache.getProfile();
 
-    if (userError || !user) {
-      console.error("Error fetching user", userError);
+      if (cachedProfile) {
+        console.log("Profile loaded from cache:", cachedProfile);
+        setProfile(cachedProfile);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to direct fetch if cache miss
+      const user = await authCache.getUser();
+      if (!user) {
+        console.error("No user found");
+        setLoading(false);
+        return;
+      }
+
+      // Query the "profile" table for this user's profile
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .eq("deleted", false)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile", error);
+      } else {
+        console.log("Profile fetched successfully:", data);
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error("Error in fetchProfile:", error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Query the "profile" table for this user's profile
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .eq("deleted", false)
-      .single();
-
-    if (error) {
-      console.error("Error fetching profile", error);
-    } else {
-      console.log("Profile fetched successfully:", data);
-      setProfile(data);
-    }
-    setLoading(false);
   };
 
   // Fetch the profile when the provider mounts
@@ -49,20 +61,18 @@ export const ProfileProvider = ({ children }) => {
   // Function to update the profile (accepts an object with the fields to update)
   const updateProfile = async (updates) => {
     if (!profile) return;
-    const { data, error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("id", profile.id)
-      .select()
-      .single();
 
-    if (error) {
-      console.error("Error updating profile", error);
-      return { error };
+    // Use cached update for better performance
+    const result = await authCache.updateProfile(updates);
+
+    if (result.error) {
+      console.error("Error updating profile", result.error);
+      return { error: result.error };
     }
 
-    setProfile(data);
-    return { data };
+    // Update local state
+    setProfile(result.data);
+    return { data: result.data };
   };
 
   // Function to accept EULA

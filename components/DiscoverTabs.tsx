@@ -12,6 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress } from "@/utils/helpers";
+import imageCache from "@/utils/imageCache";
+import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 
 interface DiscoverTabsProps {
@@ -151,11 +153,6 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
   }, [activeTab, query]);
 
   const renderProfile = ({ item }: { item: any }) => {
-    const avatarUrl = item.avatar_url
-      ? supabase.storage.from("avatars").getPublicUrl(item.avatar_url).data
-          .publicUrl
-      : null;
-
     return (
       <TouchableOpacity
         style={styles.resultCard}
@@ -164,13 +161,12 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
       >
         <View style={styles.cardContent}>
           <View style={styles.avatarContainer}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-            ) : (
-              <Text style={styles.avatarText}>
-                {item.username?.charAt(0)?.toUpperCase() || "?"}
-              </Text>
-            )}
+            <Avatar
+              avatarPath={item.avatar_url}
+              username={item.username}
+              size={50}
+              style={styles.avatar}
+            />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.resultTitle}>

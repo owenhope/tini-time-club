@@ -23,6 +23,8 @@ import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
+import imageCache from "@/utils/imageCache";
+import { Avatar } from "@/components/shared";
 import { Review } from "@/types/types";
 import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
@@ -126,10 +128,8 @@ const useAvatar = (avatarUrl: string | null | undefined) => {
 
       setLoading(true);
       try {
-        const { data } = await supabase.storage
-          .from("avatars")
-          .getPublicUrl(avatarUrl);
-        setUrl(data?.publicUrl ?? null);
+        const avatarUrlResult = await imageCache.getAvatarUrl(avatarUrl);
+        setUrl(avatarUrlResult);
       } catch (error) {
         console.error("Error loading avatar:", error);
         setUrl(null);
@@ -244,7 +244,7 @@ const useComments = (reviewId: string) => {
 };
 
 // Reusable UI Components
-const Avatar = memo(
+const AvatarWrapper = memo(
   ({
     avatarUrl,
     username,
@@ -254,7 +254,6 @@ const Avatar = memo(
     username?: string;
     isOwnReview: boolean;
   }) => {
-    const { url } = useAvatar(avatarUrl);
     const router = useRouter();
 
     const handlePress = useCallback(() => {
@@ -265,15 +264,12 @@ const Avatar = memo(
 
     const content = (
       <View style={styles.headerProfile}>
-        {url ? (
-          <Image source={{ uri: url }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>
-              {username?.charAt(0).toUpperCase() || "?"}
-            </Text>
-          </View>
-        )}
+        <Avatar
+          avatarPath={avatarUrl}
+          username={username}
+          size={40}
+          style={styles.avatar}
+        />
         <Text style={styles.headerUsername}>{username || "Unknown"}</Text>
       </View>
     );
@@ -671,7 +667,7 @@ const ReviewItem = memo(
         >
           {!hideHeader && (
             <View style={styles.header}>
-              <Avatar
+              <AvatarWrapper
                 avatarUrl={review.profile?.avatar_url || null}
                 username={review.profile?.username}
                 isOwnReview={isOwnReview}

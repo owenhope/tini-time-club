@@ -22,6 +22,10 @@ import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { v4 as uuidv4 } from "uuid";
+import imageCache from "@/utils/imageCache";
+import { Avatar } from "@/components/shared";
+import authCache from "@/utils/authCache";
+import databaseService from "@/services/databaseService";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -96,38 +100,20 @@ const Profile = () => {
       return;
     }
     try {
-      const { data: reviewsData, error } = await supabase
-        .from("reviews")
-        .select(
-          `
-          id,
-          comment,
-          image_url,
-          inserted_at,
-          taste,
-          presentation,
-          location:locations!reviews_location_fkey(name),
-          spirit:spirit(name),
-          type:type(name),
-          profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
-        `
-        )
-        .eq("user_id", userId)
-        .eq("state", 1)
-        .order("inserted_at", { ascending: false });
+      const reviewsData = await databaseService.getReviews({
+        userId,
+        limit: 50,
+        offset: 0,
+      });
 
-      const reviewsWithFullUrl = await Promise.all(
-        (reviewsData || []).map(async (review: any) => {
-          const { data, error } = await supabase.storage
-            .from("review_images")
-            .createSignedUrl(review.image_url, 60);
-          if (error) {
-            console.error("Error creating signed URL:", error);
-            return review;
-          }
-          return { ...review, image_url: data.signedUrl };
-        })
-      );
+      // Get image URLs using cache
+      const imagePaths = reviewsData.map((review: any) => review.image_url);
+      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
+        ...review,
+        image_url: imageUrls[review.image_url] || review.image_url,
+      }));
 
       setUserReviews(reviewsWithFullUrl);
     } catch (err) {
@@ -157,9 +143,7 @@ const Profile = () => {
 
       const compressedUri = manipResult.uri;
 
-      const {
-        data: { user: User },
-      } = await supabase.auth.getUser();
+      const User = await authCache.getUser();
       if (!User) return;
 
       const base64 = await FileSystem.readAsStringAsync(compressedUri, {
@@ -294,15 +278,12 @@ const Profile = () => {
     <View style={styles.container}>
       <View style={styles.profileHeader}>
         <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-          {avatar ? (
-            <Image style={styles.avatar} source={{ uri: avatar }} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {profile?.username?.charAt(0).toUpperCase() || "?"}
-              </Text>
-            </View>
-          )}
+          <Avatar
+            avatarPath={profile?.avatar_url}
+            username={profile?.username}
+            size={100}
+            style={styles.avatar}
+          />
         </TouchableOpacity>
         <Pressable
           style={styles.userInfoContainer}

@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
+import imageCache from "@/utils/imageCache";
+import { Avatar } from "@/components/shared";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
@@ -248,18 +250,14 @@ const UserProfile = () => {
         return;
       }
 
-      const reviewsWithFullUrl = await Promise.all(
-        reviewsData.map(async (review: any) => {
-          const { data, error } = await supabase.storage
-            .from("review_images")
-            .createSignedUrl(review.image_url, 60);
-          if (error) {
-            console.error("Error creating signed URL:", error);
-            return review;
-          }
-          return { ...review, image_url: data.signedUrl };
-        })
-      );
+      // Get image URLs using cache
+      const imagePaths = reviewsData.map((review: any) => review.image_url);
+      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
+        ...review,
+        image_url: imageUrls[review.image_url] || review.image_url,
+      }));
       setUserReviews(reviewsWithFullUrl);
       setLoadingReviews(false);
     } catch (err) {
@@ -428,17 +426,12 @@ const UserProfile = () => {
       {/* Profile Header */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          {avatar ? (
-            <Image style={styles.avatar} source={{ uri: avatar }} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {displayProfile?.username
-                  ? displayProfile.username.charAt(0).toUpperCase()
-                  : "?"}
-              </Text>
-            </View>
-          )}
+          <Avatar
+            avatarPath={displayProfile?.avatar_url}
+            username={displayProfile?.username}
+            size={100}
+            style={styles.avatar}
+          />
         </View>
         <View style={styles.userInfoContainer}>
           <View style={styles.statsContainer}>

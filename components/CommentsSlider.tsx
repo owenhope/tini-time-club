@@ -20,12 +20,14 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
+import imageCache from "@/utils/imageCache";
 import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
 import { useRouter } from "expo-router";
+import { Avatar } from "@/components/shared";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -233,12 +235,7 @@ export default function CommentsSlider({
                           item.inserted_at
                         );
                         const isOwnComment = profile?.id === item.user_id;
-                        const avatarUrl = item.profile?.avatar_url
-                          ? supabase.storage
-                              .from("avatars")
-                              .getPublicUrl(item.profile.avatar_url).data
-                              .publicUrl
-                          : null;
+                        const avatarPath = item.profile?.avatar_url || null;
 
                         return (
                           <View style={styles.commentRow}>
@@ -252,18 +249,11 @@ export default function CommentsSlider({
                                     )
                                   }
                                 >
-                                  {avatarUrl ? (
-                                    <Image
-                                      source={{ uri: avatarUrl }}
-                                      style={styles.avatar}
-                                    />
-                                  ) : (
-                                    <View style={styles.avatarPlaceholder}>
-                                      <Text style={styles.avatarInitial}>
-                                        {username.charAt(0).toUpperCase()}
-                                      </Text>
-                                    </View>
-                                  )}
+                                  <Avatar
+                                    avatarPath={avatarPath}
+                                    username={username}
+                                    style={styles.avatar}
+                                  />
                                 </TouchableOpacity>
                                 <View style={styles.commentContent}>
                                   <View style={styles.commentHeaderRow}>

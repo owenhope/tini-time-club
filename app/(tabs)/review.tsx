@@ -37,6 +37,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { Button } from "@/components/shared";
+import databaseService from "@/services/databaseService";
 import { TextInput } from "react-native";
 
 // ReviewPreview component for showing live preview with caption input
@@ -390,24 +391,36 @@ export default function App() {
   };
 
   const getTypes = async () => {
-    const { data, error } = await supabase.from("types").select("*");
-    if (error) {
+    try {
+      const data = await databaseService.getTypes();
+      setTypes(data);
+    } catch (error) {
       console.error("Error getting types:", error);
+      setTypes([]);
     }
-    setTypes((data as Option[]) || []);
   };
 
   const getSpirits = async () => {
-    const { data, error } = await supabase.from("spirits").select("*");
-    if (error) {
+    try {
+      const data = await databaseService.getSpirits();
+      setSpirits(data);
+    } catch (error) {
       console.error("Error getting spirits:", error);
+      setSpirits([]);
     }
-    setSpirits((data as Option[]) || []);
   };
 
   const createReview = async (userId: string, imageUrl: string) => {
-    const locationId = await getLocation(userId, watchedValues.location);
-    if (locationId) {
+    try {
+      const locationId = await databaseService.createOrGetLocation(
+        {
+          name: watchedValues.location.name,
+          address: watchedValues.location.address,
+          location: `POINT(${watchedValues.location.coordinates.longitude} ${watchedValues.location.coordinates.latitude})`,
+        },
+        userId
+      );
+
       const newReview = {
         user_id: userId,
         location: locationId,
@@ -419,56 +432,12 @@ export default function App() {
         image_url: imageUrl,
         state: 1,
       };
-      const { data, error } = await supabase
-        .from("reviews")
-        .insert(newReview)
-        .select("id")
-        .single();
 
-      if (error) {
-        console.error("Error creating review:", error);
-        return null;
-      }
-
-      return data.id;
-    } else {
-      console.log("Error getting location ID");
-    }
-  };
-
-  const getLocation = async (userId: string, location: any) => {
-    const { data, error } = await supabase
-      .from("locations")
-      .select("id")
-      .eq("name", location.name)
-      .eq("address", location.address)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error getting location:", error);
+      const result = await databaseService.createReview(newReview);
+      return result.id;
+    } catch (error) {
+      console.error("Error creating review:", error);
       return null;
-    } else if (data) {
-      return data.id;
-    }
-
-    const newLocation = {
-      created_by: userId,
-      name: location.name,
-      address: location.address,
-      location: `POINT(${location.coordinates.longitude} ${location.coordinates.latitude})`,
-    };
-
-    const { data: locationData, error: locationError } = await supabase
-      .from("locations")
-      .insert(newLocation)
-      .select("id")
-      .single();
-
-    if (locationError) {
-      console.error("Error creating location:", locationError);
-      return null;
-    } else {
-      return locationData.id;
     }
   };
 
@@ -499,7 +468,7 @@ export default function App() {
           } has posted a new review from ${
             (watchedValues.location as any)?.name || "a location"
           }`;
-          await supabase.from("notifications").insert({
+          await databaseService.createNotification({
             user_id: profile.id,
             body: notificationBody,
             type: NOTIFICATION_TYPES.FOLLOWERS,

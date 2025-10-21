@@ -24,6 +24,7 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { getBlockedUserIds } from "@/utils/blockUtils";
 import { useProfile } from "@/context/profile-context";
+import imageCache from "@/utils/imageCache";
 
 // Constants
 const COLORS = {
@@ -124,33 +125,12 @@ const Location = () => {
       return;
     }
     try {
-      const { data, error } = await supabase.storage
-        .from("location_images")
-        .download(`${locationId}/image.jpg`);
-      if (error) {
-        console.log(error);
-        if (
-          error.message.includes("400") ||
-          error.message.includes("The resource was not found")
-        ) {
-          setLocationImage(null);
-          setLoadingImage(false);
-          return;
-        }
-        console.error("Location image download error:", error);
-        setLoadingImage(false);
-        return;
-      }
-      if (data) {
-        const fr = new FileReader();
-        fr.readAsDataURL(data);
-        fr.onload = () => {
-          setLocationImage(fr.result as string);
-          setLoadingImage(false);
-        };
-      }
+      const imageUrl = await imageCache.getLocationImage(locationId);
+      setLocationImage(imageUrl);
     } catch (err) {
       console.error("Unexpected error while downloading location image:", err);
+      setLocationImage(null);
+    } finally {
       setLoadingImage(false);
     }
   }, []);
@@ -269,18 +249,16 @@ const Location = () => {
             (review: any) => !blockedIds.includes(review.user_id)
           );
 
-          const reviewsWithFullUrl = await Promise.all(
-            filteredReviews.map(async (review: any) => {
-              const { data, error } = await supabase.storage
-                .from("review_images")
-                .createSignedUrl(review.image_url, 60);
-              if (error) {
-                console.error("Error creating signed URL:", error);
-                return review;
-              }
-              return { ...review, image_url: data.signedUrl };
-            })
+          // Get image URLs using cache
+          const imagePaths = filteredReviews.map(
+            (review: any) => review.image_url
           );
+          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+          const reviewsWithFullUrl = filteredReviews.map((review: any) => ({
+            ...review,
+            image_url: imageUrls[review.image_url] || review.image_url,
+          }));
           setLocationReviews(reviewsWithFullUrl);
           setLoadingReviews(false);
         } catch (err) {
@@ -346,18 +324,16 @@ const Location = () => {
             (review: any) => !blockedIds.includes(review.user_id)
           );
 
-          const reviewsWithFullUrl = await Promise.all(
-            filteredReviews.map(async (review: any) => {
-              const { data, error } = await supabase.storage
-                .from("review_images")
-                .createSignedUrl(review.image_url, 60);
-              if (error) {
-                console.error("Error creating signed URL:", error);
-                return review;
-              }
-              return { ...review, image_url: data.signedUrl };
-            })
+          // Get image URLs using cache
+          const imagePaths = filteredReviews.map(
+            (review: any) => review.image_url
           );
+          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+          const reviewsWithFullUrl = filteredReviews.map((review: any) => ({
+            ...review,
+            image_url: imageUrls[review.image_url] || review.image_url,
+          }));
           setLocationReviews(reviewsWithFullUrl);
           setLoadingReviews(false);
         } catch (err) {

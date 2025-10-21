@@ -30,6 +30,8 @@ import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
 import { getBlockedUserIds } from "@/utils/blockUtils";
+import imageCache from "@/utils/imageCache";
+import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
@@ -139,77 +141,33 @@ function Home() {
         const start = nextPage * PAGE_SIZE;
         const end = start + PAGE_SIZE - 1;
 
-        // Get followed user IDs
-        const followedIds = await (async (): Promise<string[]> => {
-          if (!profile) return [];
-          const { data, error } = await supabase
-            .from("followers")
-            .select("following_id")
-            .eq("follower_id", profile.id);
-          if (error) {
-            console.error("Error fetching followed users:", error);
-            return [];
-          }
-          return data.map((row: any) => row.following_id);
-        })();
+        // Get reviews using optimized database service
+        const reviewsDataFromDB = await databaseService.getReviews({
+          currentUserId: profile.id,
+          limit: PAGE_SIZE,
+          offset: start,
+          excludeBlocked: true,
+        });
 
-        const blockedIds = await getBlockedUserIds(profile.id);
-
-        // Filter out blocked users from the query
-        const queryUserIds = followedIds.includes(profile.id)
-          ? followedIds.filter((id) => !blockedIds.includes(id))
-          : [...followedIds, profile.id].filter(
-              (id) => !blockedIds.includes(id)
-            );
-
-        const { data: reviewsDataFromDB, error } = await supabase
-          .from("reviews")
-          .select(
-            `
-          id,
-          comment,
-          image_url,
-          inserted_at,
-          taste,
-          presentation,
-          location:locations!reviews_location_fkey(id, name, address),
-          spirit:spirit(name),
-          type:type(name),
-          user_id,
-          profile:profiles!user_id(id, username, avatar_url)
-        `
-          )
-          .eq("state", 1)
-          .in("user_id", queryUserIds)
-          .not("profile.deleted", "eq", true)
-          .order("inserted_at", { ascending: false })
-          .range(start, end);
-
-        if (error) {
-          throw error;
+        if (!reviewsDataFromDB) {
+          throw new Error("Failed to fetch reviews");
         }
 
-        // Generate image URLs in parallel
+        // Generate image URLs using cache
         const reviewsWithUrls = await (async (reviews: any[]) => {
-          const urlPromises = reviews.map(async (review) => {
-            try {
-              const { data } = await supabase.storage
-                .from("review_images")
-                .createSignedUrl(review.image_url, 3600); // 1 hour cache
-              return {
-                ...review,
-                image_url: data?.signedUrl || review.image_url,
-                location: review.location
-                  ? { ...review.location, id: review.location.id || "" }
-                  : undefined,
-              };
-            } catch (error) {
-              console.error("Error generating image URL:", error);
-              return review;
-            }
-          });
+          if (reviews.length === 0) return [];
 
-          return Promise.all(urlPromises);
+          // Get all image URLs using batch processing
+          const imagePaths = reviews.map((review) => review.image_url);
+          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+          return reviews.map((review) => ({
+            ...review,
+            image_url: imageUrls[review.image_url] || review.image_url,
+            location: review.location
+              ? { ...review.location, id: review.location.id || "" }
+              : undefined,
+          }));
         })(reviewsDataFromDB || []);
 
         // Update state
