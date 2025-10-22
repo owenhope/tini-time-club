@@ -78,26 +78,39 @@ export default function CustomTabBar({
             onLongPress={onLongPress}
             style={styles.tab}
           >
-            {route.name === "home" ? (
-              <Image
-                source={require("@/assets/images/martini_transparent.png")}
+            <View style={styles.tabContent}>
+              {route.name === "home" ? (
+                <Image
+                  source={require("@/assets/images/martini_transparent.png")}
+                  style={[
+                    styles.martiniIcon,
+                    { tintColor: isFocused ? "#336654" : "#666" },
+                  ]}
+                  resizeMode="contain"
+                />
+              ) : route.name === "review" ? (
+                <View style={styles.oliveButton}>
+                  <Text style={styles.plusIcon}>+</Text>
+                </View>
+              ) : (
+                <Ionicons
+                  name={getIconName(route.name, isFocused)}
+                  size={24}
+                  color={isFocused ? "#336654" : "#666"}
+                />
+              )}
+              <Text
                 style={[
-                  styles.martiniIcon,
-                  { tintColor: isFocused ? "#336654" : "#666" },
+                  styles.tabLabel,
+                  {
+                    color: isFocused ? "#336654" : "#666",
+                    marginTop: route.name === "review" ? 8 : 6,
+                  },
                 ]}
-                resizeMode="contain"
-              />
-            ) : route.name === "review" ? (
-              <View style={styles.oliveButton}>
-                <Text style={styles.plusIcon}>+</Text>
-              </View>
-            ) : (
-              <Ionicons
-                name={getIconName(route.name, isFocused)}
-                size={24}
-                color={isFocused ? "#336654" : "#666"}
-              />
-            )}
+              >
+                {label}
+              </Text>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -111,14 +124,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
-    paddingBottom: 8,
-    paddingTop: 8,
+    paddingBottom: 4,
+    paddingTop: 4,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
+  },
+  tabContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: 6,
+    textAlign: "center",
   },
   martiniIcon: {
     width: 24,

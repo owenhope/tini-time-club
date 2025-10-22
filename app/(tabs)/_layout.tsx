@@ -95,7 +95,7 @@ const LayoutContent = () => {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
+          title: "Feed",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <Image
@@ -109,7 +109,7 @@ const LayoutContent = () => {
       <Tabs.Screen
         name="locations"
         options={{
-          title: "Locations",
+          title: "Map",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="map-outline" size={size} color={color} />
