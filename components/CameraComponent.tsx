@@ -86,7 +86,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
     }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["images"],
         base64: true,
         quality: 1,
       });

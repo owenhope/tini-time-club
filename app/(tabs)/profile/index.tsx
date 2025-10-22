@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Pressable,
+  RefreshControl,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -125,7 +126,7 @@ const Profile = () => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1, // raw image quality
@@ -320,8 +321,14 @@ const Profile = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
-          onRefresh={() => profile?.id && loadUserReviews(profile.id)}
-          refreshing={loadingReviews}
+          refreshControl={
+            <RefreshControl
+              refreshing={loadingReviews}
+              onRefresh={() => profile?.id && loadUserReviews(profile.id)}
+              colors={["#B6A3E2"]}
+              tintColor="#B6A3E2"
+            />
+          }
         />
       </View>
 

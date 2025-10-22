@@ -25,6 +25,7 @@ import { stripNameFromAddress } from "@/utils/helpers";
 import { getBlockedUserIds } from "@/utils/blockUtils";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
+import RatingCircles from "@/components/RatingCircles";
 
 // Constants
 const COLORS = {
@@ -352,46 +353,10 @@ const Location = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        <View style={styles.allRatingsContainer}>
-          <View style={styles.ratingContainer}>
-            <View style={styles.overallRatingCircle}>
-              <Text style={styles.circleText}>
-                {displayLocation?.rating
-                  ? displayLocation.rating.toFixed(1)
-                  : "N/A"}
-              </Text>
-            </View>
-            <Text style={styles.circleLabel}>Overall</Text>
-          </View>
-          <View style={styles.ratingContainer}>
-            <View style={styles.tasteCircle}>
-              <Text style={styles.circleText}>
-                {displayLocation?.taste_avg
-                  ? displayLocation.taste_avg.toFixed(1)
-                  : "N/A"}
-              </Text>
-            </View>
-            <Text style={styles.circleLabel}>Taste</Text>
-          </View>
-          <View style={styles.ratingContainer}>
-            <View style={styles.presentationCircle}>
-              <Text style={styles.circleText}>
-                {displayLocation?.presentation_avg
-                  ? displayLocation.presentation_avg.toFixed(1)
-                  : "N/A"}
-              </Text>
-            </View>
-            <Text style={styles.circleLabel}>Presentation</Text>
-          </View>
-          <View style={styles.ratingContainer}>
-            <View style={styles.reviewCountCircle}>
-              <Text style={styles.circleText}>
-                {displayLocation?.total_ratings ?? 0}
-              </Text>
-            </View>
-            <Text style={styles.circleLabel}>Reviews</Text>
-          </View>
-        </View>
+        <RatingCircles
+          location={displayLocation || {}}
+          circleSize={DIMENSIONS.ratingCircle}
+        />
         <View style={styles.addressRow}>
           <Text style={styles.locationAddress}>
             {stripNameFromAddress(
@@ -438,19 +403,6 @@ const styles = StyleSheet.create({
   profileHeader: {
     padding: 16,
   },
-  allRatingsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  overallRatingCircle: {
-    width: DIMENSIONS.ratingCircle,
-    height: DIMENSIONS.ratingCircle,
-    borderRadius: DIMENSIONS.ratingCircle / 2,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   addressRow: {
     marginTop: 8,
     paddingTop: 8,
@@ -461,54 +413,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     lineHeight: 18,
-    textAlign: "center",
-  },
-  ratingContainer: {
-    alignItems: "center",
-    flex: 1,
-  },
-  ratingCircle: {
-    width: DIMENSIONS.ratingCircle,
-    height: DIMENSIONS.ratingCircle,
-    borderRadius: DIMENSIONS.ratingCircle / 2,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tasteCircle: {
-    width: DIMENSIONS.ratingCircle,
-    height: DIMENSIONS.ratingCircle,
-    borderRadius: DIMENSIONS.ratingCircle / 2,
-    backgroundColor: COLORS.taste,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  presentationCircle: {
-    width: DIMENSIONS.ratingCircle,
-    height: DIMENSIONS.ratingCircle,
-    borderRadius: DIMENSIONS.ratingCircle / 2,
-    backgroundColor: COLORS.presentation,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  reviewCountCircle: {
-    width: DIMENSIONS.ratingCircle,
-    height: DIMENSIONS.ratingCircle,
-    borderRadius: DIMENSIONS.ratingCircle / 2,
-    backgroundColor: COLORS.taste,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.white,
-  },
-  circleLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#666",
-    marginTop: 6,
     textAlign: "center",
   },
   reviewsContainer: {

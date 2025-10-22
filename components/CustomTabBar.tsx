@@ -95,7 +95,7 @@ export default function CustomTabBar({
               ) : (
                 <Ionicons
                   name={getIconName(route.name, isFocused)}
-                  size={24}
+                  size={19}
                   color={isFocused ? "#336654" : "#666"}
                 />
               )}
@@ -124,14 +124,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
-    paddingBottom: 4,
     paddingTop: 4,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   tabContent: {
     alignItems: "center",
@@ -144,13 +143,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   martiniIcon: {
-    width: 24,
-    height: 24,
+    width: 19,
+    height: 19,
   },
   oliveButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#336654",
     alignItems: "center",
     justifyContent: "center",
@@ -165,8 +164,8 @@ const styles = StyleSheet.create({
   },
   plusIcon: {
     color: "#FF4444",
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "bold",
-    lineHeight: 28,
+    lineHeight: 22,
   },
 });
