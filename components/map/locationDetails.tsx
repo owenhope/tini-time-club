@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 
@@ -14,13 +14,13 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
       {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.titleContainer}>
-          <Link href={`/locations/${loc.id}`} asChild>
-            <View style={styles.locationLinkContainer}>
+          <Link href={`/home/locations/${loc.id}`} asChild>
+            <TouchableOpacity style={styles.locationLinkContainer}>
               <Text style={styles.locationName} numberOfLines={1}>
                 {loc.name || "No name available"}
               </Text>
               <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
-            </View>
+            </TouchableOpacity>
           </Link>
           {loc.address && (
             <Text style={styles.address} numberOfLines={2}>

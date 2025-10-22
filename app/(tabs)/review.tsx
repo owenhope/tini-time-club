@@ -6,11 +6,9 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-  Image,
   ActivityIndicator,
   Animated,
   ScrollView,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
@@ -21,7 +19,7 @@ import AnimatedReanimated, {
   withTiming,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
@@ -29,7 +27,6 @@ import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
 import SelectableOptionsInput from "@/components/SelectableOptionsInput";
-import Review from "@/components/Review";
 import ReviewItem from "@/components/ReviewItem";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
@@ -48,7 +45,6 @@ const ReviewPreview = ({
   photo,
   profile,
   control,
-  watch,
   isSubmitting,
   submissionMessage,
 }: {
@@ -413,11 +409,19 @@ export default function App() {
   const createReview = async (userId: string, imageUrl: string) => {
     try {
       const locationId = await databaseService.createOrGetLocation(
-        {
-          name: watchedValues.location.name,
-          address: watchedValues.location.address,
-          location: `POINT(${watchedValues.location.coordinates.longitude} ${watchedValues.location.coordinates.latitude})`,
-        },
+        watchedValues.location &&
+          typeof watchedValues.location === "object" &&
+          "name" in watchedValues.location &&
+          "address" in watchedValues.location &&
+          "coordinates" in watchedValues.location
+          ? {
+              name: (watchedValues.location as any).name,
+              address: (watchedValues.location as any).address,
+              location: `POINT(${
+                (watchedValues.location as any).coordinates.longitude
+              } ${(watchedValues.location as any).coordinates.latitude})`,
+            }
+          : null,
         userId
       );
 

@@ -1,11 +1,4 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  memo,
-} from "react";
+import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -31,6 +24,7 @@ import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
 import ReportModal from "@/components/ReportModal";
+import ActionSheet from "@/components/ActionSheet";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -302,61 +296,6 @@ const ActionButton = memo(
   )
 );
 
-const MenuModal = memo(
-  ({
-    visible,
-    onClose,
-    onDelete,
-    onReport,
-    isOwnReview,
-  }: {
-    visible: boolean;
-    onClose: () => void;
-    onDelete?: () => void;
-    onReport?: () => void;
-    isOwnReview: boolean;
-  }) => (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity style={styles.modalOverlay} onPress={onClose}>
-        <View style={styles.menuModal}>
-          {isOwnReview ? (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                onClose();
-                onDelete?.();
-              }}
-            >
-              <Ionicons name="trash" size={20} color="#ff4444" />
-              <Text style={[styles.menuItemText, { color: "#ff4444" }]}>
-                Delete
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                onClose();
-                onReport?.();
-              }}
-            >
-              <Ionicons name="flag" size={20} color="#ff4444" />
-              <Text style={[styles.menuItemText, { color: "#ff4444" }]}>
-                Report
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  )
-);
-
 const LikeButton = memo(
   ({
     hasLiked,
@@ -403,12 +342,12 @@ const ReviewOverlay = memo(
   }) => (
     <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
       <Link href={`/home/locations/${review.location?.id}`} asChild>
-        <View style={styles.locationLinkContainer}>
+        <TouchableOpacity style={styles.locationLinkContainer}>
           <Text style={styles.locationName}>
             {review.location?.name || "N/A"}
           </Text>
           <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
-        </View>
+        </TouchableOpacity>
       </Link>
       {review.location?.address && (
         <Text style={styles.locationAddress}>
@@ -523,7 +462,7 @@ const ReviewItem = memo(
     const { profile } = useProfile();
     const overlayOpacity = useRef(new Animated.Value(1)).current;
     const [reportModalVisible, setReportModalVisible] = useState(false);
-    const [menuModalVisible, setMenuModalVisible] = useState(false);
+    const [actionSheetVisible, setActionSheetVisible] = useState(false);
     const [isOverlayVisible, setIsOverlayVisible] = useState(true);
     const lastTapRef = useRef<number>(0);
     const isOwnReview = String(profile?.id) === String(review.profile?.id);
@@ -664,18 +603,6 @@ const ReviewItem = memo(
               onToggleOverlay={toggleOverlay}
               isOverlayVisible={isOverlayVisible}
             />
-            {/* Eye icon to toggle overlay - always visible */}
-            <TouchableOpacity
-              style={styles.eyeIconContainer}
-              onPress={toggleOverlay}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={isOverlayVisible ? "eye-off" : "eye"}
-                size={20}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
           </View>
 
           <ReviewFooter
@@ -708,10 +635,16 @@ const ReviewItem = memo(
                 isOwnReview={isOwnReview}
               />
               <View style={styles.headerActions}>
-                <ActionButton
-                  onPress={() => setMenuModalVisible(true)}
-                  icon="ellipsis-horizontal"
-                />
+                <TouchableOpacity
+                  onPress={() => setActionSheetVisible(true)}
+                  style={styles.actionButton}
+                >
+                  <Ionicons
+                    name="ellipsis-horizontal"
+                    size={ICON_SIZES.small}
+                    color={COLORS.black}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -756,9 +689,9 @@ const ReviewItem = memo(
           )}
         </Pressable>
 
-        <MenuModal
-          visible={menuModalVisible}
-          onClose={() => setMenuModalVisible(false)}
+        <ActionSheet
+          visible={actionSheetVisible}
+          onClose={() => setActionSheetVisible(false)}
           onDelete={onDelete}
           onReport={() => setReportModalVisible(true)}
           isOwnReview={isOwnReview}
@@ -936,37 +869,6 @@ const styles = StyleSheet.create({
     color: COLORS.lightGray,
     fontSize: 14,
     marginBottom: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  menuModal: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 8,
-    minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  menuItemText: {
-    fontSize: 16,
-    fontWeight: "500",
   },
   previewContainer: {
     backgroundColor: COLORS.white,
