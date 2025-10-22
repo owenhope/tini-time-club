@@ -285,25 +285,32 @@ const Profile = () => {
             style={styles.avatar}
           />
         </TouchableOpacity>
-        <Pressable
-          style={styles.userInfoContainer}
-          onPress={() => navigation.navigate("followers")}
-        >
+        <View style={styles.userInfoContainer}>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{userReviews.length}</Text>
               <Text style={styles.statLabel}>Reviews</Text>
             </View>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() =>
+                navigation.navigate("follow-list", { type: "followers" })
+              }
+            >
               <Text style={styles.statNumber}>{followersCount}</Text>
               <Text style={styles.statLabel}>Followers</Text>
-            </View>
-            <View style={styles.statItem}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() =>
+                navigation.navigate("follow-list", { type: "following" })
+              }
+            >
               <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
-            </View>
+            </TouchableOpacity>
           </View>
-        </Pressable>
+        </View>
       </View>
 
       <View style={styles.reviewsContainer}>

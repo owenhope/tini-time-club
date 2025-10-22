@@ -20,6 +20,7 @@ export default function RootLayout() {
       try {
         // Initialize caches
         await imageCache.loadFromStorage();
+        await imageCache.clearExpiredCache(); // Clear expired cache entries
         await authCache.loadFromStorage();
 
         // Request tracking transparency permission on iOS

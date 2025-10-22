@@ -20,7 +20,7 @@ class ImageCache {
   
   // Cache durations (in milliseconds)
   private readonly AVATAR_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-  private readonly REVIEW_IMAGE_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours
+  private readonly REVIEW_IMAGE_CACHE_DURATION = 45 * 60 * 1000; // 45 minutes (less than signed URL expiry)
   private readonly LOCATION_IMAGE_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
   
   private constructor() {}
@@ -103,7 +103,14 @@ class ImageCache {
     const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
     if (cached) {
       if (Date.now() < cached.expiresAt) {
-        return cached.signedUrl;
+        // Validate the URL is still working
+        const isValid = await this.isUrlValid(cached.signedUrl);
+        if (isValid) {
+          return cached.signedUrl;
+        } else {
+          // URL is invalid, remove from cache and fetch new one
+          this.memoryCache.delete(cacheKey);
+        }
       } else {
         // Remove expired cache entry
         this.memoryCache.delete(cacheKey);
@@ -140,7 +147,7 @@ class ImageCache {
       
       const signedUrl = data.signedUrl;
       
-      // Cache the result
+      // Cache the result with shorter expiry to ensure we refresh before URL expires
       const cached: CachedSignedUrl = {
         signedUrl,
         timestamp: Date.now(),
@@ -154,6 +161,18 @@ class ImageCache {
     } catch (error) {
       console.error('Error fetching review image URL:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check if a URL is still valid by making a HEAD request
+   */
+  private async isUrlValid(url: string): Promise<boolean> {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch (error) {
+      return false;
     }
   }
   
@@ -330,6 +349,51 @@ class ImageCache {
       await AsyncStorage.multiRemove(cacheKeys);
     } catch (error) {
       console.error('Error clearing cache:', error);
+    }
+  }
+
+  /**
+   * Clear expired cache entries
+   */
+  async clearExpiredCache(): Promise<void> {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+    
+    // Clear expired memory cache entries
+    for (const [key, cached] of this.memoryCache.entries()) {
+      if (now >= cached.expiresAt) {
+        expiredKeys.push(key);
+      }
+    }
+    
+    expiredKeys.forEach(key => this.memoryCache.delete(key));
+    
+    // Clear expired storage entries
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter(key => key.startsWith('image_cache_'));
+      const expiredStorageKeys: string[] = [];
+      
+      for (const key of cacheKeys) {
+        try {
+          const data = await AsyncStorage.getItem(key);
+          if (data) {
+            const parsed = JSON.parse(data) as CachedImage | CachedSignedUrl;
+            if (now >= parsed.expiresAt) {
+              expiredStorageKeys.push(key);
+            }
+          }
+        } catch (error) {
+          // If we can't parse the data, remove it
+          expiredStorageKeys.push(key);
+        }
+      }
+      
+      if (expiredStorageKeys.length > 0) {
+        await AsyncStorage.multiRemove(expiredStorageKeys);
+      }
+    } catch (error) {
+      console.error('Error clearing expired cache:', error);
     }
   }
   
