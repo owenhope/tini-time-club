@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert, Platform, Image, View, Text } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
@@ -87,7 +87,7 @@ const LayoutContent = () => {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: "#FFF" },
         headerTintColor: "#000",
-        tabBarActiveTintColor: "#000",
+        tabBarActiveTintColor: "#336654",
         tabBarStyle: { backgroundColor: "#f0f0f0" },
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
@@ -98,7 +98,11 @@ const LayoutContent = () => {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Image
+              source={require("@/assets/images/martini_transparent.png")}
+              style={{ width: size, height: size, tintColor: color }}
+              resizeMode="contain"
+            />
           ),
         }}
       />
@@ -119,7 +123,32 @@ const LayoutContent = () => {
           title: "Review",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="camera-outline" size={size} color={color} />
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: "#336654",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 5,
+                elevation: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#FF4444",
+                  fontSize: 28,
+                  fontWeight: "bold",
+                  lineHeight: 28,
+                }}
+              >
+                +
+              </Text>
+            </View>
           ),
         }}
       />

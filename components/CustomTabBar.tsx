@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,7 +53,7 @@ export default function CustomTabBar({
         const getIconName = (routeName: string, focused: boolean) => {
           switch (routeName) {
             case "home":
-              return focused ? "home" : "home-outline";
+              return focused ? "martini" : "martini-outline";
             case "locations":
               return focused ? "map" : "map-outline";
             case "review":
@@ -78,11 +78,26 @@ export default function CustomTabBar({
             onLongPress={onLongPress}
             style={styles.tab}
           >
-            <Ionicons
-              name={getIconName(route.name, isFocused)}
-              size={24}
-              color={isFocused ? "#000" : "#666"}
-            />
+            {route.name === "home" ? (
+              <Image
+                source={require("@/assets/images/martini_transparent.png")}
+                style={[
+                  styles.martiniIcon,
+                  { tintColor: isFocused ? "#336654" : "#666" },
+                ]}
+                resizeMode="contain"
+              />
+            ) : route.name === "review" ? (
+              <View style={styles.oliveButton}>
+                <Text style={styles.plusIcon}>+</Text>
+              </View>
+            ) : (
+              <Ionicons
+                name={getIconName(route.name, isFocused)}
+                size={24}
+                color={isFocused ? "#336654" : "#666"}
+              />
+            )}
           </TouchableOpacity>
         );
       })}
@@ -104,5 +119,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
+  },
+  martiniIcon: {
+    width: 24,
+    height: 24,
+  },
+  oliveButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#336654",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  plusIcon: {
+    color: "#FF4444",
+    fontSize: 28,
+    fontWeight: "bold",
+    lineHeight: 28,
   },
 });
