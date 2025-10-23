@@ -34,7 +34,7 @@ const Profile = () => {
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
@@ -181,11 +181,17 @@ const Profile = () => {
           return;
         }
 
-        // Update profile with new avatar path
-        await supabase
-          .from("profiles")
-          .update({ avatar_url: filePath })
-          .eq("id", User.id);
+        // Update profile with new avatar path using context
+        const result = await updateProfile({ avatar_url: filePath });
+
+        if (result.error) {
+          console.error("Error updating profile:", result.error);
+          return;
+        }
+
+        // Clear review caches to ensure fresh avatar data in reviews
+        console.log("Profile picture updated - clearing review caches");
+        await databaseService.clearReviewCaches();
 
         setAvatar(urlData.publicUrl);
       } catch (err) {

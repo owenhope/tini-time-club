@@ -33,38 +33,24 @@ class ImageCache {
   }
   
   /**
-   * Get avatar URL with caching
+   * Get avatar URL without caching (always fresh)
    */
   async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
     if (!avatarPath) return null;
     
-    const cacheKey = `avatar_${avatarPath}`;
-    
-    // Check memory cache first
-    const cached = this.memoryCache.get(cacheKey) as CachedImage;
-    if (cached) {
-      if (Date.now() < cached.expiresAt) {
-        return cached.url;
-      } else {
-        // Remove expired cache entry
-        this.memoryCache.delete(cacheKey);
-      }
-    }
-    
-    // Check if request is already pending
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
-    }
-    
-    // Create new request
-    const request = this.fetchAvatarUrl(avatarPath, cacheKey);
-    this.pendingRequests.set(cacheKey, request as Promise<string | null>);
+    console.log('Getting avatar URL without caching for:', avatarPath);
     
     try {
-      const result = await request;
-      return result;
-    } finally {
-      this.pendingRequests.delete(cacheKey);
+      const { data } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(avatarPath);
+      
+      const url = data.publicUrl;
+      console.log('Avatar URL fetched directly:', url);
+      return url;
+    } catch (error) {
+      console.error('Error fetching avatar URL:', error);
+      return null;
     }
   }
   
@@ -336,6 +322,101 @@ class ImageCache {
     }
   }
   
+  /**
+   * Clear avatar cache for a specific avatar path
+   */
+  async clearAvatarCache(avatarPath: string): Promise<void> {
+    const cacheKey = `avatar_${avatarPath}`;
+    
+    // Remove from memory cache
+    this.memoryCache.delete(cacheKey);
+    
+    // Remove from AsyncStorage
+    try {
+      await AsyncStorage.removeItem(`image_cache_${cacheKey}`);
+    } catch (error) {
+      console.error('Error clearing avatar cache:', error);
+    }
+  }
+
+  /**
+   * Clear all avatar caches for a specific user
+   */
+  async clearUserAvatarCache(userId: string): Promise<void> {
+    try {
+      console.log('Clearing avatar cache for user:', userId);
+      
+      // Get all cache keys from AsyncStorage
+      const keys = await AsyncStorage.getAllKeys();
+      const avatarCacheKeys = keys.filter(key => 
+        key.startsWith('image_cache_avatar_') && key.includes(userId)
+      );
+      
+      console.log('Found avatar cache keys to clear:', avatarCacheKeys);
+      
+      // Remove from AsyncStorage
+      if (avatarCacheKeys.length > 0) {
+        await AsyncStorage.multiRemove(avatarCacheKeys);
+        console.log('Cleared AsyncStorage avatar caches');
+      }
+      
+      // Remove from memory cache
+      const memoryKeysToDelete: string[] = [];
+      for (const [key, value] of this.memoryCache.entries()) {
+        if (key.startsWith('avatar_') && key.includes(userId)) {
+          memoryKeysToDelete.push(key);
+        }
+      }
+      
+      memoryKeysToDelete.forEach(key => {
+        this.memoryCache.delete(key);
+      });
+      
+      console.log('Cleared memory cache keys:', memoryKeysToDelete);
+    } catch (error) {
+      console.error('Error clearing user avatar cache:', error);
+    }
+  }
+
+  /**
+   * Clear all avatar caches (more aggressive approach)
+   */
+  async clearAllAvatarCaches(): Promise<void> {
+    try {
+      console.log('Clearing ALL avatar caches');
+      
+      // Get all cache keys from AsyncStorage
+      const keys = await AsyncStorage.getAllKeys();
+      const avatarCacheKeys = keys.filter(key => 
+        key.startsWith('image_cache_avatar_')
+      );
+      
+      console.log('Found all avatar cache keys to clear:', avatarCacheKeys);
+      
+      // Remove from AsyncStorage
+      if (avatarCacheKeys.length > 0) {
+        await AsyncStorage.multiRemove(avatarCacheKeys);
+        console.log('Cleared all AsyncStorage avatar caches');
+      }
+      
+      // Remove from memory cache
+      const memoryKeysToDelete: string[] = [];
+      for (const [key, value] of this.memoryCache.entries()) {
+        if (key.startsWith('avatar_')) {
+          memoryKeysToDelete.push(key);
+        }
+      }
+      
+      memoryKeysToDelete.forEach(key => {
+        this.memoryCache.delete(key);
+      });
+      
+      console.log('Cleared all memory cache keys:', memoryKeysToDelete);
+    } catch (error) {
+      console.error('Error clearing all avatar caches:', error);
+    }
+  }
+
   /**
    * Clear all caches
    */

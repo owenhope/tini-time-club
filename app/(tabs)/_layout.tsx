@@ -3,6 +3,7 @@ import { Alert, Platform, Image, View, Text } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
+import { AvatarRefreshProvider } from "@/context/avatar-refresh-context";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -180,7 +181,9 @@ const LayoutContent = () => {
 
 const Layout = () => (
   <ProfileProvider>
-    <LayoutContent />
+    <AvatarRefreshProvider>
+      <LayoutContent />
+    </AvatarRefreshProvider>
   </ProfileProvider>
 );
 

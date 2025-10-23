@@ -118,6 +118,12 @@ function Home() {
     async (refresh = false) => {
       if (!profile) return;
 
+      // Clear review cache when refreshing to get fresh avatar data
+      if (refresh) {
+        console.log("Refreshing - clearing review caches");
+        await databaseService.clearReviewCaches();
+      }
+
       // Prevent rapid successive calls
       const now = Date.now();
       if (!refresh && now - lastRefreshTime < REFRESH_THRESHOLD) {

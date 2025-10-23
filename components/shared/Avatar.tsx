@@ -28,7 +28,9 @@ const Avatar: React.FC<AvatarProps> = ({
       }
 
       try {
+        console.log("Avatar loading for path:", avatarPath);
         const url = await imageCache.getAvatarUrl(avatarPath);
+        console.log("Avatar URL loaded:", url);
         setAvatarUrl(url);
       } catch (error) {
         console.error("Error loading avatar:", error);
