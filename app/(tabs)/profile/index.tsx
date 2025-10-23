@@ -38,6 +38,7 @@ const Profile = () => {
   const router = useRouter();
   const navigation = useNavigation();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -46,11 +47,20 @@ const Profile = () => {
           .from("avatars")
           .getPublicUrl(profile.avatar_url).data.publicUrl;
         setAvatar(publicUrl);
+        setAvatarError(null);
+        console.log(
+          "Profile avatar URL generated:",
+          publicUrl,
+          "for path:",
+          profile.avatar_url
+        );
       } catch (error) {
         console.error("Error fetching avatar URL:", error);
+        setAvatarError(`Avatar URL error: ${error.message || error}`);
       }
     } else {
       setAvatar(null);
+      setAvatarError("No avatar_url in profile");
     }
   }, [profile?.avatar_url]);
 
@@ -293,6 +303,10 @@ const Profile = () => {
             size={100}
             style={styles.avatar}
           />
+          {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
+          <Text style={styles.debugText}>
+            Avatar Path: {profile?.avatar_url || "None"}
+          </Text>
         </TouchableOpacity>
         <View style={styles.userInfoContainer}>
           <View style={styles.statsContainer}>
@@ -387,6 +401,18 @@ const styles = StyleSheet.create({
   headerButton: { marginRight: 10 },
   headerTitleContainer: { alignItems: "center" },
   headerTitle: { fontSize: 20, fontWeight: "bold" },
+  errorText: {
+    color: "#d32f2f",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  debugText: {
+    color: "#666",
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 2,
+  },
 });
 
 export default Profile;

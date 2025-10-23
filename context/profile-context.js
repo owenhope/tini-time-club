@@ -18,6 +18,10 @@ export const ProfileProvider = ({ children }) => {
       const cachedProfile = await authCache.getProfile();
 
       if (cachedProfile) {
+        console.log(
+          "Profile loaded from cache, avatar_url:",
+          cachedProfile.avatar_url
+        );
         setProfile(cachedProfile);
         setLoading(false);
         return;
@@ -42,6 +46,10 @@ export const ProfileProvider = ({ children }) => {
       if (error) {
         console.error("Error fetching profile", error);
       } else {
+        console.log(
+          "Profile fetched from database, avatar_url:",
+          data.avatar_url
+        );
         setProfile(data);
       }
     } catch (error) {
