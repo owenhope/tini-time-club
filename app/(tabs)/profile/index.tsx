@@ -34,7 +34,7 @@ const Profile = () => {
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
@@ -189,8 +189,10 @@ const Profile = () => {
           return;
         }
 
+        // Force refresh profile from database
+        await refreshProfile();
+
         // Clear review caches to ensure fresh avatar data in reviews
-        console.log("Profile picture updated - clearing review caches");
         await databaseService.clearReviewCaches();
 
         setAvatar(urlData.publicUrl);

@@ -197,6 +197,24 @@ class AuthCache {
   }
   
   /**
+   * Clear profile cache to force fresh profile data
+   */
+  async clearProfileCache(): Promise<void> {
+    try {
+      // Clear memory cache
+      if (this.memoryCache) {
+        this.memoryCache.profile = null;
+        this.memoryCache.expiresAt = 0; // Force expiration
+      }
+      
+      // Clear pending requests
+      this.pendingRequests.delete('profile');
+    } catch (error) {
+      console.error('Error clearing profile cache:', error);
+    }
+  }
+
+  /**
    * Clear all auth cache
    */
   async clearCache(): Promise<void> {

@@ -38,15 +38,12 @@ class ImageCache {
   async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
     if (!avatarPath) return null;
     
-    console.log('Getting avatar URL without caching for:', avatarPath);
-    
     try {
       const { data } = supabase.storage
         .from("avatars")
         .getPublicUrl(avatarPath);
       
       const url = data.publicUrl;
-      console.log('Avatar URL fetched directly:', url);
       return url;
     } catch (error) {
       console.error('Error fetching avatar URL:', error);
@@ -344,20 +341,15 @@ class ImageCache {
    */
   async clearUserAvatarCache(userId: string): Promise<void> {
     try {
-      console.log('Clearing avatar cache for user:', userId);
-      
       // Get all cache keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
       const avatarCacheKeys = keys.filter(key => 
         key.startsWith('image_cache_avatar_') && key.includes(userId)
       );
       
-      console.log('Found avatar cache keys to clear:', avatarCacheKeys);
-      
       // Remove from AsyncStorage
       if (avatarCacheKeys.length > 0) {
         await AsyncStorage.multiRemove(avatarCacheKeys);
-        console.log('Cleared AsyncStorage avatar caches');
       }
       
       // Remove from memory cache
@@ -371,8 +363,6 @@ class ImageCache {
       memoryKeysToDelete.forEach(key => {
         this.memoryCache.delete(key);
       });
-      
-      console.log('Cleared memory cache keys:', memoryKeysToDelete);
     } catch (error) {
       console.error('Error clearing user avatar cache:', error);
     }
@@ -383,20 +373,15 @@ class ImageCache {
    */
   async clearAllAvatarCaches(): Promise<void> {
     try {
-      console.log('Clearing ALL avatar caches');
-      
       // Get all cache keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
       const avatarCacheKeys = keys.filter(key => 
         key.startsWith('image_cache_avatar_')
       );
       
-      console.log('Found all avatar cache keys to clear:', avatarCacheKeys);
-      
       // Remove from AsyncStorage
       if (avatarCacheKeys.length > 0) {
         await AsyncStorage.multiRemove(avatarCacheKeys);
-        console.log('Cleared all AsyncStorage avatar caches');
       }
       
       // Remove from memory cache
@@ -410,8 +395,6 @@ class ImageCache {
       memoryKeysToDelete.forEach(key => {
         this.memoryCache.delete(key);
       });
-      
-      console.log('Cleared all memory cache keys:', memoryKeysToDelete);
     } catch (error) {
       console.error('Error clearing all avatar caches:', error);
     }

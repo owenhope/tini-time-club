@@ -10,7 +10,6 @@ export const AvatarRefreshProvider = ({ children }) => {
 
   // Function to trigger avatar refresh
   const triggerAvatarRefresh = () => {
-    console.log("Triggering avatar refresh, current trigger:", refreshTrigger);
     setRefreshTrigger((prev) => prev + 1);
   };
 

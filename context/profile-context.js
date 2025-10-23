@@ -18,7 +18,6 @@ export const ProfileProvider = ({ children }) => {
       const cachedProfile = await authCache.getProfile();
 
       if (cachedProfile) {
-        console.log("Profile loaded from cache:", cachedProfile);
         setProfile(cachedProfile);
         setLoading(false);
         return;
@@ -43,7 +42,6 @@ export const ProfileProvider = ({ children }) => {
       if (error) {
         console.error("Error fetching profile", error);
       } else {
-        console.log("Profile fetched successfully:", data);
         setProfile(data);
       }
     } catch (error) {
@@ -75,6 +73,19 @@ export const ProfileProvider = ({ children }) => {
     return { data: result.data };
   };
 
+  // Function to force refresh the profile from database
+  const refreshProfile = async () => {
+    try {
+      // Clear profile cache first
+      await authCache.clearProfileCache();
+
+      // Fetch fresh profile data
+      await fetchProfile();
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+    }
+  };
+
   // Function to accept EULA
   const acceptEULA = async () => {
     try {
@@ -83,10 +94,6 @@ export const ProfileProvider = ({ children }) => {
         return { error: "No profile found" };
       }
 
-      console.log(
-        "Updating profile with EULA acceptance for user:",
-        profile.id
-      );
       const { data, error } = await supabase
         .from("profiles")
         .update({
@@ -102,8 +109,6 @@ export const ProfileProvider = ({ children }) => {
         return { error };
       }
 
-      console.log("EULA acceptance successful, updated profile:", data);
-
       // Update the profile state with the new data
       if (data) {
         setProfile(data);
@@ -118,7 +123,14 @@ export const ProfileProvider = ({ children }) => {
 
   return (
     <ProfileContext.Provider
-      value={{ profile, setProfile, updateProfile, acceptEULA, loading }}
+      value={{
+        profile,
+        setProfile,
+        updateProfile,
+        acceptEULA,
+        refreshProfile,
+        loading,
+      }}
     >
       {children}
     </ProfileContext.Provider>

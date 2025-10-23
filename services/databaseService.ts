@@ -531,20 +531,15 @@ class DatabaseService {
    */
   async clearReviewCaches(): Promise<void> {
     try {
-      console.log('Clearing review caches to force fresh data');
-      
       // Get all cache keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
       const reviewCacheKeys = keys.filter(key => 
         key.startsWith('db_query_cache') && key.includes('reviews_')
       );
       
-      console.log('Found review cache keys to clear:', reviewCacheKeys);
-      
       // Remove from AsyncStorage
       if (reviewCacheKeys.length > 0) {
         await AsyncStorage.multiRemove(reviewCacheKeys);
-        console.log('Cleared AsyncStorage review caches');
       }
       
       // Remove from memory cache
@@ -558,8 +553,6 @@ class DatabaseService {
       memoryKeysToDelete.forEach(key => {
         this.queryCache.delete(key);
       });
-      
-      console.log('Cleared memory cache keys:', memoryKeysToDelete);
     } catch (error) {
       console.error('Error clearing review caches:', error);
     }
