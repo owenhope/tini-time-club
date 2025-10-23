@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -9,6 +10,7 @@ import {
   Alert,
   Pressable,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -39,6 +41,7 @@ const Profile = () => {
   const navigation = useNavigation();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -48,12 +51,6 @@ const Profile = () => {
           .getPublicUrl(profile.avatar_url).data.publicUrl;
         setAvatar(publicUrl);
         setAvatarError(null);
-        console.log(
-          "Profile avatar URL generated:",
-          publicUrl,
-          "for path:",
-          profile.avatar_url
-        );
       } catch (error) {
         console.error("Error fetching avatar URL:", error);
         setAvatarError(`Avatar URL error: ${error.message || error}`);
@@ -135,37 +132,45 @@ const Profile = () => {
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1, // raw image quality
-    });
+    try {
+      // Clear any previous errors
+      setAvatarError(null);
+      setAvatarLoading(true);
 
-    if (!result.canceled) {
-      const originalUri = result.assets[0].uri;
-
-      // 👉 Resize and compress
-      const manipResult = await ImageManipulator.manipulateAsync(
-        originalUri,
-        [{ resize: { width: 512 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      const compressedUri = manipResult.uri;
-
-      const User = await authCache.getUser();
-      if (!User) return;
-
-      const base64 = await FileSystem.readAsStringAsync(compressedUri, {
-        encoding: "base64",
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1, // raw image quality
       });
 
-      const uniqueId = uuidv4();
-      const filePath = `${User.id}/avatar_${uniqueId}.jpg`;
-      const contentType = "image/jpeg";
+      if (!result.canceled) {
+        const originalUri = result.assets[0].uri;
 
-      try {
+        // 👉 Resize and compress
+        const manipResult = await ImageManipulator.manipulateAsync(
+          originalUri,
+          [{ resize: { width: 512 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+
+        const compressedUri = manipResult.uri;
+
+        const User = await authCache.getUser();
+        if (!User) {
+          setAvatarError("User not found");
+          setAvatarLoading(false);
+          return;
+        }
+
+        const base64 = await FileSystem.readAsStringAsync(compressedUri, {
+          encoding: "base64",
+        });
+
+        const uniqueId = uuidv4();
+        const filePath = `${User.id}/avatar_${uniqueId}.jpg`;
+        const contentType = "image/jpeg";
+
         // Upload new avatar
         const { error: uploadError } = await supabase.storage
           .from("avatars")
@@ -173,6 +178,8 @@ const Profile = () => {
 
         if (uploadError) {
           console.error("Error uploading avatar:", uploadError);
+          setAvatarError(`Upload failed: ${uploadError.message}`);
+          setAvatarLoading(false);
           return;
         }
 
@@ -188,14 +195,24 @@ const Profile = () => {
 
         if (urlError || !urlData?.publicUrl) {
           console.error("Error getting avatar public URL:", urlError);
+          setAvatarError(
+            `URL generation failed: ${urlError?.message || "Unknown error"}`
+          );
+          setAvatarLoading(false);
           return;
         }
 
         // Update profile with new avatar path using context
-        const result = await updateProfile({ avatar_url: filePath });
+        const updateResult = await updateProfile({ avatar_url: filePath });
 
-        if (result.error) {
-          console.error("Error updating profile:", result.error);
+        if (updateResult.error) {
+          console.error("Error updating profile:", updateResult.error);
+          setAvatarError(
+            `Profile update failed: ${
+              updateResult.error.message || updateResult.error
+            }`
+          );
+          setAvatarLoading(false);
           return;
         }
 
@@ -206,9 +223,15 @@ const Profile = () => {
         await databaseService.clearReviewCaches();
 
         setAvatar(urlData.publicUrl);
-      } catch (err) {
-        console.error("Unexpected error uploading avatar:", err);
+        setAvatarError(null);
+        setAvatarLoading(false);
+      } else {
+        setAvatarLoading(false);
       }
+    } catch (err) {
+      console.error("Unexpected error uploading avatar:", err);
+      setAvatarError(`Unexpected error: ${err.message || err}`);
+      setAvatarLoading(false);
     }
   };
 
@@ -297,16 +320,20 @@ const Profile = () => {
     <View style={styles.container}>
       <View style={styles.profileHeader}>
         <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-          <Avatar
-            avatarPath={profile?.avatar_url}
-            username={profile?.username}
-            size={100}
-            style={styles.avatar}
-          />
+          <View style={styles.avatarWrapper}>
+            <Avatar
+              avatarPath={profile?.avatar_url}
+              username={profile?.username}
+              size={100}
+              style={styles.avatar}
+            />
+            {avatarLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color="#336654" />
+              </View>
+            )}
+          </View>
           {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
-          <Text style={styles.debugText}>
-            Avatar Path: {profile?.avatar_url || "None"}
-          </Text>
         </TouchableOpacity>
         <View style={styles.userInfoContainer}>
           <View style={styles.statsContainer}>
@@ -375,10 +402,26 @@ const styles = StyleSheet.create({
     marginRight: 16,
     alignItems: "center",
   },
+  avatarWrapper: {
+    position: "relative",
+    width: 100,
+    height: 100,
+  },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
   },
   userInfoContainer: { flex: 1 },
   statsContainer: {
@@ -406,12 +449,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     marginTop: 4,
-  },
-  debugText: {
-    color: "#666",
-    fontSize: 10,
-    textAlign: "center",
-    marginTop: 2,
   },
 });
 

@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import React, { useState, useCallback, useMemo } from "react";
 import {
   Alert,

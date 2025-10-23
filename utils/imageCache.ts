@@ -44,7 +44,6 @@ class ImageCache {
         .getPublicUrl(avatarPath);
       
       const url = data.publicUrl;
-      console.log('Avatar URL generated:', url, 'for path:', avatarPath);
       return url;
     } catch (error) {
       console.error('Error fetching avatar URL:', error);

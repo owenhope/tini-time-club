@@ -30,12 +30,6 @@ const Avatar: React.FC<AvatarProps> = ({
 
       try {
         const url = await imageCache.getAvatarUrl(avatarPath);
-        console.log(
-          "Avatar component received URL:",
-          url,
-          "for path:",
-          avatarPath
-        );
         setAvatarUrl(url);
         setError(null);
       } catch (error) {
@@ -92,7 +86,6 @@ const Avatar: React.FC<AvatarProps> = ({
   }
 
   if (avatarUrl) {
-    console.log("Avatar component rendering image with URL:", avatarUrl);
     return (
       <Image
         source={{ uri: avatarUrl }}
@@ -111,7 +104,7 @@ const Avatar: React.FC<AvatarProps> = ({
           setError(errorMsg);
         }}
         onLoad={() => {
-          console.log("Image loaded successfully:", avatarUrl);
+          // Image loaded successfully
         }}
       />
     );
