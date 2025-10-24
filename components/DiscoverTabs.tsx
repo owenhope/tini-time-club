@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   SafeAreaView,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -15,19 +16,73 @@ import { stripNameFromAddress } from "@/utils/helpers";
 import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
+import * as Location from "expo-location";
 
 interface DiscoverTabsProps {
   query: string;
+  activeTab: "profiles" | "locations";
+  onTabChange: (tab: "profiles" | "locations") => void;
+  onQueryChange: (query: string) => void;
 }
 
-export default function DiscoverTabs({ query }: DiscoverTabsProps) {
-  const [activeTab, setActiveTab] = useState<"profiles" | "locations">(
-    "profiles"
-  );
+export default function DiscoverTabs({
+  query,
+  activeTab,
+  onTabChange,
+  onQueryChange,
+}: DiscoverTabsProps) {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [nearby, setNearby] = useState(true); // Default enabled
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const router = useRouter();
+
+  // Get user location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const userCoords = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+      setUserLocation(userCoords);
+    } catch (error) {
+      console.error("Error getting location:", error);
+    }
+  };
+
+  // Calculate distance between two points using Haversine formula
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in kilometers
+  };
 
   const fetchProfiles = async (searchQuery: string) => {
     setLoading(true);
@@ -54,78 +109,79 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
     setLoading(true);
     try {
       if (!searchQuery) {
-        // Use direct query instead of RPC to properly filter deleted reviews
+        // Use the location_ratings view which already includes coordinates
         const { data, error } = await supabase
-          .from("locations")
-          .select(
-            `
-            id,
-            name,
-            address,
-            reviews!reviews_location_fkey(
-              taste,
-              presentation,
-              state
-            )
-          `
-          )
-          .eq("reviews.state", 1) // Only include active reviews
-          .limit(20);
+          .from("location_ratings")
+          .select("*")
+          .order("total_ratings", { ascending: false })
+          .limit(50);
 
         if (error) {
-          console.error("Error fetching top locations:", error);
+          console.error("Error fetching location ratings:", error);
           setLocations([]);
           return;
         }
 
         // Process the data to calculate averages and format for display
-        const processedLocations =
+        let processedLocations =
           data?.map((location: any) => {
-            const activeReviews = location.reviews.filter(
-              (review: any) => review.state === 1
-            );
-            const totalRatings = activeReviews.length;
+            const totalRatings = location.total_ratings || 0;
 
-            if (totalRatings === 0) {
-              return {
-                id: location.id,
-                name: location.name,
-                address: location.address,
-                rating: null,
-                taste_avg: null,
-                presentation_avg: null,
-                total_ratings: 0,
-              };
-            }
-
-            const tasteSum = activeReviews.reduce(
-              (sum: number, review: any) => sum + (review.taste || 0),
-              0
-            );
-            const presentationSum = activeReviews.reduce(
-              (sum: number, review: any) => sum + (review.presentation || 0),
-              0
-            );
-
-            const taste_avg = tasteSum / totalRatings;
-            const presentation_avg = presentationSum / totalRatings;
-            const rating = (taste_avg + presentation_avg) / 2;
+            // Use pre-extracted coordinates from the view
+            const latitude = location.lat;
+            const longitude = location.lon;
 
             return {
               id: location.id,
               name: location.name,
               address: location.address,
-              rating,
-              taste_avg,
-              presentation_avg,
+              latitude,
+              longitude,
+              rating: location.rating,
+              taste_avg: location.taste_avg,
+              presentation_avg: location.presentation_avg,
               total_ratings: totalRatings,
             };
           }) || [];
 
-        // Sort by rating and take top 20
+        // Filter by distance if nearby is enabled and we have user location
+        if (nearby && userLocation) {
+          // Temporary: show all locations with coordinates for debugging
+          const locationsWithCoords = processedLocations.filter((location) => {
+            if (!location.latitude || !location.longitude) {
+              return false;
+            }
+            return true;
+          });
+
+          // If we have locations with coordinates, apply distance filtering
+          if (locationsWithCoords.length > 0) {
+            processedLocations = locationsWithCoords.filter((location) => {
+              const distance = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                location.latitude,
+                location.longitude
+              );
+              return distance <= 50; // 50km radius for Vancouver area
+            });
+          } else {
+            // If no locations have coordinates, show all locations
+            processedLocations = processedLocations;
+          }
+        }
+
+        // Sort by rating first, then by review_count as tiebreaker
         const sortedLocations = processedLocations
           .filter((loc) => loc.rating !== null)
-          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .sort((a, b) => {
+            // First sort by rating (highest first)
+            const ratingDiff = (b.rating || 0) - (a.rating || 0);
+            if (ratingDiff !== 0) return ratingDiff;
+
+            // If ratings are equal, sort by review_count (highest first)
+            return (b.total_ratings || 0) - (a.total_ratings || 0);
+          })
           .slice(0, 20);
 
         setLocations(sortedLocations);
@@ -150,7 +206,7 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
     } else {
       fetchLocations(query);
     }
-  }, [activeTab, query]);
+  }, [activeTab, query, nearby, userLocation]);
 
   const renderProfile = ({ item }: { item: any }) => {
     return (
@@ -172,6 +228,10 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
             <Text style={styles.resultTitle}>
               {item.username || "Unknown User"}
             </Text>
+            <Text style={styles.profileStats}>
+              {item.review_count || 0} reviews • {item.follower_count || 0}{" "}
+              followers
+            </Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
         </View>
@@ -186,9 +246,14 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
       activeOpacity={0.7}
     >
       <View style={styles.cardContent}>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingText}>
-            {getLocationRatingDisplay(item)}
+        <View style={styles.ratingSection}>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.ratingText}>
+              {getLocationRatingDisplay(item)}
+            </Text>
+          </View>
+          <Text style={styles.reviewCountText}>
+            {item.total_ratings || 0} reviews
           </Text>
         </View>
         <View style={styles.textContainer}>
@@ -211,31 +276,9 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === "profiles" && styles.activeTabProfiles,
-          ]}
-          onPress={() => setActiveTab("profiles")}
-        >
-          <Ionicons
-            name="people-outline"
-            size={20}
-            color={activeTab === "profiles" ? "#336654" : "#8E8E93"}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "profiles" && styles.activeTabTextProfiles,
-            ]}
-          >
-            Profiles
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
             activeTab === "locations" && styles.activeTabLocations,
           ]}
-          onPress={() => setActiveTab("locations")}
+          onPress={() => onTabChange("locations")}
         >
           <Ionicons
             name="location-outline"
@@ -251,6 +294,70 @@ export default function DiscoverTabs({ query }: DiscoverTabsProps) {
             Locations
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === "profiles" && styles.activeTabProfiles,
+          ]}
+          onPress={() => onTabChange("profiles")}
+        >
+          <Ionicons
+            name="people-outline"
+            size={20}
+            color={activeTab === "profiles" ? "#336654" : "#8E8E93"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "profiles" && styles.activeTabTextProfiles,
+            ]}
+          >
+            Profiles
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <Ionicons name="search-outline" size={20} color="#9ca3af" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={
+            activeTab === "locations"
+              ? "Search for places"
+              : "Search for people"
+          }
+          value={query}
+          onChangeText={onQueryChange}
+          placeholderTextColor="#9ca3af"
+        />
+        {activeTab === "locations" && (
+          <TouchableOpacity
+            style={[styles.nearbyButton, nearby && styles.nearbyButtonActive]}
+            onPress={() => setNearby(!nearby)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="location"
+              size={16}
+              color={nearby ? "#8B5CF6" : "#9CA3AF"}
+            />
+            <Text
+              style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
+            >
+              Nearby
+            </Text>
+          </TouchableOpacity>
+        )}
+        {query !== "" && (
+          <TouchableOpacity
+            onPress={() => onQueryChange("")}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Tab Content */}
@@ -285,9 +392,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#ffffff",
     marginHorizontal: 20,
-    marginTop: 10,
+    marginTop: 20,
+    marginBottom: 8,
     borderRadius: 12,
-    padding: 4,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -298,6 +405,7 @@ const styles = StyleSheet.create({
     elevation: 1,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    padding: 4,
   },
   tab: {
     flex: 1,
@@ -324,6 +432,54 @@ const styles = StyleSheet.create({
     color: "#336654",
   },
   activeTabTextLocations: {
+    color: "#8B5CF6",
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    height: 48,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 12,
+    color: "#1a1a1a",
+  },
+  nearbyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#F5F5F5",
+    marginRight: 8,
+  },
+  nearbyButtonActive: {
+    backgroundColor: "#F3F0FF",
+  },
+  nearbyText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#9CA3AF",
+    marginLeft: 4,
+  },
+  nearbyTextActive: {
     color: "#8B5CF6",
   },
   contentContainer: {
@@ -364,6 +520,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
   },
+  ratingSection: {
+    alignItems: "center",
+    marginRight: 12,
+  },
   ratingContainer: {
     width: 40,
     height: 40,
@@ -371,7 +531,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#B6A3E2",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
   },
   textContainer: {
     flex: 1,
@@ -386,9 +545,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6b7280",
   },
+  profileStats: {
+    fontSize: 14,
+    color: "#6b7280",
+    fontWeight: "400",
+  },
   ratingText: {
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  reviewCountText: {
+    color: "#6b7280",
+    fontSize: 10,
+    fontWeight: "400",
+    marginTop: 4,
+    textAlign: "center",
   },
 });

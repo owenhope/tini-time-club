@@ -620,7 +620,7 @@ function Home() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header with logo */}
+      {/* Header with logo and search icon */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
@@ -632,6 +632,13 @@ function Home() {
           ]}
           resizeMode="cover"
         />
+        <TouchableOpacity
+          style={styles.searchIconContainer}
+          onPress={navigateToDiscover}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search-outline" size={24} color="#000" />
+        </TouchableOpacity>
       </Animated.View>
 
       <FlatList
@@ -756,6 +763,7 @@ function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
+    flexDirection: "row",
     shadowOffset: { width: 0, height: 0.25 },
     shadowOpacity: 0.25,
     shadowRadius: 1,
@@ -768,6 +776,11 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 60,
     height: 60,
+  },
+  searchIconContainer: {
+    position: "absolute",
+    right: 16,
+    padding: 8,
   },
   loadingContainer: {
     flex: 1,
