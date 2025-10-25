@@ -71,20 +71,18 @@ const ExpandableText = ({
   }, [isExpanded]);
 
   return (
-    <Text style={styles.expandableText}>
-      {username && <Text style={styles.username}>{username} </Text>}
+    <Text style={styles.captionText}>
+      {username && <Text style={styles.captionUsername}>{username} </Text>}
       <Text
         numberOfLines={isExpanded ? undefined : maxLines}
         onTextLayout={onTextLayout}
+        style={styles.captionBody}
       >
         {text}
       </Text>
       {shouldShowMore && (
-        <Text>
-          {" "}
-          <Text style={styles.moreText} onPress={toggleExpanded}>
-            {isExpanded ? "less" : "more"}
-          </Text>
+        <Text style={styles.moreText} onPress={toggleExpanded}>
+          {isExpanded ? " less" : " more"}
         </Text>
       )}
     </Text>
@@ -412,21 +410,23 @@ const ReviewFooter = memo(
           </TouchableOpacity>
         </View>
 
-        <Link href={`/home/users/${review.profile?.username}`} asChild>
-          <TouchableOpacity style={styles.captionContainer}>
-            <ExpandableText
-              username={review.profile?.username || "Unknown"}
-              text={review.comment}
-            />
-          </TouchableOpacity>
-        </Link>
+        <View style={styles.captionSection}>
+          <Text style={styles.captionText}>
+            <Text style={styles.captionUsername}>
+              {review.profile?.username || "Unknown"}
+            </Text>
+            <Text style={styles.captionBody}> {review.comment}</Text>
+          </Text>
+        </View>
 
         {comments.slice(0, 2).map((c) => (
-          <View key={c.id} style={styles.commentRow}>
-            <ExpandableText
-              username={c.profile?.username || "Unknown"}
-              text={c.body}
-            />
+          <View key={c.id} style={styles.commentItem}>
+            <Text style={styles.commentText}>
+              <Text style={styles.commentUsername}>
+                {c.profile?.username || "Unknown"}
+              </Text>
+              <Text style={styles.commentBody}> {c.body}</Text>
+            </Text>
           </View>
         ))}
 
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 8,
     gap: 8,
   },
   likesCount: {
@@ -837,8 +837,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
   },
-  captionContainer: {
-    marginBottom: 5,
+  captionSection: {
+    marginBottom: 4,
+  },
+  captionText: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.black,
+  },
+  captionUsername: {
+    fontWeight: "600",
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  captionBody: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.black,
+  },
+  commentItem: {
+    marginBottom: 2,
+  },
+  commentText: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.black,
+  },
+  commentUsername: {
+    fontWeight: "600",
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  commentBody: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.black,
   },
   username: {
     fontWeight: "bold",
@@ -848,22 +881,16 @@ const styles = StyleSheet.create({
   expandableText: {
     fontSize: 16,
     color: COLORS.black,
+    lineHeight: 20,
   },
   timestamp: {
     fontSize: 12,
     color: COLORS.gray,
   },
-  commentRow: {
-    marginBottom: 4,
-  },
-  commentUsername: {
-    fontWeight: "bold",
-    color: COLORS.black,
-  },
   moreText: {
-    color: COLORS.lightGray,
-    fontSize: 14,
-    marginTop: 2,
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "400",
   },
   viewAllCommentsText: {
     color: COLORS.lightGray,

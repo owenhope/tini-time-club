@@ -118,10 +118,12 @@ const ReviewPreview = ({
 
   const handleCaptionBlur = () => {
     setIsCaptionFocused(false);
+    // Trim whitespace from caption
+    const trimmedCaption = inputCaption.trim();
     // Update the preview caption when user finishes typing
-    setPreviewCaption(inputCaption);
+    setPreviewCaption(trimmedCaption);
     // Update the form value
-    control._formValues.notes = inputCaption;
+    control._formValues.notes = trimmedCaption;
   };
 
   const openCaptionInput = () => {
@@ -322,7 +324,7 @@ export default function App() {
   };
 
   const prevStep = () => {
-    if (step > 1) {
+    if (step > 0) {
       setIsTransitioning(true);
       // Fade out
       opacity.value = withTiming(0, { duration: 400 }, () => {
@@ -432,7 +434,7 @@ export default function App() {
         type: watchedValues.type,
         taste: watchedValues.taste,
         presentation: watchedValues.presentation,
-        comment: watchedValues.notes,
+        comment: watchedValues.notes?.trim() || "",
         image_url: imageUrl,
         state: 1,
       };
@@ -547,6 +549,8 @@ export default function App() {
             style={[
               styles.content,
               questions[step].title === "Preview" && styles.previewContent,
+              questions[step].title === "Where was this served?" &&
+                styles.locationContent,
               animatedStyle,
             ]}
           >
@@ -562,7 +566,7 @@ export default function App() {
             <View style={styles.footer}>
               <Animated.View style={styles.navigation}>
                 <View style={styles.navLeft}>
-                  {step > 1 && (
+                  {step > 0 && (
                     <Button
                       title="Back"
                       onPress={prevStep}
@@ -662,6 +666,11 @@ const styles = StyleSheet.create({
     paddingTop: 10, // Minimal padding for preview step
     justifyContent: "center",
     alignItems: "center",
+  },
+  locationContent: {
+    justifyContent: "flex-start",
+    alignItems: "stretch",
+    paddingTop: 20,
   },
   footer: {
     paddingHorizontal: 20,
