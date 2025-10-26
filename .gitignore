@@ -39,3 +39,5 @@ ios
 android
 
 .env.local
+.env.production
+.env.development
