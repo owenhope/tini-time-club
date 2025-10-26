@@ -92,7 +92,8 @@ class SecureAuthCache {
       
       if (error) {
         console.error('Error fetching profile:', error);
-        return null;
+        // Throw error to be handled by calling code
+        throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
       
       return data;

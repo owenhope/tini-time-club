@@ -110,6 +110,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "com.googleusercontent.apps.732397011472-41tr3sghlftkc5kcsr57v3570l9uot05",
         },
       ],
+      [
+        "expo-apple-authentication",
+        {
+          appleSignInEnabled: true,
+        },
+      ],
     ],
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

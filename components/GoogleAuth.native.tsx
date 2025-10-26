@@ -24,10 +24,28 @@ export function GoogleAuth() {
           const result = await GoogleSignin.hasPlayServices();
           const userInfo = await GoogleSignin.signIn();
           if (userInfo.data && userInfo.data.idToken) {
-            const { data, error } = await supabase.auth.signInWithIdToken({
-              provider: "google",
-              token: userInfo.data.idToken,
-            });
+            // Try to sign in first (for existing users)
+            const { error: signInError } =
+              await supabase.auth.signInWithIdToken({
+                provider: "google",
+                token: userInfo.data.idToken,
+              });
+
+            // If sign in fails, try to sign up (for new users)
+            if (signInError) {
+              const { error: signUpError } =
+                await supabase.auth.signUpWithIdToken({
+                  provider: "google",
+                  token: userInfo.data.idToken,
+                });
+
+              if (signUpError) {
+                throw new Error(
+                  `Authentication failed: ${signUpError.message}`
+                );
+              }
+            }
+
             router.replace("/(tabs)/home");
           } else {
             throw new Error("no ID token present!");
@@ -41,7 +59,6 @@ export function GoogleAuth() {
             // play services not available or outdated
           } else {
             // some other error happened
-            console.log(error);
           }
         }
       }}

@@ -144,7 +144,8 @@ class AuthCache {
       
       if (error) {
         console.error('Error fetching profile:', error);
-        return null;
+        // Throw error to be handled by calling code
+        throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
       
       // Update cache with profile

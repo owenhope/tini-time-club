@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { supabase } from "@/utils/supabase";
 import authCache from "@/utils/authCache";
+import { useRouter } from "expo-router";
 
 // Create the context
 const ProfileContext = createContext();
@@ -10,6 +11,7 @@ const ProfileContext = createContext();
 export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   // Function to fetch the current user's profile from the "profile" table
   const fetchProfile = async () => {
@@ -41,11 +43,25 @@ export const ProfileProvider = ({ children }) => {
 
       if (error) {
         console.error("Error fetching profile", error);
+
+        // Handle any profile fetch error - redirect to auth
+        // Clear auth cache and redirect to login
+        await authCache.invalidateCache();
+        router.replace("/");
+        return;
       } else {
         setProfile(data);
       }
     } catch (error) {
       console.error("Error in fetchProfile:", error);
+
+      // Handle any profile error (including from authCache) - redirect to auth
+      if (error.message && error.message.includes("Profile fetch error")) {
+        // Clear auth cache and redirect to login
+        await authCache.invalidateCache();
+        router.replace("/");
+        return;
+      }
     } finally {
       setLoading(false);
     }
