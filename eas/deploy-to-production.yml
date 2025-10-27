@@ -35,6 +35,7 @@ jobs:
     params:
       platform: ios
       profile: production
+      clear_cache: true
   submit_ios_build:
     name: Submit iOS Build
     needs: [build_ios]

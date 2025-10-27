@@ -17,13 +17,6 @@
       "ios": { "simulator": true },
       "environment": "development"
     },
-    "android-emulator": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development",
-      "android": { "buildType": "apk" },
-      "environment": "development"
-    },
     "preview": {
       "autoIncrement": false,
       "distribution": "internal",

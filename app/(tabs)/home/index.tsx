@@ -627,8 +627,15 @@ function Home() {
         {isDevelopmentMode() && (
           <View style={styles.devIndicator}>
             <Text style={styles.devText}>DEV</Text>
+            <Button
+              title="Press me"
+              onPress={() => {
+                console.log("Button pressed!");
+              }}
+            />
           </View>
         )}
+
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
