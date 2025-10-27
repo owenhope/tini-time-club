@@ -623,19 +623,6 @@ function Home() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header with logo and search icon */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
-        {/* Development mode indicator */}
-        {isDevelopmentMode() && (
-          <View style={styles.devIndicator}>
-            <Text style={styles.devText}>DEV</Text>
-            <Button
-              title="Press me"
-              onPress={() => {
-                console.log("Button pressed!");
-              }}
-            />
-          </View>
-        )}
-
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
