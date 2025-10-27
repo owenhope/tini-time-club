@@ -25,6 +25,8 @@ const Avatar: React.FC<AvatarProps> = ({
     const loadAvatar = async () => {
       if (!avatarPath) {
         setLoading(false);
+        setAvatarUrl(null);
+        setError(null); // No error when no avatar path
         return;
       }
 
@@ -69,19 +71,22 @@ const Avatar: React.FC<AvatarProps> = ({
   }
 
   if (error) {
+    // On error, fall back to initials or default avatar instead of showing error message
+    if (showInitials && username) {
+      return (
+        <View style={placeholderStyle}>
+          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
+            {username.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={[placeholderStyle, { backgroundColor: "#ffebee" }]}>
-        <Text
-          style={[styles.initials, { fontSize: size * 0.2, color: "#d32f2f" }]}
-        >
-          ERROR
-        </Text>
-        <Text
-          style={[styles.initials, { fontSize: size * 0.15, color: "#d32f2f" }]}
-        >
-          {error}
-        </Text>
-      </View>
+      <Image
+        source={require("@/assets/images/olive_transparent.png")}
+        style={avatarStyle}
+      />
     );
   }
 
@@ -92,16 +97,14 @@ const Avatar: React.FC<AvatarProps> = ({
         style={avatarStyle}
         defaultSource={require("@/assets/images/olive_transparent.png")}
         onError={(error) => {
-          const errorMsg = `Image load failed: ${
-            error.nativeEvent.error || "Unknown error"
-          }`;
           console.error(
             "Image failed to load:",
             error.nativeEvent.error,
             "URL:",
             avatarUrl
           );
-          setError(errorMsg);
+          // Don't set error state, just let it fall back to initials/default
+          setAvatarUrl(null);
         }}
         onLoad={() => {
           // Image loaded successfully

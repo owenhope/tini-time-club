@@ -35,10 +35,14 @@ export default function DiscoverTabs({
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [nearby, setNearby] = useState(true); // Default enabled
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [userLocation, setUserLocation] = useState<
+    | {
+        latitude: number;
+        longitude: number;
+      }
+    | null
+    | undefined
+  >(undefined); // undefined = not attempted, null = denied/failed, object = success
   const router = useRouter();
 
   // Get user location on component mount
@@ -50,6 +54,8 @@ export default function DiscoverTabs({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
+        // If permission denied, set a flag to indicate we should show all locations
+        setUserLocation(null);
         return;
       }
 
@@ -61,6 +67,8 @@ export default function DiscoverTabs({
       setUserLocation(userCoords);
     } catch (error) {
       console.error("Error getting location:", error);
+      // On error, set to null so we can still show locations without nearby filtering
+      setUserLocation(null);
     }
   };
 
@@ -204,6 +212,11 @@ export default function DiscoverTabs({
     if (activeTab === "profiles") {
       fetchProfiles(query);
     } else {
+      // For locations tab, if nearby is enabled and we don't have user location yet, wait
+      // But if userLocation is explicitly null (permission denied), proceed anyway
+      if (nearby && userLocation === undefined) {
+        return; // Don't fetch until we have location or permission is denied
+      }
       fetchLocations(query);
     }
   }, [activeTab, query, nearby, userLocation]);

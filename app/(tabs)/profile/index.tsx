@@ -94,7 +94,7 @@ const Profile = () => {
             onPress={() => navigation.navigate("settings" as never)}
             style={styles.headerButton}
           >
-            <Ionicons name="ellipsis-horizontal" size={24} color="black" />
+            <Ionicons name="settings-outline" size={24} color="black" />
           </TouchableOpacity>
         ),
       });

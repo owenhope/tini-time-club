@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { ActionSheetIOS, Platform, Alert } from "react-native";
+import { ActionSheetIOS, Platform } from "react-native";
 
 interface ActionSheetProps {
   visible: boolean;
@@ -30,22 +30,8 @@ const ActionSheet = memo(
             (buttonIndex) => {
               if (buttonIndex === 0) {
                 if (isOwnReview) {
-                  // Show confirmation dialog for delete
-                  Alert.alert(
-                    "Delete Review",
-                    "Are you sure you want to delete this review? This action cannot be undone.",
-                    [
-                      {
-                        text: "Cancel",
-                        style: "cancel",
-                      },
-                      {
-                        text: "Delete",
-                        style: "destructive",
-                        onPress: () => onDelete?.(),
-                      },
-                    ]
-                  );
+                  // Call onDelete directly - the parent component will handle confirmation
+                  onDelete?.();
                 } else {
                   onReport?.();
                 }

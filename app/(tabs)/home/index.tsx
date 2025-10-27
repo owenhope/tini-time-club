@@ -621,8 +621,15 @@ function Home() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header with logo and search icon */}
+      {/* Header with add button, logo and search icon */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
+        <TouchableOpacity
+          style={styles.addButtonContainer}
+          onPress={() => router.push("/review")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={24} color="#000" />
+        </TouchableOpacity>
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
@@ -777,6 +784,11 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 60,
     height: 60,
+  },
+  addButtonContainer: {
+    position: "absolute",
+    left: 16,
+    padding: 8,
   },
   searchIconContainer: {
     position: "absolute",
