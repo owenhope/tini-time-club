@@ -33,6 +33,7 @@ import { getBlockedUserIds } from "@/utils/blockUtils";
 import imageCache from "@/utils/imageCache";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
+import { isDevelopmentMode } from "@/utils/helpers";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
 import { Button, Input } from "@/components/shared";
@@ -622,6 +623,12 @@ function Home() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header with logo and search icon */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
+        {/* Development mode indicator */}
+        {isDevelopmentMode() && (
+          <View style={styles.devIndicator}>
+            <Text style={styles.devText}>DEV</Text>
+          </View>
+        )}
         <Animated.Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
@@ -781,6 +788,20 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     padding: 8,
+  },
+  devIndicator: {
+    position: "absolute",
+    left: 16,
+    backgroundColor: "#ff4444",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  devText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   loadingContainer: {
     flex: 1,
