@@ -8,7 +8,7 @@ interface ReviewValues {
   type?: string;
   taste?: number;
   presentation?: number;
-  notes?: string;
+  comment?: string;
 }
 
 const ReviewRating = ({ value, label }: { value: number; label: string }) => {
@@ -66,7 +66,7 @@ const Review = ({
           );
         }
 
-        if (["notes"].includes(key) && value) {
+        if (["comment"].includes(key) && value) {
           return (
             <View key={key} style={styles.reviewItem}>
               <Text style={styles.reviewLabel}>{key}:</Text>

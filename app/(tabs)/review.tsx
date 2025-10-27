@@ -19,7 +19,7 @@ import AnimatedReanimated, {
   withTiming,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
@@ -45,6 +45,8 @@ const ReviewPreview = ({
   photo,
   profile,
   control,
+  watch,
+  setValue,
   isSubmitting,
   submissionMessage,
 }: {
@@ -55,21 +57,21 @@ const ReviewPreview = ({
   profile: any;
   control: any;
   watch: any;
+  setValue: any;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
   const [isCaptionFocused, setIsCaptionFocused] = useState(false);
-  const [previewCaption, setPreviewCaption] = useState("");
-  const [inputCaption, setInputCaption] = useState("");
+  const [tempCaption, setTempCaption] = useState("");
 
-  // Create a mock review object for the preview - memoize to prevent re-creation
+  // Create a mock review object for the preview - use form values directly
   const mockReview = useMemo(
     () =>
       ({
         id: "preview",
         user_id: profile?.id || "",
         image_url: photo || "",
-        comment: previewCaption || "",
+        comment: isCaptionFocused ? tempCaption : values.comment || "",
         taste: values.taste || 0,
         presentation: values.presentation || 0,
         inserted_at: new Date().toISOString(),
@@ -94,8 +96,8 @@ const ReviewPreview = ({
               address: "",
             },
       } as any),
-    [previewCaption, values, spirits, types, photo, profile]
-  ); // Type assertion to bypass strict typing for preview
+    [values, spirits, types, photo, profile, isCaptionFocused, tempCaption]
+  );
 
   // Mock handlers for the preview (they won't do anything)
   const mockHandlers = {
@@ -110,7 +112,6 @@ const ReviewPreview = ({
 
   const handleCaptionFocus = () => {
     setIsCaptionFocused(true);
-    // Scroll to show the caption input when focused
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -118,15 +119,10 @@ const ReviewPreview = ({
 
   const handleCaptionBlur = () => {
     setIsCaptionFocused(false);
-    // Trim whitespace from caption
-    const trimmedCaption = inputCaption.trim();
-    // Update the preview caption when user finishes typing
-    setPreviewCaption(trimmedCaption);
-    // Update the form value
-    control._formValues.notes = trimmedCaption;
   };
 
   const openCaptionInput = () => {
+    setTempCaption(values.comment || "");
     setIsCaptionFocused(true);
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -169,7 +165,7 @@ const ReviewPreview = ({
             onPress={openCaptionInput}
           >
             <Text style={styles.captionButtonText}>
-              {inputCaption ? "Edit Caption" : "Add Caption"}
+              {values.comment ? "Edit Caption" : "Add Caption"}
             </Text>
           </TouchableOpacity>
         ) : (
@@ -178,19 +174,20 @@ const ReviewPreview = ({
               style={styles.captionInput}
               multiline={true}
               placeholder="Write a caption..."
-              onChangeText={setInputCaption}
-              value={inputCaption}
+              onChangeText={setTempCaption}
+              value={tempCaption}
               maxLength={500}
-              onFocus={handleCaptionFocus}
-              onBlur={handleCaptionBlur}
               autoFocus={true}
             />
             <Text style={styles.characterCount}>
-              {inputCaption?.length || 0}/500
+              {tempCaption?.length || 0}/500
             </Text>
             <TouchableOpacity
               style={styles.saveCaptionButton}
-              onPress={handleCaptionBlur}
+              onPress={() => {
+                setValue("comment", tempCaption);
+                setIsCaptionFocused(false);
+              }}
             >
               <Text style={styles.saveCaptionButtonText}>Save Caption</Text>
             </TouchableOpacity>
@@ -216,17 +213,18 @@ export default function App() {
   const router = useRouter();
   const { profile } = useProfile();
 
-  const { control, handleSubmit, reset, trigger, formState, watch } = useForm({
-    mode: "onChange",
-    defaultValues: {
-      location: null,
-      spirit: "",
-      type: "",
-      taste: 0,
-      presentation: 0,
-      notes: "",
-    },
-  });
+  const { control, handleSubmit, reset, trigger, formState, watch, setValue } =
+    useForm({
+      mode: "onChange",
+      defaultValues: {
+        location: null,
+        spirit: "",
+        type: "",
+        taste: 0,
+        presentation: 0,
+        comment: "",
+      },
+    });
   const insets = useSafeAreaInsets();
   const watchedValues = watch();
 
@@ -237,7 +235,7 @@ export default function App() {
 
   interface Question {
     title: string;
-    key?: "location" | "spirit" | "type" | "taste" | "presentation" | "notes";
+    key?: "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
     Component: React.ComponentType<any>;
   }
 
@@ -282,6 +280,7 @@ export default function App() {
           profile={profile}
           control={control}
           watch={watch}
+          setValue={setValue}
           isSubmitting={isSubmitting}
           submissionMessage={submissionMessage}
           {...props}
@@ -305,9 +304,9 @@ export default function App() {
   };
 
   const nextStep = async () => {
-    // For the preview step (last step), validate notes field
+    // For the preview step (last step), validate comment field
     if (step === questions.length - 1) {
-      const isValid = await trigger("notes");
+      const isValid = await trigger("comment");
       if (!isValid) return;
     } else if (questions[step].key) {
       const isValid = await trigger(questions[step].key as any);
@@ -434,7 +433,7 @@ export default function App() {
         type: watchedValues.type,
         taste: watchedValues.taste,
         presentation: watchedValues.presentation,
-        comment: watchedValues.notes?.trim() || "",
+        comment: watchedValues.comment?.trim() || "",
         image_url: imageUrl,
         state: 1,
       };
