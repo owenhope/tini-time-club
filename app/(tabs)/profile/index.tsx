@@ -29,6 +29,7 @@ import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
+import AnalyticService from "@/services/analyticsService";
 
 const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -225,6 +226,9 @@ const Profile = () => {
         setAvatar(urlData.publicUrl);
         setAvatarError(null);
         setAvatarLoading(false);
+
+        // Track avatar change event
+        AnalyticService.capture('change_avatar', {});
       } else {
         setAvatarLoading(false);
       }
@@ -236,6 +240,7 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
+    AnalyticService.capture('logout', {});
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error logging out:", error);
@@ -251,6 +256,8 @@ const Profile = () => {
       .eq("id", id);
     if (!error) {
       setUserReviews((prev) => prev.filter((r) => r.id !== id));
+      // Track delete review event
+      AnalyticService.capture('delete_review', { reviewId: id });
     }
   };
 

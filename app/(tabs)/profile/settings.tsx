@@ -9,12 +9,14 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
+import AnalyticService from "@/services/analyticsService";
 
 const Settings = () => {
   const navigation = useNavigation();
 
   const handleLogout = async () => {
     try {
+      AnalyticService.capture('logout', {});
       await supabase.auth.signOut();
     } catch (error) {
       console.error("Error signing out:", error);

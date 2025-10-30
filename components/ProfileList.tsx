@@ -12,6 +12,7 @@ import { useProfile } from "@/context/profile-context";
 import { Avatar } from "@/components/shared";
 import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
+import AnalyticService from "@/services/analyticsService";
 export interface ProfileType {
   id: string;
   username: string;
@@ -90,6 +91,14 @@ export default function ProfileList({
           }
         }
         setFollowedIds((prev) => [...prev, targetProfileId]);
+        // Track follow event
+        const targetProfile = profiles.find(p => p.id === targetProfileId);
+        if (targetProfile) {
+          AnalyticService.capture('follow_user', {
+            targetUserId: targetProfileId,
+            targetUsername: targetProfile.username,
+          });
+        }
       }
     }
     setUpdatingFollowIds((prev) => prev.filter((id) => id !== targetProfileId));

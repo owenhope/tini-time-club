@@ -28,6 +28,7 @@ import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
 import { useRouter } from "expo-router";
 import { Avatar } from "@/components/shared";
+import AnalyticService from "@/services/analyticsService";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -106,6 +107,14 @@ export default function CommentsSlider({
     setComments((prev) => [...prev, data]);
     flatListRef.current?.scrollToEnd({ animated: true });
     onCommentAdded?.(review.id, data);
+
+    // Track comment event
+    AnalyticService.capture('comment_on_review', {
+      reviewId: review.id,
+      commentId: data.id,
+      locationId: review.location?.id,
+      locationName: review.location?.name,
+    });
 
     if (review.user_id && profile.id !== review.user_id) {
       // Only send notifications if not in development mode

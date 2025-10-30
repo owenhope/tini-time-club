@@ -36,6 +36,7 @@ import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import { TextInput } from "react-native";
+import AnalyticService from "@/services/analyticsService";
 
 // ReviewPreview component for showing live preview with caption input
 const ReviewPreview = ({
@@ -489,6 +490,13 @@ export default function App() {
 
       setSubmissionMessage("Review created successfully!");
       setIsSubmitting(false);
+
+      // Track new review event
+      AnalyticService.capture('new_review', {
+        reviewId,
+        locationId: (watchedValues.location as any)?.id,
+        locationName: (watchedValues.location as any)?.name,
+      });
 
       setStep(0);
       setPhoto(null);

@@ -22,6 +22,7 @@ import {
   useNavigation,
   usePathname,
 } from "expo-router";
+import AnalyticService from "@/services/analyticsService";
 
 interface ProfileType {
   id: string;
@@ -130,6 +131,11 @@ const UserProfile = () => {
         setDoesFollow(true);
         // Update follower count after following
         setFollowersCount((prev) => prev + 1);
+        // Track follow event
+        AnalyticService.capture('follow_user', {
+          targetUserId: displayProfile.id,
+          targetUsername: displayProfile.username,
+        });
       }
     }
   };
@@ -211,6 +217,13 @@ const UserProfile = () => {
           setAvatar(null);
         }
         setSelectedProfile(data);
+        // Track view profile event (only if not viewing own profile)
+        if (profile && data.id !== profile.id) {
+          AnalyticService.capture('view_profile', {
+            targetUserId: data.id,
+            targetUsername: data.username,
+          });
+        }
       }
     } catch (err) {
       console.error("Unexpected error fetching profile:", err);

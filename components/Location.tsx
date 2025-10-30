@@ -26,6 +26,7 @@ import { getBlockedUserIds } from "@/utils/blockUtils";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
 import RatingCircles from "@/components/RatingCircles";
+import AnalyticService from "@/services/analyticsService";
 
 // Constants
 const COLORS = {
@@ -113,6 +114,11 @@ const Location = () => {
         console.error("Error fetching selected location:", error);
       } else {
         setSelectedLocation(data);
+        // Track view location event
+        AnalyticService.capture('view_location', {
+          locationId: data?.id,
+          locationName: data?.name,
+        });
       }
     } catch (err) {
       console.error("Unexpected error fetching location:", err);

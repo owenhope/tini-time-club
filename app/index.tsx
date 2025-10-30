@@ -18,6 +18,7 @@ import { supabase } from "@/utils/supabase";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
 import { Button, Input } from "@/components/shared";
+import AnalyticService from "@/services/analyticsService";
 
 // Constants
 const COLORS = {
@@ -216,6 +217,7 @@ const useAuth = () => {
         }
 
         if (session) {
+          AnalyticService.capture('create_account', { method: 'email' });
           return true;
         } else {
           Alert.alert("Verification", MESSAGES.signUp.verification);
@@ -255,6 +257,7 @@ const useAuth = () => {
           Alert.alert(MESSAGES.signIn.error, error.message);
           return false;
         }
+        AnalyticService.capture('login', { method: 'email' });
         return true;
       } catch (err: any) {
         Alert.alert(

@@ -25,6 +25,7 @@ import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
+import AnalyticService from "@/services/analyticsService";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -502,6 +503,15 @@ const ReviewItem = memo(
       const wasLiked = hasLiked;
       await toggleLike();
 
+      // Track like event (only when liking, not unliking)
+      if (!wasLiked) {
+        AnalyticService.capture('like_review', {
+          reviewId: review.id,
+          locationId: review.location?.id,
+          locationName: review.location?.name,
+        });
+      }
+
       // Send notification if user just liked someone else's review
       if (!wasLiked && review.user_id && profile.id !== review.user_id) {
         // Only send notifications if not in development mode
@@ -573,6 +583,12 @@ const ReviewItem = memo(
             console.error("Error submitting report:", error);
             Alert.alert("Error", "Failed to submit report. Please try again.");
           } else {
+            // Track report event
+            AnalyticService.capture('report', {
+              reviewId: review.id,
+              reason: customReason || reason,
+              targetUserId: review.profile?.id,
+            });
             Alert.alert(
               "Report Submitted",
               "Thank you for your report. We will review it shortly."
