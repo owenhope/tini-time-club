@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -11,6 +11,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Controller } from "react-hook-form";
 import * as Location from "expo-location";
 import "react-native-get-random-values";
+import {
+  GOOGLE_MAPS_API_KEY,
+  RELEVANT_PLACE_TYPES,
+  calculateDistance,
+  formatDistance,
+  getNameMatchScore,
+  filterRelevantPlaces,
+  deduplicatePlaces,
+} from "@/utils/locationUtils";
 
 const LocationInput = ({ control }: { control: any }) => {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -20,341 +29,288 @@ const LocationInput = ({ control }: { control: any }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Get user location on mount
   useEffect(() => {
-    async function getCurrentLocation() {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        return;
+    let mounted = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted" || !mounted) return;
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        if (mounted) {
+          setLocation(currentLocation);
+          fetchNearbyPlaces(currentLocation);
+        }
+      } catch (error) {
+        console.error("Error getting location:", error);
       }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-      await fetchNearbyPlaces(location);
-    }
-
-    getCurrentLocation();
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
+  // Fetch nearby places
   const fetchNearbyPlaces = async (userLocation: Location.LocationObject) => {
     try {
       const { latitude, longitude } = userLocation.coords;
-      // Search for all types of places that serve alcohol
-      // Combine multiple searches to get comprehensive results
-      const types = [
-        "bar",
-        "restaurant",
-        "night_club",
-        "cafe",
-        "lounge",
-        "hotel", // Hotels often have bars
-        "brewery",
-        "meal_takeaway", // Some takeaway places serve alcohol
-      ];
-
-      const allResults: any[] = [];
-      const seenIds = new Set<string>();
-
-      // Search each type and combine unique results
-      for (const type of types) {
-        try {
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=${type}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`
-          );
-          const data = await response.json();
-          if (data.results) {
-            data.results.forEach((place: any) => {
-              if (!seenIds.has(place.place_id)) {
-                seenIds.add(place.place_id);
-                allResults.push(place);
-              }
-            });
+      const results = await Promise.all(
+        RELEVANT_PLACE_TYPES.map(async (type) => {
+          try {
+            const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data.results || [];
+          } catch {
+            return [];
           }
-        } catch (error) {
-          console.error(`Error fetching ${type}:`, error);
-        }
-      }
+        })
+      );
 
-      // Sort by distance if we have location
-      if (userLocation) {
-        allResults.sort((a, b) => {
-          const distanceA = calculateDistance(
-            userLocation.coords.latitude,
-            userLocation.coords.longitude,
-            a.geometry.location.lat,
-            a.geometry.location.lng
-          );
-          const distanceB = calculateDistance(
-            userLocation.coords.latitude,
-            userLocation.coords.longitude,
-            b.geometry.location.lat,
-            b.geometry.location.lng
-          );
-          return distanceA - distanceB;
-        });
-      }
+      const allPlaces = results.flat();
+      const uniquePlaces = deduplicatePlaces(allPlaces);
 
-      setNearbyPlaces(allResults);
+      uniquePlaces.sort((a, b) => {
+        const distA = calculateDistance(
+          latitude,
+          longitude,
+          a.geometry?.location?.lat || 0,
+          a.geometry?.location?.lng || 0
+        );
+        const distB = calculateDistance(
+          latitude,
+          longitude,
+          b.geometry?.location?.lat || 0,
+          b.geometry?.location?.lng || 0
+        );
+        return distA - distB;
+      });
+
+      setNearbyPlaces(uniquePlaces);
     } catch (error) {
       console.error("Error fetching nearby places:", error);
     }
   };
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+  // Search for places
+  const performSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-    setIsSearching(true);
-    try {
-      let searchUrl;
-      let results: any[] = [];
+      setIsSearching(true);
+      try {
+        const seenIds = new Set<string>();
+        const results: any[] = [];
 
-      if (query.length <= 3) {
-        // For short queries, try nearby search first if we have location
-        if (location) {
-          // Search multiple types that serve alcohol and combine results
-          const types = [
-            "bar",
-            "restaurant",
-            "night_club",
-            "cafe",
-            "lounge",
-            "hotel",
-            "brewery",
-          ];
-          const seenIds = new Set<string>();
-
-          for (const type of types) {
-            try {
-              const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
-                location.coords.latitude
-              },${
-                location.coords.longitude
-              }&radius=10000&type=${type}&keyword=${encodeURIComponent(
-                query
-              )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
-
-              const nearbyResponse = await fetch(nearbyUrl);
-              const nearbyData = await nearbyResponse.json();
-              if (nearbyData.results) {
-                nearbyData.results.forEach((place: any) => {
-                  if (!seenIds.has(place.place_id)) {
-                    seenIds.add(place.place_id);
-                    results.push(place);
-                  }
-                });
-              }
-            } catch (error) {
-              console.error(`Error searching ${type}:`, error);
-            }
-          }
-
-          // If nearby search returns few results, also try text search as fallback
-          if (results.length < 5) {
-            const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-              query
-            )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
-            const textResponse = await fetch(textSearchUrl);
-            const textData = await textResponse.json();
-            const textResults = textData.results || [];
-
-            // Merge results, avoiding duplicates
-            textResults.forEach((place: any) => {
-              if (!seenIds.has(place.place_id)) {
-                seenIds.add(place.place_id);
-                results.push(place);
-              }
-            });
-          }
-        } else {
-          // No location, use text search without type restrictions
-          searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
+        // Text search (finds places anywhere)
+        try {
+          const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
             query
-          )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
-          const response = await fetch(searchUrl);
+          )}&key=${GOOGLE_MAPS_API_KEY}`;
+          const response = await fetch(url);
           const data = await response.json();
-          results = data.results || [];
+          (data.results || []).forEach((place: any) => {
+            if (place.place_id && !seenIds.has(place.place_id)) {
+              seenIds.add(place.place_id);
+              results.push(place);
+            }
+          });
+        } catch (error) {
+          console.error("Error in text search:", error);
         }
-      } else {
-        // For longer queries, use text search - it will naturally find places that serve alcohol
-        searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-          query
-        )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-        results = data.results || [];
-      }
 
-      // Sort results by distance if we have location
-      if (location && results.length > 0) {
-        results.sort((a, b) => {
-          // Check if places have geometry/location data
-          if (!a.geometry?.location || !b.geometry?.location) {
-            return 0; // Keep original order if location data is missing
+        // Nearby search for short queries (if location available)
+        if (location && query.length <= 3) {
+          const nearbyResults = await Promise.all(
+            RELEVANT_PLACE_TYPES.slice(0, 7).map(async (type) => {
+              try {
+                const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
+                  location.coords.latitude
+                },${
+                  location.coords.longitude
+                }&radius=10000&type=${type}&keyword=${encodeURIComponent(
+                  query
+                )}&key=${GOOGLE_MAPS_API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.results || [];
+              } catch {
+                return [];
+              }
+            })
+          );
+          nearbyResults.flat().forEach((place: any) => {
+            if (place.place_id && !seenIds.has(place.place_id)) {
+              seenIds.add(place.place_id);
+              results.push(place);
+            }
+          });
+        }
+
+        // Filter and sort
+        const filtered = filterRelevantPlaces(results);
+
+        filtered.sort((a, b) => {
+          const scoreA = getNameMatchScore(a.name || "", query);
+          const scoreB = getNameMatchScore(b.name || "", query);
+          if (scoreA !== scoreB) return scoreB - scoreA;
+          if (
+            location?.coords &&
+            a.geometry?.location &&
+            b.geometry?.location
+          ) {
+            const distA = calculateDistance(
+              location.coords.latitude,
+              location.coords.longitude,
+              a.geometry.location.lat,
+              a.geometry.location.lng
+            );
+            const distB = calculateDistance(
+              location.coords.latitude,
+              location.coords.longitude,
+              b.geometry.location.lat,
+              b.geometry.location.lng
+            );
+            return distA - distB;
           }
-          const distanceA = calculateDistance(
-            location.coords.latitude,
-            location.coords.longitude,
-            a.geometry.location.lat,
-            a.geometry.location.lng
-          );
-          const distanceB = calculateDistance(
-            location.coords.latitude,
-            location.coords.longitude,
-            b.geometry.location.lat,
-            b.geometry.location.lng
-          );
-          return distanceA - distanceB;
+          return 0;
         });
+
+        setSearchResults(filtered);
+      } catch (error) {
+        console.error("Error searching places:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
+    },
+    [location]
+  );
 
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Error searching places:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+  // Debounced search handler
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      if (query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      searchTimeoutRef.current = setTimeout(() => performSearch(query), 300);
+    },
+    [performSearch]
+  );
+
+  // Cleanup
+  useEffect(
+    () => () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    },
+    []
+  );
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setIsSearching(false);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
   };
 
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ) => {
-    const R = 6371; // Radius of the Earth in kilometers
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
-  };
-
-  const formatDistance = (distance: number) => {
-    if (distance < 1) {
-      return `${Math.round(distance * 1000)}m`;
-    } else {
-      return `${distance.toFixed(1)}km`;
-    }
-  };
-
-  const query = {
-    key: "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8",
-    language: "en",
-    types: "restaurant|cafe|bar",
-    location: location
-      ? `${location.coords.latitude},${location.coords.longitude}`
-      : undefined,
-    radius: location ? 5000 : undefined,
-  };
-
+  // Render place list
   const renderPlaceList = (
     places: any[],
-    title: string,
     selectedValue: any,
     onSelect: (data: any) => void
   ) => (
-    <>
-      <ScrollView
-        style={styles.placesContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {places.map((place) => {
-          const distance = location
+    <ScrollView
+      style={styles.placesContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {places.map((place) => {
+        const placeName = place.name || "";
+        const selected = selectedValue?.name === placeName;
+        const placeLocation = place.geometry?.location;
+        const distance =
+          location?.coords && placeLocation
             ? calculateDistance(
                 location.coords.latitude,
                 location.coords.longitude,
-                place.geometry.location.lat,
-                place.geometry.location.lng
+                placeLocation.lat,
+                placeLocation.lng
               )
             : null;
 
-          return (
-            <TouchableOpacity
-              key={place.place_id}
-              style={[
-                styles.placeButton,
-                selectedValue?.name === place.name &&
-                  styles.selectedPlaceButton,
-              ]}
-              onPress={() => {
-                // If this place is already selected, unselect it
-                if (selectedValue?.name === place.name) {
-                  onSelect(null);
-                } else {
-                  // Otherwise, select this place
-                  const locationData = {
-                    name: place.name,
-                    address: place.vicinity || place.formatted_address,
-                    coordinates: {
-                      latitude: place.geometry.location.lat,
-                      longitude: place.geometry.location.lng,
-                    },
-                  };
-                  onSelect(locationData);
-                }
-              }}
-            >
-              <View style={styles.placeContent}>
-                <View style={styles.placeTextContainer}>
-                  <Text
-                    style={[
-                      styles.placeName,
-                      selectedValue?.name === place.name &&
-                        styles.selectedPlaceText,
-                    ]}
-                  >
-                    {place.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.placeAddress,
-                      selectedValue?.name === place.name &&
-                        styles.selectedPlaceText,
-                    ]}
-                  >
-                    {place.vicinity || place.formatted_address}
-                  </Text>
-                </View>
-                <View style={styles.rightContainer}>
-                  {distance && (
-                    <Text
-                      style={[
-                        styles.distanceText,
-                        selectedValue?.name === place.name &&
-                          styles.selectedPlaceText,
-                      ]}
-                    >
-                      {formatDistance(distance)}
-                    </Text>
-                  )}
-                  {place.tini_time_rating && (
-                    <View style={styles.ratingContainer}>
-                      <View style={styles.ratingCircle}>
-                        <Text style={styles.ratingText}>
-                          {place.tini_time_rating.toFixed(1)}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
+        return (
+          <TouchableOpacity
+            key={place.place_id}
+            style={[styles.placeButton, selected && styles.selectedPlaceButton]}
+            onPress={() => {
+              if (selected) {
+                onSelect(null);
+              } else if (placeLocation) {
+                onSelect({
+                  name: placeName,
+                  address: place.vicinity || place.formatted_address,
+                  coordinates: {
+                    latitude: placeLocation.lat,
+                    longitude: placeLocation.lng,
+                  },
+                });
+              }
+            }}
+          >
+            <View style={styles.placeContent}>
+              <View style={styles.placeTextContainer}>
+                <Text
+                  style={[
+                    styles.placeName,
+                    selected && styles.selectedPlaceText,
+                  ]}
+                >
+                  {placeName}
+                </Text>
+                <Text
+                  style={[
+                    styles.placeAddress,
+                    selected && styles.selectedPlaceText,
+                  ]}
+                >
+                  {place.vicinity || place.formatted_address}
+                </Text>
               </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </>
+              <View style={styles.rightContainer}>
+                {distance !== null && (
+                  <Text
+                    style={[
+                      styles.distanceText,
+                      selected && styles.selectedPlaceText,
+                    ]}
+                  >
+                    {formatDistance(distance)}
+                  </Text>
+                )}
+                {place.tini_time_rating && (
+                  <View style={styles.ratingContainer}>
+                    <View style={styles.ratingCircle}>
+                      <Text style={styles.ratingText}>
+                        {place.tini_time_rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 
   return (
@@ -376,11 +332,7 @@ const LocationInput = ({ control }: { control: any }) => {
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 style={styles.clearButton}
-                onPress={() => {
-                  setSearchQuery("");
-                  setSearchResults([]);
-                  setIsSearching(false);
-                }}
+                onPress={handleClearSearch}
               >
                 <Ionicons name="close-circle" size={20} color="#666" />
               </TouchableOpacity>
@@ -388,18 +340,13 @@ const LocationInput = ({ control }: { control: any }) => {
           </View>
 
           {searchQuery.length > 0 && searchResults.length > 0 ? (
-            renderPlaceList(searchResults, "Search Results", value, onChange)
+            renderPlaceList(searchResults, value, onChange)
           ) : searchQuery.length > 0 && isSearching ? (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Searching...</Text>
             </View>
           ) : (
-            renderPlaceList(
-              nearbyPlaces.slice(0, 10),
-              "Nearby Locations",
-              value,
-              onChange
-            )
+            renderPlaceList(nearbyPlaces.slice(0, 10), value, onChange)
           )}
         </View>
       )}
@@ -433,17 +380,9 @@ const styles = StyleSheet.create({
     top: 15,
     padding: 2,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 10,
-    textTransform: "capitalize",
-  },
   placesContainer: {
     maxHeight: 450,
   },
-
   placeButton: {
     backgroundColor: "#fafafa",
     borderWidth: 1,
