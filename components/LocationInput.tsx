@@ -39,11 +39,62 @@ const LocationInput = ({ control }: { control: any }) => {
   const fetchNearbyPlaces = async (userLocation: Location.LocationObject) => {
     try {
       const { latitude, longitude } = userLocation.coords;
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=2000&type=bar|night_club|restaurant&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`
-      );
-      const data = await response.json();
-      setNearbyPlaces(data.results || []);
+      // Search for all types of places that serve alcohol
+      // Combine multiple searches to get comprehensive results
+      const types = [
+        "bar",
+        "restaurant",
+        "night_club",
+        "cafe",
+        "lounge",
+        "hotel", // Hotels often have bars
+        "brewery",
+        "meal_takeaway", // Some takeaway places serve alcohol
+      ];
+
+      const allResults: any[] = [];
+      const seenIds = new Set<string>();
+
+      // Search each type and combine unique results
+      for (const type of types) {
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=${type}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`
+          );
+          const data = await response.json();
+          if (data.results) {
+            data.results.forEach((place: any) => {
+              if (!seenIds.has(place.place_id)) {
+                seenIds.add(place.place_id);
+                allResults.push(place);
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching ${type}:`, error);
+        }
+      }
+
+      // Sort by distance if we have location
+      if (userLocation) {
+        allResults.sort((a, b) => {
+          const distanceA = calculateDistance(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            a.geometry.location.lat,
+            a.geometry.location.lng
+          );
+          const distanceB = calculateDistance(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            b.geometry.location.lat,
+            b.geometry.location.lng
+          );
+          return distanceA - distanceB;
+        });
+      }
+
+      setNearbyPlaces(allResults);
     } catch (error) {
       console.error("Error fetching nearby places:", error);
     }
@@ -60,35 +111,113 @@ const LocationInput = ({ control }: { control: any }) => {
     setIsSearching(true);
     try {
       let searchUrl;
+      let results: any[] = [];
 
       if (query.length <= 3) {
-        // For short queries, prioritize nearby places with the search term
+        // For short queries, try nearby search first if we have location
         if (location) {
-          searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
-            location.coords.latitude
-          },${
-            location.coords.longitude
-          }&radius=2000&type=bar|night_club|restaurant&keyword=${encodeURIComponent(
-            query
-          )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+          // Search multiple types that serve alcohol and combine results
+          const types = [
+            "bar",
+            "restaurant",
+            "night_club",
+            "cafe",
+            "lounge",
+            "hotel",
+            "brewery",
+          ];
+          const seenIds = new Set<string>();
+
+          for (const type of types) {
+            try {
+              const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
+                location.coords.latitude
+              },${
+                location.coords.longitude
+              }&radius=10000&type=${type}&keyword=${encodeURIComponent(
+                query
+              )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+
+              const nearbyResponse = await fetch(nearbyUrl);
+              const nearbyData = await nearbyResponse.json();
+              if (nearbyData.results) {
+                nearbyData.results.forEach((place: any) => {
+                  if (!seenIds.has(place.place_id)) {
+                    seenIds.add(place.place_id);
+                    results.push(place);
+                  }
+                });
+              }
+            } catch (error) {
+              console.error(`Error searching ${type}:`, error);
+            }
+          }
+
+          // If nearby search returns few results, also try text search as fallback
+          if (results.length < 5) {
+            const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
+              query
+            )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+            const textResponse = await fetch(textSearchUrl);
+            const textData = await textResponse.json();
+            const textResults = textData.results || [];
+
+            // Merge results, avoiding duplicates
+            textResults.forEach((place: any) => {
+              if (!seenIds.has(place.place_id)) {
+                seenIds.add(place.place_id);
+                results.push(place);
+              }
+            });
+          }
         } else {
+          // No location, use text search without type restrictions
           searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
             query
-          )}&type=bar|night_club|restaurant&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+          )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+          const response = await fetch(searchUrl);
+          const data = await response.json();
+          results = data.results || [];
         }
       } else {
-        // For longer queries, use text search for more specific results
+        // For longer queries, use text search - it will naturally find places that serve alcohol
         searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
           query
-        )}&type=bar|night_club|restaurant&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+        )}&key=AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8`;
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+        results = data.results || [];
       }
 
-      const response = await fetch(searchUrl);
-      const data = await response.json();
-      setSearchResults(data.results || []);
+      // Sort results by distance if we have location
+      if (location && results.length > 0) {
+        results.sort((a, b) => {
+          // Check if places have geometry/location data
+          if (!a.geometry?.location || !b.geometry?.location) {
+            return 0; // Keep original order if location data is missing
+          }
+          const distanceA = calculateDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            a.geometry.location.lat,
+            a.geometry.location.lng
+          );
+          const distanceB = calculateDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            b.geometry.location.lat,
+            b.geometry.location.lng
+          );
+          return distanceA - distanceB;
+        });
+      }
+
+      setSearchResults(results);
     } catch (error) {
       console.error("Error searching places:", error);
       setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -258,14 +387,20 @@ const LocationInput = ({ control }: { control: any }) => {
             )}
           </View>
 
-          {isSearching && searchResults.length > 0
-            ? renderPlaceList(searchResults, "Search Results", value, onChange)
-            : renderPlaceList(
-                nearbyPlaces.slice(0, 10),
-                "Nearby Locations",
-                value,
-                onChange
-              )}
+          {searchQuery.length > 0 && searchResults.length > 0 ? (
+            renderPlaceList(searchResults, "Search Results", value, onChange)
+          ) : searchQuery.length > 0 && isSearching ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Searching...</Text>
+            </View>
+          ) : (
+            renderPlaceList(
+              nearbyPlaces.slice(0, 10),
+              "Nearby Locations",
+              value,
+              onChange
+            )
+          )}
         </View>
       )}
     />
@@ -373,6 +508,14 @@ const styles = StyleSheet.create({
   },
   selectedPlaceText: {
     color: "#fff",
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
   },
 });
 
