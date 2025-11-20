@@ -11,9 +11,9 @@ export default function ProfileLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen
-        name="followers"
+        name="follow-list"
         options={{
-          title: "Followers",
+          title: "Follow List",
         }}
       />
       <Stack.Screen

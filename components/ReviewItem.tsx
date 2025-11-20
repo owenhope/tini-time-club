@@ -683,7 +683,7 @@ const ReviewItem = memo(
               activeOpacity={0.7}
             >
               <Ionicons
-                name={isOverlayVisible ? "eye-off" : "eye"}
+                name={isOverlayVisible ? "eye" : "eye-off"}
                 size={20}
                 color="#FFFFFF"
               />

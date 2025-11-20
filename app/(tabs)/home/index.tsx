@@ -18,6 +18,7 @@ import {
   Image,
   Alert,
   Animated,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
@@ -39,6 +40,7 @@ import { Filter } from "bad-words";
 import { Button, Input } from "@/components/shared";
 
 // Constants for optimization
+const SCREEN_WIDTH = Dimensions.get("window").width;
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
 const MAX_CACHED_ITEMS = 100; // Increased from 50 to 100 to accommodate larger page size
 const END_REACHED_THRESHOLD = 0.3;
@@ -273,6 +275,30 @@ function Home() {
       loadReviews(false);
     }
   }, [loadingMore, hasMore, refreshing, loadReviews]);
+
+  // Preload images for upcoming items
+  useEffect(() => {
+    if (reviews.length > 0) {
+      // Preload image URLs and prefetch images for next 5 items
+      const preloadCount = Math.min(5, reviews.length);
+      const imagePaths = reviews.slice(0, preloadCount).map((review) => review.image_url);
+      if (imagePaths.length > 0) {
+        // Preload URLs in background
+        imageCache.getReviewImageUrls(imagePaths).then((urls) => {
+          // Prefetch actual images using React Native's prefetch
+          Object.values(urls).forEach((url) => {
+            if (url) {
+              Image.prefetch(url).catch(() => {
+                // Silently fail - preloading is optional
+              });
+            }
+          });
+        }).catch(() => {
+          // Silently fail - preloading is optional
+        });
+      }
+    }
+  }, [reviews.length]);
 
   // Initialize bad-words filter
   const badWordsFilter = new Filter();
@@ -666,13 +692,13 @@ function Home() {
         onEndReachedThreshold={END_REACHED_THRESHOLD}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
-        removeClippedSubviews={false}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={20}
-        windowSize={15}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        updateCellsBatchingPeriod={150}
+        initialNumToRender={5}
+        windowSize={5}
         onScroll={handleScroll}
-        scrollEventThrottle={1}
+        scrollEventThrottle={16}
       />
 
       <EULAModal

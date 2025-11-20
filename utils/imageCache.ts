@@ -20,7 +20,7 @@ class ImageCache {
   
   // Cache durations (in milliseconds)
   private readonly AVATAR_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-  private readonly REVIEW_IMAGE_CACHE_DURATION = 45 * 60 * 1000; // 45 minutes (less than signed URL expiry)
+  private readonly REVIEW_IMAGE_CACHE_DURATION = 90 * 60 * 1000; // 90 minutes (less than signed URL expiry of 2 hours)
   private readonly LOCATION_IMAGE_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
   
   private constructor() {}
@@ -78,26 +78,22 @@ class ImageCache {
   
   /**
    * Get signed URL for review images with caching
+   * Optimized: Removed slow URL validation check for better performance
    */
   async getReviewImageUrl(imagePath: string): Promise<string | null> {
     const cacheKey = `review_${imagePath}`;
     
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
-    if (cached) {
-      if (Date.now() < cached.expiresAt) {
-        // Validate the URL is still working
-        const isValid = await this.isUrlValid(cached.signedUrl);
-        if (isValid) {
-          return cached.signedUrl;
-        } else {
-          // URL is invalid, remove from cache and fetch new one
-          this.memoryCache.delete(cacheKey);
-        }
-      } else {
-        // Remove expired cache entry
-        this.memoryCache.delete(cacheKey);
-      }
+    if (cached && Date.now() < cached.expiresAt) {
+      // Return cached URL immediately without validation (faster)
+      // Return null if cached value is empty string (indicates missing image)
+      return cached.signedUrl || null;
+    }
+    
+    // Remove expired cache entry
+    if (cached && Date.now() >= cached.expiresAt) {
+      this.memoryCache.delete(cacheKey);
     }
     
     // Check if request is already pending
@@ -121,10 +117,21 @@ class ImageCache {
     try {
       const { data, error } = await supabase.storage
         .from("review_images")
-        .createSignedUrl(imagePath, 3600); // 1 hour server-side cache
+        .createSignedUrl(imagePath, 7200); // 2 hours server-side cache (longer = fewer API calls)
       
       if (error) {
-        console.error('Error creating signed URL:', error);
+        // Only log non-"not found" errors to reduce noise
+        // "Object not found" is expected for deleted/missing images
+        if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
+          console.error('Error creating signed URL:', error);
+        }
+        // Cache null result for missing images to avoid repeated failed requests
+        const cached: CachedSignedUrl = {
+          signedUrl: '',
+          timestamp: Date.now(),
+          expiresAt: Date.now() + this.REVIEW_IMAGE_CACHE_DURATION
+        };
+        this.memoryCache.set(cacheKey, cached);
         return null;
       }
       
@@ -141,8 +148,11 @@ class ImageCache {
       await this.persistToStorage(cacheKey, cached);
       
       return signedUrl;
-    } catch (error) {
-      console.error('Error fetching review image URL:', error);
+    } catch (error: any) {
+      // Only log unexpected errors
+      if (!error?.message?.includes('not found') && !error?.message?.includes('Object not found')) {
+        console.error('Error fetching review image URL:', error);
+      }
       return null;
     }
   }
