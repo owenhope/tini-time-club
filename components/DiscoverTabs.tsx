@@ -179,15 +179,16 @@ export default function DiscoverTabs({
           }
         }
 
-        // Sort by rating first, then by review_count as tiebreaker
+        // Filter out locations with less than 2 reviews or null ratings (minimum sample size)
+        // Sort by rating first, then by review count as tiebreaker
         const sortedLocations = processedLocations
-          .filter((loc) => loc.rating !== null)
+          .filter((loc) => loc.rating !== null && (loc.total_ratings || 0) >= 2)
           .sort((a, b) => {
             // First sort by rating (highest first)
             const ratingDiff = (b.rating || 0) - (a.rating || 0);
             if (ratingDiff !== 0) return ratingDiff;
 
-            // If ratings are equal, sort by review_count (highest first)
+            // If ratings are equal, sort by review count (highest first) - more reviews = more reliable
             return (b.total_ratings || 0) - (a.total_ratings || 0);
           })
           .slice(0, 20);
