@@ -43,6 +43,8 @@ const Profile = () => {
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  const [spirits, setSpirits] = useState<any[]>([]);
+  const [types, setTypes] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -90,6 +92,7 @@ const Profile = () => {
             <Text style={styles.headerTitle}>{profile.username}</Text>
           </View>
         ),
+        headerLeft: () => null,
         headerRight: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate("settings" as never)}
@@ -228,7 +231,7 @@ const Profile = () => {
         setAvatarLoading(false);
 
         // Track avatar change event
-        AnalyticService.capture('change_avatar', {});
+        AnalyticService.capture("change_avatar", {});
       } else {
         setAvatarLoading(false);
       }
@@ -240,7 +243,7 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    AnalyticService.capture('logout', {});
+    AnalyticService.capture("logout", {});
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error logging out:", error);
@@ -257,7 +260,7 @@ const Profile = () => {
     if (!error) {
       setUserReviews((prev) => prev.filter((r) => r.id !== id));
       // Track delete review event
-      AnalyticService.capture('delete_review', { reviewId: id });
+      AnalyticService.capture("delete_review", { reviewId: id });
     }
   };
 
@@ -297,7 +300,53 @@ const Profile = () => {
 
   useEffect(() => {
     if (profile?.id) loadUserReviews(profile.id);
+    loadSpiritsAndTypes();
   }, [profile]);
+
+  const loadSpiritsAndTypes = async () => {
+    try {
+      const [spiritsData, typesData] = await Promise.all([
+        databaseService.getSpirits(),
+        databaseService.getTypes(),
+      ]);
+      setSpirits(spiritsData);
+      setTypes(typesData);
+    } catch (error) {
+      console.error("Error loading spirits and types:", error);
+    }
+  };
+
+  const getSpiritName = (id: number | string) => {
+    const spirit = spirits.find((s) => String(s.id) === String(id));
+    return spirit?.name || String(id);
+  };
+
+  const getTypeName = (id: number | string) => {
+    const type = types.find((t) => String(t.id) === String(id));
+    return type?.name || String(id);
+  };
+
+  // Helper to get favorite arrays (handle both array and JSON string)
+  const getFavoriteSpirits = () => {
+    if (!profile?.favorite_spirits) return [];
+    if (Array.isArray(profile.favorite_spirits))
+      return profile.favorite_spirits;
+    try {
+      return JSON.parse(profile.favorite_spirits);
+    } catch {
+      return [];
+    }
+  };
+
+  const getFavoriteTypes = () => {
+    if (!profile?.favorite_types) return [];
+    if (Array.isArray(profile.favorite_types)) return profile.favorite_types;
+    try {
+      return JSON.parse(profile.favorite_types);
+    } catch {
+      return [];
+    }
+  };
 
   // Refresh follow counts and reviews when the profile screen comes into focus
   useFocusEffect(
@@ -330,23 +379,41 @@ const Profile = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-          <View style={styles.avatarWrapper}>
-            <Avatar
-              avatarPath={profile?.avatar_url}
-              username={profile?.username}
-              size={100}
-              style={styles.avatar}
-            />
-            {avatarLoading && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color="#336654" />
-              </View>
-            )}
-          </View>
-          {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
-        </TouchableOpacity>
+        <View style={styles.avatarSection}>
+          <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+            <View style={styles.avatarWrapper}>
+              <Avatar
+                avatarPath={profile?.avatar_url}
+                username={profile?.username}
+                size={100}
+                style={styles.avatar}
+              />
+              {avatarLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="small" color="#336654" />
+                </View>
+              )}
+            </View>
+            {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
+          </TouchableOpacity>
+        </View>
         <View style={styles.userInfoContainer}>
+          {profile?.name ? (
+            <Text style={styles.displayName}>{profile.name}</Text>
+          ) : (
+            <TouchableOpacity
+              onPress={() => router.push("/profile/edit-profile")}
+            >
+              <Text
+                style={[
+                  styles.ctaText,
+                  { textAlign: "left", marginBottom: 12 },
+                ]}
+              >
+                Add your name
+              </Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{userReviews.length}</Text>
@@ -372,6 +439,56 @@ const Profile = () => {
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+
+      <View style={styles.bioSection}>
+        {profile?.bio ? (
+          <Text style={styles.bio}>{profile.bio}</Text>
+        ) : (
+          <TouchableOpacity
+            onPress={() => router.push("/profile/edit-profile")}
+            style={styles.bioCtaContainer}
+          >
+            <Text
+              style={[
+                styles.ctaText,
+                { textAlign: "left", marginTop: 4, width: "100%" },
+              ]}
+            >
+              Add a bio
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.tagsSection}>
+        {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+          <View style={styles.favoritesTagsContainer}>
+            {getFavoriteSpirits().map((spiritId: any) => {
+              return (
+                <View key={`spirit-${spiritId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                </View>
+              );
+            })}
+            {getFavoriteTypes().map((typeId: any) => {
+              return (
+                <View key={`type-${typeId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={() => router.push("/profile/edit-profile")}
+            style={styles.ctaContainer}
+          >
+            <Text style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}>
+              Add favorite spirits & types
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.reviewsContainer}>
@@ -406,12 +523,21 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   profileHeader: {
     flexDirection: "row",
-    padding: 16,
-    alignItems: "center",
+    paddingTop: 16,
+
+    paddingRight: 16,
+    paddingLeft: 0,
+    alignItems: "flex-start",
   },
-  avatarContainer: {
+  avatarSection: {
     marginRight: 16,
     alignItems: "center",
+    width: 140,
+    justifyContent: "flex-start",
+  },
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 4,
   },
   avatarWrapper: {
     position: "relative",
@@ -435,18 +561,72 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userInfoContainer: { flex: 1 },
+  displayName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 12,
+  },
+  ctaText: {
+    fontSize: 14,
+    color: "#666",
+  },
   statsContainer: {
     flexDirection: "row",
-    marginTop: 8,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
+    gap: 24,
   },
-  statItem: { alignItems: "center", flex: 1 },
+  statItem: { alignItems: "flex-start" },
   statNumber: { fontSize: 16, fontWeight: "700" },
   statLabel: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#666",
-    textAlign: "center",
+    textAlign: "left",
+  },
+  bioSection: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
+  bio: {
+    fontSize: 14,
+    color: "#000",
+    lineHeight: 20,
+    textAlign: "left",
+    fontWeight: "600",
+    width: "100%",
+  },
+  bioCtaContainer: {
+    width: "100%",
+    alignItems: "flex-start",
+  },
+  tagsSection: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
+  ctaContainer: {
+    width: "100%",
+    alignItems: "flex-start",
+  },
+  favoritesTagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    width: "100%",
+    justifyContent: "flex-start",
+  },
+  tag: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "#B6A3E2",
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#fff",
+    textTransform: "capitalize",
   },
   reviewsContainer: { flex: 1 },
   gridContent: { paddingBottom: 20 },

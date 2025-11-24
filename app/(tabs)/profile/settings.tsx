@@ -25,6 +25,12 @@ const Settings = () => {
 
   const menuItems = [
     {
+      id: "edit-profile",
+      title: "Edit Profile",
+      icon: "person-outline",
+      onPress: () => navigation.navigate("edit-profile" as never),
+    },
+    {
       id: "terms",
       title: "Terms of Service",
       icon: "document-text-outline",

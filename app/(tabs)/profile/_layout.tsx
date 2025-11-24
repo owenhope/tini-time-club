@@ -40,6 +40,12 @@ export default function ProfileLayout() {
           title: "Edit Caption",
         }}
       />
+      <Stack.Screen
+        name="edit-profile"
+        options={{
+          title: "Edit Profile",
+        }}
+      />
     </Stack>
   );
 }
