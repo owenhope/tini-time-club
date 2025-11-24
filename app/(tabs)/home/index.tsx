@@ -589,39 +589,47 @@ function Home() {
 
   // Memoized review item renderer
   const renderReviewItem = useCallback(
-    ({ item }: { item: Review }) => (
-      <ReviewItem
-        review={item}
-        canDelete={false}
-        onShowLikes={(id: string) => setSelectedReviewId(id)}
-        onShowComments={() => setSelectedCommentReview(item)}
-        onCommentAdded={(reviewId, newComment) => {
-          setReviews((prev) =>
-            prev.map((review) =>
-              review.id === reviewId
-                ? {
-                    ...review,
-                    _commentPatch: { action: "add", data: newComment },
-                  }
-                : review
-            )
-          );
-        }}
-        onCommentDeleted={(reviewId, commentId) => {
-          setReviews((prev) =>
-            prev.map((review) =>
-              review.id === reviewId
-                ? {
-                    ...review,
-                    _commentPatch: { action: "delete", id: commentId },
-                  }
-                : review
-            )
-          );
-        }}
-      />
-    ),
-    []
+    ({ item }: { item: Review }) => {
+      const isOwnReview = profile && String(profile.id) === String(item.user_id);
+      return (
+        <ReviewItem
+          review={item}
+          canDelete={false}
+          onEdit={
+            isOwnReview
+              ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
+              : undefined
+          }
+          onShowLikes={(id: string) => setSelectedReviewId(id)}
+          onShowComments={() => setSelectedCommentReview(item)}
+          onCommentAdded={(reviewId, newComment) => {
+            setReviews((prev) =>
+              prev.map((review) =>
+                review.id === reviewId
+                  ? {
+                      ...review,
+                      _commentPatch: { action: "add", data: newComment },
+                    }
+                  : review
+              )
+            );
+          }}
+          onCommentDeleted={(reviewId, commentId) => {
+            setReviews((prev) =>
+              prev.map((review) =>
+                review.id === reviewId
+                  ? {
+                      ...review,
+                      _commentPatch: { action: "delete", id: commentId },
+                    }
+                  : review
+              )
+            );
+          }}
+        />
+      );
+    },
+    [profile, router]
   );
 
   // Cleanup timeouts on unmount

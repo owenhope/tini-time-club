@@ -94,6 +94,7 @@ interface ReviewItemProps {
   review: Review & { _commentPatch?: any };
   canDelete: boolean;
   onDelete?: () => void;
+  onEdit?: () => void;
   onShowLikes: (reviewId: string) => void;
   onShowComments: (
     reviewId: string,
@@ -375,6 +376,8 @@ const ReviewFooter = memo(
     onShowComments,
     onCommentAdded,
     onCommentDeleted,
+    onEdit,
+    isOwnReview,
   }: {
     review: Review;
     hasLiked: boolean;
@@ -389,6 +392,8 @@ const ReviewFooter = memo(
     ) => void;
     onCommentAdded: (reviewId: string, newComment: any) => void;
     onCommentDeleted: (reviewId: string, commentId: number) => void;
+    onEdit?: () => void;
+    isOwnReview: boolean;
   }) => {
     const handleShowComments = useCallback(() => {
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
@@ -397,6 +402,8 @@ const ReviewFooter = memo(
     const handleShowLikes = useCallback(() => {
       onShowLikes(review.id);
     }, [review.id, onShowLikes]);
+
+    const hasCaption = review.comment && review.comment.trim().length > 0;
 
     return (
       <View style={styles.footer}>
@@ -412,12 +419,18 @@ const ReviewFooter = memo(
         </View>
 
         <View style={styles.captionSection}>
-          <Text style={styles.captionText}>
-            <Text style={styles.captionUsername}>
-              {review.profile?.username || "Unknown"}
+          {hasCaption ? (
+            <Text style={styles.captionText}>
+              <Text style={styles.captionUsername}>
+                {review.profile?.username || "Unknown"}
+              </Text>
+              <Text style={styles.captionBody}> {review.comment}</Text>
             </Text>
-            <Text style={styles.captionBody}> {review.comment}</Text>
-          </Text>
+          ) : isOwnReview && onEdit ? (
+            <TouchableOpacity onPress={onEdit}>
+              <Text style={styles.addCaptionText}>Add a caption</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {comments.slice(0, 2).map((c) => (
@@ -452,6 +465,7 @@ const ReviewItem = memo(
     review,
     canDelete,
     onDelete,
+    onEdit,
     onShowLikes,
     onShowComments,
     onCommentAdded,
@@ -631,6 +645,8 @@ const ReviewItem = memo(
             onShowComments={() => {}}
             onCommentAdded={() => {}}
             onCommentDeleted={() => {}}
+            onEdit={undefined}
+            isOwnReview={false}
           />
         </View>
       );
@@ -701,6 +717,8 @@ const ReviewItem = memo(
               onShowComments={onShowComments}
               onCommentAdded={onCommentAdded}
               onCommentDeleted={onCommentDeleted}
+              onEdit={onEdit}
+              isOwnReview={isOwnReview}
             />
           )}
         </Pressable>
@@ -709,6 +727,7 @@ const ReviewItem = memo(
           visible={actionSheetVisible}
           onClose={() => setActionSheetVisible(false)}
           onDelete={onDelete}
+          onEdit={onEdit}
           onReport={() => setReportModalVisible(true)}
           isOwnReview={isOwnReview}
         />
@@ -870,6 +889,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 20,
     color: COLORS.black,
+  },
+  addCaptionText: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: "#666",
+    fontWeight: "500",
   },
   commentItem: {
     marginBottom: 2,

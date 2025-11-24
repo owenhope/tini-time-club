@@ -402,17 +402,25 @@ const UserProfile = () => {
     );
   };
 
-  const renderReviewItem = ({ item }: { item: Review }) => (
-    <ReviewItem
-      review={item}
-      canDelete={false}
-      onDelete={undefined}
-      onShowLikes={() => {}} // Empty function since we don't need likes functionality here
-      onShowComments={handleShowComments}
-      onCommentAdded={handleCommentAdded}
-      onCommentDeleted={handleCommentDeleted}
-    />
-  );
+  const renderReviewItem = ({ item }: { item: Review }) => {
+    const isOwnReview = profile && String(profile.id) === String(item.user_id);
+    return (
+      <ReviewItem
+        review={item}
+        canDelete={false}
+        onDelete={undefined}
+        onEdit={
+          isOwnReview
+            ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
+            : undefined
+        }
+        onShowLikes={() => {}} // Empty function since we don't need likes functionality here
+        onShowComments={handleShowComments}
+        onCommentAdded={handleCommentAdded}
+        onCommentDeleted={handleCommentDeleted}
+      />
+    );
+  };
 
   const renderEmpty = () => {
     if (loadingReviews) {

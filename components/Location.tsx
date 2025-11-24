@@ -16,7 +16,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
@@ -57,6 +57,7 @@ interface LocationType {
 
 const Location = () => {
   const { profile } = useProfile();
+  const router = useRouter();
   const [locationImage, setLocationImage] = useState<string | null>(null);
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
@@ -179,18 +180,26 @@ const Location = () => {
   );
 
   const renderReviewItem = useCallback(
-    ({ item }: { item: Review }) => (
-      <ReviewItem
-        review={item}
-        canDelete={false}
-        onDelete={undefined}
-        onShowLikes={() => {}}
-        onShowComments={handleShowComments}
-        onCommentAdded={handleCommentAdded}
-        onCommentDeleted={handleCommentDeleted}
-      />
-    ),
-    [handleShowComments, handleCommentAdded, handleCommentDeleted]
+    ({ item }: { item: Review }) => {
+      const isOwnReview = profile && String(profile.id) === String(item.user_id);
+      return (
+        <ReviewItem
+          review={item}
+          canDelete={false}
+          onDelete={undefined}
+          onEdit={
+            isOwnReview
+              ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
+              : undefined
+          }
+          onShowLikes={() => {}}
+          onShowComments={handleShowComments}
+          onCommentAdded={handleCommentAdded}
+          onCommentDeleted={handleCommentDeleted}
+        />
+      );
+    },
+    [handleShowComments, handleCommentAdded, handleCommentDeleted, profile, router]
   );
 
   const renderEmpty = useCallback(() => {

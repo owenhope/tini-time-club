@@ -385,6 +385,27 @@ class DatabaseService {
   }
   
   /**
+   * Update a review (e.g., caption)
+   */
+  async updateReview(reviewId: string, updates: { comment?: string }): Promise<any> {
+    const { data, error } = await supabase
+      .from('reviews')
+      .update(updates)
+      .eq('id', reviewId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Invalidate related caches
+    if (data?.user_id) {
+      this.invalidateUserCaches(data.user_id);
+    }
+    
+    return data;
+  }
+  
+  /**
    * Create a comment
    */
   async createComment(commentData: any): Promise<any> {

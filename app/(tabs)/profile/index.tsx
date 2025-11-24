@@ -281,7 +281,11 @@ const Profile = () => {
       review={item}
       canDelete={true}
       onDelete={() => confirmDeleteReview(item.id)}
+      onEdit={() => router.push(`/profile/edit-caption?reviewId=${item.id}`)}
       onShowLikes={(id: string) => setSelectedReviewId(id)}
+      onShowComments={() => {}}
+      onCommentAdded={() => {}}
+      onCommentDeleted={() => {}}
     />
   );
 

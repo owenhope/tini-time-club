@@ -34,6 +34,12 @@ export default function ProfileLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="edit-caption"
+        options={{
+          title: "Edit Caption",
+        }}
+      />
     </Stack>
   );
 }

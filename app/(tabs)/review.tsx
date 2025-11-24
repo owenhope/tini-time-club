@@ -103,6 +103,7 @@ const ReviewPreview = ({
   // Mock handlers for the preview (they won't do anything)
   const mockHandlers = {
     onDelete: () => {},
+    onEdit: () => {},
     onShowLikes: () => {},
     onShowComments: () => {},
     onCommentAdded: () => {},

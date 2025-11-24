@@ -6,20 +6,21 @@ interface ActionSheetProps {
   onClose: () => void;
   onDelete?: () => void;
   onReport?: () => void;
+  onEdit?: () => void;
   isOwnReview: boolean;
 }
 
 const ActionSheet = memo(
-  ({ visible, onClose, onDelete, onReport, isOwnReview }: ActionSheetProps) => {
+  ({ visible, onClose, onDelete, onReport, onEdit, isOwnReview }: ActionSheetProps) => {
     React.useEffect(() => {
       if (visible) {
         if (Platform.OS === "ios") {
           const options = isOwnReview
-            ? ["Delete Review", "Cancel"]
+            ? ["Edit Caption", "Delete Review", "Cancel"]
             : ["Report Review", "Cancel"];
 
-          const destructiveButtonIndex = isOwnReview ? 0 : undefined;
-          const cancelButtonIndex = isOwnReview ? 1 : 1;
+          const destructiveButtonIndex = isOwnReview ? 1 : undefined;
+          const cancelButtonIndex = isOwnReview ? 2 : 1;
 
           ActionSheetIOS.showActionSheetWithOptions(
             {
@@ -28,11 +29,17 @@ const ActionSheet = memo(
               cancelButtonIndex,
             },
             (buttonIndex) => {
-              if (buttonIndex === 0) {
-                if (isOwnReview) {
-                  // Call onDelete directly - the parent component will handle confirmation
+              if (isOwnReview) {
+                if (buttonIndex === 0) {
+                  // Edit Caption
+                  onEdit?.();
+                } else if (buttonIndex === 1) {
+                  // Delete Review
                   onDelete?.();
-                } else {
+                }
+              } else {
+                if (buttonIndex === 0) {
+                  // Report Review
                   onReport?.();
                 }
               }
@@ -41,7 +48,7 @@ const ActionSheet = memo(
           );
         }
       }
-    }, [visible, isOwnReview, onDelete, onReport, onClose]);
+    }, [visible, isOwnReview, onDelete, onReport, onEdit, onClose]);
 
     return null;
   }
