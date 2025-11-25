@@ -1,88 +1,113 @@
 import "react-native-get-random-values";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Stack, useRouter, usePathname } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
-import { AppState } from "react-native";
+import { AppState, AppStateStatus } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { View, Text, Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import * as TrackingTransparency from "expo-tracking-transparency";
 
+// Keep the splash screen visible while we fetch resources
+// Must be called in global scope per Expo docs
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
+  const appState = useRef(AppState.currentState);
+  const isCheckingSession = useRef(false);
+  const hasHandledInitialSession = useRef(false);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        // Initialize caches
-        await imageCache.loadFromStorage();
-        await imageCache.clearExpiredCache(); // Clear expired cache entries
-        await authCache.loadFromStorage();
+    // Initialize caches (non-blocking)
+    imageCache.loadFromStorage();
+    imageCache.clearExpiredCache();
+    authCache.loadFromStorage();
 
-        // Request tracking transparency permission on iOS
-        if (Platform.OS === "ios") {
-          try {
-            const { status } =
-              await TrackingTransparency.requestTrackingPermissionsAsync();
-            console.log("[RootLayout] 📊 Tracking permission status:", status);
+    // Request tracking transparency permission on iOS (non-blocking)
+    if (Platform.OS === "ios") {
+      TrackingTransparency.requestTrackingPermissionsAsync()
+        .then(({ status }) => {
+          console.log("[RootLayout] 📊 Tracking permission status:", status);
+        })
+        .catch((error) => {
+          console.error("[RootLayout] ❌ Error requesting tracking permission:", error);
+        });
+    }
 
-            if (status === "granted") {
-              console.log("[RootLayout] ✅ User granted tracking permission");
-            } else {
-              console.log("[RootLayout] ❌ User denied tracking permission");
-            }
-          } catch (trackingError) {
-            console.error(
-              "[RootLayout] ❌ Error requesting tracking permission:",
-              trackingError
-            );
-          }
-        }
-
-        // Use cached session for faster startup
-        const session = await authCache.getSession();
-
-        if (session && pathname !== "/(tabs)/home") {
-          setTimeout(() => router.replace("/(tabs)/home"), 0); // 👈 defer until after mount
-          return;
-        } else if (!session && pathname !== "/") {
-          setTimeout(() => router.replace("/"), 0); // 👈 defer until after mount
-          return;
-        }
-      } catch (error) {
-        console.error("[RootLayout] ❌ Error during session check:", error);
-      } finally {
-        await SplashScreen.hideAsync();
-        setReady(true);
-      }
-    };
-
-    init();
-
-    // Listen for authentication state changes
+    // Listen for authentication state changes - single source of truth
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[RootLayout] Auth state changed:", event, !!session);
 
-      if (event === "SIGNED_IN" && session) {
-        // User just signed in, navigate to home
+      if (event === "INITIAL_SESSION" && !hasHandledInitialSession.current) {
+        hasHandledInitialSession.current = true;
+        
+        // Mount Stack first so we can navigate
+        setIsReady(true);
+        
+        // Wait for Stack to mount
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Navigate based on session
+        if (session) {
+          if (pathname !== "/(tabs)/home") {
+            router.replace("/(tabs)/home");
+          }
+        } else {
+          if (pathname !== "/") {
+            router.replace("/");
+          }
+        }
+
+        // Wait for navigation to complete
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Hide splash after navigation completes
+        await SplashScreen.hideAsync();
+      } else if (event === "SIGNED_IN" && session) {
+        // User signed in (email, Apple, Google, etc.)
         router.replace("/(tabs)/home");
       } else if (event === "SIGNED_OUT") {
-        // User signed out, clear cache and navigate to login
+        // User signed out
         await authCache.invalidateCache();
         router.replace("/");
       }
     });
 
-    // Security: Handle app state changes
-    const handleAppStateChange = (nextAppState: string) => {
+    // Handle app state changes (resume from background)
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       authCache.onAppStateChange(nextAppState);
+
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active" &&
+        !isCheckingSession.current &&
+        isReady &&
+        pathname !== "/"
+      ) {
+        isCheckingSession.current = true;
+        setIsResuming(true);
+
+        try {
+          const session = await authCache.getSession();
+          if (!session && pathname !== "/") {
+            router.replace("/");
+          }
+        } catch (error) {
+          console.error("[RootLayout] ❌ Error during resume session check:", error);
+        } finally {
+          isCheckingSession.current = false;
+          setIsResuming(false);
+        }
+      }
+
+      appState.current = nextAppState;
     };
 
     const appStateSubscription = AppState.addEventListener(
@@ -96,20 +121,32 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!ready) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "black",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "white" }}>Loading...</Text>
-      </View>
-    );
+  // Return null to keep native splash visible until ready (per Expo docs)
+  if (!isReady) {
+    return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+      {/* Loading overlay during resume session check */}
+      {isResuming && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#B6A3E2",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <Text style={{ color: "white", fontSize: 16 }}>Loading...</Text>
+        </View>
+      )}
+    </>
+  );
 }
