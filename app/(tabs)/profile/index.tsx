@@ -242,12 +242,26 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    AnalyticService.capture("logout", {});
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error logging out:", error);
-    } else {
-      router.navigate("/");
+    try {
+      AnalyticService.capture("logout", {});
+      
+      // Clear cache first
+      await authCache.invalidateCache();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error logging out:", error);
+        // Still navigate to login even if signOut has an error
+      }
+      
+      // Navigate to login screen - don't rely on SIGNED_OUT event
+      router.replace("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      // Still try to navigate to login
+      router.replace("/");
     }
   };
 

@@ -72,3 +72,121 @@ export const deduplicatePlaces = (places: any[]): any[] => {
   );
 };
 
+/**
+ * Find place_id by searching Google Places API with name and address
+ */
+export const findPlaceId = async (
+  name: string,
+  address?: string
+): Promise<string | null> => {
+  try {
+    const query = address ? `${name} ${address}` : name;
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === "OK" && data.results && data.results.length > 0) {
+      // Return the first result's place_id
+      return data.results[0].place_id;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error finding place_id:", error);
+    return null;
+  }
+};
+
+/**
+ * Fetch Place Details from Google Places API
+ * Returns phone number, website, and other details for a given place_id
+ */
+export const fetchPlaceDetails = async (
+  placeId: string
+): Promise<{
+  phoneNumber?: string;
+  website?: string;
+  internationalPhoneNumber?: string;
+  openingHours?: any;
+  priceLevel?: number;
+  rating?: number;
+  userRatingsTotal?: number;
+  types?: string[];
+} | null> => {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,international_phone_number,website,opening_hours,price_level,rating,user_ratings_total,types&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === "OK" && data.result) {
+      return {
+        phoneNumber: data.result.formatted_phone_number,
+        internationalPhoneNumber: data.result.international_phone_number,
+        website: data.result.website,
+        openingHours: data.result.opening_hours,
+        priceLevel: data.result.price_level,
+        rating: data.result.rating,
+        userRatingsTotal: data.result.user_ratings_total,
+        types: data.result.types,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching place details:", error);
+    return null;
+  }
+};
+
+/**
+ * Get place details by name and address (finds place_id first, then fetches details)
+ */
+export const getPlaceDetailsByNameAndAddress = async (
+  name: string,
+  address?: string
+): Promise<{
+  phoneNumber?: string;
+  website?: string;
+  internationalPhoneNumber?: string;
+  openingHours?: any;
+  priceLevel?: number;
+  rating?: number;
+  userRatingsTotal?: number;
+  types?: string[];
+} | null> => {
+  const placeId = await findPlaceId(name, address);
+  if (!placeId) return null;
+  
+  return fetchPlaceDetails(placeId);
+};
+
+// Filter and format place types for display
+export const getRelevantPlaceTypes = (types: string[] | undefined): string[] => {
+  if (!types) return [];
+  
+  // Filter out generic types and keep relevant ones
+  const excludedTypes = [
+    "point_of_interest",
+    "establishment",
+    "food",
+    "store",
+    "premise",
+    "geocode",
+  ];
+  
+  const relevantTypes = types
+    .filter((type) => !excludedTypes.includes(type))
+    .map((type) => {
+      // Format type names: "night_club" -> "Night Club"
+      return type
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    })
+    .slice(0, 5); // Limit to 5 types
+  
+  return relevantTypes;
+};
+

@@ -262,6 +262,7 @@ const LocationInput = ({ control }: { control: any }) => {
                     latitude: placeLocation.lat,
                     longitude: placeLocation.lng,
                   },
+                  place_id: place.place_id, // Store place_id for fetching details later
                 });
               }
             }}

@@ -9,13 +9,14 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
+import authCache from "@/utils/authCache";
 
 const DeleteAccount = () => {
-  const navigation = useNavigation();
+  const router = useRouter();
   const { profile } = useProfile();
   const [username, setUsername] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -57,13 +58,28 @@ const DeleteAccount = () => {
                 throw profileError;
               }
 
+              // Clear cache first
+              await authCache.invalidateCache();
+              
               // Sign out the user
-              await supabase.auth.signOut();
+              const { error: signOutError } = await supabase.auth.signOut();
+              
+              if (signOutError) {
+                console.error("Error signing out:", signOutError);
+              }
 
               Alert.alert(
                 "Account Deleted",
                 "Your account has been permanently deleted.",
-                [{ text: "OK" }]
+                [
+                  { 
+                    text: "OK",
+                    onPress: () => {
+                      // Navigate to login screen
+                      router.replace("/");
+                    }
+                  }
+                ]
               );
             } catch (error) {
               console.error("Error deleting account:", error);
@@ -86,7 +102,7 @@ const DeleteAccount = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="black" />

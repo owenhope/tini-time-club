@@ -6,20 +6,36 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
+import authCache from "@/utils/authCache";
 
 const Settings = () => {
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
       AnalyticService.capture('logout', {});
-      await supabase.auth.signOut();
+      
+      // Clear cache first
+      await authCache.invalidateCache();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error signing out:", error);
+        // Still navigate to login even if signOut has an error
+      }
+      
+      // Navigate to login screen - don't rely on SIGNED_OUT event
+      router.replace("/");
     } catch (error) {
       console.error("Error signing out:", error);
+      // Still try to navigate to login
+      router.replace("/");
     }
   };
 
@@ -28,19 +44,19 @@ const Settings = () => {
       id: "edit-profile",
       title: "Edit Profile",
       icon: "person-outline",
-      onPress: () => navigation.navigate("edit-profile" as never),
+      onPress: () => router.push("/(tabs)/profile/edit-profile"),
     },
     {
       id: "terms",
       title: "Terms of Service",
       icon: "document-text-outline",
-      onPress: () => navigation.navigate("terms" as never),
+      onPress: () => router.push("/(tabs)/profile/terms"),
     },
     {
       id: "delete",
       title: "Delete Account",
       icon: "trash-outline",
-      onPress: () => navigation.navigate("delete-account" as never),
+      onPress: () => router.push("/(tabs)/profile/delete-account"),
     },
     {
       id: "logout",
@@ -54,7 +70,7 @@ const Settings = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="black" />

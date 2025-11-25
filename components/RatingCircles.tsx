@@ -79,12 +79,11 @@ const RatingCircles: React.FC<RatingCirclesProps> = ({
 const styles = StyleSheet.create({
   allRatingsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
   },
   ratingContainer: {
     alignItems: "center",
-    flex: 1,
   },
   overallRatingCircle: {
     backgroundColor: "#B6A3E2",

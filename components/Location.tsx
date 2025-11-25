@@ -27,6 +27,30 @@ import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
 import RatingCircles from "@/components/RatingCircles";
 import AnalyticService from "@/services/analyticsService";
+import {
+  getPlaceDetailsByNameAndAddress,
+  getRelevantPlaceTypes,
+} from "@/utils/locationUtils";
+import { Linking } from "react-native";
+import Tag from "@/components/Tag";
+
+// Helper function to format price level
+const getPriceLevelText = (priceLevel: number): string => {
+  switch (priceLevel) {
+    case 0:
+      return "Free";
+    case 1:
+      return "$";
+    case 2:
+      return "$$";
+    case 3:
+      return "$$$";
+    case 4:
+      return "$$$$";
+    default:
+      return "";
+  }
+};
 
 // Constants
 const COLORS = {
@@ -53,6 +77,9 @@ interface LocationType {
   taste_avg?: number;
   presentation_avg?: number;
   total_ratings?: number;
+  place_id?: string; // Google Places place_id
+  phone_number?: string;
+  website?: string;
 }
 
 const Location = () => {
@@ -68,6 +95,13 @@ const Location = () => {
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const loadedLocationIdRef = useRef<string | null>(null);
+  const [placeDetails, setPlaceDetails] = useState<{
+    phoneNumber?: string;
+    website?: string;
+    priceLevel?: number;
+    types?: string[];
+  } | null>(null);
+  const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
@@ -99,10 +133,38 @@ const Location = () => {
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
     setLocationImage(null);
+    setPlaceDetails(null);
     if (locationIdParam) {
       fetchSelectedLocation(locationIdParam);
     }
   }, [locationIdParam]);
+
+  // Fetch place details (phone, website) when location is loaded
+  useEffect(() => {
+    if (displayLocation?.name) {
+      setLoadingPlaceDetails(true);
+      getPlaceDetailsByNameAndAddress(
+        displayLocation.name,
+        displayLocation.address
+      )
+        .then((details) => {
+          if (details) {
+            setPlaceDetails({
+              phoneNumber: details.phoneNumber,
+              website: details.website,
+              priceLevel: details.priceLevel,
+              types: details.types,
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching place details:", error);
+        })
+        .finally(() => {
+          setLoadingPlaceDetails(false);
+        });
+    }
+  }, [displayLocation?.name, displayLocation?.address]);
 
   const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
@@ -116,7 +178,7 @@ const Location = () => {
       } else {
         setSelectedLocation(data);
         // Track view location event
-        AnalyticService.capture('view_location', {
+        AnalyticService.capture("view_location", {
           locationId: data?.id,
           locationName: data?.name,
         });
@@ -181,7 +243,8 @@ const Location = () => {
 
   const renderReviewItem = useCallback(
     ({ item }: { item: Review }) => {
-      const isOwnReview = profile && String(profile.id) === String(item.user_id);
+      const isOwnReview =
+        profile && String(profile.id) === String(item.user_id);
       return (
         <ReviewItem
           review={item}
@@ -199,7 +262,13 @@ const Location = () => {
         />
       );
     },
-    [handleShowComments, handleCommentAdded, handleCommentDeleted, profile, router]
+    [
+      handleShowComments,
+      handleCommentAdded,
+      handleCommentDeleted,
+      profile,
+      router,
+    ]
   );
 
   const renderEmpty = useCallback(() => {
@@ -368,17 +437,91 @@ const Location = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        <RatingCircles
-          location={displayLocation || {}}
-          circleSize={DIMENSIONS.ratingCircle}
-        />
+        <View style={styles.statsContainer}>
+          <RatingCircles
+            location={displayLocation || {}}
+            circleSize={DIMENSIONS.ratingCircle}
+          />
+        </View>
         <View style={styles.addressRow}>
-          <Text style={styles.locationAddress}>
-            {stripNameFromAddress(
-              displayLocation?.name ?? "",
-              displayLocation?.address ?? ""
-            )}
-          </Text>
+          {displayLocation?.name && (
+            <Text style={styles.locationName}>{displayLocation.name}</Text>
+          )}
+          {displayLocation?.address && (
+            <TouchableOpacity
+              onPress={() => {
+                const address = stripNameFromAddress(
+                  displayLocation?.name ?? "",
+                  displayLocation?.address ?? ""
+                );
+                // Use coordinates if available, otherwise use address
+                if (displayLocation?.lat && displayLocation?.lon) {
+                  // Open in maps with coordinates (works on both iOS and Android)
+                  Linking.openURL(
+                    `https://maps.google.com/?q=${displayLocation.lat},${displayLocation.lon}`
+                  );
+                } else if (displayLocation?.address) {
+                  // Fallback to address search
+                  Linking.openURL(
+                    `https://maps.google.com/?q=${encodeURIComponent(address)}`
+                  );
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.addressContainer}>
+                <Text style={styles.locationAddress}>
+                  {stripNameFromAddress(
+                    displayLocation?.name ?? "",
+                    displayLocation?.address ?? ""
+                  )}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          {/* Tags Section */}
+          {(placeDetails?.priceLevel !== undefined ||
+            (placeDetails?.types && placeDetails.types.length > 0)) && (
+            <View style={styles.tagsContainer}>
+              {placeDetails.priceLevel !== undefined && (
+                <Tag text={getPriceLevelText(placeDetails.priceLevel)} />
+              )}
+              {getRelevantPlaceTypes(placeDetails.types).map((type, index) => (
+                <Tag key={`type-${index}`} text={type} />
+              ))}
+            </View>
+          )}
+          {placeDetails && (
+            <View style={styles.contactInfo}>
+              {placeDetails.phoneNumber && (
+                <TouchableOpacity
+                  style={styles.contactButton}
+                  onPress={() =>
+                    Linking.openURL(`tel:${placeDetails.phoneNumber}`)
+                  }
+                >
+                  <Ionicons name="call-outline" size={18} color="#fff" />
+                  <Text style={styles.contactText}>
+                    {placeDetails.phoneNumber}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {placeDetails.website && (
+                <TouchableOpacity
+                  style={styles.contactButton}
+                  onPress={() => Linking.openURL(placeDetails.website!)}
+                >
+                  <Ionicons name="globe-outline" size={18} color="#fff" />
+                  <Text style={styles.contactText} numberOfLines={1}>
+                    Website
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {loadingPlaceDetails && (
+            <Text style={styles.loadingText}>Loading contact info...</Text>
+          )}
         </View>
       </View>
       <View style={styles.reviewsContainer}>
@@ -418,17 +561,83 @@ const styles = StyleSheet.create({
   profileHeader: {
     padding: 16,
   },
+  statsContainer: {
+    padding: 4,
+  },
   addressRow: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
   },
-  locationAddress: {
-    fontSize: 14,
+  addressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 6,
+    marginBottom: 6,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  locationName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 4,
+  },
+  priceLevel: {
+    fontSize: 16,
+    fontWeight: "500",
     color: "#666",
-    lineHeight: 18,
+    marginLeft: 8,
+  },
+  locationAddress: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 20,
+    textAlign: "left",
+  },
+  contactInfo: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+  contactButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#B6A3E2",
+    width: 160,
+  },
+  contactText: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  loadingText: {
+    fontSize: 12,
+    color: "#666",
     textAlign: "center",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 6,
   },
   reviewsContainer: {
     flex: 1,

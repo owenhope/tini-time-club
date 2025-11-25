@@ -32,6 +32,7 @@ import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
 import { getBlockedUserIds } from "@/utils/blockUtils";
 import imageCache from "@/utils/imageCache";
+import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { isDevelopmentMode } from "@/utils/helpers";
@@ -458,10 +459,16 @@ function Home() {
     }
   }, [acceptEULA, eulaLoading]);
 
-  const handleDeclineEULA = useCallback(() => {
+  const handleDeclineEULA = useCallback(async () => {
     // User declined EULA - they should be logged out
-    // This will be handled by the auth state change in the root layout
-    supabase.auth.signOut();
+    try {
+      // Clear cache first
+      await authCache.invalidateCache();
+      // Sign out - navigation will be handled by auth state change in root layout
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out after EULA decline:", error);
+    }
   }, []);
 
   const navigateToLocations = useCallback(() => {
