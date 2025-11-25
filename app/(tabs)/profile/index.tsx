@@ -3,14 +3,12 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  Image,
   FlatList,
   Text,
   TouchableOpacity,
   Alert,
   Pressable,
   RefreshControl,
-  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -27,6 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
+import ProfileHeader from "@/components/ProfileHeader";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
@@ -378,68 +377,23 @@ const Profile = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-            <View style={styles.avatarWrapper}>
-              <Avatar
-                avatarPath={profile?.avatar_url}
-                username={profile?.username}
-                size={100}
-                style={styles.avatar}
-              />
-              {avatarLoading && (
-                <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="small" color="#336654" />
-                </View>
-              )}
-            </View>
-            {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.userInfoContainer}>
-          {profile?.name ? (
-            <Text style={styles.displayName}>{profile.name}</Text>
-          ) : (
-            <TouchableOpacity
-              onPress={() => router.push("/profile/edit-profile")}
-            >
-              <Text
-                style={[
-                  styles.ctaText,
-                  { textAlign: "left", marginBottom: 12 },
-                ]}
-              >
-                Add your name
-              </Text>
-            </TouchableOpacity>
-          )}
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userReviews.length}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() =>
-                navigation.navigate("follow-list", { type: "followers" })
-              }
-            >
-              <Text style={styles.statNumber}>{followersCount}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() =>
-                navigation.navigate("follow-list", { type: "following" })
-              }
-            >
-              <Text style={styles.statNumber}>{followingCount}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      <ProfileHeader
+        profile={profile}
+        reviewsCount={userReviews.length}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        isOwnProfile={true}
+        onAvatarPress={pickImage}
+        avatarLoading={avatarLoading}
+        avatarError={avatarError}
+        onEditProfilePress={() => router.push("/profile/edit-profile")}
+        onFollowersPress={() =>
+          navigation.navigate("follow-list", { type: "followers" })
+        }
+        onFollowingPress={() =>
+          navigation.navigate("follow-list", { type: "following" })
+        }
+      />
 
       <View style={styles.bioSection}>
         {profile?.bio ? (
@@ -521,69 +475,6 @@ const Profile = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  profileHeader: {
-    flexDirection: "row",
-    paddingTop: 16,
-
-    paddingRight: 16,
-    paddingLeft: 0,
-    alignItems: "flex-start",
-  },
-  avatarSection: {
-    marginRight: 16,
-    alignItems: "center",
-    width: 140,
-    justifyContent: "flex-start",
-  },
-  avatarContainer: {
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  avatarWrapper: {
-    position: "relative",
-    width: 100,
-    height: 100,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 50,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userInfoContainer: { flex: 1 },
-  displayName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 12,
-  },
-  ctaText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    gap: 24,
-  },
-  statItem: { alignItems: "flex-start" },
-  statNumber: { fontSize: 16, fontWeight: "700" },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "left",
-  },
   bioSection: {
     paddingHorizontal: 16,
     paddingTop: 4,
@@ -635,12 +526,6 @@ const styles = StyleSheet.create({
   headerButton: { marginRight: 10 },
   headerTitleContainer: { alignItems: "center" },
   headerTitle: { fontSize: 20, fontWeight: "bold" },
-  errorText: {
-    color: "#d32f2f",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
-  },
 });
 
 export default Profile;

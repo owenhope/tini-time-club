@@ -11,10 +11,10 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
-import { Avatar } from "@/components/shared";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
+import ProfileHeader from "@/components/ProfileHeader";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useRouter,
@@ -23,15 +23,19 @@ import {
   usePathname,
 } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
 
 interface ProfileType {
   id: string;
   username: string;
+  name?: string | null;
+  bio?: string | null;
+  favorite_spirits?: any;
+  favorite_types?: any;
   avatar_url?: string | null;
 }
 
 const UserProfile = () => {
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
@@ -43,6 +47,8 @@ const UserProfile = () => {
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
+  const [spirits, setSpirits] = useState<any[]>([]);
+  const [types, setTypes] = useState<any[]>([]);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -191,7 +197,6 @@ const UserProfile = () => {
 
   // Fetch the selected profile when usernameParam is provided
   useEffect(() => {
-    setAvatar(null);
     if (usernameParam) {
       fetchSelectedProfile(usernameParam);
     }
@@ -208,14 +213,6 @@ const UserProfile = () => {
       if (error) {
         console.error("Error fetching selected profile:", error);
       } else {
-        if (data.avatar_url) {
-          const { data: avatarUrlData } = supabase.storage
-            .from("avatars")
-            .getPublicUrl(data.avatar_url);
-          setAvatar(avatarUrlData?.publicUrl ?? null);
-        } else {
-          setAvatar(null);
-        }
         setSelectedProfile(data);
         // Track view profile event (only if not viewing own profile)
         if (profile && data.id !== profile.id) {
@@ -442,90 +439,118 @@ const UserProfile = () => {
     }
   }, [displayProfile]);
 
+  // Load spirits and types for favorites display
+  useEffect(() => {
+    loadSpiritsAndTypes();
+  }, []);
+
+  const loadSpiritsAndTypes = async () => {
+    try {
+      const [spiritsData, typesData] = await Promise.all([
+        databaseService.getSpirits(),
+        databaseService.getTypes(),
+      ]);
+      setSpirits(spiritsData);
+      setTypes(typesData);
+    } catch (error) {
+      console.error("Error loading spirits and types:", error);
+    }
+  };
+
+  const getSpiritName = (id: number | string) => {
+    const spirit = spirits.find((s) => String(s.id) === String(id));
+    return spirit?.name || String(id);
+  };
+
+  const getTypeName = (id: number | string) => {
+    const type = types.find((t) => String(t.id) === String(id));
+    return type?.name || String(id);
+  };
+
+  // Helper to get favorite arrays (handle both array and JSON string)
+  const getFavoriteSpirits = () => {
+    if (!displayProfile?.favorite_spirits) return [];
+    if (Array.isArray(displayProfile.favorite_spirits))
+      return displayProfile.favorite_spirits;
+    try {
+      return JSON.parse(displayProfile.favorite_spirits);
+    } catch {
+      return [];
+    }
+  };
+
+  const getFavoriteTypes = () => {
+    if (!displayProfile?.favorite_types) return [];
+    if (Array.isArray(displayProfile.favorite_types))
+      return displayProfile.favorite_types;
+    try {
+      return JSON.parse(displayProfile.favorite_types);
+    } catch {
+      return [];
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-          <Avatar
-            avatarPath={displayProfile?.avatar_url}
-            username={displayProfile?.username}
-            size={100}
-            style={styles.avatar}
-          />
-        </View>
-        <View style={styles.userInfoContainer}>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userReviews.length}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() =>
-                navigation.navigate(
-                  getNavigationPath("users/[username]/followers"),
-                  {
-                    username: displayProfile?.username,
-                  }
-                )
-              }
-            >
-              <Text style={styles.statNumber}>{followersCount}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() =>
-                navigation.navigate(
-                  getNavigationPath("users/[username]/following"),
-                  {
-                    username: displayProfile?.username,
-                  }
-                )
-              }
-            >
-              <Text style={styles.statNumber}>{followingCount}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Action Buttons - only show if not viewing own profile */}
-          {profile && displayProfile && profile.id !== displayProfile.id && (
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                onPress={toggleFollow}
-                style={[
-                  styles.followButton,
-                  doesFollow && styles.followingButton,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.followButtonText,
-                    doesFollow && styles.followingButtonText,
-                  ]}
-                >
-                  {doesFollow ? "Following" : "Follow"}
-                </Text>
-              </TouchableOpacity>
+      <ProfileHeader
+        profile={displayProfile}
+        reviewsCount={userReviews.length}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        isOwnProfile={profile ? profile.id === displayProfile?.id : false}
+        doesFollow={doesFollow}
+        isBlocked={isBlocked}
+        onFollowPress={toggleFollow}
+        onBlockPress={handleBlockUser}
+        onUnblockPress={handleUnblockUser}
+        onFollowersPress={() =>
+          navigation.navigate(
+            getNavigationPath("users/[username]/followers"),
+            {
+              username: displayProfile?.username,
+            }
+          )
+        }
+        onFollowingPress={() =>
+          navigation.navigate(
+            getNavigationPath("users/[username]/following"),
+            {
+              username: displayProfile?.username,
+            }
+          )
+        }
+      />
 
-              <TouchableOpacity
-                onPress={isBlocked ? handleUnblockUser : handleBlockUser}
-                style={[styles.blockButton, isBlocked && styles.unblockButton]}
-              >
-                <Text
-                  style={[
-                    styles.blockButtonText,
-                    isBlocked && styles.unblockButtonText,
-                  ]}
-                >
-                  {isBlocked ? "Unblock" : "Block"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+      {/* Bio Section */}
+      {displayProfile?.bio && (
+        <View style={styles.bioSection}>
+          <Text style={styles.bio}>{displayProfile.bio}</Text>
         </View>
-      </View>
+      )}
+
+      {/* Favorites Section */}
+      {(getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0) && (
+        <View style={styles.tagsSection}>
+          <View style={styles.favoritesTagsContainer}>
+            {getFavoriteSpirits().map((spiritId: any) => {
+              return (
+                <View key={`spirit-${spiritId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                </View>
+              );
+            })}
+            {getFavoriteTypes().map((typeId: any) => {
+              return (
+                <View key={`type-${typeId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {/* Reviews List */}
       <View style={styles.reviewsContainer}>
         <FlatList
@@ -558,43 +583,6 @@ const UserProfile = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  profileHeader: {
-    flexDirection: "row",
-    padding: 16,
-    alignItems: "center",
-  },
-  avatarContainer: {
-    marginRight: 16,
-    alignItems: "center",
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  userInfoContainer: {
-    flex: 1,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    marginTop: 8,
-    justifyContent: "space-between",
-    paddingHorizontal: 0,
-  },
-  statItem: {
-    alignItems: "center",
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "center",
   },
   reviewsContainer: {
     flex: 1,
@@ -634,57 +622,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#777",
   },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    marginTop: 12,
-    gap: 12,
-    justifyContent: "space-between",
-  },
-  followButton: {
-    backgroundColor: "#B6A3E2",
+  bioSection: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingTop: 4,
+    paddingBottom: 4,
   },
-  followingButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#B6A3E2",
-  },
-  followButtonText: {
-    color: "#fff",
+  bio: {
     fontSize: 14,
+    color: "#000",
+    lineHeight: 20,
+    textAlign: "left",
     fontWeight: "600",
-    textAlign: "center",
+    width: "100%",
   },
-  followingButtonText: {
-    color: "#B6A3E2",
-  },
-  blockButton: {
-    backgroundColor: "#ff6b6b",
+  tagsSection: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingTop: 4,
+    paddingBottom: 16,
   },
-  blockButtonText: {
+  favoritesTagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    width: "100%",
+    justifyContent: "flex-start",
+  },
+  tag: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "#B6A3E2",
+  },
+  tagText: {
+    fontSize: 12,
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  unblockButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ff6b6b",
-  },
-  unblockButtonText: {
-    color: "#ff6b6b",
+    textTransform: "capitalize",
   },
 });
 
