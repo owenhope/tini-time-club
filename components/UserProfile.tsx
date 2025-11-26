@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Animated,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -49,6 +50,9 @@ const UserProfile = () => {
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const bioOpacity = useRef(new Animated.Value(1)).current;
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -490,6 +494,28 @@ const UserProfile = () => {
     }
   };
 
+  useEffect(() => {
+    Animated.timing(bioOpacity, {
+      toValue: isScrolled ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isScrolled]);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const shouldBeScrolled = offsetY > 50;
+        if (shouldBeScrolled !== isScrolled) {
+          setIsScrolled(shouldBeScrolled);
+        }
+      },
+    }
+  );
+
   return (
     <View style={styles.container}>
       {/* Profile Header */}
@@ -520,36 +546,47 @@ const UserProfile = () => {
             }
           )
         }
+        isScrolled={isScrolled}
+        hasBioOrFavs={!!(displayProfile?.bio || getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0)}
       />
 
       {/* Bio Section */}
-      {displayProfile?.bio && (
-        <View style={styles.bioSection}>
-          <Text style={styles.bio}>{displayProfile.bio}</Text>
-        </View>
-      )}
-
-      {/* Favorites Section */}
-      {(getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0) && (
-        <View style={styles.tagsSection}>
-          <View style={styles.favoritesTagsContainer}>
-            {getFavoriteSpirits().map((spiritId: any) => {
-              return (
-                <View key={`spirit-${spiritId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-                </View>
-              );
-            })}
-            {getFavoriteTypes().map((typeId: any) => {
-              return (
-                <View key={`type-${typeId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                </View>
-              );
-            })}
+      <Animated.View
+        style={{
+          opacity: bioOpacity,
+          height: isScrolled ? 0 : undefined,
+          overflow: "hidden",
+        }}
+        pointerEvents={isScrolled ? "none" : "auto"}
+      >
+        {displayProfile?.bio && (
+          <View style={styles.bioSection}>
+            <Text style={styles.bio}>{displayProfile.bio}</Text>
           </View>
-        </View>
-      )}
+        )}
+
+        {/* Favorites Section */}
+        {(getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0) && (
+          <View style={styles.tagsSection}>
+            <View style={styles.favoritesTagsContainer}>
+              {getFavoriteSpirits().map((spiritId: any) => {
+                return (
+                  <View key={`spirit-${spiritId}`} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                  </View>
+                );
+              })}
+              {getFavoriteTypes().map((typeId: any) => {
+                return (
+                  <View key={`type-${typeId}`} style={styles.tag}>
+                    <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+      </Animated.View>
 
       {/* Reviews List */}
       <View style={styles.reviewsContainer}>
@@ -559,6 +596,8 @@ const UserProfile = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           onRefresh={() => {
             if (displayProfile && displayProfile.id) {
               loadUserReviews(displayProfile.id);

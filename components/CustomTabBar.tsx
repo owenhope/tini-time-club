@@ -55,7 +55,7 @@ export default function CustomTabBar({
             case "home":
               return focused ? "martini" : "martini-outline";
             case "locations":
-              return focused ? "map" : "map-outline";
+              return focused ? "location" : "location-outline";
             case "review":
               return focused ? "camera" : "camera-outline";
             case "discover":

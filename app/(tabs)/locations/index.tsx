@@ -11,10 +11,10 @@ import { Region, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
-import Search from "@/components/map/search";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 
 const INITIAL_REGION: Region = {
   latitude: 37.33,
@@ -26,6 +26,7 @@ const INITIAL_REGION: Region = {
 const BOTTOM_SHEET_HEIGHT = 300;
 
 function Map() {
+  const params = useLocalSearchParams();
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -33,7 +34,6 @@ function Map() {
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locations, setLocations] = useState<any[]>([]);
   const mapRef = createRef<any>();
-  const searchRef = useRef(null);
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
   const bottomSheetAnim = useRef(
     new Animated.Value(BOTTOM_SHEET_HEIGHT)
@@ -96,6 +96,43 @@ function Map() {
     getLocation();
   }, []);
 
+  // Handle navigation to specific location from Location component
+  useEffect(() => {
+    if (params.lat && params.lon) {
+      const lat = parseFloat(params.lat as string);
+      const lon = parseFloat(params.lon as string);
+      
+      if (!isNaN(lat) && !isNaN(lon)) {
+        const targetRegion: Region = {
+          latitude: lat,
+          longitude: lon,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setRegion(targetRegion);
+        
+        // Wait a bit for map to be ready, then animate
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.animateToRegion(targetRegion, 1000);
+            
+            // If locationId is provided, try to find and select that marker
+            if (params.locationId) {
+              setTimeout(() => {
+                const locationIndex = locations.findIndex(
+                  (loc) => loc.id === params.locationId
+                );
+                if (locationIndex !== -1) {
+                  handleMarkerPress(locationIndex);
+                }
+              }, 1200);
+            }
+          }
+        }, 300);
+      }
+    }
+  }, [params.lat, params.lon, params.locationId, locations]);
+
   useEffect(() => {
     const fetchLocations = async () => {
       const min_lat = region.latitude - region.latitudeDelta / 2;
@@ -128,11 +165,6 @@ function Map() {
     }).start();
   };
 
-  const handlePlaceSelected = (newRegion: Region) => {
-    setRegion(newRegion);
-    mapRef.current?.animateToRegion(newRegion, 1000);
-  };
-
   const onRegionChangeComplete = (newRegion: Region) => {
     setRegion(newRegion);
   };
@@ -140,11 +172,6 @@ function Map() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View style={{ flex: 1 }}>
-        <Search
-          ref={searchRef}
-          onPlaceSelected={handlePlaceSelected}
-          currentLocation={currentLocation}
-        />
         <MapView
           ref={mapRef}
           provider={PROVIDER_GOOGLE}

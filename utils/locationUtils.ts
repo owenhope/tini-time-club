@@ -174,6 +174,8 @@ export const getRelevantPlaceTypes = (types: string[] | undefined): string[] => 
     "store",
     "premise",
     "geocode",
+    "meal_delivery",
+    "meal_takeaway",
   ];
   
   const relevantTypes = types

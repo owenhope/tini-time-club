@@ -21,7 +21,7 @@ import AnimatedReanimated, {
 } from "react-native-reanimated";
 import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import CameraComponent from "@/components/CameraComponent";
 import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
@@ -175,7 +175,7 @@ const ReviewPreview = ({
             <TextInput
               style={styles.captionInput}
               multiline={true}
-              placeholder="Write a caption..."
+              placeholder="Write a caption... (required)"
               onChangeText={setTempCaption}
               value={tempCaption}
               maxLength={500}
@@ -185,11 +185,18 @@ const ReviewPreview = ({
               {tempCaption?.length || 0}/500
             </Text>
             <TouchableOpacity
-              style={styles.saveCaptionButton}
+              style={[
+                styles.saveCaptionButton,
+                (!tempCaption || tempCaption.trim().length === 0) &&
+                  styles.saveCaptionButtonDisabled,
+              ]}
               onPress={() => {
-                setValue("comment", tempCaption);
-                setIsCaptionFocused(false);
+                if (tempCaption && tempCaption.trim().length > 0) {
+                  setValue("comment", tempCaption.trim(), { shouldValidate: true });
+                  setIsCaptionFocused(false);
+                }
               }}
+              disabled={!tempCaption || tempCaption.trim().length === 0}
             >
               <Text style={styles.saveCaptionButtonText}>Save Caption</Text>
             </TouchableOpacity>
@@ -213,6 +220,7 @@ export default function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const opacity = useSharedValue(1);
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { profile } = useProfile();
 
   const { control, handleSubmit, reset, trigger, formState, watch, setValue } =
@@ -226,6 +234,7 @@ export default function App() {
         presentation: 0,
         comment: "",
       },
+      resolver: undefined,
     });
   const insets = useSafeAreaInsets();
   const watchedValues = watch();
@@ -234,6 +243,23 @@ export default function App() {
     getTypes();
     getSpirits();
   }, []);
+
+  // Pre-fill location if provided via URL params
+  useEffect(() => {
+    if (params.locationName && params.locationAddress) {
+      setValue("location", {
+        name: params.locationName as string,
+        address: params.locationAddress as string,
+        coordinates: params.locationLat && params.locationLon
+          ? {
+              latitude: parseFloat(params.locationLat as string),
+              longitude: parseFloat(params.locationLon as string),
+            }
+          : undefined,
+        place_id: params.locationPlaceId as string | undefined,
+      });
+    }
+  }, [params.locationName, params.locationAddress, setValue]);
 
   interface Question {
     title: string;
@@ -308,6 +334,12 @@ export default function App() {
   const nextStep = async () => {
     // For the preview step (last step), validate comment field
     if (step === questions.length - 1) {
+      // Validate that comment is not empty
+      const commentValue = watchedValues.comment?.trim();
+      if (!commentValue || commentValue.length === 0) {
+        // Don't proceed if comment is empty
+        return;
+      }
       const isValid = await trigger("comment");
       if (!isValid) return;
     } else if (questions[step].key) {
@@ -602,9 +634,18 @@ export default function App() {
                   ) : (
                     <Button
                       title="Submit"
-                      onPress={handleSubmit(handleUploadAndCreateReview)}
+                      onPress={() => {
+                        // Validate comment before submission
+                        const commentValue = watchedValues.comment?.trim();
+                        if (!commentValue || commentValue.length === 0) {
+                          // Show error or prevent submission
+                          return;
+                        }
+                        handleSubmit(handleUploadAndCreateReview)();
+                      }}
                       variant="primary"
                       size="medium"
+                      disabled={!watchedValues.comment || watchedValues.comment.trim().length === 0}
                     />
                   )}
                 </View>
@@ -775,6 +816,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "white",
     fontWeight: "600",
+  },
+  saveCaptionButtonDisabled: {
+    opacity: 0.5,
   },
   submitLoadingContainer: {
     flex: 1,

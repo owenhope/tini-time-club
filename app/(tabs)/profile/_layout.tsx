@@ -19,7 +19,10 @@ export default function ProfileLayout() {
       <Stack.Screen
         name="settings"
         options={{
-          headerShown: false,
+          title: "Settings",
+          headerStyle: {
+            backgroundColor: "#f0f0f0",
+          },
         }}
       />
       <Stack.Screen

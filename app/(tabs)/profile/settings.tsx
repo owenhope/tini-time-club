@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,6 +40,11 @@ const Settings = () => {
     }
   };
 
+  const handleSupportFeedback = () => {
+    const email = "owen@hopemediahouse.com";
+    Linking.openURL(`mailto:${email}`);
+  };
+
   const menuItems = [
     {
       id: "edit-profile",
@@ -51,6 +57,12 @@ const Settings = () => {
       title: "Terms of Service",
       icon: "document-text-outline",
       onPress: () => router.push("/(tabs)/profile/terms"),
+    },
+    {
+      id: "support",
+      title: "Support & Feedback",
+      icon: "mail-outline",
+      onPress: handleSupportFeedback,
     },
     {
       id: "delete",
@@ -68,17 +80,6 @@ const Settings = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.placeholder} />
-      </View>
-
       <View style={styles.content}>
         {menuItems.map((item, index) => (
           <TouchableOpacity
@@ -119,29 +120,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 0,
   },
   menuItem: {
     borderBottomWidth: 1,

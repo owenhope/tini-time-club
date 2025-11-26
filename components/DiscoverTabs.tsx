@@ -256,7 +256,15 @@ export default function DiscoverTabs({
   const renderLocation = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.resultCard}
-      onPress={() => router.navigate(`/discover/locations/${item.id}`)}
+      onPress={() =>
+        router.navigate({
+          pathname: `/discover/locations/${item.id}`,
+          params: {
+            name: item.name || "",
+            address: item.address || "",
+          },
+        })
+      }
       activeOpacity={0.7}
     >
       <View style={styles.cardContent}>

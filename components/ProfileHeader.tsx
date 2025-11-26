@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "expo-router";
 import { Avatar } from "@/components/shared";
 
 interface ProfileHeaderProps {
@@ -20,20 +19,19 @@ interface ProfileHeaderProps {
   followersCount: number;
   followingCount: number;
   isOwnProfile: boolean;
-  // For own profile
   onAvatarPress?: () => void;
   avatarLoading?: boolean;
   avatarError?: string | null;
   onEditProfilePress?: () => void;
-  // For other user's profile
   doesFollow?: boolean;
   isBlocked?: boolean;
   onFollowPress?: () => void;
   onBlockPress?: () => void;
   onUnblockPress?: () => void;
-  // Navigation
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
+  isScrolled?: boolean;
+  hasBioOrFavs?: boolean;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -53,21 +51,29 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUnblockPress,
   onFollowersPress,
   onFollowingPress,
+  isScrolled = false,
+  hasBioOrFavs = true,
 }) => {
-  const navigation = useNavigation();
-
   if (!profile) return null;
 
+  // Add bottom padding when scrolled OR when there's no bio/favs
+  const shouldHaveBottomPadding = isScrolled || !hasBioOrFavs;
+
   return (
-    <View style={styles.profileHeader}>
+    <View
+      style={[
+        styles.profileHeader,
+        { paddingBottom: shouldHaveBottomPadding ? 16 : 0 },
+      ]}
+    >
       <View style={styles.avatarSection}>
         {isOwnProfile ? (
-          <TouchableOpacity onPress={onAvatarPress} style={styles.avatarContainer}>
-            <View style={styles.avatarWrapper}>
+          <TouchableOpacity onPress={onAvatarPress}>
+            <View>
               <Avatar
                 avatarPath={profile.avatar_url}
                 username={profile.username}
-                size={100}
+                size={75}
                 style={styles.avatar}
               />
               {avatarLoading && (
@@ -75,33 +81,32 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   <ActivityIndicator size="small" color="#336654" />
                 </View>
               )}
+              {avatarError && (
+                <Text style={styles.errorText}>{avatarError}</Text>
+              )}
             </View>
-            {avatarError && <Text style={styles.errorText}>{avatarError}</Text>}
           </TouchableOpacity>
         ) : (
-          <View style={styles.avatarContainer}>
+          <View>
             <Avatar
               avatarPath={profile.avatar_url}
               username={profile.username}
-              size={100}
+              size={75}
               style={styles.avatar}
             />
           </View>
         )}
       </View>
+
       <View style={styles.userInfoContainer}>
-        {/* Name - shown above stats */}
         {profile.name ? (
           <Text style={styles.displayName}>{profile.name}</Text>
         ) : isOwnProfile ? (
           <TouchableOpacity onPress={onEditProfilePress}>
-            <Text style={[styles.ctaText, { textAlign: "left", marginBottom: 12 }]}>
-              Add your name
-            </Text>
+            <Text style={styles.ctaText}>Add your name</Text>
           </TouchableOpacity>
         ) : null}
 
-        {/* Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{reviewsCount}</Text>
@@ -117,7 +122,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Action Buttons - only show if viewing someone else's profile */}
         {!isOwnProfile && (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
@@ -136,7 +140,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {doesFollow ? "Following" : "Follow"}
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={isBlocked ? onUnblockPress : onBlockPress}
               style={[styles.blockButton, isBlocked && styles.unblockButton]}
@@ -160,29 +163,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 const styles = StyleSheet.create({
   profileHeader: {
     flexDirection: "row",
+    paddingHorizontal: 16,
     paddingTop: 16,
-    paddingRight: 16,
-    paddingLeft: 0,
     alignItems: "flex-start",
   },
   avatarSection: {
     marginRight: 16,
-    alignItems: "center",
-    width: 140,
-    justifyContent: "flex-start",
-  },
-  avatarContainer: {
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  avatarWrapper: {
-    position: "relative",
-    width: 100,
-    height: 100,
   },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 75,
+    height: 75,
     borderRadius: 50,
   },
   loadingOverlay: {
@@ -214,11 +204,12 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: 14,
     color: "#666",
+    marginBottom: 12,
   },
   statsContainer: {
     flexDirection: "row",
-    justifyContent: "flex-start",
     gap: 24,
+    justifyContent: "flex-start",
   },
   statItem: {
     alignItems: "flex-start",
@@ -231,13 +222,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#666",
-    textAlign: "left",
   },
   actionButtonsContainer: {
     flexDirection: "row",
     marginTop: 12,
     gap: 12,
-    justifyContent: "space-between",
   },
   followButton: {
     backgroundColor: "#B6A3E2",
@@ -246,7 +235,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
   },
   followingButton: {
     backgroundColor: "#fff",
@@ -257,7 +245,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
-    textAlign: "center",
   },
   followingButtonText: {
     color: "#B6A3E2",
@@ -269,13 +256,11 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
   },
   blockButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "500",
-    textAlign: "center",
   },
   unblockButton: {
     backgroundColor: "#fff",
@@ -288,4 +273,3 @@ const styles = StyleSheet.create({
 });
 
 export default ProfileHeader;
-

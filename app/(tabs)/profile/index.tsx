@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Alert,
   Pressable,
   RefreshControl,
+  Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -44,6 +45,9 @@ const Profile = () => {
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const bioOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -100,6 +104,9 @@ const Profile = () => {
             <Ionicons name="settings-outline" size={24} color="black" />
           </TouchableOpacity>
         ),
+        headerStyle: {
+          backgroundColor: "#f0f0f0",
+        },
       });
     }
   }, [profile, navigation]);
@@ -241,30 +248,6 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      AnalyticService.capture("logout", {});
-      
-      // Clear cache first
-      await authCache.invalidateCache();
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Error logging out:", error);
-        // Still navigate to login even if signOut has an error
-      }
-      
-      // Navigate to login screen - don't rely on SIGNED_OUT event
-      router.replace("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-      // Still try to navigate to login
-      router.replace("/");
-    }
-  };
-
   const deleteReview = async (id: number) => {
     const { error } = await supabase
       .from("reviews")
@@ -389,6 +372,28 @@ const Profile = () => {
     }, [profile])
   );
 
+  useEffect(() => {
+    Animated.timing(bioOpacity, {
+      toValue: isScrolled ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isScrolled]);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const shouldBeScrolled = offsetY > 50;
+        if (shouldBeScrolled !== isScrolled) {
+          setIsScrolled(shouldBeScrolled);
+        }
+      },
+    }
+  );
+
   return (
     <View style={styles.container}>
       <ProfileHeader
@@ -407,57 +412,68 @@ const Profile = () => {
         onFollowingPress={() =>
           navigation.navigate("follow-list", { type: "following" })
         }
+        isScrolled={isScrolled}
+        hasBioOrFavs={!!(profile?.bio || getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0)}
       />
 
-      <View style={styles.bioSection}>
-        {profile?.bio ? (
-          <Text style={styles.bio}>{profile.bio}</Text>
-        ) : (
-          <TouchableOpacity
-            onPress={() => router.push("/profile/edit-profile")}
-            style={styles.bioCtaContainer}
-          >
-            <Text
-              style={[
-                styles.ctaText,
-                { textAlign: "left", marginTop: 4, width: "100%" },
-              ]}
+      <Animated.View
+        style={{
+          opacity: bioOpacity,
+          height: isScrolled ? 0 : undefined,
+          overflow: "hidden",
+        }}
+        pointerEvents={isScrolled ? "none" : "auto"}
+      >
+        <View style={styles.bioSection}>
+          {profile?.bio ? (
+            <Text style={styles.bio}>{profile.bio}</Text>
+          ) : (
+            <TouchableOpacity
+              onPress={() => router.push("/profile/edit-profile")}
+              style={styles.bioCtaContainer}
             >
-              Add a bio
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+              <Text
+                style={[
+                  styles.ctaText,
+                  { textAlign: "left", marginTop: 4, width: "100%" },
+                ]}
+              >
+                Add a bio
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-      <View style={styles.tagsSection}>
-        {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
-          <View style={styles.favoritesTagsContainer}>
-            {getFavoriteSpirits().map((spiritId: any) => {
-              return (
-                <View key={`spirit-${spiritId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-                </View>
-              );
-            })}
-            {getFavoriteTypes().map((typeId: any) => {
-              return (
-                <View key={`type-${typeId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                </View>
-              );
-            })}
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={() => router.push("/profile/edit-profile")}
-            style={styles.ctaContainer}
-          >
-            <Text style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}>
-              Add favorite spirits & types
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+        <View style={styles.tagsSection}>
+          {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+            <View style={styles.favoritesTagsContainer}>
+              {getFavoriteSpirits().map((spiritId: any) => {
+                return (
+                  <View key={`spirit-${spiritId}`} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                  </View>
+                );
+              })}
+              {getFavoriteTypes().map((typeId: any) => {
+                return (
+                  <View key={`type-${typeId}`} style={styles.tag}>
+                    <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => router.push("/profile/edit-profile")}
+              style={styles.ctaContainer}
+            >
+              <Text style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}>
+                Add favorite spirits & types
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Animated.View>
 
       <View style={styles.reviewsContainer}>
         <FlatList
@@ -466,6 +482,8 @@ const Profile = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={loadingReviews}

@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Animated,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
@@ -102,20 +103,82 @@ const Location = () => {
     types?: string[];
   } | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const contactInfoOpacity = useRef(new Animated.Value(1)).current;
+  const contactInfoHeight = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    // Animate opacity with native driver
+    Animated.timing(contactInfoOpacity, {
+      toValue: isScrolled ? 0 : 1,
+      duration: isScrolled ? 1 : 200,
+      useNativeDriver: true,
+    }).start();
+
+    // Animate height separately without native driver (to avoid conflicts)
+    Animated.timing(contactInfoHeight, {
+      toValue: isScrolled ? 0 : 300,
+      duration: isScrolled ? 200 : 300,
+      useNativeDriver: false,
+    }).start();
+  }, [isScrolled]);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const shouldBeScrolled = offsetY > 30;
+        if (shouldBeScrolled !== isScrolled) {
+          setIsScrolled(shouldBeScrolled);
+        }
+      },
+    }
+  );
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
   const locationIdParam = params.location as string | undefined;
+  const locationNameParam = params.name as string | undefined;
+  const locationAddressParam = params.address as string | undefined;
 
-  const displayLocation = useMemo(() => selectedLocation, [selectedLocation]);
+  // Create a minimal location object if fetch fails but we have name from params
+  const displayLocation = useMemo(() => {
+    if (selectedLocation) {
+      return selectedLocation;
+    }
+    // If location doesn't exist in DB but we have name from search, create minimal object
+    if (locationNameParam) {
+      return {
+        id: locationIdParam || "",
+        name: locationNameParam,
+        address: locationAddressParam || "",
+      } as LocationType;
+    }
+    return null;
+  }, [
+    selectedLocation,
+    locationNameParam,
+    locationAddressParam,
+    locationIdParam,
+  ]);
 
   // Update header with custom title and back button
   useEffect(() => {
-    if (displayLocation) {
+    if (displayLocation?.name) {
       navigation.setOptions({
         headerTitle: () => (
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>{displayLocation.name}</Text>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              adjustsFontSizeToFit={false}
+            >
+              {displayLocation.name}
+            </Text>
           </View>
         ),
         headerLeft: () => (
@@ -126,9 +189,37 @@ const Location = () => {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
         ),
+        headerRight: () => {
+          if (
+            displayLocation &&
+            "lat" in displayLocation &&
+            "lon" in displayLocation &&
+            displayLocation.lat &&
+            displayLocation.lon
+          ) {
+            return (
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({
+                    pathname: "/(tabs)/locations",
+                    params: {
+                      lat: displayLocation.lat!.toString(),
+                      lon: displayLocation.lon!.toString(),
+                      locationId: displayLocation.id,
+                    },
+                  });
+                }}
+                style={styles.headerButtonRight}
+              >
+                <Ionicons name="location" size={24} color="black" />
+              </TouchableOpacity>
+            );
+          }
+          return null;
+        },
       });
     }
-  }, [displayLocation, navigation]);
+  }, [displayLocation, navigation, router]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -175,6 +266,8 @@ const Location = () => {
         .single();
       if (error) {
         console.error("Error fetching selected location:", error);
+        // If location doesn't exist in DB, set to null so displayLocation can use params
+        setSelectedLocation(null);
       } else {
         setSelectedLocation(data);
         // Track view location event
@@ -185,6 +278,7 @@ const Location = () => {
       }
     } catch (err) {
       console.error("Unexpected error fetching location:", err);
+      setSelectedLocation(null);
     }
   }, []);
 
@@ -280,15 +374,51 @@ const Location = () => {
         </View>
       );
     }
-    if (locationReviews.length === 0) {
+    if (locationReviews.length === 0 && displayLocation?.name) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No reviews available.</Text>
+          <Text style={styles.emptyText}>No reviews yet.</Text>
+          <TouchableOpacity
+            style={styles.addReviewButton}
+            onPress={() => {
+              // Navigate to review page with location pre-filled
+              const locationParams: any = {
+                locationName: displayLocation.name,
+                locationAddress: displayLocation.address || "",
+              };
+
+              // Add coordinates if available
+              if (
+                displayLocation &&
+                "lat" in displayLocation &&
+                "lon" in displayLocation &&
+                displayLocation.lat &&
+                displayLocation.lon
+              ) {
+                locationParams.locationLat = displayLocation.lat.toString();
+                locationParams.locationLon = displayLocation.lon.toString();
+              }
+
+              router.push({
+                pathname: "/(tabs)/review",
+                params: locationParams,
+              });
+            }}
+          >
+            <Text style={styles.addReviewButtonText}>Add Review</Text>
+          </TouchableOpacity>
         </View>
       );
     }
     return null;
-  }, [loadingReviews, locationReviews.length]);
+  }, [
+    loadingReviews,
+    locationReviews.length,
+    displayLocation?.name,
+    displayLocation?.address,
+    displayLocation?.id,
+    router,
+  ]);
 
   const onRefresh = useCallback(() => {
     if (displayLocation?.id) {
@@ -437,12 +567,10 @@ const Location = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        <View style={styles.statsContainer}>
-          <RatingCircles
-            location={displayLocation || {}}
-            circleSize={DIMENSIONS.ratingCircle}
-          />
-        </View>
+        <RatingCircles
+          location={displayLocation || {}}
+          circleSize={DIMENSIONS.ratingCircle}
+        />
         <View style={styles.addressRow}>
           {displayLocation?.name && (
             <Text style={styles.locationName}>{displayLocation.name}</Text>
@@ -480,45 +608,61 @@ const Location = () => {
             </TouchableOpacity>
           )}
           {/* Tags Section */}
-          {(placeDetails?.priceLevel !== undefined ||
-            (placeDetails?.types && placeDetails.types.length > 0)) && (
-            <View style={styles.tagsContainer}>
-              {placeDetails.priceLevel !== undefined && (
-                <Tag text={getPriceLevelText(placeDetails.priceLevel)} />
+          <Animated.View
+            style={{
+              maxHeight: contactInfoHeight,
+              overflow: "hidden",
+            }}
+          >
+            <Animated.View
+              style={{
+                opacity: contactInfoOpacity,
+              }}
+              pointerEvents={isScrolled ? "none" : "auto"}
+            >
+              {(placeDetails?.priceLevel !== undefined ||
+                (placeDetails?.types && placeDetails.types.length > 0)) && (
+                <View style={styles.tagsContainer}>
+                  {placeDetails.priceLevel !== undefined && (
+                    <Tag text={getPriceLevelText(placeDetails.priceLevel)} />
+                  )}
+                  {getRelevantPlaceTypes(placeDetails.types).map(
+                    (type, index) => (
+                      <Tag key={`type-${index}`} text={type} />
+                    )
+                  )}
+                </View>
               )}
-              {getRelevantPlaceTypes(placeDetails.types).map((type, index) => (
-                <Tag key={`type-${index}`} text={type} />
-              ))}
-            </View>
-          )}
-          {placeDetails && (
-            <View style={styles.contactInfo}>
-              {placeDetails.phoneNumber && (
-                <TouchableOpacity
-                  style={styles.contactButton}
-                  onPress={() =>
-                    Linking.openURL(`tel:${placeDetails.phoneNumber}`)
-                  }
-                >
-                  <Ionicons name="call-outline" size={18} color="#fff" />
-                  <Text style={styles.contactText}>
-                    {placeDetails.phoneNumber}
-                  </Text>
-                </TouchableOpacity>
+              {placeDetails && (
+                <View style={styles.contactInfo}>
+                  {placeDetails.phoneNumber && (
+                    <TouchableOpacity
+                      style={styles.contactButton}
+                      onPress={() =>
+                        Linking.openURL(`tel:${placeDetails.phoneNumber}`)
+                      }
+                    >
+                      <Ionicons name="call-outline" size={18} color="#fff" />
+                      <Text style={styles.contactText}>
+                        {placeDetails.phoneNumber}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {placeDetails.website && (
+                    <TouchableOpacity
+                      style={styles.contactButton}
+                      onPress={() => Linking.openURL(placeDetails.website!)}
+                    >
+                      <Ionicons name="globe-outline" size={18} color="#fff" />
+                      <Text style={styles.contactText} numberOfLines={1}>
+                        Website
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
-              {placeDetails.website && (
-                <TouchableOpacity
-                  style={styles.contactButton}
-                  onPress={() => Linking.openURL(placeDetails.website!)}
-                >
-                  <Ionicons name="globe-outline" size={18} color="#fff" />
-                  <Text style={styles.contactText} numberOfLines={1}>
-                    Website
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+            </Animated.View>
+          </Animated.View>
           {loadingPlaceDetails && (
             <Text style={styles.loadingText}>Loading contact info...</Text>
           )}
@@ -531,6 +675,8 @@ const Location = () => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.gridContent}
           ListEmptyComponent={renderEmpty}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={loadingReviews}
@@ -561,21 +707,13 @@ const styles = StyleSheet.create({
   profileHeader: {
     padding: 16,
   },
-  statsContainer: {
-    padding: 4,
-  },
   addressRow: {
-    marginTop: 8,
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
   },
   addressContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 6,
-    marginBottom: 6,
   },
   nameRow: {
     flexDirection: "row",
@@ -604,9 +742,7 @@ const styles = StyleSheet.create({
   contactInfo: {
     flexDirection: "row",
     justifyContent: "flex-start",
-    alignItems: "center",
-    gap: 12,
-    marginTop: 6,
+    gap: 8,
     flexWrap: "wrap",
   },
   contactButton: {
@@ -618,7 +754,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     backgroundColor: "#B6A3E2",
-    width: 160,
   },
   contactText: {
     fontSize: 14,
@@ -636,8 +771,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 4,
-    marginBottom: 6,
+    marginVertical: 8,
   },
   reviewsContainer: {
     flex: 1,
@@ -648,20 +782,39 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: "center",
     padding: 20,
+    gap: 16,
   },
   emptyText: {
     fontSize: 16,
     color: COLORS.text,
   },
+  addReviewButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 8,
+  },
+  addReviewButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   headerButtonLeft: {
     marginLeft: 5,
   },
+  headerButtonRight: {
+    marginRight: 15,
+  },
   headerTitleContainer: {
     alignItems: "center",
+    flex: 1,
+    maxWidth: "80%",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    flexShrink: 1,
   },
 });
 

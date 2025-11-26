@@ -110,10 +110,10 @@ const LayoutContent = () => {
       <Tabs.Screen
         name="locations"
         options={{
-          title: "Map",
+          title: "Places",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
+            <Ionicons name="location-outline" size={size} color={color} />
           ),
           popToTopOnBlur: true,
         }}

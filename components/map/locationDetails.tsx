@@ -15,7 +15,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
       {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.titleContainer}>
-          <Link href={`/home/locations/${loc.id}`} asChild>
+          <Link href={`/(tabs)/locations/${loc.id}`} asChild>
             <TouchableOpacity style={styles.locationLinkContainer}>
               <Text style={styles.locationName} numberOfLines={1}>
                 {loc.name || "No name available"}
