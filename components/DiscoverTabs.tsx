@@ -96,13 +96,69 @@ export default function DiscoverTabs({
     setLoading(true);
     try {
       if (!searchQuery) {
-        const { data } = await supabase.rpc("top_profiles");
-        setProfiles(data || []);
+        // Get all profiles, then fetch review and follower counts separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .eq("deleted", false);
+
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+          setProfiles([]);
+        } else if (!profilesData || profilesData.length === 0) {
+          setProfiles([]);
+        } else {
+          // Get review counts for all profiles
+          const { data: reviewsData } = await supabase
+            .from("reviews")
+            .select("user_id, state")
+            .eq("state", 1);
+
+          // Get follower counts for all profiles
+          const { data: followersData } = await supabase
+            .from("followers")
+            .select("following_id");
+
+          // Count reviews and followers per profile
+          const reviewCounts = new Map<string, number>();
+          const followerCounts = new Map<string, number>();
+
+          (reviewsData || []).forEach((review: any) => {
+            const count = reviewCounts.get(review.user_id) || 0;
+            reviewCounts.set(review.user_id, count + 1);
+          });
+
+          (followersData || []).forEach((follower: any) => {
+            const count = followerCounts.get(follower.following_id) || 0;
+            followerCounts.set(follower.following_id, count + 1);
+          });
+
+          // Process profiles with counts
+          const processedProfiles = profilesData.map((profile: any) => ({
+            id: profile.id,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            review_count: reviewCounts.get(profile.id) || 0,
+            follower_count: followerCounts.get(profile.id) || 0,
+          }));
+
+          // Sort by review count descending, then follower count, then username (same as top_profiles likely does)
+          processedProfiles.sort((a: any, b: any) => {
+            const reviewDiff = (b.review_count || 0) - (a.review_count || 0);
+            if (reviewDiff !== 0) return reviewDiff;
+            const followerDiff = (b.follower_count || 0) - (a.follower_count || 0);
+            if (followerDiff !== 0) return followerDiff;
+            return (a.username || "").localeCompare(b.username || "");
+          });
+
+          setProfiles(processedProfiles);
+        }
       } else {
         const { data } = await supabase
           .from("profiles")
           .select("id, username, avatar_url")
           .ilike("username", `%${searchQuery}%`)
+          .eq("deleted", false)
           .limit(20);
         setProfiles(data || []);
       }
@@ -195,27 +251,72 @@ export default function DiscoverTabs({
 
         setLocations(sortedLocations);
       } else {
-        // Use location_ratings view to get rating and review count data
-        const { data, error } = await supabase
-          .from("location_ratings")
-          .select("*")
+        // Query locations table directly to include locations with no reviews
+        // Use a left join to get review counts and ratings
+        const { data: locationsData, error: locationsError } = await supabase
+          .from("locations")
+          .select(`
+            id,
+            name,
+            address,
+            location,
+            reviews!reviews_location_fkey(
+              taste,
+              presentation,
+              state
+            )
+          `)
           .ilike("name", `%${searchQuery}%`)
           .limit(20);
 
-        if (error) {
-          console.error("Error fetching location ratings:", error);
+        if (locationsError) {
+          console.error("Error fetching locations:", locationsError);
           setLocations([]);
           return;
         }
 
-        // Process the data to format for display
+        // Process the data to calculate ratings and format for display
         const processedLocations =
-          data?.map((location: any) => {
-            const totalRatings = location.total_ratings || 0;
+          locationsData?.map((location: any) => {
+            // Filter active reviews
+            const activeReviews = (location.reviews || []).filter(
+              (r: any) => r.state === 1
+            );
+            const totalRatings = activeReviews.length;
 
-            // Use pre-extracted coordinates from the view
-            const latitude = location.lat;
-            const longitude = location.lon;
+            // Calculate averages if there are reviews
+            let rating = null;
+            let taste_avg = null;
+            let presentation_avg = null;
+
+            if (totalRatings > 0) {
+              const tasteSum = activeReviews.reduce(
+                (sum: number, r: any) => sum + (r.taste || 0),
+                0
+              );
+              const presentationSum = activeReviews.reduce(
+                (sum: number, r: any) => sum + (r.presentation || 0),
+                0
+              );
+
+              taste_avg = tasteSum / totalRatings;
+              presentation_avg = presentationSum / totalRatings;
+              rating = (taste_avg + presentation_avg) / 2;
+            }
+
+            // Extract coordinates from PostGIS POINT if available
+            let latitude = null;
+            let longitude = null;
+            if (location.location) {
+              // PostGIS POINT format: "POINT(longitude latitude)"
+              const match = location.location.match(
+                /POINT\(([\d.-]+)\s+([\d.-]+)\)/
+              );
+              if (match) {
+                longitude = parseFloat(match[1]);
+                latitude = parseFloat(match[2]);
+              }
+            }
 
             return {
               id: location.id,
@@ -223,9 +324,9 @@ export default function DiscoverTabs({
               address: location.address,
               latitude,
               longitude,
-              rating: location.rating,
-              taste_avg: location.taste_avg,
-              presentation_avg: location.presentation_avg,
+              rating,
+              taste_avg,
+              presentation_avg,
               total_ratings: totalRatings,
             };
           }) || [];

@@ -259,23 +259,95 @@ const Location = () => {
 
   const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("location_ratings")
-        .select("*")
+      // Query locations table directly to include locations with no reviews
+      const { data: locationData, error: locationError } = await supabase
+        .from("locations")
+        .select(`
+          id,
+          name,
+          address,
+          location,
+          reviews!reviews_location_fkey(
+            taste,
+            presentation,
+            state
+          )
+        `)
         .eq("id", locationId)
-        .single();
-      if (error) {
-        console.error("Error fetching selected location:", error);
-        // If location doesn't exist in DB, set to null so displayLocation can use params
+        .maybeSingle();
+
+      if (locationError) {
+        console.error("Error fetching selected location:", locationError);
         setSelectedLocation(null);
-      } else {
-        setSelectedLocation(data);
-        // Track view location event
-        AnalyticService.capture("view_location", {
-          locationId: data?.id,
-          locationName: data?.name,
-        });
+        return;
       }
+
+      if (!locationData) {
+        // Location doesn't exist in DB, set to null so displayLocation can use params
+        setSelectedLocation(null);
+        return;
+      }
+
+      // Filter active reviews
+      const activeReviews = (locationData.reviews || []).filter(
+        (r: any) => r.state === 1
+      );
+      const totalRatings = activeReviews.length;
+
+      // Calculate averages if there are reviews
+      let rating = null;
+      let taste_avg = null;
+      let presentation_avg = null;
+
+      if (totalRatings > 0) {
+        const tasteSum = activeReviews.reduce(
+          (sum: number, r: any) => sum + (r.taste || 0),
+          0
+        );
+        const presentationSum = activeReviews.reduce(
+          (sum: number, r: any) => sum + (r.presentation || 0),
+          0
+        );
+
+        taste_avg = tasteSum / totalRatings;
+        presentation_avg = presentationSum / totalRatings;
+        rating = (taste_avg + presentation_avg) / 2;
+      }
+
+      // Extract coordinates from PostGIS POINT if available
+      let lat = null;
+      let lon = null;
+      if (locationData.location) {
+        // PostGIS POINT format: "POINT(longitude latitude)"
+        const match = locationData.location.match(
+          /POINT\(([\d.-]+)\s+([\d.-]+)\)/
+        );
+        if (match) {
+          lon = parseFloat(match[1]);
+          lat = parseFloat(match[2]);
+        }
+      }
+
+      // Format location data to match LocationType interface
+      const formattedLocation: LocationType = {
+        id: locationData.id,
+        name: locationData.name,
+        address: locationData.address || undefined,
+        lat,
+        lon,
+        rating,
+        taste_avg,
+        presentation_avg,
+        total_ratings: totalRatings,
+      };
+
+      setSelectedLocation(formattedLocation);
+
+      // Track view location event
+      AnalyticService.capture("view_location", {
+        locationId: formattedLocation.id,
+        locationName: formattedLocation.name,
+      });
     } catch (err) {
       console.error("Unexpected error fetching location:", err);
       setSelectedLocation(null);
