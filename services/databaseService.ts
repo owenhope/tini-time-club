@@ -503,29 +503,63 @@ class DatabaseService {
   
   /**
    * Create or get location
+   * Now prioritizes place_id for matching since all locations have place_id
    */
   async createOrGetLocation(locationData: any, userId: string): Promise<string> {
-    // First try to find existing location
-    const { data: existing, error: findError } = await supabase
-      .from('locations')
-      .select('id')
-      .eq('name', locationData.name)
-      .eq('address', locationData.address)
-      .maybeSingle();
-    
-    if (findError) throw findError;
-    
-    if (existing) {
-      return existing.id;
+    if (!locationData) {
+      throw new Error('Location data is required');
+    }
+
+    // Always try to find existing location by place_id first (most reliable)
+    // This is now the primary matching method since all locations have place_id
+    if (locationData.place_id) {
+      const { data: existingByPlaceId, error: placeIdError } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('place_id', locationData.place_id)
+        .maybeSingle();
+      
+      if (placeIdError) throw placeIdError;
+      
+      if (existingByPlaceId) {
+        return existingByPlaceId.id;
+      }
+    }
+
+    // Fall back to matching by name and address only if place_id is not available
+    // This handles edge cases where place_id might be missing
+    if (locationData.name && locationData.address) {
+      const { data: existing, error: findError } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('name', locationData.name)
+        .eq('address', locationData.address)
+        .maybeSingle();
+      
+      if (findError) throw findError;
+      
+      if (existing) {
+        // If we found by name/address but have a place_id, update it for future matches
+        if (locationData.place_id) {
+          await supabase
+            .from('locations')
+            .update({ place_id: locationData.place_id })
+            .eq('id', existing.id);
+        }
+        return existing.id;
+      }
     }
     
     // Create new location
+    // Ensure place_id is included if available
+    const insertData: any = {
+      ...locationData,
+      created_by: userId
+    };
+    
     const { data, error } = await supabase
       .from('locations')
-      .insert({
-        ...locationData,
-        created_by: userId
-      })
+      .insert(insertData)
       .select('id')
       .single();
     

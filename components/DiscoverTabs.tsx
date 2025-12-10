@@ -195,12 +195,42 @@ export default function DiscoverTabs({
 
         setLocations(sortedLocations);
       } else {
-        const { data } = await supabase
-          .from("locations")
-          .select("id, name, address")
+        // Use location_ratings view to get rating and review count data
+        const { data, error } = await supabase
+          .from("location_ratings")
+          .select("*")
           .ilike("name", `%${searchQuery}%`)
           .limit(20);
-        setLocations(data || []);
+
+        if (error) {
+          console.error("Error fetching location ratings:", error);
+          setLocations([]);
+          return;
+        }
+
+        // Process the data to format for display
+        const processedLocations =
+          data?.map((location: any) => {
+            const totalRatings = location.total_ratings || 0;
+
+            // Use pre-extracted coordinates from the view
+            const latitude = location.lat;
+            const longitude = location.lon;
+
+            return {
+              id: location.id,
+              name: location.name,
+              address: location.address,
+              latitude,
+              longitude,
+              rating: location.rating,
+              taste_avg: location.taste_avg,
+              presentation_avg: location.presentation_avg,
+              total_ratings: totalRatings,
+            };
+          }) || [];
+
+        setLocations(processedLocations);
       }
     } catch (error) {
       console.error("Error fetching locations:", error);

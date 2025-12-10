@@ -452,6 +452,7 @@ export default function App() {
           ? {
               name: (watchedValues.location as any).name,
               address: (watchedValues.location as any).address,
+              place_id: (watchedValues.location as any).place_id,
               location: `POINT(${
                 (watchedValues.location as any).coordinates.longitude
               } ${(watchedValues.location as any).coordinates.latitude})`,

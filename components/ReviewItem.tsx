@@ -318,9 +318,7 @@ const LikeButton = memo(
 
 const CommentButton = memo(
   ({ onPress, count }: { onPress: () => void; count: number }) => (
-    <TouchableOpacity onPress={onPress}>
-      <Ionicons name="chatbubble-outline" size={ICON_SIZES.medium} />
-    </TouchableOpacity>
+    <Ionicons name="chatbubble-outline" size={ICON_SIZES.medium} />
   )
 );
 
@@ -412,9 +410,14 @@ const ReviewFooter = memo(
           <TouchableOpacity onPress={handleShowLikes}>
             <CommentCount count={likesCount} />
           </TouchableOpacity>
-          <CommentButton onPress={handleShowComments} count={comments.length} />
-          <TouchableOpacity onPress={handleShowComments}>
-            <CommentCount count={comments.length} />
+          <TouchableOpacity
+            onPress={handleShowComments}
+            style={styles.commentButtonContainer}
+          >
+            <CommentButton onPress={handleShowComments} count={comments.length} />
+            {comments.length > 0 && (
+              <CommentCount count={comments.length} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -434,14 +437,19 @@ const ReviewFooter = memo(
         </View>
 
         {comments.slice(0, 2).map((c) => (
-          <View key={c.id} style={styles.commentItem}>
+          <TouchableOpacity
+            key={c.id}
+            style={styles.commentItem}
+            onPress={handleShowComments}
+            activeOpacity={0.7}
+          >
             <Text style={styles.commentText}>
               <Text style={styles.commentUsername}>
                 {c.profile?.username || "Unknown"}
               </Text>
               <Text style={styles.commentBody}> {c.body}</Text>
             </Text>
-          </View>
+          </TouchableOpacity>
         ))}
 
         {comments.length > 2 && (
@@ -866,6 +874,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
     gap: 8,
+  },
+  commentButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   likesCount: {
     fontWeight: "bold",
