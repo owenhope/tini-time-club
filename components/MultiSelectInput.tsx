@@ -1,5 +1,10 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ScrollView,
+} from "react-native";
 
 type Option = {
   id: number | string;
@@ -41,10 +46,7 @@ const MultiSelectInput = ({
           return (
             <TouchableOpacity
               key={id}
-              style={[
-                styles.optionButton,
-                isSelected && styles.selectedButton,
-              ]}
+              style={[styles.optionButton, isSelected && styles.selectedButton]}
               onPress={() => toggleSelection(id)}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
@@ -104,4 +106,3 @@ const styles = StyleSheet.create({
 });
 
 export default MultiSelectInput;
-

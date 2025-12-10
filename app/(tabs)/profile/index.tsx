@@ -7,7 +7,6 @@ import {
   Text,
   TouchableOpacity,
   Alert,
-  Pressable,
   RefreshControl,
   Animated,
 } from "react-native";
@@ -413,7 +412,13 @@ const Profile = () => {
           navigation.navigate("follow-list", { type: "following" })
         }
         isScrolled={isScrolled}
-        hasBioOrFavs={!!(profile?.bio || getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0)}
+        hasBioOrFavs={
+          !!(
+            profile?.bio ||
+            getFavoriteSpirits().length > 0 ||
+            getFavoriteTypes().length > 0
+          )
+        }
       />
 
       <Animated.View
@@ -450,7 +455,9 @@ const Profile = () => {
               {getFavoriteSpirits().map((spiritId: any) => {
                 return (
                   <View key={`spirit-${spiritId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                    <Text style={styles.tagText}>
+                      {getSpiritName(spiritId)}
+                    </Text>
                   </View>
                 );
               })}
@@ -467,7 +474,9 @@ const Profile = () => {
               onPress={() => router.push("/profile/edit-profile")}
               style={styles.ctaContainer}
             >
-              <Text style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}>
+              <Text
+                style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}
+              >
                 Add favorite spirits & types
               </Text>
             </TouchableOpacity>

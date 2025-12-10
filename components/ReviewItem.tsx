@@ -26,6 +26,7 @@ import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -201,26 +202,25 @@ const useLikes = (reviewId: string, userId: string | null) => {
   return { hasLiked, likesCount, toggleLike, loading };
 };
 
-// Custom hook for comments management
-const useComments = (reviewId: string) => {
+// Custom hook for comments management - lazy loaded
+const useComments = (reviewId: string, lazyLoad: boolean = true) => {
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const fetchComments = useCallback(async () => {
+    if (hasLoaded) return; // Don't refetch if already loaded
     try {
       setLoading(true);
-      const { data } = await supabase
-        .from("comments")
-        .select("*, profile:profiles(id, username, avatar_url)")
-        .eq("review_id", reviewId)
-        .order("inserted_at", { ascending: false });
+      const data = await databaseService.getComments(reviewId);
       setComments(data || []);
+      setHasLoaded(true);
     } catch (error) {
       console.error("Error fetching comments:", error);
     } finally {
       setLoading(false);
     }
-  }, [reviewId]);
+  }, [reviewId, hasLoaded]);
 
   const addComment = useCallback((newComment: any) => {
     setComments((prev) => [newComment, ...prev]);
@@ -230,11 +230,21 @@ const useComments = (reviewId: string) => {
     setComments((prev) => prev.filter((c) => c.id !== commentId));
   }, []);
 
+  // Only fetch comments if not lazy loading, or if explicitly requested
   useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
+    if (!lazyLoad && !hasLoaded) {
+      fetchComments();
+    }
+  }, [lazyLoad, hasLoaded, fetchComments]);
 
-  return { comments, loading, addComment, removeComment };
+  return {
+    comments,
+    loading,
+    addComment,
+    removeComment,
+    fetchComments,
+    hasLoaded,
+  };
 };
 
 // Reusable UI Components
@@ -369,6 +379,7 @@ const ReviewFooter = memo(
     hasLiked,
     likesCount,
     comments,
+    hasLoaded,
     onToggleLike,
     onShowLikes,
     onShowComments,
@@ -376,11 +387,13 @@ const ReviewFooter = memo(
     onCommentDeleted,
     onEdit,
     isOwnReview,
+    loadCommentsIfNeeded,
   }: {
     review: Review;
     hasLiked: boolean;
     likesCount: number;
     comments: any[];
+    hasLoaded: boolean;
     onToggleLike: () => void;
     onShowLikes: (reviewId: string) => void;
     onShowComments: (
@@ -392,10 +405,18 @@ const ReviewFooter = memo(
     onCommentDeleted: (reviewId: string, commentId: number) => void;
     onEdit?: () => void;
     isOwnReview: boolean;
+    loadCommentsIfNeeded: () => void;
   }) => {
     const handleShowComments = useCallback(() => {
+      loadCommentsIfNeeded(); // Ensure comments are loaded before showing
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
-    }, [review.id, onShowComments, onCommentAdded, onCommentDeleted]);
+    }, [
+      review.id,
+      onShowComments,
+      onCommentAdded,
+      onCommentDeleted,
+      loadCommentsIfNeeded,
+    ]);
 
     const handleShowLikes = useCallback(() => {
       onShowLikes(review.id);
@@ -414,8 +435,11 @@ const ReviewFooter = memo(
             onPress={handleShowComments}
             style={styles.commentButtonContainer}
           >
-            <CommentButton onPress={handleShowComments} count={comments.length} />
-            {comments.length > 0 && (
+            <CommentButton
+              onPress={handleShowComments}
+              count={hasLoaded ? comments.length : 0}
+            />
+            {hasLoaded && comments.length > 0 && (
               <CommentCount count={comments.length} />
             )}
           </TouchableOpacity>
@@ -436,29 +460,36 @@ const ReviewFooter = memo(
           ) : null}
         </View>
 
-        {comments.slice(0, 2).map((c) => (
-          <TouchableOpacity
-            key={c.id}
-            style={styles.commentItem}
-            onPress={handleShowComments}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.commentText}>
-              <Text style={styles.commentUsername}>
-                {c.profile?.username || "Unknown"}
-              </Text>
-              <Text style={styles.commentBody}> {c.body}</Text>
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {/* Show comment previews once loaded */}
+        {hasLoaded ? (
+          comments.length > 0 ? (
+            <>
+              {comments.slice(0, 2).map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.commentItem}
+                  onPress={handleShowComments}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.commentText}>
+                    <Text style={styles.commentUsername}>
+                      {c.profile?.username || "Unknown"}
+                    </Text>
+                    <Text style={styles.commentBody}> {c.body}</Text>
+                  </Text>
+                </TouchableOpacity>
+              ))}
 
-        {comments.length > 2 && (
-          <TouchableOpacity onPress={handleShowComments}>
-            <Text style={styles.viewAllCommentsText}>
-              View all {comments.length} comments
-            </Text>
-          </TouchableOpacity>
-        )}
+              {comments.length > 2 && (
+                <TouchableOpacity onPress={handleShowComments}>
+                  <Text style={styles.viewAllCommentsText}>
+                    View all {comments.length} comments
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : null
+        ) : null}
 
         <Text style={styles.timestamp}>
           {formatRelativeDate(review.inserted_at)}
@@ -468,288 +499,322 @@ const ReviewFooter = memo(
   }
 );
 
-const ReviewItem = memo(
-  ({
-    review,
-    canDelete,
-    onDelete,
-    onEdit,
-    onShowLikes,
-    onShowComments,
-    onCommentAdded,
-    onCommentDeleted,
-    hideHeader = false,
-    hideFooter = false,
-    previewMode = false,
-  }: ReviewItemProps) => {
-    const { profile } = useProfile();
-    const overlayOpacity = useRef(new Animated.Value(1)).current;
-    const [reportModalVisible, setReportModalVisible] = useState(false);
-    const [actionSheetVisible, setActionSheetVisible] = useState(false);
-    const [isOverlayVisible, setIsOverlayVisible] = useState(true);
-    const lastTapRef = useRef<number>(0);
-    const isOwnReview = String(profile?.id) === String(review.profile?.id);
+// Comparison function for memo to prevent unnecessary re-renders
+const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
+  // Only re-render if review data actually changed
+  return (
+    prevProps.review.id === nextProps.review.id &&
+    prevProps.review.comment === nextProps.review.comment &&
+    prevProps.review.image_url === nextProps.review.image_url &&
+    prevProps.review._commentPatch === nextProps.review._commentPatch &&
+    prevProps.canDelete === nextProps.canDelete &&
+    prevProps.hideHeader === nextProps.hideHeader &&
+    prevProps.hideFooter === nextProps.hideFooter &&
+    prevProps.previewMode === nextProps.previewMode
+  );
+};
 
-    // Use custom hooks for data management
-    const { hasLiked, likesCount, toggleLike } = useLikes(
-      review.id,
-      profile?.id || null
-    );
-    const { comments, addComment, removeComment } = useComments(review.id);
+const ReviewItemComponent = ({
+  review,
+  canDelete,
+  onDelete,
+  onEdit,
+  onShowLikes,
+  onShowComments,
+  onCommentAdded,
+  onCommentDeleted,
+  hideHeader = false,
+  hideFooter = false,
+  previewMode = false,
+}: ReviewItemProps) => {
+  const { profile } = useProfile();
+  const overlayOpacity = useRef(new Animated.Value(1)).current;
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(true);
+  const lastTapRef = useRef<number>(0);
+  const isOwnReview = String(profile?.id) === String(review.profile?.id);
 
-    // Toggle overlay visibility
-    const toggleOverlay = useCallback(() => {
-      setIsOverlayVisible(!isOverlayVisible);
-      Animated.timing(overlayOpacity, {
-        toValue: isOverlayVisible ? 0 : 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }, [isOverlayVisible, overlayOpacity]);
+  // Use custom hooks for data management
+  const { hasLiked, likesCount, toggleLike } = useLikes(
+    review.id,
+    profile?.id || null
+  );
+  // Load comments when item becomes visible (for preview) or when user interacts
+  const { comments, addComment, removeComment, fetchComments, hasLoaded } =
+    useComments(review.id, true);
 
-    // Handle comment patches
-    useEffect(() => {
-      if (review._commentPatch) {
-        if (review._commentPatch.action === "add") {
-          addComment(review._commentPatch.data);
-        } else if (review._commentPatch.action === "delete") {
-          removeComment(review._commentPatch.id);
-        }
+  // Load comments when item becomes visible or when user interacts
+  const commentsLoadedRef = useRef(false);
+  const loadCommentsIfNeeded = useCallback(() => {
+    if (!hasLoaded && !commentsLoadedRef.current) {
+      commentsLoadedRef.current = true;
+      fetchComments();
+    }
+  }, [hasLoaded, fetchComments]);
+
+  // Load comments when component mounts (for feed preview)
+  // Use a small delay to avoid blocking initial render, but load quickly for preview
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadCommentsIfNeeded();
+    }, 50); // Reduced delay for faster preview
+    return () => clearTimeout(timer);
+  }, [loadCommentsIfNeeded]);
+
+  // Toggle overlay visibility
+  const toggleOverlay = useCallback(() => {
+    setIsOverlayVisible(!isOverlayVisible);
+    Animated.timing(overlayOpacity, {
+      toValue: isOverlayVisible ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isOverlayVisible, overlayOpacity]);
+
+  // Handle comment patches
+  useEffect(() => {
+    if (review._commentPatch) {
+      if (review._commentPatch.action === "add") {
+        addComment(review._commentPatch.data);
+      } else if (review._commentPatch.action === "delete") {
+        removeComment(review._commentPatch.id);
       }
-    }, [review._commentPatch, addComment, removeComment]);
+    }
+  }, [review._commentPatch, addComment, removeComment]);
 
-    // Enhanced like handler with notifications
-    const handleToggleLike = useCallback(async () => {
-      if (!profile) return;
+  // Enhanced like handler with notifications
+  const handleToggleLike = useCallback(async () => {
+    if (!profile) return;
 
-      const wasLiked = hasLiked;
-      await toggleLike();
+    const wasLiked = hasLiked;
+    await toggleLike();
 
-      // Track like event (only when liking, not unliking)
-      if (!wasLiked) {
-        AnalyticService.capture('like_review', {
-          reviewId: review.id,
-          locationId: review.location?.id,
-          locationName: review.location?.name,
-        });
-      }
-
-      // Send notification if user just liked someone else's review
-      if (!wasLiked && review.user_id && profile.id !== review.user_id) {
-        // Only send notifications if not in development mode
-        if (!isDevelopmentMode()) {
-          const notificationBody = `${
-            profile.username
-          } liked your review from ${
-            review.location?.name || "an unknown location"
-          }`;
-          try {
-            await supabase.from("notifications").insert({
-              user_id: review.user_id,
-              body: notificationBody,
-              type: NOTIFICATION_TYPES.USER,
-            });
-          } catch (error) {
-            console.error("Error sending notification:", error);
-          }
-        } else {
-          console.log("🚧 Development mode - skipping like notification");
-        }
-      }
-    }, [profile, hasLiked, toggleLike, review.user_id, review.location?.name]);
-
-    const handlePress = useCallback(() => {
-      const now = Date.now();
-      if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-        handleToggleLike();
-      }
-      lastTapRef.current = now;
-    }, [handleToggleLike]);
-
-    const animateOpacity = useCallback(
-      (toValue: number) => {
-        Animated.timing(overlayOpacity, {
-          toValue,
-          duration: ANIMATION_DURATION,
-          useNativeDriver: true,
-        }).start();
-      },
-      [overlayOpacity]
-    );
-
-    const handleLongPress = useCallback(() => {
-      setIsOverlayVisible(false);
-      animateOpacity(0);
-    }, [animateOpacity]);
-    const handlePressOut = useCallback(() => {
-      setIsOverlayVisible(true);
-      animateOpacity(1);
-    }, [animateOpacity]);
-
-    const handleReportSubmit = useCallback(
-      async (reason: string, customReason?: string) => {
-        if (!profile) return;
-
-        try {
-          const reportData = {
-            reporter_id: profile.id,
-            review_id: review.id,
-            creator_id: review.profile?.id,
-            reason: customReason || reason,
-            created_at: new Date().toISOString(),
-          };
-
-          const { error } = await supabase.from("reports").insert([reportData]);
-
-          if (error) {
-            console.error("Error submitting report:", error);
-            Alert.alert("Error", "Failed to submit report. Please try again.");
-          } else {
-            // Track report event
-            AnalyticService.capture('report', {
-              reviewId: review.id,
-              reason: customReason || reason,
-              targetUserId: review.profile?.id,
-            });
-            Alert.alert(
-              "Report Submitted",
-              "Thank you for your report. We will review it shortly."
-            );
-          }
-        } catch (error) {
-          console.error("Unexpected error submitting report:", error);
-          Alert.alert(
-            "Error",
-            "An unexpected error occurred. Please try again."
-          );
-        }
-      },
-      [profile, review.id, review.profile?.id]
-    );
-
-    if (previewMode) {
-      return (
-        <View style={styles.previewContainer}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: review.image_url }}
-              style={styles.reviewImage}
-            />
-            <ReviewOverlay
-              review={review}
-              overlayOpacity={overlayOpacity}
-              onToggleOverlay={toggleOverlay}
-              isOverlayVisible={isOverlayVisible}
-            />
-          </View>
-
-          <ReviewFooter
-            review={review}
-            hasLiked={false}
-            likesCount={0}
-            comments={[]}
-            onToggleLike={() => {}}
-            onShowLikes={() => {}}
-            onShowComments={() => {}}
-            onCommentAdded={() => {}}
-            onCommentDeleted={() => {}}
-            onEdit={undefined}
-            isOwnReview={false}
-          />
-        </View>
-      );
+    // Track like event (only when liking, not unliking)
+    if (!wasLiked) {
+      AnalyticService.capture("like_review", {
+        reviewId: review.id,
+        locationId: review.location?.id,
+        locationName: review.location?.name,
+      });
     }
 
+    // Send notification if user just liked someone else's review
+    if (!wasLiked && review.user_id && profile.id !== review.user_id) {
+      // Only send notifications if not in development mode
+      if (!isDevelopmentMode()) {
+        const notificationBody = `${profile.username} liked your review from ${
+          review.location?.name || "an unknown location"
+        }`;
+        try {
+          await supabase.from("notifications").insert({
+            user_id: review.user_id,
+            body: notificationBody,
+            type: NOTIFICATION_TYPES.USER,
+          });
+        } catch (error) {
+          console.error("Error sending notification:", error);
+        }
+      } else {
+        console.log("🚧 Development mode - skipping like notification");
+      }
+    }
+  }, [profile, hasLiked, toggleLike, review.user_id, review.location?.name]);
+
+  const handlePress = useCallback(() => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      handleToggleLike();
+    }
+    lastTapRef.current = now;
+  }, [handleToggleLike]);
+
+  const animateOpacity = useCallback(
+    (toValue: number) => {
+      Animated.timing(overlayOpacity, {
+        toValue,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }).start();
+    },
+    [overlayOpacity]
+  );
+
+  const handleLongPress = useCallback(() => {
+    setIsOverlayVisible(false);
+    animateOpacity(0);
+  }, [animateOpacity]);
+  const handlePressOut = useCallback(() => {
+    setIsOverlayVisible(true);
+    animateOpacity(1);
+  }, [animateOpacity]);
+
+  const handleReportSubmit = useCallback(
+    async (reason: string, customReason?: string) => {
+      if (!profile) return;
+
+      try {
+        const reportData = {
+          reporter_id: profile.id,
+          review_id: review.id,
+          creator_id: review.profile?.id,
+          reason: customReason || reason,
+          created_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from("reports").insert([reportData]);
+
+        if (error) {
+          console.error("Error submitting report:", error);
+          Alert.alert("Error", "Failed to submit report. Please try again.");
+        } else {
+          // Track report event
+          AnalyticService.capture("report", {
+            reviewId: review.id,
+            reason: customReason || reason,
+            targetUserId: review.profile?.id,
+          });
+          Alert.alert(
+            "Report Submitted",
+            "Thank you for your report. We will review it shortly."
+          );
+        }
+      } catch (error) {
+        console.error("Unexpected error submitting report:", error);
+        Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      }
+    },
+    [profile, review.id, review.profile?.id]
+  );
+
+  if (previewMode) {
     return (
-      <>
-        <Pressable
-          onPress={handlePress}
-          onLongPress={handleLongPress}
-          onPressOut={handlePressOut}
-        >
-          {!hideHeader && (
-            <View style={styles.header}>
-              <AvatarWrapper
-                avatarUrl={review.profile?.avatar_url || null}
-                username={review.profile?.username}
-                isOwnReview={isOwnReview}
-              />
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  onPress={() => setActionSheetVisible(true)}
-                  style={styles.actionButton}
-                >
-                  <Ionicons
-                    name="ellipsis-horizontal"
-                    size={ICON_SIZES.small}
-                    color={COLORS.black}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+      <View style={styles.previewContainer}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: review.image_url }}
+            style={styles.reviewImage}
+          />
+          <ReviewOverlay
+            review={review}
+            overlayOpacity={overlayOpacity}
+            onToggleOverlay={toggleOverlay}
+            isOverlayVisible={isOverlayVisible}
+          />
+        </View>
 
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: review.image_url }}
-              style={styles.reviewImage}
-            />
-            <ReviewOverlay
-              review={review}
-              overlayOpacity={overlayOpacity}
-              onToggleOverlay={toggleOverlay}
-              isOverlayVisible={isOverlayVisible}
-            />
-            {/* Eye icon to toggle overlay - always visible */}
-            <TouchableOpacity
-              style={styles.eyeIconContainer}
-              onPress={toggleOverlay}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={isOverlayVisible ? "eye" : "eye-off"}
-                size={20}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {!hideFooter && (
-            <ReviewFooter
-              review={review}
-              hasLiked={hasLiked}
-              likesCount={likesCount}
-              comments={comments}
-              onToggleLike={handleToggleLike}
-              onShowLikes={onShowLikes}
-              onShowComments={onShowComments}
-              onCommentAdded={onCommentAdded}
-              onCommentDeleted={onCommentDeleted}
-              onEdit={onEdit}
-              isOwnReview={isOwnReview}
-            />
-          )}
-        </Pressable>
-
-        <ActionSheet
-          visible={actionSheetVisible}
-          onClose={() => setActionSheetVisible(false)}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onReport={() => setReportModalVisible(true)}
-          isOwnReview={isOwnReview}
+        <ReviewFooter
+          review={review}
+          hasLiked={false}
+          likesCount={0}
+          comments={[]}
+          hasLoaded={false}
+          onToggleLike={() => {}}
+          onShowLikes={() => {}}
+          onShowComments={() => {}}
+          onCommentAdded={() => {}}
+          onCommentDeleted={() => {}}
+          onEdit={undefined}
+          isOwnReview={false}
+          loadCommentsIfNeeded={() => {}}
         />
-
-        <ReportModal
-          visible={reportModalVisible}
-          title="Report Review"
-          onClose={() => setReportModalVisible(false)}
-          onSelect={handleReportSubmit}
-        />
-      </>
+      </View>
     );
   }
-);
+
+  return (
+    <>
+      <Pressable
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        onPressOut={handlePressOut}
+      >
+        {!hideHeader && (
+          <View style={styles.header}>
+            <AvatarWrapper
+              avatarUrl={review.profile?.avatar_url || null}
+              username={review.profile?.username}
+              isOwnReview={isOwnReview}
+            />
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => setActionSheetVisible(true)}
+                style={styles.actionButton}
+              >
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={ICON_SIZES.small}
+                  color={COLORS.black}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: review.image_url }}
+            style={styles.reviewImage}
+          />
+          <ReviewOverlay
+            review={review}
+            overlayOpacity={overlayOpacity}
+            onToggleOverlay={toggleOverlay}
+            isOverlayVisible={isOverlayVisible}
+          />
+          {/* Eye icon to toggle overlay - always visible */}
+          <TouchableOpacity
+            style={styles.eyeIconContainer}
+            onPress={toggleOverlay}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isOverlayVisible ? "eye" : "eye-off"}
+              size={20}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {!hideFooter && (
+          <ReviewFooter
+            review={review}
+            hasLiked={hasLiked}
+            likesCount={likesCount}
+            comments={comments}
+            hasLoaded={hasLoaded}
+            onToggleLike={handleToggleLike}
+            onShowLikes={onShowLikes}
+            onShowComments={onShowComments}
+            onCommentAdded={onCommentAdded}
+            onCommentDeleted={onCommentDeleted}
+            onEdit={onEdit}
+            isOwnReview={isOwnReview}
+            loadCommentsIfNeeded={loadCommentsIfNeeded}
+          />
+        )}
+      </Pressable>
+
+      <ActionSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        onReport={() => setReportModalVisible(true)}
+        isOwnReview={isOwnReview}
+      />
+
+      <ReportModal
+        visible={reportModalVisible}
+        title="Report Review"
+        onClose={() => setReportModalVisible(false)}
+        onSelect={handleReportSubmit}
+      />
+    </>
+  );
+};
+
+const ReviewItem = memo(ReviewItemComponent, areEqual);
 
 export default ReviewItem;
 

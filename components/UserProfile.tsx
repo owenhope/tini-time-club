@@ -142,7 +142,7 @@ const UserProfile = () => {
         // Update follower count after following
         setFollowersCount((prev) => prev + 1);
         // Track follow event
-        AnalyticService.capture('follow_user', {
+        AnalyticService.capture("follow_user", {
           targetUserId: displayProfile.id,
           targetUsername: displayProfile.username,
         });
@@ -220,7 +220,7 @@ const UserProfile = () => {
         setSelectedProfile(data);
         // Track view profile event (only if not viewing own profile)
         if (profile && data.id !== profile.id) {
-          AnalyticService.capture('view_profile', {
+          AnalyticService.capture("view_profile", {
             targetUserId: data.id,
             targetUsername: data.username,
           });
@@ -238,31 +238,11 @@ const UserProfile = () => {
       return;
     }
     try {
-      const { data: reviewsData, error } = await supabase
-        .from("reviews")
-        .select(
-          `
-          id,
-          comment,
-          image_url,
-          inserted_at,
-          taste,
-          presentation,
-          location:locations!reviews_location_fkey(name),
-          spirit:spirit(name),
-          type:type(name),
-          profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
-          `
-        )
-        .eq("user_id", userId)
-        .eq("state", 1)
-        .not("profile.deleted", "eq", true)
-        .order("inserted_at", { ascending: false });
-      if (error) {
-        console.error("Error fetching user reviews:", error);
-        setLoadingReviews(false);
-        return;
-      }
+      const reviewsData = await databaseService.getReviews({
+        userId,
+        currentUserId: userId,
+        excludeBlocked: false, // Don't exclude blocked users when viewing their profile
+      });
 
       // Get image URLs using cache
       const imagePaths = reviewsData.map((review: any) => review.image_url);
@@ -273,9 +253,9 @@ const UserProfile = () => {
         image_url: imageUrls[review.image_url] || review.image_url,
       }));
       setUserReviews(reviewsWithFullUrl);
-      setLoadingReviews(false);
     } catch (err) {
       console.error("Unexpected error while fetching user reviews:", err);
+    } finally {
       setLoadingReviews(false);
     }
   };
@@ -531,23 +511,23 @@ const UserProfile = () => {
         onBlockPress={handleBlockUser}
         onUnblockPress={handleUnblockUser}
         onFollowersPress={() =>
-          navigation.navigate(
-            getNavigationPath("users/[username]/followers"),
-            {
-              username: displayProfile?.username,
-            }
-          )
+          navigation.navigate(getNavigationPath("users/[username]/followers"), {
+            username: displayProfile?.username,
+          })
         }
         onFollowingPress={() =>
-          navigation.navigate(
-            getNavigationPath("users/[username]/following"),
-            {
-              username: displayProfile?.username,
-            }
-          )
+          navigation.navigate(getNavigationPath("users/[username]/following"), {
+            username: displayProfile?.username,
+          })
         }
         isScrolled={isScrolled}
-        hasBioOrFavs={!!(displayProfile?.bio || getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0)}
+        hasBioOrFavs={
+          !!(
+            displayProfile?.bio ||
+            getFavoriteSpirits().length > 0 ||
+            getFavoriteTypes().length > 0
+          )
+        }
       />
 
       {/* Bio Section */}
@@ -572,7 +552,9 @@ const UserProfile = () => {
               {getFavoriteSpirits().map((spiritId: any) => {
                 return (
                   <View key={`spirit-${spiritId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                    <Text style={styles.tagText}>
+                      {getSpiritName(spiritId)}
+                    </Text>
                   </View>
                 );
               })}

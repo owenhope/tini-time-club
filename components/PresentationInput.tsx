@@ -1,4 +1,3 @@
-import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Controller } from "react-hook-form";
 import { AirbnbRating } from "react-native-ratings";

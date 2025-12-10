@@ -23,11 +23,11 @@ import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress } from "@/utils/helpers";
-import { getBlockedUserIds } from "@/utils/blockUtils";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
 import RatingCircles from "@/components/RatingCircles";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
 import {
   getPlaceDetailsByNameAndAddress,
   getRelevantPlaceTypes,
@@ -262,7 +262,8 @@ const Location = () => {
       // Query locations table directly to include locations with no reviews
       const { data: locationData, error: locationError } = await supabase
         .from("locations")
-        .select(`
+        .select(
+          `
           id,
           name,
           address,
@@ -272,7 +273,8 @@ const Location = () => {
             presentation,
             state
           )
-        `)
+        `
+        )
         .eq("id", locationId)
         .maybeSingle();
 
@@ -492,74 +494,40 @@ const Location = () => {
     router,
   ]);
 
+  // Shared function to load location reviews
+  const loadLocationReviews = useCallback(async () => {
+    if (!displayLocation?.id) return;
+
+    setLoadingReviews(true);
+    try {
+      const reviewsData = await databaseService.getReviews({
+        locationId: displayLocation.id,
+        currentUserId: profile?.id,
+        excludeBlocked: true,
+      });
+
+      // Get image URLs using cache
+      const imagePaths = reviewsData.map((review: any) => review.image_url);
+      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+
+      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
+        ...review,
+        image_url: imageUrls[review.image_url] || review.image_url,
+      }));
+      setLocationReviews(reviewsWithFullUrl);
+    } catch (err) {
+      console.error("Unexpected error while fetching location reviews:", err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [displayLocation?.id, profile?.id]);
+
   const onRefresh = useCallback(() => {
     if (displayLocation?.id) {
       loadedLocationIdRef.current = null; // Reset to allow reload
-
-      // Load location reviews inline
-      const loadReviews = async () => {
-        setLoadingReviews(true);
-        try {
-          // Get blocked user IDs to filter out their reviews
-          const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
-
-          const { data: reviewsData, error } = await supabase
-            .from("reviews")
-            .select(
-              `
-            id,
-            comment,
-            image_url,
-            inserted_at,
-            taste,
-            presentation,
-            location:locations!reviews_location_fkey(name),
-            spirit:spirit(name),
-            type:type(name),
-            user_id,
-            profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
-            `
-            )
-            .eq("location", displayLocation.id)
-            .eq("state", 1)
-            .not("profile.deleted", "eq", true)
-            .order("inserted_at", { ascending: false });
-
-          if (error) {
-            console.error("Error fetching location reviews:", error);
-            setLoadingReviews(false);
-            return;
-          }
-
-          // Filter out reviews from blocked users
-          const filteredReviews = reviewsData.filter(
-            (review: any) => !blockedIds.includes(review.user_id)
-          );
-
-          // Get image URLs using cache
-          const imagePaths = filteredReviews.map(
-            (review: any) => review.image_url
-          );
-          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-          const reviewsWithFullUrl = filteredReviews.map((review: any) => ({
-            ...review,
-            image_url: imageUrls[review.image_url] || review.image_url,
-          }));
-          setLocationReviews(reviewsWithFullUrl);
-          setLoadingReviews(false);
-        } catch (err) {
-          console.error(
-            "Unexpected error while fetching location reviews:",
-            err
-          );
-          setLoadingReviews(false);
-        }
-      };
-
-      loadReviews();
+      loadLocationReviews();
     }
-  }, [displayLocation?.id, profile?.id]);
+  }, [displayLocation?.id, loadLocationReviews]);
 
   useEffect(() => {
     if (
@@ -571,70 +539,10 @@ const Location = () => {
       // Load location image
       loadLocationImage(displayLocation.id);
 
-      // Load location reviews inline to avoid dependency issues
-      const loadReviews = async () => {
-        setLoadingReviews(true);
-        try {
-          // Get blocked user IDs to filter out their reviews
-          const blockedIds = profile ? await getBlockedUserIds(profile.id) : [];
-
-          const { data: reviewsData, error } = await supabase
-            .from("reviews")
-            .select(
-              `
-            id,
-            comment,
-            image_url,
-            inserted_at,
-            taste,
-            presentation,
-            location:locations!reviews_location_fkey(name),
-            spirit:spirit(name),
-            type:type(name),
-            user_id,
-            profile:profiles!reviews_user_id_fkey1(id, username, avatar_url)
-            `
-            )
-            .eq("location", displayLocation.id)
-            .eq("state", 1)
-            .not("profile.deleted", "eq", true)
-            .order("inserted_at", { ascending: false });
-
-          if (error) {
-            console.error("Error fetching location reviews:", error);
-            setLoadingReviews(false);
-            return;
-          }
-
-          // Filter out reviews from blocked users
-          const filteredReviews = reviewsData.filter(
-            (review: any) => !blockedIds.includes(review.user_id)
-          );
-
-          // Get image URLs using cache
-          const imagePaths = filteredReviews.map(
-            (review: any) => review.image_url
-          );
-          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-          const reviewsWithFullUrl = filteredReviews.map((review: any) => ({
-            ...review,
-            image_url: imageUrls[review.image_url] || review.image_url,
-          }));
-          setLocationReviews(reviewsWithFullUrl);
-          setLoadingReviews(false);
-        } catch (err) {
-          console.error(
-            "Unexpected error while fetching location reviews:",
-            err
-          );
-          setLoadingReviews(false);
-        }
-      };
-
-      loadReviews();
+      // Load location reviews
+      loadLocationReviews();
     }
-  }, [displayLocation?.id, profile?.id]);
+  }, [displayLocation?.id, loadLocationImage, loadLocationReviews]);
 
   return (
     <View style={styles.container}>

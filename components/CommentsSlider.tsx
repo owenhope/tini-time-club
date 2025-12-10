@@ -15,12 +15,8 @@ import {
   TouchableWithoutFeedback,
   Platform,
   Keyboard,
-  Image,
-  Modal,
 } from "react-native";
-import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
-import imageCache from "@/utils/imageCache";
 import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,15 +25,13 @@ import ReportModal from "@/components/ReportModal";
 import { useRouter } from "expo-router";
 import { Avatar } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
+import { Review } from "@/types/types";
 
 const screenHeight = Dimensions.get("window").height;
 
 interface CommentsSliderProps {
-  review: {
-    id: string;
-    user_id: string;
-    location?: { name?: string };
-  };
+  review: Pick<Review, "id" | "user_id" | "location">;
   onClose: () => void;
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
   onCommentAdded?: (reviewId: string, newComment: any) => void;
@@ -62,11 +56,7 @@ export default function CommentsSlider({
   useEffect(() => {
     const openSlider = async () => {
       setShowContent(false);
-      const { data } = await supabase
-        .from("comments")
-        .select("*, profile:profiles(id, username, avatar_url)")
-        .eq("review_id", review.id)
-        .order("inserted_at", { ascending: true });
+      const data = await databaseService.getComments(review.id);
 
       setComments(data || []);
 
@@ -88,66 +78,55 @@ export default function CommentsSlider({
   const handleAddComment = async () => {
     if (!profile || !commentText.trim()) return;
 
-    const { data, error } = await supabase
-      .from("comments")
-      .insert({
+    try {
+      const data = await databaseService.createComment({
         review_id: review.id,
         user_id: profile.id,
         body: commentText.trim(),
-      })
-      .select("*, profile:profiles(id, username, avatar_url)")
-      .single();
+      });
 
-    if (error) {
-      console.error("Error adding comment:", error);
-      return;
-    }
+      setCommentText("");
+      setComments((prev) => [...prev, data]);
+      flatListRef.current?.scrollToEnd({ animated: true });
+      onCommentAdded?.(review.id, data);
 
-    setCommentText("");
-    setComments((prev) => [...prev, data]);
-    flatListRef.current?.scrollToEnd({ animated: true });
-    onCommentAdded?.(review.id, data);
+      // Track comment event
+      AnalyticService.capture("comment_on_review", {
+        reviewId: review.id,
+        commentId: data.id,
+        locationId: review.location?.id,
+        locationName: review.location?.name,
+      });
 
-    // Track comment event
-    AnalyticService.capture('comment_on_review', {
-      reviewId: review.id,
-      commentId: data.id,
-      locationId: review.location?.id,
-      locationName: review.location?.name,
-    });
-
-    if (review.user_id && profile.id !== review.user_id) {
-      // Only send notifications if not in development mode
-      if (!isDevelopmentMode()) {
-        const notificationBody = `${
-          profile.username
-        } commented on your review from ${
-          review.location?.name || "an unknown location"
-        }`;
-        const { error: notificationError } = await supabase
-          .from("notifications")
-          .insert({
+      if (review.user_id && profile.id !== review.user_id) {
+        // Only send notifications if not in development mode
+        if (!isDevelopmentMode()) {
+          const notificationBody = `${
+            profile.username
+          } commented on your review from ${
+            review.location?.name || "an unknown location"
+          }`;
+          await databaseService.createNotification({
             user_id: review.user_id,
             body: notificationBody,
             type: NOTIFICATION_TYPES.USER,
           });
-        if (notificationError) {
-          console.error(
-            "Error creating comment notification:",
-            notificationError
-          );
+        } else {
+          console.log("🚧 Development mode - skipping comment notification");
         }
-      } else {
-        console.log("🚧 Development mode - skipping comment notification");
       }
+    } catch (error) {
+      console.error("Error adding comment:", error);
     }
   };
 
   const deleteComment = async (id: number) => {
-    const { error } = await supabase.from("comments").delete().eq("id", id);
-    if (!error) {
+    try {
+      await databaseService.deleteComment(id, review.id);
       setComments((prev) => prev.filter((c) => c.id !== id));
       onCommentDeleted?.(review.id, id);
+    } catch (error) {
+      console.error("Error deleting comment:", error);
     }
   };
 

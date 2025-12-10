@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -18,42 +12,30 @@ import {
   Image,
   Alert,
   Animated,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
 import { Review } from "@/types/types";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
-import { getBlockedUserIds } from "@/utils/blockUtils";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
-import { isDevelopmentMode } from "@/utils/helpers";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
 import { Button, Input } from "@/components/shared";
 
 // Constants for optimization
-const SCREEN_WIDTH = Dimensions.get("window").width;
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
 const MAX_CACHED_ITEMS = 100; // Increased from 50 to 100 to accommodate larger page size
 const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
-
-// Performance monitoring
-const PERFORMANCE_CONFIG = {
-  enableLogging: __DEV__,
-  logInterval: 5000, // Log performance every 5 seconds
-} as const;
-
-// Performance monitoring removed to prevent unnecessary renders
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -88,8 +70,6 @@ function Home() {
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
   const logoScaleAnim = useRef(new Animated.Value(1)).current;
   const headerHeightAnim = useRef(new Animated.Value(68)).current; // Initial header height
-
-  // usePerformanceMonitor(PERFORMANCE_CONFIG.enableLogging); // Disabled to prevent unnecessary renders
 
   useEffect(() => {
     if (profile?.id) {
@@ -277,26 +257,32 @@ function Home() {
     }
   }, [loadingMore, hasMore, refreshing, loadReviews]);
 
-  // Preload images for upcoming items
+  // Preload images for visible and upcoming items (optimized)
   useEffect(() => {
     if (reviews.length > 0) {
-      // Preload image URLs and prefetch images for next 5 items
-      const preloadCount = Math.min(5, reviews.length);
-      const imagePaths = reviews.slice(0, preloadCount).map((review) => review.image_url);
+      // Preload more items for smoother scrolling
+      const preloadCount = Math.min(15, reviews.length);
+      const imagePaths = reviews
+        .slice(0, preloadCount)
+        .map((review) => review.image_url)
+        .filter(Boolean);
       if (imagePaths.length > 0) {
-        // Preload URLs in background
-        imageCache.getReviewImageUrls(imagePaths).then((urls) => {
-          // Prefetch actual images using React Native's prefetch
-          Object.values(urls).forEach((url) => {
-            if (url) {
-              Image.prefetch(url).catch(() => {
-                // Silently fail - preloading is optional
-              });
-            }
+        // Preload URLs in background (don't await)
+        imageCache
+          .getReviewImageUrls(imagePaths)
+          .then((urls) => {
+            // Prefetch actual images using React Native's prefetch
+            Object.values(urls).forEach((url) => {
+              if (url) {
+                Image.prefetch(url).catch(() => {
+                  // Silently fail - preloading is optional
+                });
+              }
+            });
+          })
+          .catch(() => {
+            // Silently fail - preloading is optional
           });
-        }).catch(() => {
-          // Silently fail - preloading is optional
-        });
       }
     }
   }, [reviews.length]);
@@ -594,10 +580,52 @@ function Home() {
     );
   }, [loadingMore]);
 
-  // Memoized review item renderer
+  // Stable callbacks to prevent re-renders
+  const handleShowLikes = useCallback((id: string) => {
+    setSelectedReviewId(id);
+  }, []);
+
+  const handleShowComments = useCallback((item: Review) => {
+    setSelectedCommentReview(item);
+  }, []);
+
+  const handleCommentAdded = useCallback(
+    (reviewId: string, newComment: any) => {
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                _commentPatch: { action: "add", data: newComment },
+              }
+            : review
+        )
+      );
+    },
+    []
+  );
+
+  const handleCommentDeleted = useCallback(
+    (reviewId: string, commentId: number) => {
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                _commentPatch: { action: "delete", id: commentId },
+              }
+            : review
+        )
+      );
+    },
+    []
+  );
+
+  // Memoized review item renderer with stable callbacks
   const renderReviewItem = useCallback(
     ({ item }: { item: Review }) => {
-      const isOwnReview = profile && String(profile.id) === String(item.user_id);
+      const isOwnReview =
+        profile && String(profile.id) === String(item.user_id);
       return (
         <ReviewItem
           review={item}
@@ -607,36 +635,21 @@ function Home() {
               ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
               : undefined
           }
-          onShowLikes={(id: string) => setSelectedReviewId(id)}
-          onShowComments={() => setSelectedCommentReview(item)}
-          onCommentAdded={(reviewId, newComment) => {
-            setReviews((prev) =>
-              prev.map((review) =>
-                review.id === reviewId
-                  ? {
-                      ...review,
-                      _commentPatch: { action: "add", data: newComment },
-                    }
-                  : review
-              )
-            );
-          }}
-          onCommentDeleted={(reviewId, commentId) => {
-            setReviews((prev) =>
-              prev.map((review) =>
-                review.id === reviewId
-                  ? {
-                      ...review,
-                      _commentPatch: { action: "delete", id: commentId },
-                    }
-                  : review
-              )
-            );
-          }}
+          onShowLikes={handleShowLikes}
+          onShowComments={() => handleShowComments(item)}
+          onCommentAdded={handleCommentAdded}
+          onCommentDeleted={handleCommentDeleted}
         />
       );
     },
-    [profile, router]
+    [
+      profile,
+      router,
+      handleShowLikes,
+      handleShowComments,
+      handleCommentAdded,
+      handleCommentDeleted,
+    ]
   );
 
   // Cleanup timeouts on unmount
@@ -694,7 +707,7 @@ function Home() {
         ref={flatListRef}
         data={reviews}
         renderItem={renderReviewItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -708,10 +721,10 @@ function Home() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={true}
-        maxToRenderPerBatch={3}
-        updateCellsBatchingPeriod={150}
-        initialNumToRender={5}
-        windowSize={5}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />

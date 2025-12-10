@@ -5,15 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Image,
-  SafeAreaView,
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress } from "@/utils/helpers";
-import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 import * as Location from "expo-location";
@@ -146,7 +143,8 @@ export default function DiscoverTabs({
           processedProfiles.sort((a: any, b: any) => {
             const reviewDiff = (b.review_count || 0) - (a.review_count || 0);
             if (reviewDiff !== 0) return reviewDiff;
-            const followerDiff = (b.follower_count || 0) - (a.follower_count || 0);
+            const followerDiff =
+              (b.follower_count || 0) - (a.follower_count || 0);
             if (followerDiff !== 0) return followerDiff;
             return (a.username || "").localeCompare(b.username || "");
           });
@@ -255,7 +253,8 @@ export default function DiscoverTabs({
         // Use a left join to get review counts and ratings
         const { data: locationsData, error: locationsError } = await supabase
           .from("locations")
-          .select(`
+          .select(
+            `
             id,
             name,
             address,
@@ -265,7 +264,8 @@ export default function DiscoverTabs({
               presentation,
               state
             )
-          `)
+          `
+          )
           .ilike("name", `%${searchQuery}%`)
           .limit(20);
 

@@ -3,7 +3,7 @@ import {
   GoogleSigninButton,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { supabase } from "../utils/supabase";
+import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 
@@ -34,7 +34,7 @@ export function GoogleAuth() {
 
             // If sign in succeeds, track login event
             if (!signInError) {
-              AnalyticService.capture('login', { method: 'google' });
+              AnalyticService.capture("login", { method: "google" });
             }
 
             // If sign in fails, try to sign up (for new users)
@@ -50,7 +50,7 @@ export function GoogleAuth() {
                   `Authentication failed: ${signUpError.message}`
                 );
               } else {
-                AnalyticService.capture('create_account', { method: 'google' });
+                AnalyticService.capture("create_account", { method: "google" });
               }
             }
 
