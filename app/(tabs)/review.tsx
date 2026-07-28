@@ -217,6 +217,8 @@ export default function App() {
   const [spirits, setSpirits] = useState<Option[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const opacity = useSharedValue(1);
   const router = useRouter();
@@ -421,13 +423,17 @@ export default function App() {
     }
   };
 
+  // If these fail the wizard has no options to pick from and the user is stuck
+  // mid-flow, having already taken a photo — so surface it and offer a retry.
   const getTypes = async () => {
     try {
       const data = await databaseService.getTypes();
       setTypes(data);
+      setOptionsError(null);
     } catch (error) {
       console.error("Error getting types:", error);
       setTypes([]);
+      setOptionsError("We couldn't load Martini types.");
     }
   };
 
@@ -435,10 +441,17 @@ export default function App() {
     try {
       const data = await databaseService.getSpirits();
       setSpirits(data);
+      setOptionsError(null);
     } catch (error) {
       console.error("Error getting spirits:", error);
       setSpirits([]);
+      setOptionsError("We couldn't load spirits.");
     }
+  };
+
+  const retryLoadOptions = async () => {
+    setOptionsError(null);
+    await Promise.all([getTypes(), getSpirits()]);
   };
 
   const createReview = async (userId: string, imageUrl: string) => {
@@ -484,10 +497,13 @@ export default function App() {
   const handleUploadAndCreateReview = async (formData: any) => {
     try {
       setIsSubmitting(true);
+      setSubmitError(null);
       setSubmissionMessage("Uploading image...");
       const imageUrl = await uploadImage(profile.id);
       if (!imageUrl) {
-        setSubmissionMessage("Failed to upload image.");
+        // submissionMessage only renders while isSubmitting, so a failure needs
+        // its own state or the user is dropped back with no explanation.
+        setSubmitError("We couldn't upload your photo. Please try again.");
         setIsSubmitting(false);
         return;
       }
@@ -495,7 +511,7 @@ export default function App() {
       setSubmissionMessage("Creating review...");
       const reviewId = await createReview(profile.id, imageUrl);
       if (!reviewId) {
-        setSubmissionMessage("Failed to create review.");
+        setSubmitError("We couldn't save your review. Please try again.");
         setIsSubmitting(false);
         return;
       }
@@ -538,7 +554,8 @@ export default function App() {
       reset();
       router.navigate(`/profile`);
     } catch (error) {
-      setSubmissionMessage("An error occurred.");
+      console.error("Error submitting review:", error);
+      setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -595,6 +612,25 @@ export default function App() {
               animatedStyle,
             ]}
           >
+            {(optionsError || submitError) && (
+              <View style={styles.inlineError}>
+                <Text style={styles.inlineErrorText}>
+                  {submitError || optionsError}
+                </Text>
+                <TouchableOpacity
+                  onPress={
+                    submitError
+                      ? () => setSubmitError(null)
+                      : retryLoadOptions
+                  }
+                >
+                  <Text style={styles.inlineErrorAction}>
+                    {submitError ? "Dismiss" : "Retry"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {questions[step].Component &&
               createElement(questions[step].Component, {
                 control,
@@ -693,6 +729,28 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     marginBottom: 15,
+  },
+  inlineError: {
+    backgroundColor: "#FDECEA",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  inlineErrorText: {
+    color: "#A5342B",
+    fontSize: 14,
+    flexShrink: 1,
+  },
+  inlineErrorAction: {
+    color: "#A5342B",
+    fontSize: 14,
+    fontWeight: "700",
   },
   progressBar: {
     height: 4,

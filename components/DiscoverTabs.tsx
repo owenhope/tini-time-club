@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -14,6 +15,26 @@ import { stripNameFromAddress } from "@/utils/helpers";
 import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 import * as Location from "expo-location";
+
+/**
+ * Distinguishes "still loading" from "genuinely nothing here" — both used to
+ * render as an identical blank area.
+ */
+const ListState = ({
+  loading,
+  message,
+}: {
+  loading: boolean;
+  message: string;
+}) => (
+  <View style={styles.listState}>
+    {loading ? (
+      <ActivityIndicator color="#B6A3E2" />
+    ) : (
+      <Text style={styles.listStateText}>{message}</Text>
+    )}
+  </View>
+);
 
 interface DiscoverTabsProps {
   query: string;
@@ -341,16 +362,21 @@ export default function DiscoverTabs({
   };
 
   React.useEffect(() => {
-    if (activeTab === "profiles") {
-      fetchProfiles(query);
-    } else {
-      // For locations tab, if nearby is enabled and we don't have user location yet, wait
-      // But if userLocation is explicitly null (permission denied), proceed anyway
-      if (nearby && userLocation === undefined) {
-        return; // Don't fetch until we have location or permission is denied
+    // Debounce: without this every keystroke fires its own Supabase request.
+    const handle = setTimeout(() => {
+      if (activeTab === "profiles") {
+        fetchProfiles(query);
+      } else {
+        // For locations tab, if nearby is enabled and we don't have user location yet, wait
+        // But if userLocation is explicitly null (permission denied), proceed anyway
+        if (nearby && userLocation === undefined) {
+          return; // Don't fetch until we have location or permission is denied
+        }
+        fetchLocations(query);
       }
-      fetchLocations(query);
-    }
+    }, query ? 300 : 0);
+
+    return () => clearTimeout(handle);
   }, [activeTab, query, nearby, userLocation]);
 
   const renderProfile = ({ item }: { item: any }) => {
@@ -522,6 +548,16 @@ export default function DiscoverTabs({
             keyExtractor={(item) => `profile-${item.id}`}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <ListState
+                loading={loading}
+                message={
+                  query
+                    ? `No people matching "${query}".`
+                    : "No profiles to show yet."
+                }
+              />
+            }
           />
         ) : (
           <FlatList
@@ -530,6 +566,18 @@ export default function DiscoverTabs({
             keyExtractor={(item) => `location-${item.id}`}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <ListState
+                loading={loading}
+                message={
+                  query
+                    ? `No places matching "${query}".`
+                    : nearby
+                    ? "No places near you yet. Try turning off Nearby."
+                    : "No places to show yet."
+                }
+              />
+            }
           />
         )}
       </View>
@@ -638,6 +686,17 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  listState: {
+    paddingTop: 48,
+    paddingHorizontal: 32,
+    alignItems: "center",
+  },
+  listStateText: {
+    color: "#777",
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 22,
   },
   listContainer: {
     paddingVertical: 16,

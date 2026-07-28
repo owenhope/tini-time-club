@@ -8,6 +8,7 @@ import { AppState, AppStateStatus } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { Platform, View, Text } from "react-native";
 import * as TrackingTransparency from "expo-tracking-transparency";
+import * as Linking from "expo-linking";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -21,6 +22,20 @@ export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
   const hasHandledInitialSession = useRef(false);
+
+  // The auth effect below runs once, so reading `pathname`/`isReady` directly
+  // inside it would capture their first-render values forever. Mirror them into
+  // refs the callbacks can read live.
+  const pathnameRef = useRef(pathname);
+  const isReadyRef = useRef(isReady);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    isReadyRef.current = isReady;
+  }, [isReady]);
 
   useEffect(() => {
     // Initialize caches (non-blocking)
@@ -45,22 +60,34 @@ export default function RootLayout() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[RootLayout] Auth state changed:", event, !!session);
 
+      if (event === "PASSWORD_RECOVERY") {
+        // Recovery deep link: let the user set a new password instead of
+        // dropping them on the feed.
+        setIsReady(true);
+        router.replace("/reset-password");
+        await SplashScreen.hideAsync();
+        return;
+      }
+
       if (event === "INITIAL_SESSION" && !hasHandledInitialSession.current) {
         hasHandledInitialSession.current = true;
-        
+
         // Mount Stack first so we can navigate
         setIsReady(true);
-        
+
         // Wait for Stack to mount
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Navigate based on session
-        if (session) {
-          if (pathname !== "/(tabs)/home") {
-            router.replace("/(tabs)/home");
-          }
-        } else {
-          if (pathname !== "/") {
+        // Navigate based on session. A deep link (password recovery, a shared
+        // review, a profile) already routed us somewhere — don't overwrite it.
+        const launchedViaDeepLink = await Linking.getInitialURL();
+
+        if (!launchedViaDeepLink) {
+          if (session) {
+            if (pathnameRef.current !== "/(tabs)/home") {
+              router.replace("/(tabs)/home");
+            }
+          } else if (pathnameRef.current !== "/") {
             router.replace("/");
           }
         }
@@ -71,8 +98,11 @@ export default function RootLayout() {
         // Hide splash after navigation completes
         await SplashScreen.hideAsync();
       } else if (event === "SIGNED_IN" && session) {
-        // User signed in (email, Apple, Google, etc.)
-        router.replace("/(tabs)/home");
+        // User signed in (email, Apple, Google, etc.). Recovery links also emit
+        // SIGNED_IN; staying put keeps the reset screen on screen.
+        if (pathnameRef.current !== "/reset-password") {
+          router.replace("/(tabs)/home");
+        }
       } else if (event === "SIGNED_OUT") {
         // User signed out
         await authCache.invalidateCache();
@@ -88,15 +118,15 @@ export default function RootLayout() {
         appState.current.match(/inactive|background/) &&
         nextAppState === "active" &&
         !isCheckingSession.current &&
-        isReady &&
-        pathname !== "/"
+        isReadyRef.current &&
+        pathnameRef.current !== "/"
       ) {
         isCheckingSession.current = true;
         setIsResuming(true);
 
         try {
           const session = await authCache.getSession();
-          if (!session && pathname !== "/") {
+          if (!session && pathnameRef.current !== "/") {
             router.replace("/");
           }
         } catch (error) {

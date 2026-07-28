@@ -170,26 +170,32 @@ const useLikes = (reviewId: string, userId: string | null) => {
   const toggleLike = useCallback(async () => {
     if (!userId || loading) return;
 
+    const wasLiked = hasLiked;
+
+    // Update optimistically so the heart responds immediately, then roll back
+    // if the write fails. supabase-js resolves with { error } rather than
+    // throwing, so the error must be inspected explicitly.
+    setHasLiked(!wasLiked);
+    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     setLoading(true);
     try {
-      if (hasLiked) {
-        await supabase
-          .from("likes")
-          .delete()
-          .eq("review_id", reviewId)
-          .eq("user_id", userId);
-        setHasLiked(false);
-        setLikesCount((prev) => prev - 1);
-      } else {
-        await supabase
-          .from("likes")
-          .upsert([{ review_id: reviewId, user_id: userId }]);
-        setHasLiked(true);
-        setLikesCount((prev) => prev + 1);
-      }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const { error } = wasLiked
+        ? await supabase
+            .from("likes")
+            .delete()
+            .eq("review_id", reviewId)
+            .eq("user_id", userId)
+        : await supabase
+            .from("likes")
+            .upsert([{ review_id: reviewId, user_id: userId }]);
+
+      if (error) throw error;
     } catch (error) {
       console.error("Error toggling like:", error);
+      setHasLiked(wasLiked);
+      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
     } finally {
       setLoading(false);
     }

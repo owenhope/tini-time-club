@@ -43,6 +43,8 @@ const UserProfile = () => {
     null
   );
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
+  const [followPending, setFollowPending] = useState<boolean>(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
   const [selectedCommentReview, setSelectedCommentReview] =
@@ -114,40 +116,48 @@ const UserProfile = () => {
   }, [displayProfile, profile]);
 
   const toggleFollow = async () => {
-    if (!profile || !displayProfile) return;
+    // followPending guards against double-taps, which would otherwise send two
+    // writes and adjust the local count twice.
+    if (!profile || !displayProfile || followPending) return;
 
-    if (doesFollow) {
-      const { error } = await supabase
-        .from("followers")
-        .delete()
-        .eq("follower_id", profile.id)
-        .eq("following_id", displayProfile.id);
-      if (error) {
-        console.error("Error unfollowing user:", error);
-        Alert.alert("Error", "Unable to unfollow user. Please try again.");
-      } else {
-        setDoesFollow(false);
-        // Update follower count after unfollowing
-        setFollowersCount((prev) => Math.max(0, prev - 1));
-      }
-    } else {
-      const { error } = await supabase
-        .from("followers")
-        .upsert([{ follower_id: profile.id, following_id: displayProfile.id }]);
-      if (error) {
-        console.error("Error following user:", error);
-        Alert.alert("Error", "Unable to follow user. Please try again.");
-      } else {
-        setDoesFollow(true);
-        // Update follower count after following
-        setFollowersCount((prev) => prev + 1);
-        // Track follow event
-        AnalyticService.capture("follow_user", {
-          targetUserId: displayProfile.id,
-          targetUsername: displayProfile.username,
-        });
-      }
+    const wasFollowing = doesFollow;
+    setFollowPending(true);
+
+    // Optimistic: the button reflects the new state immediately.
+    setDoesFollow(!wasFollowing);
+    setFollowersCount((prev) => Math.max(0, prev + (wasFollowing ? -1 : 1)));
+
+    const { error } = wasFollowing
+      ? await supabase
+          .from("followers")
+          .delete()
+          .eq("follower_id", profile.id)
+          .eq("following_id", displayProfile.id)
+      : await supabase
+          .from("followers")
+          .upsert([
+            { follower_id: profile.id, following_id: displayProfile.id },
+          ]);
+
+    if (error) {
+      console.error(
+        wasFollowing ? "Error unfollowing user:" : "Error following user:",
+        error
+      );
+      setDoesFollow(wasFollowing);
+      setFollowersCount((prev) => Math.max(0, prev + (wasFollowing ? 1 : -1)));
+      Alert.alert(
+        "Error",
+        `Unable to ${wasFollowing ? "unfollow" : "follow"} user. Please try again.`
+      );
+    } else if (!wasFollowing) {
+      AnalyticService.capture("follow_user", {
+        targetUserId: displayProfile.id,
+        targetUsername: displayProfile.username,
+      });
     }
+
+    setFollowPending(false);
   };
 
   // Fetch follower and following counts from the database
@@ -207,6 +217,7 @@ const UserProfile = () => {
   }, [usernameParam]);
 
   const fetchSelectedProfile = async (username: string) => {
+    setProfileError(null);
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -216,6 +227,12 @@ const UserProfile = () => {
         .single();
       if (error) {
         console.error("Error fetching selected profile:", error);
+        // Without this the screen stays blank forever with no way back.
+        setProfileError(
+          error.code === "PGRST116"
+            ? "This profile isn't available."
+            : "We couldn't load this profile."
+        );
       } else {
         setSelectedProfile(data);
         // Track view profile event (only if not viewing own profile)
@@ -228,6 +245,7 @@ const UserProfile = () => {
       }
     } catch (err) {
       console.error("Unexpected error fetching profile:", err);
+      setProfileError("We couldn't load this profile.");
     }
   };
 
@@ -496,6 +514,25 @@ const UserProfile = () => {
     }
   );
 
+  if (profileError) {
+    return (
+      <View style={[styles.container, styles.errorState]}>
+        <Text style={styles.errorTitle}>{profileError}</Text>
+        <TouchableOpacity
+          style={styles.errorButton}
+          onPress={() => {
+            if (usernameParam) fetchSelectedProfile(String(usernameParam));
+          }}
+        >
+          <Text style={styles.errorButtonText}>Try again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.errorLink}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Profile Header */}
@@ -604,6 +641,32 @@ const UserProfile = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  errorState: {
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    gap: 16,
+  },
+  errorTitle: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+  },
+  errorButton: {
+    backgroundColor: "#B6A3E2",
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+  },
+  errorButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  errorLink: {
+    color: "#666",
+    fontSize: 14,
   },
   reviewsContainer: {
     flex: 1,

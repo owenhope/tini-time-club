@@ -152,7 +152,10 @@ class DatabaseService {
           blockedIds = await this.getBlockedUserIds(currentUserId);
         }
         
-        // Build query
+        // Build query.
+        // `profiles!user_id!inner` makes the join filtering: an embedded filter
+        // on a non-inner join only nulls out the embedded object, leaving
+        // deleted users' reviews in the feed.
         let query = supabase
           .from('reviews')
           .select(`
@@ -166,13 +169,11 @@ class DatabaseService {
             location:locations!reviews_location_fkey(id, name, address),
             spirit:spirit(name),
             type:type(name),
-            profile:profiles!user_id(id, username, avatar_url)
+            profile:profiles!user_id!inner(id, username, avatar_url)
           `)
           .eq('state', 1)
-          .not('profile.deleted', 'eq', true)
-          .order('inserted_at', { ascending: false })
-          .range(offset, offset + limit - 1);
-        
+          .eq('profile.deleted', false);
+
         // Apply filters
         if (userId) {
           query = query.eq('user_id', userId);
@@ -180,15 +181,21 @@ class DatabaseService {
         if (locationId) {
           query = query.eq('location', locationId);
         }
-        
+
+        // Exclude blocked users inside the query. Filtering after .range()
+        // returns short pages, and callers infer "no more data" from a short
+        // page — which silently truncated the feed.
+        if (blockedIds.length > 0) {
+          query = query.not('user_id', 'in', `(${blockedIds.join(',')})`);
+        }
+
+        query = query
+          .order('inserted_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
         const { data, error } = await query;
         if (error) throw error;
-        
-        // Filter out blocked users
-        if (excludeBlocked && blockedIds.length > 0) {
-          return data.filter((review: any) => !blockedIds.includes(review.user_id));
-        }
-        
+
         return data;
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
@@ -541,28 +548,44 @@ class DatabaseService {
       if (existing) {
         // If we found by name/address but have a place_id, update it for future matches
         if (locationData.place_id) {
-          await supabase
+          const { error: backfillError } = await supabase
             .from('locations')
             .update({ place_id: locationData.place_id })
             .eq('id', existing.id);
+          if (backfillError) {
+            console.error('Error backfilling place_id:', backfillError);
+          }
         }
         return existing.id;
       }
     }
-    
-    // Create new location
-    // Ensure place_id is included if available
+
+    // Create new location.
     const insertData: any = {
       ...locationData,
       created_by: userId
     };
-    
+
+    // With a place_id, upsert against the unique index so two concurrent
+    // submissions for the same bar resolve to one row instead of racing
+    // between the lookup above and this insert.
+    if (locationData.place_id) {
+      const { data, error } = await supabase
+        .from('locations')
+        .upsert(insertData, { onConflict: 'place_id' })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return data.id;
+    }
+
     const { data, error } = await supabase
       .from('locations')
       .insert(insertData)
       .select('id')
       .single();
-    
+
     if (error) throw error;
     return data.id;
   }

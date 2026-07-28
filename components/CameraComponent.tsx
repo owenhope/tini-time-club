@@ -14,6 +14,7 @@ import {
   Image,
   Alert,
   Animated,
+  Linking,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -60,12 +61,24 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   }
 
   if (!permission.granted) {
+    // Once the user has denied and iOS marks the permission non-requestable,
+    // requestPermission() silently no-ops — Settings is the only way back, so
+    // send them there instead of leaving the Review tab permanently unusable.
+    const mustUseSettings = !permission.canAskAgain;
+
     return (
       <View style={styles.container}>
         <Text style={styles.infoText}>
-          We need your permission to use the camera.
+          {mustUseSettings
+            ? "Camera access is turned off. Enable it in Settings to share a Martini."
+            : "We need your permission to use the camera."}
         </Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
+        <Button
+          onPress={
+            mustUseSettings ? () => Linking.openSettings() : requestPermission
+          }
+          title={mustUseSettings ? "Open Settings" : "Grant Permission"}
+        />
       </View>
     );
   }

@@ -6,6 +6,9 @@ import {
   PanResponder,
   Keyboard,
   Platform,
+  Text,
+  TouchableOpacity,
+  Linking,
 } from "react-native";
 import MapView from "@/components/map/ClusteredMap";
 import {
@@ -39,6 +42,9 @@ function Map() {
   } | null>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locations, setLocations] = useState<any[]>([]);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [canOpenLocationSettings, setCanOpenLocationSettings] =
+    useState<boolean>(false);
   const mapRef = createRef<any>();
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
   const bottomSheetAnim = useRef(
@@ -83,20 +89,37 @@ function Map() {
 
   useEffect(() => {
     const getLocation = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        return;
+      try {
+        const { status, canAskAgain } =
+          await Location.requestForegroundPermissionsAsync();
+
+        if (status !== "granted") {
+          // Without this the map silently sits on its hardcoded default region
+          // and the user has no idea why nothing is nearby.
+          setLocationNotice(
+            canAskAgain
+              ? "Location is off, so we can't show bars near you."
+              : "Location is off. Enable it in Settings to see bars near you."
+          );
+          setCanOpenLocationSettings(!canAskAgain);
+          return;
+        }
+
+        setLocationNotice(null);
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentLocation(location.coords);
+        const initial = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        };
+        setRegion(initial);
+        mapRef.current?.animateToRegion(initial, 1000);
+      } catch (error) {
+        console.error("Error getting location:", error);
+        setLocationNotice("We couldn't determine your location.");
       }
-      const location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation(location.coords);
-      const initial = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      };
-      setRegion(initial);
-      mapRef.current?.animateToRegion(initial, 1000);
     };
 
     getLocation();
@@ -178,6 +201,16 @@ function Map() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View style={{ flex: 1 }}>
+        {locationNotice && (
+          <View style={styles.noticeBanner}>
+            <Text style={styles.noticeText}>{locationNotice}</Text>
+            {canOpenLocationSettings && (
+              <TouchableOpacity onPress={() => Linking.openSettings()}>
+                <Text style={styles.noticeAction}>Open Settings</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         <MapView
           ref={mapRef}
           provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
@@ -228,6 +261,28 @@ function Map() {
 }
 
 const styles = StyleSheet.create({
+  noticeBanner: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.82)",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  noticeText: {
+    color: "#fff",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  noticeAction: {
+    color: "#B6A3E2",
+    fontSize: 14,
+    fontWeight: "700",
+  },
   markerContainer: {
     flexDirection: "row",
     alignItems: "center",
