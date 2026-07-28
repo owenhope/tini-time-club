@@ -115,7 +115,10 @@ function Home() {
   }, [profile]);
 
   const loadReviews = useCallback(
-    async (refresh = false) => {
+    // `silent` refreshes the data without the spinners — used by the
+    // focus-staleness refresh so returning to the feed doesn't flash a
+    // loading state over content that's already on screen.
+    async (refresh = false, silent = false) => {
       if (!profile) return;
 
       // Clear review cache when refreshing to get fresh avatar data
@@ -133,8 +136,10 @@ function Home() {
 
       // Set loading states
       if (refresh) {
-        if (page === 0) setLoading(true);
-        setRefreshing(true);
+        if (!silent) {
+          if (page === 0) setLoading(true);
+          setRefreshing(true);
+        }
       } else {
         if (!hasMore) return;
         setLoadingMore(true);
@@ -233,7 +238,9 @@ function Home() {
       // time the user tabbed away and back, even seconds later.
       const isStale = Date.now() - lastRefreshTime > FOCUS_REFRESH_AFTER;
       if (profile?.id && (reviews.length === 0 || isStale)) {
-        loadReviews(true);
+        // Silent: the stale content is already visible; swap it in place
+        // instead of flashing a spinner on every return to the feed.
+        loadReviews(true, reviews.length > 0);
       }
       setGlobalScrollToTop(scrollToTop);
 
