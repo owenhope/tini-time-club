@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
+import * as Linking from "expo-linking";
 import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
 import { Button, Input } from "@/components/shared";
@@ -281,7 +282,11 @@ const useAuth = () => {
       setLoading(true);
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: "tini-time-club://reset-password",
+          // Built from the running app's scheme rather than hardcoded:
+          // app.config.ts registers tini-time-club, -prev and -dev per
+          // environment, so a literal production scheme meant the reset email
+          // opened nothing in dev/preview builds (or opened a prod install).
+          redirectTo: Linking.createURL("/reset-password"),
         });
 
         if (error) {
