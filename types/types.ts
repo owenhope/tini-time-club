@@ -40,5 +40,3 @@ export interface Review {
   user_id: string;
   profile: ReviewProfile;
 }
-
-

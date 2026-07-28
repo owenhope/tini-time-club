@@ -11,7 +11,14 @@ interface ActionSheetProps {
 }
 
 const ActionSheet = memo(
-  ({ visible, onClose, onDelete, onReport, onEdit, isOwnReview }: ActionSheetProps) => {
+  ({
+    visible,
+    onClose,
+    onDelete,
+    onReport,
+    onEdit,
+    isOwnReview,
+  }: ActionSheetProps) => {
     React.useEffect(() => {
       if (visible) {
         if (Platform.OS === "ios") {

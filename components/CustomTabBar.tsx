@@ -1,14 +1,24 @@
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
+
+/**
+ * Props as expo-router's <Tabs tabBar={...}> supplies them. Typed locally
+ * rather than importing BottomTabBarProps: expo-router bundles its own
+ * react-navigation, and the standalone package's types drift from it.
+ */
+type TabBarProps = {
+  state: { routes: any[]; index: number };
+  descriptors: Record<string, any>;
+  navigation: any;
+};
 
 export default function CustomTabBar({
   state,
   descriptors,
   navigation,
-}: BottomTabBarProps) {
+}: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -16,11 +26,11 @@ export default function CustomTabBar({
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
-          options.tabBarLabel !== undefined
+          typeof options.tabBarLabel === "string"
             ? options.tabBarLabel
             : options.title !== undefined
-            ? options.title
-            : route.name;
+              ? options.title
+              : route.name;
 
         const isFocused = state.index === index;
 
@@ -49,10 +59,12 @@ export default function CustomTabBar({
           });
         };
 
-        const getIconName = (routeName: string, focused: boolean) => {
+        const getIconName = (
+          routeName: string,
+          focused: boolean
+        ): keyof typeof Ionicons.glyphMap => {
           switch (routeName) {
-            case "home":
-              return focused ? "martini" : "martini-outline";
+            // "home" renders a PNG above and never reaches this switch.
             case "locations":
               return focused ? "location" : "location-outline";
             case "review":
@@ -62,7 +74,7 @@ export default function CustomTabBar({
             case "profile":
               return focused ? "person" : "person-outline";
             default:
-              return "circle-outline";
+              return "ellipse-outline";
           }
         };
 

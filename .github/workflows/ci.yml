@@ -1,0 +1,49 @@
+name: CI
+
+# Guards the EAS "Deploy to production" workflow, which builds and submits to
+# the App Store on every push to main. Anything that fails here should never
+# reach that pipeline.
+on:
+  pull_request:
+  push:
+    branches: ["main", "development"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --ci
+
+      # app.config.ts reads env vars at evaluation time; a placeholder is
+      # enough to prove the config still resolves.
+      - name: Validate Expo config
+        run: npx expo config --type public > /dev/null
+        env:
+          APP_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ci-placeholder
+          GOOGLE_MAPS_API_KEY_IOS: ci-placeholder
+          GOOGLE_MAPS_API_KEY_ANDROID: ci-placeholder

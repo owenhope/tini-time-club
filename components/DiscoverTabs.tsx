@@ -363,18 +363,21 @@ export default function DiscoverTabs({
 
   React.useEffect(() => {
     // Debounce: without this every keystroke fires its own Supabase request.
-    const handle = setTimeout(() => {
-      if (activeTab === "profiles") {
-        fetchProfiles(query);
-      } else {
-        // For locations tab, if nearby is enabled and we don't have user location yet, wait
-        // But if userLocation is explicitly null (permission denied), proceed anyway
-        if (nearby && userLocation === undefined) {
-          return; // Don't fetch until we have location or permission is denied
+    const handle = setTimeout(
+      () => {
+        if (activeTab === "profiles") {
+          fetchProfiles(query);
+        } else {
+          // For locations tab, if nearby is enabled and we don't have user location yet, wait
+          // But if userLocation is explicitly null (permission denied), proceed anyway
+          if (nearby && userLocation === undefined) {
+            return; // Don't fetch until we have location or permission is denied
+          }
+          fetchLocations(query);
         }
-        fetchLocations(query);
-      }
-    }, query ? 300 : 0);
+      },
+      query ? 300 : 0
+    );
 
     return () => clearTimeout(handle);
   }, [activeTab, query, nearby, userLocation]);
@@ -415,8 +418,9 @@ export default function DiscoverTabs({
       style={styles.resultCard}
       onPress={() =>
         router.navigate({
-          pathname: `/discover/locations/${item.id}`,
+          pathname: "/discover/locations/[location]",
           params: {
+            location: item.id,
             name: item.name || "",
             address: item.address || "",
           },
@@ -573,8 +577,8 @@ export default function DiscoverTabs({
                   query
                     ? `No places matching "${query}".`
                     : nearby
-                    ? "No places near you yet. Try turning off Nearby."
-                    : "No places to show yet."
+                      ? "No places near you yet. Try turning off Nearby."
+                      : "No places to show yet."
                 }
               />
             }

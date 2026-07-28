@@ -17,12 +17,7 @@ import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  useRouter,
-  useLocalSearchParams,
-  useNavigation,
-  usePathname,
-} from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 
@@ -59,18 +54,8 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const navigation = useNavigation();
-  const pathname = usePathname();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
-
-  // Determine the correct navigation path based on current context
-  const getNavigationPath = (route: string) => {
-    if (pathname?.includes("/discover/")) {
-      return route; // For discover tab, use the route as-is
-    } else {
-      return route; // For home tab, use the route as-is
-    }
-  };
 
   // For this screen, we always show the other user's profile.
   const displayProfile = selectedProfile;
@@ -548,14 +533,10 @@ const UserProfile = () => {
         onBlockPress={handleBlockUser}
         onUnblockPress={handleUnblockUser}
         onFollowersPress={() =>
-          navigation.navigate(getNavigationPath("users/[username]/followers"), {
-            username: displayProfile?.username,
-          })
+          router.push(`/users/${displayProfile?.username}/followers` as never)
         }
         onFollowingPress={() =>
-          navigation.navigate(getNavigationPath("users/[username]/following"), {
-            username: displayProfile?.username,
-          })
+          router.push(`/users/${displayProfile?.username}/following` as never)
         }
         isScrolled={isScrolled}
         hasBioOrFavs={

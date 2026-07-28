@@ -144,7 +144,7 @@ const ForgotPasswordModal = ({
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Reset Password</Text>
         <Text style={styles.modalSubtitle}>
-          Enter your email address and we'll send you a link to reset your
+          Enter your email address and we&apos;ll send you a link to reset your
           password.
         </Text>
         <Input
@@ -217,7 +217,7 @@ const useAuth = () => {
         }
 
         if (session) {
-          AnalyticService.capture('create_account', { method: 'email' });
+          AnalyticService.capture("create_account", { method: "email" });
           return true;
         } else {
           Alert.alert("Verification", MESSAGES.signUp.verification);
@@ -257,7 +257,7 @@ const useAuth = () => {
           Alert.alert(MESSAGES.signIn.error, error.message);
           return false;
         }
-        AnalyticService.capture('login', { method: 'email' });
+        AnalyticService.capture("login", { method: "email" });
         return true;
       } catch (err: any) {
         Alert.alert(
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     paddingTop: 100,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: COLORS.overlay,
     justifyContent: "center",
     alignItems: "center",

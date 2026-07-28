@@ -29,7 +29,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     icon: icon,
     scheme: scheme,
     ios: {
@@ -83,9 +82,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       [
-        "expo-tracking-transparency", 
-        { userTrackingPermission: 
-          "Allow Tini Time Club to collect app-related data that can be used to deliver personalized Martini reviews, and suggested user profiles to you."
+        "expo-tracking-transparency",
+        {
+          userTrackingPermission:
+            "Allow Tini Time Club to collect app-related data that can be used to deliver personalized Martini reviews, and suggested user profiles to you.",
         },
       ],
       [
@@ -93,13 +93,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           locationAlwaysAndWhenInUsePermission:
             "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
-            locationWhenInUsePermission: "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+          locationWhenInUsePermission:
+            "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
         },
       ],
       [
         "expo-camera",
         {
-          cameraPermission: "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture."
+          cameraPermission:
+            "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture.",
         },
       ],
       [
@@ -115,10 +117,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           appleSignInEnabled: true,
         },
       ],
-      [
-        "expo-localization"
-      ],
-      "expo-secure-store"
+      ["expo-localization"],
+      "expo-secure-store",
     ],
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

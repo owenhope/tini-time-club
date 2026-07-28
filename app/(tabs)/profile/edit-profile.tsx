@@ -21,7 +21,9 @@ const EditProfile = () => {
   const { profile, refreshProfile } = useProfile();
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
-  const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>([]);
+  const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
+    []
+  );
   const [selectedTypes, setSelectedTypes] = useState<(number | string)[]>([]);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
@@ -35,7 +37,7 @@ const EditProfile = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load spirits and types
       const [spiritsData, typesData] = await Promise.all([
         databaseService.getSpirits(),
@@ -49,7 +51,7 @@ const EditProfile = () => {
       if (profile) {
         setName(profile.name || "");
         setBio(profile.bio || "");
-        
+
         // Handle favorite_spirits (could be array or JSON string)
         let favoriteSpirits = [];
         if (profile.favorite_spirits) {
@@ -64,7 +66,7 @@ const EditProfile = () => {
           }
         }
         setSelectedSpirits(favoriteSpirits);
-        
+
         // Handle favorite_types (could be array or JSON string)
         let favoriteTypes = [];
         if (profile.favorite_types) {
@@ -152,9 +154,7 @@ const EditProfile = () => {
             maxLength={150}
             textAlignVertical="top"
           />
-          <Text style={styles.characterCount}>
-            {bio.length}/150
-          </Text>
+          <Text style={styles.characterCount}>{bio.length}/150</Text>
 
           <MultiSelectInput
             label="Favorite Spirits"
@@ -179,7 +179,11 @@ const EditProfile = () => {
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.saveButton, saving && styles.saveButtonDisabled]}
+              style={[
+                styles.button,
+                styles.saveButton,
+                saving && styles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
               disabled={saving}
             >
@@ -271,4 +275,3 @@ const styles = StyleSheet.create({
 });
 
 export default EditProfile;
-

@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabase";
 
 interface CachedImage {
   url: string;
@@ -17,72 +17,75 @@ class ImageCache {
   private static instance: ImageCache;
   private memoryCache = new Map<string, CachedImage | CachedSignedUrl>();
   private pendingRequests = new Map<string, Promise<string | null>>();
-  
+
   // Cache durations (in milliseconds)
   private readonly AVATAR_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   private readonly REVIEW_IMAGE_CACHE_DURATION = 90 * 60 * 1000; // 90 minutes (less than signed URL expiry of 2 hours)
   private readonly LOCATION_IMAGE_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
-  
+
   private constructor() {}
-  
+
   static getInstance(): ImageCache {
     if (!ImageCache.instance) {
       ImageCache.instance = new ImageCache();
     }
     return ImageCache.instance;
   }
-  
+
   /**
    * Get avatar URL without caching (always fresh)
    */
   async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
     if (!avatarPath) return null;
-    
+
     try {
       const { data } = supabase.storage
         .from("avatars")
         .getPublicUrl(avatarPath);
-      
+
       const url = data.publicUrl;
       return url;
     } catch (error) {
-      console.error('Error fetching avatar URL:', error);
+      console.error("Error fetching avatar URL:", error);
       return null;
     }
   }
-  
-  private async fetchAvatarUrl(avatarPath: string, cacheKey: string): Promise<string> {
+
+  private async fetchAvatarUrl(
+    avatarPath: string,
+    cacheKey: string
+  ): Promise<string> {
     try {
       const { data } = supabase.storage
         .from("avatars")
         .getPublicUrl(avatarPath);
-      
+
       const url = data.publicUrl;
-      
+
       // Cache the result
       const cached: CachedImage = {
         url,
         timestamp: Date.now(),
-        expiresAt: Date.now() + this.AVATAR_CACHE_DURATION
+        expiresAt: Date.now() + this.AVATAR_CACHE_DURATION,
       };
-      
+
       this.memoryCache.set(cacheKey, cached);
       await this.persistToStorage(cacheKey, cached);
-      
+
       return url;
     } catch (error) {
-      console.error('Error fetching avatar URL:', error);
+      console.error("Error fetching avatar URL:", error);
       throw error;
     }
   }
-  
+
   /**
    * Get signed URL for review images with caching
    * Optimized: Removed slow URL validation check for better performance
    */
   async getReviewImageUrl(imagePath: string): Promise<string | null> {
     const cacheKey = `review_${imagePath}`;
-    
+
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
     if (cached && Date.now() < cached.expiresAt) {
@@ -90,21 +93,21 @@ class ImageCache {
       // Return null if cached value is empty string (indicates missing image)
       return cached.signedUrl || null;
     }
-    
+
     // Remove expired cache entry
     if (cached && Date.now() >= cached.expiresAt) {
       this.memoryCache.delete(cacheKey);
     }
-    
+
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
       return this.pendingRequests.get(cacheKey)!;
     }
-    
+
     // Create new request
     const request = this.fetchReviewImageUrl(imagePath, cacheKey);
     this.pendingRequests.set(cacheKey, request as Promise<string | null>);
-    
+
     try {
       const result = await request;
       return result;
@@ -112,46 +115,55 @@ class ImageCache {
       this.pendingRequests.delete(cacheKey);
     }
   }
-  
-  private async fetchReviewImageUrl(imagePath: string, cacheKey: string): Promise<string | null> {
+
+  private async fetchReviewImageUrl(
+    imagePath: string,
+    cacheKey: string
+  ): Promise<string | null> {
     try {
       const { data, error } = await supabase.storage
         .from("review_images")
         .createSignedUrl(imagePath, 7200); // 2 hours server-side cache (longer = fewer API calls)
-      
+
       if (error) {
         // Only log non-"not found" errors to reduce noise
         // "Object not found" is expected for deleted/missing images
-        if (!error.message?.includes('not found') && !error.message?.includes('Object not found')) {
-          console.error('Error creating signed URL:', error);
+        if (
+          !error.message?.includes("not found") &&
+          !error.message?.includes("Object not found")
+        ) {
+          console.error("Error creating signed URL:", error);
         }
         // Cache null result for missing images to avoid repeated failed requests
         const cached: CachedSignedUrl = {
-          signedUrl: '',
+          signedUrl: "",
           timestamp: Date.now(),
-          expiresAt: Date.now() + this.REVIEW_IMAGE_CACHE_DURATION
+          expiresAt: Date.now() + this.REVIEW_IMAGE_CACHE_DURATION,
         };
         this.memoryCache.set(cacheKey, cached);
         return null;
       }
-      
+
       const signedUrl = data.signedUrl;
-      
+
       // Cache the result with shorter expiry to ensure we refresh before URL expires
       const cached: CachedSignedUrl = {
         signedUrl,
         timestamp: Date.now(),
-        expiresAt: Date.now() + this.REVIEW_IMAGE_CACHE_DURATION
+        expiresAt: Date.now() + this.REVIEW_IMAGE_CACHE_DURATION,
       };
-      
+
       this.memoryCache.set(cacheKey, cached);
       await this.persistToStorage(cacheKey, cached);
-      
+
       return signedUrl;
     } catch (error: any) {
       // Only log unexpected errors
-      if (!error?.message?.includes('not found') && !error?.message?.includes('Object not found')) {
-        console.error('Error fetching review image URL:', error);
+      if (
+        !error?.message?.includes("not found") &&
+        !error?.message?.includes("Object not found")
+      ) {
+        console.error("Error fetching review image URL:", error);
       }
       return null;
     }
@@ -162,19 +174,19 @@ class ImageCache {
    */
   private async isUrlValid(url: string): Promise<boolean> {
     try {
-      const response = await fetch(url, { method: 'HEAD' });
+      const response = await fetch(url, { method: "HEAD" });
       return response.ok;
     } catch (error) {
       return false;
     }
   }
-  
+
   /**
    * Get location image with caching
    */
   async getLocationImage(locationId: string): Promise<string | null> {
     const cacheKey = `location_${locationId}`;
-    
+
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedImage;
     if (cached) {
@@ -185,16 +197,16 @@ class ImageCache {
         this.memoryCache.delete(cacheKey);
       }
     }
-    
+
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
       return this.pendingRequests.get(cacheKey)!;
     }
-    
+
     // Create new request
     const request = this.fetchLocationImage(locationId, cacheKey);
     this.pendingRequests.set(cacheKey, request);
-    
+
     try {
       const result = await request;
       return result;
@@ -202,22 +214,28 @@ class ImageCache {
       this.pendingRequests.delete(cacheKey);
     }
   }
-  
-  private async fetchLocationImage(locationId: string, cacheKey: string): Promise<string | null> {
+
+  private async fetchLocationImage(
+    locationId: string,
+    cacheKey: string
+  ): Promise<string | null> {
     try {
       const { data, error } = await supabase.storage
         .from("location_images")
         .download(`${locationId}/image.jpg`);
-      
+
       if (error) {
-        if (error.message.includes("400") || error.message.includes("The resource was not found")) {
+        if (
+          error.message.includes("400") ||
+          error.message.includes("The resource was not found")
+        ) {
           return null;
         }
         throw error;
       }
-      
+
       if (!data) return null;
-      
+
       // Convert blob to data URL
       const fr = new FileReader();
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -225,43 +243,45 @@ class ImageCache {
         fr.onerror = reject;
         fr.readAsDataURL(data);
       });
-      
+
       // Cache the result
       const cached: CachedImage = {
         url: dataUrl,
         timestamp: Date.now(),
-        expiresAt: Date.now() + this.LOCATION_IMAGE_CACHE_DURATION
+        expiresAt: Date.now() + this.LOCATION_IMAGE_CACHE_DURATION,
       };
-      
+
       this.memoryCache.set(cacheKey, cached);
       await this.persistToStorage(cacheKey, cached);
-      
+
       return dataUrl;
     } catch (error) {
-      console.error('Error fetching location image:', error);
+      console.error("Error fetching location image:", error);
       return null;
     }
   }
-  
+
   /**
    * Batch process multiple review images
    */
-  async getReviewImageUrls(imagePaths: string[]): Promise<Record<string, string>> {
+  async getReviewImageUrls(
+    imagePaths: string[]
+  ): Promise<Record<string, string>> {
     const results: Record<string, string> = {};
     const uncachedPaths: string[] = [];
-    
+
     // Check cache for all images first
     for (const path of imagePaths) {
       const cacheKey = `review_${path}`;
       const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
-      
+
       if (cached && Date.now() < cached.expiresAt) {
         results[path] = cached.signedUrl;
       } else {
         uncachedPaths.push(path);
       }
     }
-    
+
     // Fetch uncached images in parallel
     if (uncachedPaths.length > 0) {
       const promises = uncachedPaths.map(async (path) => {
@@ -273,47 +293,50 @@ class ImageCache {
           return { path, url: null };
         }
       });
-      
+
       const fetchedResults = await Promise.all(promises);
-      
+
       for (const { path, url } of fetchedResults) {
         if (url) {
           results[path] = url;
         }
       }
     }
-    
+
     return results;
   }
-  
+
   /**
    * Persist cache to AsyncStorage
    */
-  private async persistToStorage(key: string, data: CachedImage | CachedSignedUrl): Promise<void> {
+  private async persistToStorage(
+    key: string,
+    data: CachedImage | CachedSignedUrl
+  ): Promise<void> {
     try {
       await AsyncStorage.setItem(`image_cache_${key}`, JSON.stringify(data));
     } catch (error) {
-      console.error('Error persisting cache:', error);
+      console.error("Error persisting cache:", error);
     }
   }
-  
+
   /**
    * Load cache from AsyncStorage on app start
    */
   async loadFromStorage(): Promise<void> {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter(key => key.startsWith('image_cache_'));
-      
+      const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
+
       for (const key of cacheKeys) {
         try {
           const data = await AsyncStorage.getItem(key);
           if (data) {
             const parsed = JSON.parse(data) as CachedImage | CachedSignedUrl;
-            
+
             // Only load if not expired
             if (Date.now() < parsed.expiresAt) {
-              const cacheKey = key.replace('image_cache_', '');
+              const cacheKey = key.replace("image_cache_", "");
               this.memoryCache.set(cacheKey, parsed);
             } else {
               // Remove expired entries
@@ -325,24 +348,24 @@ class ImageCache {
         }
       }
     } catch (error) {
-      console.error('Error loading cache from storage:', error);
+      console.error("Error loading cache from storage:", error);
     }
   }
-  
+
   /**
    * Clear avatar cache for a specific avatar path
    */
   async clearAvatarCache(avatarPath: string): Promise<void> {
     const cacheKey = `avatar_${avatarPath}`;
-    
+
     // Remove from memory cache
     this.memoryCache.delete(cacheKey);
-    
+
     // Remove from AsyncStorage
     try {
       await AsyncStorage.removeItem(`image_cache_${cacheKey}`);
     } catch (error) {
-      console.error('Error clearing avatar cache:', error);
+      console.error("Error clearing avatar cache:", error);
     }
   }
 
@@ -353,28 +376,28 @@ class ImageCache {
     try {
       // Get all cache keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
-      const avatarCacheKeys = keys.filter(key => 
-        key.startsWith('image_cache_avatar_') && key.includes(userId)
+      const avatarCacheKeys = keys.filter(
+        (key) => key.startsWith("image_cache_avatar_") && key.includes(userId)
       );
-      
+
       // Remove from AsyncStorage
       if (avatarCacheKeys.length > 0) {
         await AsyncStorage.multiRemove(avatarCacheKeys);
       }
-      
+
       // Remove from memory cache
       const memoryKeysToDelete: string[] = [];
       for (const [key, value] of this.memoryCache.entries()) {
-        if (key.startsWith('avatar_') && key.includes(userId)) {
+        if (key.startsWith("avatar_") && key.includes(userId)) {
           memoryKeysToDelete.push(key);
         }
       }
-      
-      memoryKeysToDelete.forEach(key => {
+
+      memoryKeysToDelete.forEach((key) => {
         this.memoryCache.delete(key);
       });
     } catch (error) {
-      console.error('Error clearing user avatar cache:', error);
+      console.error("Error clearing user avatar cache:", error);
     }
   }
 
@@ -385,28 +408,28 @@ class ImageCache {
     try {
       // Get all cache keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
-      const avatarCacheKeys = keys.filter(key => 
-        key.startsWith('image_cache_avatar_')
+      const avatarCacheKeys = keys.filter((key) =>
+        key.startsWith("image_cache_avatar_")
       );
-      
+
       // Remove from AsyncStorage
       if (avatarCacheKeys.length > 0) {
         await AsyncStorage.multiRemove(avatarCacheKeys);
       }
-      
+
       // Remove from memory cache
       const memoryKeysToDelete: string[] = [];
       for (const [key, value] of this.memoryCache.entries()) {
-        if (key.startsWith('avatar_')) {
+        if (key.startsWith("avatar_")) {
           memoryKeysToDelete.push(key);
         }
       }
-      
-      memoryKeysToDelete.forEach(key => {
+
+      memoryKeysToDelete.forEach((key) => {
         this.memoryCache.delete(key);
       });
     } catch (error) {
-      console.error('Error clearing all avatar caches:', error);
+      console.error("Error clearing all avatar caches:", error);
     }
   }
 
@@ -416,13 +439,13 @@ class ImageCache {
   async clearCache(): Promise<void> {
     this.memoryCache.clear();
     this.pendingRequests.clear();
-    
+
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter(key => key.startsWith('image_cache_'));
+      const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
       await AsyncStorage.multiRemove(cacheKeys);
     } catch (error) {
-      console.error('Error clearing cache:', error);
+      console.error("Error clearing cache:", error);
     }
   }
 
@@ -432,22 +455,22 @@ class ImageCache {
   async clearExpiredCache(): Promise<void> {
     const now = Date.now();
     const expiredKeys: string[] = [];
-    
+
     // Clear expired memory cache entries
     for (const [key, cached] of this.memoryCache.entries()) {
       if (now >= cached.expiresAt) {
         expiredKeys.push(key);
       }
     }
-    
-    expiredKeys.forEach(key => this.memoryCache.delete(key));
-    
+
+    expiredKeys.forEach((key) => this.memoryCache.delete(key));
+
     // Clear expired storage entries
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter(key => key.startsWith('image_cache_'));
+      const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
       const expiredStorageKeys: string[] = [];
-      
+
       for (const key of cacheKeys) {
         try {
           const data = await AsyncStorage.getItem(key);
@@ -462,22 +485,22 @@ class ImageCache {
           expiredStorageKeys.push(key);
         }
       }
-      
+
       if (expiredStorageKeys.length > 0) {
         await AsyncStorage.multiRemove(expiredStorageKeys);
       }
     } catch (error) {
-      console.error('Error clearing expired cache:', error);
+      console.error("Error clearing expired cache:", error);
     }
   }
-  
+
   /**
    * Get cache statistics
    */
   getCacheStats(): { memoryEntries: number; pendingRequests: number } {
     return {
       memoryEntries: this.memoryCache.size,
-      pendingRequests: this.pendingRequests.size
+      pendingRequests: this.pendingRequests.size,
     };
   }
 }

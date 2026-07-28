@@ -90,9 +90,9 @@ const Terms = () => {
         <Text style={styles.sectionTitle}>8. Prohibited Activities</Text>
         <Text style={styles.text}>
           You may not: • Create fake accounts or impersonate others • Post
-          reviews for venues you haven't visited • Use the app for commercial
-          purposes without permission • Attempt to hack, disrupt, or damage the
-          app • Violate any applicable laws or regulations
+          reviews for venues you haven&apos;t visited • Use the app for
+          commercial purposes without permission • Attempt to hack, disrupt, or
+          damage the app • Violate any applicable laws or regulations
         </Text>
 
         <Text style={styles.sectionTitle}>9. Enforcement</Text>

@@ -68,9 +68,7 @@ export const filterRelevantPlaces = (places: any[]): any[] => {
 
 // Deduplicate places by place_id
 export const deduplicatePlaces = (places: any[]): any[] => {
-  return Array.from(
-    new Map(places.map((p: any) => [p.place_id, p])).values()
-  );
+  return Array.from(new Map(places.map((p: any) => [p.place_id, p])).values());
 };
 
 /**
@@ -83,7 +81,7 @@ export const findPlaceId = async (
   try {
     const query = address ? `${name} ${address}` : name;
     const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
 
@@ -117,7 +115,7 @@ export const fetchPlaceDetails = async (
 } | null> => {
   try {
     const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,international_phone_number,website,opening_hours,price_level,rating,user_ratings_total,types&key=${GOOGLE_MAPS_API_KEY}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
 
@@ -159,14 +157,16 @@ export const getPlaceDetailsByNameAndAddress = async (
 } | null> => {
   const placeId = await findPlaceId(name, address);
   if (!placeId) return null;
-  
+
   return fetchPlaceDetails(placeId);
 };
 
 // Filter and format place types for display
-export const getRelevantPlaceTypes = (types: string[] | undefined): string[] => {
+export const getRelevantPlaceTypes = (
+  types: string[] | undefined
+): string[] => {
   if (!types) return [];
-  
+
   // Filter out generic types and keep relevant ones
   const excludedTypes = [
     "point_of_interest",
@@ -178,7 +178,7 @@ export const getRelevantPlaceTypes = (types: string[] | undefined): string[] => 
     "meal_delivery",
     "meal_takeaway",
   ];
-  
+
   const relevantTypes = types
     .filter((type) => !excludedTypes.includes(type))
     .map((type) => {
@@ -189,7 +189,6 @@ export const getRelevantPlaceTypes = (types: string[] | undefined): string[] => 
         .join(" ");
     })
     .slice(0, 5); // Limit to 5 types
-  
+
   return relevantTypes;
 };
-

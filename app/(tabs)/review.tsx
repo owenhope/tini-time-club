@@ -39,6 +39,23 @@ import { TextInput } from "react-native";
 import AnalyticService from "@/services/analyticsService";
 
 // ReviewPreview component for showing live preview with caption input
+interface ReviewFormLocation {
+  name: string;
+  address: string;
+  coordinates?: { latitude: number; longitude: number };
+  place_id?: string;
+  id?: string;
+}
+
+interface ReviewFormValues {
+  location: ReviewFormLocation | null;
+  spirit: string;
+  type: string;
+  taste: number;
+  presentation: number;
+  comment: string;
+}
+
 const ReviewPreview = ({
   values,
   spirits,
@@ -96,7 +113,7 @@ const ReviewPreview = ({
               name: "Unknown Location",
               address: "",
             },
-      } as any),
+      }) as any,
     [values, spirits, types, photo, profile, isCaptionFocused, tempCaption]
   );
 
@@ -192,7 +209,9 @@ const ReviewPreview = ({
               ]}
               onPress={() => {
                 if (tempCaption && tempCaption.trim().length > 0) {
-                  setValue("comment", tempCaption.trim(), { shouldValidate: true });
+                  setValue("comment", tempCaption.trim(), {
+                    shouldValidate: true,
+                  });
                   setIsCaptionFocused(false);
                 }
               }}
@@ -226,7 +245,7 @@ export default function App() {
   const { profile } = useProfile();
 
   const { control, handleSubmit, reset, trigger, formState, watch, setValue } =
-    useForm({
+    useForm<ReviewFormValues>({
       mode: "onChange",
       defaultValues: {
         location: null,
@@ -252,12 +271,13 @@ export default function App() {
       setValue("location", {
         name: params.locationName as string,
         address: params.locationAddress as string,
-        coordinates: params.locationLat && params.locationLon
-          ? {
-              latitude: parseFloat(params.locationLat as string),
-              longitude: parseFloat(params.locationLon as string),
-            }
-          : undefined,
+        coordinates:
+          params.locationLat && params.locationLon
+            ? {
+                latitude: parseFloat(params.locationLat as string),
+                longitude: parseFloat(params.locationLon as string),
+              }
+            : undefined,
         place_id: params.locationPlaceId as string | undefined,
       });
     }
@@ -542,7 +562,7 @@ export default function App() {
       setIsSubmitting(false);
 
       // Track new review event
-      AnalyticService.capture('new_review', {
+      AnalyticService.capture("new_review", {
         reviewId,
         locationId: (watchedValues.location as any)?.id,
         locationName: (watchedValues.location as any)?.name,
@@ -619,9 +639,7 @@ export default function App() {
                 </Text>
                 <TouchableOpacity
                   onPress={
-                    submitError
-                      ? () => setSubmitError(null)
-                      : retryLoadOptions
+                    submitError ? () => setSubmitError(null) : retryLoadOptions
                   }
                 >
                   <Text style={styles.inlineErrorAction}>
@@ -682,7 +700,10 @@ export default function App() {
                       }}
                       variant="primary"
                       size="medium"
-                      disabled={!watchedValues.comment || watchedValues.comment.trim().length === 0}
+                      disabled={
+                        !watchedValues.comment ||
+                        watchedValues.comment.trim().length === 0
+                      }
                     />
                   )}
                 </View>

@@ -50,7 +50,10 @@ export default function RootLayout() {
           console.log("[RootLayout] 📊 Tracking permission status:", status);
         })
         .catch((error) => {
-          console.error("[RootLayout] ❌ Error requesting tracking permission:", error);
+          console.error(
+            "[RootLayout] ❌ Error requesting tracking permission:",
+            error
+          );
         });
     }
 
@@ -76,7 +79,7 @@ export default function RootLayout() {
         setIsReady(true);
 
         // Wait for Stack to mount
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Navigate based on session. A deep link (password recovery, a shared
         // review, a profile) already routed us somewhere — don't overwrite it.
@@ -93,7 +96,7 @@ export default function RootLayout() {
         }
 
         // Wait for navigation to complete
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise((resolve) => setTimeout(resolve, 400));
 
         // Hide splash after navigation completes
         await SplashScreen.hideAsync();
@@ -130,7 +133,10 @@ export default function RootLayout() {
             router.replace("/");
           }
         } catch (error) {
-          console.error("[RootLayout] ❌ Error during resume session check:", error);
+          console.error(
+            "[RootLayout] ❌ Error during resume session check:",
+            error
+          );
         } finally {
           isCheckingSession.current = false;
           setIsResuming(false);

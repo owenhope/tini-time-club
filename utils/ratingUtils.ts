@@ -22,7 +22,7 @@ export const calculateOverallRating = (
   if (tasteAvg === undefined || presentationAvg === undefined) {
     return null;
   }
-  
+
   return (tasteAvg + presentationAvg) / 2;
 };
 
@@ -39,7 +39,7 @@ export const formatRating = (
   if (rating === null || rating === undefined) {
     return "N/A";
   }
-  
+
   return rating.toFixed(decimalPlaces);
 };
 
@@ -48,12 +48,14 @@ export const formatRating = (
  * @param location - Location object with rating data
  * @returns Overall rating number or null
  */
-export const getLocationOverallRating = (location: LocationRating): number | null => {
+export const getLocationOverallRating = (
+  location: LocationRating
+): number | null => {
   // If rating is already calculated, use it
   if (location.rating !== undefined) {
     return location.rating;
   }
-  
+
   // Otherwise calculate from taste and presentation
   return calculateOverallRating(location.taste_avg, location.presentation_avg);
 };
@@ -77,6 +79,3 @@ export const getLocationRatingDisplay = (
  * @param location - Location object with rating data
  * @returns Number of reviews or 0
  */
-export const getLocationReviewCount = (location: LocationRating): number => {
-  return location.total_ratings ?? 0;
-};

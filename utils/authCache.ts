@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabase";
 
 interface CachedProfile {
   profile: any;
@@ -7,10 +7,10 @@ interface CachedProfile {
   expiresAt: number;
 }
 
-const PROFILE_CACHE_KEY = 'profile_cache';
+const PROFILE_CACHE_KEY = "profile_cache";
 // Legacy key that used to hold the full session (access + refresh tokens) in
 // plaintext AsyncStorage. Always removed on startup.
-const LEGACY_AUTH_CACHE_KEY = 'auth_cache';
+const LEGACY_AUTH_CACHE_KEY = "auth_cache";
 
 /**
  * Profile cache. Sessions and users are NOT cached here — supabase-js is the
@@ -38,9 +38,12 @@ class AuthCache {
    * expired). Kept for API compatibility with existing callers.
    */
   async getSession(): Promise<any> {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
     if (error) {
-      console.error('Error fetching session:', error);
+      console.error("Error fetching session:", error);
       return null;
     }
     return session;
@@ -58,7 +61,7 @@ class AuthCache {
    * Get cached profile or fetch from database
    */
   async getProfile(): Promise<any> {
-    const cacheKey = 'profile';
+    const cacheKey = "profile";
 
     if (this.profileCache && Date.now() < this.profileCache.expiresAt) {
       return this.profileCache.profile;
@@ -94,7 +97,7 @@ class AuthCache {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error("Error fetching profile:", error);
         // Throw error to be handled by calling code
         throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
@@ -102,7 +105,7 @@ class AuthCache {
       await this.setProfile(data);
       return data;
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
       return null;
     }
   }
@@ -119,7 +122,7 @@ class AuthCache {
         JSON.stringify(this.profileCache)
       );
     } catch (error) {
-      console.error('Error persisting profile cache:', error);
+      console.error("Error persisting profile cache:", error);
     }
   }
 
@@ -131,7 +134,7 @@ class AuthCache {
       const user = await this.getUser();
       const profileId = this.profileCache?.profile?.id ?? user?.id;
       if (!profileId) {
-        return { error: 'No profile to update' };
+        return { error: "No profile to update" };
       }
 
       const { data, error } = await supabase
@@ -142,14 +145,14 @@ class AuthCache {
         .single();
 
       if (error) {
-        console.error('Error updating profile:', error);
+        console.error("Error updating profile:", error);
         return { error };
       }
 
       await this.setProfile(data);
       return { data };
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       return { error };
     }
   }
@@ -159,11 +162,11 @@ class AuthCache {
    */
   async clearProfileCache(): Promise<void> {
     this.profileCache = null;
-    this.pendingRequests.delete('profile');
+    this.pendingRequests.delete("profile");
     try {
       await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
     } catch (error) {
-      console.error('Error clearing profile cache:', error);
+      console.error("Error clearing profile cache:", error);
     }
   }
 
@@ -199,14 +202,18 @@ class AuthCache {
         }
       }
     } catch (error) {
-      console.error('Error loading profile cache:', error);
+      console.error("Error loading profile cache:", error);
     }
   }
 
   /**
    * Get cache statistics
    */
-  getCacheStats(): { hasSession: boolean; hasProfile: boolean; pendingRequests: number } {
+  getCacheStats(): {
+    hasSession: boolean;
+    hasProfile: boolean;
+    pendingRequests: number;
+  } {
     return {
       hasSession: false, // sessions are no longer cached here
       hasProfile: !!this.profileCache?.profile,

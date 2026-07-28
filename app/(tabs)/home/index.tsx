@@ -57,7 +57,9 @@ function Home() {
   }>({ isValid: false, message: "", isChecking: false });
   const flatListRef = useRef<FlatList>(null);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // Direct state management to avoid re-render issues
   const [reviews, setReviews] = useState<Review[]>([]);

@@ -11,11 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
 export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | "danger";
+  "primary" | "secondary" | "outline" | "ghost" | "danger";
 export type ButtonIconPosition = "left" | "right" | "none";
 
 export interface ButtonProps {

@@ -32,27 +32,15 @@ export function GoogleAuth() {
                 token: userInfo.data.idToken,
               });
 
-            // If sign in succeeds, track login event
-            if (!signInError) {
-              AnalyticService.capture("login", { method: "google" });
-            }
-
-            // If sign in fails, try to sign up (for new users)
+            // signInWithIdToken provisions the account on first use, so there
+            // is no separate sign-up call. (The previous fallback called
+            // supabase.auth.signUpWithIdToken, which does not exist and threw
+            // a TypeError whenever sign-in returned an error.)
             if (signInError) {
-              const { error: signUpError } =
-                await supabase.auth.signUpWithIdToken({
-                  provider: "google",
-                  token: userInfo.data.idToken,
-                });
-
-              if (signUpError) {
-                throw new Error(
-                  `Authentication failed: ${signUpError.message}`
-                );
-              } else {
-                AnalyticService.capture("create_account", { method: "google" });
-              }
+              throw new Error(`Authentication failed: ${signInError.message}`);
             }
+
+            AnalyticService.capture("login", { method: "google" });
 
             router.replace("/(tabs)/home");
           } else {

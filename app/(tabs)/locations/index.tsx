@@ -130,7 +130,7 @@ function Map() {
     if (params.lat && params.lon) {
       const lat = parseFloat(params.lat as string);
       const lon = parseFloat(params.lon as string);
-      
+
       if (!isNaN(lat) && !isNaN(lon)) {
         const targetRegion: Region = {
           latitude: lat,
@@ -139,12 +139,12 @@ function Map() {
           longitudeDelta: 0.01,
         };
         setRegion(targetRegion);
-        
+
         // Wait a bit for map to be ready, then animate
         setTimeout(() => {
           if (mapRef.current) {
             mapRef.current.animateToRegion(targetRegion, 1000);
-            
+
             // If locationId is provided, try to find and select that marker
             if (params.locationId) {
               setTimeout(() => {
@@ -213,7 +213,9 @@ function Map() {
         )}
         <MapView
           ref={mapRef}
-          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+          provider={
+            Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
+          }
           mapType="standard"
           clusteringEnabled={true}
           style={[StyleSheet.absoluteFill, { zIndex: -1 }]}

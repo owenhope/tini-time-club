@@ -199,15 +199,13 @@ const Profile = () => {
         }
 
         // Get public URL
-        const { data: urlData, error: urlError } = supabase.storage
+        const { data: urlData } = supabase.storage
           .from("avatars")
           .getPublicUrl(filePath);
 
-        if (urlError || !urlData?.publicUrl) {
-          console.error("Error getting avatar public URL:", urlError);
-          setAvatarError(
-            `URL generation failed: ${urlError?.message || "Unknown error"}`
-          );
+        if (!urlData?.publicUrl) {
+          console.error("Error getting avatar public URL for", filePath);
+          setAvatarError("Couldn't finish uploading your photo.");
           setAvatarLoading(false);
           return;
         }
@@ -243,12 +241,12 @@ const Profile = () => {
       }
     } catch (err) {
       console.error("Unexpected error uploading avatar:", err);
-      setAvatarError(`Unexpected error: ${err.message || err}`);
+      setAvatarError("Couldn't upload your photo. Please try again.");
       setAvatarLoading(false);
     }
   };
 
-  const deleteReview = async (id: number) => {
+  const deleteReview = async (id: string) => {
     const { error } = await supabase
       .from("reviews")
       .update({ state: 3 })
@@ -260,7 +258,7 @@ const Profile = () => {
     }
   };
 
-  const confirmDeleteReview = (id: number) => {
+  const confirmDeleteReview = (id: string) => {
     Alert.alert(
       "Confirm Delete",
       "Are you sure you want to delete your review?",
@@ -407,10 +405,10 @@ const Profile = () => {
         avatarError={avatarError}
         onEditProfilePress={() => router.push("/profile/edit-profile")}
         onFollowersPress={() =>
-          navigation.navigate("follow-list", { type: "followers" })
+          router.push("/profile/follow-list?type=followers")
         }
         onFollowingPress={() =>
-          navigation.navigate("follow-list", { type: "following" })
+          router.push("/profile/follow-list?type=following")
         }
         isScrolled={isScrolled}
         hasBioOrFavs={
@@ -560,6 +558,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#fff",
     textTransform: "capitalize",
+  },
+  ctaText: {
+    fontSize: 15,
+    color: "#B6A3E2",
+    fontWeight: "600",
   },
   reviewsContainer: { flex: 1 },
   gridContent: { paddingBottom: 20 },

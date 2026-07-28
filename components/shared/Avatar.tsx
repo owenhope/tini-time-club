@@ -34,7 +34,7 @@ const Avatar: React.FC<AvatarProps> = ({
         const url = await imageCache.getAvatarUrl(avatarPath);
         setAvatarUrl(url);
         setError(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error loading avatar:", error);
         setAvatarUrl(null);
         setError(`Avatar load error: ${error.message || error}`);

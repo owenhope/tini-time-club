@@ -132,7 +132,7 @@ const EULAModal: React.FC<EULAModalProps> = ({
             <Text style={styles.sectionTitle}>8. Prohibited Activities</Text>
             <Text style={styles.text}>
               You may not: • Create fake accounts or impersonate others • Post
-              reviews for venues you haven't visited • Use the app for
+              reviews for venues you haven&apos;t visited • Use the app for
               commercial purposes without permission • Attempt to hack, disrupt,
               or damage the app • Violate any applicable laws or regulations
             </Text>
@@ -186,7 +186,8 @@ const EULAModal: React.FC<EULAModalProps> = ({
 
           {!hasScrolledToBottom && (
             <Text style={styles.scrollHint}>
-              Please scroll to the bottom to enable the "I Agree" button
+              Please scroll to the bottom to enable the &quot;I Agree&quot;
+              button
             </Text>
           )}
         </View>

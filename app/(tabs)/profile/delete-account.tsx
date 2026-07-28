@@ -60,10 +60,10 @@ const DeleteAccount = () => {
 
               // Clear cache first
               await authCache.invalidateCache();
-              
+
               // Sign out the user
               const { error: signOutError } = await supabase.auth.signOut();
-              
+
               if (signOutError) {
                 console.error("Error signing out:", signOutError);
               }
@@ -72,13 +72,13 @@ const DeleteAccount = () => {
                 "Account Deleted",
                 "Your account has been permanently deleted.",
                 [
-                  { 
+                  {
                     text: "OK",
                     onPress: () => {
                       // Navigate to login screen
                       router.replace("/");
-                    }
-                  }
+                    },
+                  },
                 ]
               );
             } catch (error) {

@@ -87,7 +87,7 @@ const Input: React.FC<InputProps> = ({
     }
   };
 
-  const getSizeStyles = (): ViewStyle => {
+  const getSizeStyles = (): TextStyle => {
     switch (size) {
       case "small":
         return {

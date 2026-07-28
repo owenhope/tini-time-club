@@ -61,7 +61,7 @@ export function AppleAuth() {
                 );
                 throw new Error(`Authentication failed: ${error.message}`);
               } else {
-                AnalyticService.capture('login', { method: 'apple' });
+                AnalyticService.capture("login", { method: "apple" });
                 router.replace("/(tabs)/home");
               }
             } else {

@@ -7,7 +7,9 @@ import databaseService from "@/services/databaseService";
  * @param currentUserId - The ID of the current user
  * @returns Array of blocked user IDs
  */
-export const getBlockedUserIds = async (currentUserId: string): Promise<string[]> => {
+export const getBlockedUserIds = async (
+  currentUserId: string
+): Promise<string[]> => {
   // Use databaseService for consistency and caching
   return databaseService.getBlockedUserIds(currentUserId);
 };
@@ -17,21 +19,3 @@ export const getBlockedUserIds = async (currentUserId: string): Promise<string[]
  * @param currentUserId - The ID of the current user
  * @returns Array of user IDs who have blocked the current user
  */
-export const getBlockedByUserIds = async (currentUserId: string): Promise<string[]> => {
-  try {
-    const { data, error } = await supabase
-      .from("blocks")
-      .select("blocker_id")
-      .eq("blocked_id", currentUserId);
-
-    if (error) {
-      console.error("Error fetching users who blocked current user:", error);
-      return [];
-    }
-
-    return data.map((block: any) => block.blocker_id);
-  } catch (err) {
-    console.error("Unexpected error fetching users who blocked current user:", err);
-    return [];
-  }
-};

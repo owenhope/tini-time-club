@@ -295,6 +295,7 @@ const AvatarWrapper = memo(
     );
   }
 );
+AvatarWrapper.displayName = "AvatarWrapper";
 
 const ActionButton = memo(
   ({
@@ -311,6 +312,7 @@ const ActionButton = memo(
     </TouchableOpacity>
   )
 );
+ActionButton.displayName = "ActionButton";
 
 const LikeButton = memo(
   ({
@@ -331,12 +333,14 @@ const LikeButton = memo(
     </TouchableOpacity>
   )
 );
+LikeButton.displayName = "LikeButton";
 
 const CommentButton = memo(
   ({ onPress, count }: { onPress: () => void; count: number }) => (
     <Ionicons name="chatbubble-outline" size={ICON_SIZES.medium} />
   )
 );
+CommentButton.displayName = "CommentButton";
 
 const CommentCount = memo(({ count }: { count: number }) => (
   <Text style={styles.likesCount}>{count}</Text>
@@ -378,6 +382,8 @@ const ReviewOverlay = memo(
     </Animated.View>
   )
 );
+ReviewOverlay.displayName = "ReviewOverlay";
+CommentCount.displayName = "CommentCount";
 
 const ReviewFooter = memo(
   ({
@@ -504,6 +510,7 @@ const ReviewFooter = memo(
     );
   }
 );
+ReviewFooter.displayName = "ReviewFooter";
 
 // Comparison function for memo to prevent unnecessary re-renders
 const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {

@@ -20,10 +20,7 @@ type AnalyticEventType =
   | "logout";
 
 const AnalyticService = {
-  capture: (
-    event: AnalyticEventType,
-    properties?: Record<string, unknown>
-  ) => {
+  capture: (event: AnalyticEventType, properties?: Record<string, any>) => {
     posthog.capture(event, properties);
   },
 

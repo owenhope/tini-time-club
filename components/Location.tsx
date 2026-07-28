@@ -297,9 +297,9 @@ const Location = () => {
       const totalRatings = activeReviews.length;
 
       // Calculate averages if there are reviews
-      let rating = null;
-      let taste_avg = null;
-      let presentation_avg = null;
+      let rating: number | undefined;
+      let taste_avg: number | undefined;
+      let presentation_avg: number | undefined;
 
       if (totalRatings > 0) {
         const tasteSum = activeReviews.reduce(
@@ -317,8 +317,8 @@ const Location = () => {
       }
 
       // Extract coordinates from PostGIS POINT if available
-      let lat = null;
-      let lon = null;
+      let lat: number | undefined;
+      let lon: number | undefined;
       if (locationData.location) {
         // PostGIS POINT format: "POINT(longitude latitude)"
         const match = locationData.location.match(

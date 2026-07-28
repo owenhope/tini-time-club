@@ -53,7 +53,7 @@
 
 ## Known follow-ups (Phase 2)
 
-- Notification inserts are still open to any *authenticated* user (the app inserts
+- Notification inserts are still open to any _authenticated_ user (the app inserts
   like/follow notifications client-side). Move notification creation into a DB
   trigger, then drop the authenticated insert policy.
 - `expo_push_token` is still readable by other authenticated users via

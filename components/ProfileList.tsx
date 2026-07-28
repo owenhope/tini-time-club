@@ -16,7 +16,7 @@ import AnalyticService from "@/services/analyticsService";
 export interface ProfileType {
   id: string;
   username: string;
-  // add other fields as needed
+  avatar_url?: string | null;
 }
 
 interface ProfileListProps {
@@ -92,9 +92,9 @@ export default function ProfileList({
         }
         setFollowedIds((prev) => [...prev, targetProfileId]);
         // Track follow event
-        const targetProfile = profiles.find(p => p.id === targetProfileId);
+        const targetProfile = profiles.find((p) => p.id === targetProfileId);
         if (targetProfile) {
-          AnalyticService.capture('follow_user', {
+          AnalyticService.capture("follow_user", {
             targetUserId: targetProfileId,
             targetUsername: targetProfile.username,
           });

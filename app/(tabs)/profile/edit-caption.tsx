@@ -77,7 +77,7 @@ const EditCaption = () => {
         image_url: imageUrls[data.image_url] || data.image_url,
       };
 
-      setReview(reviewWithImage);
+      setReview(reviewWithImage as unknown as Review);
       setCaption(data.comment || "");
     } catch (error) {
       console.error("Error loading review:", error);
@@ -136,9 +136,7 @@ const EditCaption = () => {
             autoFocus
             textAlignVertical="top"
           />
-          <Text style={styles.characterCount}>
-            {caption.length}/500
-          </Text>
+          <Text style={styles.characterCount}>{caption.length}/500</Text>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -149,7 +147,11 @@ const EditCaption = () => {
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.saveButton, saving && styles.saveButtonDisabled]}
+              style={[
+                styles.button,
+                styles.saveButton,
+                saving && styles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
               disabled={saving}
             >
@@ -238,4 +240,3 @@ const styles = StyleSheet.create({
 });
 
 export default EditCaption;
-

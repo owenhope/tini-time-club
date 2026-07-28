@@ -1,5 +1,18 @@
-import React, { forwardRef, useState, useCallback, useRef, useEffect } from "react";
-import { TouchableOpacity, View, Text, TextInput, FlatList, StyleSheet } from "react-native";
+import React, {
+  forwardRef,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
+import {
+  TouchableOpacity,
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   GOOGLE_MAPS_API_KEY,
@@ -308,5 +321,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 });
+
+Search.displayName = "Search";
 
 export default Search;
