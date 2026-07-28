@@ -6,8 +6,11 @@ import {
   TouchableWithoutFeedback,
   View,
   ActivityIndicator,
+  Alert,
   Animated,
   ScrollView,
+  StyleSheet,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
@@ -34,7 +37,6 @@ import { useProfile } from "@/context/profile-context";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
-import { TextInput } from "react-native";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -356,6 +358,17 @@ export default function App() {
     setIsSubmitting(false);
     setSubmissionMessage("");
     reset();
+  };
+
+  const confirmDiscardReview = () => {
+    Alert.alert(
+      "Discard review?",
+      "Your photo and review details will be lost.",
+      [
+        { text: "Keep editing", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: cancelCapture },
+      ]
+    );
   };
 
   const nextStep = async () => {
@@ -686,13 +699,18 @@ export default function App() {
 
                 <TouchableOpacity
                   style={styles.quitButton}
-                  onPress={cancelCapture}
+                  onPress={confirmDiscardReview}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Discard review"
                 >
-                  <Ionicons
-                    name="trash-outline"
-                    size={20}
-                    color={colors.danger}
-                  />
+                  <View style={styles.quitButtonVisual}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={16}
+                      color={colors.danger}
+                    />
+                  </View>
                 </TouchableOpacity>
 
                 <View style={styles.navRight}>
@@ -830,10 +848,19 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
   },
   quitButton: {
-    padding: t.spacing.md,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  quitButtonVisual: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     backgroundColor: t.colors.dangerSubtle,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.colors.danger,
   },
   previewContainer: {
