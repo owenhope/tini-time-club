@@ -18,6 +18,7 @@ import {
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { makeStyles, useTheme } from "@/theme";
 
 interface CameraComponentProps {
@@ -70,19 +71,27 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
     const mustUseSettings = !permission.canAskAgain;
 
     return (
-      <View style={styles.container}>
-        <Text style={styles.infoText}>
-          {mustUseSettings
-            ? "Camera access is turned off. Enable it in Settings to share a Martini."
-            : "We need your permission to use the camera."}
-        </Text>
-        <Button
-          onPress={
-            mustUseSettings ? () => Linking.openSettings() : requestPermission
-          }
-          title={mustUseSettings ? "Open Settings" : "Grant Permission"}
-        />
-      </View>
+      <SafeAreaView style={styles.permissionSafeArea} edges={["top", "bottom"]}>
+        <View style={styles.permissionContent}>
+          <Ionicons
+            name="camera-outline"
+            size={38}
+            color={colors.textOnImage}
+          />
+          <Text style={styles.permissionTitle}>Camera Access</Text>
+          <Text style={styles.infoText}>
+            {mustUseSettings
+              ? "Camera access is turned off. Enable it in Settings to share a Martini."
+              : "We need your permission to use the camera."}
+          </Text>
+          <Button
+            onPress={
+              mustUseSettings ? () => Linking.openSettings() : requestPermission
+            }
+            title={mustUseSettings ? "Open Settings" : "Grant Permission"}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -230,9 +239,26 @@ const useStyles = makeStyles((t) => ({
     // reads as black in both themes.
     backgroundColor: "#000",
   },
+  permissionSafeArea: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  permissionContent: {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.xxl,
+    gap: t.spacing.md,
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: "700" as const,
+    color: t.colors.textOnImage,
+  },
   infoText: {
     textAlign: "center" as const,
-    marginBottom: t.spacing.sm + 2,
+    lineHeight: 22,
+    marginBottom: t.spacing.sm,
     color: t.colors.textOnImage,
   },
   camera: {

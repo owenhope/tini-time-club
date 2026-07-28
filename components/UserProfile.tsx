@@ -45,6 +45,7 @@ const UserProfile = () => {
   const { colors, isDark } = useTheme();
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
+  const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
     null
   );
@@ -310,10 +311,18 @@ const UserProfile = () => {
     }
   };
 
-  const loadUserReviews = async (userId?: string) => {
-    setLoadingReviews(true);
+  const loadUserReviews = async (userId?: string, isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshingReviews(true);
+    } else {
+      setLoadingReviews(true);
+    }
     if (!userId) {
-      setLoadingReviews(false);
+      if (isRefresh) {
+        setRefreshingReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
       return;
     }
     try {
@@ -335,7 +344,11 @@ const UserProfile = () => {
     } catch (err) {
       console.error("Unexpected error while fetching user reviews:", err);
     } finally {
-      setLoadingReviews(false);
+      if (isRefresh) {
+        setRefreshingReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
     }
   };
 
@@ -597,9 +610,10 @@ const UserProfile = () => {
         reviews={userReviews}
         header={header}
         emptyComponent={renderEmpty()}
-        refreshing={loadingReviews}
+        loading={loadingReviews}
+        refreshing={refreshingReviews}
         onRefresh={() => {
-          if (displayProfile?.id) loadUserReviews(displayProfile.id);
+          if (displayProfile?.id) loadUserReviews(displayProfile.id, true);
         }}
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)

@@ -4,9 +4,11 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
+import { useTheme } from "@/theme";
 
 export function AppleAuth() {
   const router = useRouter();
+  const { isDark } = useTheme();
 
   // Check if Apple Sign-In is available
   const [isAvailable, setIsAvailable] = React.useState(false);
@@ -33,10 +35,12 @@ export function AppleAuth() {
       <AppleAuthentication.AppleAuthenticationButton
         buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
         buttonStyle={
-          AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
+          isDark
+            ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+            : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
         }
-        cornerRadius={5}
-        style={{ width: 220, height: 44 }}
+        cornerRadius={24}
+        style={{ width: "100%", height: 48 }}
         onPress={async () => {
           try {
             const credential = await AppleAuthentication.signInAsync({
@@ -49,7 +53,7 @@ export function AppleAuth() {
             // Sign in or sign up via Supabase Auth.
             if (credential.identityToken) {
               // Supabase will automatically create a new user if they don't exist
-              const { data, error } = await supabase.auth.signInWithIdToken({
+              const { error } = await supabase.auth.signInWithIdToken({
                 provider: "apple",
                 token: credential.identityToken,
               });

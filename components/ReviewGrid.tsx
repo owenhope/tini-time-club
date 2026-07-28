@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   RefreshControl,
+  ActivityIndicator,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -26,6 +27,7 @@ export interface ReviewGridProps {
   /** Profile header; scrolls away with the grid. */
   header?: React.ReactElement | null;
   emptyComponent?: React.ReactElement | null;
+  loading?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -56,6 +58,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   reviews,
   header,
   emptyComponent,
+  loading = false,
   refreshing = false,
   onRefresh,
   onScroll,
@@ -120,7 +123,15 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
         ListHeaderComponent={header}
-        ListEmptyComponent={emptyComponent}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.accent} />
+            </View>
+          ) : (
+            emptyComponent
+          )
+        }
         onScroll={onScroll}
         scrollEventThrottle={16}
         onEndReached={onEndReached}
@@ -191,6 +202,11 @@ const useStyles = makeStyles((t) => ({
   },
   row: {
     marginBottom: GAP,
+  },
+  loadingContainer: {
+    minHeight: 132,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   tile: {
     backgroundColor: t.colors.imagePlaceholder,

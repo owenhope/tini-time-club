@@ -18,6 +18,8 @@ export interface RatingSummaryProps {
   tone?: RatingSummaryTone;
   /** Hide the review count (e.g. on a single review, where it's meaningless). */
   showReviewCount?: boolean;
+  /** Start bar animation only when the surrounding content is visible. */
+  animateBars?: boolean;
 }
 
 const format = (value?: number | null) =>
@@ -44,6 +46,7 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
   variant = "full",
   tone = "surface",
   showReviewCount = true,
+  animateBars = true,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -159,11 +162,17 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
           )}
 
           <View style={styles.bars}>
-            <RatingBar label="Taste" value={taste} onImage={onImage} />
+            <RatingBar
+              label="Taste"
+              value={taste}
+              onImage={onImage}
+              active={animateBars}
+            />
             <RatingBar
               label="Presentation"
               value={presentation}
               onImage={onImage}
+              active={animateBars}
             />
           </View>
         </>
@@ -186,10 +195,12 @@ const RatingBar = ({
   label,
   value,
   onImage,
+  active,
 }: {
   label: string;
   value?: number | null;
   onImage: boolean;
+  active: boolean;
 }) => {
   const styles = useStyles();
   const pct = value == null ? 0 : Math.max(0, Math.min(1, value / RATING_MAX));
@@ -198,13 +209,23 @@ const RatingBar = ({
   // to the new value if the score changes in place).
   const fill = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(fill, {
+    fill.stopAnimation();
+
+    if (!active) {
+      fill.setValue(0);
+      return;
+    }
+
+    const animation = Animated.timing(fill, {
       toValue: pct,
       duration: 650,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false, // drives width
-    }).start();
-  }, [pct, fill]);
+    });
+    animation.start();
+
+    return () => animation.stop();
+  }, [active, pct, fill]);
 
   return (
     // The parent block already carries a composed label; hide the pieces so

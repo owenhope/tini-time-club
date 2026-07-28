@@ -37,6 +37,7 @@ const Profile = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+  const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
   const { profile, updateProfile, refreshProfile } = useProfile();
@@ -112,10 +113,18 @@ const Profile = () => {
     }
   }, [profile, navigation, colors, styles]);
 
-  const loadUserReviews = async (userId?: string) => {
-    setLoadingReviews(true);
+  const loadUserReviews = async (userId?: string, isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshingReviews(true);
+    } else {
+      setLoadingReviews(true);
+    }
     if (!userId) {
-      setLoadingReviews(false);
+      if (isRefresh) {
+        setRefreshingReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
       return;
     }
     try {
@@ -138,7 +147,11 @@ const Profile = () => {
     } catch (err) {
       console.error("Unexpected error while fetching reviews:", err);
     } finally {
-      setLoadingReviews(false);
+      if (isRefresh) {
+        setRefreshingReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
     }
   };
 
@@ -408,7 +421,6 @@ const Profile = () => {
       onAvatarPress={pickImage}
       avatarLoading={avatarLoading}
       avatarError={avatarError}
-      onEditProfilePress={() => router.push("/edit-profile")}
       onFollowersPress={() =>
         profile?.username &&
         router.push(`/users/${profile.username}/followers`)
@@ -428,8 +440,9 @@ const Profile = () => {
         reviews={userReviews}
         header={header}
         emptyComponent={renderEmpty()}
-        refreshing={loadingReviews}
-        onRefresh={() => profile?.id && loadUserReviews(profile.id)}
+        loading={loadingReviews}
+        refreshing={refreshingReviews}
+        onRefresh={() => profile?.id && loadUserReviews(profile.id, true)}
         canDelete={true}
         onDelete={(review) => confirmDeleteReview(review.id)}
         onEdit={(review) =>

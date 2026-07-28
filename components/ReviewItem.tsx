@@ -107,6 +107,7 @@ interface ReviewItemProps {
   hideHeader?: boolean;
   hideFooter?: boolean;
   previewMode?: boolean;
+  isVisible?: boolean;
 }
 
 // Custom hook for avatar loading
@@ -351,11 +352,13 @@ const ReviewOverlay = memo(
     overlayOpacity,
     onToggleOverlay,
     isOverlayVisible,
+    animateRatings,
   }: {
     review: Review;
     overlayOpacity: Animated.Value;
     onToggleOverlay: () => void;
     isOverlayVisible: boolean;
+    animateRatings: boolean;
   }) => {
     const styles = useStyles();
 
@@ -395,6 +398,7 @@ const ReviewOverlay = memo(
             presentation={review.presentation}
             showReviewCount={false}
             tone="onImage"
+            animateBars={animateRatings}
           />
         </View>
       </Animated.View>
@@ -549,7 +553,8 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prevProps.canDelete === nextProps.canDelete &&
     prevProps.hideHeader === nextProps.hideHeader &&
     prevProps.hideFooter === nextProps.hideFooter &&
-    prevProps.previewMode === nextProps.previewMode
+    prevProps.previewMode === nextProps.previewMode &&
+    prevProps.isVisible === nextProps.isVisible
   );
 };
 
@@ -565,6 +570,7 @@ const ReviewItemComponent = ({
   hideHeader = false,
   hideFooter = false,
   previewMode = false,
+  isVisible = true,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
   const styles = useStyles();
@@ -746,6 +752,7 @@ const ReviewItemComponent = ({
             overlayOpacity={overlayOpacity}
             onToggleOverlay={toggleOverlay}
             isOverlayVisible={isOverlayVisible}
+            animateRatings={isVisible}
           />
         </View>
 
@@ -817,6 +824,7 @@ const ReviewItemComponent = ({
             overlayOpacity={overlayOpacity}
             onToggleOverlay={toggleOverlay}
             isOverlayVisible={isOverlayVisible}
+            animateRatings={isVisible}
           />
           {/* Eye icon to toggle overlay - always visible */}
           <TouchableOpacity

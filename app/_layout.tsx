@@ -4,14 +4,24 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
-import { AppState, AppStateStatus } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  AppStateStatus,
+  Platform,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { Platform, View, ActivityIndicator } from "react-native";
 import * as TrackingTransparency from "expo-tracking-transparency";
 import * as Linking from "expo-linking";
 import { ThemeProvider, useTheme } from "@/theme";
+import {
+  createSessionFromAuthUrl,
+  isAuthCallbackUrl,
+} from "@/utils/authDeepLink";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -37,6 +47,7 @@ function RootLayoutNav() {
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
   const hasHandledInitialSession = useRef(false);
+  const lastHandledAuthUrl = useRef<string | null>(null);
 
   // The auth effect below runs once, so reading `pathname`/`isReady` directly
   // inside it would capture their first-render values forever. Mirror them into
@@ -57,6 +68,33 @@ function RootLayoutNav() {
     imageCache.loadFromStorage();
     imageCache.clearExpiredCache();
     authCache.loadFromStorage();
+
+    const handleAuthUrl = async (url: string) => {
+      if (!isAuthCallbackUrl(url) || lastHandledAuthUrl.current === url) {
+        return;
+      }
+
+      lastHandledAuthUrl.current = url;
+      try {
+        await createSessionFromAuthUrl(url);
+      } catch (error: any) {
+        console.error("[RootLayout] Auth callback failed:", error);
+        Alert.alert(
+          "Sign-in link unavailable",
+          error.message || "This sign-in link is invalid or has expired."
+        );
+        setIsReady(true);
+        router.replace("/auth");
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    const linkingSubscription = Linking.addEventListener("url", ({ url }) => {
+      void handleAuthUrl(url);
+    });
+    Linking.getInitialURL().then((url) => {
+      if (url) void handleAuthUrl(url);
+    });
 
     // Request tracking transparency permission on iOS (non-blocking)
     if (Platform.OS === "ios") {
@@ -168,9 +206,10 @@ function RootLayoutNav() {
 
     return () => {
       subscription.unsubscribe();
+      linkingSubscription.remove();
       appStateSubscription?.remove();
     };
-  }, []);
+  }, [router]);
 
   // Return null to keep native splash visible until ready (per Expo docs)
   if (!isReady) {

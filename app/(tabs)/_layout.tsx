@@ -31,26 +31,20 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     });
   }
 
-  if (Device.isDevice) {
-    try {
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ??
-        Constants?.easConfig?.projectId;
-      if (!projectId) {
-        Alert.alert("Push Notifications", "Project ID not found");
-        return null;
-      }
-      const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
-      return data;
-    } catch (error) {
-      Alert.alert("Push Notifications", `Error getting push token: ${error}`);
+  if (!Device.isDevice) return null;
+
+  try {
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+    if (!projectId) {
+      Alert.alert("Push Notifications", "Project ID not found");
       return null;
     }
-  } else {
-    Alert.alert(
-      "Push Notifications",
-      "Must use physical device for push notifications"
-    );
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    return data;
+  } catch (error) {
+    Alert.alert("Push Notifications", `Error getting push token: ${error}`);
     return null;
   }
 }
@@ -60,7 +54,13 @@ const LayoutContent = () => {
   const { colors } = useTheme();
 
   useEffect(() => {
-    if (!profile) return;
+    if (
+      !profile?.eula_accepted ||
+      !profile.username ||
+      !Device.isDevice
+    ) {
+      return;
+    }
 
     const updatePushToken = async () => {
       const { status } = await Notifications.getPermissionsAsync();

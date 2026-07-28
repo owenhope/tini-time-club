@@ -3,9 +3,7 @@ import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import {
   Avatar,
   MetricRow,
-  ActionBar,
   type Metric,
-  type Action,
 } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -24,7 +22,6 @@ interface ProfileHeaderProps {
   onAvatarPress?: () => void;
   avatarLoading?: boolean;
   avatarError?: string | null;
-  onEditProfilePress?: () => void;
   doesFollow?: boolean;
   followPending?: boolean;
   isBlocked?: boolean;
@@ -56,7 +53,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onAvatarPress,
   avatarLoading = false,
   avatarError = null,
-  onEditProfilePress,
   doesFollow = false,
   followPending = false,
   isBlocked = false,
@@ -91,22 +87,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       onPress: onFollowingPress,
     },
   ];
-
-  // Only the owner gets a body action. Follow and Block live in the nav bar
-  // on someone else's profile — Follow always visible, Block behind the
-  // overflow menu, so a rare and semi-destructive action isn't sitting at the
-  // same weight as the common one.
-  const actions: Action[] = isOwnProfile
-    ? [
-        {
-          key: "edit",
-          title: "Edit Profile",
-          emphasis: "secondary",
-          accessibilityLabel: "Edit your profile",
-          onPress: () => onEditProfilePress?.(),
-        },
-      ]
-    : [];
 
   return (
     <View style={styles.container}>
@@ -149,11 +129,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
       {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
 
-      {actions.length > 0 && (
-        <View style={styles.actions}>
-          <ActionBar actions={actions} size="small" fullWidth />
-        </View>
-      )}
     </View>
   );
 };
@@ -201,9 +176,6 @@ const useStyles = makeStyles((t) => ({
   error: {
     ...t.typography.caption,
     color: t.colors.danger,
-    paddingHorizontal: t.spacing.lg,
-  },
-  actions: {
     paddingHorizontal: t.spacing.lg,
   },
 }));
