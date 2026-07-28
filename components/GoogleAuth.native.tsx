@@ -42,7 +42,7 @@ export function GoogleAuth() {
 
             AnalyticService.capture("login", { method: "google" });
 
-            router.replace("/(tabs)/home");
+            router.replace("/home");
           } else {
             throw new Error("no ID token present!");
           }

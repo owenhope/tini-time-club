@@ -400,7 +400,7 @@ const Profile = () => {
         </View>
       ) : (
         <TouchableOpacity
-          onPress={() => router.push("/profile/edit-profile")}
+          onPress={() => router.push("/edit-profile")}
           style={styles.ctaContainer}
           accessibilityRole="button"
           accessibilityLabel="Add your favorite spirits and types"
@@ -410,7 +410,7 @@ const Profile = () => {
       )}
       {!profile?.bio && (
         <TouchableOpacity
-          onPress={() => router.push("/profile/edit-profile")}
+          onPress={() => router.push("/edit-profile")}
           style={styles.ctaContainer}
           accessibilityRole="button"
           accessibilityLabel="Add a bio to your profile"
@@ -433,12 +433,14 @@ const Profile = () => {
       onAvatarPress={pickImage}
       avatarLoading={avatarLoading}
       avatarError={avatarError}
-      onEditProfilePress={() => router.push("/profile/edit-profile")}
+      onEditProfilePress={() => router.push("/edit-profile")}
       onFollowersPress={() =>
-        router.push("/profile/follow-list?type=followers")
+        profile?.username &&
+        router.push(`/users/${profile.username}/followers`)
       }
       onFollowingPress={() =>
-        router.push("/profile/follow-list?type=following")
+        profile?.username &&
+        router.push(`/users/${profile.username}/following`)
       }
     >
       {favoriteChips}

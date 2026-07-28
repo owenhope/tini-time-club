@@ -24,7 +24,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
 
   return (
     <View style={styles.sheet}>
-      <Link href={`/(tabs)/locations/${loc.id}`} asChild>
+      <Link href={`/places/${loc.id}`} asChild>
         <Pressable
           style={({ pressed }) => [styles.titleRow, pressed && styles.pressed]}
           accessibilityRole="link"

@@ -54,28 +54,32 @@ export default function CustomTabBar({
 
           if (!isFocused) return;
 
+          // Until a tab's stack has navigated at least once, route.state is
+          // undefined — and there is nothing to pop anyway.
           const nestedState = (route as any).state;
+          const stackIsDeep = nestedState?.index > 0;
 
-          if (route.name === "home" && !(nestedState?.index > 0)) {
-            // Already on the feed root: scroll back to the top. When the
-            // feed stack is deep (a user or place is pushed), fall through
-            // and pop back to the feed like the other tabs.
-            const scrollToTop = getGlobalScrollToTop();
-            if (scrollToTop) scrollToTop();
+          if (!stackIsDeep) {
+            // Already on this tab's root: for the feed, scroll back to the
+            // top; the other roots have nothing to do.
+            if (route.name === "(home)") {
+              const scrollToTop = getGlobalScrollToTop();
+              if (scrollToTop) scrollToTop();
+            }
             return;
           }
 
-          // Already on a stack tab: pop it back to its root, so tapping
-          // Places always returns to the map rather than leaving you on a
-          // place you drilled into. Targeting the nested stack's key is what
-          // makes the dispatch land on that stack rather than the tabs.
-          // POP_TO_TOP is what StackActions.popToTop() produces;
-          // @react-navigation/native isn't a direct dependency here (expo-router
-          // bundles its own copy), so the action is built by hand.
-          const nestedKey = nestedState?.key;
+          // Already on a stack tab with pushed screens: pop back to its
+          // root, so tapping Places always returns to the map rather than
+          // leaving you on a place you drilled into. Targeting the nested
+          // stack's key is what makes the dispatch land on that stack rather
+          // than the tabs. POP_TO_TOP is what StackActions.popToTop()
+          // produces; @react-navigation/native isn't a direct dependency
+          // here (expo-router bundles its own copy), so the action is built
+          // by hand.
           navigation.dispatch({
             type: "POP_TO_TOP",
-            target: nestedKey ?? route.key,
+            target: nestedState.key,
           });
         };
 
@@ -91,14 +95,14 @@ export default function CustomTabBar({
           focused: boolean
         ): keyof typeof Ionicons.glyphMap => {
           switch (routeName) {
-            // "home" renders a PNG above and never reaches this switch.
-            case "locations":
+            // "(home)" renders a PNG above and never reaches this switch.
+            case "(places)":
               return focused ? "location" : "location-outline";
             case "review":
               return focused ? "camera" : "camera-outline";
-            case "discover":
+            case "(discover)":
               return focused ? "search" : "search-outline";
-            case "profile":
+            case "(profile)":
               return focused ? "person" : "person-outline";
             default:
               return "ellipse-outline";
@@ -121,7 +125,7 @@ export default function CustomTabBar({
             style={styles.tab}
           >
             <View style={styles.tabContent}>
-              {route.name === "home" ? (
+              {route.name === "(home)" ? (
                 <Image
                   source={require("@/assets/images/martini_transparent.png")}
                   style={[

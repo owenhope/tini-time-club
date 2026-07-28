@@ -9,8 +9,7 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Avatar } from "@/components/shared";
-import { Link, usePathname } from "expo-router";
-import { userHref } from "@/utils/tabRoutes";
+import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
@@ -32,7 +31,6 @@ export default function ProfileList({
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile } = useProfile();
-  const pathname = usePathname();
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   // Track profile ids that are currently being updated
@@ -120,10 +118,7 @@ export default function ProfileList({
     const isUpdating = updatingFollowIds.includes(item.id);
     return (
       <View style={styles.profileCard}>
-        <Link
-          href={userHref(pathname, item.username || "unknown")}
-          asChild
-        >
+        <Link href={`/users/${item.username || "unknown"}`} asChild>
           <TouchableOpacity style={styles.profileInfo} activeOpacity={0.7}>
             <Avatar
               avatarPath={item.avatar_url}

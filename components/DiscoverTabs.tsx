@@ -339,7 +339,7 @@ export default function DiscoverTabs({
     return (
       <TouchableOpacity
         style={styles.resultCard}
-        onPress={() => router.navigate(`/discover/users/${item.username}`)}
+        onPress={() => router.navigate(`/users/${item.username}`)}
         activeOpacity={0.7}
       >
         <View style={styles.cardContent}>
@@ -371,9 +371,9 @@ export default function DiscoverTabs({
       style={styles.resultCard}
       onPress={() =>
         router.navigate({
-          pathname: "/discover/locations/[location]",
+          pathname: "/places/[place]",
           params: {
-            location: item.id,
+            place: item.id,
             name: item.name || "",
             address: item.address || "",
           },

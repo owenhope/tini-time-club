@@ -81,7 +81,7 @@ const Location = () => {
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
-  const locationIdParam = params.location as string | undefined;
+  const locationIdParam = params.place as string | undefined;
   const locationNameParam = params.name as string | undefined;
   const locationAddressParam = params.address as string | undefined;
 
@@ -142,14 +142,6 @@ const Location = () => {
         // over by headerLeft and headerRight, which are different widths, so
         // it sits off-centre.
         headerTitleAlign: "center",
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.headerButtonLeft}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-        ),
         headerRight: () => {
           if (
             displayLocation &&
@@ -165,7 +157,7 @@ const Location = () => {
                   // pops back to the map when already in that stack) instead
                   // of stacking a tab root with no back button.
                   router.navigate({
-                    pathname: "/(tabs)/locations",
+                    pathname: "/places",
                     params: {
                       lat: displayLocation.lat!.toString(),
                       lon: displayLocation.lon!.toString(),
@@ -420,7 +412,7 @@ const Location = () => {
               }
 
               router.push({
-                pathname: "/(tabs)/review",
+                pathname: "/review",
                 params: locationParams,
               });
             }}
@@ -828,9 +820,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.onAccent,
     fontSize: 16,
     fontWeight: "600" as const,
-  },
-  headerButtonLeft: {
-    marginLeft: 5,
   },
   headerButtonRight: {
     marginRight: 15,

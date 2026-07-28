@@ -62,7 +62,7 @@ export function AppleAuth() {
                 throw new Error(`Authentication failed: ${error.message}`);
               } else {
                 AnalyticService.capture("login", { method: "apple" });
-                router.replace("/(tabs)/home");
+                router.replace("/home");
               }
             } else {
               console.error("[AppleAuth] ❌ No identityToken received");

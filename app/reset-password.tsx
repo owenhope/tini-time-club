@@ -85,7 +85,7 @@ export default function ResetPasswordScreen() {
     }
 
     Alert.alert("Password updated", "You can now use your new password.", [
-      { text: "OK", onPress: () => router.replace("/(tabs)/home") },
+      { text: "OK", onPress: () => router.replace("/home") },
     ]);
   };
 

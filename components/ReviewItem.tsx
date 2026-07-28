@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
-import { Link, useRouter, usePathname } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
@@ -21,7 +21,6 @@ import { Avatar, RatingSummary } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
-import { userHref, locationHref } from "@/utils/tabRoutes";
 import {
   stripNameFromAddress,
   formatRelativeDate,
@@ -257,14 +256,14 @@ const AvatarWrapper = memo(
     isOwnReview: boolean;
   }) => {
     const router = useRouter();
-    const pathname = usePathname();
     const styles = useStyles();
 
     const handlePress = useCallback(() => {
       if (!isOwnReview && username) {
-        router.push(userHref(pathname, username));
+        // Shared route: resolves inside whichever tab stack is rendering.
+        router.push(`/users/${username}`);
       }
-    }, [isOwnReview, username, router, pathname]);
+    }, [isOwnReview, username, router]);
 
     const content = (
       <View style={styles.headerProfile}>
@@ -359,11 +358,10 @@ const ReviewOverlay = memo(
     isOverlayVisible: boolean;
   }) => {
     const styles = useStyles();
-    const pathname = usePathname();
 
     return (
       <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-        <Link href={locationHref(pathname, review.location?.id)} asChild>
+        <Link href={`/places/${review.location?.id}`} asChild>
           <TouchableOpacity style={styles.locationLinkContainer}>
             <Text style={styles.locationName}>
               {review.location?.name || "N/A"}

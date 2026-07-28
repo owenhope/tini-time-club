@@ -460,15 +460,15 @@ function Home() {
   }, []);
 
   const navigateToLocations = useCallback(() => {
-    router.navigate("/(tabs)/locations");
+    router.navigate("/places");
   }, [router]);
 
   const navigateToReview = useCallback(() => {
-    router.navigate("/(tabs)/review");
+    router.navigate("/review");
   }, [router]);
 
   const navigateToDiscover = useCallback(() => {
-    router.navigate("/(tabs)/discover");
+    router.navigate("/discover");
   }, [router]);
 
   // Memoized empty component

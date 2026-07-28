@@ -101,7 +101,7 @@ const LayoutContent = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
-        name="home"
+        name="(home)"
         options={{
           title: "Feed",
           headerShown: false,
@@ -115,7 +115,7 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen
-        name="locations"
+        name="(places)"
         options={{
           title: "Places",
           headerShown: false,
@@ -155,7 +155,7 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen
-        name="discover"
+        name="(discover)"
         options={{
           title: "Discover",
           headerShown: false,
@@ -165,7 +165,7 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="(profile)"
         options={{
           title: "Profile",
           headerShown: false,

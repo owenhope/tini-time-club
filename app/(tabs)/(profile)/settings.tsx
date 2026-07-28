@@ -59,13 +59,13 @@ const Settings = () => {
       id: "edit-profile",
       title: "Edit Profile",
       icon: "person-outline",
-      onPress: () => router.push("/(tabs)/profile/edit-profile"),
+      onPress: () => router.push("/edit-profile"),
     },
     {
       id: "terms",
       title: "Terms of Service",
       icon: "document-text-outline",
-      onPress: () => router.push("/(tabs)/profile/terms"),
+      onPress: () => router.push("/terms"),
     },
     {
       id: "support",
@@ -77,7 +77,7 @@ const Settings = () => {
       id: "delete",
       title: "Delete Account",
       icon: "trash-outline",
-      onPress: () => router.push("/(tabs)/profile/delete-account"),
+      onPress: () => router.push("/delete-account"),
     },
     {
       id: "logout",

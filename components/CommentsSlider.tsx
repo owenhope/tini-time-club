@@ -22,8 +22,7 @@ import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
-import { useRouter, usePathname } from "expo-router";
-import { userHref } from "@/utils/tabRoutes";
+import { useRouter } from "expo-router";
 import { Avatar } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -47,7 +46,6 @@ export default function CommentsSlider({
 }: CommentsSliderProps) {
   const { profile } = useProfile();
   const router = useRouter();
-  const pathname = usePathname();
   const styles = useStyles();
   const { colors } = useTheme();
   const [comments, setComments] = useState<any[]>([]);
@@ -151,7 +149,8 @@ export default function CommentsSlider({
     if (profile?.id === userId) return;
 
     if (username) {
-      router.push(userHref(pathname, username));
+      // Shared route: resolves inside whichever tab stack is rendering.
+      router.push(`/users/${username}`);
     }
   };
 

@@ -582,7 +582,7 @@ export default function App() {
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.navigate("/(tabs)/profile");
+        router.navigate("/profile");
       }
     } catch (error) {
       console.error("Error submitting review:", error);

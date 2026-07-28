@@ -98,8 +98,8 @@ function RootLayoutNav() {
 
         if (!launchedViaDeepLink) {
           if (session) {
-            if (pathnameRef.current !== "/(tabs)/home") {
-              router.replace("/(tabs)/home");
+            if (pathnameRef.current !== "/home") {
+              router.replace("/home");
             }
           } else if (pathnameRef.current !== "/") {
             router.replace("/");
@@ -115,7 +115,7 @@ function RootLayoutNav() {
         // User signed in (email, Apple, Google, etc.). Recovery links also emit
         // SIGNED_IN; staying put keeps the reset screen on screen.
         if (pathnameRef.current !== "/reset-password") {
-          router.replace("/(tabs)/home");
+          router.replace("/home");
         }
       } else if (event === "SIGNED_OUT") {
         // User signed out

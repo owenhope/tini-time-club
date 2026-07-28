@@ -195,14 +195,6 @@ const UserProfile = () => {
             <Text style={styles.headerTitle}>{displayProfile.username}</Text>
           </View>
         ),
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.headerButtonLeft}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-        ),
         headerRight: () => (
           <View style={styles.headerActions}>
             <Button
@@ -706,9 +698,6 @@ const useStyles = makeStyles((t) => ({
     marginRight: 10,
     paddingHorizontal: t.spacing.sm,
     paddingVertical: t.spacing.xs,
-  },
-  headerButtonLeft: {
-    marginLeft: 5,
   },
   friendText: {
     fontSize: 16,
