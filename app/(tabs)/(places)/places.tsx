@@ -2,14 +2,13 @@ import React, { useEffect, useState, createRef, useRef } from "react";
 import {
   View,
   StyleSheet,
-  Animated,
-  PanResponder,
   Keyboard,
   Platform,
   Text,
   TouchableOpacity,
   Linking,
 } from "react-native";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import MapView from "@/components/map/ClusteredMap";
 import {
   Region,
@@ -33,7 +32,7 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 2,
 };
 
-const BOTTOM_SHEET_HEIGHT = 340;
+const SHEET_HEIGHT = 340;
 
 function Map() {
   const styles = useStyles();
@@ -49,45 +48,7 @@ function Map() {
     useState<boolean>(false);
   const mapRef = createRef<any>();
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
-  const bottomSheetAnim = useRef(
-    new Animated.Value(BOTTOM_SHEET_HEIGHT)
-  ).current;
-
-  // Function to dismiss the bottom sheet (animate down and clear selection)
-  const handleDismiss = () => {
-    Animated.timing(bottomSheetAnim, {
-      toValue: BOTTOM_SHEET_HEIGHT,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setSelectedMarker(null);
-      bottomSheetAnim.setValue(BOTTOM_SHEET_HEIGHT);
-    });
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) =>
-        Math.abs(gestureState.dy) > 10,
-      onPanResponderMove: (evt, gestureState) => {
-        if (gestureState.dy > 0) {
-          bottomSheetAnim.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dy > 100) {
-          handleDismiss();
-        } else {
-          // Animate back up if not dragged far enough.
-          Animated.timing(bottomSheetAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const sheetRef = useRef<BottomSheet>(null);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -189,11 +150,7 @@ function Map() {
 
   const handleMarkerPress = (index: number) => {
     setSelectedMarker(index);
-    Animated.timing(bottomSheetAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    sheetRef.current?.snapToIndex(0);
   };
 
   const onRegionChangeComplete = (newRegion: Region) => {
@@ -230,7 +187,7 @@ function Map() {
           onPress={() => {
             Keyboard.dismiss();
             if (selectedMarker !== null) {
-              handleDismiss();
+              sheetRef.current?.close();
             }
           }}
         >
@@ -245,20 +202,27 @@ function Map() {
             </Marker>
           ))}
         </MapView>
-        <Animated.View
-          {...panResponder.panHandlers}
-          style={[
-            styles.bottomSheet,
-            { transform: [{ translateY: bottomSheetAnim }] },
-          ]}
+        {/* No backdrop on purpose: the map has to stay interactive while the
+            sheet is up, and tapping the map already dismisses it. */}
+        <BottomSheet
+          ref={sheetRef}
+          index={-1}
+          snapPoints={[SHEET_HEIGHT]}
+          enablePanDownToClose
+          onClose={() => setSelectedMarker(null)}
+          style={styles.sheetShadow}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={styles.sheetHandle}
         >
-          <View style={styles.dragIndicatorContainer}>
-            <View style={styles.dragIndicator} />
-          </View>
-          {selectedMarker !== null && locations[selectedMarker] && (
-            <LocationDetails loc={locations[selectedMarker]} />
-          )}
-        </Animated.View>
+          <BottomSheetScrollView
+            contentContainerStyle={styles.sheetContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {selectedMarker !== null && locations[selectedMarker] && (
+              <LocationDetails loc={locations[selectedMarker]} />
+            )}
+          </BottomSheetScrollView>
+        </BottomSheet>
       </View>
     </SafeAreaView>
   );
@@ -299,27 +263,22 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
-  bottomSheet: {
-    position: "absolute" as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: BOTTOM_SHEET_HEIGHT,
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
+  sheetShadow: {
     ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
   },
-  dragIndicatorContainer: {
-    alignItems: "center" as const,
-    paddingVertical: t.spacing.sm,
+  sheetBackground: {
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
   },
-  dragIndicator: {
+  sheetHandle: {
     width: 40,
     height: 4,
-    borderRadius: t.radius.md,
     backgroundColor: t.colors.borderStrong,
+  },
+  sheetContent: {
+    paddingBottom: t.spacing.xl,
   },
 }));
 

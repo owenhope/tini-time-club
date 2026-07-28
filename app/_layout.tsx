@@ -5,6 +5,7 @@ import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
 import { AppState, AppStateStatus } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Platform, View, ActivityIndicator } from "react-native";
@@ -18,9 +19,12 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <RootLayoutNav />
-    </ThemeProvider>
+    // Required by @gorhom/bottom-sheet's gestures (the map sheet).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <RootLayoutNav />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
