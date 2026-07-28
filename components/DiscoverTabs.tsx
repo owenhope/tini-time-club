@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
-import { stripNameFromAddress } from "@/utils/helpers";
+import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 import * as Location from "expo-location";
@@ -397,7 +397,7 @@ export default function DiscoverTabs({
           <Text style={styles.resultTitle}>{item.name}</Text>
           {item.address && (
             <Text style={styles.resultSubtitle}>
-              {stripNameFromAddress(item.name, item.address)}
+              {formatCityRegion(stripNameFromAddress(item.name, item.address))}
             </Text>
           )}
         </View>
@@ -428,7 +428,7 @@ export default function DiscoverTabs({
               activeTab === "locations" && styles.activeTabTextLocations,
             ]}
           >
-            Locations
+            Places
           </Text>
         </TouchableOpacity>
 

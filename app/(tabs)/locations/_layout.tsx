@@ -18,7 +18,7 @@ export default function LocationsLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: "Locations",
+          title: "Places",
           headerShown: false,
         }}
       />
