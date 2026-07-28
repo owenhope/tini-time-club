@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { View, Text, Animated, PanResponder } from "react-native";
 import * as Haptics from "expo-haptics";
 import { makeStyles, useTheme } from "@/theme";
@@ -37,16 +43,19 @@ const RatingSlider: React.FC<RatingSliderProps> = ({
   const accent = accentColor ?? colors.accent;
 
   const [trackWidth, setTrackWidth] = useState(0);
-  const thumbX = useRef(new Animated.Value(0)).current;
+  const [thumbX] = useState(() => new Animated.Value(0));
+  const trackRef = useRef<View>(null);
+  const trackLeftRef = useRef(0);
+  const draggingRef = useRef(false);
 
   // Refs so the PanResponder (created once) always sees current values.
   const trackWidthRef = useRef(0);
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
-  valueRef.current = value;
-  onChangeRef.current = onChange;
-
-  const stepWidth = count > 1 ? trackWidth / (count - 1) : 0;
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  }, [onChange, value]);
 
   const positionFor = useCallback(
     (v: number, width: number) =>
@@ -54,14 +63,14 @@ const RatingSlider: React.FC<RatingSliderProps> = ({
     [count]
   );
 
-  // Snap the thumb to the current value (springy, follows drag steps too).
+  // Follow external value changes, but never fight the user's finger while a
+  // drag is active. A short timing animation avoids spring overshoot.
   useEffect(() => {
-    if (trackWidth === 0) return;
-    Animated.spring(thumbX, {
+    if (trackWidth === 0 || draggingRef.current) return;
+    Animated.timing(thumbX, {
       toValue: positionFor(value, trackWidth),
       useNativeDriver: true,
-      speed: 30,
-      bounciness: 6,
+      duration: 120,
     }).start();
   }, [value, trackWidth, positionFor, thumbX]);
 
@@ -69,24 +78,74 @@ const RatingSlider: React.FC<RatingSliderProps> = ({
     (x: number) => {
       const width = trackWidthRef.current;
       if (width === 0) return;
+      const clampedX = Math.min(width, Math.max(0, x));
+      thumbX.setValue(clampedX);
       const step = width / (count - 1);
-      const next = Math.min(count, Math.max(1, Math.round(x / step) + 1));
+      const next = Math.min(
+        count,
+        Math.max(1, Math.round(clampedX / step) + 1)
+      );
       if (next !== valueRef.current) {
+        valueRef.current = next;
         Haptics.selectionAsync();
         onChangeRef.current(next);
       }
     },
-    [count]
+    [count, thumbX]
   );
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => setFromX(evt.nativeEvent.locationX),
-      onPanResponderMove: (evt) => setFromX(evt.nativeEvent.locationX),
-    })
-  ).current;
+  const setFromPageX = useCallback(
+    (pageX: number) => setFromX(pageX - trackLeftRef.current),
+    [setFromX]
+  );
+
+  const measureTrack = useCallback((onMeasured?: () => void) => {
+    trackRef.current?.measureInWindow((left, _top, width) => {
+      trackLeftRef.current = left;
+      trackWidthRef.current = width;
+      setTrackWidth(width);
+      onMeasured?.();
+    });
+  }, []);
+
+  const finishDrag = useCallback(() => {
+    draggingRef.current = false;
+    Animated.timing(thumbX, {
+      toValue: positionFor(valueRef.current, trackWidthRef.current),
+      useNativeDriver: true,
+      duration: 100,
+    }).start();
+  }, [positionFor, thumbX]);
+
+  const beginDrag = useCallback(
+    (pageX: number) => {
+      draggingRef.current = true;
+      thumbX.stopAnimation();
+      if (trackWidthRef.current > 0) {
+        setFromPageX(pageX);
+        measureTrack();
+      } else {
+        measureTrack(() => setFromPageX(pageX));
+      }
+    },
+    [measureTrack, setFromPageX, thumbX]
+  );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt) => beginDrag(evt.nativeEvent.pageX),
+        onPanResponderMove: (_evt, gestureState) =>
+          setFromPageX(gestureState.moveX),
+        onPanResponderRelease: finishDrag,
+        onPanResponderTerminate: finishDrag,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
+      }),
+    [beginDrag, finishDrag, setFromPageX]
+  );
 
   const rated = value >= 1;
 
@@ -132,12 +191,14 @@ const RatingSlider: React.FC<RatingSliderProps> = ({
         }}
       >
         <View
+          ref={trackRef}
           style={styles.trackArea}
           onLayout={(e) => {
             const width = e.nativeEvent.layout.width;
             trackWidthRef.current = width;
             setTrackWidth(width);
             thumbX.setValue(positionFor(valueRef.current, width));
+            requestAnimationFrame(() => measureTrack());
           }}
         >
           <View style={styles.track}>
