@@ -6,15 +6,26 @@ import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
 import { AppState, AppStateStatus } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { Platform, View, Text } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Platform, View, ActivityIndicator } from "react-native";
 import * as TrackingTransparency from "expo-tracking-transparency";
 import * as Linking from "expo-linking";
+import { ThemeProvider, useTheme } from "@/theme";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutNav />
+    </ThemeProvider>
+  );
+}
+
+function RootLayoutNav() {
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
@@ -164,7 +175,13 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }} />
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
       {/* Loading overlay during resume session check */}
       {isResuming && (
         <View
@@ -174,13 +191,13 @@ export default function RootLayout() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "#B6A3E2",
+            backgroundColor: colors.background,
             justifyContent: "center",
             alignItems: "center",
             zIndex: 9999,
           }}
         >
-          <Text style={{ color: "white", fontSize: 16 }}>Loading...</Text>
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       )}
     </>

@@ -12,9 +12,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import authCache from "@/utils/authCache";
+import { makeStyles, useTheme, type ThemePreference } from "@/theme";
+
+const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
 
 const Settings = () => {
   const router = useRouter();
+  const styles = useStyles();
+  const { colors, preference, setPreference } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -81,6 +90,34 @@ const Settings = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Appearance</Text>
+          <View style={styles.segmented}>
+            {APPEARANCE_OPTIONS.map((option) => {
+              const selected = preference === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.segment, selected && styles.segmentSelected]}
+                  onPress={() => setPreference(option.value)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${option.label} appearance`}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      selected && styles.segmentTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         {menuItems.map((item, index) => (
           <TouchableOpacity
             key={item.id}
@@ -95,7 +132,7 @@ const Settings = () => {
                 <Ionicons
                   name={item.icon as any}
                   size={24}
-                  color={item.id === "delete" ? "#ff4444" : "#333"}
+                  color={item.id === "delete" ? colors.danger : colors.text}
                 />
                 <Text
                   style={[
@@ -106,7 +143,11 @@ const Settings = () => {
                   {item.title}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textMuted}
+              />
             </View>
           </TouchableOpacity>
         ))}
@@ -115,42 +156,79 @@ const Settings = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.background,
   },
   content: {
     flex: 1,
-    paddingTop: 0,
+  },
+  section: {
+    paddingHorizontal: t.spacing.xl,
+    paddingTop: t.spacing.xl,
+    paddingBottom: t.spacing.lg,
+  },
+  sectionLabel: {
+    ...t.typography.label,
+    color: t.colors.textMuted,
+    textTransform: "uppercase" as const,
+    marginBottom: t.spacing.md,
+  },
+  segmented: {
+    flexDirection: "row" as const,
+    backgroundColor: t.colors.surfaceSunken,
+    borderRadius: t.radius.md,
+    padding: t.spacing.xs,
+    gap: t.spacing.xs,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: t.spacing.sm + 2,
+    borderRadius: t.radius.sm,
+    alignItems: "center" as const,
+  },
+  segmentSelected: {
+    backgroundColor: t.colors.surface,
+    ...t.elevation.card,
+  },
+  segmentText: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+  },
+  segmentTextSelected: {
+    color: t.colors.text,
+    fontWeight: "600" as const,
   },
   menuItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    backgroundColor: t.colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: t.colors.divider,
   },
   lastMenuItem: {
     borderBottomWidth: 0,
   },
   menuItemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: t.spacing.xl,
+    paddingVertical: t.spacing.lg,
   },
   menuItemLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   menuItemText: {
+    ...t.typography.body,
     fontSize: 16,
-    color: "#333",
-    marginLeft: 16,
-    fontWeight: "500",
+    color: t.colors.text,
+    marginLeft: t.spacing.lg,
+    fontWeight: "500" as const,
   },
   deleteText: {
-    color: "#ff4444",
+    color: t.colors.danger,
   },
-});
+}));
 
 export default Settings;

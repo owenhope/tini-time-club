@@ -2,6 +2,7 @@ import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
+import { makeStyles, useTheme } from "@/theme";
 import * as Haptics from "expo-haptics";
 
 /**
@@ -21,6 +22,8 @@ export default function CustomTabBar({
   navigation,
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const styles = useStyles();
+  const { colors } = useTheme();
 
   return (
     <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
@@ -102,7 +105,11 @@ export default function CustomTabBar({
                   source={require("@/assets/images/martini_transparent.png")}
                   style={[
                     styles.martiniIcon,
-                    { tintColor: isFocused ? "#336654" : "#666" },
+                    {
+                      tintColor: isFocused
+                        ? colors.tabBarActive
+                        : colors.tabBarInactive,
+                    },
                   ]}
                   resizeMode="contain"
                 />
@@ -114,14 +121,18 @@ export default function CustomTabBar({
                 <Ionicons
                   name={getIconName(route.name, isFocused)}
                   size={19}
-                  color={isFocused ? "#336654" : "#666"}
+                  color={
+                    isFocused ? colors.tabBarActive : colors.tabBarInactive
+                  }
                 />
               )}
               <Text
                 style={[
                   styles.tabLabel,
                   {
-                    color: isFocused ? "#336654" : "#666",
+                    color: isFocused
+                      ? colors.tabBarActive
+                      : colors.tabBarInactive,
                     marginTop: route.name === "review" ? 8 : 6,
                   },
                 ]}
@@ -136,54 +147,47 @@ export default function CustomTabBar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#f0f0f0",
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    paddingTop: 4,
+    backgroundColor: t.colors.tabBar,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: t.colors.border,
+    paddingTop: t.spacing.xs,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
+    paddingVertical: t.spacing.sm - 2,
   },
   tabContent: {
     alignItems: "center",
     justifyContent: "center",
   },
   tabLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginTop: 6,
-    textAlign: "center",
+    ...t.typography.caption,
+    fontWeight: "500" as const,
+    marginTop: t.spacing.sm - 2,
+    textAlign: "center" as const,
   },
   martiniIcon: {
-    width: 19,
-    height: 19,
+    width: 20,
+    height: 20,
   },
   oliveButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#336654",
+    width: 40,
+    height: 40,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.secondary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    ...t.elevation.raised,
   },
   plusIcon: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "bold",
-    lineHeight: 22,
+    color: t.colors.onSecondary,
+    fontSize: 24,
+    fontWeight: "600" as const,
+    lineHeight: 26,
   },
-});
+}));
