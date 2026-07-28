@@ -49,13 +49,30 @@ export default function CustomTabBar({
 
           if (!isFocused && !event.defaultPrevented) {
             navigation.navigate(route.name, route.params);
-          } else if (isFocused && route.name === "home") {
-            // If home tab is already focused and pressed, scroll to top
-            const scrollToTop = getGlobalScrollToTop();
-            if (scrollToTop) {
-              scrollToTop();
-            }
+            return;
           }
+
+          if (!isFocused) return;
+
+          if (route.name === "home") {
+            // Already on Feed: scroll back to the top.
+            const scrollToTop = getGlobalScrollToTop();
+            if (scrollToTop) scrollToTop();
+            return;
+          }
+
+          // Already on a stack tab: pop it back to its root, so tapping
+          // Places always returns to the map rather than leaving you on a
+          // place you drilled into. Targeting the nested stack's key is what
+          // makes the dispatch land on that stack rather than the tabs.
+          // POP_TO_TOP is what StackActions.popToTop() produces;
+          // @react-navigation/native isn't a direct dependency here (expo-router
+          // bundles its own copy), so the action is built by hand.
+          const nestedKey = (route as any).state?.key;
+          navigation.dispatch({
+            type: "POP_TO_TOP",
+            target: nestedKey ?? route.key,
+          });
         };
 
         const onLongPress = () => {

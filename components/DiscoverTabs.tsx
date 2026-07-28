@@ -11,8 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import { Avatar } from "@/components/shared";
-import { getLocationRatingDisplay } from "@/utils/ratingUtils";
+import { Avatar, RatingSummary } from "@/components/shared";
 import * as Location from "expo-location";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -383,16 +382,6 @@ export default function DiscoverTabs({
       activeOpacity={0.7}
     >
       <View style={styles.cardContent}>
-        <View style={styles.ratingSection}>
-          <View style={styles.ratingContainer}>
-            <Text style={styles.ratingText}>
-              {getLocationRatingDisplay(item)}
-            </Text>
-          </View>
-          <Text style={styles.reviewCountText}>
-            {item.total_ratings || 0} reviews
-          </Text>
-        </View>
         <View style={styles.textContainer}>
           <Text style={styles.resultTitle}>{item.name}</Text>
           {item.address && (
@@ -400,6 +389,15 @@ export default function DiscoverTabs({
               {formatCityRegion(stripNameFromAddress(item.name, item.address))}
             </Text>
           )}
+          {/* Same RatingSummary as the place profile and map sheet — the
+              rating circle here was the last of the old design. */}
+          <View style={styles.resultRating}>
+            <RatingSummary
+              variant="compact"
+              overall={item.rating}
+              reviewCount={item.total_ratings ?? 0}
+            />
+          </View>
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
@@ -682,6 +680,9 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
     alignItems: "center" as const,
     justifyContent: "center" as const,
+  },
+  resultRating: {
+    marginTop: t.spacing.xs,
   },
   textContainer: {
     flex: 1,
