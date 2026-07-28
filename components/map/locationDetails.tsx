@@ -1,9 +1,10 @@
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React from "react";
 import { View, Text, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
-import { RatingSummary } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { Button, RatingSummary } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
   loc: any;
@@ -17,6 +18,8 @@ interface LocationDetailsProps {
  */
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   const styles = useStyles();
+  const router = useRouter();
+  const { colors } = useTheme();
 
   const address = loc.address
     ? stripNameFromAddress(loc.name, loc.address)
@@ -34,6 +37,11 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
           <Text style={styles.name} numberOfLines={1}>
             {loc.name || "No name available"}
           </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={22}
+            color={colors.accent}
+          />
         </Pressable>
       </Link>
 
@@ -49,6 +57,18 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
           reviewCount={loc.total_ratings ?? 0}
         />
       </View>
+
+      <Button
+        title="View place"
+        onPress={() => router.push(`/places/${loc.id}`)}
+        variant="primary"
+        size="medium"
+        icon="arrow-forward"
+        iconPosition="right"
+        fullWidth
+        style={styles.viewPlaceButton}
+        accessibilityHint={`Opens the profile for ${loc.name || "this place"}`}
+      />
     </View>
   );
 };
@@ -61,7 +81,10 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.xs,
   },
   titleRow: {
-    justifyContent: "center" as const,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
     minHeight: 44,
     alignSelf: "stretch" as const,
   },
@@ -71,6 +94,7 @@ const useStyles = makeStyles((t) => ({
   name: {
     ...t.typography.title,
     color: t.colors.text,
+    flex: 1,
   },
   address: {
     ...t.typography.body,
@@ -79,6 +103,9 @@ const useStyles = makeStyles((t) => ({
   },
   ratings: {
     marginTop: t.spacing.sm,
+  },
+  viewPlaceButton: {
+    marginTop: t.spacing.lg,
   },
 }));
 
