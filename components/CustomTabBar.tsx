@@ -54,8 +54,12 @@ export default function CustomTabBar({
 
           if (!isFocused) return;
 
-          if (route.name === "home") {
-            // Already on Feed: scroll back to the top.
+          const nestedState = (route as any).state;
+
+          if (route.name === "home" && !(nestedState?.index > 0)) {
+            // Already on the feed root: scroll back to the top. When the
+            // feed stack is deep (a user or place is pushed), fall through
+            // and pop back to the feed like the other tabs.
             const scrollToTop = getGlobalScrollToTop();
             if (scrollToTop) scrollToTop();
             return;
@@ -68,7 +72,7 @@ export default function CustomTabBar({
           // POP_TO_TOP is what StackActions.popToTop() produces;
           // @react-navigation/native isn't a direct dependency here (expo-router
           // bundles its own copy), so the action is built by hand.
-          const nestedKey = (route as any).state?.key;
+          const nestedKey = nestedState?.key;
           navigation.dispatch({
             type: "POP_TO_TOP",
             target: nestedKey ?? route.key,

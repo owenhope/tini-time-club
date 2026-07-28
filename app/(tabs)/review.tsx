@@ -577,7 +577,13 @@ export default function App() {
       setPhoto(null);
       setIsReviewing(false);
       reset();
-      router.navigate(`/profile`);
+      // Return to wherever the review flow was started (feed, a place
+      // profile, ...) instead of always landing on the Profile tab.
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.navigate("/(tabs)/profile");
+      }
     } catch (error) {
       console.error("Error submitting review:", error);
       setSubmitError("Something went wrong. Please try again.");

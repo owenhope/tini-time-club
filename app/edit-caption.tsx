@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useProfile } from "@/context/profile-context";
+import { ProfileProvider, useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
@@ -242,4 +242,12 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
-export default EditCaption;
+// This screen lives in the root stack, outside the tabs layout that mounts
+// ProfileProvider, so it brings its own (served from the auth cache).
+const EditCaptionScreen = () => (
+  <ProfileProvider>
+    <EditCaption />
+  </ProfileProvider>
+);
+
+export default EditCaptionScreen;

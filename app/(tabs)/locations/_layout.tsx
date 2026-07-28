@@ -23,6 +23,15 @@ export default function LocationsLayout() {
         }}
       />
       <Stack.Screen name="[location]" />
+      <Stack.Screen name="users/[username]" options={{ headerShown: true }} />
+      <Stack.Screen
+        name="users/[username]/followers"
+        options={{ title: "Followers" }}
+      />
+      <Stack.Screen
+        name="users/[username]/following"
+        options={{ title: "Following" }}
+      />
     </Stack>
   );
 }

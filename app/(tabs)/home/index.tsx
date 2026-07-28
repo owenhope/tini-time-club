@@ -460,15 +460,15 @@ function Home() {
   }, []);
 
   const navigateToLocations = useCallback(() => {
-    router.push("/(tabs)/locations");
+    router.navigate("/(tabs)/locations");
   }, [router]);
 
   const navigateToReview = useCallback(() => {
-    router.push("/(tabs)/review");
+    router.navigate("/(tabs)/review");
   }, [router]);
 
   const navigateToDiscover = useCallback(() => {
-    router.push("/(tabs)/discover");
+    router.navigate("/(tabs)/discover");
   }, [router]);
 
   // Memoized empty component
@@ -642,7 +642,7 @@ function Home() {
           canDelete={false}
           onEdit={
             isOwnReview
-              ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
+              ? () => router.push(`/edit-caption?reviewId=${item.id}`)
               : undefined
           }
           onShowLikes={handleShowLikes}

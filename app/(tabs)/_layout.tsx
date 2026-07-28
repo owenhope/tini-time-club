@@ -122,7 +122,6 @@ const LayoutContent = () => {
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="location-outline" size={size} color={color} />
           ),
-          popToTopOnBlur: true,
         }}
       />
       <Tabs.Screen
@@ -163,7 +162,6 @@ const LayoutContent = () => {
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="search-outline" size={size} color={color} />
           ),
-          popToTopOnBlur: true,
         }}
       />
       <Tabs.Screen
@@ -174,7 +172,6 @@ const LayoutContent = () => {
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
-          popToTopOnBlur: true,
         }}
       />
     </Tabs>

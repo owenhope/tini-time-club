@@ -181,7 +181,20 @@ function RootLayoutNav() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
         }}
-      />
+      >
+        {/* Lives in the root stack rather than a tab stack so it can be
+            pushed from any tab and back returns to wherever it was opened. */}
+        <Stack.Screen
+          name="edit-caption"
+          options={{
+            headerShown: true,
+            title: "Edit Caption",
+            headerBackButtonDisplayMode: "minimal",
+            headerTintColor: colors.text,
+            headerStyle: { backgroundColor: colors.surface },
+          }}
+        />
+      </Stack>
       {/* Loading overlay during resume session check */}
       {isResuming && (
         <View

@@ -161,7 +161,10 @@ const Location = () => {
             return (
               <TouchableOpacity
                 onPress={() => {
-                  router.push({
+                  // navigate, not push: this switches to the Places tab (or
+                  // pops back to the map when already in that stack) instead
+                  // of stacking a tab root with no back button.
+                  router.navigate({
                     pathname: "/(tabs)/locations",
                     params: {
                       lat: displayLocation.lat!.toString(),
@@ -363,7 +366,7 @@ const Location = () => {
           onDelete={undefined}
           onEdit={
             isOwnReview
-              ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
+              ? () => router.push(`/edit-caption?reviewId=${item.id}`)
               : undefined
           }
           onShowLikes={() => {}}

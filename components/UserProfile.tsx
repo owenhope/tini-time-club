@@ -637,7 +637,7 @@ const UserProfile = () => {
         onScroll={handleScroll}
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
-            ? router.push(`/profile/edit-caption?reviewId=${review.id}`)
+            ? router.push(`/edit-caption?reviewId=${review.id}`)
             : undefined
         }
         onShowComments={handleShowComments}

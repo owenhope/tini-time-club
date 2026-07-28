@@ -457,7 +457,7 @@ const Profile = () => {
         canDelete={true}
         onDelete={(review) => confirmDeleteReview(review.id)}
         onEdit={(review) =>
-          router.push(`/profile/edit-caption?reviewId=${review.id}`)
+          router.push(`/edit-caption?reviewId=${review.id}`)
         }
       />
 

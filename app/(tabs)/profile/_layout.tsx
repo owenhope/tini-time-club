@@ -44,17 +44,21 @@ export default function ProfileLayout() {
         }}
       />
       <Stack.Screen
-        name="edit-caption"
-        options={{
-          title: "Edit Caption",
-        }}
-      />
-      <Stack.Screen
         name="edit-profile"
         options={{
           title: "Edit Profile",
         }}
       />
+      <Stack.Screen name="users/[username]" options={{ headerShown: true }} />
+      <Stack.Screen
+        name="users/[username]/followers"
+        options={{ title: "Followers" }}
+      />
+      <Stack.Screen
+        name="users/[username]/following"
+        options={{ title: "Following" }}
+      />
+      <Stack.Screen name="locations/[location]" />
     </Stack>
   );
 }
