@@ -23,13 +23,13 @@ import { useRouter, useNavigation } from "expo-router";
 import { useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
-import { Avatar } from "@/components/shared";
+import { Avatar, VerifiedName } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
 import ReviewGrid from "@/components/ReviewGrid";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 
 const Profile = () => {
   const styles = useStyles();
@@ -92,15 +92,22 @@ const Profile = () => {
     if (profile) {
       navigation.setOptions({
         headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>{profile.username}</Text>
-          </View>
+          <VerifiedName
+            name={profile.username}
+            isVerified={profile.is_verified}
+            badgeSize={15}
+            style={styles.headerTitleContainer}
+            textStyle={styles.headerTitle}
+          />
         ),
         headerLeft: () => null,
         headerRight: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate("settings" as never)}
             style={styles.headerButton}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="Profile settings"
           >
             <Ionicons name="settings-outline" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -521,7 +528,13 @@ const useStyles = makeStyles((t) => ({
   gridContent: { paddingBottom: 20 },
   emptyContainer: { alignItems: "center" as const, padding: 20 },
   emptyText: { fontSize: 16, color: t.colors.textSecondary },
-  headerButton: { marginRight: 10 },
+  headerButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 2,
+  },
   headerTitleContainer: { alignItems: "center" as const },
   headerTitle: {
     fontSize: 20,

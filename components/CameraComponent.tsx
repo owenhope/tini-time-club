@@ -1,5 +1,4 @@
 import {
-  CameraMode,
   CameraType,
   CameraView,
   useCameraPermissions,
@@ -12,13 +11,16 @@ import {
   View,
   Image,
   Alert,
-  Animated,
   Linking,
+  StyleSheet,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { makeStyles, useTheme } from "@/theme";
 
 interface CameraComponentProps {
@@ -28,37 +30,18 @@ interface CameraComponentProps {
 export default function CameraComponent({ onCapture }: CameraComponentProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
-  const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("back");
-  const [showCta, setShowCta] = useState(true);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!permission) return;
     if (!permission.granted) {
       requestPermission();
     }
-  }, [permission]);
-
-  // Auto-dismiss CTA after 5 seconds with fade-out
-  useEffect(() => {
-    if (showCta) {
-      const timer = setTimeout(() => {
-        // Fade out animation
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setShowCta(false);
-        });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCta, fadeAnim]);
+  }, [permission, requestPermission]);
 
   if (!permission) {
     return null;
@@ -166,62 +149,69 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   // Render the camera view along with controls.
   const renderCamera = () => {
     return (
-      <CameraView
-        style={styles.camera}
-        ref={cameraRef}
-        mode={mode}
-        facing={facing}
-        mute={false}
-        responsiveOrientationWhenOrientationLocked
-      >
-        {/* Toggle camera facing button in top left */}
-        <Pressable
-          style={styles.toggleButton}
-          onPress={toggleFacing}
-          accessibilityRole="button"
-          accessibilityLabel="Switch camera"
-        >
-          <FontAwesome6
-            name="camera-rotate"
-            size={32}
-            color={colors.textOnImage}
-          />
-        </Pressable>
+      <View style={styles.cameraStage}>
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          ref={cameraRef}
+          mode="picture"
+          facing={facing}
+          mute={false}
+          responsiveOrientationWhenOrientationLocked
+        />
 
-        {/* Pick image button with CTA in top right */}
-        <View style={styles.imagePickerContainer}>
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.cameraControls,
+            {
+              paddingTop: Math.max(insets.top, 16),
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+        >
+          <View style={styles.topControls}>
+            <Pressable
+              style={styles.controlButton}
+              onPress={toggleFacing}
+              accessibilityRole="button"
+              accessibilityLabel="Switch camera"
+            >
+              <FontAwesome6
+                name="camera-rotate"
+                size={22}
+                color={colors.textOnImage}
+              />
+            </Pressable>
+
+            <Pressable
+              style={[styles.controlButton, styles.libraryButton]}
+              onPress={pickImage}
+              accessibilityRole="button"
+              accessibilityLabel="Choose a photo from your library"
+            >
+              <FontAwesome6
+                name="image"
+                size={18}
+                color={colors.textOnImage}
+              />
+              <Text style={styles.libraryLabel}>Library</Text>
+            </Pressable>
+          </View>
+
           <Pressable
-            style={styles.pickImageButton}
-            onPress={pickImage}
+            style={styles.captureButton}
+            onPress={takePicture}
             accessibilityRole="button"
-            accessibilityLabel="Choose a photo from your library"
+            accessibilityLabel="Take photo"
           >
-            <FontAwesome6 name="image" size={32} color={colors.textOnImage} />
+            {({ pressed }) => (
+              <View style={[styles.shutterBtn, pressed && styles.shutterPressed]}>
+                <View style={styles.shutterBtnInner} />
+              </View>
+            )}
           </Pressable>
-          {showCta && (
-            <Animated.View style={[styles.ctaBanner, { opacity: fadeAnim }]}>
-              <Text style={styles.ctaText}>Upload from camera roll</Text>
-              <Text style={styles.ctaSubtext}>
-                Post reviews from previous dates
-              </Text>
-            </Animated.View>
-          )}
         </View>
-
-        {/* Capture button in the center */}
-        <Pressable
-          style={styles.captureButton}
-          onPress={takePicture}
-          accessibilityRole="button"
-          accessibilityLabel="Take photo"
-        >
-          {({ pressed }) => (
-            <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
-              <View style={styles.shutterBtnInner} />
-            </View>
-          )}
-        </Pressable>
-      </CameraView>
+      </View>
     );
   };
 
@@ -261,56 +251,50 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.sm,
     color: t.colors.textOnImage,
   },
-  camera: {
+  cameraStage: {
     flex: 1,
     width: "100%" as const,
   },
-  toggleButton: {
+  cameraControls: {
     position: "absolute" as const,
-    top: 80,
-    left: t.spacing.xl - 4,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: t.spacing.lg,
+  },
+  topControls: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+  },
+  controlButton: {
+    minWidth: 48,
+    height: 48,
+    paddingHorizontal: t.spacing.md,
+    borderRadius: t.radius.pill,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  libraryButton: {
+    gap: t.spacing.sm,
+  },
+  libraryLabel: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: t.colors.textOnImage,
   },
   captureButton: {
-    position: "absolute" as const,
-    bottom: 0,
-    left: "50%" as const,
-    transform: [{ translateX: -42.5 }, { translateY: -20 }],
-  },
-  imagePickerContainer: {
-    position: "absolute" as const,
-    top: 80,
-    right: t.spacing.xl - 4,
-    alignItems: "flex-end" as const,
-  },
-  pickImageButton: {
-    marginBottom: t.spacing.sm,
-  },
-  ctaBanner: {
-    backgroundColor: t.colors.accent,
-    borderRadius: t.radius.md,
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
+    alignSelf: "center" as const,
+    width: 96,
+    height: 96,
     alignItems: "center" as const,
-    minWidth: 170,
-    ...t.elevation.raised,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  ctaText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: t.colors.onAccent,
-
-    textAlign: "center" as const,
-    letterSpacing: 0.2,
-  },
-  ctaSubtext: {
-    fontSize: 12,
-    color: t.colors.onAccent,
-    opacity: 0.85,
-    marginTop: 2,
-    textAlign: "center" as const,
-    fontWeight: "400" as const,
+    justifyContent: "center" as const,
   },
   shutterBtn: {
     backgroundColor: "transparent",
@@ -327,6 +311,10 @@ const useStyles = makeStyles((t) => ({
     height: 70,
     borderRadius: 50,
     backgroundColor: t.colors.textOnImage,
+  },
+  shutterPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.96 }],
   },
   previewContainer: {
     flex: 1,

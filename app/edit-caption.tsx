@@ -56,7 +56,7 @@ const EditCaption = () => {
           location:locations!reviews_location_fkey(id, name, address),
           spirit:spirit(name),
           type:type(name),
-          profile:profiles!user_id(id, username, avatar_url)
+          profile:profiles!user_id(id, username, avatar_url, is_verified)
         `
         )
         .eq("id", params.reviewId)

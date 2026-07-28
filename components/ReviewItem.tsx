@@ -17,7 +17,7 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
 import imageCache from "@/utils/imageCache";
-import { Avatar, RatingSummary } from "@/components/shared";
+import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
@@ -250,10 +250,12 @@ const AvatarWrapper = memo(
   ({
     avatarUrl,
     username,
+    isVerified,
     isOwnReview,
   }: {
     avatarUrl: string | null;
     username?: string;
+    isVerified?: boolean;
     isOwnReview: boolean;
   }) => {
     const router = useRouter();
@@ -274,7 +276,11 @@ const AvatarWrapper = memo(
           size={40}
           style={styles.avatar}
         />
-        <Text style={styles.headerUsername}>{username || "Unknown"}</Text>
+        <VerifiedName
+          name={username || "Unknown"}
+          isVerified={isVerified}
+          textStyle={styles.headerUsername}
+        />
       </View>
     );
 
@@ -483,12 +489,14 @@ const ReviewFooter = memo(
 
         <View style={styles.captionSection}>
           {hasCaption ? (
-            <Text style={styles.captionText}>
-              <Text style={styles.captionUsername}>
-                {review.profile?.username || "Unknown"}
-              </Text>
-              <Text style={styles.captionBody}> {review.comment}</Text>
-            </Text>
+            <View style={styles.inlineIdentityRow}>
+              <VerifiedName
+                name={review.profile?.username || "Unknown"}
+                isVerified={review.profile?.is_verified}
+                textStyle={styles.captionUsername}
+              />
+              <Text style={styles.inlineBody}>{review.comment}</Text>
+            </View>
           ) : isOwnReview && onEdit ? (
             <TouchableOpacity onPress={onEdit}>
               <Text style={styles.addCaptionText}>Add a caption</Text>
@@ -506,12 +514,14 @@ const ReviewFooter = memo(
                 onPress={handleShowComments}
                 activeOpacity={0.7}
               >
-                <Text style={styles.commentText}>
-                  <Text style={styles.commentUsername}>
-                    {c.profile?.username || "Unknown"}
-                  </Text>
-                  <Text style={styles.commentBody}> {c.body}</Text>
-                </Text>
+                <View style={styles.inlineIdentityRow}>
+                  <VerifiedName
+                    name={c.profile?.username || "Unknown"}
+                    isVerified={c.profile?.is_verified}
+                    textStyle={styles.commentUsername}
+                  />
+                  <Text style={styles.inlineBody}>{c.body}</Text>
+                </View>
               </TouchableOpacity>
             ))}
 
@@ -550,6 +560,7 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prev.likes_count === next.likes_count &&
     prev.comments_count === next.comments_count &&
     prev.has_liked === next.has_liked &&
+    prev.profile?.is_verified === next.profile?.is_verified &&
     prevProps.canDelete === nextProps.canDelete &&
     prevProps.hideHeader === nextProps.hideHeader &&
     prevProps.hideFooter === nextProps.hideFooter &&
@@ -789,6 +800,7 @@ const ReviewItemComponent = ({
             <AvatarWrapper
               avatarUrl={review.profile?.avatar_url || null}
               username={review.profile?.username}
+              isVerified={review.profile?.is_verified}
               isOwnReview={isOwnReview}
             />
             <View style={styles.headerActions}>
@@ -1030,6 +1042,18 @@ const useStyles = makeStyles((t) => ({
     fontSize: 16,
     lineHeight: 20,
     color: t.colors.text,
+  },
+  inlineIdentityRow: {
+    flexDirection: "row" as const,
+    alignItems: "baseline" as const,
+    flexWrap: "wrap" as const,
+    columnGap: t.spacing.xs,
+  },
+  inlineBody: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: t.colors.text,
+    flexShrink: 1,
   },
   captionUsername: {
     fontWeight: "600" as const,

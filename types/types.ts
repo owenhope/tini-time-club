@@ -25,6 +25,7 @@ export interface ReviewProfile {
   id: string;
   username: string;
   avatar_url?: string | null;
+  is_verified?: boolean;
 }
 
 export interface Review {

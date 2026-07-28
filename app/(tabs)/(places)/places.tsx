@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createRef, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import MapView from "@/components/map/ClusteredMap";
@@ -37,16 +38,13 @@ const SHEET_HEIGHT = 340;
 function Map() {
   const styles = useStyles();
   const params = useLocalSearchParams();
-  const [currentLocation, setCurrentLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
+  const [locationResolved, setLocationResolved] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [canOpenLocationSettings, setCanOpenLocationSettings] =
     useState<boolean>(false);
-  const mapRef = createRef<any>();
+  const mapRef = useRef<any>(null);
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
   const sheetRef = useRef<BottomSheet>(null);
 
@@ -70,7 +68,6 @@ function Map() {
 
         setLocationNotice(null);
         const location = await Location.getCurrentPositionAsync({});
-        setCurrentLocation(location.coords);
         const initial = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
@@ -82,6 +79,8 @@ function Map() {
       } catch (error) {
         console.error("Error getting location:", error);
         setLocationNotice("We couldn't determine your location.");
+      } finally {
+        setLocationResolved(true);
       }
     };
 
@@ -126,6 +125,8 @@ function Map() {
   }, [params.lat, params.lon, params.locationId, locations]);
 
   useEffect(() => {
+    if (!locationResolved) return;
+
     const fetchLocations = async () => {
       const min_lat = region.latitude - region.latitudeDelta / 2;
       const max_lat = region.latitude + region.latitudeDelta / 2;
@@ -146,7 +147,7 @@ function Map() {
     };
 
     fetchLocations();
-  }, [region]);
+  }, [locationResolved, region]);
 
   const handleMarkerPress = (index: number) => {
     setSelectedMarker(index);
@@ -170,38 +171,44 @@ function Map() {
             )}
           </View>
         )}
-        <MapView
-          ref={mapRef}
-          provider={
-            Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
-          }
-          mapType="standard"
-          clusteringEnabled={true}
-          style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
-          showsUserLocation
-          showsMyLocationButton
-          rotateEnabled={false}
-          region={region}
-          onRegionChangeComplete={onRegionChangeComplete}
-          customMapStyle={mapStyle}
-          onPress={() => {
-            Keyboard.dismiss();
-            if (selectedMarker !== null) {
-              sheetRef.current?.close();
+        {locationResolved ? (
+          <MapView
+            ref={mapRef}
+            provider={
+              Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
             }
-          }}
-        >
-          {locations.map((loc, index) => (
-            <Marker
-              key={index}
-              coordinate={{ latitude: loc.lat, longitude: loc.long }}
-              anchor={{ x: 0.5, y: 1 }}
-              onPress={() => handleMarkerPress(index)}
-            >
-              <LocationPin loc={loc} />
-            </Marker>
-          ))}
-        </MapView>
+            mapType="standard"
+            clusteringEnabled={true}
+            style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
+            showsUserLocation
+            showsMyLocationButton
+            rotateEnabled={false}
+            region={region}
+            onRegionChangeComplete={onRegionChangeComplete}
+            customMapStyle={mapStyle}
+            onPress={() => {
+              Keyboard.dismiss();
+              if (selectedMarker !== null) {
+                sheetRef.current?.close();
+              }
+            }}
+          >
+            {locations.map((loc, index) => (
+              <Marker
+                key={index}
+                coordinate={{ latitude: loc.lat, longitude: loc.long }}
+                anchor={{ x: 0.5, y: 1 }}
+                onPress={() => handleMarkerPress(index)}
+              >
+                <LocationPin loc={loc} />
+              </Marker>
+            ))}
+          </MapView>
+        ) : (
+          <View style={styles.mapLoading}>
+            <ActivityIndicator size="small" />
+          </View>
+        )}
         {/* No backdrop on purpose: the map has to stay interactive while the
             sheet is up, and tapping the map already dismisses it. */}
         <BottomSheet
@@ -230,6 +237,16 @@ function Map() {
 }
 
 const useStyles = makeStyles((t) => ({
+  mapLoading: {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.background,
+  },
   noticeBanner: {
     position: "absolute" as const,
     top: t.spacing.md,

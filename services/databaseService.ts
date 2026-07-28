@@ -318,7 +318,7 @@ class DatabaseService {
       async () => {
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, username, avatar_url")
+          .select("id, username, avatar_url, is_verified")
           .ilike("username", `%${searchQuery}%`)
           .eq("deleted", false)
           .limit(limit);
@@ -342,7 +342,7 @@ class DatabaseService {
           .select(
             `
             *,
-            profile:profiles(id, username, avatar_url)
+            profile:profiles(id, username, avatar_url, is_verified)
           `
           )
           .eq("review_id", reviewId)
@@ -407,7 +407,7 @@ class DatabaseService {
       .select(
         `
         *,
-        profile:profiles(id, username, avatar_url)
+        profile:profiles(id, username, avatar_url, is_verified)
       `
       )
       .single();

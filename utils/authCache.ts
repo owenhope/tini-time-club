@@ -5,9 +5,11 @@ interface CachedProfile {
   profile: any;
   timestamp: number;
   expiresAt: number;
+  version: number;
 }
 
 const PROFILE_CACHE_KEY = "profile_cache";
+const PROFILE_CACHE_VERSION = 2;
 // Legacy key that used to hold the full session (access + refresh tokens) in
 // plaintext AsyncStorage. Always removed on startup.
 const LEGACY_AUTH_CACHE_KEY = "auth_cache";
@@ -63,7 +65,15 @@ class AuthCache {
   async getProfile(): Promise<any> {
     const cacheKey = "profile";
 
-    if (this.profileCache && Date.now() < this.profileCache.expiresAt) {
+    if (
+      this.profileCache &&
+      Date.now() < this.profileCache.expiresAt &&
+      this.profileCache.version === PROFILE_CACHE_VERSION &&
+      Object.prototype.hasOwnProperty.call(
+        this.profileCache.profile,
+        "is_verified"
+      )
+    ) {
       return this.profileCache.profile;
     }
 
@@ -115,6 +125,7 @@ class AuthCache {
       profile,
       timestamp: Date.now(),
       expiresAt: Date.now() + this.PROFILE_CACHE_DURATION,
+      version: PROFILE_CACHE_VERSION,
     };
     try {
       await AsyncStorage.setItem(
@@ -195,7 +206,15 @@ class AuthCache {
       const data = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
       if (data) {
         const cached = JSON.parse(data) as CachedProfile;
-        if (Date.now() < cached.expiresAt && cached.profile) {
+        if (
+          Date.now() < cached.expiresAt &&
+          cached.profile &&
+          cached.version === PROFILE_CACHE_VERSION &&
+          Object.prototype.hasOwnProperty.call(
+            cached.profile,
+            "is_verified"
+          )
+        ) {
           this.profileCache = cached;
         } else {
           await AsyncStorage.removeItem(PROFILE_CACHE_KEY);

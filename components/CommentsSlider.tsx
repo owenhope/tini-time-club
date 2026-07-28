@@ -22,7 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
 import { useRouter } from "expo-router";
-import { Avatar } from "@/components/shared";
+import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
@@ -179,7 +179,12 @@ export default function CommentsSlider({
                   onPress={() => navigateToUserProfile(username, item.user_id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.username}>{username}</Text>
+                  <VerifiedName
+                    name={username}
+                    isVerified={item.profile?.is_verified}
+                    badgeSize={14}
+                    textStyle={styles.username}
+                  />
                 </TouchableOpacity>
                 <Text style={styles.timestamp}> · {relativeDate}</Text>
               </View>

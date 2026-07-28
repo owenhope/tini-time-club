@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import { Avatar, RatingSummary } from "@/components/shared";
+import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
 import * as Location from "expo-location";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -352,9 +352,11 @@ export default function DiscoverTabs({
             />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.resultTitle}>
-              {item.username || "Unknown User"}
-            </Text>
+            <VerifiedName
+              name={item.username || "Unknown User"}
+              isVerified={item.is_verified}
+              textStyle={styles.resultTitle}
+            />
             <Text style={styles.profileStats}>
               {item.review_count || 0} reviews • {item.follower_count || 0}{" "}
               followers

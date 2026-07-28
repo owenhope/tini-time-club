@@ -11,6 +11,9 @@ export type { InputProps, InputSize, InputVariant, InputType } from "./Input";
 
 export { default as Avatar } from "./Avatar";
 
+export { default as VerifiedName } from "./VerifiedName";
+export type { VerifiedNameProps } from "./VerifiedName";
+
 // Profile system primitives — shared by the user, place and review surfaces.
 export { default as RatingSummary, RATING_MAX } from "./RatingSummary";
 export type {

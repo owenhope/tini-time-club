@@ -17,7 +17,7 @@ import { Review } from "@/types/types";
 import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Button } from "@/components/shared";
+import { Button, VerifiedName } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useRouter,
@@ -38,6 +38,7 @@ interface ProfileType {
   favorite_spirits?: any;
   favorite_types?: any;
   avatar_url?: string | null;
+  is_verified?: boolean;
 }
 
 const UserProfile = () => {
@@ -189,9 +190,13 @@ const UserProfile = () => {
     if (displayProfile) {
       navigation.setOptions({
         headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>{displayProfile.username}</Text>
-          </View>
+          <VerifiedName
+            name={displayProfile.username}
+            isVerified={displayProfile.is_verified}
+            badgeSize={15}
+            style={styles.headerTitleContainer}
+            textStyle={styles.headerTitle}
+          />
         ),
         headerRight: () => (
           <View style={styles.headerActions}>

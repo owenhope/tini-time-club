@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { Avatar } from "@/components/shared";
+import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import AnalyticService from "@/services/analyticsService";
@@ -17,6 +17,7 @@ export interface ProfileType {
   id: string;
   username: string;
   avatar_url?: string | null;
+  is_verified?: boolean;
 }
 
 interface ProfileListProps {
@@ -126,9 +127,12 @@ export default function ProfileList({
               size={32}
               style={styles.avatar}
             />
-            <Text style={styles.username}>
-              {item.username || "Unknown User"}
-            </Text>
+            <VerifiedName
+              name={item.username || "Unknown User"}
+              isVerified={item.is_verified}
+              badgeSize={14}
+              textStyle={styles.username}
+            />
           </TouchableOpacity>
         </Link>
         {!isSelf && (

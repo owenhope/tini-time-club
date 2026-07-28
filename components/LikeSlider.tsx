@@ -36,7 +36,7 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
       const userIds = likesData.map((row: any) => row.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, avatar_url, is_verified")
         .in("id", userIds);
       if (profilesError) {
         console.error("Error fetching profiles for likes:", profilesError);
