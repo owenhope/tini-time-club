@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
 } from "react-native";
@@ -13,6 +12,7 @@ import { Avatar } from "@/components/shared";
 import { Link } from "expo-router";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import AnalyticService from "@/services/analyticsService";
+import { makeStyles, useTheme } from "@/theme";
 export interface ProfileType {
   id: string;
   username: string;
@@ -28,6 +28,8 @@ export default function ProfileList({
   profiles,
   enableSearch = false,
 }: ProfileListProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { profile } = useProfile();
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -161,7 +163,7 @@ export default function ProfileList({
           <TextInput
             style={styles.searchInput}
             placeholder="Search profiles..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -177,10 +179,10 @@ export default function ProfileList({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: t.colors.background,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -189,47 +191,33 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     height: 48,
-    backgroundColor: "#ffffff",
-    borderColor: "#e5e7eb",
+    backgroundColor: t.colors.surface,
+    borderColor: t.colors.border,
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
     fontSize: 16,
-    color: "#1a1a1a",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    color: t.colors.text,
+    ...t.elevation.card,
   },
   listContent: {
     paddingBottom: 20,
   },
   profileCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.md,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.sm,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    ...t.elevation.card,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: t.colors.border,
   },
   profileInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     flex: 1,
   },
   avatar: {
@@ -239,32 +227,31 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   username: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1a1a1a",
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
   },
   followButton: {
-    backgroundColor: "#B6A3E2",
+    backgroundColor: t.colors.accent,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: t.spacing.md,
     borderRadius: 25,
     minWidth: 70,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   followingButton: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: t.colors.borderStrong,
   },
   disabledButton: {
     opacity: 0.6,
   },
   buttonText: {
-    color: "#ffffff",
+    color: t.colors.onAccent,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   followingButtonText: {
-    color: "#6b7280",
+    color: t.colors.textSecondary,
   },
-});
+}));

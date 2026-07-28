@@ -1,12 +1,21 @@
 // app/profile/_layout.tsx
 import { Stack } from "expo-router";
+import { useTheme } from "@/theme";
 
 export default function ProfileLayout() {
+  const { colors } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
-        headerTintColor: "#000",
+        headerTintColor: colors.text,
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        contentStyle: {
+          backgroundColor: colors.background,
+        },
       }}
     >
       <Stack.Screen name="index" />
@@ -20,9 +29,6 @@ export default function ProfileLayout() {
         name="settings"
         options={{
           title: "Settings",
-          headerStyle: {
-            backgroundColor: "#f0f0f0",
-          },
         }}
       />
       <Stack.Screen

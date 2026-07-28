@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import {
   View,
-  StyleSheet,
   Image,
   FlatList,
   Text,
@@ -34,6 +33,7 @@ import {
 } from "@/utils/locationUtils";
 import { Linking } from "react-native";
 import Tag from "@/components/Tag";
+import { makeStyles, useTheme } from "@/theme";
 
 // Helper function to format price level
 const getPriceLevelText = (priceLevel: number): string => {
@@ -54,15 +54,6 @@ const getPriceLevelText = (priceLevel: number): string => {
 };
 
 // Constants
-const COLORS = {
-  primary: "#B6A3E2",
-  taste: "#9E9E9E",
-  presentation: "#9E9E9E",
-  white: "#fff",
-  gray: "#ccc",
-  text: "#555",
-} as const;
-
 const DIMENSIONS = {
   avatar: 100,
   ratingCircle: 50,
@@ -84,6 +75,8 @@ interface LocationType {
 }
 
 const Location = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const [locationImage, setLocationImage] = useState<string | null>(null);
@@ -186,7 +179,7 @@ const Location = () => {
             onPress={() => navigation.goBack()}
             style={styles.headerButtonLeft}
           >
-            <Ionicons name="arrow-back" size={24} color="black" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ),
         headerRight: () => {
@@ -211,7 +204,7 @@ const Location = () => {
                 }}
                 style={styles.headerButtonRight}
               >
-                <Ionicons name="location" size={24} color="black" />
+                <Ionicons name="location" size={24} color={colors.text} />
               </TouchableOpacity>
             );
           }
@@ -219,7 +212,7 @@ const Location = () => {
         },
       });
     }
-  }, [displayLocation, navigation, router]);
+  }, [displayLocation, navigation, router, colors, styles]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -443,7 +436,7 @@ const Location = () => {
     if (loadingReviews) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.emptyText}>Loading reviews...</Text>
         </View>
       );
@@ -622,7 +615,11 @@ const Location = () => {
                         Linking.openURL(`tel:${placeDetails.phoneNumber}`)
                       }
                     >
-                      <Ionicons name="call-outline" size={18} color="#fff" />
+                      <Ionicons
+                        name="call-outline"
+                        size={18}
+                        color={colors.onAccent}
+                      />
                       <Text style={styles.contactText}>
                         {placeDetails.phoneNumber}
                       </Text>
@@ -633,7 +630,11 @@ const Location = () => {
                       style={styles.contactButton}
                       onPress={() => Linking.openURL(placeDetails.website!)}
                     >
-                      <Ionicons name="globe-outline" size={18} color="#fff" />
+                      <Ionicons
+                        name="globe-outline"
+                        size={18}
+                        color={colors.onAccent}
+                      />
                       <Text style={styles.contactText} numberOfLines={1}>
                         Website
                       </Text>
@@ -661,8 +662,8 @@ const Location = () => {
             <RefreshControl
               refreshing={loadingReviews}
               onRefresh={onRefresh}
-              colors={[COLORS.primary]}
-              tintColor={COLORS.primary}
+              colors={[colors.accent]}
+              tintColor={colors.accent}
             />
           }
         />
@@ -680,105 +681,105 @@ const Location = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
   },
   profileHeader: {
-    padding: 16,
+    padding: t.spacing.lg,
   },
   addressRow: {
-    paddingTop: 8,
+    paddingTop: t.spacing.sm,
   },
   addressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "flex-start" as const,
   },
   nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    marginBottom: t.spacing.xs,
   },
   locationName: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: 4,
+    fontWeight: "600" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.xs,
   },
   priceLevel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#666",
-    marginLeft: 8,
+    fontWeight: "500" as const,
+    color: t.colors.textSecondary,
+    marginLeft: t.spacing.sm,
   },
   locationAddress: {
     fontSize: 16,
-    color: "#333",
+    color: t.colors.text,
     lineHeight: 20,
-    textAlign: "left",
+    textAlign: "left" as const,
   },
   contactInfo: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    gap: 8,
-    flexWrap: "wrap",
+    flexDirection: "row" as const,
+    justifyContent: "flex-start" as const,
+    gap: t.spacing.sm,
+    flexWrap: "wrap" as const,
   },
   contactButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "#B6A3E2",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: t.spacing.sm,
+    paddingVertical: t.spacing.sm + 2,
+    paddingHorizontal: t.spacing.lg,
+    borderRadius: t.radius.xl - 4,
+    backgroundColor: t.colors.accent,
   },
   contactText: {
     fontSize: 14,
-    color: "#fff",
-    fontWeight: "600",
+    color: t.colors.onAccent,
+    fontWeight: "600" as const,
   },
   loadingText: {
     fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 4,
-    fontStyle: "italic",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    marginTop: t.spacing.xs,
+    fontStyle: "italic" as const,
   },
   tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginVertical: 8,
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: t.spacing.sm,
+    marginVertical: t.spacing.sm,
   },
   reviewsContainer: {
     flex: 1,
   },
   gridContent: {
-    paddingBottom: 20,
+    paddingBottom: t.spacing.xl - 4,
   },
   emptyContainer: {
-    alignItems: "center",
-    padding: 20,
-    gap: 16,
+    alignItems: "center" as const,
+    padding: t.spacing.xl - 4,
+    gap: t.spacing.lg,
   },
   emptyText: {
     fontSize: 16,
-    color: COLORS.text,
+    color: t.colors.textSecondary,
   },
   addReviewButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    backgroundColor: t.colors.accent,
+    paddingHorizontal: t.spacing.xl,
+    paddingVertical: t.spacing.md,
     borderRadius: 25,
-    marginTop: 8,
+    marginTop: t.spacing.sm,
   },
   addReviewButtonText: {
-    color: "#fff",
+    color: t.colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   headerButtonLeft: {
     marginLeft: 5,
@@ -787,15 +788,16 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   headerTitleContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     flex: 1,
-    maxWidth: "80%",
+    maxWidth: "80%" as const,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
     flexShrink: 1,
   },
-});
+}));
 
 export default Location;

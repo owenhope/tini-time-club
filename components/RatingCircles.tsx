@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
+import { makeStyles } from "@/theme";
 
 interface RatingCirclesProps {
   location: {
@@ -19,6 +20,8 @@ const RatingCircles: React.FC<RatingCirclesProps> = ({
   textSize = 16,
   labelSize = 14,
 }) => {
+  const styles = useStyles();
+
   const circleStyle = {
     width: circleSize,
     height: circleSize,
@@ -76,65 +79,51 @@ const RatingCircles: React.FC<RatingCirclesProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   allRatingsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
   },
   ratingContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   overallRatingCircle: {
-    backgroundColor: "#B6A3E2",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#B6A3E2",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: t.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.card,
   },
   ratingText: {
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    // onAccent / onSecondary resolve to the same value per scheme, so one
+    // token covers the text in all four circles.
+    color: t.colors.onAccent,
   },
   ratingLabel: {
-    fontWeight: "700",
-    color: "#666",
+    fontWeight: "700" as const,
+    color: t.colors.textSecondary,
     marginTop: 6,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   tasteCircle: {
-    backgroundColor: "#2d5016",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#2d5016",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: t.colors.secondary,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.card,
   },
   presentationCircle: {
-    backgroundColor: "#2d5016",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#2d5016",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: t.colors.secondary,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.card,
   },
   reviewCircle: {
-    backgroundColor: "#d32f2f",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#d32f2f",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: t.colors.danger,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.card,
   },
-});
+}));
 
 export default RatingCircles;

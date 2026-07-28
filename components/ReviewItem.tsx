@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
   Dimensions,
   TouchableOpacity,
   Pressable,
@@ -28,20 +27,12 @@ import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
+import { BRAND, makeStyles, useTheme } from "@/theme";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const DOUBLE_TAP_DELAY = 300;
 const ANIMATION_DURATION = 300;
-
-const COLORS = {
-  white: "#fff",
-  black: "#000",
-  red: "red",
-  gray: "#999",
-  lightGray: "#888",
-  overlay: "rgba(0,0,0,0.6)",
-} as const;
 
 const ICON_SIZES = {
   small: 20,
@@ -62,6 +53,7 @@ const ExpandableText = ({
   text: string;
   maxLines?: number;
 }) => {
+  const styles = useStyles();
   const [isExpanded, setIsExpanded] = useState(false);
   const [shouldShowMore, setShouldShowMore] = useState(false);
 
@@ -261,6 +253,7 @@ const AvatarWrapper = memo(
     isOwnReview: boolean;
   }) => {
     const router = useRouter();
+    const styles = useStyles();
 
     const handlePress = useCallback(() => {
       if (!isOwnReview && username) {
@@ -302,39 +295,51 @@ const LikeButton = memo(
     hasLiked: boolean;
     onPress: () => void;
     disabled?: boolean;
-  }) => (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={hasLiked ? "Unlike this review" : "Like this review"}
-      accessibilityState={{ selected: hasLiked, disabled }}
-      hitSlop={HIT_SLOP}
-    >
-      <Ionicons
-        name={hasLiked ? "heart" : "heart-outline"}
-        size={ICON_SIZES.medium}
-        color={hasLiked ? COLORS.red : COLORS.black}
-      />
-    </TouchableOpacity>
-  )
+  }) => {
+    const { colors } = useTheme();
+
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={
+          hasLiked ? "Unlike this review" : "Like this review"
+        }
+        accessibilityState={{ selected: hasLiked, disabled }}
+        hitSlop={HIT_SLOP}
+      >
+        <Ionicons
+          name={hasLiked ? "heart" : "heart-outline"}
+          size={ICON_SIZES.medium}
+          color={hasLiked ? colors.like : colors.text}
+        />
+      </TouchableOpacity>
+    );
+  }
 );
 LikeButton.displayName = "LikeButton";
 
 const CommentButton = memo(
-  ({ count }: { onPress: () => void; count: number }) => (
-    <Ionicons
-      name="chatbubble-outline"
-      size={ICON_SIZES.medium}
-      accessibilityLabel={count === 1 ? "1 comment" : `${count} comments`}
-    />
-  )
+  ({ count }: { onPress: () => void; count: number }) => {
+    const { colors } = useTheme();
+
+    return (
+      <Ionicons
+        name="chatbubble-outline"
+        size={ICON_SIZES.medium}
+        color={colors.text}
+        accessibilityLabel={count === 1 ? "1 comment" : `${count} comments`}
+      />
+    );
+  }
 );
 CommentButton.displayName = "CommentButton";
 
-const CommentCount = memo(({ count }: { count: number }) => (
-  <Text style={styles.likesCount}>{count}</Text>
-));
+const CommentCount = memo(({ count }: { count: number }) => {
+  const styles = useStyles();
+  return <Text style={styles.likesCount}>{count}</Text>;
+});
 
 const ReviewOverlay = memo(
   ({
@@ -347,30 +352,40 @@ const ReviewOverlay = memo(
     overlayOpacity: Animated.Value;
     onToggleOverlay: () => void;
     isOverlayVisible: boolean;
-  }) => (
-    <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-      <Link href={`/home/locations/${review.location?.id}`} asChild>
-        <TouchableOpacity style={styles.locationLinkContainer}>
-          <Text style={styles.locationName}>
-            {review.location?.name || "N/A"}
+  }) => {
+    const styles = useStyles();
+
+    return (
+      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+        <Link href={`/home/locations/${review.location?.id}`} asChild>
+          <TouchableOpacity style={styles.locationLinkContainer}>
+            <Text style={styles.locationName}>
+              {review.location?.name || "N/A"}
+            </Text>
+            {/* Raw brand lavender rather than colors.accent: this chevron sits
+                on the dark photo scrim in both schemes, and the light-mode
+                accent (#7B60BC) is near-invisible against it. */}
+            <Ionicons name="chevron-forward" size={16} color={BRAND.lavender} />
+          </TouchableOpacity>
+        </Link>
+        {review.location?.address && (
+          <Text style={styles.locationAddress}>
+            {stripNameFromAddress(
+              review.location.name,
+              review.location.address
+            )}
           </Text>
-          <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
-        </TouchableOpacity>
-      </Link>
-      {review.location?.address && (
-        <Text style={styles.locationAddress}>
-          {stripNameFromAddress(review.location.name, review.location.address)}
+        )}
+        <Text style={styles.spiritText}>
+          {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
         </Text>
-      )}
-      <Text style={styles.spiritText}>
-        {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
-      </Text>
-      <Text style={styles.ratingLabel}>Taste</Text>
-      <ReviewRating value={review.taste} label="taste" />
-      <Text style={styles.ratingLabel}>Presentation</Text>
-      <ReviewRating value={review.presentation} label="presentation" />
-    </Animated.View>
-  )
+        <Text style={styles.ratingLabel}>Taste</Text>
+        <ReviewRating value={review.taste} label="taste" />
+        <Text style={styles.ratingLabel}>Presentation</Text>
+        <ReviewRating value={review.presentation} label="presentation" />
+      </Animated.View>
+    );
+  }
 );
 ReviewOverlay.displayName = "ReviewOverlay";
 CommentCount.displayName = "CommentCount";
@@ -413,6 +428,8 @@ const ReviewFooter = memo(
     isOwnReview: boolean;
     loadCommentsIfNeeded: () => void;
   }) => {
+    const styles = useStyles();
+
     const handleShowComments = useCallback(() => {
       loadCommentsIfNeeded(); // Ensure comments are loaded before showing
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
@@ -536,6 +553,8 @@ const ReviewItemComponent = ({
   previewMode = false,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
+  const styles = useStyles();
+  const { colors } = useTheme();
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -762,7 +781,7 @@ const ReviewItemComponent = ({
                 <Ionicons
                   name="ellipsis-horizontal"
                   size={ICON_SIZES.small}
-                  color={COLORS.black}
+                  color={colors.text}
                 />
               </TouchableOpacity>
             </View>
@@ -799,7 +818,7 @@ const ReviewItemComponent = ({
             <Ionicons
               name={isOverlayVisible ? "eye" : "eye-off"}
               size={20}
-              color="#FFFFFF"
+              color={colors.textOnImage}
             />
           </TouchableOpacity>
         </View>
@@ -848,161 +867,159 @@ const ReviewItem = memo(ReviewItemComponent, areEqual);
 
 export default ReviewItem;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   header: {
     paddingHorizontal: 10,
-    paddingVertical: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
+    paddingVertical: t.spacing.md,
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.surface,
   },
   headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
   },
   actionButton: {
-    padding: 4,
+    padding: t.spacing.xs,
   },
   headerUsername: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   headerProfile: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   avatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    marginRight: 8,
+    marginRight: t.spacing.sm,
   },
   imageContainer: {
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH, // Instagram-style 1:1 aspect ratio
-    position: "relative",
+    position: "relative" as const,
   },
   reviewImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#EDE7F6",
+    width: "100%" as const,
+    height: "100%" as const,
+    backgroundColor: t.colors.imagePlaceholder,
   },
   topBar: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 0,
     right: 0,
     padding: 10,
     zIndex: 2,
-    flexDirection: "row",
-    gap: 8,
+    flexDirection: "row" as const,
+    gap: t.spacing.sm,
   },
   overlay: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.overlay,
-    padding: 20,
-    justifyContent: "flex-end",
+    backgroundColor: t.colors.overlay,
+    padding: t.spacing.xl - 4,
+    justifyContent: "flex-end" as const,
   },
   locationLinkContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: t.spacing.xs,
   },
+  // Everything below sits on the photo scrim, so it stays light in both
+  // schemes rather than following colors.text.
   locationName: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 22,
-    color: COLORS.white,
+    color: t.colors.textOnImage,
     marginRight: 6,
   },
   locationAddress: {
     fontSize: 14,
-    color: "#ddd",
-    marginBottom: 8,
+    color: t.colors.textOnImage,
+    marginBottom: t.spacing.sm,
   },
   ratingLabel: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 16,
-    marginTop: 8,
-    marginBottom: 4,
-    color: COLORS.white,
+    marginTop: t.spacing.sm,
+    marginBottom: t.spacing.xs,
+    color: t.colors.textOnImage,
   },
   eyeIconContainer: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
+    position: "absolute" as const,
+    bottom: t.spacing.xl - 4,
+    right: t.spacing.xl - 4,
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: t.radius.xl - 4,
+    backgroundColor: t.colors.scrim,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.raised,
   },
   spiritText: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.white,
-    textTransform: "capitalize",
+    fontWeight: "bold" as const,
+    color: t.colors.textOnImage,
+    textTransform: "capitalize" as const,
   },
   typeText: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.white,
-    textTransform: "capitalize",
+    fontWeight: "bold" as const,
+    color: t.colors.textOnImage,
+    textTransform: "capitalize" as const,
   },
   footer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: t.colors.surface,
     padding: 10,
   },
   actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: t.spacing.sm,
+    gap: t.spacing.sm,
   },
   commentButtonContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
   },
   likesCount: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   captionSection: {
-    marginBottom: 4,
+    marginBottom: t.spacing.xs,
   },
   captionText: {
     fontSize: 16,
     lineHeight: 20,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   captionUsername: {
-    fontWeight: "600",
+    fontWeight: "600" as const,
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   captionBody: {
     fontSize: 16,
     lineHeight: 20,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   addCaptionText: {
     fontSize: 16,
     lineHeight: 20,
-    color: "#666",
-    fontWeight: "500",
+    color: t.colors.textSecondary,
+    fontWeight: "500" as const,
   },
   commentItem: {
     marginBottom: 2,
@@ -1010,59 +1027,59 @@ const styles = StyleSheet.create({
   commentText: {
     fontSize: 16,
     lineHeight: 20,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   commentUsername: {
-    fontWeight: "600",
+    fontWeight: "600" as const,
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   commentBody: {
     fontSize: 16,
     lineHeight: 20,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   username: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
   },
   expandableText: {
     fontSize: 16,
-    color: COLORS.black,
+    color: t.colors.text,
     lineHeight: 20,
   },
   timestamp: {
     fontSize: 12,
-    color: COLORS.gray,
+    color: t.colors.textMuted,
   },
   moreText: {
-    color: "#666",
+    color: t.colors.textSecondary,
     fontSize: 16,
-    fontWeight: "400",
+    fontWeight: "400" as const,
   },
   viewAllCommentsText: {
-    color: COLORS.lightGray,
+    color: t.colors.textMuted,
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: t.spacing.xs,
   },
   previewContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: t.colors.surface,
   },
   previewFooter: {
     paddingHorizontal: 10,
-    paddingVertical: 12,
-    backgroundColor: COLORS.white,
+    paddingVertical: t.spacing.md,
+    backgroundColor: t.colors.surface,
   },
   previewUsername: {
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     fontSize: 16,
-    color: COLORS.black,
-    marginBottom: 4,
+    color: t.colors.text,
+    marginBottom: t.spacing.xs,
   },
   previewComment: {
     fontSize: 14,
-    color: COLORS.black,
+    color: t.colors.text,
     lineHeight: 18,
   },
-});
+}));

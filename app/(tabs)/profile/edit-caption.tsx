@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -17,8 +16,11 @@ import databaseService from "@/services/databaseService";
 import { supabase } from "@/utils/supabase";
 import { Review } from "@/types/types";
 import imageCache from "@/utils/imageCache";
+import { makeStyles, useTheme } from "@/theme";
 
 const EditCaption = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ reviewId: string }>();
   const { profile } = useProfile();
@@ -108,7 +110,7 @@ const EditCaption = () => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#B6A3E2" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -130,6 +132,7 @@ const EditCaption = () => {
             style={styles.input}
             multiline
             placeholder="Write a caption..."
+            placeholderTextColor={colors.textMuted}
             value={caption}
             onChangeText={setCaption}
             maxLength={500}
@@ -156,7 +159,7 @@ const EditCaption = () => {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={colors.onAccent} />
               ) : (
                 <Text style={styles.saveButtonText}>Save</Text>
               )}
@@ -168,10 +171,10 @@ const EditCaption = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
   },
   scrollView: {
     flex: 1,
@@ -185,58 +188,58 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#000",
+    fontWeight: "600" as const,
+    marginBottom: t.spacing.md,
+    color: t.colors.text,
   },
   input: {
     fontSize: 16,
     minHeight: 120,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#fafafa",
+    padding: t.spacing.md,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.background,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    color: "#000",
+    borderColor: t.colors.border,
+    color: t.colors.text,
   },
   characterCount: {
     fontSize: 12,
-    color: "#666",
-    textAlign: "right",
-    marginTop: 8,
+    color: t.colors.textSecondary,
+    textAlign: "right" as const,
+    marginTop: t.spacing.sm,
     marginBottom: 20,
   },
   buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
+    flexDirection: "row" as const,
+    gap: t.spacing.md,
+    marginTop: t.spacing.sm,
   },
   button: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: t.radius.sm,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   cancelButton: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: t.colors.surfaceSunken,
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: "600" as const,
+    color: t.colors.text,
   },
   saveButton: {
-    backgroundColor: "#B6A3E2",
+    backgroundColor: t.colors.accent,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: t.colors.onAccent,
   },
-});
+}));
 
 export default EditCaption;

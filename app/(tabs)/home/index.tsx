@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   ActivityIndicator,
   Modal,
   TextInput,
@@ -30,6 +29,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
 import { Button, Input } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -42,6 +42,8 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 // Simplified state management - no custom hook to avoid re-render issues
 
 function Home() {
+  const styles = useStyles();
+  const { colors, isDark } = useTheme();
   const { profile, updateProfile, acceptEULA } = useProfile();
   const router = useRouter();
   const [selectedCommentReview, setSelectedCommentReview] =
@@ -503,7 +505,7 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="map-outline" size={24} color="#ffffff" />
+              <Ionicons name="map-outline" size={24} color={colors.onAccent} />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Discover Locations</Text>
@@ -521,7 +523,7 @@ function Home() {
             <View style={styles.stepIconContainer}>
               <Image
                 source={require("@/assets/images/martini_transparent.png")}
-                style={[styles.martiniIcon, { tintColor: "#ffffff" }]}
+                style={[styles.martiniIcon, { tintColor: colors.onAccent }]}
                 resizeMode="contain"
               />
             </View>
@@ -539,7 +541,11 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="camera-outline" size={24} color="#ffffff" />
+              <Ionicons
+                name="camera-outline"
+                size={24}
+                color={colors.onAccent}
+              />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Share Your Review</Text>
@@ -555,7 +561,11 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Ionicons name="search-outline" size={24} color="#ffffff" />
+              <Ionicons
+                name="search-outline"
+                size={24}
+                color={colors.onAccent}
+              />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Connect With Others</Text>
@@ -574,7 +584,7 @@ function Home() {
     if (!loadingMore) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#B6A3E2" />
+        <ActivityIndicator size="small" color={colors.accent} />
         <Text style={styles.footerLoaderText}>Loading more...</Text>
       </View>
     );
@@ -667,7 +677,7 @@ function Home() {
   if (!firstLoadDone) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#B6A3E2" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.loadingText}>Loading reviews...</Text>
       </View>
     );
@@ -684,12 +694,16 @@ function Home() {
           accessibilityRole="button"
           accessibilityLabel="Share a Martini review"
         >
-          <Ionicons name="add" size={24} color="#000" />
+          <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
         <Animated.Image
           accessibilityRole="header"
           accessibilityLabel="Tini Time Club"
           source={require("@/assets/images/tini-time-logo-2x.png")}
+          // The logo artwork is dark green; on the dark surface it drops to
+          // roughly 1.5:1. Tint it to the text colour there. Light mode keeps
+          // the original two-colour mark.
+          {...(isDark ? { tintColor: colors.text } : {})}
           style={[
             styles.headerLogo,
             {
@@ -705,7 +719,7 @@ function Home() {
           accessibilityRole="button"
           accessibilityLabel="Search people and places"
         >
-          <Ionicons name="search-outline" size={24} color="#000" />
+          <Ionicons name="search-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
 
@@ -718,8 +732,8 @@ function Home() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#B6A3E2"]}
-            tintColor="#B6A3E2"
+            colors={[colors.accent]}
+            tintColor={colors.accent}
           />
         }
         onEndReached={onEndReached}
@@ -828,212 +842,205 @@ function Home() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
   header: {
-    flexDirection: "row",
+    flexDirection: "row" as const,
     shadowOffset: { width: 0, height: 0.25 },
     shadowOpacity: 0.25,
     shadowRadius: 1,
-    paddingTop: 4,
-    paddingBottom: 8,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.sm,
+    paddingHorizontal: t.spacing.sm,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   headerLogo: {
     width: 60,
     height: 60,
   },
   addButtonContainer: {
-    position: "absolute",
-    left: 16,
-    padding: 8,
+    position: "absolute" as const,
+    left: t.spacing.lg,
+    padding: t.spacing.sm,
   },
   searchIconContainer: {
-    position: "absolute",
-    right: 16,
-    padding: 8,
+    position: "absolute" as const,
+    right: t.spacing.lg,
+    padding: t.spacing.sm,
   },
   devIndicator: {
-    position: "absolute",
-    left: 16,
-    backgroundColor: "#ff4444",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    position: "absolute" as const,
+    left: t.spacing.lg,
+    backgroundColor: t.colors.danger,
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.spacing.xs,
     zIndex: 10,
   },
   devText: {
-    color: "#fff",
+    color: t.colors.textOnImage,
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     gap: 10,
   },
   loadingText: {
     fontSize: 16,
-    color: "#B6A3E2",
-    fontWeight: "500",
+    color: t.colors.accent,
+    fontWeight: "500" as const,
   },
   emptyContainer: {
-    padding: 20,
-    alignItems: "center",
+    padding: t.spacing.xl - 4,
+    alignItems: "center" as const,
     gap: 10,
   },
   emptyText: {
     fontSize: 16,
-    color: "#555",
-    textAlign: "center",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
   },
   errorText: {
     fontSize: 16,
-    color: "#ff4444",
-    textAlign: "center",
+    color: t.colors.danger,
+    textAlign: "center" as const,
     marginBottom: 10,
   },
   footerLoader: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    paddingVertical: t.spacing.xl - 4,
     gap: 10,
   },
   footerLoaderText: {
     fontSize: 14,
-    color: "#B6A3E2",
+    color: t.colors.accent,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.overlay,
   },
   modalContent: {
-    backgroundColor: "#fff",
-    paddingVertical: 20,
+    backgroundColor: t.colors.surface,
+    paddingVertical: t.spacing.xl - 4,
     paddingHorizontal: 40,
-    borderRadius: 12,
-    width: "90%",
-    alignItems: "center",
+    borderRadius: t.radius.md,
+    width: "90%" as const,
+    alignItems: "center" as const,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: "#000",
-    textAlign: "center",
+    fontWeight: "bold" as const,
+    marginBottom: t.spacing.md,
+    color: t.colors.text,
+    textAlign: "center" as const,
   },
   modalSubTitle: {
     fontSize: 14,
-    fontWeight: "normal",
-    marginBottom: 12,
-    color: "#000",
+    fontWeight: "normal" as const,
+    marginBottom: t.spacing.md,
+    color: t.colors.text,
   },
   validationMessage: {
     fontSize: 14,
-    color: "#ff4444",
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 8,
+    color: t.colors.danger,
+    textAlign: "center" as const,
+    marginTop: t.spacing.sm,
+    marginBottom: t.spacing.sm,
   },
   validationSuccess: {
-    color: "#B6A3E2",
+    color: t.colors.accent,
   },
   validationChecking: {
-    color: "#6b7280",
+    color: t.colors.textMuted,
   },
   rulesContainer: {
-    marginTop: 12,
-    marginBottom: 16,
-    paddingHorizontal: 8,
+    marginTop: t.spacing.md,
+    marginBottom: t.spacing.lg,
+    paddingHorizontal: t.spacing.sm,
   },
   rulesTitle: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "600" as const,
+    color: t.colors.text,
     marginBottom: 6,
   },
   ruleItem: {
     fontSize: 12,
-    color: "#666",
+    color: t.colors.textSecondary,
     marginBottom: 2,
   },
   welcomeContainer: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-    paddingHorizontal: 20,
+    backgroundColor: t.colors.background,
+    paddingHorizontal: t.spacing.xl - 4,
     paddingTop: 60,
     paddingBottom: 40,
   },
   heroSection: {
-    alignItems: "center",
+    alignItems: "center" as const,
     marginBottom: 40,
-    paddingHorizontal: 20,
+    paddingHorizontal: t.spacing.xl - 4,
   },
   heroSubtitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    textAlign: "center",
+    fontWeight: "600" as const,
+    color: t.colors.text,
+    textAlign: "center" as const,
     lineHeight: 22,
     maxWidth: 320,
     letterSpacing: -0.2,
   },
   stepsContainer: {
     flex: 1,
-    paddingHorizontal: 4,
+    paddingHorizontal: t.spacing.xs,
   },
   stepCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.lg,
+    padding: t.spacing.xl - 4,
+    marginBottom: t.spacing.lg,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    ...t.elevation.card,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: t.colors.border,
   },
   stepIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#B6A3E2",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
+    backgroundColor: t.colors.accent,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: t.spacing.lg,
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: 4,
+    fontWeight: "600" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.xs,
     letterSpacing: -0.2,
   },
   stepDescription: {
     fontSize: 13,
-    color: "#6b7280",
+    color: t.colors.textMuted,
     lineHeight: 19,
   },
   martiniIcon: {
     width: 24,
     height: 24,
   },
-});
+}));
 
 export default Home;

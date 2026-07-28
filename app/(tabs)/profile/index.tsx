@@ -2,7 +2,6 @@ import "react-native-get-random-values";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
-  StyleSheet,
   FlatList,
   Text,
   TouchableOpacity,
@@ -29,8 +28,11 @@ import ProfileHeader from "@/components/ProfileHeader";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
+import { makeStyles, useTheme } from "@/theme";
 
 const Profile = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
@@ -101,15 +103,16 @@ const Profile = () => {
             onPress={() => navigation.navigate("settings" as never)}
             style={styles.headerButton}
           >
-            <Ionicons name="settings-outline" size={24} color="black" />
+            <Ionicons name="settings-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         ),
         headerStyle: {
-          backgroundColor: "#f0f0f0",
+          backgroundColor: colors.surface,
         },
+        headerTintColor: colors.text,
       });
     }
-  }, [profile, navigation]);
+  }, [profile, navigation, colors, styles]);
 
   const loadUserReviews = async (userId?: string) => {
     setLoadingReviews(true);
@@ -496,8 +499,8 @@ const Profile = () => {
             <RefreshControl
               refreshing={loadingReviews}
               onRefresh={() => profile?.id && loadUserReviews(profile.id)}
-              colors={["#B6A3E2"]}
-              tintColor="#B6A3E2"
+              colors={[colors.accent]}
+              tintColor={colors.accent}
             />
           }
         />
@@ -513,64 +516,68 @@ const Profile = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
   bioSection: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.xs,
   },
   bio: {
     fontSize: 14,
-    color: "#000",
+    color: t.colors.text,
     lineHeight: 20,
-    textAlign: "left",
-    fontWeight: "600",
-    width: "100%",
+    textAlign: "left" as const,
+    fontWeight: "600" as const,
+    width: "100%" as const,
   },
   bioCtaContainer: {
-    width: "100%",
-    alignItems: "flex-start",
+    width: "100%" as const,
+    alignItems: "flex-start" as const,
   },
   tagsSection: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 16,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.lg,
   },
   ctaContainer: {
-    width: "100%",
-    alignItems: "flex-start",
+    width: "100%" as const,
+    alignItems: "flex-start" as const,
   },
   favoritesTagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    width: "100%",
-    justifyContent: "flex-start",
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: t.spacing.sm,
+    width: "100%" as const,
+    justifyContent: "flex-start" as const,
   },
   tag: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#B6A3E2",
+    paddingHorizontal: t.spacing.md,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.accent,
   },
   tagText: {
     fontSize: 12,
-    color: "#fff",
-    textTransform: "capitalize",
+    color: t.colors.onAccent,
+    textTransform: "capitalize" as const,
   },
   ctaText: {
-    fontSize: 15,
-    color: "#B6A3E2",
-    fontWeight: "600",
+    ...t.typography.body,
+    color: t.colors.accent,
+    fontWeight: "600" as const,
   },
   reviewsContainer: { flex: 1 },
   gridContent: { paddingBottom: 20 },
-  emptyContainer: { alignItems: "center", padding: 20 },
-  emptyText: { fontSize: 16, color: "#555" },
+  emptyContainer: { alignItems: "center" as const, padding: 20 },
+  emptyText: { fontSize: 16, color: t.colors.textSecondary },
   headerButton: { marginRight: 10 },
-  headerTitleContainer: { alignItems: "center" },
-  headerTitle: { fontSize: 20, fontWeight: "bold" },
-});
+  headerTitleContainer: { alignItems: "center" as const },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+  },
+}));
 
 export default Profile;

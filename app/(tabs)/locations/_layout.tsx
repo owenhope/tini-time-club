@@ -1,12 +1,18 @@
-// app/profile/_layout.tsx
+// app/locations/_layout.tsx
 import { Stack } from "expo-router";
+import { useTheme } from "@/theme";
 
-export default function ProfileLayout() {
+export default function LocationsLayout() {
+  const { colors } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
-        headerTintColor: "#000",
+        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { color: colors.text },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen

@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
+import { makeStyles } from "@/theme";
 
 interface LocationPinProps {
   loc: {
@@ -15,6 +16,7 @@ interface LocationPinProps {
 }
 
 function LocationPin({ loc }: LocationPinProps) {
+  const styles = useStyles();
   if (loc.lat == null || loc.long == null) return null;
   return (
     <View style={styles.container}>
@@ -30,11 +32,9 @@ function LocationPin({ loc }: LocationPinProps) {
   );
 }
 
-const PIN_COLOR = "#B6A3E2";
-
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
-    position: "relative",
+    position: "relative" as const,
     width: 40, // same width as the pinWrapper
     height: 40, // same height as the pinWrapper
   },
@@ -43,34 +43,34 @@ const styles = StyleSheet.create({
     height: 40,
   },
   pin: {
-    position: "absolute",
+    position: "absolute" as const,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: PIN_COLOR,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: t.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   pinText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: t.colors.onAccent,
+    fontWeight: "bold" as const,
     fontSize: 14,
   },
   pinPointer: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: -10,
-    left: "50%",
+    left: "50%" as const,
     transform: [{ translateX: -5 }],
     width: 0,
     height: 0,
     borderLeftWidth: 5,
     borderRightWidth: 5,
     borderTopWidth: 10,
-    borderStyle: "solid",
+    borderStyle: "solid" as const,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: PIN_COLOR,
+    borderTopColor: t.colors.accent,
   },
-});
+}));
 
 export default LocationPin;

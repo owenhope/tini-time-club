@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   FlatList,
   TextInput,
@@ -15,6 +14,7 @@ import { stripNameFromAddress } from "@/utils/helpers";
 import { Avatar } from "@/components/shared";
 import { getLocationRatingDisplay } from "@/utils/ratingUtils";
 import * as Location from "expo-location";
+import { makeStyles, useTheme } from "@/theme";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -26,15 +26,20 @@ const ListState = ({
 }: {
   loading: boolean;
   message: string;
-}) => (
-  <View style={styles.listState}>
-    {loading ? (
-      <ActivityIndicator color="#B6A3E2" />
-    ) : (
-      <Text style={styles.listStateText}>{message}</Text>
-    )}
-  </View>
-);
+}) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.listState}>
+      {loading ? (
+        <ActivityIndicator color={colors.accent} />
+      ) : (
+        <Text style={styles.listStateText}>{message}</Text>
+      )}
+    </View>
+  );
+};
 
 interface DiscoverTabsProps {
   query: string;
@@ -49,6 +54,8 @@ export default function DiscoverTabs({
   onTabChange,
   onQueryChange,
 }: DiscoverTabsProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -354,7 +361,7 @@ export default function DiscoverTabs({
               followers
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </View>
       </TouchableOpacity>
     );
@@ -394,7 +401,7 @@ export default function DiscoverTabs({
             </Text>
           )}
         </View>
-        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
     </TouchableOpacity>
   );
@@ -413,7 +420,7 @@ export default function DiscoverTabs({
           <Ionicons
             name="location-outline"
             size={20}
-            color={activeTab === "locations" ? "#8B5CF6" : "#8E8E93"}
+            color={activeTab === "locations" ? colors.accent : colors.textMuted}
           />
           <Text
             style={[
@@ -435,7 +442,9 @@ export default function DiscoverTabs({
           <Ionicons
             name="people-outline"
             size={20}
-            color={activeTab === "profiles" ? "#336654" : "#8E8E93"}
+            color={
+              activeTab === "profiles" ? colors.secondary : colors.textMuted
+            }
           />
           <Text
             style={[
@@ -450,7 +459,7 @@ export default function DiscoverTabs({
 
       {/* Search Bar */}
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={20} color="#9ca3af" />
+        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
         <TextInput
           style={styles.searchInput}
           placeholder={
@@ -460,7 +469,7 @@ export default function DiscoverTabs({
           }
           value={query}
           onChangeText={onQueryChange}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.textMuted}
         />
         {activeTab === "locations" && (
           <TouchableOpacity
@@ -471,7 +480,7 @@ export default function DiscoverTabs({
             <Ionicons
               name="location"
               size={16}
-              color={nearby ? "#8B5CF6" : "#9CA3AF"}
+              color={nearby ? colors.accent : colors.textMuted}
             />
             <Text
               style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
@@ -485,7 +494,7 @@ export default function DiscoverTabs({
             onPress={() => onQueryChange("")}
             activeOpacity={0.7}
           >
-            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+            <Ionicons name="close-circle" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -536,147 +545,126 @@ export default function DiscoverTabs({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
   },
   tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "#ffffff",
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    flexDirection: "row" as const,
+    backgroundColor: t.colors.surface,
+    marginHorizontal: t.spacing.xl - 4,
+    marginTop: t.spacing.xl - 4,
+    marginBottom: t.spacing.sm,
+    borderRadius: t.radius.md,
+    ...t.elevation.card,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    padding: 4,
+    borderColor: t.colors.border,
+    padding: t.spacing.xs,
   },
   tab: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    borderRadius: t.radius.sm,
   },
   activeTabProfiles: {
-    backgroundColor: "#E8F5E8",
+    backgroundColor: t.colors.secondarySubtle,
   },
   activeTabLocations: {
-    backgroundColor: "#F3F0FF",
+    backgroundColor: t.colors.accentSubtle,
   },
   tabText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginLeft: 8,
+    fontWeight: "600" as const,
+    color: t.colors.textMuted,
+    marginLeft: t.spacing.sm,
   },
   activeTabTextProfiles: {
-    color: "#336654",
+    color: t.colors.secondary,
   },
   activeTabTextLocations: {
-    color: "#8B5CF6",
+    color: t.colors.accent,
   },
   searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.surface,
+    marginHorizontal: t.spacing.xl - 4,
+    marginTop: t.spacing.sm,
+    marginBottom: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
     borderRadius: 25,
     height: 48,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...t.elevation.card,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: t.colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    marginLeft: 12,
-    color: "#1a1a1a",
+    marginLeft: t.spacing.md,
+    color: t.colors.text,
   },
   nearbyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: t.spacing.md,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: "#F5F5F5",
-    marginRight: 8,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.surfaceSunken,
+    marginRight: t.spacing.sm,
   },
   nearbyButtonActive: {
-    backgroundColor: "#F3F0FF",
+    backgroundColor: t.colors.accentSubtle,
   },
   nearbyText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    marginLeft: 4,
+    ...t.typography.label,
+    letterSpacing: 0,
+    color: t.colors.textMuted,
+    marginLeft: t.spacing.xs,
   },
   nearbyTextActive: {
-    color: "#8B5CF6",
+    color: t.colors.accent,
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: t.spacing.xl - 4,
   },
   listState: {
-    paddingTop: 48,
-    paddingHorizontal: 32,
-    alignItems: "center",
+    paddingTop: t.spacing.xxxl,
+    paddingHorizontal: t.spacing.xxl,
+    alignItems: "center" as const,
   },
   listStateText: {
-    color: "#777",
+    color: t.colors.textSecondary,
     fontSize: 15,
-    textAlign: "center",
+    textAlign: "center" as const,
     lineHeight: 22,
   },
   listContainer: {
-    paddingVertical: 16,
+    paddingVertical: t.spacing.lg,
   },
   resultCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.md,
+    marginBottom: t.spacing.sm,
+    ...t.elevation.card,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: t.colors.border,
   },
   cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    padding: t.spacing.lg,
   },
   avatarContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: t.spacing.md,
   },
   avatar: {
     width: 40,
@@ -684,45 +672,45 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   ratingSection: {
-    alignItems: "center",
-    marginRight: 12,
+    alignItems: "center" as const,
+    marginRight: t.spacing.md,
   },
   ratingContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#B6A3E2",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: t.colors.accent,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   textContainer: {
     flex: 1,
   },
   resultTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1a1a1a",
+    fontWeight: "600" as const,
+    color: t.colors.text,
     marginBottom: 2,
   },
   resultSubtitle: {
     fontSize: 14,
-    color: "#6b7280",
+    color: t.colors.textSecondary,
   },
   profileStats: {
     fontSize: 14,
-    color: "#6b7280",
-    fontWeight: "400",
+    color: t.colors.textSecondary,
+    fontWeight: "400" as const,
   },
   ratingText: {
-    color: "#ffffff",
+    color: t.colors.onAccent,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   reviewCountText: {
-    color: "#6b7280",
+    color: t.colors.textSecondary,
     fontSize: 10,
-    fontWeight: "400",
-    marginTop: 4,
-    textAlign: "center",
+    fontWeight: "400" as const,
+    marginTop: t.spacing.xs,
+    textAlign: "center" as const,
   },
-});
+}));

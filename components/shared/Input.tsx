@@ -3,12 +3,12 @@ import {
   View,
   TextInput,
   Text,
-  StyleSheet,
   ViewStyle,
   TextStyle,
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { makeStyles, useTheme } from "@/theme";
 
 export type InputSize = "small" | "medium" | "large";
 export type InputVariant = "default" | "outlined" | "filled" | "transparent";
@@ -67,6 +67,8 @@ const Input: React.FC<InputProps> = ({
   containerStyle,
   testID,
 }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   // Determine if this should be a password input
@@ -120,31 +122,32 @@ const Input: React.FC<InputProps> = ({
     switch (variant) {
       case "default":
         return {
-          backgroundColor: "#fafafa",
+          backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: error ? "#EF4444" : "#E5E7EB",
+          borderColor: error ? colors.danger : colors.border,
         };
       case "outlined":
         return {
           backgroundColor: "transparent",
           borderWidth: 2,
-          borderColor: error ? "#EF4444" : "#B6A3E2",
+          borderColor: error ? colors.danger : colors.accent,
         };
       case "filled":
         return {
-          backgroundColor: "#F3F4F6",
+          backgroundColor: colors.surfaceSunken,
           borderWidth: 0,
         };
       case "transparent":
+        // Sits over imagery in both themes, so it stays a fixed white scrim.
         return {
           backgroundColor: "rgba(255, 255, 255, 0.1)",
           borderWidth: 0,
         };
       default:
         return {
-          backgroundColor: "#fafafa",
+          backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: error ? "#EF4444" : "#E5E7EB",
+          borderColor: error ? colors.danger : colors.border,
         };
     }
   };
@@ -163,14 +166,14 @@ const Input: React.FC<InputProps> = ({
   };
 
   const getTextColor = (): string => {
-    if (disabled) return "#9CA3AF";
-    if (variant === "transparent") return "#FFFFFF";
-    return "#000000";
+    if (disabled) return colors.textMuted;
+    if (variant === "transparent") return colors.textOnImage;
+    return colors.text;
   };
 
   const getPlaceholderColor = (): string => {
     if (variant === "transparent") return "rgba(255, 255, 255, 0.6)";
-    return "#9CA3AF";
+    return colors.textMuted;
   };
 
   const renderLeftIcon = () => {
@@ -260,42 +263,45 @@ const Input: React.FC<InputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
-    width: "100%",
-    marginVertical: 8,
+    width: "100%" as const,
+    marginVertical: t.spacing.sm,
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     marginBottom: 6,
-    color: "#374151",
+    color: t.colors.textSecondary,
   },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     borderRadius: 25,
-    position: "relative",
+    position: "relative" as const,
   },
   input: {
     flex: 1,
     paddingHorizontal: 0,
+    color: t.colors.text,
   },
   leftIcon: {
-    marginLeft: 16,
-    marginRight: 8,
+    marginLeft: t.spacing.lg,
+    marginRight: t.spacing.sm,
   },
   rightIcon: {
-    marginRight: 16,
-    marginLeft: 8,
-    padding: 4,
+    marginRight: t.spacing.lg,
+    marginLeft: t.spacing.sm,
+    padding: t.spacing.xs,
   },
   errorText: {
-    fontSize: 12,
-    color: "#EF4444",
-    marginTop: 4,
-    marginLeft: 4,
+    ...t.typography.label,
+    fontWeight: "400" as const,
+    letterSpacing: 0,
+    color: t.colors.danger,
+    marginTop: t.spacing.xs,
+    marginLeft: t.spacing.xs,
   },
-});
+}));
 
 export default Input;

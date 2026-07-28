@@ -11,7 +11,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -21,6 +20,7 @@ import {
   getNameMatchScore,
   calculateDistance,
 } from "@/utils/locationUtils";
+import { makeStyles, useTheme } from "@/theme";
 
 interface SearchProps {
   onPlaceSelected: (newRegion: {
@@ -52,6 +52,8 @@ interface SearchResult {
 
 const Search = forwardRef<any, SearchProps>(
   ({ onPlaceSelected, currentLocation }, ref) => {
+    const styles = useStyles();
+    const { colors } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -223,7 +225,7 @@ const Search = forwardRef<any, SearchProps>(
             placeholder="Search"
             value={searchQuery}
             onChangeText={handleSearch}
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
@@ -233,7 +235,11 @@ const Search = forwardRef<any, SearchProps>(
                 setSearchResults([]);
               }}
             >
-              <Ionicons name="close-circle-outline" color="black" size={22} />
+              <Ionicons
+                name="close-circle-outline"
+                color={colors.textSecondary}
+                size={22}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -262,65 +268,58 @@ const Search = forwardRef<any, SearchProps>(
   }
 );
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 0,
-    padding: 8,
+    padding: t.spacing.sm,
     zIndex: 1,
   },
   searchContainer: {
-    position: "relative",
-    padding: 4,
+    position: "relative" as const,
+    padding: t.spacing.xs,
   },
   textInput: {
-    backgroundColor: "#fff",
-    paddingLeft: 20,
+    backgroundColor: t.colors.surface,
+    color: t.colors.text,
+    paddingLeft: t.spacing.xl - 4,
     paddingRight: 40,
     height: 44,
-    borderRadius: 8,
+    borderRadius: t.radius.sm,
     fontSize: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...t.elevation.card,
   },
   clearButton: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 15,
     top: 15,
     zIndex: 100,
   },
   resultsContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginTop: 4,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.sm,
+    marginTop: t.spacing.xs,
     maxHeight: 200,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...t.elevation.card,
   },
   resultsList: {
     maxHeight: 200,
   },
   resultItem: {
-    padding: 12,
+    padding: t.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: t.colors.border,
   },
   resultName: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#000",
-    marginBottom: 4,
+    fontWeight: "500" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.xs,
   },
   resultAddress: {
     fontSize: 14,
-    color: "#666",
+    color: t.colors.textSecondary,
   },
-});
+}));
 
 Search.displayName = "Search";
 

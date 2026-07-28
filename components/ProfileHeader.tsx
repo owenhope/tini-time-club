@@ -1,12 +1,7 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Avatar } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 
 interface ProfileHeaderProps {
   profile: {
@@ -56,6 +51,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   isScrolled = false,
   hasBioOrFavs = true,
 }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
   if (!profile) return null;
 
   // Add bottom padding when scrolled OR when there's no bio/favs
@@ -80,7 +78,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               />
               {avatarLoading && (
                 <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="small" color="#336654" />
+                  <ActivityIndicator size="small" color={colors.secondary} />
                 </View>
               )}
               {avatarError && (
@@ -175,18 +173,18 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   buttonPending: {
     opacity: 0.6,
   },
   profileHeader: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    alignItems: "flex-start",
+    flexDirection: "row" as const,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.lg,
+    alignItems: "flex-start" as const,
   },
   avatarSection: {
-    marginRight: 16,
+    marginRight: t.spacing.lg,
   },
   avatar: {
     width: 75,
@@ -194,100 +192,101 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   loadingOverlay: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: t.colors.scrim,
     borderRadius: 50,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   errorText: {
-    color: "#d32f2f",
+    color: t.colors.danger,
     fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
+    textAlign: "center" as const,
+    marginTop: t.spacing.xs,
   },
   userInfoContainer: {
     flex: 1,
   },
   displayName: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 12,
+    fontWeight: "600" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.md,
   },
   ctaText: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
+    color: t.colors.textSecondary,
+    marginBottom: t.spacing.md,
   },
   statsContainer: {
-    flexDirection: "row",
-    gap: 24,
-    justifyContent: "flex-start",
+    flexDirection: "row" as const,
+    gap: t.spacing.xl,
+    justifyContent: "flex-start" as const,
   },
   statItem: {
-    alignItems: "flex-start",
+    alignItems: "flex-start" as const,
   },
   statNumber: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
+    color: t.colors.text,
   },
   statLabel: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#666",
+    fontWeight: "bold" as const,
+    color: t.colors.textSecondary,
   },
   actionButtonsContainer: {
-    flexDirection: "row",
-    marginTop: 12,
-    gap: 12,
+    flexDirection: "row" as const,
+    marginTop: t.spacing.md,
+    gap: t.spacing.md,
   },
   followButton: {
-    backgroundColor: "#B6A3E2",
-    paddingHorizontal: 16,
+    backgroundColor: t.colors.accent,
+    paddingHorizontal: t.spacing.lg,
     paddingVertical: 10,
     borderRadius: 25,
     flex: 1,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   followingButton: {
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
     borderWidth: 1,
-    borderColor: "#B6A3E2",
+    borderColor: t.colors.accent,
   },
   followButtonText: {
-    color: "#fff",
+    color: t.colors.onAccent,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   followingButtonText: {
-    color: "#B6A3E2",
+    color: t.colors.accent,
   },
   blockButton: {
-    backgroundColor: "#ff6b6b",
-    paddingHorizontal: 16,
+    backgroundColor: t.colors.danger,
+    paddingHorizontal: t.spacing.lg,
     paddingVertical: 10,
     borderRadius: 25,
     flex: 1,
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   blockButtonText: {
-    color: "#fff",
+    color: t.colors.textOnAccent,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
   unblockButton: {
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
     borderWidth: 1,
-    borderColor: "#ff6b6b",
+    borderColor: t.colors.danger,
   },
   unblockButtonText: {
-    color: "#ff6b6b",
+    color: t.colors.danger,
   },
-});
+}));
 
 export default ProfileHeader;

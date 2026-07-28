@@ -27,6 +27,7 @@ import { Avatar } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
+import { makeStyles, useTheme } from "@/theme";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -45,6 +46,8 @@ export default function CommentsSlider({
 }: CommentsSliderProps) {
   const { profile } = useProfile();
   const router = useRouter();
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [showContent, setShowContent] = useState(false);
@@ -276,7 +279,7 @@ export default function CommentsSlider({
                                   <Ionicons
                                     name="trash-outline"
                                     size={16}
-                                    color="#888"
+                                    color={colors.textMuted}
                                   />
                                 </TouchableOpacity>
                               ) : (
@@ -287,7 +290,7 @@ export default function CommentsSlider({
                                   <Ionicons
                                     name="flag-outline"
                                     size={16}
-                                    color="#888"
+                                    color={colors.textMuted}
                                   />
                                 </TouchableOpacity>
                               )}
@@ -303,6 +306,7 @@ export default function CommentsSlider({
                   <View style={styles.inputContainer}>
                     <TextInput
                       placeholder="Add a comment..."
+                      placeholderTextColor={colors.textMuted}
                       value={commentText}
                       onChangeText={setCommentText}
                       onFocus={() => setIsFocused(true)}
@@ -331,113 +335,131 @@ export default function CommentsSlider({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   slider: {
-    position: "absolute",
+    position: "absolute" as const,
     left: 0,
     right: 0,
     bottom: 0,
     height: screenHeight * 0.4,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
+    padding: t.spacing.lg,
+    ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   sliderExpanded: {
     height: screenHeight * 0.8,
   },
-  sliderHeader: { alignItems: "center" },
-  dragIndicatorContainer: { alignItems: "center", paddingVertical: 8 },
+  sliderHeader: { alignItems: "center" as const },
+  dragIndicatorContainer: {
+    alignItems: "center" as const,
+    paddingVertical: t.spacing.sm,
+  },
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 12,
-    backgroundColor: "#ccc",
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.borderStrong,
   },
   emptyStateContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 32,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingTop: t.spacing.xxl,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.sm,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#888",
-    textAlign: "center",
-    paddingHorizontal: 32,
+    color: t.colors.textMuted,
+    textAlign: "center" as const,
+    paddingHorizontal: t.spacing.xxl,
   },
-  commentRow: { marginBottom: 16 },
+  commentRow: { marginBottom: t.spacing.lg },
   commentOuter: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    justifyContent: "space-between" as const,
   },
-  commentInner: { flexDirection: "row", alignItems: "flex-start", flex: 1 },
-  avatar: { width: 32, height: 32, borderRadius: 16, marginRight: 12 },
+  commentInner: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    flex: 1,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: t.spacing.md,
+  },
   commentContent: { flex: 1 },
   commentHeaderRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
     marginBottom: 2,
-    flexWrap: "wrap",
+    flexWrap: "wrap" as const,
   },
-  username: { fontWeight: "bold", color: "#000" },
-  timestamp: { color: "#888", fontSize: 12 },
-  commentBody: { fontSize: 14, color: "#000" },
+  username: { fontWeight: "bold" as const, color: t.colors.text },
+  timestamp: { color: t.colors.textMuted, fontSize: 12 },
+  commentBody: { fontSize: 14, color: t.colors.text },
   inputContainer: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-    backgroundColor: "#fff",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    padding: t.spacing.sm,
+    backgroundColor: t.colors.surface,
     borderTopWidth: 1,
-    borderColor: "#ddd",
+    borderColor: t.colors.border,
   },
   input: {
     flex: 1,
     height: 40,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: t.colors.border,
     borderRadius: 20,
     paddingHorizontal: 15,
     marginRight: 10,
+    color: t.colors.text,
   },
-  sendButton: { color: "#000000", fontWeight: "bold" },
-  deleteIcon: { paddingLeft: 8, paddingTop: 2 },
+  sendButton: { color: t.colors.text, fontWeight: "bold" as const },
+  deleteIcon: { paddingLeft: t.spacing.sm, paddingTop: 2 },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: t.colors.scrim,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    width: "80%",
-    alignItems: "center",
+    backgroundColor: t.colors.surface,
+    padding: t.spacing.xl - 4,
+    borderRadius: t.radius.md,
+    width: "80%" as const,
+    alignItems: "center" as const,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
     marginBottom: 10,
   },
-  optionButton: { paddingVertical: 8, alignSelf: "stretch" },
-  optionText: { textAlign: "center", fontSize: 16 },
+  optionButton: {
+    paddingVertical: t.spacing.sm,
+    alignSelf: "stretch" as const,
+  },
+  optionText: {
+    textAlign: "center" as const,
+    fontSize: 16,
+    color: t.colors.text,
+  },
   cancelButton: { marginTop: 10 },
-  cancelText: { color: "#007AFF", fontSize: 16 },
-});
+  cancelText: { color: t.colors.accent, fontSize: 16 },
+}));

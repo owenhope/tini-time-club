@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
-  StyleSheet,
   Image,
   FlatList,
   Text,
@@ -21,6 +20,7 @@ import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
+import { makeStyles, useTheme } from "@/theme";
 
 interface ProfileType {
   id: string;
@@ -33,6 +33,8 @@ interface ProfileType {
 }
 
 const UserProfile = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
@@ -189,12 +191,16 @@ const UserProfile = () => {
             onPress={() => navigation.goBack()}
             style={styles.headerButtonLeft}
           >
-            <Ionicons name="arrow-back" size={24} color="black" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ),
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
       });
     }
-  }, [displayProfile, navigation]);
+  }, [displayProfile, navigation, colors, styles]);
 
   // Fetch the selected profile when usernameParam is provided
   useEffect(() => {
@@ -622,34 +628,35 @@ const UserProfile = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
+    backgroundColor: t.colors.background,
   },
   errorState: {
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    gap: 16,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    padding: t.spacing.xl,
+    gap: t.spacing.lg,
   },
   errorTitle: {
     fontSize: 16,
-    color: "#333",
-    textAlign: "center",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
   },
   errorButton: {
-    backgroundColor: "#B6A3E2",
-    paddingVertical: 12,
+    backgroundColor: t.colors.accent,
+    paddingVertical: t.spacing.md,
     paddingHorizontal: 28,
-    borderRadius: 24,
+    borderRadius: t.radius.xl,
   },
   errorButtonText: {
-    color: "#fff",
-    fontWeight: "700",
+    color: t.colors.onAccent,
+    fontWeight: "700" as const,
     fontSize: 15,
   },
   errorLink: {
-    color: "#666",
+    color: t.colors.textSecondary,
     fontSize: 14,
   },
   reviewsContainer: {
@@ -659,73 +666,74 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   emptyContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     padding: 20,
   },
   emptyText: {
     fontSize: 16,
-    color: "#555",
+    color: t.colors.textSecondary,
   },
   headerButton: {
     marginRight: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: t.spacing.xs,
   },
   headerButtonLeft: {
     marginLeft: 5,
   },
   friendText: {
     fontSize: 16,
-    color: "#fff", // White text on purple background
-    fontWeight: "600",
+    color: t.colors.onAccent, // Text on the lavender fill
+    fontWeight: "600" as const,
   },
   headerTitleContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: "#777",
+    color: t.colors.textMuted,
   },
   bioSection: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.xs,
   },
   bio: {
     fontSize: 14,
-    color: "#000",
+    color: t.colors.text,
     lineHeight: 20,
-    textAlign: "left",
-    fontWeight: "600",
-    width: "100%",
+    textAlign: "left" as const,
+    fontWeight: "600" as const,
+    width: "100%" as const,
   },
   tagsSection: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 16,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.lg,
   },
   favoritesTagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    width: "100%",
-    justifyContent: "flex-start",
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: t.spacing.sm,
+    width: "100%" as const,
+    justifyContent: "flex-start" as const,
   },
   tag: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#B6A3E2",
+    paddingHorizontal: t.spacing.md,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.accent,
   },
   tagText: {
     fontSize: 12,
-    color: "#fff",
-    textTransform: "capitalize",
+    color: t.colors.onAccent,
+    textTransform: "capitalize" as const,
   },
-});
+}));
 
 export default UserProfile;

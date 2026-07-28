@@ -9,6 +9,7 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/utils/supabase";
 import CustomTabBar from "@/components/CustomTabBar";
+import { useTheme } from "@/theme";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -56,6 +57,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
 const LayoutContent = () => {
   const { profile } = useProfile();
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (!profile) return;
@@ -90,10 +92,11 @@ const LayoutContent = () => {
     <Tabs
       screenOptions={{
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: "#FFF" },
-        headerTintColor: "#000",
-        tabBarActiveTintColor: "#336654",
-        tabBarStyle: { backgroundColor: "#f0f0f0" },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarStyle: { backgroundColor: colors.tabBar },
+        sceneStyle: { backgroundColor: colors.background },
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
@@ -133,19 +136,14 @@ const LayoutContent = () => {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: "#336654",
+                backgroundColor: colors.secondary,
                 alignItems: "center",
                 justifyContent: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 5,
-                elevation: 8,
               }}
             >
               <Text
                 style={{
-                  color: "#FF4444",
+                  color: colors.onSecondary,
                   fontSize: 28,
                   fontWeight: "bold",
                   lineHeight: 28,

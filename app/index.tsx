@@ -3,7 +3,6 @@ import React, { useState, useCallback, useMemo } from "react";
 import {
   Alert,
   View,
-  TextInput,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,17 +18,7 @@ import { AppleAuth } from "@/components/AppleAuth.native";
 import { GoogleAuth } from "@/components/GoogleAuth.native";
 import { Button, Input } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
-
-// Constants
-const COLORS = {
-  primary: "#B6A3E2",
-  background: "#fff",
-  text: "#000",
-  textSecondary: "#666",
-  placeholder: "#999",
-  inputBackground: "#fafafa",
-  overlay: "rgba(0,0,0,0.5)",
-} as const;
+import { makeStyles, useTheme } from "@/theme";
 
 const DIMENSIONS = {
   inputHeight: 50,
@@ -110,11 +99,14 @@ const useFormState = (initialState: { email: string; password: string }) => {
 
 // Reusable UI Components
 const LoadingOverlay = ({ visible }: { visible: boolean }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
   if (!visible) return null;
 
   return (
     <View style={styles.loadingOverlay}>
-      <ActivityIndicator size="large" color={COLORS.background} />
+      <ActivityIndicator size="large" color={colors.textOnImage} />
       <Text style={styles.loadingText}>{MESSAGES.general.loading}</Text>
     </View>
   );
@@ -138,43 +130,47 @@ const ForgotPasswordModal = ({
   onSend: () => void;
   onCancel: () => void;
   loading: boolean;
-}) => (
-  <Modal visible={visible} transparent animationType="slide">
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Reset Password</Text>
-        <Text style={styles.modalSubtitle}>
-          Enter your email address and we&apos;ll send you a link to reset your
-          password.
-        </Text>
-        <Input
-          placeholder="Email"
-          value={email}
-          onChangeText={onEmailChange}
-          type="email"
-          size="medium"
-          variant="default"
-        />
-        <View style={styles.modalButtonContainer}>
-          <TouchableOpacity
-            style={styles.modalCancelButton}
-            onPress={onCancel}
-            disabled={loading}
-          >
-            <Text style={styles.modalCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.modalSendButton}
-            onPress={onSend}
-            disabled={loading}
-          >
-            <Text style={styles.modalSendText}>Send Reset Email</Text>
-          </TouchableOpacity>
+}) => {
+  const styles = useStyles();
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Reset Password</Text>
+          <Text style={styles.modalSubtitle}>
+            Enter your email address and we&apos;ll send you a link to reset
+            your password.
+          </Text>
+          <Input
+            placeholder="Email"
+            value={email}
+            onChangeText={onEmailChange}
+            type="email"
+            size="medium"
+            variant="default"
+          />
+          <View style={styles.modalButtonContainer}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={onCancel}
+              disabled={loading}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalSendButton}
+              onPress={onSend}
+              disabled={loading}
+            >
+              <Text style={styles.modalSendText}>Send Reset Email</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 // Custom hook for auth operations
 const useAuth = () => {
@@ -315,6 +311,8 @@ const useAuth = () => {
 };
 
 const Login = () => {
+  const styles = useStyles();
+  const { colors, isDark } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
   const { formData, updateField } = useFormState({ email: "", password: "" });
   const forgotPasswordModal = useModal();
@@ -358,6 +356,7 @@ const Login = () => {
       <View style={styles.content}>
         <Image
           source={require("@/assets/images/tini-time-logo-2x.png")}
+          {...(isDark ? { tintColor: colors.text } : {})}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -428,48 +427,28 @@ const Login = () => {
   );
 };
 
-// Base styles that can be reused
-const baseInputStyle = {
-  width: "100%",
-  height: DIMENSIONS.inputHeight,
-  backgroundColor: COLORS.inputBackground,
-  borderColor: COLORS.primary,
-  borderWidth: 1,
-  borderRadius: DIMENSIONS.borderRadius,
-  paddingHorizontal: 20,
-  color: COLORS.text,
-} as const;
-
-const baseButtonStyle = {
-  width: "100%",
-  height: DIMENSIONS.buttonHeight,
-  borderRadius: DIMENSIONS.borderRadius,
-  justifyContent: "center" as const,
-  alignItems: "center" as const,
-} as const;
-
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: t.colors.background,
     paddingHorizontal: 40,
   },
   content: {
     flex: 1,
-    justifyContent: "flex-start",
-    alignItems: "center",
+    justifyContent: "flex-start" as const,
+    alignItems: "center" as const,
     paddingTop: 100,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: COLORS.overlay,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: t.colors.overlay,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     zIndex: 1,
   },
   loadingText: {
     marginTop: 10,
-    color: COLORS.background,
+    color: t.colors.textOnImage,
     fontSize: 18,
   },
   logo: {
@@ -478,80 +457,80 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   authContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     gap: 10,
-    width: "100%",
-    marginTop: 20,
-    marginBottom: 20,
+    width: "100%" as const,
+    marginTop: t.spacing.xl - 4,
+    marginBottom: t.spacing.xl - 4,
   },
   forgotPasswordButton: {
-    alignSelf: "flex-end",
-    marginTop: 8,
+    alignSelf: "flex-end" as const,
+    marginTop: t.spacing.sm,
     marginBottom: 10,
   },
   forgotPasswordText: {
-    color: COLORS.primary,
+    color: t.colors.accent,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.overlay,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.overlay,
   },
   modalContent: {
-    backgroundColor: COLORS.background,
-    paddingVertical: 20,
+    backgroundColor: t.colors.surface,
+    paddingVertical: t.spacing.xl - 4,
     paddingHorizontal: 40,
-    borderRadius: 12,
-    width: "90%",
-    alignItems: "center",
+    borderRadius: t.radius.md,
+    width: "90%" as const,
+    alignItems: "center" as const,
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: COLORS.text,
+    fontWeight: "bold" as const,
+    marginBottom: t.spacing.md,
+    color: t.colors.text,
   },
   modalSubtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    marginBottom: 20,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    marginBottom: t.spacing.xl - 4,
     lineHeight: 22,
   },
   modalButtonContainer: {
-    flexDirection: "row",
-    gap: 12,
+    flexDirection: "row" as const,
+    gap: t.spacing.md,
   },
   modalCancelButton: {
     flex: 1,
     height: DIMENSIONS.buttonHeight,
     borderRadius: DIMENSIONS.borderRadius,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: t.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   modalCancelText: {
-    color: COLORS.primary,
+    color: t.colors.accent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   modalSendButton: {
     flex: 1,
     height: DIMENSIONS.buttonHeight,
-    backgroundColor: COLORS.primary,
+    backgroundColor: t.colors.accent,
     borderRadius: DIMENSIONS.borderRadius,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   modalSendText: {
-    color: COLORS.background,
+    color: t.colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
-});
+}));
 
 export default Login;

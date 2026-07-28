@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Image, Text, StyleSheet } from "react-native";
+import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
+import { makeStyles } from "@/theme";
 
 interface AvatarProps {
   avatarPath?: string | null;
@@ -17,6 +18,7 @@ const Avatar: React.FC<AvatarProps> = ({
   style,
   showInitials = true,
 }) => {
+  const styles = useStyles();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,19 +134,19 @@ const Avatar: React.FC<AvatarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   avatar: {
-    resizeMode: "cover",
+    resizeMode: "cover" as const,
   },
   placeholder: {
-    backgroundColor: "#B6A3E2", // App primary color
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: t.colors.accent,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   initials: {
-    fontWeight: "600",
-    color: "#FFFFFF", // White text for better contrast
+    fontWeight: "600" as const,
+    color: t.colors.onAccent,
   },
-});
+}));
 
 export default Avatar;

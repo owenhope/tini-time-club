@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
@@ -14,8 +13,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import authCache from "@/utils/authCache";
+import { makeStyles, useTheme } from "@/theme";
 
 const DeleteAccount = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const router = useRouter();
   const { profile } = useProfile();
   const [username, setUsername] = useState("");
@@ -105,7 +107,7 @@ const DeleteAccount = () => {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Delete Account</Text>
         <View style={styles.placeholder} />
@@ -135,6 +137,7 @@ const DeleteAccount = () => {
             value={username}
             onChangeText={setUsername}
             placeholder="Enter your username"
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -157,27 +160,27 @@ const DeleteAccount = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: t.colors.border,
   },
   backButton: {
-    padding: 8,
+    padding: t.spacing.sm,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: "600" as const,
+    color: t.colors.text,
   },
   placeholder: {
     width: 40,
@@ -187,36 +190,36 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   warningContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     marginBottom: 20,
   },
   warningTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#ff4444",
-    marginTop: 12,
-    textAlign: "center",
+    fontWeight: "bold" as const,
+    color: t.colors.danger,
+    marginTop: t.spacing.md,
+    textAlign: "center" as const,
   },
   description: {
     fontSize: 16,
-    color: "#333",
+    color: t.colors.textSecondary,
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: t.spacing.lg,
   },
   listContainer: {
     marginBottom: 20,
   },
   listItem: {
     fontSize: 14,
-    color: "#333",
-    marginBottom: 8,
+    color: t.colors.textSecondary,
+    marginBottom: t.spacing.sm,
     lineHeight: 20,
   },
   warningText: {
     fontSize: 16,
-    color: "#ff4444",
-    fontWeight: "600",
-    textAlign: "left",
+    color: t.colors.danger,
+    fontWeight: "600" as const,
+    textAlign: "left" as const,
     marginBottom: 30,
     lineHeight: 22,
   },
@@ -225,43 +228,44 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
-    fontWeight: "500",
+    color: t.colors.text,
+    marginBottom: t.spacing.sm,
+    fontWeight: "500" as const,
   },
   usernameHint: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
+    color: t.colors.textSecondary,
+    marginBottom: t.spacing.md,
   },
   username: {
-    fontWeight: "600",
-    color: "#B6A3E2",
+    fontWeight: "600" as const,
+    color: t.colors.accent,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: t.colors.border,
     borderRadius: 25,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: t.spacing.md,
     fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    color: t.colors.text,
+    backgroundColor: t.colors.background,
   },
   deleteButton: {
-    backgroundColor: "#ff4444",
-    paddingVertical: 16,
+    backgroundColor: t.colors.danger,
+    paddingVertical: t.spacing.lg,
     borderRadius: 25,
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 20,
   },
   deleteButtonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: t.colors.borderStrong,
   },
   deleteButtonText: {
-    color: "#fff",
+    color: t.colors.textOnAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
-});
+}));
 
 export default DeleteAccount;

@@ -5,10 +5,10 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { makeStyles, useTheme } from "@/theme";
 
 interface EULAModalProps {
   visible: boolean;
@@ -23,6 +23,8 @@ const EULAModal: React.FC<EULAModalProps> = ({
   onDecline,
   loading = false,
 }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
   const [viewportHeight, setViewportHeight] = useState(0);
@@ -201,7 +203,7 @@ const EULAModal: React.FC<EULAModalProps> = ({
             >
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={colors.onAccent} />
                   <Text style={styles.acceptButtonText}>Accepting...</Text>
                 </View>
               ) : (
@@ -222,98 +224,98 @@ const EULAModal: React.FC<EULAModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 20,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.scrim,
+    padding: t.spacing.xl - 4,
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    width: "100%",
-    maxHeight: "90%",
-    padding: 20,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.md,
+    width: "100%" as const,
+    maxHeight: "90%" as const,
+    padding: t.spacing.xl - 4,
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    textAlign: "center",
-    marginBottom: 20,
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+    textAlign: "center" as const,
+    marginBottom: t.spacing.xl - 4,
   },
   scrollView: {
     maxHeight: 400,
-    marginBottom: 20,
+    marginBottom: t.spacing.xl - 4,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+    marginTop: t.spacing.lg,
+    marginBottom: t.spacing.sm,
   },
   text: {
     fontSize: 14,
-    color: "#333",
+    color: t.colors.text,
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: t.spacing.md,
   },
   footerText: {
     fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginTop: 16,
-    marginBottom: 8,
+    color: t.colors.textSecondary,
+    fontStyle: "italic" as const,
+    textAlign: "center" as const,
+    marginTop: t.spacing.lg,
+    marginBottom: t.spacing.sm,
   },
   buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
+    flexDirection: "row" as const,
+    gap: t.spacing.md,
     marginTop: 10,
   },
   button: {
     flex: 1,
     height: 50,
     borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   acceptButton: {
-    backgroundColor: "#B6A3E2",
+    backgroundColor: t.colors.accent,
   },
   declineButton: {
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
     borderWidth: 2,
-    borderColor: "#B6A3E2",
+    borderColor: t.colors.accent,
   },
   disabledButton: {
     opacity: 0.6,
   },
   acceptButtonText: {
-    color: "#fff",
+    color: t.colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   declineButtonText: {
-    color: "#B6A3E2",
+    color: t.colors.accent,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   scrollHint: {
     fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 8,
-    fontStyle: "italic",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    marginTop: t.spacing.sm,
+    fontStyle: "italic" as const,
   },
   loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
   },
-});
+}));
 
 export default EULAModal;

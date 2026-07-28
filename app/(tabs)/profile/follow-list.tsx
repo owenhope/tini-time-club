@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { supabase } from "@/utils/supabase";
 import ProfileList, { ProfileType } from "@/components/ProfileList";
 import { useProfile } from "@/context/profile-context";
 import { useLocalSearchParams, useNavigation } from "expo-router";
+import { makeStyles, useTheme } from "@/theme";
 
 type FollowType = "followers" | "following";
 
 export default function FollowListScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [profiles, setProfiles] = useState<ProfileType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { profile } = useProfile();
@@ -85,7 +88,11 @@ export default function FollowListScreen() {
 
   if (loading) {
     return (
-      <ActivityIndicator size="large" color="#000" style={styles.loader} />
+      <ActivityIndicator
+        size="large"
+        color={colors.accent}
+        style={styles.loader}
+      />
     );
   }
 
@@ -96,12 +103,12 @@ export default function FollowListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
   },
   loader: {
     marginTop: 20,
   },
-});
+}));

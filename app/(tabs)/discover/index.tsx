@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native";
 import DiscoverTabs from "@/components/DiscoverTabs";
+import { makeStyles } from "@/theme";
 
 export default function SearchScreen() {
+  const styles = useStyles();
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"profiles" | "locations">(
     "locations"
@@ -24,9 +26,9 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: t.colors.background,
   },
-});
+}));

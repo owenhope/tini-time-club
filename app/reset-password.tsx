@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -23,6 +23,8 @@ const MIN_PASSWORD_LENGTH = 8;
  */
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +92,7 @@ export default function ResetPasswordScreen() {
   if (checkingSession) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#B6A3E2" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -146,22 +148,32 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  centered: { justifyContent: "center", alignItems: "center", padding: 24 },
-  content: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
+  centered: {
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    padding: t.spacing.xl,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center" as const,
+    padding: t.spacing.xl,
+    gap: t.spacing.md,
+  },
   title: {
     fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 12,
-    textAlign: "center",
+    fontWeight: "700" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.md,
+    textAlign: "center" as const,
   },
   body: {
-    fontSize: 15,
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 20,
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    marginBottom: t.spacing.xl - 4,
     lineHeight: 22,
   },
-  error: { color: "#C0392B", fontSize: 14, marginTop: 4 },
-});
+  error: { color: t.colors.danger, fontSize: 14, marginTop: t.spacing.xs },
+}));

@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { ActionSheetIOS, Platform } from "react-native";
+import { useTheme } from "@/theme";
 
 interface ActionSheetProps {
   visible: boolean;
@@ -19,6 +20,11 @@ const ActionSheet = memo(
     onEdit,
     isOwnReview,
   }: ActionSheetProps) => {
+    // The sheet is drawn by UIKit, so the only themable surface here is which
+    // interface style it renders in — otherwise it ignores the in-app override
+    // and follows the OS setting.
+    const { isDark } = useTheme();
+
     React.useEffect(() => {
       if (visible) {
         if (Platform.OS === "ios") {
@@ -34,6 +40,7 @@ const ActionSheet = memo(
               options,
               destructiveButtonIndex,
               cancelButtonIndex,
+              userInterfaceStyle: isDark ? "dark" : "light",
             },
             (buttonIndex) => {
               if (isOwnReview) {
@@ -55,7 +62,7 @@ const ActionSheet = memo(
           );
         }
       }
-    }, [visible, isOwnReview, onDelete, onReport, onEdit, onClose]);
+    }, [visible, isOwnReview, isDark, onDelete, onReport, onEdit, onClose]);
 
     return null;
   }

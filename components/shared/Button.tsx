@@ -2,12 +2,12 @@ import React from "react";
 import {
   TouchableOpacity,
   Text,
-  StyleSheet,
   ViewStyle,
   TextStyle,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { makeStyles, useTheme } from "@/theme";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
 export type ButtonVariant =
@@ -47,6 +47,9 @@ const Button: React.FC<ButtonProps> = ({
   textStyle,
   activeOpacity = 0.7,
 }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
   const getSizeStyles = (): ViewStyle => {
     switch (size) {
       case "small":
@@ -86,19 +89,19 @@ const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case "primary":
         return {
-          backgroundColor: "#B6A3E2",
+          backgroundColor: colors.accent,
           borderWidth: 0,
         };
       case "secondary":
         return {
-          backgroundColor: "#6B7280",
+          backgroundColor: colors.secondary,
           borderWidth: 0,
         };
       case "outline":
         return {
           backgroundColor: "transparent",
           borderWidth: 1,
-          borderColor: "#B6A3E2",
+          borderColor: colors.accent,
         };
       case "ghost":
         return {
@@ -107,12 +110,12 @@ const Button: React.FC<ButtonProps> = ({
         };
       case "danger":
         return {
-          backgroundColor: "#EF4444",
+          backgroundColor: colors.danger,
           borderWidth: 0,
         };
       default:
         return {
-          backgroundColor: "#B6A3E2",
+          backgroundColor: colors.accent,
           borderWidth: 0,
         };
     }
@@ -121,14 +124,16 @@ const Button: React.FC<ButtonProps> = ({
   const getTextColor = (): string => {
     switch (variant) {
       case "primary":
+        return colors.onAccent;
       case "secondary":
+        return colors.onSecondary;
       case "danger":
-        return "#FFFFFF";
+        return colors.textOnAccent;
       case "outline":
       case "ghost":
-        return "#B6A3E2";
+        return colors.accent;
       default:
-        return "#FFFFFF";
+        return colors.onAccent;
     }
   };
 
@@ -243,33 +248,33 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     borderRadius: 25,
-    gap: 8,
+    gap: t.spacing.sm,
   },
   fullWidth: {
-    width: "100%",
+    width: "100%" as const,
   },
   disabled: {
     opacity: 0.6,
   },
   text: {
-    fontWeight: "600",
-    textAlign: "center",
+    fontWeight: "600" as const,
+    textAlign: "center" as const,
   },
   iconLeft: {
-    marginRight: 4,
+    marginRight: t.spacing.xs,
   },
   iconRight: {
-    marginLeft: 4,
+    marginLeft: t.spacing.xs,
   },
   loadingIndicator: {
-    marginRight: 8,
+    marginRight: t.spacing.sm,
   },
-});
+}));
 
 export default Button;

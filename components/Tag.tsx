@@ -1,11 +1,14 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
+import { makeStyles } from "@/theme";
 
 interface TagProps {
   text: string;
 }
 
 const Tag: React.FC<TagProps> = ({ text }) => {
+  const styles = useStyles();
+
   return (
     <View style={styles.tag}>
       <Text style={styles.tagText}>{text}</Text>
@@ -13,18 +16,20 @@ const Tag: React.FC<TagProps> = ({ text }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   tag: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#2d5016",
+    paddingHorizontal: t.spacing.md,
+    borderRadius: t.radius.lg,
+    backgroundColor: t.colors.secondary,
   },
   tagText: {
-    fontSize: 12,
-    color: "#fff",
-    textTransform: "capitalize",
+    ...t.typography.label,
+    fontWeight: "400" as const,
+    letterSpacing: 0,
+    color: t.colors.onSecondary,
+    textTransform: "capitalize" as const,
   },
-});
+}));
 
 export default Tag;

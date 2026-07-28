@@ -1,15 +1,19 @@
 import { Link } from "expo-router";
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 import RatingCircles from "@/components/RatingCircles";
+import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
   loc: any;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
   return (
     <View style={styles.bottomSheetContent}>
       {/* Header Section */}
@@ -20,7 +24,11 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
               <Text style={styles.locationName} numberOfLines={1}>
                 {loc.name || "No name available"}
               </Text>
-              <Ionicons name="chevron-forward" size={16} color="#B6A3E2" />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={colors.accent}
+              />
             </TouchableOpacity>
           </Link>
           {loc.address && (
@@ -42,37 +50,36 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   bottomSheetContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: "#fff",
+    paddingHorizontal: t.spacing.xl - 4,
+    paddingVertical: t.spacing.xl - 4,
+    backgroundColor: t.colors.surface,
   },
 
   // Header Section
   headerSection: {
-    marginBottom: 16,
+    marginBottom: t.spacing.lg,
     minHeight: 60,
   },
   titleContainer: {
-    flexDirection: "column",
+    flexDirection: "column" as const,
   },
   locationLinkContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: t.spacing.xs,
   },
   locationName: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1a1a1a",
+    ...t.typography.title,
+    color: t.colors.text,
     marginRight: 6,
   },
   address: {
-    fontSize: 15,
-    color: "#666",
+    ...t.typography.body,
+    color: t.colors.textSecondary,
     lineHeight: 20,
   },
-});
+}));
 
 export default LocationDetails;

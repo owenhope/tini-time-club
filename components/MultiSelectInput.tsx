@@ -1,10 +1,5 @@
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ScrollView,
-} from "react-native";
+import { Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { makeStyles } from "@/theme";
 
 type Option = {
   id: number | string;
@@ -24,6 +19,8 @@ const MultiSelectInput = ({
   onSelectionChange,
   label,
 }: MultiSelectInputProps) => {
+  const styles = useStyles();
+
   const toggleSelection = (id: number | string) => {
     if (selectedIds.includes(id)) {
       onSelectionChange(selectedIds.filter((selectedId) => selectedId !== id));
@@ -67,42 +64,43 @@ const MultiSelectInput = ({
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     marginVertical: 10,
-    width: "100%",
+    width: "100%" as const,
   },
   label: {
+    ...t.typography.heading,
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#000",
+    letterSpacing: 0,
+    marginBottom: t.spacing.md,
+    color: t.colors.text,
   },
   scrollContent: {
-    paddingRight: 20,
+    paddingRight: t.spacing.xl - 4,
   },
   optionButton: {
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 8,
+    paddingHorizontal: t.spacing.lg,
+    marginRight: t.spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#fafafa",
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
   },
   selectedButton: {
-    backgroundColor: "#B6A3E2",
-    borderColor: "#B6A3E2",
+    backgroundColor: t.colors.accent,
+    borderColor: t.colors.accent,
   },
   buttonText: {
     fontSize: 14,
-    color: "#000",
-    textTransform: "capitalize",
+    color: t.colors.text,
+    textTransform: "capitalize" as const,
   },
   selectedButtonText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: t.colors.onAccent,
+    fontWeight: "600" as const,
   },
-});
+}));
 
 export default MultiSelectInput;

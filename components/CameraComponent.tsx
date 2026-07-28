@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Pressable,
-  StyleSheet,
   Text,
   View,
   Image,
@@ -19,12 +18,15 @@ import {
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { makeStyles, useTheme } from "@/theme";
 
 interface CameraComponentProps {
   onCapture: (photo: string) => void;
 }
 
 export default function CameraComponent({ onCapture }: CameraComponentProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
@@ -170,7 +172,11 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
           accessibilityRole="button"
           accessibilityLabel="Switch camera"
         >
-          <FontAwesome6 name="camera-rotate" size={32} color="white" />
+          <FontAwesome6
+            name="camera-rotate"
+            size={32}
+            color={colors.textOnImage}
+          />
         </Pressable>
 
         {/* Pick image button with CTA in top right */}
@@ -181,7 +187,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
             accessibilityRole="button"
             accessibilityLabel="Choose a photo from your library"
           >
-            <FontAwesome6 name="image" size={32} color="white" />
+            <FontAwesome6 name="image" size={32} color={colors.textOnImage} />
           </Pressable>
           {showCta && (
             <Animated.View style={[styles.ctaBanner, { opacity: fadeAnim }]}>
@@ -217,94 +223,93 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
+    // Deliberately fixed: this is the frame behind a live camera feed, which
+    // reads as black in both themes.
     backgroundColor: "#000",
   },
   infoText: {
-    textAlign: "center",
-    marginBottom: 10,
-    color: "#fff",
+    textAlign: "center" as const,
+    marginBottom: t.spacing.sm + 2,
+    color: t.colors.textOnImage,
   },
   camera: {
     flex: 1,
-    width: "100%",
+    width: "100%" as const,
   },
   toggleButton: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 80,
-    left: 20,
+    left: t.spacing.xl - 4,
   },
   captureButton: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 0,
-    left: "50%",
+    left: "50%" as const,
     transform: [{ translateX: -42.5 }, { translateY: -20 }],
   },
   imagePickerContainer: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 80,
-    right: 20,
-    alignItems: "flex-end",
+    right: t.spacing.xl - 4,
+    alignItems: "flex-end" as const,
   },
   pickImageButton: {
-    marginBottom: 8,
+    marginBottom: t.spacing.sm,
   },
   ctaBanner: {
-    backgroundColor: "#B6A3E2",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: "center",
+    backgroundColor: t.colors.accent,
+    borderRadius: t.radius.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+    alignItems: "center" as const,
     minWidth: 170,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...t.elevation.raised,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
   ctaText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "600" as const,
+    color: t.colors.onAccent,
 
-    textAlign: "center",
+    textAlign: "center" as const,
     letterSpacing: 0.2,
   },
   ctaSubtext: {
     fontSize: 12,
-    color: "rgba(255, 255, 255, 0.85)",
+    color: t.colors.onAccent,
+    opacity: 0.85,
     marginTop: 2,
-    textAlign: "center",
-    fontWeight: "400",
+    textAlign: "center" as const,
+    fontWeight: "400" as const,
   },
   shutterBtn: {
     backgroundColor: "transparent",
     borderWidth: 5,
-    borderColor: "white",
+    borderColor: t.colors.textOnImage,
     width: 85,
     height: 85,
     borderRadius: 45,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   shutterBtnInner: {
     width: 70,
     height: 70,
     borderRadius: 50,
-    backgroundColor: "#FFF",
+    backgroundColor: t.colors.textOnImage,
   },
   previewContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   previewImage: {
     width: 300,
     aspectRatio: 1,
-    marginBottom: 20,
+    marginBottom: t.spacing.xl - 4,
   },
-});
+}));

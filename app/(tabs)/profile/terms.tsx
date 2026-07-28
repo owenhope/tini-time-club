@@ -2,15 +2,17 @@ import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { makeStyles, useTheme } from "@/theme";
 
 const Terms = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const router = useRouter();
 
   return (
@@ -20,7 +22,7 @@ const Terms = () => {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Terms of Service</Text>
         <View style={styles.placeholder} />
@@ -117,27 +119,27 @@ const Terms = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.colors.surface,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: t.colors.border,
   },
   backButton: {
-    padding: 8,
+    padding: t.spacing.sm,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: "600" as const,
+    color: t.colors.text,
   },
   placeholder: {
     width: 40,
@@ -148,32 +150,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    textAlign: "center",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+    textAlign: "center" as const,
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: "bold" as const,
+    color: t.colors.text,
+    marginTop: t.spacing.lg,
+    marginBottom: t.spacing.sm,
   },
   text: {
     fontSize: 14,
-    color: "#333",
+    color: t.colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: t.spacing.md,
   },
   footerText: {
     fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginTop: 16,
-    marginBottom: 8,
+    color: t.colors.textSecondary,
+    fontStyle: "italic" as const,
+    textAlign: "center" as const,
+    marginTop: t.spacing.lg,
+    marginBottom: t.spacing.sm,
   },
-});
+}));
 
 export default Terms;

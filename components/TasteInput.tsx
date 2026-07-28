@@ -1,8 +1,11 @@
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Controller } from "react-hook-form";
 import AirbnbRating from "@/components/shared/AirbnbRating";
+import { makeStyles, useTheme } from "@/theme";
 
 const TasteInput = ({ control }: { control: any }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");
   return (
     <Controller
@@ -19,7 +22,7 @@ const TasteInput = ({ control }: { control: any }) => {
             ratingContainerStyle={{
               gap: 10,
             }}
-            reviewColor="#8B9A46"
+            reviewColor={colors.textSecondary}
             defaultRating={value}
             isDisabled={false}
             reviews={[
@@ -37,11 +40,11 @@ const TasteInput = ({ control }: { control: any }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   inputContainer: {
     marginVertical: 5,
-    width: "100%",
+    width: "100%" as const,
   },
-});
+}));
 
 export default TasteInput;

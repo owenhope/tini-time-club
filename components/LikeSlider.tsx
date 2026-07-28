@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Animated,
-  StyleSheet,
-  Dimensions,
-  PanResponder,
-} from "react-native";
+import { View, Animated, Dimensions, PanResponder } from "react-native";
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
+import { makeStyles } from "@/theme";
 
 const screenHeight = Dimensions.get("window").height;
 
@@ -17,6 +12,7 @@ interface LikesSliderProps {
 }
 
 export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
+  const styles = useStyles();
   const [likesUsers, setLikesUsers] = useState<any[]>([]);
   const [showContent, setShowContent] = useState(false);
   // Start off-screen (below the visible area)
@@ -120,38 +116,36 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   slider: {
-    position: "absolute",
+    position: "absolute" as const,
     left: 0,
     right: 0,
     bottom: 0,
     height: screenHeight * 0.5,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
+    padding: t.spacing.lg,
+    ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   sliderHeader: {
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   dragIndicatorContainer: {
-    alignItems: "center",
-    paddingVertical: 8,
+    alignItems: "center" as const,
+    paddingVertical: t.spacing.sm,
   },
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 12,
-    backgroundColor: "#ccc",
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.borderStrong,
   },
   sliderTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
   },
-});
+}));

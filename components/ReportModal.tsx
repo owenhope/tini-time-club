@@ -4,11 +4,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   TextInput,
   ScrollView,
   Alert,
 } from "react-native";
+import { makeStyles, useTheme } from "@/theme";
 
 interface ReportModalProps {
   visible: boolean;
@@ -25,6 +25,8 @@ export default function ReportModal({
   onSelect,
   options = ["Spam", "Inappropriate", "Harassment", "Other"],
 }: ReportModalProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customReason, setCustomReason] = useState("");
 
@@ -93,6 +95,7 @@ export default function ReportModal({
                 value={customReason}
                 onChangeText={setCustomReason}
                 placeholder="Enter your complaint here..."
+                placeholderTextColor={colors.textMuted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -119,82 +122,89 @@ export default function ReportModal({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: t.colors.scrim,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
+    backgroundColor: t.colors.surface,
+    padding: t.spacing.xl - 4,
     borderRadius: 25,
-    width: "85%",
-    maxHeight: "80%",
-    alignItems: "center",
+    width: "85%" as const,
+    maxHeight: "80%" as const,
+    alignItems: "center" as const,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
+    color: t.colors.text,
     marginBottom: 10,
   },
   optionButton: {
-    paddingVertical: 8,
-    alignSelf: "stretch",
+    paddingVertical: t.spacing.sm,
+    alignSelf: "stretch" as const,
   },
-  optionText: { textAlign: "center", fontSize: 16 },
+  optionText: {
+    textAlign: "center" as const,
+    fontSize: 16,
+    color: t.colors.text,
+  },
   cancelButton: { marginTop: 10 },
-  cancelText: { color: "#007AFF", fontSize: 16 },
+  cancelText: { color: t.colors.accent, fontSize: 16 },
   customInputContainer: {
-    width: "100%",
+    width: "100%" as const,
   },
   customInputLabel: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "500" as const,
+    color: t.colors.text,
     marginBottom: 10,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   customInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: t.colors.border,
     borderRadius: 25,
-    paddingHorizontal: 20,
+    paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 15,
     fontSize: 16,
+    color: t.colors.text,
     minHeight: 100,
-    textAlignVertical: "top",
-    marginBottom: 20,
+    textAlignVertical: "top" as const,
+    marginBottom: t.spacing.xl - 4,
   },
   customInputButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
     gap: 10,
   },
   submitButton: {
-    backgroundColor: "#ff4444",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: t.colors.danger,
+    paddingVertical: t.spacing.md,
+    paddingHorizontal: t.spacing.xl - 4,
     borderRadius: 25,
     flex: 1,
   },
   submitButtonText: {
-    color: "#fff",
+    color: t.colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+    fontWeight: "600" as const,
+    textAlign: "center" as const,
   },
   backButton: {
-    backgroundColor: "#f0f0f0",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: t.colors.surfaceSunken,
+    paddingVertical: t.spacing.md,
+    paddingHorizontal: t.spacing.xl - 4,
     borderRadius: 25,
     flex: 1,
   },
   backButtonText: {
-    color: "#333",
+    color: t.colors.text,
     fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+    fontWeight: "600" as const,
+    textAlign: "center" as const,
   },
-});
+}));

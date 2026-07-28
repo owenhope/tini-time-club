@@ -1,11 +1,16 @@
 import { Stack } from "expo-router";
+import { useTheme } from "@/theme";
 
 export default function DiscoverLayout() {
+  const { colors } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
-        headerTintColor: "#000",
+        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: colors.surface },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />

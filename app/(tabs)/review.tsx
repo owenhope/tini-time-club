@@ -1,7 +1,6 @@
 import React, { createElement, useEffect, useState, useMemo } from "react";
 import {
   Keyboard,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -37,6 +36,7 @@ import { Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import { TextInput } from "react-native";
 import AnalyticService from "@/services/analyticsService";
+import { makeStyles, useTheme } from "@/theme";
 
 // ReviewPreview component for showing live preview with caption input
 interface ReviewFormLocation {
@@ -79,6 +79,8 @@ const ReviewPreview = ({
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [isCaptionFocused, setIsCaptionFocused] = useState(false);
   const [tempCaption, setTempCaption] = useState("");
 
@@ -152,7 +154,7 @@ const ReviewPreview = ({
   if (isSubmitting) {
     return (
       <View style={styles.submitLoadingContainer}>
-        <ActivityIndicator size="large" color="#B6A3E2" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.submitLoadingText}>{submissionMessage}</Text>
       </View>
     );
@@ -193,6 +195,7 @@ const ReviewPreview = ({
               style={styles.captionInput}
               multiline={true}
               placeholder="Write a caption... (required)"
+              placeholderTextColor={colors.textMuted}
               onChangeText={setTempCaption}
               value={tempCaption}
               maxLength={500}
@@ -227,6 +230,8 @@ const ReviewPreview = ({
 };
 
 export default function App() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
@@ -675,7 +680,11 @@ export default function App() {
                   style={styles.quitButton}
                   onPress={cancelCapture}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ff4444" />
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={colors.danger}
+                  />
                 </TouchableOpacity>
 
                 <View style={styles.navRight}>
@@ -716,201 +725,190 @@ export default function App() {
   );
 }
 
-// App design system constants
-const COLORS = {
-  primary: "#B6A3E2",
-  background: "#fff",
-  text: "#000",
-  textSecondary: "#666",
-  inputBackground: "#fafafa",
-  overlay: "rgba(0,0,0,0.5)",
-} as const;
-
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: t.colors.background,
   },
   header: {
     paddingTop: 70,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingHorizontal: t.spacing.xl - 4,
+    paddingBottom: t.spacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: t.colors.border,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: COLORS.text,
-    textAlign: "center",
-    marginBottom: 8,
+    ...t.typography.display,
+    color: t.colors.text,
+    textAlign: "center" as const,
+    marginBottom: t.spacing.sm,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: "center",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
     marginBottom: 15,
   },
   inlineError: {
-    backgroundColor: "#FDECEA",
-    borderRadius: 10,
-    paddingVertical: 10,
+    backgroundColor: t.colors.dangerSubtle,
+    borderRadius: t.radius.sm + 2,
+    paddingVertical: t.spacing.sm + 2,
     paddingHorizontal: 14,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    marginHorizontal: t.spacing.lg,
+    marginBottom: t.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
   },
   inlineErrorText: {
-    color: "#A5342B",
+    color: t.colors.danger,
     fontSize: 14,
     flexShrink: 1,
   },
   inlineErrorAction: {
-    color: "#A5342B",
+    color: t.colors.danger,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "700" as const,
   },
   progressBar: {
     height: 4,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: t.colors.border,
     borderRadius: 2,
-    overflow: "hidden",
+    overflow: "hidden" as const,
   },
   progressFill: {
-    height: "100%",
-    backgroundColor: COLORS.primary,
+    height: "100%" as const,
+    backgroundColor: t.colors.accent,
     borderRadius: 2,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: t.spacing.xl - 4,
+    overflow: "hidden" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   previewContent: {
-    paddingTop: 10, // Minimal padding for preview step
-    justifyContent: "center",
-    alignItems: "center",
+    paddingTop: t.spacing.sm + 2, // Minimal padding for preview step
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   locationContent: {
-    justifyContent: "flex-start",
-    alignItems: "stretch",
-    paddingTop: 20,
+    justifyContent: "flex-start" as const,
+    alignItems: "stretch" as const,
+    paddingTop: t.spacing.xl - 4,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: t.spacing.xl - 4,
+    paddingVertical: t.spacing.sm + 2,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: t.colors.border,
     height: 70,
   },
   navigation: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
   },
   navLeft: {
     flex: 1,
-    alignItems: "flex-start",
+    alignItems: "flex-start" as const,
   },
   navRight: {
     flex: 1,
-    alignItems: "flex-end",
+    alignItems: "flex-end" as const,
   },
   quitButton: {
-    padding: 12,
+    padding: t.spacing.md,
     borderRadius: 25,
-    backgroundColor: "rgba(255, 68, 68, 0.1)",
+    backgroundColor: t.colors.dangerSubtle,
     borderWidth: 1,
-    borderColor: "rgba(255, 68, 68, 0.3)",
+    borderColor: t.colors.danger,
   },
   previewContainer: {
     flex: 1,
-    width: "100%",
+    width: "100%" as const,
   },
   previewWrapper: {
     flex: 1,
-    overflow: "hidden",
+    overflow: "hidden" as const,
   },
   scaledReviewContainer: {
     transformOrigin: "top center",
   },
   captionInputContainer: {
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
+    backgroundColor: t.colors.background,
+    borderRadius: t.radius.md,
   },
   captionButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.xl - 4,
+    paddingVertical: t.spacing.md,
     borderRadius: 25,
-    backgroundColor: COLORS.primary,
+    backgroundColor: t.colors.accent,
     minHeight: 50,
   },
   captionButtonText: {
     fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    color: t.colors.onAccent,
+    fontWeight: "600" as const,
   },
   captionInput: {
     fontSize: 16,
     minHeight: 60,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.inputBackground,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    color: COLORS.text,
-    textAlignVertical: "top",
+    borderColor: t.colors.border,
+    color: t.colors.text,
+    textAlignVertical: "top" as const,
   },
   characterCount: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: "right",
-    marginTop: 4,
+    color: t.colors.textSecondary,
+    textAlign: "right" as const,
+    marginTop: t.spacing.xs,
   },
   hintText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    marginTop: 8,
-    fontStyle: "italic",
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    marginTop: t.spacing.sm,
+    fontStyle: "italic" as const,
   },
   saveCaptionButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.xl - 4,
+    paddingVertical: t.spacing.md,
     borderRadius: 25,
-    backgroundColor: COLORS.primary,
-    marginTop: 12,
+    backgroundColor: t.colors.accent,
+    marginTop: t.spacing.md,
     minHeight: 50,
   },
   saveCaptionButtonText: {
     fontSize: 16,
-    color: "white",
-    fontWeight: "600",
+    color: t.colors.onAccent,
+    fontWeight: "600" as const,
   },
   saveCaptionButtonDisabled: {
     opacity: 0.5,
   },
   submitLoadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     paddingHorizontal: 40,
   },
   submitLoadingText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.primary,
-    marginTop: 20,
-    textAlign: "center",
+    fontWeight: "600" as const,
+    color: t.colors.accent,
+    marginTop: t.spacing.xl - 4,
+    textAlign: "center" as const,
   },
-});
+}));

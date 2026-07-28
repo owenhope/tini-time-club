@@ -1,8 +1,11 @@
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Controller } from "react-hook-form";
 import AirbnbRating from "@/components/shared/AirbnbRating";
+import { makeStyles, useTheme } from "@/theme";
 
 const PresentationInput = ({ control }: { control: any }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");
   return (
     <Controller
@@ -20,7 +23,7 @@ const PresentationInput = ({ control }: { control: any }) => {
               gap: 10,
             }}
             defaultRating={value}
-            reviewColor="#9CA3AF"
+            reviewColor={colors.textSecondary}
             isDisabled={false}
             reviews={[
               "Messy disaster",
@@ -37,11 +40,11 @@ const PresentationInput = ({ control }: { control: any }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   inputContainer: {
     marginBottom: 10,
-    width: "100%",
+    width: "100%" as const,
   },
-});
+}));
 
 export default PresentationInput;

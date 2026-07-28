@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
-  StyleSheet,
   Text,
   TouchableOpacity,
   ScrollView,
@@ -20,8 +19,11 @@ import {
   filterRelevantPlaces,
   deduplicatePlaces,
 } from "@/utils/locationUtils";
+import { makeStyles, useTheme } from "@/theme";
 
 const LocationInput = ({ control }: { control: any }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
@@ -325,7 +327,7 @@ const LocationInput = ({ control }: { control: any }) => {
             <TextInput
               style={styles.searchInput}
               placeholder="Search bars, lounges, or cocktail spots..."
-              placeholderTextColor="#AAA"
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={handleSearch}
               returnKeyType="search"
@@ -335,7 +337,11 @@ const LocationInput = ({ control }: { control: any }) => {
                 style={styles.clearButton}
                 onPress={handleClearSearch}
               >
-                <Ionicons name="close-circle" size={20} color="#666" />
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={colors.textSecondary}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -355,28 +361,28 @@ const LocationInput = ({ control }: { control: any }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   inputContainer: {
     marginVertical: 5,
-    width: "100%",
+    width: "100%" as const,
   },
   searchInputContainer: {
-    position: "relative",
+    position: "relative" as const,
     marginBottom: 15,
   },
   searchInput: {
-    backgroundColor: "#fafafa",
+    backgroundColor: t.colors.surfaceSunken,
     height: 50,
     borderRadius: 25,
-    paddingHorizontal: 20,
+    paddingHorizontal: t.spacing.xl - 4,
     paddingRight: 50,
     fontSize: 16,
-    color: "#000",
+    color: t.colors.text,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: t.colors.border,
   },
   clearButton: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 15,
     top: 15,
     padding: 2,
@@ -385,78 +391,74 @@ const styles = StyleSheet.create({
     maxHeight: 450,
   },
   placeButton: {
-    backgroundColor: "#fafafa",
+    backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: t.colors.border,
+    borderRadius: t.radius.md,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.sm,
   },
   selectedPlaceButton: {
-    backgroundColor: "#B6A3E2",
-    borderColor: "#B6A3E2",
+    backgroundColor: t.colors.accent,
+    borderColor: t.colors.accent,
   },
   placeContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
   },
   placeTextContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: t.spacing.md,
   },
   placeName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
+    fontWeight: "600" as const,
+    color: t.colors.text,
+    marginBottom: t.spacing.xs,
   },
   placeAddress: {
     fontSize: 14,
-    color: "#666",
+    color: t.colors.textSecondary,
   },
   rightContainer: {
-    alignItems: "flex-end",
+    alignItems: "flex-end" as const,
   },
   distanceText: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "#666",
-    marginBottom: 4,
+    fontWeight: "500" as const,
+    color: t.colors.textSecondary,
+    marginBottom: t.spacing.xs,
   },
   ratingContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
   },
   ratingCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#B6A3E2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-    shadowColor: "#B6A3E2",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: t.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    marginRight: t.spacing.sm,
+    ...t.elevation.card,
   },
   ratingText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: "700" as const,
+    color: t.colors.onAccent,
   },
   selectedPlaceText: {
-    color: "#fff",
+    color: t.colors.onAccent,
   },
   loadingContainer: {
-    padding: 20,
-    alignItems: "center",
+    padding: t.spacing.xl - 4,
+    alignItems: "center" as const,
   },
   loadingText: {
     fontSize: 16,
-    color: "#666",
+    color: t.colors.textSecondary,
   },
-});
+}));
 
 export default LocationInput;

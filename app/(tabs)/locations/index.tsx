@@ -24,6 +24,7 @@ import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import { makeStyles } from "@/theme";
 
 const INITIAL_REGION: Region = {
   latitude: 37.33,
@@ -35,6 +36,7 @@ const INITIAL_REGION: Region = {
 const BOTTOM_SHEET_HEIGHT = 300;
 
 function Map() {
+  const styles = useStyles();
   const params = useLocalSearchParams();
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -262,66 +264,63 @@ function Map() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   noticeBanner: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    right: 12,
+    position: "absolute" as const,
+    top: t.spacing.md,
+    left: t.spacing.md,
+    right: t.spacing.md,
     zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.82)",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: t.colors.overlay,
+    borderRadius: t.radius.md,
+    paddingVertical: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
     gap: 6,
   },
   noticeText: {
-    color: "#fff",
+    color: t.colors.textOnImage,
     fontSize: 14,
     lineHeight: 20,
   },
   noticeAction: {
-    color: "#B6A3E2",
+    color: t.colors.accent,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "700" as const,
   },
   markerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   pin: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#B6A3E2",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: t.colors.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   bottomSheet: {
-    position: "absolute",
+    position: "absolute" as const,
     bottom: 0,
     left: 0,
     right: 0,
     height: BOTTOM_SHEET_HEIGHT,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    shadowColor: "#000",
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
+    ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
   },
   dragIndicatorContainer: {
-    alignItems: "center",
-    paddingVertical: 8,
+    alignItems: "center" as const,
+    paddingVertical: t.spacing.sm,
   },
   dragIndicator: {
     width: 40,
     height: 4,
-    borderRadius: 12,
-    backgroundColor: "#ccc",
+    borderRadius: t.radius.md,
+    backgroundColor: t.colors.borderStrong,
   },
-});
+}));
 
 export default Map;
