@@ -30,3 +30,6 @@ export type { Action } from "./ActionBar";
 
 export { default as ProfileIdentity } from "./ProfileIdentity";
 export type { ProfileIdentityProps } from "./ProfileIdentity";
+
+export { default as RatingSlider } from "./RatingSlider";
+export type { RatingSliderProps } from "./RatingSlider";

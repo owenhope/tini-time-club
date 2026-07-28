@@ -676,8 +676,10 @@ export default function App() {
                     <Button
                       title="Back"
                       onPress={prevStep}
-                      variant="outline"
+                      variant="ghost"
                       size="medium"
+                      icon="chevron-back"
+                      iconPosition="left"
                     />
                   )}
                 </View>
@@ -700,6 +702,8 @@ export default function App() {
                       onPress={nextStep}
                       variant="primary"
                       size="medium"
+                      icon="chevron-forward"
+                      iconPosition="right"
                     />
                   ) : (
                     <Button
