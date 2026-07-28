@@ -144,33 +144,28 @@ const useAvatar = (avatarUrl: string | null | undefined) => {
   return { url, loading };
 };
 
-// Custom hook for likes management
-const useLikes = (reviewId: string, userId: string | null) => {
-  const [hasLiked, setHasLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+/**
+ * Likes state for one review.
+ *
+ * The counts arrive with the feed row (see the feed_reviews DB function), so
+ * this no longer issues its own count + membership queries per rendered item —
+ * that was two extra round trips per row, ~40 per page.
+ */
+const useLikes = (
+  reviewId: string,
+  userId: string | null,
+  initialCount: number,
+  initialHasLiked: boolean
+) => {
+  const [hasLiked, setHasLiked] = useState(initialHasLiked);
+  const [likesCount, setLikesCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
 
-  const fetchLikes = useCallback(async () => {
-    try {
-      const { count } = await supabase
-        .from("likes")
-        .select("*", { count: "exact", head: true })
-        .eq("review_id", reviewId);
-      setLikesCount(count || 0);
-
-      if (userId) {
-        const { data } = await supabase
-          .from("likes")
-          .select("*")
-          .eq("review_id", reviewId)
-          .eq("user_id", userId)
-          .maybeSingle();
-        setHasLiked(!!data);
-      }
-    } catch (error) {
-      console.error("Error fetching likes:", error);
-    }
-  }, [reviewId, userId]);
+  // Re-sync when the row is refreshed or recycled onto a different review.
+  useEffect(() => {
+    setHasLiked(initialHasLiked);
+    setLikesCount(initialCount);
+  }, [reviewId, initialHasLiked, initialCount]);
 
   const toggleLike = useCallback(async () => {
     if (!userId || loading) return;
@@ -205,10 +200,6 @@ const useLikes = (reviewId: string, userId: string | null) => {
       setLoading(false);
     }
   }, [reviewId, userId, hasLiked, loading]);
-
-  useEffect(() => {
-    fetchLikes();
-  }, [fetchLikes]);
 
   return { hasLiked, likesCount, toggleLike, loading };
 };
@@ -391,6 +382,8 @@ const ReviewFooter = memo(
     likesCount,
     comments,
     hasLoaded,
+    commentCount,
+    previewComments,
     onToggleLike,
     onShowLikes,
     onShowComments,
@@ -405,6 +398,8 @@ const ReviewFooter = memo(
     likesCount: number;
     comments: any[];
     hasLoaded: boolean;
+    commentCount: number;
+    previewComments: any[];
     onToggleLike: () => void;
     onShowLikes: (reviewId: string) => void;
     onShowComments: (
@@ -448,10 +443,10 @@ const ReviewFooter = memo(
           >
             <CommentButton
               onPress={handleShowComments}
-              count={hasLoaded ? comments.length : 0}
+              count={commentCount}
             />
-            {hasLoaded && comments.length > 0 && (
-              <CommentCount count={comments.length} />
+            {commentCount > 0 && (
+              <CommentCount count={commentCount} />
             )}
           </TouchableOpacity>
         </View>
@@ -471,36 +466,34 @@ const ReviewFooter = memo(
           ) : null}
         </View>
 
-        {/* Show comment previews once loaded */}
-        {hasLoaded ? (
-          comments.length > 0 ? (
-            <>
-              {comments.slice(0, 2).map((c) => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.commentItem}
-                  onPress={handleShowComments}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.commentText}>
-                    <Text style={styles.commentUsername}>
-                      {c.profile?.username || "Unknown"}
-                    </Text>
-                    <Text style={styles.commentBody}> {c.body}</Text>
+        {/* Comment previews: from the feed row, or the full list once loaded */}
+        {previewComments.length > 0 && (
+          <>
+            {previewComments.slice(0, 2).map((c: any) => (
+              <TouchableOpacity
+                key={c.id}
+                style={styles.commentItem}
+                onPress={handleShowComments}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.commentText}>
+                  <Text style={styles.commentUsername}>
+                    {c.profile?.username || "Unknown"}
                   </Text>
-                </TouchableOpacity>
-              ))}
+                  <Text style={styles.commentBody}> {c.body}</Text>
+                </Text>
+              </TouchableOpacity>
+            ))}
 
-              {comments.length > 2 && (
-                <TouchableOpacity onPress={handleShowComments}>
-                  <Text style={styles.viewAllCommentsText}>
-                    View all {comments.length} comments
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          ) : null
-        ) : null}
+            {commentCount > 2 && (
+              <TouchableOpacity onPress={handleShowComments}>
+                <Text style={styles.viewAllCommentsText}>
+                  View all {commentCount} comments
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
 
         <Text style={styles.timestamp}>
           {formatRelativeDate(review.inserted_at)}
@@ -514,11 +507,19 @@ ReviewFooter.displayName = "ReviewFooter";
 // Comparison function for memo to prevent unnecessary re-renders
 const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
   // Only re-render if review data actually changed
+  const prev = prevProps.review as any;
+  const next = nextProps.review as any;
+
   return (
     prevProps.review.id === nextProps.review.id &&
     prevProps.review.comment === nextProps.review.comment &&
     prevProps.review.image_url === nextProps.review.image_url &&
     prevProps.review._commentPatch === nextProps.review._commentPatch &&
+    // Aggregates now arrive with the row; without these a refreshed feed
+    // would keep rendering stale like/comment counts.
+    prev.likes_count === next.likes_count &&
+    prev.comments_count === next.comments_count &&
+    prev.has_liked === next.has_liked &&
     prevProps.canDelete === nextProps.canDelete &&
     prevProps.hideHeader === nextProps.hideHeader &&
     prevProps.hideFooter === nextProps.hideFooter &&
@@ -550,29 +551,29 @@ const ReviewItemComponent = ({
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
     review.id,
-    profile?.id || null
+    profile?.id || null,
+    (review as any).likes_count ?? 0,
+    (review as any).has_liked ?? false
   );
-  // Load comments when item becomes visible (for preview) or when user interacts
+
   const { comments, addComment, removeComment, fetchComments, hasLoaded } =
     useComments(review.id, true);
 
-  // Load comments when item becomes visible or when user interacts
-  const commentsLoadedRef = useRef(false);
-  const loadCommentsIfNeeded = useCallback(() => {
-    if (!hasLoaded && !commentsLoadedRef.current) {
-      commentsLoadedRef.current = true;
-      fetchComments();
-    }
-  }, [hasLoaded, fetchComments]);
+  // Comment bodies are only needed once the user actually looks at them. The
+  // count shown in the footer comes with the feed row, so the previous
+  // fetch-on-mount (one query per rendered item) is gone.
+  const serverCommentCount = (review as any).comments_count ?? 0;
+  const commentCount = hasLoaded ? comments.length : serverCommentCount;
 
-  // Load comments when component mounts (for feed preview)
-  // Use a small delay to avoid blocking initial render, but load quickly for preview
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadCommentsIfNeeded();
-    }, 50); // Reduced delay for faster preview
-    return () => clearTimeout(timer);
-  }, [loadCommentsIfNeeded]);
+  // Preview comments ride along with the feed row; once the full list has been
+  // fetched (user opened the sheet) prefer that.
+  const previewComments = hasLoaded
+    ? comments
+    : ((review as any).recent_comments ?? []);
+
+  const loadCommentsIfNeeded = useCallback(() => {
+    if (!hasLoaded) fetchComments();
+  }, [hasLoaded, fetchComments]);
 
   // Toggle overlay visibility
   const toggleOverlay = useCallback(() => {
@@ -726,6 +727,8 @@ const ReviewItemComponent = ({
           likesCount={0}
           comments={[]}
           hasLoaded={false}
+          commentCount={0}
+          previewComments={[]}
           onToggleLike={() => {}}
           onShowLikes={() => {}}
           onShowComments={() => {}}
@@ -813,6 +816,8 @@ const ReviewItemComponent = ({
             likesCount={likesCount}
             comments={comments}
             hasLoaded={hasLoaded}
+            commentCount={commentCount}
+            previewComments={previewComments}
             onToggleLike={handleToggleLike}
             onShowLikes={onShowLikes}
             onShowComments={onShowComments}

@@ -148,59 +148,21 @@ class DatabaseService {
     return this.query(
       cacheKey,
       async () => {
-        // Get blocked user IDs if needed
-        let blockedIds: string[] = [];
-        if (excludeBlocked && currentUserId) {
-          blockedIds = await this.getBlockedUserIds(currentUserId);
-        }
+        // One round trip: the feed_reviews function joins locations/spirits/
+        // types/profiles and computes likes_count, comments_count and
+        // has_liked server-side, and does the blocked/deleted filtering in
+        // SQL so pages are never short.
+        const { data, error } = await supabase.rpc("feed_reviews", {
+          p_viewer: currentUserId ?? null,
+          p_limit: limit,
+          p_offset: offset,
+          p_user_id: userId ?? null,
+          p_location_id: locationId ? Number(locationId) : null,
+          p_exclude_blocked: excludeBlocked,
+        });
 
-        // Build query.
-        // `profiles!user_id!inner` makes the join filtering: an embedded filter
-        // on a non-inner join only nulls out the embedded object, leaving
-        // deleted users' reviews in the feed.
-        let query = supabase
-          .from("reviews")
-          .select(
-            `
-            id,
-            comment,
-            image_url,
-            inserted_at,
-            taste,
-            presentation,
-            user_id,
-            location:locations!reviews_location_fkey(id, name, address),
-            spirit:spirit(name),
-            type:type(name),
-            profile:profiles!user_id!inner(id, username, avatar_url)
-          `
-          )
-          .eq("state", 1)
-          .eq("profile.deleted", false);
-
-        // Apply filters
-        if (userId) {
-          query = query.eq("user_id", userId);
-        }
-        if (locationId) {
-          query = query.eq("location", locationId);
-        }
-
-        // Exclude blocked users inside the query. Filtering after .range()
-        // returns short pages, and callers infer "no more data" from a short
-        // page — which silently truncated the feed.
-        if (blockedIds.length > 0) {
-          query = query.not("user_id", "in", `(${blockedIds.join(",")})`);
-        }
-
-        query = query
-          .order("inserted_at", { ascending: false })
-          .range(offset, offset + limit - 1);
-
-        const { data, error } = await query;
         if (error) throw error;
-
-        return data;
+        return data ?? [];
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
