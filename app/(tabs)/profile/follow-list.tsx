@@ -3,7 +3,7 @@ import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { supabase } from "@/utils/supabase";
 import ProfileList, { ProfileType } from "@/components/ProfileList";
 import { useProfile } from "@/context/profile-context";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 
 type FollowType = "followers" | "following";
 
@@ -11,9 +11,8 @@ export default function FollowListScreen() {
   const [profiles, setProfiles] = useState<ProfileType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { profile } = useProfile();
-  const route = useRoute();
   const navigation = useNavigation();
-  const type = (route.params as { type?: FollowType })?.type;
+  const { type } = useLocalSearchParams<{ type?: FollowType }>();
 
   // Set the title based on the type
   useEffect(() => {

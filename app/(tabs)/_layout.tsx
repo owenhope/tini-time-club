@@ -12,7 +12,9 @@ import CustomTabBar from "@/components/CustomTabBar";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // shouldShowAlert was split into banner/list in SDK 53+
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -55,9 +57,9 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 const LayoutContent = () => {
   const { profile } = useProfile();
 
-  if (!profile) return null;
-
   useEffect(() => {
+    if (!profile) return;
+
     const updatePushToken = async () => {
       const { status } = await Notifications.getPermissionsAsync();
       let finalStatus = status;
@@ -81,6 +83,8 @@ const LayoutContent = () => {
 
     updatePushToken();
   }, [profile]);
+
+  if (!profile) return null;
 
   return (
     <Tabs

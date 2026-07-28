@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import { AirbnbRating } from "react-native-ratings";
+import AirbnbRating from "@/components/shared/AirbnbRating";
 
 interface ReviewValues {
   location?: { name: string; address: string };

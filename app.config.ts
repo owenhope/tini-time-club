@@ -35,9 +35,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: false,
       bundleIdentifier: bundleIdentifier,
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY_IOS,
-      },
+      // No googleMapsApiKey: react-native-maps >= 1.22 dropped Google Maps on
+      // iOS, so the map uses Apple Maps there (Google remains on Android).
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },

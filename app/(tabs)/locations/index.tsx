@@ -5,9 +5,15 @@ import {
   Animated,
   PanResponder,
   Keyboard,
+  Platform,
 } from "react-native";
-import MapView from "react-native-map-clustering";
-import { Region, Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView from "@/components/map/ClusteredMap";
+import {
+  Region,
+  Marker,
+  PROVIDER_GOOGLE,
+  PROVIDER_DEFAULT,
+} from "react-native-maps";
 import * as Location from "expo-location";
 import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
@@ -174,7 +180,7 @@ function Map() {
       <View style={{ flex: 1 }}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
+          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
           mapType="standard"
           clusteringEnabled={true}
           style={[StyleSheet.absoluteFill, { zIndex: -1 }]}

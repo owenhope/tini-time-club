@@ -18,7 +18,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
 import { Review } from "@/types/types";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
@@ -56,8 +56,8 @@ function Home() {
     isChecking: boolean;
   }>({ isValid: false, message: "", isChecking: false });
   const flatListRef = useRef<FlatList>(null);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Direct state management to avoid re-render issues
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -262,28 +262,17 @@ function Home() {
     if (reviews.length > 0) {
       // Preload more items for smoother scrolling
       const preloadCount = Math.min(15, reviews.length);
-      const imagePaths = reviews
+      // review.image_url already holds a signed URL (resolved in loadReviews);
+      // re-resolving it here would sign the signed URL and 400.
+      reviews
         .slice(0, preloadCount)
         .map((review) => review.image_url)
-        .filter(Boolean);
-      if (imagePaths.length > 0) {
-        // Preload URLs in background (don't await)
-        imageCache
-          .getReviewImageUrls(imagePaths)
-          .then((urls) => {
-            // Prefetch actual images using React Native's prefetch
-            Object.values(urls).forEach((url) => {
-              if (url) {
-                Image.prefetch(url).catch(() => {
-                  // Silently fail - preloading is optional
-                });
-              }
-            });
-          })
-          .catch(() => {
+        .filter((url) => typeof url === "string" && url.startsWith("http"))
+        .forEach((url) => {
+          Image.prefetch(url).catch(() => {
             // Silently fail - preloading is optional
           });
-      }
+        });
     }
   }, [reviews.length]);
 

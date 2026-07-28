@@ -1,6 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { Controller } from "react-hook-form";
-import { AirbnbRating } from "react-native-ratings";
+import AirbnbRating from "@/components/shared/AirbnbRating";
 
 const PresentationInput = ({ control }: { control: any }) => {
   const MARTINI_IMAGE = require("@/assets/images/martini_transparent.png");

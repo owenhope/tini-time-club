@@ -21,7 +21,7 @@ import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
@@ -58,11 +58,12 @@ const Profile = () => {
         setAvatarError(null);
       } catch (error) {
         console.error("Error fetching avatar URL:", error);
-        setAvatarError(`Avatar URL error: ${error.message || error}`);
+        setAvatarError("Couldn't load your photo");
       }
     } else {
+      // No avatar set yet — not an error, the placeholder initial is shown.
       setAvatar(null);
-      setAvatarError("No avatar_url in profile");
+      setAvatarError(null);
     }
   }, [profile?.avatar_url]);
 

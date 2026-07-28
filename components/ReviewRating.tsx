@@ -1,5 +1,5 @@
 import React from "react";
-import { AirbnbRating } from "react-native-ratings";
+import AirbnbRating from "@/components/shared/AirbnbRating";
 
 interface ReviewRatingProps {
   value: number;

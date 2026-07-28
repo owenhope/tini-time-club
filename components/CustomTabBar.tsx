@@ -1,5 +1,5 @@
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";

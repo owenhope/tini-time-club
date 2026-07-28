@@ -1,6 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { Controller } from "react-hook-form";
-import { AirbnbRating } from "react-native-ratings";
+import AirbnbRating from "@/components/shared/AirbnbRating";
 
 const TasteInput = ({ control }: { control: any }) => {
   const OLIVE_IMAGE = require("@/assets/images/olive_transparent.png");

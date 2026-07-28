@@ -42,7 +42,7 @@ const Search = forwardRef<any, SearchProps>(
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Expose clear method via ref
     React.useImperativeHandle(ref, () => ({
