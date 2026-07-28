@@ -22,15 +22,10 @@ import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
-import { stripNameFromAddress } from "@/utils/helpers";
+import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
-import {
-  RatingSummary,
-  ProfileIdentity,
-  ActionBar,
-  type Action,
-} from "@/components/shared";
+import { RatingSummary, ProfileIdentity } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -66,10 +61,8 @@ const Location = () => {
   const { colors } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
-  const [locationImage, setLocationImage] = useState<string | null>(null);
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
-  const [loadingImage, setLoadingImage] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
@@ -84,11 +77,7 @@ const Location = () => {
   } | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const {
-    isCollapsed,
-    onScroll: handleScroll,
-    collapsibleStyle,
-  } = useCollapsibleHeader();
+  const { isCollapsed, onScroll: handleScroll } = useCollapsibleHeader();
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
@@ -181,7 +170,6 @@ const Location = () => {
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
-    setLocationImage(null);
     setPlaceDetails(null);
     if (locationIdParam) {
       fetchSelectedLocation(locationIdParam);
@@ -311,23 +299,6 @@ const Location = () => {
     } catch (err) {
       console.error("Unexpected error fetching location:", err);
       setSelectedLocation(null);
-    }
-  }, []);
-
-  const loadLocationImage = useCallback(async (locationId?: string) => {
-    setLoadingImage(true);
-    if (!locationId) {
-      setLoadingImage(false);
-      return;
-    }
-    try {
-      const imageUrl = await imageCache.getLocationImage(locationId);
-      setLocationImage(imageUrl);
-    } catch (err) {
-      console.error("Unexpected error while downloading location image:", err);
-      setLocationImage(null);
-    } finally {
-      setLoadingImage(false);
     }
   }, []);
 
@@ -494,13 +465,10 @@ const Location = () => {
     ) {
       loadedLocationIdRef.current = displayLocation.id;
 
-      // Load location image
-      loadLocationImage(displayLocation.id);
-
       // Load location reviews
       loadLocationReviews();
     }
-  }, [displayLocation?.id, loadLocationImage, loadLocationReviews]);
+  }, [displayLocation?.id, loadLocationReviews]);
 
   const address = displayLocation?.address
     ? stripNameFromAddress(
@@ -521,101 +489,144 @@ const Location = () => {
     }
   };
 
-  const contactActions: Action[] = [];
-  if (placeDetails?.phoneNumber) {
-    contactActions.push({
-      key: "call",
-      title: "Call",
-      icon: "call-outline",
-      iconPosition: "left",
-      emphasis: "secondary",
-      accessibilityLabel: `Call ${displayLocation?.name ?? "this place"}`,
-      accessibilityHint: placeDetails.phoneNumber,
-      onPress: () => Linking.openURL(`tel:${placeDetails.phoneNumber}`),
-    });
-  }
-  if (placeDetails?.website) {
-    contactActions.push({
-      key: "website",
-      title: "Website",
-      icon: "globe-outline",
-      iconPosition: "left",
-      emphasis: "secondary",
-      accessibilityLabel: `Open the website for ${displayLocation?.name ?? "this place"}`,
-      onPress: () => Linking.openURL(placeDetails.website!),
-    });
-  }
+  const cityRegion = formatCityRegion(address);
+
+  const prettyWebsite = placeDetails?.website
+    ? placeDetails.website.replace(/^https?:\/\//, "").replace(/\/$/, "")
+    : null;
+
+  const hasContact = !!(
+    placeDetails?.website ||
+    placeDetails?.phoneNumber ||
+    address ||
+    loadingPlaceDetails
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {/* Identity first: the venue name has to arrive before the numbers
-            that describe it. Previously the rating circles rendered above
-            the name. */}
-        <ProfileIdentity
-          kind="place"
-          title={displayLocation?.name ?? ""}
-          subtitle={address}
-          onSubtitlePress={address ? openInMaps : undefined}
-          subtitleAccessibilityHint="Opens this address in Maps"
-          imageUrl={locationImage}
-        />
+        {isCollapsed ? (
+          // Scrolled: keep only what identifies the place and how it scores,
+          // so the reviews get the rest of the screen.
+          <View style={styles.collapsedRow}>
+            <Text style={styles.collapsedName} numberOfLines={1}>
+              {displayLocation?.name ?? ""}
+            </Text>
+            <RatingSummary
+              variant="compact"
+              overall={displayLocation?.rating}
+              reviewCount={displayLocation?.total_ratings ?? 0}
+            />
+          </View>
+        ) : (
+          <>
+            {/* Identity first: the venue name has to arrive before the numbers
+                that describe it. */}
+            <ProfileIdentity
+              kind="place"
+              title={displayLocation?.name ?? ""}
+              subtitle={cityRegion || null}
+            />
 
-        <View style={styles.ratingBlock}>
-          <RatingSummary
-            overall={displayLocation?.rating}
-            taste={displayLocation?.taste_avg}
-            presentation={displayLocation?.presentation_avg}
-            reviewCount={displayLocation?.total_ratings ?? 0}
-          />
-        </View>
-
-        {/* Contact actions sit behind a disclosure: they're secondary to the
-            ratings and reviews, and hiding them keeps the reviews closer to
-            the top of the screen. */}
-        {(contactActions.length > 0 || loadingPlaceDetails) && (
-          <Animated.View
-            style={[styles.collapsible, collapsibleStyle]}
-            pointerEvents={isCollapsed ? "none" : "auto"}
-          >
-            <Pressable
-              onPress={() => setDetailsExpanded((prev) => !prev)}
-              style={({ pressed }: { pressed: boolean }) => [
-                styles.disclosure,
-                pressed && styles.disclosurePressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Contact details"
-              accessibilityState={{ expanded: detailsExpanded }}
-              accessibilityHint={
-                detailsExpanded
-                  ? "Hides phone and website"
-                  : "Shows phone and website"
-              }
-            >
-              <Text style={styles.disclosureLabel}>Contact</Text>
-              <Ionicons
-                name={detailsExpanded ? "chevron-up" : "chevron-down"}
-                size={18}
-                color={colors.textSecondary}
+            <View style={styles.ratingBlock}>
+              <RatingSummary
+                overall={displayLocation?.rating}
+                taste={displayLocation?.taste_avg}
+                presentation={displayLocation?.presentation_avg}
+                reviewCount={displayLocation?.total_ratings ?? 0}
               />
-            </Pressable>
+            </View>
 
-            {detailsExpanded && (
-              <>
-                {contactActions.length > 0 && (
-                  <View style={styles.actions}>
-                    <ActionBar actions={contactActions} />
+            {hasContact && (
+              <View style={styles.collapsible}>
+                <Pressable
+                  onPress={() => setDetailsExpanded((prev) => !prev)}
+                  style={({ pressed }: { pressed: boolean }) => [
+                    styles.disclosure,
+                    pressed && styles.disclosurePressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Contact details"
+                  accessibilityState={{ expanded: detailsExpanded }}
+                  accessibilityHint={
+                    detailsExpanded
+                      ? "Hides website, phone and address"
+                      : "Shows website, phone and address"
+                  }
+                >
+                  <Text style={styles.disclosureLabel}>Contact</Text>
+                  <Ionicons
+                    name={detailsExpanded ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </Pressable>
+
+                {detailsExpanded && (
+                  <View style={styles.contactLinks}>
+                    {prettyWebsite && (
+                      <Pressable
+                        onPress={() => Linking.openURL(placeDetails!.website!)}
+                        style={({ pressed }: { pressed: boolean }) => [
+                          styles.contactLinkHit,
+                          pressed && styles.disclosurePressed,
+                        ]}
+                        accessibilityRole="link"
+                        accessibilityLabel={`Open the website for ${
+                          displayLocation?.name ?? "this place"
+                        }`}
+                      >
+                        <Text style={styles.contactLink} numberOfLines={1}>
+                          {prettyWebsite}
+                        </Text>
+                      </Pressable>
+                    )}
+
+                    {placeDetails?.phoneNumber && (
+                      <Pressable
+                        onPress={() =>
+                          Linking.openURL(`tel:${placeDetails.phoneNumber}`)
+                        }
+                        style={({ pressed }: { pressed: boolean }) => [
+                          styles.contactLinkHit,
+                          pressed && styles.disclosurePressed,
+                        ]}
+                        accessibilityRole="link"
+                        accessibilityLabel={`Call ${
+                          displayLocation?.name ?? "this place"
+                        } at ${placeDetails.phoneNumber}`}
+                      >
+                        <Text style={styles.contactLink}>
+                          {placeDetails.phoneNumber}
+                        </Text>
+                      </Pressable>
+                    )}
+
+                    {address && (
+                      <Pressable
+                        onPress={openInMaps}
+                        style={({ pressed }: { pressed: boolean }) => [
+                          styles.contactLinkHit,
+                          pressed && styles.disclosurePressed,
+                        ]}
+                        accessibilityRole="link"
+                        accessibilityLabel={address}
+                        accessibilityHint="Opens this address in Maps"
+                      >
+                        <Text style={styles.contactLink}>{address}</Text>
+                      </Pressable>
+                    )}
+
+                    {loadingPlaceDetails && (
+                      <Text style={styles.loadingTextInline}>
+                        Loading contact info...
+                      </Text>
+                    )}
                   </View>
                 )}
-                {loadingPlaceDetails && (
-                  <Text style={styles.loadingTextInline}>
-                    Loading contact info...
-                  </Text>
-                )}
-              </>
+              </View>
             )}
-          </Animated.View>
+          </>
         )}
       </View>
 
@@ -669,6 +680,31 @@ const useStyles = makeStyles((t) => ({
   },
   collapsible: {
     gap: t.spacing.sm,
+  },
+  collapsedRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.xs,
+  },
+  collapsedName: {
+    ...t.typography.heading,
+    color: t.colors.text,
+    flexShrink: 1,
+  },
+  contactLinks: {
+    paddingHorizontal: t.spacing.lg,
+    paddingBottom: t.spacing.sm,
+  },
+  contactLinkHit: {
+    minHeight: 44,
+    justifyContent: "center" as const,
+  },
+  contactLink: {
+    ...t.typography.body,
+    color: t.colors.accent,
   },
   disclosure: {
     flexDirection: "row" as const,

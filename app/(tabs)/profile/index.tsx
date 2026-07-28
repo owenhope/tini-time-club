@@ -25,7 +25,7 @@ import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
-import { SectionCard } from "@/components/shared";
+import ReviewGrid from "@/components/ReviewGrid";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
@@ -277,19 +277,6 @@ const Profile = () => {
     );
   };
 
-  const renderReviewItem = ({ item }: { item: Review }) => (
-    <ReviewItem
-      review={item}
-      canDelete={true}
-      onDelete={() => confirmDeleteReview(item.id)}
-      onEdit={() => router.push(`/profile/edit-caption?reviewId=${item.id}`)}
-      onShowLikes={(id: string) => setSelectedReviewId(id)}
-      onShowComments={() => {}}
-      onCommentAdded={() => {}}
-      onCommentDeleted={() => {}}
-    />
-  );
-
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No reviews available.</Text>
@@ -396,103 +383,83 @@ const Profile = () => {
     }
   );
 
+  const favoriteChips = (
+    <View style={styles.favoritesSection}>
+      {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+        <View style={styles.favoritesTagsContainer}>
+          {getFavoriteSpirits().map((spiritId: any) => (
+            <View key={`spirit-${spiritId}`} style={styles.tag}>
+              <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+            </View>
+          ))}
+          {getFavoriteTypes().map((typeId: any) => (
+            <View key={`type-${typeId}`} style={styles.tag}>
+              <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={() => router.push("/profile/edit-profile")}
+          style={styles.ctaContainer}
+          accessibilityRole="button"
+          accessibilityLabel="Add your favorite spirits and types"
+        >
+          <Text style={styles.ctaText}>Add favorite spirits & types</Text>
+        </TouchableOpacity>
+      )}
+      {!profile?.bio && (
+        <TouchableOpacity
+          onPress={() => router.push("/profile/edit-profile")}
+          style={styles.ctaContainer}
+          accessibilityRole="button"
+          accessibilityLabel="Add a bio to your profile"
+        >
+          <Text style={styles.ctaText}>Add a bio</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // The header is the list header rather than a sibling, so the whole profile
+  // scrolls away and the grid gets the full screen.
+  const header = (
+    <ProfileHeader
+      profile={profile}
+      reviewsCount={userReviews.length}
+      followersCount={followersCount}
+      followingCount={followingCount}
+      isOwnProfile={true}
+      onAvatarPress={pickImage}
+      avatarLoading={avatarLoading}
+      avatarError={avatarError}
+      onEditProfilePress={() => router.push("/profile/edit-profile")}
+      onFollowersPress={() =>
+        router.push("/profile/follow-list?type=followers")
+      }
+      onFollowingPress={() =>
+        router.push("/profile/follow-list?type=following")
+      }
+    >
+      {favoriteChips}
+    </ProfileHeader>
+  );
+
   return (
     <View style={styles.container}>
-      <ProfileHeader
-        profile={profile}
-        reviewsCount={userReviews.length}
-        followersCount={followersCount}
-        followingCount={followingCount}
-        isOwnProfile={true}
-        onAvatarPress={pickImage}
-        avatarLoading={avatarLoading}
-        avatarError={avatarError}
-        onEditProfilePress={() => router.push("/profile/edit-profile")}
-        onFollowersPress={() =>
-          router.push("/profile/follow-list?type=followers")
-        }
-        onFollowingPress={() =>
-          router.push("/profile/follow-list?type=following")
-        }
-        isScrolled={isScrolled}
-        hasBioOrFavs={
-          !!(
-            profile?.bio ||
-            getFavoriteSpirits().length > 0 ||
-            getFavoriteTypes().length > 0
-          )
+      <ReviewGrid
+        reviews={userReviews}
+        header={header}
+        emptyComponent={renderEmpty()}
+        refreshing={loadingReviews}
+        onRefresh={() => profile?.id && loadUserReviews(profile.id)}
+        onScroll={handleScroll}
+        canDelete={true}
+        onDelete={(review) => confirmDeleteReview(review.id)}
+        onEdit={(review) =>
+          router.push(`/profile/edit-caption?reviewId=${review.id}`)
         }
       />
-
-      <Animated.View
-        style={{
-          opacity: bioOpacity,
-          height: isScrolled ? 0 : undefined,
-          overflow: "hidden",
-        }}
-        pointerEvents={isScrolled ? "none" : "auto"}
-      >
-        <SectionCard title="About" plain>
-          {profile?.bio ? (
-            <Text style={styles.bio}>{profile.bio}</Text>
-          ) : (
-            <TouchableOpacity
-              onPress={() => router.push("/profile/edit-profile")}
-              style={styles.ctaContainer}
-              accessibilityRole="button"
-              accessibilityLabel="Add a bio to your profile"
-            >
-              <Text style={styles.ctaText}>Add a bio</Text>
-            </TouchableOpacity>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Favorites" plain>
-          {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
-            <View style={styles.favoritesTagsContainer}>
-              {getFavoriteSpirits().map((spiritId: any) => (
-                <View key={`spirit-${spiritId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-                </View>
-              ))}
-              {getFavoriteTypes().map((typeId: any) => (
-                <View key={`type-${typeId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => router.push("/profile/edit-profile")}
-              style={styles.ctaContainer}
-              accessibilityRole="button"
-              accessibilityLabel="Add your favorite spirits and types"
-            >
-              <Text style={styles.ctaText}>Add favorite spirits & types</Text>
-            </TouchableOpacity>
-          )}
-        </SectionCard>
-      </Animated.View>
-
-      <View style={styles.reviewsContainer}>
-        <FlatList
-          data={userReviews}
-          renderItem={renderReviewItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.gridContent}
-          ListEmptyComponent={renderEmpty}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          refreshControl={
-            <RefreshControl
-              refreshing={loadingReviews}
-              onRefresh={() => profile?.id && loadUserReviews(profile.id)}
-              colors={[colors.accent]}
-              tintColor={colors.accent}
-            />
-          }
-        />
-      </View>
 
       {selectedReviewId && (
         <LikeSlider
@@ -531,6 +498,12 @@ const useStyles = makeStyles((t) => ({
   ctaContainer: {
     width: "100%" as const,
     alignItems: "flex-start" as const,
+    minHeight: 44,
+    justifyContent: "center" as const,
+  },
+  favoritesSection: {
+    paddingHorizontal: t.spacing.lg,
+    gap: t.spacing.xs,
   },
   favoritesTagsContainer: {
     flexDirection: "row" as const,

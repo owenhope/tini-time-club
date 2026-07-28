@@ -24,7 +24,12 @@ const VARIANT_FOR_EMPHASIS = {
  * buttons, which left Follow and Block looking equally weighted despite Block
  * being rare and semi-destructive.
  */
-const ActionBar: React.FC<{ actions: Action[] }> = ({ actions }) => {
+const ActionBar: React.FC<{
+  actions: Action[];
+  size?: ButtonProps["size"];
+  /** Split the row evenly instead of sizing each button to its content. */
+  fullWidth?: boolean;
+}> = ({ actions, size = "medium", fullWidth = false }) => {
   const styles = useStyles();
 
   if (actions.length === 0) return null;
@@ -34,9 +39,11 @@ const ActionBar: React.FC<{ actions: Action[] }> = ({ actions }) => {
       {actions.map(({ key, emphasis = "secondary", variant, ...rest }) => (
         <Button
           key={key}
-          size="medium"
+          size={size}
           variant={variant ?? VARIANT_FOR_EMPHASIS[emphasis]}
-          style={emphasis === "primary" ? styles.primary : undefined}
+          style={
+            fullWidth || emphasis === "primary" ? styles.primary : undefined
+          }
           {...rest}
         />
       ))}

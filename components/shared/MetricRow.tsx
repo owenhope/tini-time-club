@@ -18,7 +18,11 @@ export interface Metric {
  * navigates looks the same as a review count that doesn't — the difference is
  * carried by role and hint rather than by styling, which keeps the row even.
  */
-const MetricRow: React.FC<{ metrics: Metric[] }> = ({ metrics }) => {
+const MetricRow: React.FC<{
+  metrics: Metric[];
+  /** "center" stacks value over label, for the row beside an avatar. */
+  align?: "left" | "center";
+}> = ({ metrics, align = "left" }) => {
   const styles = useStyles();
 
   return (
@@ -31,7 +35,7 @@ const MetricRow: React.FC<{ metrics: Metric[] }> = ({ metrics }) => {
           return (
             <View
               key={metric.key}
-              style={styles.item}
+              style={[styles.item, align === "center" && styles.centered]}
               accessible
               accessibilityLabel={label}
             >
@@ -44,7 +48,11 @@ const MetricRow: React.FC<{ metrics: Metric[] }> = ({ metrics }) => {
         return (
           <Pressable
             key={metric.key}
-            style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.item,
+              align === "center" && styles.centered,
+              pressed && styles.pressed,
+            ]}
             onPress={metric.onPress}
             accessibilityRole="button"
             accessibilityLabel={label}
@@ -71,6 +79,9 @@ const useStyles = makeStyles((t) => ({
     minHeight: 44,
     justifyContent: "center" as const,
     paddingVertical: t.spacing.xs,
+  },
+  centered: {
+    alignItems: "center" as const,
   },
   pressed: {
     opacity: 0.6,

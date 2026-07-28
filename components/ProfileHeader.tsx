@@ -1,19 +1,20 @@
 import React from "react";
-import { View } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import {
-  ProfileIdentity,
+  Avatar,
   MetricRow,
   ActionBar,
   type Metric,
   type Action,
 } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 interface ProfileHeaderProps {
   profile: {
     id: string;
     username: string;
     name?: string | null;
+    bio?: string | null;
     avatar_url?: string | null;
   } | null;
   reviewsCount: number;
@@ -32,17 +33,21 @@ interface ProfileHeaderProps {
   onUnblockPress?: () => void;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
+  /** Rendered between the bio and the action row (favourite spirits, etc.). */
+  children?: React.ReactNode;
   isScrolled?: boolean;
   hasBioOrFavs?: boolean;
 }
 
+const AVATAR_SIZE = 80;
+
 /**
- * Identity block for a person, shared by the signed-in user's own profile and
- * other users' profiles.
+ * Person identity block, in the familiar social-profile arrangement: avatar
+ * and counts share the top row, then name and bio, then a compact full-width
+ * action row.
  *
- * Now a thin composition of the same primitives the place profile uses
- * (ProfileIdentity + MetricRow + ActionBar) rather than a bespoke layout, so
- * the two profile types line up on spacing, type and button hierarchy.
+ * The username is deliberately not repeated here — it is already the
+ * navigation title on both the own-profile and other-user screens.
  */
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
@@ -62,12 +67,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUnblockPress,
   onFollowersPress,
   onFollowingPress,
+  children,
 }) => {
   const styles = useStyles();
+  const { colors } = useTheme();
 
   if (!profile) return null;
-
-  const who = profile.username ?? "this user";
 
   const metrics: Metric[] = [
     {
@@ -89,74 +94,115 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     },
   ];
 
+  // Only the owner gets a body action. Follow and Block live in the nav bar
+  // on someone else's profile — Follow always visible, Block behind the
+  // overflow menu, so a rare and semi-destructive action isn't sitting at the
+  // same weight as the common one.
   const actions: Action[] = isOwnProfile
     ? [
         {
           key: "edit",
           title: "Edit Profile",
-          emphasis: "primary",
-          icon: "create-outline",
-          iconPosition: "left",
+          emphasis: "secondary",
           accessibilityLabel: "Edit your profile",
           onPress: () => onEditProfilePress?.(),
         },
       ]
-    : [
-        {
-          key: "follow",
-          title: doesFollow ? "Following" : "Follow",
-          // Following is a toggled-on state, so it drops to tonal rather than
-          // shouting as a primary action the user has already taken.
-          emphasis: doesFollow ? "secondary" : "primary",
-          loading: followPending,
-          accessibilityLabel: doesFollow ? `Unfollow ${who}` : `Follow ${who}`,
-          onPress: () => onFollowPress?.(),
-        },
-        {
-          key: "block",
-          title: isBlocked ? "Unblock" : "Block",
-          // Tertiary, not danger: blocking is reversible and low-frequency, so
-          // it shouldn't compete with Follow.
-          emphasis: "tertiary",
-          accessibilityLabel: isBlocked ? `Unblock ${who}` : `Block ${who}`,
-          onPress: () => (isBlocked ? onUnblockPress?.() : onBlockPress?.()),
-        },
-      ];
+    : [];
 
   return (
     <View style={styles.container}>
-      <ProfileIdentity
-        kind="person"
-        title={profile.name ?? ""}
-        subtitle={profile.username ? `@${profile.username}` : null}
-        avatarPath={profile.avatar_url}
-        username={profile.username}
-        onImagePress={isOwnProfile ? onAvatarPress : undefined}
-        imageLoading={avatarLoading}
-        imageError={avatarError}
-        titlePlaceholder={isOwnProfile ? "Add your name" : undefined}
-        onTitlePlaceholderPress={onEditProfilePress}
-      />
-
-      <View style={styles.metrics}>
-        <MetricRow metrics={metrics} />
+      <View style={styles.topRow}>
+        <Pressable
+          onPress={isOwnProfile ? onAvatarPress : undefined}
+          disabled={!isOwnProfile}
+          accessibilityRole={isOwnProfile ? "button" : undefined}
+          accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
+          accessibilityState={{ busy: avatarLoading }}
+        >
+          <Avatar
+            avatarPath={profile.avatar_url}
+            username={profile.username}
+            size={AVATAR_SIZE}
+          />
+          {avatarLoading && (
+            <View style={styles.avatarLoading}>
+              <ActivityIndicator size="small" color={colors.onAccent} />
+            </View>
+          )}
+        </Pressable>
+        <View style={styles.metrics}>
+          <MetricRow metrics={metrics} align="center" />
+        </View>
       </View>
 
-      <View style={styles.actions}>
-        <ActionBar actions={actions} />
-      </View>
+      {(profile.name || profile.bio) && (
+        <View style={styles.identity}>
+          {profile.name ? (
+            <Text style={styles.name} numberOfLines={1}>
+              {profile.name}
+            </Text>
+          ) : null}
+          {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+        </View>
+      )}
+
+      {children}
+
+      {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
+
+      {actions.length > 0 && (
+        <View style={styles.actions}>
+          <ActionBar actions={actions} size="small" fullWidth />
+        </View>
+      )}
     </View>
   );
 };
 
 const useStyles = makeStyles((t) => ({
   container: {
-    paddingTop: t.spacing.lg,
+    paddingTop: t.spacing.md,
     paddingBottom: t.spacing.md,
-    gap: t.spacing.lg,
+    gap: t.spacing.md,
     backgroundColor: t.colors.surface,
   },
+  topRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xl,
+    paddingHorizontal: t.spacing.lg,
+  },
   metrics: {
+    flex: 1,
+  },
+  avatarLoading: {
+    ...({ position: "absolute" } as const),
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.scrim,
+    borderRadius: AVATAR_SIZE / 2,
+  },
+  identity: {
+    paddingHorizontal: t.spacing.lg,
+    gap: 2,
+  },
+  name: {
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
+  },
+  bio: {
+    ...t.typography.body,
+    color: t.colors.text,
+    lineHeight: 20,
+  },
+  error: {
+    ...t.typography.caption,
+    color: t.colors.danger,
     paddingHorizontal: t.spacing.lg,
   },
   actions: {

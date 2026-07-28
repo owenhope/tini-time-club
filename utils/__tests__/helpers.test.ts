@@ -1,4 +1,8 @@
-import { stripNameFromAddress, formatRelativeDate } from "../helpers";
+import {
+  stripNameFromAddress,
+  formatRelativeDate,
+  formatCityRegion,
+} from "../helpers";
 
 describe("stripNameFromAddress", () => {
   it("removes a leading venue name and separator", () => {
@@ -57,5 +61,45 @@ describe("formatRelativeDate", () => {
     expect(formatRelativeDate(ago(400 * 24 * 60 * 60_000))).toMatch(
       /\w{3} \d{1,2}, \d{4}/
     );
+  });
+});
+
+// Cases taken from real rows in the locations table.
+describe("formatCityRegion", () => {
+  it.each([
+    ["855 Main St, West Vancouver, BC V7T 0A5, Canada", "West Vancouver, BC"],
+    ["201 Concourse Blvd, Dresher, PA 19025, United States", "Dresher, PA"],
+    ["4238 Wilson Blvd #1130, Arlington, VA 22203, USA", "Arlington, VA"],
+    ["Como Taperia, East 7th Avenue, Vancouver, BC, Canada", "Vancouver, BC"],
+    ["SIDECUT Steakhouse, Blackcomb Way, Whistler, BC, Canada", "Whistler, BC"],
+    [
+      "Castelli's Ristorante, California 111, Palm Desert, CA, USA",
+      "Palm Desert, CA",
+    ],
+    ["1038 Canada Pl, Vancouver, BC V6C 0E2, Canada", "Vancouver, BC"],
+  ])("reduces %s", (input, expected) => {
+    expect(formatCityRegion(input)).toBe(expected);
+  });
+
+  it("handles a non-US/CA address without a region code", () => {
+    expect(
+      formatCityRegion(
+        "76/8-9 Soi Si Bamphen, Thung Maha Mek, Sathon, Bangkok 10120, Thailand"
+      )
+    ).toBe("Sathon, Bangkok");
+  });
+
+  it("does not mistake a street for a city in a two-part address", () => {
+    expect(formatCityRegion("401 Main Street, Columbia")).toBe("Columbia");
+  });
+
+  it("keeps a genuine two-part city and region", () => {
+    expect(formatCityRegion("Vancouver, BC")).toBe("Vancouver, BC");
+  });
+
+  it("returns an empty string for missing input", () => {
+    expect(formatCityRegion(null)).toBe("");
+    expect(formatCityRegion(undefined)).toBe("");
+    expect(formatCityRegion("")).toBe("");
   });
 });

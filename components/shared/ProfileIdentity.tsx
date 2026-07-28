@@ -53,6 +53,8 @@ const ProfileIdentity: React.FC<ProfileIdentityProps> = ({
   const styles = useStyles();
   const { colors } = useTheme();
 
+  // Places only render media when they actually have an image — an empty
+  // placeholder square just took up space on every venue.
   const media =
     kind === "person" ? (
       <Avatar
@@ -61,40 +63,42 @@ const ProfileIdentity: React.FC<ProfileIdentityProps> = ({
         size={AVATAR_SIZE}
         style={styles.avatar}
       />
-    ) : (
+    ) : imageUrl ? (
       <ExpoImage
-        source={imageUrl ? { uri: imageUrl } : undefined}
+        source={{ uri: imageUrl }}
         style={styles.placeImage}
         contentFit="cover"
         transition={200}
         cachePolicy="memory-disk"
         accessibilityIgnoresInvertColors
       />
-    );
+    ) : null;
 
   return (
     <View style={styles.container}>
-      <View>
-        {onImagePress ? (
-          <Pressable
-            onPress={onImagePress}
-            accessibilityRole="button"
-            accessibilityLabel={
-              kind === "person" ? "Change profile photo" : "View photo"
-            }
-            accessibilityState={{ busy: imageLoading }}
-          >
-            {media}
-          </Pressable>
-        ) : (
-          media
-        )}
-        {imageLoading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="small" color={colors.onAccent} />
-          </View>
-        )}
-      </View>
+      {media !== null && (
+        <View>
+          {onImagePress ? (
+            <Pressable
+              onPress={onImagePress}
+              accessibilityRole="button"
+              accessibilityLabel={
+                kind === "person" ? "Change profile photo" : "View photo"
+              }
+              accessibilityState={{ busy: imageLoading }}
+            >
+              {media}
+            </Pressable>
+          ) : (
+            media
+          )}
+          {imageLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="small" color={colors.onAccent} />
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={styles.text}>
         {title ? (

@@ -7,20 +7,23 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
 import { Review } from "@/types/types";
-import ReviewItem from "@/components/ReviewItem";
+import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
+import { Button } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
 
 interface ProfileType {
   id: string;
@@ -34,7 +37,7 @@ interface ProfileType {
 
 const UserProfile = () => {
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
@@ -194,13 +197,83 @@ const UserProfile = () => {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ),
+        headerRight: () => (
+          <View style={styles.headerActions}>
+            <Button
+              title={doesFollow ? "Following" : "Follow"}
+              size="small"
+              variant={doesFollow ? "tonal" : "primary"}
+              loading={followPending}
+              onPress={toggleFollow}
+              accessibilityLabel={
+                doesFollow
+                  ? `Unfollow ${displayProfile.username}`
+                  : `Follow ${displayProfile.username}`
+              }
+              style={styles.headerFollow}
+            />
+            <TouchableOpacity
+              onPress={showProfileMenu}
+              hitSlop={HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={`More options for ${displayProfile.username}`}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={22}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+        ),
         headerStyle: {
           backgroundColor: colors.surface,
         },
         headerTintColor: colors.text,
       });
     }
-  }, [displayProfile, navigation, colors, styles]);
+  }, [
+    displayProfile,
+    navigation,
+    colors,
+    styles,
+    doesFollow,
+    followPending,
+    isBlocked,
+  ]);
+
+  /**
+   * Block lives behind the overflow menu rather than beside Follow: it is rare
+   * and semi-destructive, and giving it equal billing invited mis-taps.
+   */
+  const showProfileMenu = () => {
+    const blockLabel = isBlocked ? "Unblock" : "Block";
+    const act = () => (isBlocked ? handleUnblockUser() : handleBlockUser());
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [blockLabel, "Cancel"],
+          destructiveButtonIndex: isBlocked ? undefined : 0,
+          cancelButtonIndex: 1,
+          userInterfaceStyle: isDark ? "dark" : "light",
+        },
+        (index) => {
+          if (index === 0) act();
+        }
+      );
+      return;
+    }
+
+    Alert.alert(displayProfile?.username ?? "Profile", undefined, [
+      {
+        text: blockLabel,
+        style: isBlocked ? "default" : "destructive",
+        onPress: act,
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
 
   // Fetch the selected profile when usernameParam is provided
   useEffect(() => {
@@ -394,26 +467,6 @@ const UserProfile = () => {
     );
   };
 
-  const renderReviewItem = ({ item }: { item: Review }) => {
-    const isOwnReview = profile && String(profile.id) === String(item.user_id);
-    return (
-      <ReviewItem
-        review={item}
-        canDelete={false}
-        onDelete={undefined}
-        onEdit={
-          isOwnReview
-            ? () => router.push(`/profile/edit-caption?reviewId=${item.id}`)
-            : undefined
-        }
-        onShowLikes={() => {}} // Empty function since we don't need likes functionality here
-        onShowComments={handleShowComments}
-        onCommentAdded={handleCommentAdded}
-        onCommentDeleted={handleCommentDeleted}
-      />
-    );
-  };
-
   const renderEmpty = () => {
     if (loadingReviews) {
       return null; // Don't show empty state while loading
@@ -526,95 +579,69 @@ const UserProfile = () => {
     );
   }
 
+  const favoriteChips =
+    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+      <View style={styles.favoritesSection}>
+        <View style={styles.favoritesTagsContainer}>
+          {getFavoriteSpirits().map((spiritId: any) => (
+            <View key={`spirit-${spiritId}`} style={styles.tag}>
+              <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+            </View>
+          ))}
+          {getFavoriteTypes().map((typeId: any) => (
+            <View key={`type-${typeId}`} style={styles.tag}>
+              <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    ) : null;
+
+  // Header scrolls with the grid rather than sitting fixed above it.
+  const header = (
+    <ProfileHeader
+      profile={displayProfile}
+      reviewsCount={userReviews.length}
+      followersCount={followersCount}
+      followingCount={followingCount}
+      isOwnProfile={profile ? profile.id === displayProfile?.id : false}
+      doesFollow={doesFollow}
+      followPending={followPending}
+      isBlocked={isBlocked}
+      onFollowPress={toggleFollow}
+      onBlockPress={handleBlockUser}
+      onUnblockPress={handleUnblockUser}
+      onFollowersPress={() =>
+        router.push(`/users/${displayProfile?.username}/followers` as never)
+      }
+      onFollowingPress={() =>
+        router.push(`/users/${displayProfile?.username}/following` as never)
+      }
+    >
+      {favoriteChips}
+    </ProfileHeader>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Profile Header */}
-      <ProfileHeader
-        profile={displayProfile}
-        reviewsCount={userReviews.length}
-        followersCount={followersCount}
-        followingCount={followingCount}
-        isOwnProfile={profile ? profile.id === displayProfile?.id : false}
-        doesFollow={doesFollow}
-        followPending={followPending}
-        isBlocked={isBlocked}
-        onFollowPress={toggleFollow}
-        onBlockPress={handleBlockUser}
-        onUnblockPress={handleUnblockUser}
-        onFollowersPress={() =>
-          router.push(`/users/${displayProfile?.username}/followers` as never)
-        }
-        onFollowingPress={() =>
-          router.push(`/users/${displayProfile?.username}/following` as never)
-        }
-        isScrolled={isScrolled}
-        hasBioOrFavs={
-          !!(
-            displayProfile?.bio ||
-            getFavoriteSpirits().length > 0 ||
-            getFavoriteTypes().length > 0
-          )
-        }
-      />
-
-      {/* Bio Section */}
-      <Animated.View
-        style={{
-          opacity: bioOpacity,
-          height: isScrolled ? 0 : undefined,
-          overflow: "hidden",
+      <ReviewGrid
+        reviews={userReviews}
+        header={header}
+        emptyComponent={renderEmpty()}
+        refreshing={loadingReviews}
+        onRefresh={() => {
+          if (displayProfile?.id) loadUserReviews(displayProfile.id);
         }}
-        pointerEvents={isScrolled ? "none" : "auto"}
-      >
-        {displayProfile?.bio && (
-          <View style={styles.bioSection}>
-            <Text style={styles.bio}>{displayProfile.bio}</Text>
-          </View>
-        )}
-
-        {/* Favorites Section */}
-        {(getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0) && (
-          <View style={styles.tagsSection}>
-            <View style={styles.favoritesTagsContainer}>
-              {getFavoriteSpirits().map((spiritId: any) => {
-                return (
-                  <View key={`spirit-${spiritId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>
-                      {getSpiritName(spiritId)}
-                    </Text>
-                  </View>
-                );
-              })}
-              {getFavoriteTypes().map((typeId: any) => {
-                return (
-                  <View key={`type-${typeId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* Reviews List */}
-      <View style={styles.reviewsContainer}>
-        <FlatList
-          data={userReviews}
-          renderItem={renderReviewItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.gridContent}
-          ListEmptyComponent={renderEmpty}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onRefresh={() => {
-            if (displayProfile && displayProfile.id) {
-              loadUserReviews(displayProfile.id);
-            }
-          }}
-          refreshing={loadingReviews}
-        />
-      </View>
+        onScroll={handleScroll}
+        onEdit={(review) =>
+          profile && String(profile.id) === String(review.user_id)
+            ? router.push(`/profile/edit-caption?reviewId=${review.id}`)
+            : undefined
+        }
+        onShowComments={handleShowComments}
+        onCommentAdded={handleCommentAdded}
+        onCommentDeleted={handleCommentDeleted}
+      />
 
       {selectedCommentReview && (
         <CommentsSlider
@@ -710,6 +737,19 @@ const useStyles = makeStyles((t) => ({
     textAlign: "left" as const,
     fontWeight: "600" as const,
     width: "100%" as const,
+  },
+  headerActions: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.md,
+    paddingRight: t.spacing.xs,
+  },
+  headerFollow: {
+    paddingHorizontal: t.spacing.lg,
+    minHeight: 36,
+  },
+  favoritesSection: {
+    paddingHorizontal: t.spacing.lg,
   },
   tagsSection: {
     paddingHorizontal: t.spacing.lg,

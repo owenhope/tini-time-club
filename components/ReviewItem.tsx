@@ -21,7 +21,11 @@ import { Avatar, RatingSummary } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
-import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
+import {
+  stripNameFromAddress,
+  formatRelativeDate,
+  formatCityRegion,
+} from "@/utils/helpers";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
@@ -369,9 +373,11 @@ const ReviewOverlay = memo(
         </Link>
         {review.location?.address && (
           <Text style={styles.locationAddress}>
-            {stripNameFromAddress(
-              review.location.name,
-              review.location.address
+            {formatCityRegion(
+              stripNameFromAddress(
+                review.location.name,
+                review.location.address
+              )
             )}
           </Text>
         )}
