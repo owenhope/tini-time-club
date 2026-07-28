@@ -18,10 +18,16 @@
       "environment": "development"
     },
     "preview": {
-      "autoIncrement": false,
+      "distribution": "store",
+      "channel": "preview",
+      "environment": "preview",
+      "autoIncrement": true
+    },
+    "preview-adhoc": {
       "distribution": "internal",
       "channel": "preview",
-      "environment": "preview"
+      "environment": "preview",
+      "autoIncrement": false
     },
     "production": {
       "channel": "production",
@@ -30,6 +36,13 @@
     }
   },
   "submit": {
+    "preview": {
+      "ios": {
+        "appleId": "owen@hopemediahouse.com",
+        "ascAppId": "REPLACE_WITH_PREVIEW_ASC_APP_ID",
+        "appleTeamId": "AB12XYZ34S"
+      }
+    },
     "production": {
       "ios": {
         "appleId": "owen@hopemediahouse.com",
