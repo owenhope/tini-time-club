@@ -1,84 +1,90 @@
 import { Link } from "expo-router";
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
-import RatingCircles from "@/components/RatingCircles";
+import { RatingSummary } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
   loc: any;
 }
 
+/**
+ * The bottom sheet shown when a map pin is tapped.
+ *
+ * Uses the compact RatingSummary variant: this sheet is short, and the full
+ * bar layout would push the venue name and link below the fold.
+ */
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   const styles = useStyles();
   const { colors } = useTheme();
 
-  return (
-    <View style={styles.bottomSheetContent}>
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <View style={styles.titleContainer}>
-          <Link href={`/(tabs)/locations/${loc.id}`} asChild>
-            <TouchableOpacity style={styles.locationLinkContainer}>
-              <Text style={styles.locationName} numberOfLines={1}>
-                {loc.name || "No name available"}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.accent}
-              />
-            </TouchableOpacity>
-          </Link>
-          {loc.address && (
-            <Text style={styles.address} numberOfLines={2}>
-              {stripNameFromAddress(loc.name, loc.address)}
-            </Text>
-          )}
-          {!loc.address && (
-            <Text style={styles.address} numberOfLines={2}>
-              No address available
-            </Text>
-          )}
-        </View>
-      </View>
+  const address = loc.address
+    ? stripNameFromAddress(loc.name, loc.address)
+    : null;
 
-      {/* All Ratings in One Row */}
-      <RatingCircles location={loc} circleSize={44} />
+  return (
+    <View style={styles.sheet}>
+      <Link href={`/(tabs)/locations/${loc.id}`} asChild>
+        <Pressable
+          style={({ pressed }) => [styles.titleRow, pressed && styles.pressed]}
+          accessibilityRole="link"
+          accessibilityLabel={loc.name || "No name available"}
+          accessibilityHint="Opens this place's profile"
+        >
+          <Text style={styles.name} numberOfLines={1}>
+            {loc.name || "No name available"}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+        </Pressable>
+      </Link>
+
+      <Text style={styles.address} numberOfLines={2}>
+        {address ?? "No address available"}
+      </Text>
+
+      <View style={styles.ratings}>
+        <RatingSummary
+          variant="compact"
+          overall={loc.rating}
+          taste={loc.taste_avg}
+          presentation={loc.presentation_avg}
+          reviewCount={loc.total_ratings ?? 0}
+        />
+      </View>
     </View>
   );
 };
 
 const useStyles = makeStyles((t) => ({
-  bottomSheetContent: {
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingVertical: t.spacing.xl - 4,
+  sheet: {
+    paddingHorizontal: t.spacing.xl,
+    paddingVertical: t.spacing.xl,
     backgroundColor: t.colors.surface,
+    gap: t.spacing.xs,
   },
-
-  // Header Section
-  headerSection: {
-    marginBottom: t.spacing.lg,
-    minHeight: 60,
-  },
-  titleContainer: {
-    flexDirection: "column" as const,
-  },
-  locationLinkContainer: {
+  titleRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    marginBottom: t.spacing.xs,
+    gap: t.spacing.xs,
+    minHeight: 44,
   },
-  locationName: {
+  pressed: {
+    opacity: 0.6,
+  },
+  name: {
     ...t.typography.title,
     color: t.colors.text,
-    marginRight: 6,
+    flexShrink: 1,
   },
   address: {
     ...t.typography.body,
     color: t.colors.textSecondary,
     lineHeight: 20,
+  },
+  ratings: {
+    marginTop: t.spacing.sm,
   },
 }));
 

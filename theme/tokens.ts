@@ -97,6 +97,19 @@ export interface ThemeColors {
   success: string;
   warning: string;
 
+  // Tonal (low-emphasis filled) surfaces for secondary actions
+  accentTonal: string;
+  onAccentTonal: string;
+
+  // Interaction states
+  pressed: string;
+  disabledSurface: string;
+  disabledText: string;
+
+  // Ratings
+  ratingTrack: string;
+  ratingFill: string;
+
   // Component-specific
   tabBar: string;
   tabBarActive: string;
@@ -138,6 +151,18 @@ export const lightColors: ThemeColors = {
   dangerSubtle: "#FDECEA",
   success: palette.green500,
   warning: palette.amber500,
+
+  accentTonal: palette.lavender50,
+  // lavender600 is 4.45:1 on the tonal fill, just under AA, so tonal labels
+  // take the next step down the ramp.
+  onAccentTonal: "#6E55A9", // 5.34:1 on accentTonal
+
+  pressed: "rgba(23,21,29,0.08)",
+  disabledSurface: palette.neutral100,
+  disabledText: "#6B6777", // 4.70:1 on disabledSurface
+
+  ratingTrack: palette.neutral200,
+  ratingFill: palette.lavender600, // 3.78:1 on the track
 
   tabBar: palette.white,
   tabBarActive: palette.olive500,
@@ -183,6 +208,16 @@ export const darkColors: ThemeColors = {
   success: "#4FBF8B",
   warning: "#E0A94A",
 
+  accentTonal: "#241F31",
+  onAccentTonal: palette.lavender300, // 8.27:1 on accentTonal
+
+  pressed: "rgba(255,255,255,0.10)",
+  disabledSurface: palette.neutral800,
+  disabledText: "#948EA0", // 4.63:1 on disabledSurface
+
+  ratingTrack: "#332F3C",
+  ratingFill: palette.lavender300, // 6.75:1 on the track
+
   tabBar: palette.neutral900,
   tabBarActive: palette.olive300,
   tabBarInactive: "#948EA0",
@@ -217,6 +252,10 @@ export const typography = {
   bodyStrong: { fontSize: 15, fontWeight: "600" },
   caption: { fontSize: 13, fontWeight: "400" },
   label: { fontSize: 12, fontWeight: "600", letterSpacing: 0.2 },
+  // Large numerals in metric rows and rating summaries. Tabular figures keep
+  // columns from shifting as values change.
+  metric: { fontSize: 20, fontWeight: "700", letterSpacing: -0.3 },
+  metricLarge: { fontSize: 34, fontWeight: "700", letterSpacing: -0.8 },
 } as const;
 
 /**

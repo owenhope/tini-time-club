@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   ViewStyle,
   TextStyle,
@@ -11,7 +11,7 @@ import { makeStyles, useTheme } from "@/theme";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
 export type ButtonVariant =
-  "primary" | "secondary" | "outline" | "ghost" | "danger";
+  "primary" | "tonal" | "secondary" | "outline" | "ghost" | "danger";
 export type ButtonIconPosition = "left" | "right" | "none";
 
 export interface ButtonProps {
@@ -28,7 +28,9 @@ export interface ButtonProps {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
-  activeOpacity?: number;
+  /** Overrides the label as the screen-reader name (e.g. icon-heavy buttons). */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -45,7 +47,8 @@ const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
-  activeOpacity = 0.7,
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -53,10 +56,12 @@ const Button: React.FC<ButtonProps> = ({
   const getSizeStyles = (): ViewStyle => {
     switch (size) {
       case "small":
+        // 44pt is the minimum comfortable touch target; "small" refers to the
+        // visual weight, not a sub-minimum hit area.
         return {
-          paddingVertical: 8,
+          paddingVertical: 10,
           paddingHorizontal: 16,
-          minHeight: 36,
+          minHeight: 44,
         };
       case "medium":
         return {
@@ -92,6 +97,11 @@ const Button: React.FC<ButtonProps> = ({
           backgroundColor: colors.accent,
           borderWidth: 0,
         };
+      case "tonal":
+        return {
+          backgroundColor: colors.accentTonal,
+          borderWidth: 0,
+        };
       case "secondary":
         return {
           backgroundColor: colors.secondary,
@@ -125,6 +135,8 @@ const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case "primary":
         return colors.onAccent;
+      case "tonal":
+        return colors.onAccentTonal;
       case "secondary":
         return colors.onSecondary;
       case "danger":
@@ -192,6 +204,9 @@ const Button: React.FC<ButtonProps> = ({
 
   const renderContent = () => {
     if (loading) {
+      // Keep the original label rather than swapping in "Loading...": the text
+      // width stays put so the button doesn't resize, and the user doesn't
+      // lose track of what is in flight.
       return (
         <>
           <ActivityIndicator
@@ -203,10 +218,11 @@ const Button: React.FC<ButtonProps> = ({
             style={[
               styles.text,
               { color: getTextColor(), fontSize: getTextSize() },
+              styles.loadingText,
               textStyle,
             ]}
           >
-            Loading...
+            {title}
           </Text>
         </>
       );
@@ -229,22 +245,30 @@ const Button: React.FC<ButtonProps> = ({
     );
   };
 
+  const isInactive = disabled || loading;
+
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={activeOpacity}
-      style={[
+      disabled={isInactive}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isInactive, busy: loading }}
+      style={({ pressed }) => [
         styles.button,
         getSizeStyles(),
         getVariantStyles(),
         fullWidth && styles.fullWidth,
+        // An explicit disabled fill rather than dimming the whole button:
+        // opacity dragged the label below the contrast minimum.
         disabled && styles.disabled,
+        pressed && !isInactive && styles.pressed,
         style,
       ]}
     >
       {renderContent()}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -253,14 +277,22 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     gap: t.spacing.sm,
   },
   fullWidth: {
     width: "100%" as const,
   },
   disabled: {
-    opacity: 0.6,
+    backgroundColor: t.colors.disabledSurface,
+    borderColor: t.colors.disabledSurface,
+  },
+  pressed: {
+    opacity: 0.85,
+    backgroundColor: t.colors.pressed,
+  },
+  loadingText: {
+    opacity: 0.9,
   },
   text: {
     fontWeight: "600" as const,

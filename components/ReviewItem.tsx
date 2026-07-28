@@ -17,9 +17,8 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import { isDevelopmentMode } from "@/utils/helpers";
 import imageCache from "@/utils/imageCache";
-import { Avatar } from "@/components/shared";
+import { Avatar, RatingSummary } from "@/components/shared";
 import { Review } from "@/types/types";
-import ReviewRating from "./ReviewRating";
 import * as Haptics from "expo-haptics";
 import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { stripNameFromAddress, formatRelativeDate } from "@/utils/helpers";
@@ -379,10 +378,18 @@ const ReviewOverlay = memo(
         <Text style={styles.spiritText}>
           {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
         </Text>
-        <Text style={styles.ratingLabel}>Taste</Text>
-        <ReviewRating value={review.taste} label="taste" />
-        <Text style={styles.ratingLabel}>Presentation</Text>
-        <ReviewRating value={review.presentation} label="presentation" />
+        <View style={styles.overlayRatings}>
+          {/* Same RatingSummary the place profile uses, in its on-image tone.
+              No overall hero and no review count: a single review has neither,
+              and inventing an average here would imply data that isn't stored. */}
+          <RatingSummary
+            overall={null}
+            taste={review.taste}
+            presentation={review.presentation}
+            showReviewCount={false}
+            tone="onImage"
+          />
+        </View>
       </Animated.View>
     );
   }
@@ -917,6 +924,10 @@ const useStyles = makeStyles((t) => ({
     zIndex: 2,
     flexDirection: "row" as const,
     gap: t.spacing.sm,
+  },
+  overlayRatings: {
+    marginTop: t.spacing.sm,
+    maxWidth: 260,
   },
   overlay: {
     position: "absolute" as const,

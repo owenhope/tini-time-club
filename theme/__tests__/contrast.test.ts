@@ -48,12 +48,17 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   ["danger on surface", c.danger, c.surface],
   ["tabBarActive on tabBar", c.tabBarActive, c.tabBar],
   ["tabBarInactive on tabBar", c.tabBarInactive, c.tabBar],
+  ["onAccentTonal on accentTonal", c.onAccentTonal, c.accentTonal],
+  ["disabledText on disabledSurface", c.disabledText, c.disabledSurface],
 ];
 
 const largePairs = (c: ThemeColors): [string, string, string][] => [
   ["like on surface", c.like, c.surface],
   ["success on surface", c.success, c.surface],
   ["warning on surface", c.warning, c.surface],
+  // The bar fill must be distinguishable from its track, since the bar is a
+  // graphical object conveying the rating value.
+  ["ratingFill on ratingTrack", c.ratingFill, c.ratingTrack],
 ];
 
 /**

@@ -1,7 +1,13 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Avatar } from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import { View } from "react-native";
+import {
+  ProfileIdentity,
+  MetricRow,
+  ActionBar,
+  type Metric,
+  type Action,
+} from "@/components/shared";
+import { makeStyles } from "@/theme";
 
 interface ProfileHeaderProps {
   profile: {
@@ -30,6 +36,14 @@ interface ProfileHeaderProps {
   hasBioOrFavs?: boolean;
 }
 
+/**
+ * Identity block for a person, shared by the signed-in user's own profile and
+ * other users' profiles.
+ *
+ * Now a thin composition of the same primitives the place profile uses
+ * (ProfileIdentity + MetricRow + ActionBar) rather than a bespoke layout, so
+ * the two profile types line up on spacing, type and button hierarchy.
+ */
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
   reviewsCount,
@@ -48,244 +62,105 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUnblockPress,
   onFollowersPress,
   onFollowingPress,
-  isScrolled = false,
-  hasBioOrFavs = true,
 }) => {
   const styles = useStyles();
-  const { colors } = useTheme();
 
   if (!profile) return null;
 
-  // Add bottom padding when scrolled OR when there's no bio/favs
-  const shouldHaveBottomPadding = isScrolled || !hasBioOrFavs;
+  const who = profile.username ?? "this user";
+
+  const metrics: Metric[] = [
+    {
+      key: "reviews",
+      value: reviewsCount,
+      label: reviewsCount === 1 ? "Review" : "Reviews",
+    },
+    {
+      key: "followers",
+      value: followersCount,
+      label: followersCount === 1 ? "Follower" : "Followers",
+      onPress: onFollowersPress,
+    },
+    {
+      key: "following",
+      value: followingCount,
+      label: "Following",
+      onPress: onFollowingPress,
+    },
+  ];
+
+  const actions: Action[] = isOwnProfile
+    ? [
+        {
+          key: "edit",
+          title: "Edit Profile",
+          emphasis: "primary",
+          icon: "create-outline",
+          iconPosition: "left",
+          accessibilityLabel: "Edit your profile",
+          onPress: () => onEditProfilePress?.(),
+        },
+      ]
+    : [
+        {
+          key: "follow",
+          title: doesFollow ? "Following" : "Follow",
+          // Following is a toggled-on state, so it drops to tonal rather than
+          // shouting as a primary action the user has already taken.
+          emphasis: doesFollow ? "secondary" : "primary",
+          loading: followPending,
+          accessibilityLabel: doesFollow ? `Unfollow ${who}` : `Follow ${who}`,
+          onPress: () => onFollowPress?.(),
+        },
+        {
+          key: "block",
+          title: isBlocked ? "Unblock" : "Block",
+          // Tertiary, not danger: blocking is reversible and low-frequency, so
+          // it shouldn't compete with Follow.
+          emphasis: "tertiary",
+          accessibilityLabel: isBlocked ? `Unblock ${who}` : `Block ${who}`,
+          onPress: () => (isBlocked ? onUnblockPress?.() : onBlockPress?.()),
+        },
+      ];
 
   return (
-    <View
-      style={[
-        styles.profileHeader,
-        { paddingBottom: shouldHaveBottomPadding ? 16 : 0 },
-      ]}
-    >
-      <View style={styles.avatarSection}>
-        {isOwnProfile ? (
-          <TouchableOpacity onPress={onAvatarPress}>
-            <View>
-              <Avatar
-                avatarPath={profile.avatar_url}
-                username={profile.username}
-                size={75}
-                style={styles.avatar}
-              />
-              {avatarLoading && (
-                <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="small" color={colors.secondary} />
-                </View>
-              )}
-              {avatarError && (
-                <Text style={styles.errorText}>{avatarError}</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <View>
-            <Avatar
-              avatarPath={profile.avatar_url}
-              username={profile.username}
-              size={75}
-              style={styles.avatar}
-            />
-          </View>
-        )}
+    <View style={styles.container}>
+      <ProfileIdentity
+        kind="person"
+        title={profile.name ?? ""}
+        subtitle={profile.username ? `@${profile.username}` : null}
+        avatarPath={profile.avatar_url}
+        username={profile.username}
+        onImagePress={isOwnProfile ? onAvatarPress : undefined}
+        imageLoading={avatarLoading}
+        imageError={avatarError}
+        titlePlaceholder={isOwnProfile ? "Add your name" : undefined}
+        onTitlePlaceholderPress={onEditProfilePress}
+      />
+
+      <View style={styles.metrics}>
+        <MetricRow metrics={metrics} />
       </View>
 
-      <View style={styles.userInfoContainer}>
-        {profile.name ? (
-          <Text style={styles.displayName}>{profile.name}</Text>
-        ) : isOwnProfile ? (
-          <TouchableOpacity onPress={onEditProfilePress}>
-            <Text style={styles.ctaText}>Add your name</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{reviewsCount}</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
-          </View>
-          <TouchableOpacity style={styles.statItem} onPress={onFollowersPress}>
-            <Text style={styles.statNumber}>{followersCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.statItem} onPress={onFollowingPress}>
-            <Text style={styles.statNumber}>{followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </TouchableOpacity>
-        </View>
-
-        {!isOwnProfile && (
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              onPress={onFollowPress}
-              disabled={followPending}
-              accessibilityRole="button"
-              accessibilityLabel={
-                doesFollow
-                  ? `Unfollow ${profile?.username ?? "this user"}`
-                  : `Follow ${profile?.username ?? "this user"}`
-              }
-              accessibilityState={{ selected: doesFollow, busy: followPending }}
-              style={[
-                styles.followButton,
-                doesFollow && styles.followingButton,
-                followPending && styles.buttonPending,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.followButtonText,
-                  doesFollow && styles.followingButtonText,
-                ]}
-              >
-                {doesFollow ? "Following" : "Follow"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={isBlocked ? onUnblockPress : onBlockPress}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isBlocked ? "Unblock this user" : "Block this user"
-              }
-              style={[styles.blockButton, isBlocked && styles.unblockButton]}
-            >
-              <Text
-                style={[
-                  styles.blockButtonText,
-                  isBlocked && styles.unblockButtonText,
-                ]}
-              >
-                {isBlocked ? "Unblock" : "Block"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      <View style={styles.actions}>
+        <ActionBar actions={actions} />
       </View>
     </View>
   );
 };
 
 const useStyles = makeStyles((t) => ({
-  buttonPending: {
-    opacity: 0.6,
-  },
-  profileHeader: {
-    flexDirection: "row" as const,
-    paddingHorizontal: t.spacing.lg,
+  container: {
     paddingTop: t.spacing.lg,
-    alignItems: "flex-start" as const,
-  },
-  avatarSection: {
-    marginRight: t.spacing.lg,
-  },
-  avatar: {
-    width: 75,
-    height: 75,
-    borderRadius: 50,
-  },
-  loadingOverlay: {
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: t.colors.scrim,
-    borderRadius: 50,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  errorText: {
-    color: t.colors.danger,
-    fontSize: 12,
-    textAlign: "center" as const,
-    marginTop: t.spacing.xs,
-  },
-  userInfoContainer: {
-    flex: 1,
-  },
-  displayName: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: t.colors.text,
-    marginBottom: t.spacing.md,
-  },
-  ctaText: {
-    fontSize: 14,
-    color: t.colors.textSecondary,
-    marginBottom: t.spacing.md,
-  },
-  statsContainer: {
-    flexDirection: "row" as const,
-    gap: t.spacing.xl,
-    justifyContent: "flex-start" as const,
-  },
-  statItem: {
-    alignItems: "flex-start" as const,
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: t.colors.text,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: "bold" as const,
-    color: t.colors.textSecondary,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row" as const,
-    marginTop: t.spacing.md,
-    gap: t.spacing.md,
-  },
-  followButton: {
-    backgroundColor: t.colors.accent,
-    paddingHorizontal: t.spacing.lg,
-    paddingVertical: 10,
-    borderRadius: 25,
-    flex: 1,
-    alignItems: "center" as const,
-  },
-  followingButton: {
+    paddingBottom: t.spacing.md,
+    gap: t.spacing.lg,
     backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.accent,
   },
-  followButtonText: {
-    color: t.colors.onAccent,
-    fontSize: 14,
-    fontWeight: "600" as const,
-  },
-  followingButtonText: {
-    color: t.colors.accent,
-  },
-  blockButton: {
-    backgroundColor: t.colors.danger,
+  metrics: {
     paddingHorizontal: t.spacing.lg,
-    paddingVertical: 10,
-    borderRadius: 25,
-    flex: 1,
-    alignItems: "center" as const,
   },
-  blockButtonText: {
-    color: t.colors.textOnAccent,
-    fontSize: 14,
-    fontWeight: "500" as const,
-  },
-  unblockButton: {
-    backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.danger,
-  },
-  unblockButtonText: {
-    color: t.colors.danger,
+  actions: {
+    paddingHorizontal: t.spacing.lg,
   },
 }));
 

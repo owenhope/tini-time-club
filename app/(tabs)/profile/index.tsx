@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
 import { Avatar } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
+import { SectionCard } from "@/components/shared";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
@@ -431,59 +432,46 @@ const Profile = () => {
         }}
         pointerEvents={isScrolled ? "none" : "auto"}
       >
-        <View style={styles.bioSection}>
+        <SectionCard title="About" plain>
           {profile?.bio ? (
             <Text style={styles.bio}>{profile.bio}</Text>
           ) : (
             <TouchableOpacity
               onPress={() => router.push("/profile/edit-profile")}
-              style={styles.bioCtaContainer}
+              style={styles.ctaContainer}
+              accessibilityRole="button"
+              accessibilityLabel="Add a bio to your profile"
             >
-              <Text
-                style={[
-                  styles.ctaText,
-                  { textAlign: "left", marginTop: 4, width: "100%" },
-                ]}
-              >
-                Add a bio
-              </Text>
+              <Text style={styles.ctaText}>Add a bio</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </SectionCard>
 
-        <View style={styles.tagsSection}>
+        <SectionCard title="Favorites" plain>
           {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
             <View style={styles.favoritesTagsContainer}>
-              {getFavoriteSpirits().map((spiritId: any) => {
-                return (
-                  <View key={`spirit-${spiritId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>
-                      {getSpiritName(spiritId)}
-                    </Text>
-                  </View>
-                );
-              })}
-              {getFavoriteTypes().map((typeId: any) => {
-                return (
-                  <View key={`type-${typeId}`} style={styles.tag}>
-                    <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                  </View>
-                );
-              })}
+              {getFavoriteSpirits().map((spiritId: any) => (
+                <View key={`spirit-${spiritId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                </View>
+              ))}
+              {getFavoriteTypes().map((typeId: any) => (
+                <View key={`type-${typeId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                </View>
+              ))}
             </View>
           ) : (
             <TouchableOpacity
               onPress={() => router.push("/profile/edit-profile")}
               style={styles.ctaContainer}
+              accessibilityRole="button"
+              accessibilityLabel="Add your favorite spirits and types"
             >
-              <Text
-                style={[styles.ctaText, { textAlign: "left", marginTop: 6 }]}
-              >
-                Add favorite spirits & types
-              </Text>
+              <Text style={styles.ctaText}>Add favorite spirits & types</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </SectionCard>
       </Animated.View>
 
       <View style={styles.reviewsContainer}>

@@ -3,6 +3,11 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { supabase } from "@/utils/supabase";
 import authCache from "@/utils/authCache";
 import { useRouter } from "expo-router";
+import { Alert } from "react-native";
+import {
+  isAccountGoneError,
+  ACCOUNT_GONE_MESSAGE,
+} from "@/utils/accountErrors";
 
 // Create the context
 const ProfileContext = createContext();
@@ -12,6 +17,18 @@ export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  /**
+   * The session is valid but the account behind it is gone. Sign out properly
+   * (so the stale session can't keep failing every write) and explain why.
+   */
+  const handleAccountGone = async () => {
+    setProfile(null);
+    await authCache.invalidateCache();
+    await supabase.auth.signOut();
+    router.replace("/");
+    Alert.alert("Signed out", ACCOUNT_GONE_MESSAGE);
+  };
 
   // Function to fetch the current user's profile from the "profile" table
   const fetchProfile = async () => {
@@ -44,8 +61,12 @@ export const ProfileProvider = ({ children }) => {
       if (error) {
         console.error("Error fetching profile", error);
 
-        // Handle any profile fetch error - redirect to auth
-        // Clear auth cache and redirect to login
+        if (isAccountGoneError(error)) {
+          await handleAccountGone();
+          return;
+        }
+
+        // Any other profile fetch error: fall back to the auth screen.
         await authCache.invalidateCache();
         router.replace("/");
         return;
@@ -55,9 +76,12 @@ export const ProfileProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in fetchProfile:", error);
 
-      // Handle any profile error (including from authCache) - redirect to auth
+      if (isAccountGoneError(error)) {
+        await handleAccountGone();
+        return;
+      }
+
       if (error.message && error.message.includes("Profile fetch error")) {
-        // Clear auth cache and redirect to login
         await authCache.invalidateCache();
         router.replace("/");
         return;
@@ -81,6 +105,9 @@ export const ProfileProvider = ({ children }) => {
 
     if (result.error) {
       console.error("Error updating profile", result.error);
+      if (isAccountGoneError(result.error)) {
+        await handleAccountGone();
+      }
       return { error: result.error };
     }
 

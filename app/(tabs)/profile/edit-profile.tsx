@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
+import { isAccountGoneError } from "@/utils/accountErrors";
 import MultiSelectInput from "@/components/MultiSelectInput";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -110,6 +111,12 @@ const EditProfile = () => {
       router.back();
     } catch (error) {
       console.error("Error updating profile:", error);
+      if (isAccountGoneError(error)) {
+        // refreshProfile() -> the context signs out and explains; don't stack
+        // a second, misleading alert on top of it.
+        await refreshProfile();
+        return;
+      }
       Alert.alert("Error", "Failed to update profile");
     } finally {
       setSaving(false);

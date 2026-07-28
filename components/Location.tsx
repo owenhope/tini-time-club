@@ -24,7 +24,13 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
-import RatingCircles from "@/components/RatingCircles";
+import {
+  RatingSummary,
+  ProfileIdentity,
+  ActionBar,
+  type Action,
+} from "@/components/shared";
+import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import {
@@ -96,40 +102,11 @@ const Location = () => {
     types?: string[];
   } | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const contactInfoOpacity = useRef(new Animated.Value(1)).current;
-  const contactInfoHeight = useRef(new Animated.Value(300)).current;
-
-  useEffect(() => {
-    // Animate opacity with native driver
-    Animated.timing(contactInfoOpacity, {
-      toValue: isScrolled ? 0 : 1,
-      duration: isScrolled ? 1 : 200,
-      useNativeDriver: true,
-    }).start();
-
-    // Animate height separately without native driver (to avoid conflicts)
-    Animated.timing(contactInfoHeight, {
-      toValue: isScrolled ? 0 : 300,
-      duration: isScrolled ? 200 : 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isScrolled]);
-
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        const shouldBeScrolled = offsetY > 30;
-        if (shouldBeScrolled !== isScrolled) {
-          setIsScrolled(shouldBeScrolled);
-        }
-      },
-    }
-  );
+  const {
+    isCollapsed,
+    onScroll: handleScroll,
+    collapsibleStyle,
+  } = useCollapsibleHeader();
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
@@ -537,118 +514,107 @@ const Location = () => {
     }
   }, [displayLocation?.id, loadLocationImage, loadLocationReviews]);
 
+  const address = displayLocation?.address
+    ? stripNameFromAddress(
+        displayLocation?.name ?? "",
+        displayLocation?.address ?? ""
+      )
+    : null;
+
+  const openInMaps = () => {
+    if (displayLocation?.lat && displayLocation?.lon) {
+      Linking.openURL(
+        `https://maps.google.com/?q=${displayLocation.lat},${displayLocation.lon}`
+      );
+    } else if (address) {
+      Linking.openURL(
+        `https://maps.google.com/?q=${encodeURIComponent(address)}`
+      );
+    }
+  };
+
+  const contactActions: Action[] = [];
+  if (placeDetails?.phoneNumber) {
+    contactActions.push({
+      key: "call",
+      title: "Call",
+      icon: "call-outline",
+      iconPosition: "left",
+      emphasis: "secondary",
+      accessibilityLabel: `Call ${displayLocation?.name ?? "this place"}`,
+      accessibilityHint: placeDetails.phoneNumber,
+      onPress: () => Linking.openURL(`tel:${placeDetails.phoneNumber}`),
+    });
+  }
+  if (placeDetails?.website) {
+    contactActions.push({
+      key: "website",
+      title: "Website",
+      icon: "globe-outline",
+      iconPosition: "left",
+      emphasis: "secondary",
+      accessibilityLabel: `Open the website for ${displayLocation?.name ?? "this place"}`,
+      onPress: () => Linking.openURL(placeDetails.website!),
+    });
+  }
+
+  const tags = [
+    ...(placeDetails?.priceLevel !== undefined
+      ? [getPriceLevelText(placeDetails.priceLevel)]
+      : []),
+    ...getRelevantPlaceTypes(placeDetails?.types),
+  ];
+
   return (
     <View style={styles.container}>
-      <View style={styles.profileHeader}>
-        <RatingCircles
-          location={displayLocation || {}}
-          circleSize={DIMENSIONS.ratingCircle}
+      <View style={styles.header}>
+        {/* Identity first: the venue name has to arrive before the numbers
+            that describe it. Previously the rating circles rendered above
+            the name. */}
+        <ProfileIdentity
+          kind="place"
+          title={displayLocation?.name ?? ""}
+          subtitle={address}
+          onSubtitlePress={address ? openInMaps : undefined}
+          subtitleAccessibilityHint="Opens this address in Maps"
+          imageUrl={locationImage}
         />
-        <View style={styles.addressRow}>
-          {displayLocation?.name && (
-            <Text style={styles.locationName}>{displayLocation.name}</Text>
-          )}
-          {displayLocation?.address && (
-            <TouchableOpacity
-              onPress={() => {
-                const address = stripNameFromAddress(
-                  displayLocation?.name ?? "",
-                  displayLocation?.address ?? ""
-                );
-                // Use coordinates if available, otherwise use address
-                if (displayLocation?.lat && displayLocation?.lon) {
-                  // Open in maps with coordinates (works on both iOS and Android)
-                  Linking.openURL(
-                    `https://maps.google.com/?q=${displayLocation.lat},${displayLocation.lon}`
-                  );
-                } else if (displayLocation?.address) {
-                  // Fallback to address search
-                  Linking.openURL(
-                    `https://maps.google.com/?q=${encodeURIComponent(address)}`
-                  );
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.addressContainer}>
-                <Text style={styles.locationAddress}>
-                  {stripNameFromAddress(
-                    displayLocation?.name ?? "",
-                    displayLocation?.address ?? ""
-                  )}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          {/* Tags Section */}
-          <Animated.View
-            style={{
-              maxHeight: contactInfoHeight,
-              overflow: "hidden",
-            }}
-          >
-            <Animated.View
-              style={{
-                opacity: contactInfoOpacity,
-              }}
-              pointerEvents={isScrolled ? "none" : "auto"}
-            >
-              {(placeDetails?.priceLevel !== undefined ||
-                (placeDetails?.types && placeDetails.types.length > 0)) && (
-                <View style={styles.tagsContainer}>
-                  {placeDetails.priceLevel !== undefined && (
-                    <Tag text={getPriceLevelText(placeDetails.priceLevel)} />
-                  )}
-                  {getRelevantPlaceTypes(placeDetails.types).map(
-                    (type, index) => (
-                      <Tag key={`type-${index}`} text={type} />
-                    )
-                  )}
-                </View>
-              )}
-              {placeDetails && (
-                <View style={styles.contactInfo}>
-                  {placeDetails.phoneNumber && (
-                    <TouchableOpacity
-                      style={styles.contactButton}
-                      onPress={() =>
-                        Linking.openURL(`tel:${placeDetails.phoneNumber}`)
-                      }
-                    >
-                      <Ionicons
-                        name="call-outline"
-                        size={18}
-                        color={colors.onAccent}
-                      />
-                      <Text style={styles.contactText}>
-                        {placeDetails.phoneNumber}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {placeDetails.website && (
-                    <TouchableOpacity
-                      style={styles.contactButton}
-                      onPress={() => Linking.openURL(placeDetails.website!)}
-                    >
-                      <Ionicons
-                        name="globe-outline"
-                        size={18}
-                        color={colors.onAccent}
-                      />
-                      <Text style={styles.contactText} numberOfLines={1}>
-                        Website
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            </Animated.View>
-          </Animated.View>
-          {loadingPlaceDetails && (
-            <Text style={styles.loadingText}>Loading contact info...</Text>
-          )}
+
+        <View style={styles.ratingBlock}>
+          <RatingSummary
+            overall={displayLocation?.rating}
+            taste={displayLocation?.taste_avg}
+            presentation={displayLocation?.presentation_avg}
+            reviewCount={displayLocation?.total_ratings ?? 0}
+          />
         </View>
+
+        <Animated.View
+          style={[styles.collapsible, collapsibleStyle]}
+          pointerEvents={isCollapsed ? "none" : "auto"}
+        >
+          {contactActions.length > 0 && (
+            <View style={styles.actions}>
+              <ActionBar actions={contactActions} />
+            </View>
+          )}
+
+          {tags.length > 0 && (
+            <View style={styles.tagsContainer}>
+              {tags.map((tag, index) => (
+                <Tag key={`tag-${index}`} text={tag} />
+              ))}
+            </View>
+          )}
+
+          {loadingPlaceDetails && (
+            <Text style={styles.loadingTextInline}>
+              Loading contact info...
+            </Text>
+          )}
+        </Animated.View>
       </View>
+
       <View style={styles.reviewsContainer}>
         <FlatList
           data={locationReviews}
@@ -684,6 +650,24 @@ const Location = () => {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
+    backgroundColor: t.colors.background,
+  },
+  header: {
+    paddingTop: t.spacing.lg,
+    paddingBottom: t.spacing.md,
+    gap: t.spacing.lg,
+    backgroundColor: t.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.border,
+  },
+  ratingBlock: {
+    paddingHorizontal: t.spacing.lg,
+  },
+  collapsible: {
+    gap: t.spacing.md,
+  },
+  actions: {
+    paddingHorizontal: t.spacing.lg,
   },
   profileHeader: {
     padding: t.spacing.lg,
@@ -752,7 +736,12 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: t.spacing.sm,
-    marginVertical: t.spacing.sm,
+    paddingHorizontal: t.spacing.lg,
+  },
+  loadingTextInline: {
+    ...t.typography.caption,
+    color: t.colors.textMuted,
+    paddingHorizontal: t.spacing.lg,
   },
   reviewsContainer: {
     flex: 1,
