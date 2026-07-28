@@ -47,9 +47,6 @@ const Profile = () => {
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const bioOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -361,28 +358,6 @@ const Profile = () => {
     }, [profile])
   );
 
-  useEffect(() => {
-    Animated.timing(bioOpacity, {
-      toValue: isScrolled ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isScrolled]);
-
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        const shouldBeScrolled = offsetY > 50;
-        if (shouldBeScrolled !== isScrolled) {
-          setIsScrolled(shouldBeScrolled);
-        }
-      },
-    }
-  );
-
   const favoriteChips = (
     <View style={styles.favoritesSection}>
       {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
@@ -455,7 +430,6 @@ const Profile = () => {
         emptyComponent={renderEmpty()}
         refreshing={loadingReviews}
         onRefresh={() => profile?.id && loadUserReviews(profile.id)}
-        onScroll={handleScroll}
         canDelete={true}
         onDelete={(review) => confirmDeleteReview(review.id)}
         onEdit={(review) =>

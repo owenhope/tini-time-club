@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { View, Text } from "react-native";
+import React, { useEffect, useMemo, useRef } from "react";
+import { View, Text, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -194,6 +194,18 @@ const RatingBar = ({
   const styles = useStyles();
   const pct = value == null ? 0 : Math.max(0, Math.min(1, value / RATING_MAX));
 
+  // The fill grows from empty to the score when the bar appears (and glides
+  // to the new value if the score changes in place).
+  const fill = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fill, {
+      toValue: pct,
+      duration: 650,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // drives width
+    }).start();
+  }, [pct, fill]);
+
   return (
     // The parent block already carries a composed label; hide the pieces so
     // the values aren't announced twice.
@@ -209,11 +221,16 @@ const RatingBar = ({
         {label}
       </Text>
       <View style={[styles.barTrack, onImage && styles.barTrackOnImage]}>
-        <View
+        <Animated.View
           style={[
             styles.barFill,
             onImage && styles.barFillOnImage,
-            { width: `${pct * 100}%` },
+            {
+              width: fill.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["0%", "100%"],
+              }),
+            },
           ]}
         />
       </View>

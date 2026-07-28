@@ -1,21 +1,20 @@
 // CommentsSlider.tsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Alert,
   View,
   Text,
-  TextInput,
-  StyleSheet,
-  Dimensions,
-  Animated,
-  PanResponder,
   TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Platform,
-  Keyboard,
 } from "react-native";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetFlatList,
+  BottomSheetFooter,
+  BottomSheetTextInput,
+  type BottomSheetBackdropProps,
+  type BottomSheetFooterProps,
+} from "@gorhom/bottom-sheet";
 import { isDevelopmentMode } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
@@ -28,8 +27,6 @@ import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
-
-const screenHeight = Dimensions.get("window").height;
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -50,32 +47,23 @@ export default function CommentsSlider({
   const { colors } = useTheme();
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
-  const [showContent, setShowContent] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const sliderAnim = useRef(new Animated.Value(screenHeight)).current;
-  const flatListRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    const openSlider = async () => {
-      setShowContent(false);
+    let cancelled = false;
+    const loadComments = async () => {
       const data = await databaseService.getComments(review.id);
-
+      if (cancelled) return;
       setComments(data || []);
-
-      Animated.timing(sliderAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setShowContent(true);
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: false });
-        }, 100);
-      });
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: false });
+      }, 100);
     };
-
-    openSlider();
+    loadComments();
+    return () => {
+      cancelled = true;
+    };
   }, [review.id]);
 
   const handleAddComment = async () => {
@@ -90,7 +78,7 @@ export default function CommentsSlider({
 
       setCommentText("");
       setComments((prev) => [...prev, data]);
-      flatListRef.current?.scrollToEnd({ animated: true });
+      listRef.current?.scrollToEnd({ animated: true });
       onCommentAdded?.(review.id, data);
 
       // Track comment event
@@ -154,178 +142,133 @@ export default function CommentsSlider({
     }
   };
 
-  const closeSlider = () => {
-    setShowContent(false);
-    Animated.timing(sliderAnim, {
-      toValue: screenHeight,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      onClose();
-      sliderAnim.setValue(screenHeight);
-    });
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  const renderComment = ({ item }: { item: any }) => {
+    const username = item.profile?.username || "Unknown";
+    const relativeDate = formatRelativeDate(item.inserted_at);
+    const isOwnComment = profile?.id === item.user_id;
+    const avatarPath = item.profile?.avatar_url || null;
+
+    return (
+      <View style={styles.commentRow}>
+        <View style={styles.commentOuter}>
+          <View style={styles.commentInner}>
+            <TouchableOpacity
+              onPress={() => navigateToUserProfile(username, item.user_id)}
+            >
+              <Avatar
+                avatarPath={avatarPath}
+                username={username}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
+            <View style={styles.commentContent}>
+              <View style={styles.commentHeaderRow}>
+                <TouchableOpacity
+                  onPress={() => navigateToUserProfile(username, item.user_id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.username}>{username}</Text>
+                </TouchableOpacity>
+                <Text style={styles.timestamp}> · {relativeDate}</Text>
+              </View>
+              <Text style={styles.commentBody}>{item.body}</Text>
+            </View>
+          </View>
+          {isOwnComment ? (
+            <TouchableOpacity
+              onPress={() => confirmDeleteComment(item.id)}
+              style={styles.deleteIcon}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={16}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setReportModalVisible(true)}
+              style={styles.deleteIcon}
+            >
+              <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 10,
-      onPanResponderMove: (_, gesture) => {
-        if (gesture.dy > 0) sliderAnim.setValue(gesture.dy);
-      },
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dy > 100) closeSlider();
-        else
-          Animated.timing(sliderAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-      },
-    })
-  ).current;
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) => (
+      <BottomSheetFooter {...props}>
+        <View style={styles.inputContainer}>
+          <BottomSheetTextInput
+            placeholder="Add a comment..."
+            placeholderTextColor={colors.textMuted}
+            value={commentText}
+            onChangeText={setCommentText}
+            style={styles.input}
+            returnKeyType="send"
+            onSubmitEditing={handleAddComment}
+          />
+          <TouchableOpacity onPress={handleAddComment}>
+            <Text style={styles.sendButton}>Post</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheetFooter>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [commentText, styles, colors]
+  );
 
   return (
     <>
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[
-          StyleSheet.absoluteFill,
-          { transform: [{ translateY: sliderAnim }] },
-        ]}
+      <BottomSheet
+        snapPoints={["45%", "85%"]}
+        enableDynamicSizing={false}
+        enablePanDownToClose
+        onClose={onClose}
+        // The sheet grows to its tall snap point while typing, instead of the
+        // old hand-rolled height jump.
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        backdropComponent={renderBackdrop}
+        footerComponent={renderFooter}
+        style={styles.sheetShadow}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={[styles.slider, isFocused && styles.sliderExpanded]}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={{ flex: 1 }}>
-              {showContent && (
-                <>
-                  <View style={styles.sliderHeader}>
-                    <View style={styles.dragIndicatorContainer}>
-                      <View style={styles.dragIndicator} />
-                    </View>
-                  </View>
-
-                  {comments.length === 0 ? (
-                    <View style={styles.emptyStateContainer}>
-                      <Text style={styles.emptyTitle}>LEAVE A COMMENT</Text>
-                      <Text style={styles.emptySubtitle}>
-                        Share your thoughts and be the first to join the
-                        conversation.
-                      </Text>
-                    </View>
-                  ) : (
-                    <FlatList
-                      ref={flatListRef}
-                      data={comments}
-                      keyExtractor={(item) => item.id.toString()}
-                      renderItem={({ item }) => {
-                        const username = item.profile?.username || "Unknown";
-                        const relativeDate = formatRelativeDate(
-                          item.inserted_at
-                        );
-                        const isOwnComment = profile?.id === item.user_id;
-                        const avatarPath = item.profile?.avatar_url || null;
-
-                        return (
-                          <View style={styles.commentRow}>
-                            <View style={styles.commentOuter}>
-                              <View style={styles.commentInner}>
-                                <TouchableOpacity
-                                  onPress={() =>
-                                    navigateToUserProfile(
-                                      username,
-                                      item.user_id
-                                    )
-                                  }
-                                >
-                                  <Avatar
-                                    avatarPath={avatarPath}
-                                    username={username}
-                                    style={styles.avatar}
-                                  />
-                                </TouchableOpacity>
-                                <View style={styles.commentContent}>
-                                  <View style={styles.commentHeaderRow}>
-                                    <TouchableOpacity
-                                      onPress={() =>
-                                        navigateToUserProfile(
-                                          username,
-                                          item.user_id
-                                        )
-                                      }
-                                      activeOpacity={0.7}
-                                    >
-                                      <Text style={styles.username}>
-                                        {username}
-                                      </Text>
-                                    </TouchableOpacity>
-                                    <Text style={styles.timestamp}>
-                                      {" "}
-                                      · {relativeDate}
-                                    </Text>
-                                  </View>
-                                  <Text style={styles.commentBody}>
-                                    {item.body}
-                                  </Text>
-                                </View>
-                              </View>
-                              {isOwnComment ? (
-                                <TouchableOpacity
-                                  onPress={() => confirmDeleteComment(item.id)}
-                                  style={styles.deleteIcon}
-                                >
-                                  <Ionicons
-                                    name="trash-outline"
-                                    size={16}
-                                    color={colors.textMuted}
-                                  />
-                                </TouchableOpacity>
-                              ) : (
-                                <TouchableOpacity
-                                  onPress={() => setReportModalVisible(true)}
-                                  style={styles.deleteIcon}
-                                >
-                                  <Ionicons
-                                    name="flag-outline"
-                                    size={16}
-                                    color={colors.textMuted}
-                                  />
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                          </View>
-                        );
-                      }}
-                      contentContainerStyle={{ paddingBottom: 100 }}
-                      keyboardShouldPersistTaps="handled"
-                    />
-                  )}
-
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      placeholder="Add a comment..."
-                      placeholderTextColor={colors.textMuted}
-                      value={commentText}
-                      onChangeText={setCommentText}
-                      onFocus={() => setIsFocused(true)}
-                      onBlur={() => setIsFocused(false)}
-                      style={styles.input}
-                      returnKeyType="send"
-                      onSubmitEditing={handleAddComment}
-                    />
-                    <TouchableOpacity onPress={handleAddComment}>
-                      <Text style={styles.sendButton}>Post</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
+        <BottomSheetFlatList
+          ref={listRef as any}
+          data={comments}
+          keyExtractor={(item: any) => item.id.toString()}
+          renderItem={renderComment}
+          ListEmptyComponent={
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyTitle}>LEAVE A COMMENT</Text>
+              <Text style={styles.emptySubtitle}>
+                Share your thoughts and be the first to join the conversation.
+              </Text>
             </View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </Animated.View>
+          }
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        />
+      </BottomSheet>
       <ReportModal
         visible={reportModalVisible}
         title="Report Comment"
@@ -337,38 +280,32 @@ export default function CommentsSlider({
 }
 
 const useStyles = makeStyles((t) => ({
-  slider: {
-    position: "absolute" as const,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: screenHeight * 0.4,
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
-    padding: t.spacing.lg,
+  sheetShadow: {
     ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
   },
-  sliderExpanded: {
-    height: screenHeight * 0.8,
+  sheetBackground: {
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
   },
-  sliderHeader: { alignItems: "center" as const },
-  dragIndicatorContainer: {
-    alignItems: "center" as const,
-    paddingVertical: t.spacing.sm,
-  },
-  dragIndicator: {
+  sheetHandle: {
     width: 40,
     height: 4,
-    borderRadius: t.radius.md,
     backgroundColor: t.colors.borderStrong,
   },
+  listContent: {
+    padding: t.spacing.lg,
+    // Keep the last comment clear of the pinned input footer.
+    paddingBottom: 88,
+  },
+  // Fixed offset rather than flex centering: the sheet's scroll container is
+  // sized to the tallest snap point, so "centered" would land off-screen at
+  // the resting snap.
   emptyStateContainer: {
-    flex: 1,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingTop: t.spacing.xxl,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.xxl * 2,
   },
   emptyTitle: {
     fontSize: 18,
@@ -410,13 +347,10 @@ const useStyles = makeStyles((t) => ({
   timestamp: { color: t.colors.textMuted, fontSize: 12 },
   commentBody: { fontSize: 14, color: t.colors.text },
   inputContainer: {
-    position: "absolute" as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     padding: t.spacing.sm,
+    paddingBottom: t.spacing.lg,
     backgroundColor: t.colors.surface,
     borderTopWidth: 1,
     borderColor: t.colors.border,
@@ -433,34 +367,4 @@ const useStyles = makeStyles((t) => ({
   },
   sendButton: { color: t.colors.text, fontWeight: "bold" as const },
   deleteIcon: { paddingLeft: t.spacing.sm, paddingTop: 2 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: t.colors.scrim,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  modalContent: {
-    backgroundColor: t.colors.surface,
-    padding: t.spacing.xl - 4,
-    borderRadius: t.radius.md,
-    width: "80%" as const,
-    alignItems: "center" as const,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold" as const,
-    color: t.colors.text,
-    marginBottom: 10,
-  },
-  optionButton: {
-    paddingVertical: t.spacing.sm,
-    alignSelf: "stretch" as const,
-  },
-  optionText: {
-    textAlign: "center" as const,
-    fontSize: 16,
-    color: t.colors.text,
-  },
-  cancelButton: { marginTop: 10 },
-  cancelText: { color: t.colors.accent, fontSize: 16 },
 }));

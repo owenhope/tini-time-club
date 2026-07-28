@@ -208,6 +208,7 @@ function Map() {
           ref={sheetRef}
           index={-1}
           snapPoints={[SHEET_HEIGHT]}
+          enableDynamicSizing={false}
           enablePanDownToClose
           onClose={() => setSelectedMarker(null)}
           style={styles.sheetShadow}

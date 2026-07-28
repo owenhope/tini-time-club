@@ -58,9 +58,6 @@ const UserProfile = () => {
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const bioOpacity = useRef(new Animated.Value(1)).current;
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -536,28 +533,6 @@ const UserProfile = () => {
     }
   };
 
-  useEffect(() => {
-    Animated.timing(bioOpacity, {
-      toValue: isScrolled ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isScrolled]);
-
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        const shouldBeScrolled = offsetY > 50;
-        if (shouldBeScrolled !== isScrolled) {
-          setIsScrolled(shouldBeScrolled);
-        }
-      },
-    }
-  );
-
   if (profileError) {
     return (
       <View style={[styles.container, styles.errorState]}>
@@ -626,7 +601,6 @@ const UserProfile = () => {
         onRefresh={() => {
           if (displayProfile?.id) loadUserReviews(displayProfile.id);
         }}
-        onScroll={handleScroll}
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
             ? router.push(`/edit-caption?reviewId=${review.id}`)

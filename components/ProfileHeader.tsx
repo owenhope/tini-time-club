@@ -35,8 +35,6 @@ interface ProfileHeaderProps {
   onFollowingPress?: () => void;
   /** Rendered between the bio and the action row (favourite spirits, etc.). */
   children?: React.ReactNode;
-  isScrolled?: boolean;
-  hasBioOrFavs?: boolean;
 }
 
 const AVATAR_SIZE = 80;

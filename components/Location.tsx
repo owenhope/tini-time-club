@@ -26,7 +26,9 @@ import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
 import { RatingSummary, ProfileIdentity } from "@/components/shared";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import useCollapsibleHeader, {
+  COLLAPSE_RANGE,
+} from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { getPlaceDetailsByNameAndAddress } from "@/utils/locationUtils";
@@ -77,7 +79,18 @@ const Location = () => {
   } | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const { isCollapsed, onScroll: handleScroll } = useCollapsibleHeader();
+  const {
+    isCollapsed,
+    progress: headerProgress,
+    onScroll: handleScroll,
+  } = useCollapsibleHeader();
+  // Measured natural heights of the two header states, so the container can
+  // glide between them as the user scrolls.
+  const [expandedHeaderH, setExpandedHeaderH] = useState(0);
+  const [collapsedHeaderH, setCollapsedHeaderH] = useState(0);
+  // Give short review lists enough scroll runway that the header can always
+  // finish collapsing instead of resting half-faded.
+  const [listViewportH, setListViewportH] = useState(0);
 
   const navigation = useNavigation();
   const params = useLocalSearchParams();
@@ -511,18 +524,37 @@ const Location = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {isCollapsed ? (
-          // Scrolled: the nav bar still shows the name, so the body keeps only
-          // the score and count and hands the rest of the screen to reviews.
-          <View style={styles.collapsedRow}>
-            <RatingSummary
-              variant="compact"
-              overall={displayLocation?.rating}
-              reviewCount={displayLocation?.total_ratings ?? 0}
-            />
-          </View>
-        ) : (
+      {/* The header glides between its full and compact form at the speed the
+          user scrolls: the container height interpolates between the two
+          measured states while their contents crossfade. */}
+      <Animated.View
+        style={[
+          styles.header,
+          expandedHeaderH > 0 && collapsedHeaderH > 0
+            ? {
+                height: headerProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [expandedHeaderH, collapsedHeaderH],
+                }),
+                overflow: "hidden" as const,
+              }
+            : null,
+        ]}
+      >
+        <Animated.View
+          onLayout={(e) => setExpandedHeaderH(e.nativeEvent.layout.height)}
+          pointerEvents={isCollapsed ? "none" : "auto"}
+          style={[
+            styles.expandedHeader,
+            {
+              opacity: headerProgress.interpolate({
+                inputRange: [0, 0.6],
+                outputRange: [1, 0],
+                extrapolate: "clamp",
+              }),
+            },
+          ]}
+        >
           <>
             <View style={styles.ratingBlock}>
               <RatingSummary
@@ -623,15 +655,48 @@ const Location = () => {
               </View>
             )}
           </>
-        )}
-      </View>
+        </Animated.View>
 
-      <View style={styles.reviewsContainer}>
+        {/* Scrolled: the nav bar still shows the name, so the body keeps only
+            the score and count and hands the rest of the screen to reviews. */}
+        <Animated.View
+          onLayout={(e) => setCollapsedHeaderH(e.nativeEvent.layout.height)}
+          pointerEvents={isCollapsed ? "auto" : "none"}
+          style={[
+            styles.collapsedOverlay,
+            {
+              opacity: headerProgress.interpolate({
+                inputRange: [0.4, 1],
+                outputRange: [0, 1],
+                extrapolate: "clamp",
+              }),
+            },
+          ]}
+        >
+          <View style={styles.collapsedRow}>
+            <RatingSummary
+              variant="compact"
+              overall={displayLocation?.rating}
+              reviewCount={displayLocation?.total_ratings ?? 0}
+            />
+          </View>
+        </Animated.View>
+      </Animated.View>
+
+      <View
+        style={styles.reviewsContainer}
+        onLayout={(e) => setListViewportH(e.nativeEvent.layout.height)}
+      >
         <FlatList
           data={locationReviews}
           renderItem={renderReviewItem}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.gridContent}
+          contentContainerStyle={[
+            styles.gridContent,
+            listViewportH > 0
+              ? { minHeight: listViewportH + COLLAPSE_RANGE }
+              : null,
+          ]}
           ListEmptyComponent={renderEmpty}
           onScroll={handleScroll}
           scrollEventThrottle={16}
@@ -664,12 +729,22 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
   },
   header: {
-    paddingTop: t.spacing.lg,
-    paddingBottom: t.spacing.md,
-    gap: t.spacing.lg,
     backgroundColor: t.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,
+  },
+  expandedHeader: {
+    paddingTop: t.spacing.lg,
+    paddingBottom: t.spacing.md,
+    gap: t.spacing.lg,
+  },
+  collapsedOverlay: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: t.spacing.sm,
+    justifyContent: "center" as const,
   },
   ratingBlock: {
     paddingHorizontal: t.spacing.lg,

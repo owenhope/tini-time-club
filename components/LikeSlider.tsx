@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Animated, Dimensions, PanResponder } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
 import { makeStyles } from "@/theme";
-
-const screenHeight = Dimensions.get("window").height;
 
 interface LikesSliderProps {
   reviewId: string;
@@ -14,138 +16,92 @@ interface LikesSliderProps {
 export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
   const styles = useStyles();
   const [likesUsers, setLikesUsers] = useState<any[]>([]);
-  const [showContent, setShowContent] = useState(false);
-  // Start off-screen (below the visible area)
-  const sliderAnim = useRef(new Animated.Value(screenHeight)).current;
-
-  const fetchLikesUsers = async () => {
-    const { data: likesData, error: likesError } = await supabase
-      .from("likes")
-      .select("user_id")
-      .eq("review_id", reviewId);
-    if (likesError) {
-      console.error("Error fetching likes users:", likesError);
-      return;
-    }
-    if (!likesData || likesData.length === 0) {
-      setLikesUsers([]);
-      return;
-    }
-    const userIds = likesData.map((row: any) => row.user_id);
-    const { data: profilesData, error: profilesError } = await supabase
-      .from("profiles")
-      .select("id, username")
-      .in("id", userIds);
-    if (profilesError) {
-      console.error("Error fetching profiles for likes:", profilesError);
-      return;
-    }
-    setLikesUsers(profilesData || []);
-  };
 
   useEffect(() => {
-    const openSlider = async () => {
-      setShowContent(false);
-      await fetchLikesUsers();
-      Animated.timing(sliderAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setShowContent(true);
-      });
+    let cancelled = false;
+
+    const fetchLikesUsers = async () => {
+      const { data: likesData, error: likesError } = await supabase
+        .from("likes")
+        .select("user_id")
+        .eq("review_id", reviewId);
+      if (likesError) {
+        console.error("Error fetching likes users:", likesError);
+        return;
+      }
+      if (!likesData || likesData.length === 0) {
+        if (!cancelled) setLikesUsers([]);
+        return;
+      }
+      const userIds = likesData.map((row: any) => row.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .in("id", userIds);
+      if (profilesError) {
+        console.error("Error fetching profiles for likes:", profilesError);
+        return;
+      }
+      if (!cancelled) setLikesUsers(profilesData || []);
     };
-    openSlider();
-  }, [sliderAnim, reviewId]);
 
-  // Animate the slider down and then trigger onClose.
-  const closeSlider = () => {
-    setShowContent(false);
-    Animated.timing(sliderAnim, {
-      toValue: screenHeight,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      onClose();
-      sliderAnim.setValue(screenHeight);
-    });
-  };
+    fetchLikesUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, [reviewId]);
 
-  // PanResponder to enable swipe down to dismiss.
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dy) > 10,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          sliderAnim.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100) {
-          closeSlider();
-        } else {
-          Animated.timing(sliderAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   return (
-    <Animated.View
-      {...panResponder.panHandlers}
-      style={[styles.slider, { transform: [{ translateY: sliderAnim }] }]}
+    <BottomSheet
+      snapPoints={["50%"]}
+      enableDynamicSizing={false}
+      enablePanDownToClose
+      onClose={onClose}
+      // ProfileList brings its own FlatList; let it scroll and leave sheet
+      // dragging to the handle and backdrop.
+      enableContentPanningGesture={false}
+      backdropComponent={renderBackdrop}
+      style={styles.sheetShadow}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.sheetHandle}
     >
-      {showContent && (
-        <>
-          {/* A drag indicator to signal swipe-down functionality */}
-          <View style={styles.sliderHeader}>
-            <View style={styles.dragIndicatorContainer}>
-              <View style={styles.dragIndicator} />
-            </View>
-          </View>
-          {/* Render the list of profiles that liked the review */}
-          <ProfileList profiles={likesUsers} enableSearch={false} />
-        </>
-      )}
-    </Animated.View>
+      <BottomSheetView style={styles.content}>
+        <ProfileList profiles={likesUsers} enableSearch={false} />
+      </BottomSheetView>
+    </BottomSheet>
   );
 }
 
 const useStyles = makeStyles((t) => ({
-  slider: {
-    position: "absolute" as const,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: screenHeight * 0.5,
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
-    padding: t.spacing.lg,
+  sheetShadow: {
     ...t.elevation.raised,
     shadowOffset: { width: 0, height: -2 },
   },
-  sliderHeader: {
-    alignItems: "center" as const,
+  sheetBackground: {
+    backgroundColor: t.colors.surface,
+    borderTopLeftRadius: t.radius.lg,
+    borderTopRightRadius: t.radius.lg,
   },
-  dragIndicatorContainer: {
-    alignItems: "center" as const,
-    paddingVertical: t.spacing.sm,
-  },
-  dragIndicator: {
+  sheetHandle: {
     width: 40,
     height: 4,
-    borderRadius: t.radius.md,
     backgroundColor: t.colors.borderStrong,
   },
-  sliderTitle: {
-    fontSize: 18,
-    fontWeight: "bold" as const,
-    color: t.colors.text,
+  content: {
+    flex: 1,
+    paddingHorizontal: t.spacing.lg,
+    paddingBottom: t.spacing.lg,
   },
 }));
