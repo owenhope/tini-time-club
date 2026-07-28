@@ -23,21 +23,32 @@
 - Sessions now persisted encrypted (Keychain/Keystore-backed AES) instead of
   plaintext AsyncStorage.
 
-## ⏳ Still needs you (Google/Expo account access)
+## ✅ Google Cloud (done via API Keys API, 2026-07-27)
 
-1. **Google Cloud console** (https://console.cloud.google.com/apis/credentials):
-   - **Rotate** the Places key (`AIzaSy...coH8`) — it lives in git history. After
-     rotating, update `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` in `.env.local` and in all
-     three EAS environments (`eas env:update`).
-   - **Restrict** all three keys: Places key → Places API only; iOS key → Maps SDK
-     for iOS + bundle IDs `com.ohope.tinitimeclub` / `.preview` / `.dev`; Android
-     key → Maps SDK for Android + package + SHA-1.
-   - Set billing quotas/alerts.
-2. **Expo access token** (https://expo.dev/settings/access-tokens): rotate when
+- New `places-web-service-key` created, restricted to the Places API; deployed to
+  `.env.local` and all three EAS environments. Verified working.
+- Old exposed key ("API key 1", `AIzaSy...coH8`) clamped from **unrestricted** to
+  Places-API-only so shipped app binaries keep working but the key can't be abused
+  for other Google APIs. Verified: Places OK, Geocoding REQUEST_DENIED.
+- iOS key: added the missing `com.ohope.tinitimeclub.preview` bundle ID (it only
+  allowed a stale `com.hopemediahouse.tinitimeclub.preview`).
+- Android key was already correctly restricted.
+
+## ⏳ Still needs you
+
+1. **Delete the old Places key** ("API key 1" in the console) — but only AFTER an
+   EAS update/build containing the new env-based key has rolled out to users, since
+   v2.2.7 binaries have the old key hardcoded in their JS bundle:
+   ```bash
+   gcloud services api-keys delete projects/732397011472/locations/global/keys/3fd6ec03-30ea-474c-8918-0dd9349ecbcf
+   ```
+2. **Billing alerts** in Google Cloud console (Billing → Budgets) — no API for
+   creating budgets without extra setup; a $10–50/mo budget alert is sensible.
+3. **Expo access token** (https://expo.dev/settings/access-tokens): rotate when
    convenient (it was only ever in gitignored/EAS config, so lower urgency), then
    `supabase secrets set EXPO_ACCESS_TOKEN=<new>` and update the EAS env var, and
    `supabase secrets unset EXPO_PUBLIC_ACCESS_TOKEN`.
-3. After the next like/follow in the app, glance at the `push` function logs in the
+4. After the next like/follow in the app, glance at the `push` function logs in the
    Supabase dashboard to confirm notifications still deliver end-to-end.
 
 ## Known follow-ups (Phase 2)
