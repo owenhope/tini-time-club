@@ -11,6 +11,7 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
   Animated,
@@ -33,31 +34,11 @@ import {
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import {
-  getPlaceDetailsByNameAndAddress,
-  getRelevantPlaceTypes,
-} from "@/utils/locationUtils";
+import { getPlaceDetailsByNameAndAddress } from "@/utils/locationUtils";
 import { Linking } from "react-native";
-import Tag from "@/components/Tag";
 import { makeStyles, useTheme } from "@/theme";
 
 // Helper function to format price level
-const getPriceLevelText = (priceLevel: number): string => {
-  switch (priceLevel) {
-    case 0:
-      return "Free";
-    case 1:
-      return "$";
-    case 2:
-      return "$$";
-    case 3:
-      return "$$$";
-    case 4:
-      return "$$$$";
-    default:
-      return "";
-  }
-};
 
 // Constants
 const DIMENSIONS = {
@@ -102,6 +83,7 @@ const Location = () => {
     types?: string[];
   } | null>(null);
   const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const {
     isCollapsed,
     onScroll: handleScroll,
@@ -139,18 +121,24 @@ const Location = () => {
   useEffect(() => {
     if (displayLocation?.name) {
       navigation.setOptions({
-        headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <Text
-              style={styles.headerTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              adjustsFontSizeToFit={false}
-            >
-              {displayLocation.name}
-            </Text>
-          </View>
-        ),
+        // The name is already the heading of the identity block below, so
+        // showing it in the nav bar too rendered it twice. Standard iOS
+        // large-title behaviour instead: the bar title appears only once the
+        // in-page heading has scrolled out of view.
+        headerTitle: () =>
+          isCollapsed ? (
+            <View style={styles.headerTitleContainer}>
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {displayLocation.name}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          ),
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -189,7 +177,7 @@ const Location = () => {
         },
       });
     }
-  }, [displayLocation, navigation, router, colors, styles]);
+  }, [displayLocation, navigation, router, colors, styles, isCollapsed]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -558,13 +546,6 @@ const Location = () => {
     });
   }
 
-  const tags = [
-    ...(placeDetails?.priceLevel !== undefined
-      ? [getPriceLevelText(placeDetails.priceLevel)]
-      : []),
-    ...getRelevantPlaceTypes(placeDetails?.types),
-  ];
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -589,30 +570,53 @@ const Location = () => {
           />
         </View>
 
-        <Animated.View
-          style={[styles.collapsible, collapsibleStyle]}
-          pointerEvents={isCollapsed ? "none" : "auto"}
-        >
-          {contactActions.length > 0 && (
-            <View style={styles.actions}>
-              <ActionBar actions={contactActions} />
-            </View>
-          )}
+        {/* Contact actions sit behind a disclosure: they're secondary to the
+            ratings and reviews, and hiding them keeps the reviews closer to
+            the top of the screen. */}
+        {(contactActions.length > 0 || loadingPlaceDetails) && (
+          <Animated.View
+            style={[styles.collapsible, collapsibleStyle]}
+            pointerEvents={isCollapsed ? "none" : "auto"}
+          >
+            <Pressable
+              onPress={() => setDetailsExpanded((prev) => !prev)}
+              style={({ pressed }: { pressed: boolean }) => [
+                styles.disclosure,
+                pressed && styles.disclosurePressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Contact details"
+              accessibilityState={{ expanded: detailsExpanded }}
+              accessibilityHint={
+                detailsExpanded
+                  ? "Hides phone and website"
+                  : "Shows phone and website"
+              }
+            >
+              <Text style={styles.disclosureLabel}>Contact</Text>
+              <Ionicons
+                name={detailsExpanded ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={colors.textSecondary}
+              />
+            </Pressable>
 
-          {tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {tags.map((tag, index) => (
-                <Tag key={`tag-${index}`} text={tag} />
-              ))}
-            </View>
-          )}
-
-          {loadingPlaceDetails && (
-            <Text style={styles.loadingTextInline}>
-              Loading contact info...
-            </Text>
-          )}
-        </Animated.View>
+            {detailsExpanded && (
+              <>
+                {contactActions.length > 0 && (
+                  <View style={styles.actions}>
+                    <ActionBar actions={contactActions} />
+                  </View>
+                )}
+                {loadingPlaceDetails && (
+                  <Text style={styles.loadingTextInline}>
+                    Loading contact info...
+                  </Text>
+                )}
+              </>
+            )}
+          </Animated.View>
+        )}
       </View>
 
       <View style={styles.reviewsContainer}>
@@ -664,7 +668,22 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.lg,
   },
   collapsible: {
-    gap: t.spacing.md,
+    gap: t.spacing.sm,
+  },
+  disclosure: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    minHeight: 44,
+    paddingHorizontal: t.spacing.lg,
+  },
+  disclosurePressed: {
+    opacity: 0.6,
+  },
+  disclosureLabel: {
+    ...t.typography.label,
+    color: t.colors.textMuted,
+    textTransform: "uppercase" as const,
   },
   actions: {
     paddingHorizontal: t.spacing.lg,

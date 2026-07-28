@@ -148,6 +148,13 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
                   Overall
                 </Text>
               </View>
+              {countLabel && (
+                <Text
+                  style={[styles.countInline, onImage && styles.onImageMeta]}
+                >
+                  {countLabel}
+                </Text>
+              )}
             </View>
           )}
 
@@ -166,7 +173,7 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
         </Text>
       )}
 
-      {countLabel && (
+      {countLabel && overall == null && (
         <Text style={[styles.countText, onImage && styles.onImageMeta]}>
           {countLabel}
         </Text>
@@ -284,6 +291,11 @@ const useStyles = makeStyles((t) => ({
   countText: {
     ...t.typography.caption,
     color: t.colors.textMuted,
+  },
+  countInline: {
+    ...t.typography.bodyStrong,
+    color: t.colors.textSecondary,
+    marginLeft: "auto" as const,
   },
   emptyText: {
     ...t.typography.body,
