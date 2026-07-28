@@ -1,10 +1,9 @@
 import { Link } from "expo-router";
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { RatingSummary } from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import { makeStyles } from "@/theme";
 
 interface LocationDetailsProps {
   loc: any;
@@ -18,7 +17,6 @@ interface LocationDetailsProps {
  */
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   const styles = useStyles();
-  const { colors } = useTheme();
 
   const address = loc.address
     ? stripNameFromAddress(loc.name, loc.address)
@@ -36,7 +34,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
           <Text style={styles.name} numberOfLines={1}>
             {loc.name || "No name available"}
           </Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
         </Pressable>
       </Link>
 
@@ -64,10 +61,9 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.xs,
   },
   titleRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
+    justifyContent: "center" as const,
     minHeight: 44,
+    alignSelf: "stretch" as const,
   },
   pressed: {
     opacity: 0.6,
@@ -75,7 +71,6 @@ const useStyles = makeStyles((t) => ({
   name: {
     ...t.typography.title,
     color: t.colors.text,
-    flex: 1,
   },
   address: {
     ...t.typography.body,
