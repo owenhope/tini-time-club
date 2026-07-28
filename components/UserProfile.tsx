@@ -19,7 +19,12 @@ import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Button } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
+import {
+  useRouter,
+  useLocalSearchParams,
+  useNavigation,
+  usePathname,
+} from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -60,6 +65,7 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const navigation = useNavigation();
+  const pathname = usePathname();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
 
@@ -611,12 +617,8 @@ const UserProfile = () => {
       onFollowPress={toggleFollow}
       onBlockPress={handleBlockUser}
       onUnblockPress={handleUnblockUser}
-      onFollowersPress={() =>
-        router.push(`/users/${displayProfile?.username}/followers` as never)
-      }
-      onFollowingPress={() =>
-        router.push(`/users/${displayProfile?.username}/following` as never)
-      }
+      onFollowersPress={() => router.push(`${pathname}/followers` as never)}
+      onFollowingPress={() => router.push(`${pathname}/following` as never)}
     >
       {favoriteChips}
     </ProfileHeader>

@@ -12,6 +12,7 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { Image as ExpoImage } from "expo-image";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
@@ -48,8 +49,8 @@ export interface ReviewGridProps {
  * profile is visible at a glance instead of one full-width card at a time.
  *
  * There is no review detail route, so tapping a tile opens the existing
- * ReviewItem card in a sheet. Nothing is lost: likes, comments and the
- * per-review actions all come along.
+ * ReviewItem card full screen with a back button. Nothing is lost: likes,
+ * comments and the per-review actions all come along.
  */
 const ReviewGrid: React.FC<ReviewGridProps> = ({
   reviews,
@@ -138,22 +139,25 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
       <Modal
         visible={active !== null}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setActive(null)}
       >
-        <View style={styles.sheet}>
+        <SafeAreaView style={styles.sheet} edges={["top"]}>
           <View style={styles.sheetBar}>
-            <Text style={styles.sheetTitle} numberOfLines={1}>
-              {active?.location?.name ?? "Review"}
-            </Text>
             <Pressable
               onPress={() => setActive(null)}
               hitSlop={HIT_SLOP}
               accessibilityRole="button"
-              accessibilityLabel="Close review"
+              accessibilityLabel="Back"
+              style={styles.backButton}
             >
-              <Ionicons name="close" size={26} color={colors.text} />
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </Pressable>
+            <Text style={styles.sheetTitle} numberOfLines={1}>
+              {active?.location?.name ?? "Review"}
+            </Text>
+            {/* Balances the back button so the title stays centred. */}
+            <View style={styles.backButton} />
           </View>
 
           <ScrollView contentContainerStyle={styles.sheetBody}>
@@ -170,7 +174,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
               />
             )}
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     </>
   );
@@ -202,6 +206,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
+    gap: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
@@ -212,6 +217,12 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.heading,
     color: t.colors.text,
     flexShrink: 1,
+    textAlign: "center" as const,
+  },
+  backButton: {
+    width: 32,
+    minHeight: 44,
+    justifyContent: "center" as const,
   },
   sheetBody: {
     paddingBottom: t.spacing.xxl,
