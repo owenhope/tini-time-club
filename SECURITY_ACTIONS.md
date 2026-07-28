@@ -1,67 +1,55 @@
-# Phase 1 security follow-ups (manual steps)
+# Phase 1 security status
 
-Code changes are done; these steps need your accounts. Do them in order.
+## ✅ Done (applied to production on 2026-07-27)
 
-## 1. Google Cloud console — rotate & restrict Maps keys
-- **Rotate** the Places key `AIzaSy...coH8` (it was committed to git history). Put the
-  new value in `.env.local` as `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` and restrict it to the
-  **Places API** only.
-- Restrict the iOS key (`GOOGLE_MAPS_API_KEY_IOS`) to the **Maps SDK for iOS** +
-  bundle IDs `com.ohope.tinitimeclub`, `.preview`, `.dev`.
-- Restrict the Android key (`GOOGLE_MAPS_API_KEY_ANDROID`) to the **Maps SDK for
-  Android** + package + SHA-1 fingerprints.
-- Set billing quotas/alerts on all three.
+- **Push edge function** deployed with service-role client, `x-webhook-secret`
+  verification, crash fix, and batched Expo sends.
+- **Database webhook trigger** on `public.notifications` updated to send
+  `x-webhook-secret` (+ anon-key Authorization for the gateway JWT check). Its
+  definition is intentionally excluded from the schema migration because it embeds
+  secret headers.
+- **Supabase function secrets**: `PUSH_WEBHOOK_SECRET` set; `EXPO_ACCESS_TOKEN`
+  already existed (function code now prefers it over the legacy
+  `EXPO_PUBLIC_ACCESS_TOKEN` name).
+- **RLS migration applied** (`20260728000100_tighten_rls.sql`): RLS enabled on
+  `comments` (was fully open), anon reads of profiles/followers/reviews removed,
+  unauthenticated notification inserts blocked. Verified from the anon key:
+  profiles/comments reads return empty, notification insert → 401, push function
+  without secret → 401.
+- **EAS env vars** (production/preview/development): `GOOGLE_MAPS_API_KEY_IOS` and
+  `GOOGLE_MAPS_API_KEY_ANDROID` created; production
+  `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` corrected to the Places key (it previously held
+  the iOS native key, which would have broken Places search under the new code).
+- Sessions now persisted encrypted (Keychain/Keystore-backed AES) instead of
+  plaintext AsyncStorage.
 
-## 2. EAS environment variables (for CI builds)
-Local builds read `.env.local`; EAS builds need the same values per environment:
+## ⏳ Still needs you (Google/Expo account access)
 
-```bash
-eas env:create --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value <new-places-key> --environment production
-eas env:create --name GOOGLE_MAPS_API_KEY_IOS --value <ios-key> --environment production
-eas env:create --name GOOGLE_MAPS_API_KEY_ANDROID --value <android-key> --environment production
-```
-
-Repeat for `preview`/`development` as needed (`eas env:list` to check what exists).
-
-## 3. Supabase — push function secrets
-The Expo push access token was previously named `EXPO_PUBLIC_ACCESS_TOKEN` (one import
-away from being inlined into the client bundle). Rotate it at
-https://expo.dev/settings/access-tokens, then:
-
-```bash
-supabase secrets set EXPO_ACCESS_TOKEN=<new-expo-access-token>
-supabase secrets set PUSH_WEBHOOK_SECRET=$(openssl rand -hex 32)
-supabase secrets unset EXPO_PUBLIC_ACCESS_TOKEN
-```
-
-## 4. Supabase — update the database webhook, then deploy
-In Dashboard → Database → Webhooks, edit the webhook that calls the `push` function and
-add an HTTP header `x-webhook-secret: <the PUSH_WEBHOOK_SECRET value>`.
-
-Then deploy the hardened function (do this AFTER setting the secrets above, or pushes
-will stop):
-
-```bash
-supabase functions deploy push
-```
-
-## 5. Supabase — apply the RLS migration
-`supabase/migrations/20260728000100_tighten_rls.sql` enables RLS on `comments`
-(it was fully open to anyone with the anon key), removes anon reads of
-profiles/followers/reviews, and blocks unauthenticated notification inserts.
-
-```bash
-supabase db push
-```
+1. **Google Cloud console** (https://console.cloud.google.com/apis/credentials):
+   - **Rotate** the Places key (`AIzaSy...coH8`) — it lives in git history. After
+     rotating, update `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` in `.env.local` and in all
+     three EAS environments (`eas env:update`).
+   - **Restrict** all three keys: Places key → Places API only; iOS key → Maps SDK
+     for iOS + bundle IDs `com.ohope.tinitimeclub` / `.preview` / `.dev`; Android
+     key → Maps SDK for Android + package + SHA-1.
+   - Set billing quotas/alerts.
+2. **Expo access token** (https://expo.dev/settings/access-tokens): rotate when
+   convenient (it was only ever in gitignored/EAS config, so lower urgency), then
+   `supabase secrets set EXPO_ACCESS_TOKEN=<new>` and update the EAS env var, and
+   `supabase secrets unset EXPO_PUBLIC_ACCESS_TOKEN`.
+3. After the next like/follow in the app, glance at the `push` function logs in the
+   Supabase dashboard to confirm notifications still deliver end-to-end.
 
 ## Known follow-ups (Phase 2)
+
 - Notification inserts are still open to any *authenticated* user (the app inserts
-  like/follow notifications client-side). Move notification creation into a DB trigger,
-  then drop the authenticated insert policy.
+  like/follow notifications client-side). Move notification creation into a DB
+  trigger, then drop the authenticated insert policy.
 - `expo_push_token` is still readable by other authenticated users via
-  `profiles.select("*")`. Move it to a private table (or column privileges) once the
-  service layer stops selecting `*`.
-- `locations` UPDATE is open to any authenticated user (`USING (true)`) — needed today
-  for the client-side `place_id` backfill; scope it once that moves server-side.
+  `profiles.select("*")`. Move it to a private table once the service layer stops
+  selecting `*`.
+- `locations` UPDATE is open to any authenticated user (`USING (true)`) — needed
+  today for the client-side `place_id` backfill; scope it once that moves
+  server-side.
 - Server-side account deletion (edge function with service role) to replace the
   client-only `deleted = true` soft delete.
