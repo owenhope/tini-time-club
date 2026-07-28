@@ -441,13 +441,8 @@ const ReviewFooter = memo(
             onPress={handleShowComments}
             style={styles.commentButtonContainer}
           >
-            <CommentButton
-              onPress={handleShowComments}
-              count={commentCount}
-            />
-            {commentCount > 0 && (
-              <CommentCount count={commentCount} />
-            )}
+            <CommentButton onPress={handleShowComments} count={commentCount} />
+            {commentCount > 0 && <CommentCount count={commentCount} />}
           </TouchableOpacity>
         </View>
 

@@ -113,76 +113,23 @@ export default function DiscoverTabs({
   const fetchProfiles = async (searchQuery: string) => {
     setLoading(true);
     try {
-      if (!searchQuery) {
-        // Get all profiles, then fetch review and follower counts separately
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .eq("deleted", false);
+      // Ranked and filtered in SQL. This previously downloaded every profile,
+      // every published review and every follower row to count them locally.
+      const { data, error } = await supabase.rpc("top_profiles", {
+        p_limit: 50,
+        p_search: searchQuery || null,
+      });
 
-        if (profilesError) {
-          console.error("Error fetching profiles:", profilesError);
-          setProfiles([]);
-        } else if (!profilesData || profilesData.length === 0) {
-          setProfiles([]);
-        } else {
-          // Get review counts for all profiles
-          const { data: reviewsData } = await supabase
-            .from("reviews")
-            .select("user_id, state")
-            .eq("state", 1);
-
-          // Get follower counts for all profiles
-          const { data: followersData } = await supabase
-            .from("followers")
-            .select("following_id");
-
-          // Count reviews and followers per profile
-          const reviewCounts = new Map<string, number>();
-          const followerCounts = new Map<string, number>();
-
-          (reviewsData || []).forEach((review: any) => {
-            const count = reviewCounts.get(review.user_id) || 0;
-            reviewCounts.set(review.user_id, count + 1);
-          });
-
-          (followersData || []).forEach((follower: any) => {
-            const count = followerCounts.get(follower.following_id) || 0;
-            followerCounts.set(follower.following_id, count + 1);
-          });
-
-          // Process profiles with counts
-          const processedProfiles = profilesData.map((profile: any) => ({
-            id: profile.id,
-            username: profile.username,
-            avatar_url: profile.avatar_url,
-            review_count: reviewCounts.get(profile.id) || 0,
-            follower_count: followerCounts.get(profile.id) || 0,
-          }));
-
-          // Sort by review count descending, then follower count, then username (same as top_profiles likely does)
-          processedProfiles.sort((a: any, b: any) => {
-            const reviewDiff = (b.review_count || 0) - (a.review_count || 0);
-            if (reviewDiff !== 0) return reviewDiff;
-            const followerDiff =
-              (b.follower_count || 0) - (a.follower_count || 0);
-            if (followerDiff !== 0) return followerDiff;
-            return (a.username || "").localeCompare(b.username || "");
-          });
-
-          setProfiles(processedProfiles);
-        }
-      } else {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .ilike("username", `%${searchQuery}%`)
-          .eq("deleted", false)
-          .limit(20);
-        setProfiles(data || []);
+      if (error) {
+        console.error("Error fetching profiles:", error);
+        setProfiles([]);
+        return;
       }
+
+      setProfiles(data ?? []);
     } catch (error) {
       console.error("Error fetching profiles:", error);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }

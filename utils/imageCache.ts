@@ -327,25 +327,31 @@ class ImageCache {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
+      if (cacheKeys.length === 0) return;
 
-      for (const key of cacheKeys) {
+      // One multiGet rather than a sequential getItem per key. This runs on
+      // every cold start, and the cache can hold hundreds of entries.
+      const entries = await AsyncStorage.multiGet(cacheKeys);
+      const expired: string[] = [];
+      const now = Date.now();
+
+      for (const [key, data] of entries) {
+        if (!data) continue;
         try {
-          const data = await AsyncStorage.getItem(key);
-          if (data) {
-            const parsed = JSON.parse(data) as CachedImage | CachedSignedUrl;
-
-            // Only load if not expired
-            if (Date.now() < parsed.expiresAt) {
-              const cacheKey = key.replace("image_cache_", "");
-              this.memoryCache.set(cacheKey, parsed);
-            } else {
-              // Remove expired entries
-              await AsyncStorage.removeItem(key);
-            }
+          const parsed = JSON.parse(data) as CachedImage | CachedSignedUrl;
+          if (now < parsed.expiresAt) {
+            this.memoryCache.set(key.replace("image_cache_", ""), parsed);
+          } else {
+            expired.push(key);
           }
         } catch (error) {
           console.error(`Error loading cache for ${key}:`, error);
+          expired.push(key);
         }
+      }
+
+      if (expired.length > 0) {
+        await AsyncStorage.multiRemove(expired);
       }
     } catch (error) {
       console.error("Error loading cache from storage:", error);
