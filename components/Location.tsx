@@ -106,28 +106,42 @@ const Location = () => {
     locationIdParam,
   ]);
 
+  const headerCityRegion = formatCityRegion(
+    displayLocation?.address
+      ? stripNameFromAddress(
+          displayLocation?.name ?? "",
+          displayLocation.address
+        )
+      : null
+  );
+
   // Update header with custom title and back button
   useEffect(() => {
     if (displayLocation?.name) {
       navigation.setOptions({
-        // The name is already the heading of the identity block below, so
-        // showing it in the nav bar too rendered it twice. Standard iOS
-        // large-title behaviour instead: the bar title appears only once the
-        // in-page heading has scrolled out of view.
-        headerTitle: () =>
-          isCollapsed ? (
-            <View style={styles.headerTitleContainer}>
-              <Text
-                style={styles.headerTitle}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {displayLocation.name}
+        // The nav bar carries the identity: name over city/region. The body
+        // therefore doesn't repeat the name — that duplication was the whole
+        // problem — and the otherwise-empty bar earns its space.
+        headerTitle: () => (
+          <View style={styles.headerTitleContainer}>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {displayLocation.name}
+            </Text>
+            {headerCityRegion ? (
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {headerCityRegion}
               </Text>
-            </View>
-          ) : (
-            <View />
-          ),
+            ) : null}
+          </View>
+        ),
+        // Without this the custom title view is laid out in the space left
+        // over by headerLeft and headerRight, which are different widths, so
+        // it sits off-centre.
+        headerTitleAlign: "center",
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -166,7 +180,7 @@ const Location = () => {
         },
       });
     }
-  }, [displayLocation, navigation, router, colors, styles, isCollapsed]);
+  }, [displayLocation, headerCityRegion, navigation, router, colors, styles]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -489,8 +503,6 @@ const Location = () => {
     }
   };
 
-  const cityRegion = formatCityRegion(address);
-
   const prettyWebsite = placeDetails?.website
     ? placeDetails.website.replace(/^https?:\/\//, "").replace(/\/$/, "")
     : null;
@@ -506,12 +518,9 @@ const Location = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         {isCollapsed ? (
-          // Scrolled: keep only what identifies the place and how it scores,
-          // so the reviews get the rest of the screen.
+          // Scrolled: the nav bar still shows the name, so the body keeps only
+          // the score and count and hands the rest of the screen to reviews.
           <View style={styles.collapsedRow}>
-            <Text style={styles.collapsedName} numberOfLines={1}>
-              {displayLocation?.name ?? ""}
-            </Text>
             <RatingSummary
               variant="compact"
               overall={displayLocation?.rating}
@@ -520,14 +529,6 @@ const Location = () => {
           </View>
         ) : (
           <>
-            {/* Identity first: the venue name has to arrive before the numbers
-                that describe it. */}
-            <ProfileIdentity
-              kind="place"
-              title={displayLocation?.name ?? ""}
-              subtitle={cityRegion || null}
-            />
-
             <View style={styles.ratingBlock}>
               <RatingSummary
                 overall={displayLocation?.rating}
@@ -833,13 +834,16 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitleContainer: {
     alignItems: "center" as const,
-    flex: 1,
-    maxWidth: "80%" as const,
+    justifyContent: "center" as const,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold" as const,
+    ...t.typography.heading,
     color: t.colors.text,
+    flexShrink: 1,
+  },
+  headerSubtitle: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
     flexShrink: 1,
   },
 }));
