@@ -728,16 +728,17 @@ function Home() {
           <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
         <Animated.Image
+          key={isDark ? "home-logo-dark" : "home-logo-light"}
           accessibilityRole="header"
           accessibilityLabel="Tini Time Club"
           source={require("@/assets/images/tini-time-logo-2x.png")}
           // The logo artwork is dark green; on the dark surface it drops to
           // roughly 1.5:1. Tint it to the text colour there. Light mode keeps
           // the original two-colour mark.
-          {...(isDark ? { tintColor: colors.text } : {})}
           style={[
             styles.headerLogo,
             {
+              tintColor: isDark ? colors.text : undefined,
               transform: [{ scale: logoScale }],
             },
           ]}

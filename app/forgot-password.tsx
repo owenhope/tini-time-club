@@ -54,9 +54,12 @@ export default function ForgotPassword() {
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
             <Image
+              key={isDark ? "forgot-logo-dark" : "forgot-logo-light"}
               source={require("@/assets/images/tini-time-logo-2x.png")}
-              {...(isDark ? { tintColor: colors.text } : {})}
-              style={styles.logo}
+              style={[
+                styles.logo,
+                { tintColor: isDark ? colors.text : undefined },
+              ]}
               resizeMode="contain"
               accessibilityRole="image"
               accessibilityLabel="Tini Time Club"
