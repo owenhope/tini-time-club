@@ -1,304 +1,219 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
-interface CachedSession {
-  session: any;
-  user: any;
+interface CachedProfile {
   profile: any;
   timestamp: number;
   expiresAt: number;
 }
 
+const PROFILE_CACHE_KEY = 'profile_cache';
+// Legacy key that used to hold the full session (access + refresh tokens) in
+// plaintext AsyncStorage. Always removed on startup.
+const LEGACY_AUTH_CACHE_KEY = 'auth_cache';
+
+/**
+ * Profile cache. Sessions and users are NOT cached here — supabase-js is the
+ * single source of session truth (persisted encrypted via LargeSecureStore in
+ * ./supabase.ts, with its own auto-refresh).
+ */
 class AuthCache {
   private static instance: AuthCache;
-  private memoryCache: CachedSession | null = null;
+  private profileCache: CachedProfile | null = null;
   private pendingRequests = new Map<string, Promise<any>>();
-  
-  // Cache duration (in milliseconds) - Persistent until explicit logout
-  private readonly SESSION_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days (persistent sessions)
-  private readonly PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (profiles cached for a day)
-  
+
+  private readonly PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
   private constructor() {}
-  
+
   static getInstance(): AuthCache {
     if (!AuthCache.instance) {
       AuthCache.instance = new AuthCache();
     }
     return AuthCache.instance;
   }
-  
+
   /**
-   * Get cached session or fetch from Supabase
-   * Uses cached session for better user experience
+   * Get the current session from supabase-js (refreshes automatically when
+   * expired). Kept for API compatibility with existing callers.
    */
   async getSession(): Promise<any> {
-    const cacheKey = 'session';
-    
-    // Check memory cache first
-    if (this.memoryCache && Date.now() < this.memoryCache.expiresAt) {
-      // Return cached session for better user experience
-      return this.memoryCache.session;
-    }
-    
-    // Check if request is already pending
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey);
-    }
-    
-    // Create new request
-    const request = this.fetchSession(cacheKey);
-    this.pendingRequests.set(cacheKey, request);
-    
-    try {
-      const result = await request;
-      return result;
-    } finally {
-      this.pendingRequests.delete(cacheKey);
-    }
-  }
-  
-  private async fetchSession(cacheKey: string): Promise<any> {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error fetching session:', error);
-        return null;
-      }
-      
-      // Cache the session
-      if (session) {
-        const cached: CachedSession = {
-          session,
-          user: session.user,
-          profile: null, // Will be fetched separately if needed
-          timestamp: Date.now(),
-          expiresAt: Date.now() + this.SESSION_CACHE_DURATION
-        };
-        
-        this.memoryCache = cached;
-        await this.persistToStorage('auth_cache', cached);
-      }
-      
-      return session;
-    } catch (error) {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
       console.error('Error fetching session:', error);
       return null;
     }
+    return session;
   }
-  
+
   /**
-   * Get cached user or fetch from session
+   * Get the current user from the session.
    */
   async getUser(): Promise<any> {
-    // Check memory cache first
-    if (this.memoryCache && Date.now() < this.memoryCache.expiresAt) {
-      return this.memoryCache.user;
-    }
-    
     const session = await this.getSession();
     return session?.user || null;
   }
-  
+
   /**
    * Get cached profile or fetch from database
    */
   async getProfile(): Promise<any> {
     const cacheKey = 'profile';
-    
-    // Check memory cache first
-    if (this.memoryCache && this.memoryCache.profile && Date.now() < this.memoryCache.expiresAt) {
-      return this.memoryCache.profile;
+
+    if (this.profileCache && Date.now() < this.profileCache.expiresAt) {
+      return this.profileCache.profile;
     }
-    
+
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
       return this.pendingRequests.get(cacheKey);
     }
-    
-    // Create new request
-    const request = this.fetchProfile(cacheKey);
+
+    const request = this.fetchProfile();
     this.pendingRequests.set(cacheKey, request);
-    
+
     try {
-      const result = await request;
-      return result;
+      return await request;
     } finally {
       this.pendingRequests.delete(cacheKey);
     }
   }
-  
-  private async fetchProfile(cacheKey: string): Promise<any> {
+
+  private async fetchProfile(): Promise<any> {
     try {
       const user = await this.getUser();
       if (!user) {
         return null;
       }
-      
+
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .eq("deleted", false)
         .single();
-      
+
       if (error) {
         console.error('Error fetching profile:', error);
         // Throw error to be handled by calling code
         throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
-      
-      // Update cache with profile
-      if (this.memoryCache) {
-        this.memoryCache.profile = data;
-        this.memoryCache.expiresAt = Date.now() + this.PROFILE_CACHE_DURATION;
-        await this.persistToStorage('auth_cache', this.memoryCache);
-      }
-      
+
+      await this.setProfile(data);
       return data;
     } catch (error) {
       console.error('Error fetching profile:', error);
       return null;
     }
   }
-  
+
+  private async setProfile(profile: any): Promise<void> {
+    this.profileCache = {
+      profile,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + this.PROFILE_CACHE_DURATION,
+    };
+    try {
+      await AsyncStorage.setItem(
+        PROFILE_CACHE_KEY,
+        JSON.stringify(this.profileCache)
+      );
+    } catch (error) {
+      console.error('Error persisting profile cache:', error);
+    }
+  }
+
   /**
-   * Update profile in cache
+   * Update profile in the database and refresh the cache
    */
   async updateProfile(updates: any): Promise<{ data?: any; error?: any }> {
     try {
-      if (!this.memoryCache?.profile) {
-        return { error: 'No profile in cache' };
+      const user = await this.getUser();
+      const profileId = this.profileCache?.profile?.id ?? user?.id;
+      if (!profileId) {
+        return { error: 'No profile to update' };
       }
-      
+
       const { data, error } = await supabase
         .from("profiles")
         .update(updates)
-        .eq("id", this.memoryCache.profile.id)
+        .eq("id", profileId)
         .select()
         .single();
-      
+
       if (error) {
         console.error('Error updating profile:', error);
         return { error };
       }
-      
-      // Update cache
-      if (this.memoryCache) {
-        this.memoryCache.profile = data;
-        this.memoryCache.expiresAt = Date.now() + this.PROFILE_CACHE_DURATION;
-        await this.persistToStorage('auth_cache', this.memoryCache);
-      }
-      
+
+      await this.setProfile(data);
       return { data };
     } catch (error) {
       console.error('Error updating profile:', error);
       return { error };
     }
   }
-  
+
   /**
    * Clear profile cache to force fresh profile data
    */
   async clearProfileCache(): Promise<void> {
+    this.profileCache = null;
+    this.pendingRequests.delete('profile');
     try {
-      // Clear memory cache
-      if (this.memoryCache) {
-        this.memoryCache.profile = null;
-        this.memoryCache.expiresAt = 0; // Force expiration
-      }
-      
-      // Clear pending requests
-      this.pendingRequests.delete('profile');
+      await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
     } catch (error) {
       console.error('Error clearing profile cache:', error);
     }
   }
 
   /**
-   * Clear all auth cache
+   * Clear all cached data
    */
   async clearCache(): Promise<void> {
-    this.memoryCache = null;
     this.pendingRequests.clear();
-    
-    try {
-      await AsyncStorage.removeItem('auth_cache');
-    } catch (error) {
-      console.error('Error clearing auth cache:', error);
-    }
+    await this.clearProfileCache();
   }
-  
+
   /**
-   * Handle app state changes
-   * Keep sessions persistent - only clear on explicit logout
+   * Handle app state changes. Sessions are managed by supabase-js; nothing to do.
    */
-  async onAppStateChange(nextAppState: string): Promise<void> {
-    // Keep sessions persistent - don't clear cache on background
-    // Sessions will only be cleared on explicit logout
-  }
-  
+  async onAppStateChange(_nextAppState: string): Promise<void> {}
+
   /**
-   * Security: Check if cache is expired and clear if needed
-   */
-  private isCacheExpired(): boolean {
-    if (!this.memoryCache) return true;
-    return Date.now() >= this.memoryCache.expiresAt;
-  }
-  
-  /**
-   * Security: Clear cache if expired
-   */
-  private async clearIfExpired(): Promise<void> {
-    if (this.isCacheExpired()) {
-      await this.clearCache();
-    }
-  }
-  
-  /**
-   * Load cache from storage on app start
+   * Load cached profile from storage on app start, and scrub the legacy
+   * plaintext session cache if present.
    */
   async loadFromStorage(): Promise<void> {
     try {
-      const data = await AsyncStorage.getItem('auth_cache');
+      // Remove the legacy cache that stored tokens in plaintext.
+      await AsyncStorage.removeItem(LEGACY_AUTH_CACHE_KEY);
+
+      const data = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
       if (data) {
-        const cached = JSON.parse(data) as CachedSession;
-        
-        // Only load if not expired
-        if (Date.now() < cached.expiresAt) {
-          this.memoryCache = cached;
+        const cached = JSON.parse(data) as CachedProfile;
+        if (Date.now() < cached.expiresAt && cached.profile) {
+          this.profileCache = cached;
         } else {
-          // Clear expired cache
-          await this.clearCache();
+          await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
         }
       }
     } catch (error) {
-      console.error('Error loading auth cache:', error);
+      console.error('Error loading profile cache:', error);
     }
   }
-  
-  /**
-   * Persist cache to storage
-   */
-  private async persistToStorage(key: string, data: CachedSession): Promise<void> {
-    try {
-      await AsyncStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error persisting auth cache:', error);
-    }
-  }
-  
+
   /**
    * Get cache statistics
    */
   getCacheStats(): { hasSession: boolean; hasProfile: boolean; pendingRequests: number } {
     return {
-      hasSession: !!(this.memoryCache?.session),
-      hasProfile: !!(this.memoryCache?.profile),
-      pendingRequests: this.pendingRequests.size
+      hasSession: false, // sessions are no longer cached here
+      hasProfile: !!this.profileCache?.profile,
+      pendingRequests: this.pendingRequests.size,
     };
   }
-  
+
   /**
    * Invalidate cache (useful after sign out)
    */

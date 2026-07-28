@@ -36,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: false,
       bundleIdentifier: bundleIdentifier,
       config: {
-        googleMapsApiKey: "AIzaSyAV4ioL2mbXF0mGeJsKfDUP_wnaDsQQ2nk",
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY_IOS,
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -50,7 +50,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: packageName,
       config: {
         googleMaps: {
-          apiKey: "AIzaSyCGBwGNvHcIKasPMV67MS_RmYOM_2hRRQg",
+          apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,
         },
       },
       permissions: [
@@ -118,7 +118,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       [
         "expo-localization"
-      ]
+      ],
+      "expo-secure-store"
     ],
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

@@ -2,8 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 interface Notification {
-  id: string; 
-  user_id: string; 
+  id: string;
+  user_id: string;
   body: string;
   type: number; // added field to indicate notification type
 }
@@ -21,17 +21,58 @@ const NOTIFICATION_TYPES = {
   USER: 2,
 };
 
+// Expo accepts up to 100 messages per push request.
+const EXPO_PUSH_BATCH_SIZE = 100;
+
+// SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected into every edge
+// function by Supabase. The service role bypasses RLS, so profiles.expo_push_token
+// no longer needs to be readable by anon clients.
 const supabase = createClient(
-  Deno.env.get("EXPO_PUBLIC_SUPABASE_URL")!,
-  Deno.env.get("EXPO_PUBLIC_SUPABASE_ANON_KEY")!
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// EXPO_ACCESS_TOKEN is a server-only secret (set via `supabase secrets set`).
+// Fallback to the legacy name so existing deployments keep working until rotated.
+const expoAccessToken =
+  Deno.env.get("EXPO_ACCESS_TOKEN") ?? Deno.env.get("EXPO_PUBLIC_ACCESS_TOKEN");
+
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+
+async function sendExpoPushes(pushTokens: string[], body: string) {
+  const results: unknown[] = [];
+  for (let i = 0; i < pushTokens.length; i += EXPO_PUSH_BATCH_SIZE) {
+    const batch = pushTokens.slice(i, i + EXPO_PUSH_BATCH_SIZE);
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${expoAccessToken}`,
+      },
+      body: JSON.stringify(
+        batch.map((to) => ({ to, title: "Tini Time Club", body }))
+      ),
+    });
+    results.push(await res.json());
+  }
+  return results;
+}
+
 Deno.serve(async (req) => {
+  // Reject anything that isn't the configured database webhook. The webhook
+  // must send an `x-webhook-secret` header matching PUSH_WEBHOOK_SECRET.
+  const webhookSecret = Deno.env.get("PUSH_WEBHOOK_SECRET");
+  if (!webhookSecret || req.headers.get("x-webhook-secret") !== webhookSecret) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+
   const payload: WebhookPayload = await req.json();
 
-  // Check the notification type.
   if (payload.record.type === NOTIFICATION_TYPES.FOLLOWERS) {
-    
     const { data: followersData, error: followersError } = await supabase
       .from("followers")
       .select("follower_id")
@@ -39,18 +80,12 @@ Deno.serve(async (req) => {
 
     if (followersError) {
       console.error("Error fetching followers:", followersError);
-      return new Response(
-        JSON.stringify({ error: followersError.message }),
-        { headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ error: followersError.message }, 500);
     }
 
     if (!followersData || followersData.length === 0) {
       console.log("No followers to notify.");
-      return new Response(
-        JSON.stringify({ message: "No followers to notify." }),
-        { headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ message: "No followers to notify." });
     }
 
     const followerIds = followersData.map((row: any) => row.follower_id);
@@ -62,37 +97,21 @@ Deno.serve(async (req) => {
 
     if (profilesError) {
       console.error("Error fetching follower profiles:", profilesError);
-      return new Response(
-        JSON.stringify({ error: profilesError.message }),
-        { headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ error: profilesError.message }, 500);
     }
-    const notifications = profilesData.map(async (profile: any) => {
-      console.log('Sending FOLLOWER push note to:', profile.expo_push_token);
-      const pushToken = profile.expo_push_token;
-      if (!pushToken) return null;
-      return await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("EXPO_PUBLIC_ACCESS_TOKEN")}`
-        },
-        body: JSON.stringify({
-          to: pushToken,
-          title: "Tini Time Club",
-          body: payload.record.body,
-        }),
-      }).then((res) => res.json());
-    });
 
-    // Wait for all notifications to be sent.
-    const results = await Promise.all(notifications);
-    
-    console.log('Successfully sent FOLLOWER push notes');
+    const pushTokens = (profilesData ?? [])
+      .map((profile: any) => profile.expo_push_token)
+      .filter(Boolean);
 
-    return new Response(JSON.stringify(results), {
-      headers: { "content-type": "application/json" },
-    });
+    if (pushTokens.length === 0) {
+      console.log("No follower push tokens to notify.");
+      return jsonResponse({ message: "No follower push tokens to notify." });
+    }
+
+    const results = await sendExpoPushes(pushTokens, payload.record.body);
+    console.log(`Sent FOLLOWER push notes to ${pushTokens.length} tokens`);
+    return jsonResponse(results);
   } else if (payload.record.type === NOTIFICATION_TYPES.USER) {
     // For USER notifications, send a push notification to the user specified by user_id.
     const { data: profileData, error: profileError } = await supabase
@@ -101,46 +120,23 @@ Deno.serve(async (req) => {
       .eq("id", payload.record.user_id)
       .maybeSingle();
 
-    console.log('Sending USER push note to:', profileData.expo_push_token);
-
     if (profileError) {
       console.error("Error fetching user profile:", profileError);
-      return new Response(
-        JSON.stringify({ error: profileError.message }),
-        { headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ error: profileError.message }, 500);
     }
 
     if (!profileData || !profileData.expo_push_token) {
       console.log("No push token for user.");
-      return new Response(
-        JSON.stringify({ message: "No push token for user." }),
-        { headers: { "content-type": "application/json" } }
-      );
+      return jsonResponse({ message: "No push token for user." });
     }
 
-    const result = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("EXPO_PUBLIC_ACCESS_TOKEN")}`
-      },
-      body: JSON.stringify({
-        to: profileData.expo_push_token,
-        title: "Tini Time Club",
-        body: payload.record.body,
-      }),
-    }).then((res) => res.json());
-
-    console.log('Successfully sent USER push note to:', profileData.expo_push_token);
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "content-type": "application/json" },
-    });
-  } else {
-    return new Response(
-      JSON.stringify({ message: "Unhandled notification type." }),
-      { headers: { "content-type": "application/json" } }
+    const result = await sendExpoPushes(
+      [profileData.expo_push_token],
+      payload.record.body
     );
+    console.log("Sent USER push note");
+    return jsonResponse(result);
+  } else {
+    return jsonResponse({ message: "Unhandled notification type." });
   }
 });

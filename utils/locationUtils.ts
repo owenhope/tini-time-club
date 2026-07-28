@@ -1,5 +1,6 @@
 // Google Maps API configuration
-export const GOOGLE_MAPS_API_KEY = "AIzaSyC1LKk6V5h4J_AxLq9vwbZcS__BJ-fcoH8";
+export const GOOGLE_MAPS_API_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
 // Place types that serve alcohol
 export const RELEVANT_PLACE_TYPES = [
