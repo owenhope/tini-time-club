@@ -18,6 +18,7 @@ import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
+import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 
@@ -107,6 +108,7 @@ const UserProfile = () => {
 
     const wasFollowing = doesFollow;
     setFollowPending(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     // Optimistic: the button reflects the new state immediately.
     setDoesFollow(!wasFollowing);
@@ -528,6 +530,7 @@ const UserProfile = () => {
         followingCount={followingCount}
         isOwnProfile={profile ? profile.id === displayProfile?.id : false}
         doesFollow={doesFollow}
+        followPending={followPending}
         isBlocked={isBlocked}
         onFollowPress={toggleFollow}
         onBlockPress={handleBlockUser}

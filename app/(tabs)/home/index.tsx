@@ -36,6 +36,8 @@ const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
 const MAX_CACHED_ITEMS = 100; // Increased from 50 to 100 to accommodate larger page size
 const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
+// How long the feed may sit unfocused before a re-focus triggers a refresh.
+const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -236,7 +238,11 @@ function Home() {
 
   useFocusEffect(
     useCallback(() => {
-      if (profile?.id) {
+      // Refresh on focus only when the feed has actually gone stale. Doing it
+      // unconditionally cleared the caches and reset scroll position every
+      // time the user tabbed away and back, even seconds later.
+      const isStale = Date.now() - lastRefreshTime > FOCUS_REFRESH_AFTER;
+      if (profile?.id && (reviews.length === 0 || isStale)) {
         loadReviews(true);
       }
       setGlobalScrollToTop(scrollToTop);
@@ -244,7 +250,10 @@ function Home() {
       return () => {
         setGlobalScrollToTop(null);
       };
-    }, [profile?.id, scrollToTop])
+      // loadReviews/lastRefreshTime intentionally excluded: including them
+      // would re-run this on every fetch, defeating the staleness check.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profile?.id, scrollToTop, reviews.length])
   );
 
   // Optimized refresh handler
@@ -672,10 +681,14 @@ function Home() {
           style={styles.addButtonContainer}
           onPress={() => router.push("/review")}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Share a Martini review"
         >
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
         <Animated.Image
+          accessibilityRole="header"
+          accessibilityLabel="Tini Time Club"
           source={require("@/assets/images/tini-time-logo-2x.png")}
           style={[
             styles.headerLogo,
@@ -689,6 +702,8 @@ function Home() {
           style={styles.searchIconContainer}
           onPress={navigateToDiscover}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Search people and places"
         >
           <Ionicons name="search-outline" size={24} color="#000" />
         </TouchableOpacity>

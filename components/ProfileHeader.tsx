@@ -24,6 +24,7 @@ interface ProfileHeaderProps {
   avatarError?: string | null;
   onEditProfilePress?: () => void;
   doesFollow?: boolean;
+  followPending?: boolean;
   isBlocked?: boolean;
   onFollowPress?: () => void;
   onBlockPress?: () => void;
@@ -45,6 +46,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   avatarError = null,
   onEditProfilePress,
   doesFollow = false,
+  followPending = false,
   isBlocked = false,
   onFollowPress,
   onBlockPress,
@@ -126,9 +128,18 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               onPress={onFollowPress}
+              disabled={followPending}
+              accessibilityRole="button"
+              accessibilityLabel={
+                doesFollow
+                  ? `Unfollow ${profile?.username ?? "this user"}`
+                  : `Follow ${profile?.username ?? "this user"}`
+              }
+              accessibilityState={{ selected: doesFollow, busy: followPending }}
               style={[
                 styles.followButton,
                 doesFollow && styles.followingButton,
+                followPending && styles.buttonPending,
               ]}
             >
               <Text
@@ -142,6 +153,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               onPress={isBlocked ? onUnblockPress : onBlockPress}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isBlocked ? "Unblock this user" : "Block this user"
+              }
               style={[styles.blockButton, isBlocked && styles.unblockButton]}
             >
               <Text
@@ -161,6 +176,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
+  buttonPending: {
+    opacity: 0.6,
+  },
   profileHeader: {
     flexDirection: "row",
     paddingHorizontal: 16,

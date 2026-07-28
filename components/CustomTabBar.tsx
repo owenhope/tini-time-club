@@ -2,6 +2,7 @@ import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
+import * as Haptics from "expo-haptics";
 
 /**
  * Props as expo-router's <Tabs tabBar={...}> supplies them. Typed locally
@@ -35,6 +36,8 @@ export default function CustomTabBar({
         const isFocused = state.index === index;
 
         const onPress = () => {
+          Haptics.selectionAsync();
+
           const event = navigation.emit({
             type: "tabPress",
             target: route.key,
@@ -81,9 +84,13 @@ export default function CustomTabBar({
         return (
           <TouchableOpacity
             key={route.key}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isFocused }}
+            // tabBarAccessibilityLabel is never set in (tabs)/_layout, so fall
+            // back to the visible label rather than announcing nothing.
+            accessibilityLabel={
+              options.tabBarAccessibilityLabel ?? String(label)
+            }
             testID={options.tabBarTestID}
             onPress={onPress}
             onLongPress={onLongPress}
@@ -174,7 +181,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   plusIcon: {
-    color: "#FF4444",
+    color: "#FFFFFF",
     fontSize: 22,
     fontWeight: "bold",
     lineHeight: 22,

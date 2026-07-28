@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 
 interface CameraComponentProps {
   onCapture: (photo: string) => void;
@@ -86,9 +87,12 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   // Function to take a picture using the camera.
   const takePicture = async () => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const photo = await cameraRef.current?.takePictureAsync({
         quality: 1,
-        base64: true,
+        // base64 is not read anywhere; requesting it doubles peak memory and
+        // adds noticeable shutter lag. The uri is all the review flow needs.
+        base64: false,
         exif: false,
       });
       if (photo && photo.uri) {
@@ -120,7 +124,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
-        base64: true,
+        base64: false,
         quality: 1,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -160,13 +164,23 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
         responsiveOrientationWhenOrientationLocked
       >
         {/* Toggle camera facing button in top left */}
-        <Pressable style={styles.toggleButton} onPress={toggleFacing}>
+        <Pressable
+          style={styles.toggleButton}
+          onPress={toggleFacing}
+          accessibilityRole="button"
+          accessibilityLabel="Switch camera"
+        >
           <FontAwesome6 name="camera-rotate" size={32} color="white" />
         </Pressable>
 
         {/* Pick image button with CTA in top right */}
         <View style={styles.imagePickerContainer}>
-          <Pressable style={styles.pickImageButton} onPress={pickImage}>
+          <Pressable
+            style={styles.pickImageButton}
+            onPress={pickImage}
+            accessibilityRole="button"
+            accessibilityLabel="Choose a photo from your library"
+          >
             <FontAwesome6 name="image" size={32} color="white" />
           </Pressable>
           {showCta && (
@@ -180,7 +194,12 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
         </View>
 
         {/* Capture button in the center */}
-        <Pressable style={styles.captureButton} onPress={takePicture}>
+        <Pressable
+          style={styles.captureButton}
+          onPress={takePicture}
+          accessibilityRole="button"
+          accessibilityLabel="Take photo"
+        >
           {({ pressed }) => (
             <View style={[styles.shutterBtn, { opacity: pressed ? 0.5 : 1 }]}>
               <View style={styles.shutterBtnInner} />

@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Image as ExpoImage } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
@@ -46,6 +47,10 @@ const ICON_SIZES = {
   small: 20,
   medium: 28,
 } as const;
+
+// Icon-only controls render at 20-28px; this brings the tappable area up
+// toward the 44pt minimum without changing the layout.
+const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 // Expandable Text Component for Instagram-style captions
 const ExpandableText = ({
@@ -297,23 +302,6 @@ const AvatarWrapper = memo(
 );
 AvatarWrapper.displayName = "AvatarWrapper";
 
-const ActionButton = memo(
-  ({
-    onPress,
-    icon,
-    color = COLORS.black,
-  }: {
-    onPress: () => void;
-    icon: string;
-    color?: string;
-  }) => (
-    <TouchableOpacity onPress={onPress} style={styles.actionButton}>
-      <Ionicons name={icon as any} size={ICON_SIZES.small} color={color} />
-    </TouchableOpacity>
-  )
-);
-ActionButton.displayName = "ActionButton";
-
 const LikeButton = memo(
   ({
     hasLiked,
@@ -324,7 +312,14 @@ const LikeButton = memo(
     onPress: () => void;
     disabled?: boolean;
   }) => (
-    <TouchableOpacity onPress={onPress} disabled={disabled}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={hasLiked ? "Unlike this review" : "Like this review"}
+      accessibilityState={{ selected: hasLiked, disabled }}
+      hitSlop={HIT_SLOP}
+    >
       <Ionicons
         name={hasLiked ? "heart" : "heart-outline"}
         size={ICON_SIZES.medium}
@@ -336,8 +331,12 @@ const LikeButton = memo(
 LikeButton.displayName = "LikeButton";
 
 const CommentButton = memo(
-  ({ onPress, count }: { onPress: () => void; count: number }) => (
-    <Ionicons name="chatbubble-outline" size={ICON_SIZES.medium} />
+  ({ count }: { onPress: () => void; count: number }) => (
+    <Ionicons
+      name="chatbubble-outline"
+      size={ICON_SIZES.medium}
+      accessibilityLabel={count === 1 ? "1 comment" : `${count} comments`}
+    />
   )
 );
 CommentButton.displayName = "CommentButton";
@@ -704,9 +703,14 @@ const ReviewItemComponent = ({
     return (
       <View style={styles.previewContainer}>
         <View style={styles.imageContainer}>
-          <Image
+          <ExpoImage
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
+            contentFit="cover"
+            transition={200}
+            placeholderContentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={review.id}
           />
           <ReviewOverlay
             review={review}
@@ -753,6 +757,9 @@ const ReviewItemComponent = ({
               <TouchableOpacity
                 onPress={() => setActionSheetVisible(true)}
                 style={styles.actionButton}
+                accessibilityRole="button"
+                accessibilityLabel="More options for this review"
+                hitSlop={HIT_SLOP}
               >
                 <Ionicons
                   name="ellipsis-horizontal"
@@ -765,9 +772,14 @@ const ReviewItemComponent = ({
         )}
 
         <View style={styles.imageContainer}>
-          <Image
+          <ExpoImage
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
+            contentFit="cover"
+            transition={200}
+            placeholderContentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={review.id}
           />
           <ReviewOverlay
             review={review}
@@ -780,6 +792,11 @@ const ReviewItemComponent = ({
             style={styles.eyeIconContainer}
             onPress={toggleOverlay}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isOverlayVisible ? "Hide review details" : "Show review details"
+            }
+            hitSlop={HIT_SLOP}
           >
             <Ionicons
               name={isOverlayVisible ? "eye" : "eye-off"}
@@ -871,7 +888,7 @@ const styles = StyleSheet.create({
   reviewImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    backgroundColor: "#EDE7F6",
   },
   topBar: {
     position: "absolute",

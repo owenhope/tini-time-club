@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,12 +25,36 @@ const EULAModal: React.FC<EULAModalProps> = ({
 }) => {
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const isAtBottom =
       layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-    setHasScrolledToBottom(isAtBottom);
+    if (isAtBottom) setHasScrolledToBottom(true);
   };
+
+  // If the terms ever fit without scrolling (short text, large screen,
+  // small font setting) there is no scroll event to fire and "I Agree" would
+  // stay disabled forever — a soft-lock out of the app.
+  const handleContentFits = (event: any) => {
+    setViewportHeight(event.nativeEvent.layout.height);
+  };
+
+  const handleContentSizeChange = (_w: number, h: number) => {
+    setContentHeight(h);
+  };
+
+  useEffect(() => {
+    if (
+      viewportHeight > 0 &&
+      contentHeight > 0 &&
+      contentHeight <= viewportHeight
+    ) {
+      setHasScrolledToBottom(true);
+    }
+  }, [viewportHeight, contentHeight]);
 
   const handleAccept = () => {
     if (loading) return; // Prevent action while loading
@@ -70,6 +94,8 @@ const EULAModal: React.FC<EULAModalProps> = ({
           <ScrollView
             style={styles.scrollView}
             onScroll={handleScroll}
+            onLayout={handleContentFits}
+            onContentSizeChange={handleContentSizeChange}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={true}
           >
