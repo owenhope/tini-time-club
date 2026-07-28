@@ -33,7 +33,7 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 2,
 };
 
-const BOTTOM_SHEET_HEIGHT = 300;
+const BOTTOM_SHEET_HEIGHT = 340;
 
 function Map() {
   const styles = useStyles();

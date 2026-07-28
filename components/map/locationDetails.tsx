@@ -13,8 +13,8 @@ interface LocationDetailsProps {
 /**
  * The bottom sheet shown when a map pin is tapped.
  *
- * Uses the compact RatingSummary variant: this sheet is short, and the full
- * bar layout would push the venue name and link below the fold.
+ * Uses the same full RatingSummary as the place profile and review card, so
+ * the three surfaces read identically.
  */
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   const styles = useStyles();
@@ -46,7 +46,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
 
       <View style={styles.ratings}>
         <RatingSummary
-          variant="compact"
           overall={loc.rating}
           taste={loc.taste_avg}
           presentation={loc.presentation_avg}
@@ -76,7 +75,7 @@ const useStyles = makeStyles((t) => ({
   name: {
     ...t.typography.title,
     color: t.colors.text,
-    flexShrink: 1,
+    flex: 1,
   },
   address: {
     ...t.typography.body,
