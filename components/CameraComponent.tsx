@@ -33,8 +33,10 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const pickerOpenRef = useRef(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>("back");
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!permission) return;
@@ -106,16 +108,22 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
 
   // Function to pick an image from the user's photo library.
   const pickImage = async () => {
-    const mediaPermission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!mediaPermission.granted) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access your photo library is required!"
-      );
-      return;
-    }
+    if (pickerOpenRef.current) return;
+
+    pickerOpenRef.current = true;
+    setIsPickerOpen(true);
+
     try {
+      const mediaPermission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!mediaPermission.granted) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your photo library is required!"
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         base64: false,
@@ -130,6 +138,9 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
     } catch (error) {
       console.error("Error picking image:", error);
       Alert.alert("Error", "An error occurred while picking the image.");
+    } finally {
+      pickerOpenRef.current = false;
+      setIsPickerOpen(false);
     }
   };
 
@@ -184,8 +195,13 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
             </Pressable>
 
             <Pressable
-              style={[styles.controlButton, styles.libraryButton]}
+              style={[
+                styles.controlButton,
+                styles.libraryButton,
+                isPickerOpen && styles.controlButtonDisabled,
+              ]}
               onPress={pickImage}
+              disabled={isPickerOpen}
               accessibilityRole="button"
               accessibilityLabel="Choose a photo from your library"
             >
@@ -283,6 +299,9 @@ const useStyles = makeStyles((t) => ({
   },
   libraryButton: {
     gap: t.spacing.sm,
+  },
+  controlButtonDisabled: {
+    opacity: 0.5,
   },
   libraryLabel: {
     fontSize: 14,
