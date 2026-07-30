@@ -35,6 +35,47 @@ interface CommentsSliderProps {
   onCommentAdded?: (reviewId: string, newComment: any) => void;
 }
 
+interface CommentInputFooterProps extends BottomSheetFooterProps {
+  onSubmit: (comment: string) => Promise<boolean>;
+}
+
+function CommentInputFooter({
+  onSubmit,
+  ...footerProps
+}: CommentInputFooterProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const [commentText, setCommentText] = useState("");
+
+  const handleSubmit = useCallback(async () => {
+    const comment = commentText.trim();
+    if (!comment) return;
+
+    if (await onSubmit(comment)) {
+      setCommentText("");
+    }
+  }, [commentText, onSubmit]);
+
+  return (
+    <BottomSheetFooter {...footerProps}>
+      <View style={styles.inputContainer}>
+        <BottomSheetTextInput
+          placeholder="Add a comment..."
+          placeholderTextColor={colors.textMuted}
+          value={commentText}
+          onChangeText={setCommentText}
+          style={styles.input}
+          returnKeyType="send"
+          onSubmitEditing={handleSubmit}
+        />
+        <TouchableOpacity onPress={handleSubmit}>
+          <Text style={styles.sendButton}>Post</Text>
+        </TouchableOpacity>
+      </View>
+    </BottomSheetFooter>
+  );
+}
+
 export default function CommentsSlider({
   review,
   onClose,
@@ -46,7 +87,6 @@ export default function CommentsSlider({
   const styles = useStyles();
   const { colors } = useTheme();
   const [comments, setComments] = useState<any[]>([]);
-  const [commentText, setCommentText] = useState("");
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const listRef = useRef<FlatList>(null);
 
@@ -66,17 +106,16 @@ export default function CommentsSlider({
     };
   }, [review.id]);
 
-  const handleAddComment = async () => {
-    if (!profile || !commentText.trim()) return;
+  const handleAddComment = useCallback(async (comment: string) => {
+    if (!profile) return false;
 
     try {
       const data = await databaseService.createComment({
         review_id: review.id,
         user_id: profile.id,
-        body: commentText.trim(),
+        body: comment,
       });
 
-      setCommentText("");
       setComments((prev) => [...prev, data]);
       listRef.current?.scrollToEnd({ animated: true });
       onCommentAdded?.(review.id, data);
@@ -106,10 +145,12 @@ export default function CommentsSlider({
           console.log("🚧 Development mode - skipping comment notification");
         }
       }
+      return true;
     } catch (error) {
       console.error("Error adding comment:", error);
+      return false;
     }
-  };
+  }, [onCommentAdded, profile, review]);
 
   const deleteComment = async (id: number) => {
     try {
@@ -217,25 +258,9 @@ export default function CommentsSlider({
 
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
-      <BottomSheetFooter {...props}>
-        <View style={styles.inputContainer}>
-          <BottomSheetTextInput
-            placeholder="Add a comment..."
-            placeholderTextColor={colors.textMuted}
-            value={commentText}
-            onChangeText={setCommentText}
-            style={styles.input}
-            returnKeyType="send"
-            onSubmitEditing={handleAddComment}
-          />
-          <TouchableOpacity onPress={handleAddComment}>
-            <Text style={styles.sendButton}>Post</Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheetFooter>
+      <CommentInputFooter {...props} onSubmit={handleAddComment} />
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [commentText, styles, colors]
+    [handleAddComment]
   );
 
   return (

@@ -39,10 +39,10 @@ const ANIMATION_DURATION = 300;
 
 const ICON_SIZES = {
   small: 20,
-  medium: 28,
+  medium: 24,
 } as const;
 
-// Icon-only controls render at 20-28px; this brings the tappable area up
+// Icon-only controls render at 20-24px; this brings the tappable area up
 // toward the 44pt minimum without changing the layout.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
@@ -221,7 +221,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
   }, [reviewId, hasLoaded]);
 
   const addComment = useCallback((newComment: any) => {
-    setComments((prev) => [newComment, ...prev]);
+    setComments((prev) => [...prev, newComment]);
   }, []);
 
   const removeComment = useCallback((commentId: number) => {
@@ -279,6 +279,7 @@ const AvatarWrapper = memo(
         <VerifiedName
           name={username || "Unknown"}
           isVerified={isVerified}
+          style={styles.headerIdentity}
           textStyle={styles.headerUsername}
         />
       </View>
@@ -487,27 +488,29 @@ const ReviewFooter = memo(
           </TouchableOpacity>
         </View>
 
-        <View style={styles.captionSection}>
-          {hasCaption ? (
-            <View style={styles.inlineIdentityRow}>
-              <VerifiedName
-                name={review.profile?.username || "Unknown"}
-                isVerified={review.profile?.is_verified}
-                textStyle={styles.captionUsername}
-              />
-              <Text style={styles.inlineBody}>{review.comment}</Text>
-            </View>
-          ) : isOwnReview && onEdit ? (
-            <TouchableOpacity onPress={onEdit}>
-              <Text style={styles.addCaptionText}>Add a caption</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {(hasCaption || (isOwnReview && onEdit)) && (
+          <View style={styles.captionSection}>
+            {hasCaption ? (
+              <View style={styles.inlineIdentityRow}>
+                <VerifiedName
+                  name={review.profile?.username || "Unknown"}
+                  isVerified={review.profile?.is_verified}
+                  textStyle={styles.captionUsername}
+                />
+                <Text style={styles.inlineBody}>{review.comment}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={onEdit}>
+                <Text style={styles.addCaptionText}>Add a caption</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Comment previews: from the feed row, or the full list once loaded */}
         {previewComments.length > 0 && (
           <>
-            {previewComments.slice(0, 2).map((c: any) => (
+            {previewComments.map((c: any) => (
               <TouchableOpacity
                 key={c.id}
                 style={styles.commentItem}
@@ -613,8 +616,8 @@ const ReviewItemComponent = ({
   // Preview comments ride along with the feed row; once the full list has been
   // fetched (user opened the sheet) prefer that.
   const previewComments = hasLoaded
-    ? comments
-    : ((review as any).recent_comments ?? []);
+    ? comments.slice(-2)
+    : [...((review as any).recent_comments ?? [])].reverse();
 
   const loadCommentsIfNeeded = useCallback(() => {
     if (!hasLoaded) fetchComments();
@@ -923,6 +926,9 @@ const useStyles = makeStyles((t) => ({
     fontSize: 16,
     color: t.colors.text,
   },
+  headerIdentity: {
+    alignSelf: "center" as const,
+  },
   headerProfile: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -1022,7 +1028,7 @@ const useStyles = makeStyles((t) => ({
   actionRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    marginBottom: t.spacing.sm,
+    marginBottom: t.spacing.xs,
     gap: t.spacing.sm,
   },
   commentButtonContainer: {
@@ -1050,14 +1056,14 @@ const useStyles = makeStyles((t) => ({
     columnGap: t.spacing.xs,
   },
   inlineBody: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     color: t.colors.text,
     flexShrink: 1,
   },
   captionUsername: {
     fontWeight: "600" as const,
-    fontSize: 16,
+    fontSize: 14,
     color: t.colors.text,
   },
   captionBody: {
@@ -1072,7 +1078,7 @@ const useStyles = makeStyles((t) => ({
     fontWeight: "500" as const,
   },
   commentItem: {
-    marginBottom: 2,
+    marginBottom: t.spacing.xs,
   },
   commentText: {
     fontSize: 16,
@@ -1081,7 +1087,7 @@ const useStyles = makeStyles((t) => ({
   },
   commentUsername: {
     fontWeight: "600" as const,
-    fontSize: 16,
+    fontSize: 14,
     color: t.colors.text,
   },
   commentBody: {
