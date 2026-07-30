@@ -400,11 +400,15 @@ const ReviewOverlay = memo(
           <TouchableOpacity style={styles.locationLinkContainer}>
             <Text style={styles.locationName}>
               {review.location?.name || "N/A"}
+              {"\u00a0"}
+              {/* Raw brand lavender rather than colors.accent: this chevron
+                  sits on the dark photo scrim in both schemes. */}
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={BRAND.lavender}
+              />
             </Text>
-            {/* Raw brand lavender rather than colors.accent: this chevron sits
-                on the dark photo scrim in both schemes, and the light-mode
-                accent (#7B60BC) is near-invisible against it. */}
-            <Ionicons name="chevron-forward" size={16} color={BRAND.lavender} />
           </TouchableOpacity>
         </Link>
         {review.location?.address && (
@@ -982,6 +986,8 @@ const useStyles = makeStyles((t) => ({
   locationLinkContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
+    alignSelf: "flex-start" as const,
+    maxWidth: "100%" as const,
     marginBottom: t.spacing.xs,
   },
   // Everything below sits on the photo scrim, so it stays light in both
@@ -990,7 +996,7 @@ const useStyles = makeStyles((t) => ({
     fontWeight: "bold" as const,
     fontSize: 22,
     color: t.colors.textOnImage,
-    marginRight: 6,
+    flexShrink: 1,
   },
   locationAddress: {
     fontSize: 14,

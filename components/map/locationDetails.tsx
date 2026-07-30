@@ -1,9 +1,9 @@
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
-import { Button, RatingSummary } from "@/components/shared";
+import { RatingSummary } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
@@ -18,7 +18,6 @@ interface LocationDetailsProps {
  */
 const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
   const styles = useStyles();
-  const router = useRouter();
   const { colors } = useTheme();
 
   const address = loc.address
@@ -36,12 +35,13 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
         >
           <Text style={styles.name} numberOfLines={1}>
             {loc.name || "No name available"}
+            {"\u00a0"}
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.accent}
+            />
           </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={22}
-            color={colors.accent}
-          />
         </Pressable>
       </Link>
 
@@ -58,17 +58,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
         />
       </View>
 
-      <Button
-        title="View place"
-        onPress={() => router.push(`/places/${loc.id}`)}
-        variant="primary"
-        size="medium"
-        icon="arrow-forward"
-        iconPosition="right"
-        fullWidth
-        style={styles.viewPlaceButton}
-        accessibilityHint={`Opens the profile for ${loc.name || "this place"}`}
-      />
     </View>
   );
 };
@@ -95,6 +84,7 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.title,
     color: t.colors.text,
     flex: 1,
+    minWidth: 0,
   },
   address: {
     ...t.typography.body,
@@ -103,9 +93,6 @@ const useStyles = makeStyles((t) => ({
   },
   ratings: {
     marginTop: t.spacing.sm,
-  },
-  viewPlaceButton: {
-    marginTop: t.spacing.lg,
   },
 }));
 

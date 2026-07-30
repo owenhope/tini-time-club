@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text } from "react-native";
 import { makeStyles } from "@/theme";
 
@@ -5,13 +6,13 @@ interface LocationPinProps {
   loc: {
     lat: number | null;
     long: number | null;
-    id: string;
+    id: number | string;
     name: string;
-    rating?: number;
-    total_ratings?: number;
-    taste_avg?: number;
-    presentation_avg?: number;
-    address?: string;
+    rating?: number | null;
+    total_ratings?: number | null;
+    taste_avg?: number | null;
+    presentation_avg?: number | null;
+    address?: string | null;
   };
 }
 
@@ -73,4 +74,11 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
-export default LocationPin;
+export default memo(
+  LocationPin,
+  (previous, next) =>
+    previous.loc.id === next.loc.id &&
+    previous.loc.lat === next.loc.lat &&
+    previous.loc.long === next.loc.long &&
+    previous.loc.rating === next.loc.rating
+);

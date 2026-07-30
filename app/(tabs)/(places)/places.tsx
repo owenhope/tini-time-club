@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -39,19 +45,111 @@ const INITIAL_REGION: Region = {
 };
 
 const SHEET_HEIGHT = 390;
+const FETCH_DEBOUNCE_MS = 250;
+const FETCH_PADDING = 0.35;
+
+interface MapLocation {
+  id: number | string;
+  name: string;
+  address?: string | null;
+  lat: number;
+  long: number;
+  rating?: number | null;
+  taste_avg?: number | null;
+  presentation_avg?: number | null;
+  total_ratings?: number | null;
+}
+
+interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLong: number;
+  maxLong: number;
+}
+
+const getBounds = (region: Region, padding = 0): MapBounds => {
+  const latitudeRadius = region.latitudeDelta * (0.5 + padding);
+  const longitudeRadius = region.longitudeDelta * (0.5 + padding);
+
+  return {
+    minLat: region.latitude - latitudeRadius,
+    maxLat: region.latitude + latitudeRadius,
+    minLong: region.longitude - longitudeRadius,
+    maxLong: region.longitude + longitudeRadius,
+  };
+};
+
+const containsBounds = (outer: MapBounds, inner: MapBounds) =>
+  outer.minLat <= inner.minLat &&
+  outer.maxLat >= inner.maxLat &&
+  outer.minLong <= inner.minLong &&
+  outer.maxLong >= inner.maxLong;
 
 function Map() {
   const styles = useStyles();
   const params = useLocalSearchParams();
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
-  const [locations, setLocations] = useState<any[]>([]);
+  const [locations, setLocations] = useState<MapLocation[]>([]);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [canOpenLocationSettings, setCanOpenLocationSettings] =
     useState<boolean>(false);
   const mapRef = useRef<any>(null);
-  const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
+  const mapHeightRef = useRef(0);
+  const regionRef = useRef<Region>(INITIAL_REGION);
+  const fetchedBoundsRef = useRef<MapBounds | null>(null);
+  const fetchRequestRef = useRef(0);
+  const openedRouteLocationRef = useRef<string | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<
+    MapLocation["id"] | null
+  >(null);
   const sheetRef = useRef<BottomSheet>(null);
+
+  const selectedLocation = useMemo(
+    () =>
+      locations.find((location) => location.id === selectedLocationId) ?? null,
+    [locations, selectedLocationId]
+  );
+
+  const handleMarkerPress = useCallback((location: MapLocation) => {
+    const mapHeight = mapHeightRef.current;
+    const sheetLatitudeOffset =
+      mapHeight > 0
+        ? regionRef.current.latitudeDelta * (SHEET_HEIGHT / (2 * mapHeight))
+        : 0;
+    const centeredRegion = {
+      ...regionRef.current,
+      latitude: location.lat - sheetLatitudeOffset,
+      longitude: location.long,
+    };
+
+    regionRef.current = centeredRegion;
+    mapRef.current?.animateToRegion(centeredRegion, 350);
+    setSelectedLocationId(location.id);
+    sheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const onRegionChangeComplete = useCallback((newRegion: Region) => {
+    regionRef.current = newRegion;
+    setRegion(newRegion);
+  }, []);
+
+  const markerElements = useMemo(
+    () =>
+      locations.map((location) => (
+        <Marker
+          key={location.id}
+          coordinate={{ latitude: location.lat, longitude: location.long }}
+          anchor={{ x: 0.5, y: 1 }}
+          tracksViewChanges={false}
+          stopPropagation
+          onPress={() => handleMarkerPress(location)}
+        >
+          <LocationPin loc={location} />
+        </Marker>
+      )),
+    [handleMarkerPress, locations]
+  );
 
   useEffect(() => {
     const getLocation = async () => {
@@ -82,6 +180,7 @@ function Map() {
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         };
+        regionRef.current = initial;
         setRegion(initial);
         mapRef.current?.animateToRegion(initial, 1000);
       } catch (error) {
@@ -108,67 +207,92 @@ function Map() {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         };
-        setRegion(targetRegion);
-
-        // Wait a bit for map to be ready, then animate
-        setTimeout(() => {
-          if (mapRef.current) {
-            mapRef.current.animateToRegion(targetRegion, 1000);
-
-            // If locationId is provided, try to find and select that marker
-            if (params.locationId) {
-              setTimeout(() => {
-                const locationIndex = locations.findIndex(
-                  (loc) => loc.id === params.locationId
-                );
-                if (locationIndex !== -1) {
-                  handleMarkerPress(locationIndex);
-                }
-              }, 1200);
-            }
-          }
+        const animationTimer = setTimeout(() => {
+          regionRef.current = targetRegion;
+          setRegion(targetRegion);
+          mapRef.current?.animateToRegion(targetRegion, 1000);
         }, 300);
+
+        return () => clearTimeout(animationTimer);
       }
     }
-  }, [params.lat, params.lon, params.locationId, locations]);
+  }, [params.lat, params.lon]);
+
+  useEffect(() => {
+    if (!params.locationId) {
+      openedRouteLocationRef.current = null;
+      return;
+    }
+
+    const routeLocationId = String(params.locationId);
+    if (openedRouteLocationRef.current === routeLocationId) return;
+
+    const target = locations.find(
+      (location) => String(location.id) === routeLocationId
+    );
+    if (!target) return;
+
+    const openTimer = setTimeout(() => {
+      openedRouteLocationRef.current = routeLocationId;
+      handleMarkerPress(target);
+    }, 0);
+
+    return () => clearTimeout(openTimer);
+  }, [handleMarkerPress, locations, params.locationId]);
 
   useEffect(() => {
     if (!locationResolved) return;
 
-    const fetchLocations = async () => {
-      const min_lat = region.latitude - region.latitudeDelta / 2;
-      const max_lat = region.latitude + region.latitudeDelta / 2;
-      const min_long = region.longitude - region.longitudeDelta / 2;
-      const max_long = region.longitude + region.longitudeDelta / 2;
+    const visibleBounds = getBounds(region);
+    if (
+      fetchedBoundsRef.current &&
+      containsBounds(fetchedBoundsRef.current, visibleBounds)
+    ) {
+      return;
+    }
 
+    const queryBounds = getBounds(region, FETCH_PADDING);
+    const requestId = ++fetchRequestRef.current;
+
+    const fetchTimer = setTimeout(async () => {
       const { data, error } = await supabase.rpc("locations_in_view", {
-        min_lat,
-        min_long,
-        max_lat,
-        max_long,
+        min_lat: queryBounds.minLat,
+        min_long: queryBounds.minLong,
+        max_lat: queryBounds.maxLat,
+        max_long: queryBounds.maxLong,
       });
+
+      if (requestId !== fetchRequestRef.current) return;
+
       if (error) {
         console.error("Error fetching locations in view:", error);
       } else {
-        setLocations(data);
+        fetchedBoundsRef.current = queryBounds;
+        setLocations(
+          (data ?? []).filter(
+            (location: MapLocation) =>
+              Number.isFinite(location.lat) && Number.isFinite(location.long)
+          )
+        );
+      }
+    }, FETCH_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(fetchTimer);
+      if (fetchRequestRef.current === requestId) {
+        fetchRequestRef.current += 1;
       }
     };
-
-    fetchLocations();
   }, [locationResolved, region]);
-
-  const handleMarkerPress = (index: number) => {
-    setSelectedMarker(index);
-    sheetRef.current?.snapToIndex(0);
-  };
-
-  const onRegionChangeComplete = (newRegion: Region) => {
-    setRegion(newRegion);
-  };
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View style={{ flex: 1 }}>
+      <View
+        style={{ flex: 1 }}
+        onLayout={(event) => {
+          mapHeightRef.current = event.nativeEvent.layout.height;
+        }}
+      >
         {locationNotice && (
           <View style={styles.noticeBanner}>
             <Text style={styles.noticeText}>{locationNotice}</Text>
@@ -191,26 +315,17 @@ function Map() {
             showsUserLocation
             showsMyLocationButton
             rotateEnabled={false}
-            region={region}
+            initialRegion={region}
             onRegionChangeComplete={onRegionChangeComplete}
             customMapStyle={mapStyle}
             onPress={() => {
               Keyboard.dismiss();
-              if (selectedMarker !== null) {
+              if (selectedLocationId !== null) {
                 sheetRef.current?.close();
               }
             }}
           >
-            {locations.map((loc, index) => (
-              <Marker
-                key={index}
-                coordinate={{ latitude: loc.lat, longitude: loc.long }}
-                anchor={{ x: 0.5, y: 1 }}
-                onPress={() => handleMarkerPress(index)}
-              >
-                <LocationPin loc={loc} />
-              </Marker>
-            ))}
+            {markerElements}
           </MapView>
         ) : (
           <View style={styles.mapLoading}>
@@ -225,7 +340,7 @@ function Map() {
           snapPoints={[SHEET_HEIGHT]}
           enableDynamicSizing={false}
           enablePanDownToClose
-          onClose={() => setSelectedMarker(null)}
+          onClose={() => setSelectedLocationId(null)}
           style={styles.sheetShadow}
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
@@ -234,9 +349,7 @@ function Map() {
             contentContainerStyle={styles.sheetContent}
             showsVerticalScrollIndicator={false}
           >
-            {selectedMarker !== null && locations[selectedMarker] && (
-              <LocationDetails loc={locations[selectedMarker]} />
-            )}
+            {selectedLocation && <LocationDetails loc={selectedLocation} />}
           </BottomSheetScrollView>
         </BottomSheet>
       </View>
