@@ -9,8 +9,10 @@ import {
   Animated,
   Modal,
   Alert,
+  type StyleProp,
+  type TextStyle,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
@@ -43,6 +45,31 @@ const ICON_SIZES = {
 // Icon-only controls render at 20-24px; this brings the tappable area up
 // toward the 44pt minimum without changing the layout.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
+
+const InlineIdentityText = ({
+  username,
+  isVerified,
+  body,
+  usernameStyle,
+}: {
+  username: string;
+  isVerified?: boolean | null;
+  body: string;
+  usernameStyle: StyleProp<TextStyle>;
+}) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
+  return (
+    <Text style={styles.inlineBody}>
+      <Text style={usernameStyle}>{username}</Text>
+      {isVerified ? (
+        <MaterialIcons name="verified" size={13} color={colors.accent} />
+      ) : null}
+      <Text> {body}</Text>
+    </Text>
+  );
+};
 
 // Expandable Text Component for Instagram-style captions
 const ExpandableText = ({
@@ -489,14 +516,12 @@ const ReviewFooter = memo(
         {(hasCaption || (isOwnReview && onEdit)) && (
           <View style={styles.captionSection}>
             {hasCaption ? (
-              <View style={styles.inlineIdentityRow}>
-                <VerifiedName
-                  name={review.profile?.username || "Unknown"}
-                  isVerified={review.profile?.is_verified}
-                  textStyle={styles.captionUsername}
-                />
-                <Text style={styles.inlineBody}>{review.comment}</Text>
-              </View>
+              <InlineIdentityText
+                username={review.profile?.username || "Unknown"}
+                isVerified={review.profile?.is_verified}
+                body={review.comment}
+                usernameStyle={styles.captionUsername}
+              />
             ) : (
               <TouchableOpacity onPress={onEdit}>
                 <Text style={styles.addCaptionText}>Add a caption</Text>
@@ -515,14 +540,12 @@ const ReviewFooter = memo(
                 onPress={handleShowComments}
                 activeOpacity={0.7}
               >
-                <View style={styles.inlineIdentityRow}>
-                  <VerifiedName
-                    name={c.profile?.username || "Unknown"}
-                    isVerified={c.profile?.is_verified}
-                    textStyle={styles.commentUsername}
-                  />
-                  <Text style={styles.inlineBody}>{c.body}</Text>
-                </View>
+                <InlineIdentityText
+                  username={c.profile?.username || "Unknown"}
+                  isVerified={c.profile?.is_verified}
+                  body={c.body}
+                  usernameStyle={styles.commentUsername}
+                />
               </TouchableOpacity>
             ))}
 
@@ -1032,12 +1055,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 16,
     lineHeight: 20,
     color: t.colors.text,
-  },
-  inlineIdentityRow: {
-    flexDirection: "row" as const,
-    alignItems: "baseline" as const,
-    flexWrap: "wrap" as const,
-    columnGap: t.spacing.xs,
   },
   inlineBody: {
     fontSize: 14,

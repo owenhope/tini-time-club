@@ -18,6 +18,7 @@ import {
   PROVIDER_DEFAULT,
 } from "react-native-maps";
 import * as Location from "expo-location";
+import * as Device from "expo-device";
 import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
@@ -26,11 +27,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { makeStyles } from "@/theme";
 
+const LOWER_LONSDALE_COORDINATES = {
+  latitude: 49.3104,
+  longitude: -123.0815,
+};
+
 const INITIAL_REGION: Region = {
-  latitude: 37.33,
-  longitude: -122,
-  latitudeDelta: 2,
-  longitudeDelta: 2,
+  ...LOWER_LONSDALE_COORDINATES,
+  latitudeDelta: 0.12,
+  longitudeDelta: 0.12,
 };
 
 const SHEET_HEIGHT = 390;
@@ -67,10 +72,13 @@ function Map() {
         }
 
         setLocationNotice(null);
-        const location = await Location.getCurrentPositionAsync({});
+        const coordinates =
+          __DEV__ && !Device.isDevice
+            ? LOWER_LONSDALE_COORDINATES
+            : (await Location.getCurrentPositionAsync({})).coords;
         const initial = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         };
