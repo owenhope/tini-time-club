@@ -397,6 +397,7 @@ const Profile = () => {
         <TouchableOpacity
           onPress={() => router.push("/edit-profile")}
           style={styles.ctaContainer}
+          hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel="Add your favorite spirits and types"
         >
@@ -407,6 +408,7 @@ const Profile = () => {
         <TouchableOpacity
           onPress={() => router.push("/edit-profile")}
           style={styles.ctaContainer}
+          hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel="Add a bio to your profile"
         >
@@ -494,7 +496,7 @@ const useStyles = makeStyles((t) => ({
   ctaContainer: {
     width: "100%" as const,
     alignItems: "flex-start" as const,
-    minHeight: 44,
+    minHeight: 32,
     justifyContent: "center" as const,
   },
   favoritesSection: {
