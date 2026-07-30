@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import authCache from "@/utils/authCache";
+import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme, type ThemePreference } from "@/theme";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -28,6 +29,8 @@ const Settings = () => {
   const handleLogout = async () => {
     try {
       AnalyticService.capture("logout", {});
+
+      await unregisterPushNotificationsAsync();
 
       // Clear cache first
       await authCache.invalidateCache();

@@ -22,6 +22,7 @@ import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
 } from "@/utils/authDeepLink";
+import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -68,6 +69,7 @@ function RootLayoutNav() {
     imageCache.loadFromStorage();
     imageCache.clearExpiredCache();
     authCache.loadFromStorage();
+    void retryPendingPushUnregistrationAsync();
 
     const handleAuthUrl = async (url: string) => {
       if (!isAuthCallbackUrl(url) || lastHandledAuthUrl.current === url) {
@@ -194,6 +196,10 @@ function RootLayoutNav() {
           isCheckingSession.current = false;
           setIsResuming(false);
         }
+      }
+
+      if (nextAppState === "active") {
+        void retryPendingPushUnregistrationAsync();
       }
 
       appState.current = nextAppState;

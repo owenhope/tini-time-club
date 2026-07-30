@@ -1,13 +1,28 @@
 import "react-native-url-polyfill/auto";
 import "react-native-get-random-values";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import * as aesjs from "aes-js";
 import { createClient } from "@supabase/supabase-js";
 import { AppState } from "react-native";
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as
+  | string
+  | undefined;
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as
+  | string
+  | undefined;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Supabase runtime configuration is missing");
+}
+
+if (__DEV__) {
+  console.log(`[Supabase] Connected to ${new URL(supabaseUrl).hostname}`);
+}
+
+export const supabaseProjectRef = new URL(supabaseUrl).hostname.split(".")[0];
 
 /**
  * Session storage adapter that encrypts values before they touch AsyncStorage.
@@ -75,7 +90,7 @@ class LargeSecureStore {
   }
 }
 
-export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: new LargeSecureStore(),
     autoRefreshToken: true,

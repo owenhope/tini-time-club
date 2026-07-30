@@ -48,17 +48,15 @@
    convenient (it was only ever in gitignored/EAS config, so lower urgency), then
    `supabase secrets set EXPO_ACCESS_TOKEN=<new>` and update the EAS env var, and
    `supabase secrets unset EXPO_PUBLIC_ACCESS_TOKEN`.
-4. After the next like/follow in the app, glance at the `push` function logs in the
-   Supabase dashboard to confirm notifications still deliver end-to-end.
-
 ## Known follow-ups (Phase 2)
 
-- Notification inserts are still open to any _authenticated_ user (the app inserts
-  like/follow notifications client-side). Move notification creation into a DB
-  trigger, then drop the authenticated insert policy.
-- `expo_push_token` is still readable by other authenticated users via
-  `profiles.select("*")`. Move it to a private table once the service layer stops
-  selecting `*`.
+- **Push notification hardening deployed (2026-07-30):** migration
+  `20260730120000` and the updated `push` function are live on both main and the
+  development branch. Notification events now come from database triggers,
+  direct client inserts are revoked, installation tokens live in a private
+  multi-device table, and Expo tickets and receipts retire dead tokens. The
+  development webhook, function secret, registered device, Expo ticket, and
+  delivery receipt were verified end to end.
 - `locations` UPDATE is open to any authenticated user (`USING (true)`) — needed
   today for the client-side `place_id` backfill; scope it once that moves
   server-side.

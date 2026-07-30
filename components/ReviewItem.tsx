@@ -15,12 +15,10 @@ import { Image as ExpoImage } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
-import { isDevelopmentMode } from "@/utils/helpers";
 import imageCache from "@/utils/imageCache";
 import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
-import { NOTIFICATION_TYPES } from "@/utils/consts";
 import {
   stripNameFromAddress,
   formatRelativeDate,
@@ -644,7 +642,7 @@ const ReviewItemComponent = ({
     }
   }, [review._commentPatch, addComment, removeComment]);
 
-  // Enhanced like handler with notifications
+  // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
     if (!profile) return;
 
@@ -659,28 +657,14 @@ const ReviewItemComponent = ({
         locationName: review.location?.name,
       });
     }
-
-    // Send notification if user just liked someone else's review
-    if (!wasLiked && review.user_id && profile.id !== review.user_id) {
-      // Only send notifications if not in development mode
-      if (!isDevelopmentMode()) {
-        const notificationBody = `${profile.username} liked your review from ${
-          review.location?.name || "an unknown location"
-        }`;
-        try {
-          await supabase.from("notifications").insert({
-            user_id: review.user_id,
-            body: notificationBody,
-            type: NOTIFICATION_TYPES.USER,
-          });
-        } catch (error) {
-          console.error("Error sending notification:", error);
-        }
-      } else {
-        console.log("🚧 Development mode - skipping like notification");
-      }
-    }
-  }, [profile, hasLiked, toggleLike, review.user_id, review.location?.name]);
+  }, [
+    profile,
+    hasLiked,
+    toggleLike,
+    review.id,
+    review.location?.id,
+    review.location?.name,
+  ]);
 
   const handlePress = useCallback(() => {
     const now = Date.now();

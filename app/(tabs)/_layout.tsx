@@ -1,15 +1,18 @@
 import React, { useEffect } from "react";
-import { Alert, Platform, Image, View, Text } from "react-native";
-import { Tabs } from "expo-router";
+import { Image, View, Text } from "react-native";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { AvatarRefreshProvider } from "@/context/avatar-refresh-context";
-import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
-import { supabase } from "@/utils/supabase";
 import CustomTabBar from "@/components/CustomTabBar";
 import { useTheme } from "@/theme";
+import {
+  getNotificationRoute,
+  registerPushNotificationsAsync,
+  subscribeToPushRegistrationRetry,
+  subscribeToPushTokenChanges,
+} from "@/services/pushNotificationService";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,70 +24,44 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
-    });
-  }
-
-  if (!Device.isDevice) return null;
-
-  try {
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
-    if (!projectId) {
-      Alert.alert("Push Notifications", "Project ID not found");
-      return null;
-    }
-    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
-    return data;
-  } catch (error) {
-    Alert.alert("Push Notifications", `Error getting push token: ${error}`);
-    return null;
-  }
-}
-
 const LayoutContent = () => {
   const { profile } = useProfile();
   const { colors } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
-    if (
-      !profile?.eula_accepted ||
-      !profile.username ||
-      !Device.isDevice
-    ) {
-      return;
-    }
+    if (!profile?.eula_accepted || !profile.username) return;
 
-    const updatePushToken = async () => {
-      const { status } = await Notifications.getPermissionsAsync();
-      let finalStatus = status;
-
-      if (status !== "granted") {
-        const permissionResponse =
-          await Notifications.requestPermissionsAsync();
-        finalStatus = permissionResponse.status;
-      }
-
-      if (finalStatus === "granted") {
-        const token = await registerForPushNotificationsAsync();
-        if (token && profile.expo_push_token !== token) {
-          await supabase
-            .from("profiles")
-            .update({ expo_push_token: token })
-            .eq("id", profile.id);
-        }
-      }
+    const syncToken = (requestPermission = false) => {
+      void registerPushNotificationsAsync({ requestPermission });
     };
 
-    updatePushToken();
-  }, [profile]);
+    const handleResponse = (response: Notifications.NotificationResponse) => {
+      const route = getNotificationRoute(response);
+      if (route) router.push(route as any);
+    };
+
+    syncToken(true);
+
+    const tokenSubscription = subscribeToPushTokenChanges(() => syncToken());
+    const retrySubscription = subscribeToPushRegistrationRetry(() =>
+      syncToken()
+    );
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener(handleResponse);
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      handleResponse(response);
+      void Notifications.clearLastNotificationResponseAsync();
+    });
+
+    return () => {
+      tokenSubscription.remove();
+      retrySubscription.remove();
+      responseSubscription.remove();
+    };
+  }, [profile?.eula_accepted, profile?.id, profile?.username, router]);
 
   if (!profile) return null;
 

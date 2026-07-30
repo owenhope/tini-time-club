@@ -15,12 +15,16 @@ const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  console.log("⚙️ Building app for environment:", process.env.APP_ENV);
+  const appEnvironment =
+    (process.env.APP_ENV as "development" | "preview" | "production") ||
+    "development";
+  const backendEnvironment = process.env.BACKEND_ENV || appEnvironment;
+
+  console.log(
+    `Building ${appEnvironment} app against ${backendEnvironment} backend`
+  );
   const { name, bundleIdentifier, icon, adaptiveIcon, packageName, scheme } =
-    getDynamicAppConfig(
-      (process.env.APP_ENV as "development" | "preview" | "production") ||
-        "development"
-    );
+    getDynamicAppConfig(appEnvironment);
 
   return {
     ...config,
@@ -108,6 +112,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       [
+        "expo-notifications",
+        {
+          color: "#336654",
+          defaultChannel: "default",
+        },
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme:
@@ -136,7 +147,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       router: {
         origin: false,
       },
-      environment: process.env.APP_ENV || "development",
+      environment: appEnvironment,
+      backendEnvironment,
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     },
     experiments: {
       typedRoutes: true,

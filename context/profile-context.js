@@ -4,6 +4,7 @@ import { supabase } from "@/utils/supabase";
 import authCache from "@/utils/authCache";
 import { useRouter } from "expo-router";
 import { Alert } from "react-native";
+import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import {
   isAccountGoneError,
   ACCOUNT_GONE_MESSAGE,
@@ -24,6 +25,7 @@ export const ProfileProvider = ({ children }) => {
    */
   const handleAccountGone = async () => {
     setProfile(null);
+    await unregisterPushNotificationsAsync();
     await authCache.invalidateCache();
     await supabase.auth.signOut();
     router.replace("/");

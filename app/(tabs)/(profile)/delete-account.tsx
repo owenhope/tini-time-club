@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import authCache from "@/utils/authCache";
+import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme } from "@/theme";
 
 const DeleteAccount = () => {
@@ -59,6 +60,8 @@ const DeleteAccount = () => {
                 );
                 throw profileError;
               }
+
+              await unregisterPushNotificationsAsync();
 
               // Clear cache first
               await authCache.invalidateCache();

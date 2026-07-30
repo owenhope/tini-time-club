@@ -31,6 +31,7 @@ import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
+import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -195,6 +196,10 @@ function Home() {
 
         if (!reviewsDataFromDB) {
           throw new Error("Failed to fetch reviews");
+        }
+
+        if (__DEV__) {
+          console.log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
         }
 
         // Generate image URLs using cache
@@ -479,6 +484,7 @@ function Home() {
   const handleDeclineEULA = useCallback(async () => {
     // User declined EULA - they should be logged out
     try {
+      await unregisterPushNotificationsAsync();
       // Clear cache first
       await authCache.invalidateCache();
       // Sign out - navigation will be handled by auth state change in root layout

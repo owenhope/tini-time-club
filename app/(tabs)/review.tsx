@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
-import { isDevelopmentMode } from "@/utils/helpers";
 import AnimatedReanimated, {
   runOnJS,
   useSharedValue,
@@ -34,7 +33,6 @@ import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
-import { NOTIFICATION_TYPES } from "@/utils/consts";
 import { Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
@@ -552,28 +550,6 @@ export default function App() {
         setSubmitError("We couldn't save your review. Please try again.");
         setIsSubmitting(false);
         return;
-      }
-
-      // Only send notifications if not in development mode
-      if (!isDevelopmentMode()) {
-        try {
-          const notificationBody = `${
-            profile.username
-          } has posted a new review from ${
-            (watchedValues.location as any)?.name || "a location"
-          }`;
-          await databaseService.createNotification({
-            user_id: profile.id,
-            body: notificationBody,
-            type: NOTIFICATION_TYPES.FOLLOWERS,
-          });
-        } catch (error) {
-          console.error("Error inserting notification:", error);
-        }
-      } else {
-        console.log(
-          "🚧 Development mode - skipping notification for new review"
-        );
       }
 
       setSubmissionMessage("Review created successfully!");

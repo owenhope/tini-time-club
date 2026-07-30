@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { supabase } from "./supabase";
+import { supabase, supabaseProjectRef } from "./supabase";
 
 interface CachedProfile {
   profile: any;
@@ -8,7 +8,8 @@ interface CachedProfile {
   version: number;
 }
 
-const PROFILE_CACHE_KEY = "profile_cache";
+const LEGACY_PROFILE_CACHE_KEY = "profile_cache";
+const PROFILE_CACHE_KEY = `profile_cache_${supabaseProjectRef}`;
 const PROFILE_CACHE_VERSION = 2;
 // Legacy key that used to hold the full session (access + refresh tokens) in
 // plaintext AsyncStorage. Always removed on startup.
@@ -64,9 +65,12 @@ class AuthCache {
    */
   async getProfile(): Promise<any> {
     const cacheKey = "profile";
+    const user = await this.getUser();
+    if (!user) return null;
 
     if (
       this.profileCache &&
+      this.profileCache.profile?.id === user.id &&
       Date.now() < this.profileCache.expiresAt &&
       this.profileCache.version === PROFILE_CACHE_VERSION &&
       Object.prototype.hasOwnProperty.call(
@@ -77,12 +81,16 @@ class AuthCache {
       return this.profileCache.profile;
     }
 
+    if (this.profileCache?.profile?.id !== user.id) {
+      await this.clearProfileCache();
+    }
+
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
       return this.pendingRequests.get(cacheKey);
     }
 
-    const request = this.fetchProfile();
+    const request = this.fetchProfile(user.id);
     this.pendingRequests.set(cacheKey, request);
 
     try {
@@ -92,17 +100,12 @@ class AuthCache {
     }
   }
 
-  private async fetchProfile(): Promise<any> {
+  private async fetchProfile(userId: string): Promise<any> {
     try {
-      const user = await this.getUser();
-      if (!user) {
-        return null;
-      }
-
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", userId)
         .eq("deleted", false)
         .single();
 
@@ -202,6 +205,7 @@ class AuthCache {
     try {
       // Remove the legacy cache that stored tokens in plaintext.
       await AsyncStorage.removeItem(LEGACY_AUTH_CACHE_KEY);
+      await AsyncStorage.removeItem(LEGACY_PROFILE_CACHE_KEY);
 
       const data = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
       if (data) {

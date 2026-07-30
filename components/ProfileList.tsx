@@ -10,7 +10,6 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
-import { NOTIFICATION_TYPES } from "@/utils/consts";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 export interface ProfileType {
@@ -80,19 +79,6 @@ export default function ProfileList({
       if (error) {
         console.error("Error following:", error);
       } else {
-        if (profile && profile.id && profile.username) {
-          const notificationBody = `${profile.username} started following you`;
-          const { error: notificationError } = await supabase
-            .from("notifications")
-            .insert({
-              user_id: targetProfileId,
-              body: notificationBody,
-              type: NOTIFICATION_TYPES.USER,
-            });
-          if (notificationError) {
-            console.error("Error creating notification:", notificationError);
-          }
-        }
         setFollowedIds((prev) => [...prev, targetProfileId]);
         // Track follow event
         const targetProfile = profiles.find((p) => p.id === targetProfileId);

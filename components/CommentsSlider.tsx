@@ -1,12 +1,6 @@
 // CommentsSlider.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Alert,
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
+import { Alert, View, Text, TouchableOpacity, FlatList } from "react-native";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetFlatList,
@@ -15,11 +9,9 @@ import BottomSheet, {
   type BottomSheetBackdropProps,
   type BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
-import { isDevelopmentMode } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
-import { NOTIFICATION_TYPES } from "@/utils/consts";
 import ReportModal from "@/components/ReportModal";
 import { useRouter } from "expo-router";
 import { Avatar, VerifiedName } from "@/components/shared";
@@ -106,51 +98,37 @@ export default function CommentsSlider({
     };
   }, [review.id]);
 
-  const handleAddComment = useCallback(async (comment: string) => {
-    if (!profile) return false;
+  const handleAddComment = useCallback(
+    async (comment: string) => {
+      if (!profile) return false;
 
-    try {
-      const data = await databaseService.createComment({
-        review_id: review.id,
-        user_id: profile.id,
-        body: comment,
-      });
+      try {
+        const data = await databaseService.createComment({
+          review_id: review.id,
+          user_id: profile.id,
+          body: comment,
+        });
 
-      setComments((prev) => [...prev, data]);
-      listRef.current?.scrollToEnd({ animated: true });
-      onCommentAdded?.(review.id, data);
+        setComments((prev) => [...prev, data]);
+        listRef.current?.scrollToEnd({ animated: true });
+        onCommentAdded?.(review.id, data);
 
-      // Track comment event
-      AnalyticService.capture("comment_on_review", {
-        reviewId: review.id,
-        commentId: data.id,
-        locationId: review.location?.id,
-        locationName: review.location?.name,
-      });
+        // Track comment event
+        AnalyticService.capture("comment_on_review", {
+          reviewId: review.id,
+          commentId: data.id,
+          locationId: review.location?.id,
+          locationName: review.location?.name,
+        });
 
-      if (review.user_id && profile.id !== review.user_id) {
-        // Only send notifications if not in development mode
-        if (!isDevelopmentMode()) {
-          const notificationBody = `${
-            profile.username
-          } commented on your review from ${
-            review.location?.name || "an unknown location"
-          }`;
-          await databaseService.createNotification({
-            user_id: review.user_id,
-            body: notificationBody,
-            type: NOTIFICATION_TYPES.USER,
-          });
-        } else {
-          console.log("🚧 Development mode - skipping comment notification");
-        }
+        return true;
+      } catch (error) {
+        console.error("Error adding comment:", error);
+        return false;
       }
-      return true;
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      return false;
-    }
-  }, [onCommentAdded, profile, review]);
+    },
+    [onCommentAdded, profile, review]
+  );
 
   const deleteComment = async (id: number) => {
     try {
@@ -248,7 +226,11 @@ export default function CommentsSlider({
               onPress={() => setReportModalVisible(true)}
               style={styles.deleteIcon}
             >
-              <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
+              <Ionicons
+                name="flag-outline"
+                size={16}
+                color={colors.textMuted}
+              />
             </TouchableOpacity>
           )}
         </View>

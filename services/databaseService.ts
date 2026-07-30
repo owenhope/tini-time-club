@@ -13,6 +13,24 @@ interface QueryOptions {
   forceRefresh?: boolean;
 }
 
+const QUERY_TIMEOUT_MS = 20_000;
+
+const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error("The request timed out. Please try again.")),
+      QUERY_TIMEOUT_MS
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+};
+
 class DatabaseService {
   private static instance: DatabaseService;
   private queryCache = new Map<string, CachedQuery>();
@@ -60,7 +78,7 @@ class DatabaseService {
     }
 
     // Execute query
-    const queryPromise = queryFn();
+    const queryPromise = withTimeout(queryFn());
     this.pendingQueries.set(queryKey, queryPromise);
 
     try {
@@ -433,17 +451,6 @@ class DatabaseService {
 
     // Invalidate comments cache
     this.queryCache.delete(`comments_${reviewId}`);
-  }
-
-  /**
-   * Create a notification
-   */
-  async createNotification(notificationData: any): Promise<void> {
-    const { error } = await supabase
-      .from("notifications")
-      .insert(notificationData);
-
-    if (error) throw error;
   }
 
   /**
