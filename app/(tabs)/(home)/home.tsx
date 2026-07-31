@@ -36,9 +36,16 @@ import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Filter } from "bad-words";
+import { Image as ExpoImage } from "expo-image";
 import { Button, Input } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { makeStyles, useTheme } from "@/theme";
+
+// Built once: constructing the profanity list is expensive and the filter is
+// stateless, so a per-render instance was pure waste.
+const badWordsFilter = new Filter();
+const isExplicitUsername = (username: string) =>
+  badWordsFilter.isProfane(username);
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -307,25 +314,21 @@ function Home() {
       const preloadCount = Math.min(15, reviews.length);
       // review.image_url already holds a signed URL (resolved in loadReviews);
       // re-resolving it here would sign the signed URL and 400.
-      reviews
+      // Prefetch through expo-image: the cards render with ExpoImage, so
+      // RN's Image.prefetch warmed a cache nothing reads and every photo
+      // downloaded twice.
+      const urls = reviews
         .slice(0, preloadCount)
         .map((review) => review.image_url)
-        .filter((url) => typeof url === "string" && url.startsWith("http"))
-        .forEach((url) => {
-          Image.prefetch(url).catch(() => {
-            // Silently fail - preloading is optional
-          });
-        });
+        .filter(
+          (url): url is string =>
+            typeof url === "string" && url.startsWith("http")
+        );
+      if (urls.length > 0) {
+        void ExpoImage.prefetch(urls, { cachePolicy: "memory-disk" });
+      }
     }
   }, [reviews.length]);
-
-  // Initialize bad-words filter
-  const badWordsFilter = new Filter();
-
-  // Check if username contains inappropriate content using bad-words package
-  const isExplicitUsername = (username: string) => {
-    return badWordsFilter.isProfane(username);
-  };
 
   // Check if username is unique
   const checkUsernameUnique = async (username: string) => {
@@ -775,10 +778,13 @@ function Home() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
+        maxToRenderPerBatch={3}
         updateCellsBatchingPeriod={50}
-        initialNumToRender={10}
-        windowSize={10}
+        // Each card is ~1.3 screens tall (square photo + header + footer), so
+        // 3 items is already several screens of runway; 10 meant mounting a
+        // dozen screens of content and photo decodes before first paint.
+        initialNumToRender={3}
+        windowSize={5}
         extraData={visibleReviewIds}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}

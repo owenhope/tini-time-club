@@ -1,6 +1,11 @@
 import "react-native-get-random-values";
 import { useEffect, useState, useRef } from "react";
-import { Stack, useRouter, usePathname } from "expo-router";
+import {
+  Stack,
+  useRouter,
+  usePathname,
+  useRootNavigationState,
+} from "expo-router";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
@@ -42,7 +47,11 @@ function RootLayoutNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
+  // Initial-launch destination waiting on the router to mount; the splash
+  // stays up until we actually arrive there.
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [isResuming, setIsResuming] = useState(false);
+  const rootNavigationState = useRootNavigationState();
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
   const hasHandledInitialSession = useRef(false);
@@ -62,10 +71,37 @@ function RootLayoutNav() {
     isReadyRef.current = isReady;
   }, [isReady]);
 
+  // Perform the initial-launch navigation as soon as the router is ready —
+  // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.
   useEffect(() => {
-    // Initialize caches (non-blocking)
+    if (pendingRoute && rootNavigationState?.key) {
+      router.replace(pendingRoute as never);
+    }
+  }, [pendingRoute, rootNavigationState?.key, router]);
+
+  // Hide the splash when we arrive at the launch destination — this replaces
+  // the old fixed 400 ms "wait for navigation" sleep. The timeout is a
+  // backstop so a route mismatch can never strand the splash.
+  useEffect(() => {
+    if (!pendingRoute) return;
+
+    if (pathname === pendingRoute) {
+      setPendingRoute(null);
+      void SplashScreen.hideAsync();
+      return;
+    }
+
+    const backstop = setTimeout(() => {
+      setPendingRoute(null);
+      void SplashScreen.hideAsync();
+    }, 2000);
+    return () => clearTimeout(backstop);
+  }, [pathname, pendingRoute]);
+
+  useEffect(() => {
+    // Initialize caches (non-blocking). loadFromStorage already prunes
+    // expired entries in one batched multiGet/multiRemove pass.
     imageCache.loadFromStorage();
-    imageCache.clearExpiredCache();
     authCache.loadFromStorage();
     void retryPendingPushUnregistrationAsync();
 
@@ -129,16 +165,10 @@ function RootLayoutNav() {
       if (event === "INITIAL_SESSION" && !hasHandledInitialSession.current) {
         hasHandledInitialSession.current = true;
 
-        // Mount Stack first so we can navigate
-        setIsReady(true);
-
-        // Wait for Stack to mount
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        // Navigate based on session — unless a deep link is being handled.
-        // Auth callbacks navigate from handleAuthUrl, and a routable link
-        // (a shared review, a profile) has already moved us off the entry
-        // route. But an unroutable launch URL must NOT suppress the
+        // Decide where this launch should land — unless a deep link is being
+        // handled. Auth callbacks navigate from handleAuthUrl, and a routable
+        // link (a shared review, a profile) has already moved us off the
+        // entry route. But an unroutable launch URL must NOT suppress the
         // redirect, or a signed-in user gets stranded on the welcome screen.
         const launchedViaDeepLink = await Linking.getInitialURL();
         const isAuthLaunch =
@@ -146,21 +176,18 @@ function RootLayoutNav() {
         const deepLinkRouted =
           !!launchedViaDeepLink && pathnameRef.current !== "/";
 
-        if (!isAuthLaunch && !deepLinkRouted) {
-          if (session) {
-            if (pathnameRef.current !== "/home") {
-              router.replace("/home");
-            }
-          } else if (pathnameRef.current !== "/") {
-            router.replace("/");
-          }
+        const target =
+          !isAuthLaunch && !deepLinkRouted ? (session ? "/home" : "/") : null;
+
+        // Mount the Stack; the navigation + splash-hide effects below take
+        // over once the router reports ready — no fixed timers.
+        setIsReady(true);
+
+        if (target && pathnameRef.current !== target) {
+          setPendingRoute(target);
+        } else {
+          await SplashScreen.hideAsync();
         }
-
-        // Wait for navigation to complete
-        await new Promise((resolve) => setTimeout(resolve, 400));
-
-        // Hide splash after navigation completes
-        await SplashScreen.hideAsync();
       } else if (event === "SIGNED_IN" && session) {
         // User signed in (email, Apple, Google, etc.). Recovery links also emit
         // SIGNED_IN; staying put keeps the reset screen on screen.

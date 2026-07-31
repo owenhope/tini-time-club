@@ -642,6 +642,12 @@ const Location = () => {
               : null,
           ]}
           ListEmptyComponent={renderEmpty}
+          // Full-bleed photo cards: without windowing config the defaults
+          // mount 10 cards up front and keep ~21 screens of them alive.
+          removeClippedSubviews={true}
+          initialNumToRender={3}
+          maxToRenderPerBatch={3}
+          windowSize={5}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           refreshControl={

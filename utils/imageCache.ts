@@ -276,30 +276,59 @@ class ImageCache {
       const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
 
       if (cached && Date.now() < cached.expiresAt) {
-        results[path] = cached.signedUrl;
+        // Empty string is the "missing image" sentinel — leave those out so
+        // callers' `urls[path] || path` fallback stays on the raw path.
+        if (cached.signedUrl) {
+          results[path] = cached.signedUrl;
+        }
       } else {
         uncachedPaths.push(path);
       }
     }
 
-    // Fetch uncached images in parallel
+    // Sign all uncached paths in ONE storage API call — the previous
+    // per-path createSignedUrl fan-out cost ~20 HTTPS round trips per feed
+    // page before any photo could render.
     if (uncachedPaths.length > 0) {
-      const promises = uncachedPaths.map(async (path) => {
-        try {
-          const url = await this.getReviewImageUrl(path);
-          return { path, url };
-        } catch (error) {
-          console.error(`Error fetching image ${path}:`, error);
-          return { path, url: null };
-        }
-      });
+      const uniquePaths = [...new Set(uncachedPaths)];
+      try {
+        const { data, error } = await supabase.storage
+          .from("review_images")
+          .createSignedUrls(uniquePaths, 7200);
 
-      const fetchedResults = await Promise.all(promises);
+        if (error) throw error;
 
-      for (const { path, url } of fetchedResults) {
-        if (url) {
-          results[path] = url;
+        const now = Date.now();
+        const toPersist: [string, string][] = [];
+
+        for (const item of data ?? []) {
+          const path = item.path;
+          if (!path) continue;
+
+          // Missing objects get the same empty sentinel as before, so a
+          // deleted image doesn't trigger a re-fetch on every page load.
+          const cached: CachedSignedUrl = {
+            signedUrl: item.error ? "" : item.signedUrl,
+            timestamp: now,
+            expiresAt: now + this.REVIEW_IMAGE_CACHE_DURATION,
+          };
+          this.memoryCache.set(`review_${path}`, cached);
+          toPersist.push([
+            `image_cache_review_${path}`,
+            JSON.stringify(cached),
+          ]);
+
+          if (!item.error) {
+            results[path] = item.signedUrl;
+          }
         }
+
+        // One batched write instead of one setItem per image.
+        if (toPersist.length > 0) {
+          await AsyncStorage.multiSet(toPersist);
+        }
+      } catch (error) {
+        console.error("Error batch-signing review image URLs:", error);
       }
     }
 
