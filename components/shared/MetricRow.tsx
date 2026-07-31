@@ -40,11 +40,11 @@ const MetricRow: React.FC<{
               accessible
               accessibilityLabel={label}
             >
+              <AppText variant="caption" tone="secondary">
+                {metric.label}
+              </AppText>
               <AppText variant="metric" style={styles.value}>
                 {metric.value}
-              </AppText>
-              <AppText variant="caption" tone="secondary" style={styles.label}>
-                {metric.label}
               </AppText>
             </View>
           );
@@ -63,11 +63,11 @@ const MetricRow: React.FC<{
             accessibilityLabel={label}
             accessibilityHint={`Shows ${metric.label.toLowerCase()}`}
           >
+            <AppText variant="caption" tone="secondary">
+              {metric.label}
+            </AppText>
             <AppText variant="metric" style={styles.value}>
               {metric.value}
-            </AppText>
-            <AppText variant="caption" tone="secondary" style={styles.label}>
-              {metric.label}
             </AppText>
           </Pressable>
         );
@@ -88,6 +88,7 @@ const useStyles = makeStyles((t) => ({
     minHeight: 44,
     justifyContent: "center" as const,
     paddingVertical: t.spacing.xs,
+    gap: 2,
   },
   centered: {
     alignItems: "center" as const,
@@ -97,9 +98,6 @@ const useStyles = makeStyles((t) => ({
   },
   value: {
     fontVariant: ["tabular-nums"] as const,
-  },
-  label: {
-    marginTop: 2,
   },
 }));
 

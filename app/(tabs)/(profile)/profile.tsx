@@ -442,22 +442,41 @@ const Profile = () => {
     }, [profile])
   );
 
+  const hasFavoriteTags =
+    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0;
+
+  const favoriteTags = hasFavoriteTags ? (
+    <View style={styles.favoritesTagsBlock}>
+      {getFavoriteSpirits().length > 0 && (
+        <View style={styles.favoritesTagsGroup}>
+          <Text style={styles.favoritesLabel}>Spirit</Text>
+          <View style={styles.favoritesTagsContainer}>
+            {getFavoriteSpirits().map((spiritId: any) => (
+              <View key={`spirit-${spiritId}`} style={styles.tag}>
+                <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+      {getFavoriteTypes().length > 0 && (
+        <View style={styles.favoritesTagsGroup}>
+          <Text style={styles.favoritesLabel}>Type</Text>
+          <View style={styles.favoritesTagsContainer}>
+            {getFavoriteTypes().map((typeId: any) => (
+              <View key={`type-${typeId}`} style={styles.tag}>
+                <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  ) : null;
+
   const favoriteChips = (
     <View style={styles.favoritesSection}>
-      {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
-        <View style={styles.favoritesTagsContainer}>
-          {getFavoriteSpirits().map((spiritId: any) => (
-            <View key={`spirit-${spiritId}`} style={styles.tag}>
-              <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-            </View>
-          ))}
-          {getFavoriteTypes().map((typeId: any) => (
-            <View key={`type-${typeId}`} style={styles.tag}>
-              <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-            </View>
-          ))}
-        </View>
-      ) : (
+      {!hasFavoriteTags && (
         <TouchableOpacity
           onPress={() => router.push("/edit-profile")}
           style={styles.ctaContainer}
@@ -480,17 +499,20 @@ const Profile = () => {
         </TouchableOpacity>
       )}
       {favoriteLocation ? (
-        <TouchableOpacity
-          onPress={() => router.push(`/places/${favoriteLocation.id}`)}
-          style={styles.favoriteLocationLink}
-          accessibilityRole="link"
-          accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
-        >
-          <Ionicons name="location" size={16} color={colors.accent} />
-          <Text style={styles.favoriteLocationText} numberOfLines={1}>
-            {favoriteLocation.name}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.favoriteLocationBlock}>
+          <Text style={styles.favoritesLabel}>Favorite Location</Text>
+          <TouchableOpacity
+            onPress={() => router.push(`/places/${favoriteLocation.id}`)}
+            style={styles.favoriteLocationLink}
+            accessibilityRole="link"
+            accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
+          >
+            <Ionicons name="location" size={16} color={colors.accent} />
+            <Text style={styles.favoriteLocationText} numberOfLines={1}>
+              {favoriteLocation.name}
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <TouchableOpacity
           onPress={() =>
@@ -534,6 +556,7 @@ const Profile = () => {
           profile?.username &&
           router.push(`/users/${profile.username}/following`)
         }
+        tags={favoriteTags}
       >
         {favoriteChips}
       </ProfileHeader>
@@ -641,12 +664,33 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.lg,
     gap: t.spacing.xs,
   },
+  favoritesTagsBlock: {
+    // One row always: the Spirit and Type groups sit side by side and their
+    // chips wrap vertically within each group instead of stacking the groups.
+    flexDirection: "row" as const,
+    justifyContent: "flex-end" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.lg,
+  },
+  favoritesTagsGroup: {
+    flexShrink: 1,
+    alignItems: "flex-start" as const,
+    gap: 6,
+  },
+  favoritesLabel: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+  },
+  favoriteLocationBlock: {
+    // The link centres its text in a 32pt touch target, which already adds
+    // ~6pt of visual space below the label — no extra gap on top of that.
+    gap: 0,
+  },
   favoritesTagsContainer: {
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: t.spacing.sm,
-    width: "100%" as const,
-    justifyContent: "flex-start" as const,
+    justifyContent: "flex-end" as const,
   },
   tag: {
     paddingVertical: 6,

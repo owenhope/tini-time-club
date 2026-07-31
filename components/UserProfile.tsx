@@ -9,7 +9,6 @@ import {
   Animated,
   Platform,
   ActionSheetIOS,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
@@ -19,7 +18,7 @@ import { Review } from "@/types/types";
 import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Button, VerifiedName } from "@/components/shared";
+import { Button, Skeleton, VerifiedName } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useRouter,
@@ -74,7 +73,7 @@ const UserProfile = () => {
   const [types, setTypes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
   const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
-  const [loadingRegulars, setLoadingRegulars] = useState(false);
+  const [loadingRegulars, setLoadingRegulars] = useState(true);
   const [favoriteLocation, setFavoriteLocation] =
     useState<FavoriteLocationValue | null>(null);
 
@@ -621,40 +620,54 @@ const UserProfile = () => {
     );
   }
 
-  const favoriteChips =
-    getFavoriteSpirits().length > 0 ||
-    getFavoriteTypes().length > 0 ||
-    favoriteLocation ? (
-      <View style={styles.favoritesSection}>
-        {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
-          <View style={styles.favoritesTagsContainer}>
-            {getFavoriteSpirits().map((spiritId: any) => (
-              <View key={`spirit-${spiritId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-              </View>
-            ))}
-            {getFavoriteTypes().map((typeId: any) => (
-              <View key={`type-${typeId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-              </View>
-            ))}
+  const favoriteTags =
+    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+      <View style={styles.favoritesTagsBlock}>
+        {getFavoriteSpirits().length > 0 && (
+          <View style={styles.favoritesTagsGroup}>
+            <Text style={styles.favoritesLabel}>Spirit</Text>
+            <View style={styles.favoritesTagsContainer}>
+              {getFavoriteSpirits().map((spiritId: any) => (
+                <View key={`spirit-${spiritId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        ) : null}
-        {favoriteLocation ? (
-          <TouchableOpacity
-            onPress={() => router.push(`/places/${favoriteLocation.id}`)}
-            style={styles.favoriteLocationLink}
-            accessibilityRole="link"
-            accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
-          >
-            <Ionicons name="location" size={16} color={colors.accent} />
-            <Text style={styles.favoriteLocationText} numberOfLines={1}>
-              {favoriteLocation.name}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+        )}
+        {getFavoriteTypes().length > 0 && (
+          <View style={styles.favoritesTagsGroup}>
+            <Text style={styles.favoritesLabel}>Type</Text>
+            <View style={styles.favoritesTagsContainer}>
+              {getFavoriteTypes().map((typeId: any) => (
+                <View key={`type-${typeId}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     ) : null;
+
+  const favoriteChips = favoriteLocation ? (
+    <View style={styles.favoritesSection}>
+      <View style={styles.favoriteLocationBlock}>
+        <Text style={styles.favoritesLabel}>Favorite Location</Text>
+        <TouchableOpacity
+          onPress={() => router.push(`/places/${favoriteLocation.id}`)}
+          style={styles.favoriteLocationLink}
+          accessibilityRole="link"
+          accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
+        >
+          <Ionicons name="location" size={16} color={colors.accent} />
+          <Text style={styles.favoriteLocationText} numberOfLines={1}>
+            {favoriteLocation.name}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  ) : null;
 
   // Header scrolls with the grid rather than sitting fixed above it.
   const header = (
@@ -673,6 +686,7 @@ const UserProfile = () => {
         onUnblockPress={handleUnblockUser}
         onFollowersPress={() => router.push(`${pathname}/followers` as never)}
         onFollowingPress={() => router.push(`${pathname}/following` as never)}
+        tags={favoriteTags}
       >
         {favoriteChips}
       </ProfileHeader>
@@ -708,15 +722,25 @@ const UserProfile = () => {
           renderItem={({ item }) => <RegularPlaceRow place={item} />}
           ListHeaderComponent={header}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              {loadingRegulars ? (
-                <ActivityIndicator size="small" color={colors.accent} />
-              ) : (
+            loadingRegulars ? (
+              <View>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.skeletonPlaceRow}>
+                    <Skeleton circle height={38} />
+                    <View style={styles.skeletonPlaceContent}>
+                      <Skeleton width="55%" height={13} />
+                      <Skeleton width="35%" height={10} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
                   This member is not a top-three regular anywhere yet.
                 </Text>
-              )}
-            </View>
+              </View>
+            )
           }
           refreshControl={
             <RefreshControl
@@ -790,6 +814,22 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     color: t.colors.textSecondary,
   },
+  skeletonPlaceRow: {
+    minHeight: 76,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.md,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  skeletonPlaceContent: {
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
+  },
   headerButton: {
     marginRight: 10,
     paddingHorizontal: t.spacing.sm,
@@ -844,12 +884,33 @@ const useStyles = makeStyles((t) => ({
     paddingTop: t.spacing.xs,
     paddingBottom: t.spacing.lg,
   },
+  favoritesTagsBlock: {
+    // One row always: the Spirit and Type groups sit side by side and their
+    // chips wrap vertically within each group instead of stacking the groups.
+    flexDirection: "row" as const,
+    justifyContent: "flex-end" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.lg,
+  },
+  favoritesTagsGroup: {
+    flexShrink: 1,
+    alignItems: "flex-start" as const,
+    gap: 6,
+  },
+  favoritesLabel: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+  },
+  favoriteLocationBlock: {
+    // The link centres its text in a 32pt touch target, which already adds
+    // ~6pt of visual space below the label — no extra gap on top of that.
+    gap: 0,
+  },
   favoritesTagsContainer: {
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: t.spacing.sm,
-    width: "100%" as const,
-    justifyContent: "flex-start" as const,
+    justifyContent: "flex-end" as const,
   },
   tag: {
     paddingVertical: 6,

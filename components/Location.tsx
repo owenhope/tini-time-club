@@ -10,7 +10,6 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Animated,
 } from "react-native";
@@ -23,14 +22,14 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
-import { RatingSummary } from "@/components/shared";
+import { RatingSummary, Skeleton } from "@/components/shared";
 import useCollapsibleHeader, {
   COLLAPSE_RANGE,
 } from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
-import Regulars from "@/components/Regulars";
+import Regulars, { RegularsSkeleton } from "@/components/Regulars";
 import {
   getRegularsByLocation,
   type Regular,
@@ -53,14 +52,38 @@ interface LocationType {
   website?: string;
 }
 
+// Placeholder for a full-width review card (header, square photo, footer)
+// while the review list loads, so content doesn't jump in from an empty list.
+const ReviewCardSkeleton = () => {
+  const styles = useStyles();
+  return (
+    <View>
+      <View style={styles.skeletonCardHeader}>
+        <Skeleton circle height={28} />
+        <Skeleton width={120} height={12} />
+      </View>
+      <Skeleton width="100%" style={styles.skeletonCardImage} />
+      <View style={styles.skeletonCardFooter}>
+        <View style={styles.skeletonCardActions}>
+          <Skeleton circle height={22} />
+          <Skeleton circle height={22} />
+        </View>
+        <Skeleton width="90%" height={12} />
+        <Skeleton width="60%" height={12} />
+      </View>
+    </View>
+  );
+};
+
 const Location = () => {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+  const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [regulars, setRegulars] = useState<Regular[]>([]);
+  const [loadingRegulars, setLoadingRegulars] = useState<boolean>(true);
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
@@ -218,6 +241,7 @@ const Location = () => {
     if (!displayLocation?.id) return;
 
     let active = true;
+    setLoadingRegulars(true);
     getRegularsByLocation([displayLocation.id])
       .then((grouped) => {
         if (active) {
@@ -227,6 +251,9 @@ const Location = () => {
       .catch((error) => {
         console.error("Error fetching location regulars:", error);
         if (active) setRegulars([]);
+      })
+      .finally(() => {
+        if (active) setLoadingRegulars(false);
       });
 
     return () => {
@@ -401,12 +428,7 @@ const Location = () => {
 
   const renderEmpty = useCallback(() => {
     if (loadingReviews) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.emptyText}>Loading reviews...</Text>
-        </View>
-      );
+      return <ReviewCardSkeleton />;
     }
     if (locationReviews.length === 0 && displayLocation?.name) {
       return (
@@ -551,7 +573,11 @@ const Location = () => {
                   />
                 </View>
 
-                {regulars.length > 0 ? (
+                {loadingRegulars ? (
+                  <View style={styles.regularsBlock}>
+                    <RegularsSkeleton />
+                  </View>
+                ) : regulars.length > 0 ? (
                   <View style={styles.regularsBlock}>
                     <Regulars regulars={regulars} variant="dense" />
                   </View>
@@ -855,6 +881,29 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     color: t.colors.textSecondary,
     flexShrink: 1,
+  },
+  skeletonCardHeader: {
+    paddingHorizontal: 10,
+    paddingVertical: t.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+    backgroundColor: t.colors.surface,
+  },
+  skeletonCardImage: {
+    height: "auto" as const,
+    aspectRatio: 1,
+    borderRadius: 0,
+  },
+  skeletonCardFooter: {
+    padding: 10,
+    gap: t.spacing.sm,
+    backgroundColor: t.colors.surface,
+  },
+  skeletonCardActions: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
   },
 }));
 

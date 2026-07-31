@@ -4,7 +4,7 @@ import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { RatingSummary } from "@/components/shared";
-import Regulars from "@/components/Regulars";
+import Regulars, { RegularsSkeleton } from "@/components/Regulars";
 import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
@@ -62,7 +62,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
             />
           </View>
 
-          {loc.regulars?.length ? (
+          {loc.regulars === undefined ? (
+            // Regulars arrive in a second fetch after the pins; hold their
+            // column open so the rating block doesn't stretch full width and
+            // then snap back when they land.
+            <View style={styles.regulars}>
+              <RegularsSkeleton />
+            </View>
+          ) : loc.regulars.length ? (
             <View style={styles.regulars}>
               <Regulars regulars={loc.regulars} variant="dense" />
             </View>

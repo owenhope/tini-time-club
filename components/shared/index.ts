@@ -43,3 +43,6 @@ export type { ProfileIdentityProps } from "./ProfileIdentity";
 
 export { default as RatingSlider } from "./RatingSlider";
 export type { RatingSliderProps } from "./RatingSlider";
+
+export { default as Skeleton } from "./Skeleton";
+export type { SkeletonProps } from "./Skeleton";

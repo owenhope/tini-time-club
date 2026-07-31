@@ -38,7 +38,7 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
         onPress={() => onChange("regulars")}
         accessibilityRole="tab"
         accessibilityState={{ selected: activeTab === "regulars" }}
-        accessibilityLabel="Regulars"
+        accessibilityLabel="Regular"
       >
         <Text
           style={[
@@ -46,7 +46,7 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
             activeTab === "regulars" && styles.activeLabel,
           ]}
         >
-          Regulars
+          Regular
         </Text>
       </Pressable>
     </View>
@@ -75,7 +75,7 @@ const useStyles = makeStyles((t) => ({
     borderBottomColor: t.colors.accent,
   },
   tabLabel: {
-    ...t.typography.label,
+    ...t.typography.bodyStrong,
     color: t.colors.textMuted,
   },
   activeLabel: {

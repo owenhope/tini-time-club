@@ -52,17 +52,19 @@ const InlineIdentityText = ({
   isVerified,
   body,
   usernameStyle,
+  bodyStyle,
 }: {
   username: string;
   isVerified?: boolean | null;
   body: string;
   usernameStyle: StyleProp<TextStyle>;
+  bodyStyle?: StyleProp<TextStyle>;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
 
   return (
-    <Text style={styles.inlineBody}>
+    <Text style={[styles.inlineBody, bodyStyle]}>
       <Text style={usernameStyle}>{username}</Text>
       {isVerified ? (
         <MaterialIcons name="verified" size={13} color={colors.accent} />
@@ -545,6 +547,7 @@ const ReviewFooter = memo(
                 isVerified={review.profile?.is_verified}
                 body={review.comment}
                 usernameStyle={styles.captionUsername}
+                bodyStyle={styles.captionText}
               />
             ) : (
               <TouchableOpacity onPress={onEdit}>
@@ -1111,7 +1114,7 @@ const useStyles = makeStyles((t) => ({
   },
   captionUsername: {
     fontWeight: "600" as const,
-    fontSize: 13,
+    fontSize: 15,
     color: t.colors.text,
   },
   captionBody: {

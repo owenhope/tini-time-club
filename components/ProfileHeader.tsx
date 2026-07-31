@@ -30,7 +30,10 @@ interface ProfileHeaderProps {
   onUnblockPress?: () => void;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
-  /** Rendered between the bio and the action row (favourite spirits, etc.). */
+  /** Spirit/type chips; rendered to the right of the name and bio so they
+      don't cost the header an extra row. */
+  tags?: React.ReactNode;
+  /** Rendered between the bio and the action row (favourite location, etc.). */
   children?: React.ReactNode;
 }
 
@@ -61,6 +64,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUnblockPress,
   onFollowersPress,
   onFollowingPress,
+  tags,
   children,
 }) => {
   const styles = useStyles();
@@ -114,14 +118,17 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         </View>
       </View>
 
-      {(profile.name || profile.bio) && (
-        <View style={styles.identity}>
-          {profile.name ? (
-            <Text style={styles.name} numberOfLines={1}>
-              {profile.name}
-            </Text>
-          ) : null}
-          {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+      {(profile.name || profile.bio || tags) && (
+        <View style={styles.identityRow}>
+          <View style={styles.identity}>
+            {profile.name ? (
+              <Text style={styles.name} numberOfLines={1}>
+                {profile.name}
+              </Text>
+            ) : null}
+            {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+          </View>
+          {tags ? <View style={styles.identityTags}>{tags}</View> : null}
         </View>
       )}
 
@@ -160,9 +167,21 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrim,
     borderRadius: AVATAR_SIZE / 2,
   },
-  identity: {
+  identityRow: {
     paddingHorizontal: t.spacing.lg,
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.md,
+  },
+  identity: {
+    flex: 1,
+    minWidth: 0,
     gap: 2,
+  },
+  identityTags: {
+    flexShrink: 1,
+    maxWidth: "65%" as const,
+    alignItems: "flex-end" as const,
   },
   name: {
     ...t.typography.bodyStrong,

@@ -11,6 +11,8 @@ type MultiSelectInputProps = {
   selectedIds: (number | string)[];
   onSelectionChange: (selectedIds: (number | string)[]) => void;
   label?: string;
+  /** Cap on selections; picking beyond it replaces the oldest choice. */
+  maxSelections?: number;
 };
 
 const MultiSelectInput = ({
@@ -18,12 +20,16 @@ const MultiSelectInput = ({
   selectedIds,
   onSelectionChange,
   label,
+  maxSelections,
 }: MultiSelectInputProps) => {
   const styles = useStyles();
 
   const toggleSelection = (id: number | string) => {
     if (selectedIds.includes(id)) {
       onSelectionChange(selectedIds.filter((selectedId) => selectedId !== id));
+    } else if (maxSelections != null && selectedIds.length >= maxSelections) {
+      const keep = maxSelections - 1;
+      onSelectionChange([...(keep > 0 ? selectedIds.slice(-keep) : []), id]);
     } else {
       onSelectionChange([...selectedIds, id]);
     }

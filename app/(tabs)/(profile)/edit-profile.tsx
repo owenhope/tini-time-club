@@ -204,17 +204,19 @@ const EditProfile = () => {
           <Text style={styles.characterCount}>{bio.length}/150</Text>
 
           <MultiSelectInput
-            label="Favorite Spirits"
+            label="Favorite Spirit"
             options={spirits}
             selectedIds={selectedSpirits}
             onSelectionChange={setSelectedSpirits}
+            maxSelections={1}
           />
 
           <MultiSelectInput
-            label="Favorite Types"
+            label="Favorite Type"
             options={types}
             selectedIds={selectedTypes}
             onSelectionChange={setSelectedTypes}
+            maxSelections={1}
           />
 
           <Text style={styles.label}>Favorite Location</Text>

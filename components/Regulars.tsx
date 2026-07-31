@@ -1,8 +1,9 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
+import { useProfile } from "@/context/profile-context";
 import { makeStyles } from "@/theme";
 
 interface RegularsProps {
@@ -13,6 +14,28 @@ interface RegularsProps {
 
 type DisplayRegular = Regular & { isPreview?: boolean };
 
+/**
+ * Placeholder for the dense Regulars column while regulars load, sized to the
+ * loaded rows so the surrounding layout doesn't shift when data arrives.
+ */
+export const RegularsSkeleton = () => {
+  const styles = useStyles();
+  return (
+    <View style={styles.denseSection}>
+      <Skeleton width={52} height={12} />
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.densePerson}>
+          <Skeleton circle height={26} />
+          <View style={styles.skeletonIdentity}>
+            <Skeleton width="80%" height={10} />
+            <Skeleton width="50%" height={8} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 const Regulars: React.FC<RegularsProps> = ({
   regulars,
   variant = "default",
@@ -20,6 +43,17 @@ const Regulars: React.FC<RegularsProps> = ({
 }) => {
   const styles = useStyles();
   const router = useRouter();
+  const { profile } = useProfile();
+
+  // Your own row lands on your Profile tab — the shared /users/[username]
+  // route renders the visitor view, Follow button and all.
+  const openRegular = (regular: DisplayRegular) => {
+    if (String(profile?.id) === String(regular.profile_id)) {
+      router.navigate("/profile");
+    } else {
+      router.push(`/users/${regular.username}`);
+    }
+  };
 
   if (!regulars?.length) return null;
 
@@ -65,9 +99,7 @@ const Regulars: React.FC<RegularsProps> = ({
               <Pressable
                 key={regular.profile_id}
                 onPress={
-                  regular.isPreview
-                    ? undefined
-                    : () => router.push(`/users/${regular.username}`)
+                  regular.isPreview ? undefined : () => openRegular(regular)
                 }
                 style={[
                   styles.stackedAvatar,
@@ -98,9 +130,7 @@ const Regulars: React.FC<RegularsProps> = ({
       <Pressable
         key={regular.profile_id}
         onPress={
-          regular.isPreview
-            ? undefined
-            : () => router.push(`/users/${regular.username}`)
+          regular.isPreview ? undefined : () => openRegular(regular)
         }
         style={({ pressed }) => [
           styles.densePerson,
@@ -144,9 +174,7 @@ const Regulars: React.FC<RegularsProps> = ({
         <Pressable
           key={regular.profile_id}
           onPress={
-            regular.isPreview
-              ? undefined
-              : () => router.push(`/users/${regular.username}`)
+            regular.isPreview ? undefined : () => openRegular(regular)
           }
           style={({ pressed }) => [styles.person, pressed && styles.pressed]}
           accessibilityRole={regular.isPreview ? "text" : "link"}
@@ -218,6 +246,11 @@ const useStyles = makeStyles((t) => ({
   identity: {
     flex: 1,
     minWidth: 0,
+  },
+  skeletonIdentity: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
   username: {
     ...t.typography.bodyStrong,

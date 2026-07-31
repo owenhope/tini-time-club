@@ -476,6 +476,9 @@ const useStyles = makeStyles((t) => ({
   },
   scoreColumn: {
     alignItems: "flex-start" as const,
+    // Matches the 6pt label-to-content gap of the dense Regulars column, so
+    // the two columns share one vertical rhythm when shown side by side.
+    gap: 6,
   },
   overallMeta: {
     justifyContent: "center" as const,

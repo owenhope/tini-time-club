@@ -7,7 +7,6 @@ import {
   Modal,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   useWindowDimensions,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
@@ -18,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import { Skeleton } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
 const COLUMNS = 3;
@@ -148,8 +148,15 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         ListHeaderComponent={header}
         ListEmptyComponent={
           loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={colors.accent} />
+            <View style={styles.skeletonGrid}>
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton
+                  key={i}
+                  width={tileSize}
+                  height={tileSize}
+                  radius={0}
+                />
+              ))}
             </View>
           ) : (
             emptyComponent
@@ -226,10 +233,10 @@ const useStyles = makeStyles((t) => ({
   row: {
     marginBottom: GAP,
   },
-  loadingContainer: {
-    minHeight: 132,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
+  skeletonGrid: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: GAP,
   },
   tile: {
     backgroundColor: t.colors.imagePlaceholder,
