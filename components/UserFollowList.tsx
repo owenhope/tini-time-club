@@ -58,7 +58,9 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
         const { data, error: listError } = await supabase
           .from("followers")
           .select(joinColumn)
-          .eq(matchColumn, userProfile.id);
+          .eq(matchColumn, userProfile.id)
+          // Cap so a large account can't pull an unbounded list in one shot.
+          .limit(200);
 
         if (listError) {
           reportError(`Error fetching ${noun}:`, listError);

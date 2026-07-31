@@ -266,7 +266,9 @@ class DatabaseService {
     return this.query(
       "spirits",
       async () => {
-        const { data, error } = await supabase.from("spirits").select("*");
+        const { data, error } = await supabase
+          .from("spirits")
+          .select("id, name");
 
         if (error) throw error;
         return data;
@@ -282,7 +284,9 @@ class DatabaseService {
     return this.query(
       "types",
       async () => {
-        const { data, error } = await supabase.from("types").select("*");
+        const { data, error } = await supabase
+          .from("types")
+          .select("id, name");
 
         if (error) throw error;
         return data;
@@ -331,7 +335,9 @@ class DatabaseService {
           `
           )
           .eq("review_id", reviewId)
-          .order("inserted_at", { ascending: true });
+          .order("inserted_at", { ascending: true })
+          // Generous cap so one viral review can't pull an unbounded payload.
+          .limit(200);
 
         if (error) throw error;
         return data;

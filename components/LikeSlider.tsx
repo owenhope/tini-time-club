@@ -22,28 +22,22 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
     let cancelled = false;
 
     const fetchLikesUsers = async () => {
-      const { data: likesData, error: likesError } = await supabase
+      // One embedded query instead of the old likes -> profiles waterfall;
+      // capped so a viral review can't pull an unbounded list.
+      const { data, error } = await supabase
         .from("likes")
-        .select("user_id")
-        .eq("review_id", reviewId);
-      if (likesError) {
-        reportError("Error fetching likes users:", likesError);
+        .select("profiles(id, username, avatar_url, is_verified)")
+        .eq("review_id", reviewId)
+        .limit(200);
+      if (error) {
+        reportError("Error fetching likes users:", error);
         return;
       }
-      if (!likesData || likesData.length === 0) {
-        if (!cancelled) setLikesUsers([]);
-        return;
+      if (!cancelled) {
+        setLikesUsers(
+          (data ?? []).map((row: any) => row.profiles).filter(Boolean)
+        );
       }
-      const userIds = likesData.map((row: any) => row.user_id);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url, is_verified")
-        .in("id", userIds);
-      if (profilesError) {
-        reportError("Error fetching profiles for likes:", profilesError);
-        return;
-      }
-      if (!cancelled) setLikesUsers(profilesData || []);
     };
 
     fetchLikesUsers();
