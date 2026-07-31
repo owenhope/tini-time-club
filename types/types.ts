@@ -1,14 +1,36 @@
-export interface NamedEntity {
+/** An option row from the spirits/types lookup tables. */
+export interface NamedOption {
+  id: number;
   name: string;
 }
 
-export interface ReviewSpirit {
-  name: string;
+/**
+ * Canonical shape of a profiles-table row.
+ *
+ * favorite_spirits / favorite_types are id arrays, but legacy rows may hold a
+ * JSON-encoded string of the same — parse defensively (see getFavoriteSpirits
+ * in the profile screens).
+ */
+export interface Profile {
+  id: string;
+  username: string;
+  name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  is_verified?: boolean;
+  favorite_spirits?: (number | string)[] | string | null;
+  favorite_types?: (number | string)[] | string | null;
+  favorite_location_id?: number | null;
+  eula_accepted?: boolean | null;
+  deleted?: boolean;
 }
 
-export interface Location {
-  name: string;
-  address?: string;
+/** Minimal author/commenter identity embedded in feed rows. */
+export interface ReviewProfile {
+  id: string;
+  username: string;
+  avatar_url?: string | null;
+  is_verified?: boolean;
 }
 
 export interface ReviewLocation {
@@ -17,17 +39,20 @@ export interface ReviewLocation {
   address?: string;
 }
 
-export interface ReviewType {
-  name: string;
+export interface Comment {
+  id: number;
+  body: string;
+  inserted_at: string;
+  review_id?: number | string;
+  user_id?: string;
+  profile?: ReviewProfile;
 }
 
-export interface ReviewProfile {
-  id: string;
-  username: string;
-  avatar_url?: string | null;
-  is_verified?: boolean;
-}
-
+/**
+ * A feed row as returned by the feed_reviews RPC (see supabase/migrations),
+ * with image_url already hydrated to a signed URL by
+ * databaseService.getReviews.
+ */
 export interface Review {
   id: string;
   comment: string;
@@ -35,9 +60,14 @@ export interface Review {
   inserted_at: string;
   taste: number;
   presentation: number;
-  location: ReviewLocation;
-  spirit: ReviewSpirit;
-  type: ReviewType;
   user_id: string;
+  location: ReviewLocation;
+  spirit: NamedOption | { name: string };
+  type: NamedOption | { name: string };
   profile: ReviewProfile;
+  // Engagement, computed server-side per viewer.
+  likes_count?: number;
+  comments_count?: number;
+  has_liked?: boolean;
+  recent_comments?: Comment[];
 }

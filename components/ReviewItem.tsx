@@ -578,8 +578,8 @@ const ReviewItemComponent = ({
   const { hasLiked, likesCount, toggleLike } = useLikes(
     review.id,
     profile?.id || null,
-    (review as any).likes_count ?? 0,
-    (review as any).has_liked ?? false
+    review.likes_count ?? 0,
+    review.has_liked ?? false
   );
 
   const { comments, addComment, removeComment, fetchComments, hasLoaded } =
@@ -588,14 +588,14 @@ const ReviewItemComponent = ({
   // Comment bodies are only needed once the user actually looks at them. The
   // count shown in the footer comes with the feed row, so the previous
   // fetch-on-mount (one query per rendered item) is gone.
-  const serverCommentCount = (review as any).comments_count ?? 0;
+  const serverCommentCount = review.comments_count ?? 0;
   const commentCount = hasLoaded ? comments.length : serverCommentCount;
 
   // Preview comments ride along with the feed row; once the full list has been
   // fetched (user opened the sheet) prefer that.
   const previewComments = hasLoaded
     ? comments.slice(-2)
-    : [...((review as any).recent_comments ?? [])].reverse();
+    : [...(review.recent_comments ?? [])].reverse();
 
   const loadCommentsIfNeeded = useCallback(() => {
     if (!hasLoaded) fetchComments();

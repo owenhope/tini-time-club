@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { Review } from "@/types/types";
+import { NamedOption, Profile, Review } from "@/types/types";
 import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -37,17 +37,6 @@ import {
 } from "@/services/regularsService";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
 
-interface ProfileType {
-  id: string;
-  username: string;
-  name?: string | null;
-  bio?: string | null;
-  favorite_spirits?: any;
-  favorite_types?: any;
-  avatar_url?: string | null;
-  is_verified?: boolean;
-  favorite_location_id?: number | null;
-}
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -55,7 +44,7 @@ const UserProfile = () => {
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
-  const [selectedProfile, setSelectedProfile] = useState<ProfileType | null>(
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(
     null
   );
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
@@ -66,8 +55,8 @@ const UserProfile = () => {
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
-  const [spirits, setSpirits] = useState<any[]>([]);
-  const [types, setTypes] = useState<any[]>([]);
+  const [spirits, setSpirits] = useState<NamedOption[]>([]);
+  const [types, setTypes] = useState<NamedOption[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
   const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
   const [loadingRegulars, setLoadingRegulars] = useState(true);

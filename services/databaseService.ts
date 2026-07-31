@@ -1,5 +1,11 @@
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
+import type {
+  Comment,
+  NamedOption,
+  Profile,
+  Review,
+} from "@/types/types";
 
 interface CachedQuery {
   data: any;
@@ -102,7 +108,7 @@ class DatabaseService {
   /**
    * Get user profile
    */
-  async getUserProfile(userId: string): Promise<any> {
+  async getUserProfile(userId: string): Promise<Profile> {
     return this.query(
       `profile_${userId}`,
       async () => {
@@ -123,7 +129,10 @@ class DatabaseService {
   /**
    * Update user profile
    */
-  async updateUserProfile(userId: string, updates: any): Promise<any> {
+  async updateUserProfile(
+    userId: string,
+    updates: Partial<Profile>
+  ): Promise<Profile> {
     const { data, error } = await supabase
       .from("profiles")
       .update(updates)
@@ -153,7 +162,7 @@ class DatabaseService {
       /** Bypass the cached page (pull-to-refresh); the fresh result still gets cached. */
       forceRefresh?: boolean;
     } = {}
-  ): Promise<any[]> {
+  ): Promise<Review[]> {
     const {
       userId,
       locationId,
@@ -251,7 +260,7 @@ class DatabaseService {
   /**
    * Get spirits (static data - long cache)
    */
-  async getSpirits(): Promise<any[]> {
+  async getSpirits(): Promise<NamedOption[]> {
     return this.query(
       "spirits",
       async () => {
@@ -267,7 +276,7 @@ class DatabaseService {
   /**
    * Get types (static data - long cache)
    */
-  async getTypes(): Promise<any[]> {
+  async getTypes(): Promise<NamedOption[]> {
     return this.query(
       "types",
       async () => {
@@ -307,7 +316,7 @@ class DatabaseService {
   /**
    * Get comments for a review
    */
-  async getComments(reviewId: string): Promise<any[]> {
+  async getComments(reviewId: string): Promise<Comment[]> {
     return this.query(
       `comments_${reviewId}`,
       async () => {
