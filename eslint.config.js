@@ -24,4 +24,21 @@ module.exports = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // Guardrail for the theme-token refactor: new styles should pull type
+    // from t.typography.* rather than hardcoding fontSize. Warn (not error)
+    // because a tail of literals without a matching token remains.
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            "Property[key.name='fontSize'][value.type='Literal'][value.raw=/^[0-9]/]",
+          message:
+            "Prefer theme typography tokens (t.typography.*) over raw fontSize",
+        },
+      ],
+    },
+  },
 ]);

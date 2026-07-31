@@ -80,8 +80,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   const { width: windowWidth } = useWindowDimensions();
   const [active, setActive] = useState<Review | null>(null);
 
-  const tileSize =
-    (windowWidth - GAP * (COLUMNS - 1)) / COLUMNS;
+  const tileSize = (windowWidth - GAP * (COLUMNS - 1)) / COLUMNS;
 
   const renderTile = useCallback(
     ({ item, index }: { item: Review; index: number }) => {
@@ -124,11 +123,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           />
           {overallScore != null ? (
             <View style={styles.tileScore} accessibilityElementsHidden>
-              <Ionicons
-                name="star"
-                size={11}
-                color={colors.textOnImage}
-              />
+              <Ionicons name="star" size={11} color={colors.textOnImage} />
               <Text style={styles.tileScoreText}>{scoreLabel}</Text>
             </View>
           ) : null}
@@ -257,7 +252,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     gap: 3,
     paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingVertical: t.spacing.xs,
     borderRadius: t.radius.sm,
     backgroundColor: t.colors.scrim,
   },

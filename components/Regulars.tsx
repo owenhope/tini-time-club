@@ -130,13 +130,8 @@ const Regulars: React.FC<RegularsProps> = ({
     const renderDenseRegular = (regular: DisplayRegular) => (
       <Pressable
         key={regular.profile_id}
-        onPress={
-          regular.isPreview ? undefined : () => openRegular(regular)
-        }
-        style={({ pressed }) => [
-          styles.densePerson,
-          pressed && styles.pressed,
-        ]}
+        onPress={regular.isPreview ? undefined : () => openRegular(regular)}
+        style={({ pressed }) => [styles.densePerson, pressed && styles.pressed]}
         accessibilityRole={regular.isPreview ? "text" : "link"}
         accessibilityLabel={`${regular.username}, regular with ${regular.review_count} reviews`}
       >
@@ -174,9 +169,7 @@ const Regulars: React.FC<RegularsProps> = ({
       {displayRegulars.map((regular) => (
         <Pressable
           key={regular.profile_id}
-          onPress={
-            regular.isPreview ? undefined : () => openRegular(regular)
-          }
+          onPress={regular.isPreview ? undefined : () => openRegular(regular)}
           style={({ pressed }) => [styles.person, pressed && styles.pressed]}
           accessibilityRole={regular.isPreview ? "text" : "link"}
           accessibilityLabel={`${regular.username}, number ${regular.rank} regular with ${regular.review_count} reviews`}
@@ -285,7 +278,7 @@ const useStyles = makeStyles((t) => ({
   stackedAvatar: {
     borderWidth: 2,
     borderColor: t.colors.surface,
-    borderRadius: 16,
+    borderRadius: t.radius.lg,
   },
   avatarOverlap: {
     marginLeft: -8,

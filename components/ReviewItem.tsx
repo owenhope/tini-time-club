@@ -1004,13 +1004,11 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.xs,
   },
   captionText: {
-    fontSize: 15,
-    lineHeight: 20,
+    ...t.typography.body,
     color: t.colors.text,
   },
   inlineBody: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...t.typography.caption,
     color: t.colors.text,
     flexShrink: 1,
   },
@@ -1020,8 +1018,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   captionBody: {
-    fontSize: 15,
-    lineHeight: 20,
+    ...t.typography.body,
     color: t.colors.text,
   },
   addCaptionText: {

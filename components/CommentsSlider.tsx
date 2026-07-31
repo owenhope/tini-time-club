@@ -347,7 +347,7 @@ const useStyles = makeStyles((t) => ({
   avatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: t.radius.lg,
     marginRight: t.spacing.md,
   },
   commentContent: { flex: 1 },

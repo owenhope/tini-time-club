@@ -175,7 +175,8 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
                   onImage && styles.onImageMeta,
                 ]}
               >
-                {compactDecorated ? "· " : ""}Presentation {format(presentation)}
+                {compactDecorated ? "· " : ""}Presentation{" "}
+                {format(presentation)}
               </Text>
             )}
           </>
@@ -192,7 +193,8 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
               onImage && styles.onImageMeta,
             ]}
           >
-            {compactDecorated ? "· " : ""}{countLabel}
+            {compactDecorated ? "· " : ""}
+            {countLabel}
           </Text>
         )}
       </View>
@@ -264,7 +266,9 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
                   >
                     out of {RATING_MAX}
                   </Text>
-                  <Text style={[styles.overallLabel, onImage && styles.onImage]}>
+                  <Text
+                    style={[styles.overallLabel, onImage && styles.onImage]}
+                  >
                     Overall
                   </Text>
                   {countLabel && countPlacement === "meta" ? (
@@ -400,9 +404,7 @@ const RatingBar = ({
           >
             {label}
           </Text>
-          <Text
-            style={[styles.stackedBarValue, onImage && styles.onImage]}
-          >
+          <Text style={[styles.stackedBarValue, onImage && styles.onImage]}>
             {format(value) ?? "—"}
           </Text>
         </View>
@@ -595,19 +597,12 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
-  compactOverallTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: "600" as const,
-  },
+  compactOverallTitle: { ...t.typography.bodyStrong },
   compactMeta: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
   },
-  compactMetaSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  compactMetaSubtitle: { ...t.typography.caption },
   onImage: {
     color: t.colors.textOnImage,
   },

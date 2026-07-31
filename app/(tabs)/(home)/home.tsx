@@ -1001,7 +1001,7 @@ const useStyles = makeStyles((t) => ({
   stepIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: t.radius.xl,
     backgroundColor: t.colors.accent,
     alignItems: "center" as const,
     justifyContent: "center" as const,

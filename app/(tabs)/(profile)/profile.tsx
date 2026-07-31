@@ -30,7 +30,9 @@ import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
-import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTags";
+import FavoriteTags, {
+  parseFavoriteIds,
+} from "@/components/profile/FavoriteTags";
 import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
@@ -368,12 +370,10 @@ const Profile = () => {
         avatarLoading={avatarLoading}
         avatarError={avatarError}
         onFollowersPress={() =>
-          profile?.username &&
-          router.push(routes.followers(profile.username))
+          profile?.username && router.push(routes.followers(profile.username))
         }
         onFollowingPress={() =>
-          profile?.username &&
-          router.push(routes.following(profile.username))
+          profile?.username && router.push(routes.following(profile.username))
         }
         tags={favoriteTags}
       >
@@ -395,9 +395,7 @@ const Profile = () => {
           onRefresh={() => profile?.id && loadUserReviews(true)}
           canDelete={true}
           onDelete={(review) => confirmDeleteReview(review.id)}
-          onEdit={(review) =>
-            router.push(routes.editCaption(review.id))
-          }
+          onEdit={(review) => router.push(routes.editCaption(review.id))}
         />
       ) : (
         <FlatList
@@ -478,7 +476,7 @@ const useStyles = makeStyles((t) => ({
   emptyCtaIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: t.radius.xl,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.accentSubtle,

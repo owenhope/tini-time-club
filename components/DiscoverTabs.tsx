@@ -656,15 +656,12 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   resultTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: "600" as const,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: 2,
   },
   resultSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
   },
   profileStats: {
