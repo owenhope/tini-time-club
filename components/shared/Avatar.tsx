@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
 import { makeStyles } from "@/theme";
@@ -19,103 +19,44 @@ const Avatar: React.FC<AvatarProps> = ({
   showInitials = true,
 }) => {
   const styles = useStyles();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Public-bucket URLs are built locally, so the URL exists on first render —
+  // no loading frame. `failed` only flips if the image itself 404s.
+  const avatarUrl = useMemo(
+    () => imageCache.getAvatarUrlSync(avatarPath ?? null),
+    [avatarPath]
+  );
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    const loadAvatar = async () => {
-      if (!avatarPath) {
-        setLoading(false);
-        setAvatarUrl(null);
-        setError(null); // No error when no avatar path
-        return;
-      }
+  const avatarStyle = useMemo(
+    () => [
+      styles.avatar,
+      { width: size, height: size, borderRadius: size / 2 },
+      style,
+    ],
+    [styles, size, style]
+  );
 
-      try {
-        const url = await imageCache.getAvatarUrl(avatarPath);
-        setAvatarUrl(url);
-        setError(null);
-      } catch (error: any) {
-        console.error("Error loading avatar:", error);
-        setAvatarUrl(null);
-        setError(`Avatar load error: ${error.message || error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const placeholderStyle = useMemo(
+    () => [
+      styles.placeholder,
+      { width: size, height: size, borderRadius: size / 2 },
+      style,
+    ],
+    [styles, size, style]
+  );
 
-    loadAvatar();
-  }, [avatarPath]);
-
-  const avatarStyle = [
-    styles.avatar,
-    {
-      width: size,
-      height: size,
-      borderRadius: size / 2,
-    },
-    style,
-  ];
-
-  const placeholderStyle = [
-    styles.placeholder,
-    {
-      width: size,
-      height: size,
-      borderRadius: size / 2,
-    },
-    style,
-  ];
-
-  if (loading) {
-    return <View style={placeholderStyle} />;
-  }
-
-  if (error) {
-    // On error, fall back to initials or default avatar instead of showing error message
-    if (showInitials && username) {
-      return (
-        <View style={placeholderStyle}>
-          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
-            {username.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <Image
-        source={require("@/assets/images/olive_transparent.png")}
-        style={avatarStyle}
-      />
-    );
-  }
-
-  if (avatarUrl) {
+  if (avatarUrl && !failed) {
     return (
       <Image
         source={{ uri: avatarUrl }}
         style={avatarStyle}
         defaultSource={require("@/assets/images/olive_transparent.png")}
-        onError={(error) => {
-          console.error(
-            "Image failed to load:",
-            error.nativeEvent.error,
-            "URL:",
-            avatarUrl
-          );
-          // Don't set error state, just let it fall back to initials/default
-          setAvatarUrl(null);
-        }}
-        onLoad={() => {
-          // Image loaded successfully
-        }}
+        onError={() => setFailed(true)}
       />
     );
   }
 
-  // Show initials or default avatar
+  // Initials or default avatar
   if (showInitials && username) {
     return (
       <View style={placeholderStyle}>
@@ -149,4 +90,4 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
-export default Avatar;
+export default memo(Avatar);

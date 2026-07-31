@@ -33,22 +33,20 @@ class ImageCache {
   }
 
   /**
-   * Get avatar URL without caching (always fresh)
+   * Avatar URL from a storage path. Public-bucket URLs are pure local string
+   * construction — no I/O — so this is synchronous and safe to call in
+   * render. Awaiting it in an effect forced every avatar through a blank
+   * loading frame and an extra render.
    */
-  async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
+  getAvatarUrlSync(avatarPath: string | null): string | null {
     if (!avatarPath) return null;
+    return supabase.storage.from("avatars").getPublicUrl(avatarPath).data
+      .publicUrl;
+  }
 
-    try {
-      const { data } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(avatarPath);
-
-      const url = data.publicUrl;
-      return url;
-    } catch (error) {
-      console.error("Error fetching avatar URL:", error);
-      return null;
-    }
+  /** @deprecated Use getAvatarUrlSync — this never did any async work. */
+  async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
+    return this.getAvatarUrlSync(avatarPath);
   }
 
   private async fetchAvatarUrl(

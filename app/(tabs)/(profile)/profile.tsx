@@ -20,8 +20,7 @@ import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
-import { useRouter, useNavigation } from "expo-router";
-import { useFocusEffect } from "expo-router";
+import { useRouter, useNavigation , useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import imageCache from "@/utils/imageCache";
 import { Avatar, VerifiedName } from "@/components/shared";
@@ -84,26 +83,6 @@ const Profile = () => {
   }, [profile?.avatar_url]);
 
   useEffect(() => {
-    const fetchFollowCounts = async () => {
-      if (!profile) return;
-      const { count: followers } = await supabase
-        .from("followers")
-        .select("*", { count: "exact", head: true })
-        .eq("following_id", profile.id);
-
-      const { count: following } = await supabase
-        .from("followers")
-        .select("*", { count: "exact", head: true })
-        .eq("follower_id", profile.id);
-
-      setFollowersCount(followers || 0);
-      setFollowingCount(following || 0);
-    };
-
-    fetchFollowCounts();
-  }, [profile]);
-
-  useEffect(() => {
     if (profile) {
       navigation.setOptions({
         headerTitle: () => (
@@ -134,6 +113,10 @@ const Profile = () => {
       });
     }
   }, [profile, navigation, colors, styles]);
+
+  // Focus-refresh staleness gate; pull-to-refresh bypasses it via isRefresh.
+  const PROFILE_REFRESH_AFTER = 30 * 1000;
+  const lastProfileLoadRef = useRef(0);
 
   const loadUserReviews = async (userId?: string, isRefresh = false) => {
     if (isRefresh) {
@@ -375,11 +358,9 @@ const Profile = () => {
     setFavoriteLocation(data);
   };
 
+  // Reviews, regulars and counts are owned by the focus effect below (which
+  // also covers first mount); this only tracks profile-driven cheap lookups.
   useEffect(() => {
-    if (profile?.id) {
-      loadUserReviews(profile.id);
-      loadRegularPlaces(profile.id);
-    }
     loadFavoriteLocation(profile?.favorite_location_id);
     loadSpiritsAndTypes();
   }, [profile]);
@@ -416,33 +397,44 @@ const Profile = () => {
     }
   };
 
-  // Refresh follow counts and reviews when the profile screen comes into focus
+  // Load counts, reviews and regulars on focus (including first mount) —
+  // but only when stale, so tab-hopping doesn't refire five queries every
+  // time the user glances at their profile.
   useFocusEffect(
     React.useCallback(() => {
+      if (!profile) return;
+
+      const isStale =
+        Date.now() - lastProfileLoadRef.current > PROFILE_REFRESH_AFTER;
+      if (!isStale) return;
+      lastProfileLoadRef.current = Date.now();
+
       const refreshData = async () => {
-        if (!profile) return;
-
-        // Refresh follow counts
-        const { count: followers } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("following_id", profile.id);
-
-        const { count: following } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("follower_id", profile.id);
+        // The two counts are independent — fetch them together.
+        const [{ count: followers }, { count: following }] = await Promise.all(
+          [
+            supabase
+              .from("followers")
+              .select("*", { count: "exact", head: true })
+              .eq("following_id", profile.id),
+            supabase
+              .from("followers")
+              .select("*", { count: "exact", head: true })
+              .eq("follower_id", profile.id),
+          ]
+        );
 
         setFollowersCount(followers || 0);
         setFollowingCount(following || 0);
-
-        // Refresh reviews
-        loadUserReviews(profile.id);
-        loadRegularPlaces(profile.id);
-        loadFavoriteLocation(profile.favorite_location_id);
       };
 
       refreshData();
+      loadUserReviews(profile.id);
+      loadRegularPlaces(profile.id);
+      // loadUserReviews/loadRegularPlaces intentionally excluded from deps:
+      // they are stable in behavior and including them would re-run this on
+      // every render, defeating the staleness gate.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profile])
   );
 

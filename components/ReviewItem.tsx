@@ -1,4 +1,11 @@
-import React, { useRef, useState, useEffect, useCallback, memo } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  memo,
+} from "react";
 import {
   View,
   Text,
@@ -140,32 +147,13 @@ interface ReviewItemProps {
 
 // Custom hook for avatar loading
 const useAvatar = (avatarUrl: string | null | undefined) => {
-  const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const loadAvatar = async () => {
-      if (!avatarUrl) {
-        setUrl(null);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const avatarUrlResult = await imageCache.getAvatarUrl(avatarUrl);
-        setUrl(avatarUrlResult);
-      } catch (error) {
-        console.error("Error loading avatar:", error);
-        setUrl(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAvatar();
-  }, [avatarUrl]);
-
-  return { url, loading };
+  // Public-bucket URL construction is synchronous; resolving it in an effect
+  // gave every row's avatar a blank first frame and an extra render.
+  const url = useMemo(
+    () => imageCache.getAvatarUrlSync(avatarUrl ?? null),
+    [avatarUrl]
+  );
+  return { url, loading: false };
 };
 
 /**
