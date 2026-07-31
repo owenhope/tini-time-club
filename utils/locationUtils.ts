@@ -1,3 +1,4 @@
+import { reportError } from "./log";
 // Google Maps API configuration
 export const GOOGLE_MAPS_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -92,7 +93,7 @@ export const findPlaceId = async (
 
     return null;
   } catch (error) {
-    console.error("Error finding place_id:", error);
+    reportError("Error finding place_id:", error);
     return null;
   }
 };
@@ -134,7 +135,7 @@ export const fetchPlaceDetails = async (
 
     return null;
   } catch (error) {
-    console.error("Error fetching place details:", error);
+    reportError("Error fetching place details:", error);
     return null;
   }
 };

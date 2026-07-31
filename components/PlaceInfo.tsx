@@ -12,6 +12,7 @@ import { useLocalSearchParams } from "expo-router";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { getPlaceDetailsByNameAndAddress } from "@/utils/locationUtils";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const firstParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
@@ -63,7 +64,7 @@ const PlaceInfo = () => {
         );
       })
       .catch((error) => {
-        console.error("Error fetching place information:", error);
+        reportError("Error fetching place information:", error);
         if (active) setPlaceDetails(null);
       })
       .finally(() => {
@@ -77,11 +78,16 @@ const PlaceInfo = () => {
 
   const mapsUrl = useMemo(() => {
     if (lat && lon) return `https://maps.google.com/?q=${lat},${lon}`;
-    if (address) return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+    if (address)
+      return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
     return null;
   }, [address, lat, lon]);
 
-  const hasAnyInfo = !!(address || placeDetails?.website || placeDetails?.phoneNumber);
+  const hasAnyInfo = !!(
+    address ||
+    placeDetails?.website ||
+    placeDetails?.phoneNumber
+  );
 
   return (
     <ScrollView
@@ -134,7 +140,9 @@ const PlaceInfo = () => {
         ) : null}
 
         {!loading && !hasAnyInfo ? (
-          <Text style={styles.emptyText}>No contact information available.</Text>
+          <Text style={styles.emptyText}>
+            No contact information available.
+          </Text>
         ) : null}
       </View>
     </ScrollView>

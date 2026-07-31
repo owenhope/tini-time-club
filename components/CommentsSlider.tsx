@@ -19,6 +19,7 @@ import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
+import { log, reportError } from "@/utils/log";
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -123,7 +124,7 @@ export default function CommentsSlider({
 
         return true;
       } catch (error) {
-        console.error("Error adding comment:", error);
+        reportError("Error adding comment:", error);
         return false;
       }
     },
@@ -136,7 +137,7 @@ export default function CommentsSlider({
       setComments((prev) => prev.filter((c) => c.id !== id));
       onCommentDeleted?.(review.id, id);
     } catch (error) {
-      console.error("Error deleting comment:", error);
+      reportError("Error deleting comment:", error);
     }
   };
 
@@ -285,7 +286,7 @@ export default function CommentsSlider({
         visible={reportModalVisible}
         title="Report Comment"
         onClose={() => setReportModalVisible(false)}
-        onSelect={(option) => console.log("report pressed", option)}
+        onSelect={(option) => log("report pressed", option)}
       />
     </>
   );

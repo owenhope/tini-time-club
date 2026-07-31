@@ -5,6 +5,7 @@ import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 export function AppleAuth() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function AppleAuth() {
         const available = await AppleAuthentication.isAvailableAsync();
         setIsAvailable(available);
       } catch (error) {
-        console.error(
+        reportError(
           "[AppleAuth] Error checking Apple Sign-In availability:",
           error
         );
@@ -59,7 +60,7 @@ export function AppleAuth() {
               });
 
               if (error) {
-                console.error(
+                reportError(
                   "[AppleAuth] ❌ Supabase authentication failed:",
                   error
                 );
@@ -69,16 +70,16 @@ export function AppleAuth() {
                 router.replace("/home");
               }
             } else {
-              console.error("[AppleAuth] ❌ No identityToken received");
+              reportError("[AppleAuth] ❌ No identityToken received");
               throw new Error("No identityToken.");
             }
           } catch (e: any) {
-            console.error("[AppleAuth] ❌ Apple Sign-In error:", e);
+            reportError("[AppleAuth] ❌ Apple Sign-In error:", e);
 
             if (e.code === "ERR_REQUEST_CANCELED") {
               // handle that the user canceled the sign-in flow
             } else {
-              console.error("[AppleAuth] ❌ Other error:", e.message || e);
+              reportError("[AppleAuth] ❌ Other error:", e.message || e);
               // handle other errors
             }
           }

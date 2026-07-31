@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
+import { reportError } from "./log";
 
 interface CachedImage {
   url: string;
@@ -101,7 +102,7 @@ class ImageCache {
           !error.message?.includes("not found") &&
           !error.message?.includes("Object not found")
         ) {
-          console.error("Error creating signed URL:", error);
+          reportError("Error creating signed URL:", error);
         }
         // Cache null result for missing images to avoid repeated failed requests
         const cached: CachedSignedUrl = {
@@ -132,7 +133,7 @@ class ImageCache {
         !error?.message?.includes("not found") &&
         !error?.message?.includes("Object not found")
       ) {
-        console.error("Error fetching review image URL:", error);
+        reportError("Error fetching review image URL:", error);
       }
       return null;
     }
@@ -213,7 +214,7 @@ class ImageCache {
 
       return dataUrl;
     } catch (error) {
-      console.error("Error fetching location image:", error);
+      reportError("Error fetching location image:", error);
       return null;
     }
   }
@@ -285,7 +286,7 @@ class ImageCache {
           await AsyncStorage.multiSet(toPersist);
         }
       } catch (error) {
-        console.error("Error batch-signing review image URLs:", error);
+        reportError("Error batch-signing review image URLs:", error);
       }
     }
 
@@ -302,7 +303,7 @@ class ImageCache {
     try {
       await AsyncStorage.setItem(`image_cache_${key}`, JSON.stringify(data));
     } catch (error) {
-      console.error("Error persisting cache:", error);
+      reportError("Error persisting cache:", error);
     }
   }
 
@@ -331,7 +332,7 @@ class ImageCache {
             expired.push(key);
           }
         } catch (error) {
-          console.error(`Error loading cache for ${key}:`, error);
+          reportError(`Error loading cache for ${key}:`, error);
           expired.push(key);
         }
       }
@@ -340,7 +341,7 @@ class ImageCache {
         await AsyncStorage.multiRemove(expired);
       }
     } catch (error) {
-      console.error("Error loading cache from storage:", error);
+      reportError("Error loading cache from storage:", error);
     }
   }
 
@@ -356,7 +357,7 @@ class ImageCache {
       const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
       await AsyncStorage.multiRemove(cacheKeys);
     } catch (error) {
-      console.error("Error clearing cache:", error);
+      reportError("Error clearing cache:", error);
     }
   }
 

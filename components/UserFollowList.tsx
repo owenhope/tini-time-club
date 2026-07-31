@@ -4,6 +4,7 @@ import { supabase } from "@/utils/supabase";
 import ProfileList, { ProfileType } from "@/components/ProfileList";
 import { useLocalSearchParams } from "expo-router";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 export type FollowDirection = "followers" | "following";
 
@@ -43,7 +44,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
           .single();
 
         if (userError || !userProfile) {
-          console.error("Error fetching user profile:", userError);
+          reportError("Error fetching user profile:", userError);
           if (!cancelled) setError("We couldn't load this profile.");
           return;
         }
@@ -60,7 +61,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
           .eq(matchColumn, userProfile.id);
 
         if (listError) {
-          console.error(`Error fetching ${noun}:`, listError);
+          reportError(`Error fetching ${noun}:`, listError);
           if (!cancelled) setError(`We couldn't load ${noun}.`);
           return;
         }
@@ -70,7 +71,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
           [];
         if (!cancelled) setProfiles(list);
       } catch (err) {
-        console.error(`Unexpected error fetching ${noun}:`, err);
+        reportError(`Unexpected error fetching ${noun}:`, err);
         if (!cancelled) setError(`We couldn't load ${noun}.`);
       } finally {
         if (!cancelled) setLoading(false);

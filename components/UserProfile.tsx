@@ -36,7 +36,7 @@ import {
   type ProfileRegularPlace,
 } from "@/services/regularsService";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
-
+import { reportError } from "@/utils/log";
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -44,9 +44,7 @@ const UserProfile = () => {
   const [userReviews, setUserReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(
-    null
-  );
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -84,7 +82,7 @@ const UserProfile = () => {
           .eq("following_id", displayProfile.id)
           .maybeSingle();
         if (error) {
-          console.error("Error checking follow status:", error);
+          reportError("Error checking follow status:", error);
         } else {
           setDoesFollow(!!data);
         }
@@ -104,7 +102,7 @@ const UserProfile = () => {
           .eq("blocked_id", displayProfile.id)
           .maybeSingle();
         if (error) {
-          console.error("Error checking block status:", error);
+          reportError("Error checking block status:", error);
         } else {
           setIsBlocked(!!data);
         }
@@ -139,7 +137,7 @@ const UserProfile = () => {
           ]);
 
     if (error) {
-      console.error(
+      reportError(
         wasFollowing ? "Error unfollowing user:" : "Error following user:",
         error
       );
@@ -168,7 +166,7 @@ const UserProfile = () => {
           .select("*", { count: "exact", head: true })
           .eq("following_id", displayProfile.id);
         if (errorFollowers) {
-          console.error("Error fetching followers count:", errorFollowers);
+          reportError("Error fetching followers count:", errorFollowers);
         } else {
           setFollowersCount(followers || 0);
         }
@@ -177,7 +175,7 @@ const UserProfile = () => {
           .select("*", { count: "exact", head: true })
           .eq("follower_id", displayProfile.id);
         if (errorFollowing) {
-          console.error("Error fetching following count:", errorFollowing);
+          reportError("Error fetching following count:", errorFollowing);
         } else {
           setFollowingCount(following || 0);
         }
@@ -295,7 +293,7 @@ const UserProfile = () => {
         .eq("deleted", false)
         .single();
       if (error) {
-        console.error("Error fetching selected profile:", error);
+        reportError("Error fetching selected profile:", error);
         // Without this the screen stays blank forever with no way back.
         setProfileError(
           error.code === "PGRST116"
@@ -313,7 +311,7 @@ const UserProfile = () => {
         }
       }
     } catch (err) {
-      console.error("Unexpected error fetching profile:", err);
+      reportError("Unexpected error fetching profile:", err);
       setProfileError("We couldn't load this profile.");
     }
   };
@@ -345,7 +343,7 @@ const UserProfile = () => {
       // getReviews returns image_url already hydrated to a signed URL.
       setUserReviews(reviewsData);
     } catch (err) {
-      console.error("Unexpected error while fetching user reviews:", err);
+      reportError("Unexpected error while fetching user reviews:", err);
     } finally {
       if (isRefresh) {
         setRefreshingReviews(false);
@@ -408,7 +406,7 @@ const UserProfile = () => {
               ]);
 
               if (error) {
-                console.error("Error blocking user:", error);
+                reportError("Error blocking user:", error);
                 Alert.alert("Error", "Unable to block user. Please try again.");
                 return;
               }
@@ -425,7 +423,7 @@ const UserProfile = () => {
 
               setIsBlocked(true);
             } catch (err) {
-              console.error("Unexpected error blocking user:", err);
+              reportError("Unexpected error blocking user:", err);
               Alert.alert(
                 "Error",
                 "An unexpected error occurred. Please try again."
@@ -456,7 +454,7 @@ const UserProfile = () => {
                 .eq("blocked_id", displayProfile.id);
 
               if (error) {
-                console.error("Error unblocking user:", error);
+                reportError("Error unblocking user:", error);
                 Alert.alert(
                   "Error",
                   "Unable to unblock user. Please try again."
@@ -466,7 +464,7 @@ const UserProfile = () => {
 
               setIsBlocked(false);
             } catch (err) {
-              console.error("Unexpected error unblocking user:", err);
+              reportError("Unexpected error unblocking user:", err);
               Alert.alert(
                 "Error",
                 "An unexpected error occurred. Please try again."
@@ -497,7 +495,7 @@ const UserProfile = () => {
     try {
       setRegularPlaces(await getProfileRegularPlaces(profileId));
     } catch (error) {
-      console.error("Error loading profile regular places:", error);
+      reportError("Error loading profile regular places:", error);
       setRegularPlaces([]);
     } finally {
       setLoadingRegulars(false);
@@ -517,7 +515,7 @@ const UserProfile = () => {
       .maybeSingle();
 
     if (error) {
-      console.error("Error loading profile favorite location:", error);
+      reportError("Error loading profile favorite location:", error);
       setFavoriteLocation(null);
       return;
     }
@@ -546,7 +544,7 @@ const UserProfile = () => {
       setSpirits(spiritsData);
       setTypes(typesData);
     } catch (error) {
-      console.error("Error loading spirits and types:", error);
+      reportError("Error loading spirits and types:", error);
     }
   };
 

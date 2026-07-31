@@ -1,10 +1,4 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  memo,
-} from "react";
+import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -35,6 +29,7 @@ import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { BRAND, HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -141,7 +136,7 @@ const useLikes = (
 
       if (error) throw error;
     } catch (error) {
-      console.error("Error toggling like:", error);
+      reportError("Error toggling like:", error);
       setHasLiked(wasLiked);
       setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
     } finally {
@@ -166,7 +161,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
       setComments(data || []);
       setHasLoaded(true);
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      reportError("Error fetching comments:", error);
     } finally {
       setLoading(false);
     }
@@ -690,7 +685,7 @@ const ReviewItemComponent = ({
         const { error } = await supabase.from("reports").insert([reportData]);
 
         if (error) {
-          console.error("Error submitting report:", error);
+          reportError("Error submitting report:", error);
           Alert.alert("Error", "Failed to submit report. Please try again.");
         } else {
           // Track report event
@@ -705,7 +700,7 @@ const ReviewItemComponent = ({
           );
         }
       } catch (error) {
-        console.error("Unexpected error submitting report:", error);
+        reportError("Unexpected error submitting report:", error);
         Alert.alert("Error", "An unexpected error occurred. Please try again.");
       }
     },

@@ -7,6 +7,7 @@ import BottomSheet, {
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
 import { makeStyles } from "@/theme";
+import { reportError } from "@/utils/log";
 
 interface LikesSliderProps {
   reviewId: string;
@@ -26,7 +27,7 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
         .select("user_id")
         .eq("review_id", reviewId);
       if (likesError) {
-        console.error("Error fetching likes users:", likesError);
+        reportError("Error fetching likes users:", likesError);
         return;
       }
       if (!likesData || likesData.length === 0) {
@@ -39,7 +40,7 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
         .select("id, username, avatar_url, is_verified")
         .in("id", userIds);
       if (profilesError) {
-        console.error("Error fetching profiles for likes:", profilesError);
+        reportError("Error fetching profiles for likes:", profilesError);
         return;
       }
       if (!cancelled) setLikesUsers(profilesData || []);

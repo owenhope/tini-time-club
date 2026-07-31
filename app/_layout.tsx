@@ -5,7 +5,9 @@ import {
   useRouter,
   usePathname,
   useRootNavigationState,
+  type ErrorBoundaryProps,
 } from "expo-router";
+import { log, reportError } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
@@ -14,6 +16,9 @@ import {
   Alert,
   AppState,
   AppStateStatus,
+  Pressable,
+  StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -30,6 +35,72 @@ import { retryPendingPushUnregistrationAsync } from "@/services/pushNotification
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Last-resort catch for render-time throws anywhere in the app — without it
+ * a production render error is a frozen white screen with no way out.
+ * Deliberately unthemed: it must render even if the theme provider is what
+ * broke. expo-router picks this export up automatically.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  reportError("[ErrorBoundary] Render error:", error);
+
+  return (
+    <View style={errorBoundaryStyles.container}>
+      <Text style={errorBoundaryStyles.title}>Something went wrong</Text>
+      <Text style={errorBoundaryStyles.body}>
+        An unexpected error occurred. Please try again.
+      </Text>
+      <Pressable
+        onPress={retry}
+        style={({ pressed }) => [
+          errorBoundaryStyles.button,
+          pressed && errorBoundaryStyles.buttonPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+      >
+        <Text style={errorBoundaryStyles.buttonText}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const errorBoundaryStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    gap: 12,
+    backgroundColor: "#ffffff",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  body: {
+    fontSize: 15,
+    color: "#555555",
+    textAlign: "center",
+  },
+  button: {
+    marginTop: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: "#6c5ce7",
+  },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+});
 
 export default function RootLayout() {
   return (
@@ -114,7 +185,7 @@ function RootLayoutNav() {
       try {
         await createSessionFromAuthUrl(url);
       } catch (error: any) {
-        console.error("[RootLayout] Auth callback failed:", error);
+        reportError("[RootLayout] Auth callback failed:", error);
         Alert.alert(
           "Sign-in link unavailable",
           error.message || "This sign-in link is invalid or has expired."
@@ -140,7 +211,7 @@ function RootLayoutNav() {
       // the initial session handled (password recovery, auth-link errors).
       if (!hasHandledInitialSession.current && !isReadyRef.current) {
         hasHandledInitialSession.current = true;
-        console.error("[RootLayout] Auth never initialized; forcing sign-in");
+        reportError("[RootLayout] Auth never initialized; forcing sign-in");
         setIsReady(true);
         router.replace("/");
         void SplashScreen.hideAsync();
@@ -151,7 +222,7 @@ function RootLayoutNav() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[RootLayout] Auth state changed:", event, !!session);
+      log("[RootLayout] Auth state changed:", event, !!session);
 
       if (event === "PASSWORD_RECOVERY") {
         // Recovery deep link: let the user set a new password instead of
@@ -221,7 +292,7 @@ function RootLayoutNav() {
             router.replace("/");
           }
         } catch (error) {
-          console.error(
+          reportError(
             "[RootLayout] ❌ Error during resume session check:",
             error
           );

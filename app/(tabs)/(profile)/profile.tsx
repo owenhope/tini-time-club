@@ -18,7 +18,7 @@ import { useProfile } from "@/context/profile-context";
 import { NamedOption, Review } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
-import { useRouter, useNavigation , useFocusEffect } from "expo-router";
+import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import { VerifiedName } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -36,6 +36,7 @@ import {
   type ProfileRegularPlace,
 } from "@/services/regularsService";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
+import { reportError } from "@/utils/log";
 
 const Profile = () => {
   const styles = useStyles();
@@ -69,7 +70,7 @@ const Profile = () => {
         setAvatar(publicUrl);
         setAvatarError(null);
       } catch (error) {
-        console.error("Error fetching avatar URL:", error);
+        reportError("Error fetching avatar URL:", error);
         setAvatarError("Couldn't load your photo");
       }
     } else {
@@ -143,7 +144,7 @@ const Profile = () => {
       // getReviews returns image_url already hydrated to a signed URL.
       setUserReviews(reviewsData);
     } catch (err) {
-      console.error("Unexpected error while fetching reviews:", err);
+      reportError("Unexpected error while fetching reviews:", err);
     } finally {
       if (isRefresh) {
         setRefreshingReviews(false);
@@ -197,7 +198,7 @@ const Profile = () => {
           .upload(filePath, decode(base64), { contentType });
 
         if (uploadError) {
-          console.error("Error uploading avatar:", uploadError);
+          reportError("Error uploading avatar:", uploadError);
           setAvatarError(`Upload failed: ${uploadError.message}`);
           setAvatarLoading(false);
           return;
@@ -214,7 +215,7 @@ const Profile = () => {
           .getPublicUrl(filePath);
 
         if (!urlData?.publicUrl) {
-          console.error("Error getting avatar public URL for", filePath);
+          reportError("Error getting avatar public URL for", filePath);
           setAvatarError("Couldn't finish uploading your photo.");
           setAvatarLoading(false);
           return;
@@ -224,7 +225,7 @@ const Profile = () => {
         const updateResult = await updateProfile({ avatar_url: filePath });
 
         if (updateResult.error) {
-          console.error("Error updating profile:", updateResult.error);
+          reportError("Error updating profile:", updateResult.error);
           setAvatarError(
             `Profile update failed: ${
               updateResult.error.message || updateResult.error
@@ -250,7 +251,7 @@ const Profile = () => {
         setAvatarLoading(false);
       }
     } catch (err) {
-      console.error("Unexpected error uploading avatar:", err);
+      reportError("Unexpected error uploading avatar:", err);
       setAvatarError("Couldn't upload your photo. Please try again.");
       setAvatarLoading(false);
     }
@@ -311,7 +312,7 @@ const Profile = () => {
       setSpirits(spiritsData);
       setTypes(typesData);
     } catch (error) {
-      console.error("Error loading spirits and types:", error);
+      reportError("Error loading spirits and types:", error);
     }
   };
 
@@ -320,7 +321,7 @@ const Profile = () => {
     try {
       setRegularPlaces(await getProfileRegularPlaces(profileId));
     } catch (error) {
-      console.error("Error loading regular places:", error);
+      reportError("Error loading regular places:", error);
       setRegularPlaces([]);
     } finally {
       setLoadingRegulars(false);
@@ -340,7 +341,7 @@ const Profile = () => {
       .maybeSingle();
 
     if (error) {
-      console.error("Error loading favorite location:", error);
+      reportError("Error loading favorite location:", error);
       setFavoriteLocation(null);
       return;
     }
@@ -400,18 +401,16 @@ const Profile = () => {
 
       const refreshData = async () => {
         // The two counts are independent — fetch them together.
-        const [{ count: followers }, { count: following }] = await Promise.all(
-          [
-            supabase
-              .from("followers")
-              .select("*", { count: "exact", head: true })
-              .eq("following_id", profile.id),
-            supabase
-              .from("followers")
-              .select("*", { count: "exact", head: true })
-              .eq("follower_id", profile.id),
-          ]
-        );
+        const [{ count: followers }, { count: following }] = await Promise.all([
+          supabase
+            .from("followers")
+            .select("*", { count: "exact", head: true })
+            .eq("following_id", profile.id),
+          supabase
+            .from("followers")
+            .select("*", { count: "exact", head: true })
+            .eq("follower_id", profile.id),
+        ]);
 
         setFollowersCount(followers || 0);
         setFollowingCount(following || 0);

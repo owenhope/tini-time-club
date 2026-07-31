@@ -20,6 +20,7 @@ import {
   deduplicatePlaces,
 } from "@/utils/locationUtils";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 export interface LocationInputValue {
   name: string;
@@ -79,7 +80,7 @@ const LocationInput = ({
           fetchNearbyPlaces(currentLocation);
         }
       } catch (error) {
-        console.error("Error getting location:", error);
+        reportError("Error getting location:", error);
       }
     })();
     return () => {
@@ -125,7 +126,7 @@ const LocationInput = ({
 
       setNearbyPlaces(uniquePlaces);
     } catch (error) {
-      console.error("Error fetching nearby places:", error);
+      reportError("Error fetching nearby places:", error);
     }
   };
 
@@ -160,7 +161,7 @@ const LocationInput = ({
             }
           });
         } catch (error) {
-          console.error("Error in text search:", error);
+          reportError("Error in text search:", error);
         }
 
         // Nearby search for short queries (if location available)
@@ -222,7 +223,7 @@ const LocationInput = ({
 
         setSearchResults(filtered);
       } catch (error) {
-        console.error("Error searching places:", error);
+        reportError("Error searching places:", error);
         setSearchResults([]);
       } finally {
         setIsSearching(false);

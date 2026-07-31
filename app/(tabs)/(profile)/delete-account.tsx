@@ -15,6 +15,7 @@ import { useProfile } from "@/context/profile-context";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const DeleteAccount = () => {
   const styles = useStyles();
@@ -54,10 +55,7 @@ const DeleteAccount = () => {
                 .eq("id", profile.id);
 
               if (profileError) {
-                console.error(
-                  "Error marking profile as deleted:",
-                  profileError
-                );
+                reportError("Error marking profile as deleted:", profileError);
                 throw profileError;
               }
 
@@ -70,7 +68,7 @@ const DeleteAccount = () => {
               const { error: signOutError } = await supabase.auth.signOut();
 
               if (signOutError) {
-                console.error("Error signing out:", signOutError);
+                reportError("Error signing out:", signOutError);
               }
 
               Alert.alert(
@@ -87,7 +85,7 @@ const DeleteAccount = () => {
                 ]
               );
             } catch (error) {
-              console.error("Error deleting account:", error);
+              reportError("Error deleting account:", error);
               Alert.alert(
                 "Error",
                 "There was an error deleting your account. Please try again or contact support."

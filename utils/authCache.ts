@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, supabaseProjectRef } from "./supabase";
+import { reportError } from "./log";
 
 interface CachedProfile {
   profile: any;
@@ -46,7 +47,7 @@ class AuthCache {
       error,
     } = await supabase.auth.getSession();
     if (error) {
-      console.error("Error fetching session:", error);
+      reportError("Error fetching session:", error);
       return null;
     }
     return session;
@@ -110,7 +111,7 @@ class AuthCache {
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        reportError("Error fetching profile:", error);
         // Throw error to be handled by calling code
         throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
@@ -118,7 +119,7 @@ class AuthCache {
       await this.setProfile(data);
       return data;
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      reportError("Error fetching profile:", error);
       return null;
     }
   }
@@ -136,7 +137,7 @@ class AuthCache {
         JSON.stringify(this.profileCache)
       );
     } catch (error) {
-      console.error("Error persisting profile cache:", error);
+      reportError("Error persisting profile cache:", error);
     }
   }
 
@@ -159,14 +160,14 @@ class AuthCache {
         .single();
 
       if (error) {
-        console.error("Error updating profile:", error);
+        reportError("Error updating profile:", error);
         return { error };
       }
 
       await this.setProfile(data);
       return { data };
     } catch (error) {
-      console.error("Error updating profile:", error);
+      reportError("Error updating profile:", error);
       return { error };
     }
   }
@@ -180,7 +181,7 @@ class AuthCache {
     try {
       await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
     } catch (error) {
-      console.error("Error clearing profile cache:", error);
+      reportError("Error clearing profile cache:", error);
     }
   }
 
@@ -214,10 +215,7 @@ class AuthCache {
           Date.now() < cached.expiresAt &&
           cached.profile &&
           cached.version === PROFILE_CACHE_VERSION &&
-          Object.prototype.hasOwnProperty.call(
-            cached.profile,
-            "is_verified"
-          )
+          Object.prototype.hasOwnProperty.call(cached.profile, "is_verified")
         ) {
           this.profileCache = cached;
         } else {
@@ -225,7 +223,7 @@ class AuthCache {
         }
       }
     } catch (error) {
-      console.error("Error loading profile cache:", error);
+      reportError("Error loading profile cache:", error);
     }
   }
 

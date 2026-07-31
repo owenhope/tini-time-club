@@ -1,8 +1,4 @@
-import {
-  CameraType,
-  CameraView,
-  useCameraPermissions,
-} from "expo-camera";
+import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -22,6 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 interface CameraComponentProps {
   onCapture: (photo: string) => void;
@@ -96,7 +93,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
         setCapturedUri(photo.uri); // For preview purposes
       }
     } catch (error) {
-      console.error("Error taking picture:", error);
+      reportError("Error taking picture:", error);
       Alert.alert("Error", "An error occurred while taking the picture.");
     }
   };
@@ -136,7 +133,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
         }
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      reportError("Error picking image:", error);
       Alert.alert("Error", "An error occurred while picking the image.");
     } finally {
       pickerOpenRef.current = false;
@@ -205,11 +202,7 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
               accessibilityRole="button"
               accessibilityLabel="Choose a photo from your library"
             >
-              <FontAwesome6
-                name="image"
-                size={18}
-                color={colors.textOnImage}
-              />
+              <FontAwesome6 name="image" size={18} color={colors.textOnImage} />
               <Text style={styles.libraryLabel}>Library</Text>
             </Pressable>
           </View>
@@ -221,7 +214,9 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
             accessibilityLabel="Take photo"
           >
             {({ pressed }) => (
-              <View style={[styles.shutterBtn, pressed && styles.shutterPressed]}>
+              <View
+                style={[styles.shutterBtn, pressed && styles.shutterPressed]}
+              >
                 <View style={styles.shutterBtnInner} />
               </View>
             )}

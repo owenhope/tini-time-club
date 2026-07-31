@@ -16,6 +16,7 @@ import Regulars from "@/components/Regulars";
 import { getRegularsByLocation } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -92,7 +93,7 @@ export default function DiscoverTabs({
       };
       setUserLocation(userCoords);
     } catch (error) {
-      console.error("Error getting location:", error);
+      reportError("Error getting location:", error);
       // On error, set to null so we can still show locations without nearby filtering
       setUserLocation(null);
     }
@@ -129,14 +130,14 @@ export default function DiscoverTabs({
       });
 
       if (error) {
-        console.error("Error fetching profiles:", error);
+        reportError("Error fetching profiles:", error);
         setProfiles([]);
         return;
       }
 
       setProfiles(data ?? []);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      reportError("Error fetching profiles:", error);
       setProfiles([]);
     } finally {
       setLoading(false);
@@ -155,7 +156,7 @@ export default function DiscoverTabs({
           .limit(50);
 
         if (error) {
-          console.error("Error fetching location ratings:", error);
+          reportError("Error fetching location ratings:", error);
           setLocations([]);
           return;
         }
@@ -246,7 +247,7 @@ export default function DiscoverTabs({
           .limit(20);
 
         if (locationsError) {
-          console.error("Error fetching locations:", locationsError);
+          reportError("Error fetching locations:", locationsError);
           setLocations([]);
           return;
         }
@@ -281,7 +282,7 @@ export default function DiscoverTabs({
         );
       }
     } catch (error) {
-      console.error("Error fetching locations:", error);
+      reportError("Error fetching locations:", error);
     } finally {
       setLoading(false);
     }

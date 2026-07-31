@@ -6,21 +6,18 @@ import * as SecureStore from "expo-secure-store";
 import * as aesjs from "aes-js";
 import { createClient } from "@supabase/supabase-js";
 import { AppState } from "react-native";
+import { log, reportError } from "./log";
 
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as
-  | string
-  | undefined;
+  string | undefined;
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as
-  | string
-  | undefined;
+  string | undefined;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Supabase runtime configuration is missing");
 }
 
-if (__DEV__) {
-  console.log(`[Supabase] Connected to ${new URL(supabaseUrl).hostname}`);
-}
+log(`[Supabase] Connected to ${new URL(supabaseUrl).hostname}`);
 
 export const supabaseProjectRef = new URL(supabaseUrl).hostname.split(".")[0];
 
@@ -83,7 +80,7 @@ class LargeSecureStore {
 
       return await this.decrypt(key, stored);
     } catch (error) {
-      console.error("Session storage read failed; forcing re-login:", error);
+      reportError("Session storage read failed; forcing re-login:", error);
       await this.removeItem(key).catch(() => {});
       return null;
     }

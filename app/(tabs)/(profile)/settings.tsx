@@ -14,6 +14,7 @@ import AnalyticService from "@/services/analyticsService";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme, type ThemePreference } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
@@ -39,14 +40,14 @@ const Settings = () => {
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        console.error("Error signing out:", error);
+        reportError("Error signing out:", error);
         // Still navigate to login even if signOut has an error
       }
 
       // Navigate to login screen - don't rely on SIGNED_OUT event
       router.replace("/");
     } catch (error) {
-      console.error("Error signing out:", error);
+      reportError("Error signing out:", error);
       // Still try to navigate to login
       router.replace("/");
     }

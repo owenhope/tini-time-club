@@ -1,3 +1,4 @@
+import { log } from "@/utils/log";
 /**
  * Analytics facade.
  *
@@ -24,9 +25,7 @@ type AnalyticEventType =
 
 const AnalyticService = {
   capture: (event: AnalyticEventType, properties?: Record<string, any>) => {
-    if (__DEV__) {
-      console.log(`[Analytics] ${event}`, properties ?? {});
-    }
+    log(`[Analytics] ${event}`, properties ?? {});
   },
 
   identify: (_userId: string, _properties?: Record<string, any>) => {},

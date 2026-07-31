@@ -32,6 +32,7 @@ import {
   getRegularsByLocation,
   type Regular,
 } from "@/services/regularsService";
+import { reportError } from "@/utils/log";
 
 // Helper function to format price level
 
@@ -247,7 +248,7 @@ const Location = () => {
         }
       })
       .catch((error) => {
-        console.error("Error fetching location regulars:", error);
+        reportError("Error fetching location regulars:", error);
         if (active) setRegulars([]);
       })
       .finally(() => {
@@ -429,7 +430,7 @@ const Location = () => {
         // getReviews returns image_url already hydrated to a signed URL.
         setLocationReviews(reviewsData);
       } catch (err) {
-        console.error("Unexpected error while fetching location reviews:", err);
+        reportError("Unexpected error while fetching location reviews:", err);
       } finally {
         setLoadingReviews(false);
       }

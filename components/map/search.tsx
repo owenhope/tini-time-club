@@ -21,6 +21,7 @@ import {
   calculateDistance,
 } from "@/utils/locationUtils";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 interface SearchProps {
   onPlaceSelected: (newRegion: {
@@ -96,7 +97,7 @@ const Search = forwardRef<any, SearchProps>(
               }
             });
           } catch (error) {
-            console.error("Error in text search:", error);
+            reportError("Error in text search:", error);
           }
 
           // Nearby search for short queries (if location available)
@@ -158,7 +159,7 @@ const Search = forwardRef<any, SearchProps>(
 
           setSearchResults(filtered.slice(0, 5)); // Limit to 5 results for autocomplete
         } catch (error) {
-          console.error("Error searching places:", error);
+          reportError("Error searching places:", error);
           setSearchResults([]);
         } finally {
           setIsSearching(false);

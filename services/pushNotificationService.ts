@@ -6,6 +6,7 @@ import * as SecureStore from "expo-secure-store";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase";
 import { getNotificationRouteFromData } from "@/utils/notificationRoutes";
+import { warn, reportError } from "@/utils/log";
 
 const DEFAULT_CHANNEL_ID = "default";
 const INSTALLATION_ID_KEY = "push-installation-id";
@@ -50,7 +51,7 @@ async function ensureAndroidChannel(): Promise<void> {
 async function getCurrentExpoPushToken(): Promise<string | null> {
   const projectId = getProjectId();
   if (!projectId) {
-    console.error("[Push] EAS project ID is missing");
+    reportError("[Push] EAS project ID is missing");
     return null;
   }
 
@@ -109,7 +110,7 @@ async function performPushRegistration({
     return token;
   } catch (error) {
     registrationRetryAfter = Date.now() + REGISTRATION_RETRY_DELAY_MS;
-    console.warn("[Push] Registration failed:", error);
+    warn("[Push] Registration failed:", error);
     return null;
   }
 }
@@ -147,7 +148,7 @@ export async function unregisterPushNotificationsAsync(): Promise<boolean> {
       await SecureStore.deleteItemAsync(UNREGISTRATION_PENDING_KEY);
       return true;
     } catch (error) {
-      console.warn("[Push] Unregistration failed:", error);
+      warn("[Push] Unregistration failed:", error);
       return false;
     } finally {
       unregistrationPromise = null;

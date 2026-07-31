@@ -36,6 +36,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { makeStyles } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const LOWER_LONSDALE_COORDINATES = {
   latitude: 49.3104,
@@ -189,7 +190,7 @@ function Map() {
         setRegion(initial);
         mapRef.current?.animateToRegion(initial, 1000);
       } catch (error) {
-        console.error("Error getting location:", error);
+        reportError("Error getting location:", error);
         setLocationNotice("We couldn't determine your location.");
       } finally {
         setLocationResolved(true);
@@ -270,7 +271,7 @@ function Map() {
       if (requestId !== fetchRequestRef.current) return;
 
       if (error) {
-        console.error("Error fetching locations in view:", error);
+        reportError("Error fetching locations in view:", error);
       } else {
         const nextLocations = (data ?? []).filter(
           (location: MapLocation) =>
@@ -291,7 +292,7 @@ function Map() {
             }))
           );
         } catch (regularsError) {
-          console.error("Error fetching map regulars:", regularsError);
+          reportError("Error fetching map regulars:", regularsError);
         }
       }
     }, FETCH_DEBOUNCE_MS);

@@ -22,6 +22,7 @@ import {
 } from "@/services/favoriteLocationSelection";
 import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const EditProfile = () => {
   const styles = useStyles();
@@ -111,7 +112,7 @@ const EditProfile = () => {
               .maybeSingle();
 
           if (favoriteLocationError) {
-            console.error(
+            reportError(
               "Error loading favorite location:",
               favoriteLocationError
             );
@@ -121,7 +122,7 @@ const EditProfile = () => {
         }
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      reportError("Error loading data:", error);
       Alert.alert("Error", "Failed to load profile data");
     } finally {
       setLoading(false);
@@ -146,7 +147,7 @@ const EditProfile = () => {
 
       router.back();
     } catch (error) {
-      console.error("Error updating profile:", error);
+      reportError("Error updating profile:", error);
       if (isAccountGoneError(error)) {
         // refreshProfile() -> the context signs out and explains; don't stack
         // a second, misleading alert on top of it.

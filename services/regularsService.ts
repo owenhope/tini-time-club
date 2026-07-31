@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase";
+import { reportError } from "@/utils/log";
 
 export interface Regular {
   location_id: number;
@@ -30,7 +31,7 @@ export async function getRegularsByLocation(
   });
 
   if (error) {
-    console.error("Error fetching regulars:", error);
+    reportError("Error fetching regulars:", error);
     return new Map();
   }
 

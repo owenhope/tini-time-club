@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import databaseService from "@/services/databaseService";
 import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 const EditCaption = () => {
   const styles = useStyles();
@@ -62,7 +63,7 @@ const EditCaption = () => {
 
       setCaption(data.comment || "");
     } catch (error) {
-      console.error("Error loading review:", error);
+      reportError("Error loading review:", error);
       Alert.alert("Error", "Failed to load review");
       router.back();
     } finally {
@@ -85,7 +86,7 @@ const EditCaption = () => {
 
       router.back();
     } catch (error) {
-      console.error("Error updating caption:", error);
+      reportError("Error updating caption:", error);
       Alert.alert("Error", "Failed to update caption");
       setSaving(false);
     }

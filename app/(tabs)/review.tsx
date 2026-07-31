@@ -36,6 +36,7 @@ import { AppText, Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 // ReviewPreview component for showing live preview with caption input
 interface ReviewFormLocation {
@@ -154,7 +155,11 @@ const ReviewPreview = ({
     return (
       <View style={styles.submitLoadingContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
-        <AppText variant="heading" tone="accent" style={styles.submitLoadingText}>
+        <AppText
+          variant="heading"
+          tone="accent"
+          style={styles.submitLoadingText}
+        >
           {submissionMessage}
         </AppText>
       </View>
@@ -202,7 +207,11 @@ const ReviewPreview = ({
               maxLength={500}
               autoFocus={true}
             />
-            <AppText variant="label" tone="secondary" style={styles.characterCount}>
+            <AppText
+              variant="label"
+              tone="secondary"
+              style={styles.characterCount}
+            >
               {tempCaption?.length || 0}/500
             </AppText>
             <TouchableOpacity
@@ -422,7 +431,7 @@ export default function App() {
   const uploadImage = async (userId: string) => {
     try {
       if (!photo) {
-        console.error("No photo to upload");
+        reportError("No photo to upload");
         return null;
       }
 
@@ -449,13 +458,13 @@ export default function App() {
         });
 
       if (error || !data) {
-        console.error("Error uploading image:", error);
+        reportError("Error uploading image:", error);
         return null;
       }
 
       return data.path;
     } catch (error) {
-      console.error("Exception while uploading image:", error);
+      reportError("Exception while uploading image:", error);
       return null;
     }
   };
@@ -468,7 +477,7 @@ export default function App() {
       setTypes(data);
       setOptionsError(null);
     } catch (error) {
-      console.error("Error getting types:", error);
+      reportError("Error getting types:", error);
       setTypes([]);
       setOptionsError("We couldn't load Martini types.");
     }
@@ -480,7 +489,7 @@ export default function App() {
       setSpirits(data);
       setOptionsError(null);
     } catch (error) {
-      console.error("Error getting spirits:", error);
+      reportError("Error getting spirits:", error);
       setSpirits([]);
       setOptionsError("We couldn't load spirits.");
     }
@@ -526,7 +535,7 @@ export default function App() {
       const result = await databaseService.createReview(newReview);
       return result.id;
     } catch (error) {
-      console.error("Error creating review:", error);
+      reportError("Error creating review:", error);
       return null;
     }
   };
@@ -575,7 +584,7 @@ export default function App() {
         router.navigate("/profile");
       }
     } catch (error) {
-      console.error("Error submitting review:", error);
+      reportError("Error submitting review:", error);
       setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
@@ -645,7 +654,11 @@ export default function App() {
           >
             {(optionsError || submitError) && (
               <View style={styles.inlineError}>
-                <AppText variant="caption" tone="danger" style={styles.inlineErrorText}>
+                <AppText
+                  variant="caption"
+                  tone="danger"
+                  style={styles.inlineErrorText}
+                >
                   {submitError || optionsError}
                 </AppText>
                 <TouchableOpacity
@@ -653,7 +666,11 @@ export default function App() {
                     submitError ? () => setSubmitError(null) : retryLoadOptions
                   }
                 >
-                  <AppText variant="caption" tone="danger" style={styles.inlineErrorAction}>
+                  <AppText
+                    variant="caption"
+                    tone="danger"
+                    style={styles.inlineErrorAction}
+                  >
                     {submitError ? "Dismiss" : "Retry"}
                   </AppText>
                 </TouchableOpacity>

@@ -23,7 +23,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
 import { Review } from "@/types/types";
-import { useFocusEffect , useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
@@ -37,6 +37,7 @@ import { Image as ExpoImage } from "expo-image";
 import { Button, Input } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { makeStyles, useTheme } from "@/theme";
+import { log, reportError } from "@/utils/log";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -198,9 +199,7 @@ function Home() {
           throw new Error("Failed to fetch reviews");
         }
 
-        if (__DEV__) {
-          console.log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
-        }
+        log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
 
         // getReviews returns image_url already hydrated to a signed URL.
         const reviewsWithUrls = reviewsDataFromDB;
@@ -233,7 +232,7 @@ function Home() {
           setLoadingMore(false);
         }
       } catch (error) {
-        console.error("Error fetching reviews:", error);
+        reportError("Error fetching reviews:", error);
         setError(
           error instanceof Error ? error.message : "Failed to load reviews"
         );
@@ -324,13 +323,13 @@ function Home() {
         .maybeSingle();
 
       if (error) {
-        console.error("Error checking username uniqueness:", error);
+        reportError("Error checking username uniqueness:", error);
         return false;
       }
 
       return !data; // Return true if no data found (username is unique)
     } catch (error) {
-      console.error("Unexpected error checking username:", error);
+      reportError("Unexpected error checking username:", error);
       return false;
     }
   };
@@ -422,7 +421,7 @@ function Home() {
     try {
       const result = await updateProfile({ username: trimmedUsername });
       if (result.error) {
-        console.error("Error saving username:", result.error);
+        reportError("Error saving username:", result.error);
         Alert.alert("Error", "Failed to save username. Please try again.", [
           { text: "OK" },
         ]);
@@ -434,7 +433,7 @@ function Home() {
       setNewUsername("");
       setUsernameValidation({ isValid: false, message: "", isChecking: false });
     } catch (error) {
-      console.error("Unexpected error saving username:", error);
+      reportError("Unexpected error saving username:", error);
       Alert.alert("Error", "An unexpected error occurred. Please try again.", [
         { text: "OK" },
       ]);
@@ -449,14 +448,14 @@ function Home() {
       const result = await acceptEULA();
 
       if (result.error) {
-        console.error("Error accepting EULA:", result.error);
+        reportError("Error accepting EULA:", result.error);
         // Don't close modal on error, let user try again
         return;
       }
 
       setShowEULAModal(false);
     } catch (error) {
-      console.error("Unexpected error accepting EULA:", error);
+      reportError("Unexpected error accepting EULA:", error);
       // Don't close modal on unexpected error
     } finally {
       setEulaLoading(false);
@@ -472,7 +471,7 @@ function Home() {
       // Sign out - navigation will be handled by auth state change in root layout
       await supabase.auth.signOut();
     } catch (error) {
-      console.error("Error signing out after EULA decline:", error);
+      reportError("Error signing out after EULA decline:", error);
     }
   }, []);
 

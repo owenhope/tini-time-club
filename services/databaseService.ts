@@ -7,6 +7,7 @@ import type {
   Profile,
   Review,
 } from "@/types/types";
+import { reportError } from "@/utils/log";
 
 interface CachedQuery {
   data: any;
@@ -529,7 +530,7 @@ class DatabaseService {
             if (isMissingPlaceIdColumn(backfillError)) {
               placeIdSupported = false;
             } else {
-              console.error("Error backfilling place_id:", backfillError);
+              reportError("Error backfilling place_id:", backfillError);
             }
           }
         }
@@ -614,7 +615,7 @@ class DatabaseService {
         this.queryCache.delete(key);
       });
     } catch (error) {
-      console.error("Error clearing review caches:", error);
+      reportError("Error clearing review caches:", error);
     }
   }
 

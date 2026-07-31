@@ -17,6 +17,7 @@ import { useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
 import { setPendingFavoriteLocation } from "@/services/favoriteLocationSelection";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 
 interface FavoriteLocationForm {
   location: LocationInputValue | null;
@@ -72,7 +73,7 @@ const FavoriteLocation = () => {
         }
         router.back();
       } catch (error) {
-        console.error("Error selecting favorite location:", error);
+        reportError("Error selecting favorite location:", error);
         Alert.alert(
           "Couldn't select location",
           "Please check your connection and try again."
@@ -98,7 +99,7 @@ const FavoriteLocation = () => {
       }
       router.back();
     } catch (error) {
-      console.error("Error removing favorite location:", error);
+      reportError("Error removing favorite location:", error);
       Alert.alert(
         "Couldn't remove location",
         "Please check your connection and try again."

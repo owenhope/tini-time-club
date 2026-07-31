@@ -12,6 +12,7 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
+import { reportError } from "@/utils/log";
 export interface ProfileType {
   id: string;
   username: string;
@@ -45,7 +46,7 @@ export default function ProfileList({
         .select("following_id")
         .eq("follower_id", profile.id);
       if (error) {
-        console.error("Error fetching followed ids:", error);
+        reportError("Error fetching followed ids:", error);
       } else if (data) {
         setFollowedIds(data.map((row: any) => row.following_id));
       }
@@ -68,7 +69,7 @@ export default function ProfileList({
         .eq("follower_id", profile.id)
         .eq("following_id", targetProfileId);
       if (error) {
-        console.error("Error unfollowing:", error);
+        reportError("Error unfollowing:", error);
       } else {
         setFollowedIds((prev) => prev.filter((id) => id !== targetProfileId));
       }
@@ -77,7 +78,7 @@ export default function ProfileList({
         .from("followers")
         .upsert([{ follower_id: profile.id, following_id: targetProfileId }]);
       if (error) {
-        console.error("Error following:", error);
+        reportError("Error following:", error);
       } else {
         setFollowedIds((prev) => [...prev, targetProfileId]);
         // Track follow event
