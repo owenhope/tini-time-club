@@ -30,6 +30,7 @@ import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { BRAND, HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -215,7 +216,7 @@ const AvatarWrapper = memo(
     const handlePress = useCallback(() => {
       if (!isOwnReview && username) {
         // Shared route: resolves inside whichever tab stack is rendering.
-        router.push(`/users/${username}`);
+        router.push(routes.user(username));
       }
     }, [isOwnReview, username, router]);
 

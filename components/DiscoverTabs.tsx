@@ -17,6 +17,7 @@ import { getRegularsByLocation } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -313,7 +314,7 @@ export default function DiscoverTabs({
     return (
       <TouchableOpacity
         style={styles.resultCard}
-        onPress={() => router.navigate(`/users/${item.username}`)}
+        onPress={() => router.navigate(routes.user(item.username))}
         activeOpacity={0.7}
       >
         <View style={styles.cardContent}>
@@ -346,14 +347,12 @@ export default function DiscoverTabs({
     <TouchableOpacity
       style={styles.resultCard}
       onPress={() =>
-        router.navigate({
-          pathname: "/places/[place]",
-          params: {
-            place: item.id,
+        router.navigate(
+          routes.place(item.id, {
             name: item.name || "",
             address: item.address || "",
-          },
-        })
+          })
+        )
       }
       activeOpacity={0.7}
     >

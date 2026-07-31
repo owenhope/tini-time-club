@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const EditProfile = () => {
   const styles = useStyles();
@@ -224,12 +225,11 @@ const EditProfile = () => {
           <FavoriteLocationPicker
             value={favoriteLocation}
             onPress={() =>
-              router.push({
-                pathname: "/favorite-location",
-                params: {
+              router.push(
+                routes.favoriteLocation({
                   hasFavoriteLocation: favoriteLocation ? "1" : "0",
-                },
-              })
+                })
+              )
             }
           />
 

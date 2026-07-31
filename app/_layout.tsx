@@ -30,6 +30,7 @@ import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
 } from "@/utils/authDeepLink";
+import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 
 // Keep the splash screen visible while we fetch resources
@@ -120,7 +121,9 @@ function RootLayoutNav() {
   const [isReady, setIsReady] = useState(false);
   // Initial-launch destination waiting on the router to mount; the splash
   // stays up until we actually arrive there.
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+  const [pendingRoute, setPendingRoute] = useState<
+    ReturnType<typeof routes.home> | ReturnType<typeof routes.welcome> | null
+  >(null);
   const [isResuming, setIsResuming] = useState(false);
   const rootNavigationState = useRootNavigationState();
   const appState = useRef(AppState.currentState);
@@ -146,7 +149,7 @@ function RootLayoutNav() {
   // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.
   useEffect(() => {
     if (pendingRoute && rootNavigationState?.key) {
-      router.replace(pendingRoute as never);
+      router.replace(pendingRoute);
     }
   }, [pendingRoute, rootNavigationState?.key, router]);
 
@@ -191,7 +194,7 @@ function RootLayoutNav() {
           error.message || "This sign-in link is invalid or has expired."
         );
         setIsReady(true);
-        router.replace("/auth");
+        router.replace(routes.auth());
         await SplashScreen.hideAsync();
       }
     };
@@ -213,7 +216,7 @@ function RootLayoutNav() {
         hasHandledInitialSession.current = true;
         reportError("[RootLayout] Auth never initialized; forcing sign-in");
         setIsReady(true);
-        router.replace("/");
+        router.replace(routes.welcome());
         void SplashScreen.hideAsync();
       }
     }, 5000);
@@ -228,7 +231,7 @@ function RootLayoutNav() {
         // Recovery deep link: let the user set a new password instead of
         // dropping them on the feed.
         setIsReady(true);
-        router.replace("/reset-password");
+        router.replace(routes.resetPassword());
         await SplashScreen.hideAsync();
         return;
       }
@@ -248,7 +251,11 @@ function RootLayoutNav() {
           !!launchedViaDeepLink && pathnameRef.current !== "/";
 
         const target =
-          !isAuthLaunch && !deepLinkRouted ? (session ? "/home" : "/") : null;
+          !isAuthLaunch && !deepLinkRouted
+            ? session
+              ? routes.home()
+              : routes.welcome()
+            : null;
 
         // Mount the Stack; the navigation + splash-hide effects below take
         // over once the router reports ready — no fixed timers.
@@ -263,12 +270,12 @@ function RootLayoutNav() {
         // User signed in (email, Apple, Google, etc.). Recovery links also emit
         // SIGNED_IN; staying put keeps the reset screen on screen.
         if (pathnameRef.current !== "/reset-password") {
-          router.replace("/home");
+          router.replace(routes.home());
         }
       } else if (event === "SIGNED_OUT") {
         // User signed out
         await authCache.invalidateCache();
-        router.replace("/");
+        router.replace(routes.welcome());
       }
     });
 
@@ -289,7 +296,7 @@ function RootLayoutNav() {
         try {
           const session = await authCache.getSession();
           if (!session && pathnameRef.current !== "/") {
-            router.replace("/");
+            router.replace(routes.welcome());
           }
         } catch (error) {
           reportError(

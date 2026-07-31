@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Image, View, Text } from "react-native";
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { AvatarRefreshProvider } from "@/context/avatar-refresh-context";
@@ -38,7 +38,9 @@ const LayoutContent = () => {
 
     const handleResponse = (response: Notifications.NotificationResponse) => {
       const route = getNotificationRoute(response);
-      if (route) router.push(route as any);
+      // getNotificationRoute only returns strings matching an allowlist of
+      // internal routes, so this cast narrows a validated string, not junk.
+      if (route) router.push(route as Href);
     };
 
     syncToken(true);

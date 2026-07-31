@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/shared";
 import { makeStyles } from "@/theme";
+import { routes } from "@/utils/routes";
 
 const FEATURES = [
   {
@@ -81,7 +82,7 @@ const Welcome = () => {
         <View style={styles.footer}>
           <Button
             title="Continue"
-            onPress={() => router.push("/auth")}
+            onPress={() => router.push(routes.auth())}
             variant="primary"
             size="large"
             fullWidth

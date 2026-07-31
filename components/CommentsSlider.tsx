@@ -20,6 +20,7 @@ import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -158,7 +159,7 @@ export default function CommentsSlider({
 
     if (username) {
       // Shared route: resolves inside whichever tab stack is rendering.
-      router.push(`/users/${username}`);
+      router.push(routes.user(username));
     }
   };
 

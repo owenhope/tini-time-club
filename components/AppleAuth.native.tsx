@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 export function AppleAuth() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export function AppleAuth() {
                 throw new Error(`Authentication failed: ${error.message}`);
               } else {
                 AnalyticService.capture("login", { method: "apple" });
-                router.replace("/home");
+                router.replace(routes.home());
               }
             } else {
               reportError("[AppleAuth] ❌ No identityToken received");

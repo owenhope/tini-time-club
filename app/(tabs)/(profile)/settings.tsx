@@ -15,6 +15,7 @@ import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme, type ThemePreference } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
@@ -45,11 +46,11 @@ const Settings = () => {
       }
 
       // Navigate to login screen - don't rely on SIGNED_OUT event
-      router.replace("/");
+      router.replace(routes.welcome());
     } catch (error) {
       reportError("Error signing out:", error);
       // Still try to navigate to login
-      router.replace("/");
+      router.replace(routes.welcome());
     }
   };
 
@@ -63,13 +64,13 @@ const Settings = () => {
       id: "edit-profile",
       title: "Edit Profile",
       icon: "person-outline",
-      onPress: () => router.push("/edit-profile"),
+      onPress: () => router.push(routes.editProfile()),
     },
     {
       id: "terms",
       title: "Terms of Service",
       icon: "document-text-outline",
-      onPress: () => router.push("/terms"),
+      onPress: () => router.push(routes.terms()),
     },
     {
       id: "support",
@@ -81,7 +82,7 @@ const Settings = () => {
       id: "delete",
       title: "Delete Account",
       icon: "trash-outline",
-      onPress: () => router.push("/delete-account"),
+      onPress: () => router.push(routes.deleteAccount()),
     },
     {
       id: "logout",

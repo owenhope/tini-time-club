@@ -34,6 +34,7 @@ import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTag
 import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const Profile = () => {
   const styles = useStyles();
@@ -102,6 +103,10 @@ const Profile = () => {
         headerLeft: () => null,
         headerRight: () => (
           <TouchableOpacity
+            // navigation.navigate targets the sibling screen in this tab's
+            // stack; expo-router's useNavigation() has no typed param list,
+            // so the cast is unavoidable without switching to router.push
+            // (which would change back behavior).
             onPress={() => navigation.navigate("settings" as never)}
             style={styles.headerButton}
             hitSlop={HIT_SLOP}
@@ -261,7 +266,7 @@ const Profile = () => {
       <Text style={styles.emptyCtaTitle}>Share your first Martini</Text>
       <TouchableOpacity
         style={styles.reviewLink}
-        onPress={() => router.navigate("/review")}
+        onPress={() => router.navigate(routes.review())}
         hitSlop={HIT_SLOP}
         accessibilityRole="link"
         accessibilityLabel="Write a review"
@@ -306,7 +311,7 @@ const Profile = () => {
     <View style={styles.favoritesSection}>
       {!hasFavoriteTags && (
         <TouchableOpacity
-          onPress={() => router.push("/edit-profile")}
+          onPress={() => router.push(routes.editProfile())}
           style={styles.ctaContainer}
           hitSlop={6}
           accessibilityRole="button"
@@ -317,7 +322,7 @@ const Profile = () => {
       )}
       {!profile?.bio && (
         <TouchableOpacity
-          onPress={() => router.push("/edit-profile")}
+          onPress={() => router.push(routes.editProfile())}
           style={styles.ctaContainer}
           hitSlop={6}
           accessibilityRole="button"
@@ -331,13 +336,12 @@ const Profile = () => {
       ) : (
         <TouchableOpacity
           onPress={() =>
-            router.push({
-              pathname: "/favorite-location",
-              params: {
+            router.push(
+              routes.favoriteLocation({
                 hasFavoriteLocation: "0",
                 saveImmediately: "1",
-              },
-            })
+              })
+            )
           }
           style={styles.ctaContainer}
           hitSlop={6}
@@ -365,11 +369,11 @@ const Profile = () => {
         avatarError={avatarError}
         onFollowersPress={() =>
           profile?.username &&
-          router.push(`/users/${profile.username}/followers`)
+          router.push(routes.followers(profile.username))
         }
         onFollowingPress={() =>
           profile?.username &&
-          router.push(`/users/${profile.username}/following`)
+          router.push(routes.following(profile.username))
         }
         tags={favoriteTags}
       >
@@ -392,7 +396,7 @@ const Profile = () => {
           canDelete={true}
           onDelete={(review) => confirmDeleteReview(review.id)}
           onEdit={(review) =>
-            router.push(`/edit-caption?reviewId=${review.id}`)
+            router.push(routes.editCaption(review.id))
           }
         />
       ) : (

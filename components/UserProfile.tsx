@@ -21,7 +21,6 @@ import {
   useRouter,
   useLocalSearchParams,
   useNavigation,
-  usePathname,
 } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
@@ -34,6 +33,7 @@ import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTag
 import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -50,7 +50,6 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const navigation = useNavigation();
-  const pathname = usePathname();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
 
@@ -491,8 +490,14 @@ const UserProfile = () => {
         followersCount={followersCount}
         followingCount={followingCount}
         isOwnProfile={profile ? profile.id === displayProfile?.id : false}
-        onFollowersPress={() => router.push(`${pathname}/followers` as never)}
-        onFollowingPress={() => router.push(`${pathname}/following` as never)}
+        onFollowersPress={() =>
+          displayProfile?.username &&
+          router.push(routes.followers(displayProfile.username))
+        }
+        onFollowingPress={() =>
+          displayProfile?.username &&
+          router.push(routes.following(displayProfile.username))
+        }
         tags={favoriteTags}
       >
         {favoriteChips}
@@ -515,7 +520,7 @@ const UserProfile = () => {
           }}
           onEdit={(review) =>
             profile && String(profile.id) === String(review.user_id)
-              ? router.push(`/edit-caption?reviewId=${review.id}`)
+              ? router.push(routes.editCaption(review.id))
               : undefined
           }
           onShowComments={handleShowComments}

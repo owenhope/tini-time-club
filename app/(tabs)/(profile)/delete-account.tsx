@@ -16,6 +16,7 @@ import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const DeleteAccount = () => {
   const styles = useStyles();
@@ -79,7 +80,7 @@ const DeleteAccount = () => {
                     text: "OK",
                     onPress: () => {
                       // Navigate to login screen
-                      router.replace("/");
+                      router.replace(routes.welcome());
                     },
                   },
                 ]

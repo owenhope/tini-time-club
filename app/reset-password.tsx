@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
+import { routes } from "@/utils/routes";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -85,7 +86,7 @@ export default function ResetPasswordScreen() {
     }
 
     Alert.alert("Password updated", "You can now use your new password.", [
-      { text: "OK", onPress: () => router.replace("/home") },
+      { text: "OK", onPress: () => router.replace(routes.home()) },
     ]);
   };
 
@@ -105,7 +106,10 @@ export default function ResetPasswordScreen() {
           This password reset link is no longer valid. Request a new one from
           the login screen.
         </Text>
-        <Button title="Back to login" onPress={() => router.replace("/")} />
+        <Button
+          title="Back to login"
+          onPress={() => router.replace(routes.welcome())}
+        />
       </View>
     );
   }

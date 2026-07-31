@@ -33,6 +33,7 @@ import {
   type Regular,
 } from "@/services/regularsService";
 import { reportError } from "@/utils/log";
+import { routes, type ReviewLocationParams } from "@/utils/routes";
 
 // Helper function to format price level
 
@@ -169,9 +170,8 @@ const Location = () => {
           <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={() =>
-                router.push({
-                  pathname: "/place-info",
-                  params: {
+                router.push(
+                  routes.placeInfo({
                     locationId: displayLocation.id,
                     name: displayLocation.name,
                     address: displayLocation.address ?? "",
@@ -183,8 +183,8 @@ const Location = () => {
                       "lon" in displayLocation && displayLocation.lon
                         ? displayLocation.lon.toString()
                         : "",
-                  },
-                })
+                  })
+                )
               }
               style={styles.headerButton}
               hitSlop={HIT_SLOP}
@@ -206,14 +206,13 @@ const Location = () => {
                   // navigate, not push: this switches to the Places tab (or
                   // pops back to the map when already in that stack) instead
                   // of stacking a tab root with no back button.
-                  router.navigate({
-                    pathname: "/places",
-                    params: {
+                  router.navigate(
+                    routes.places({
                       lat: displayLocation.lat!.toString(),
                       lon: displayLocation.lon!.toString(),
                       locationId: displayLocation.id,
-                    },
-                  });
+                    })
+                  );
                 }}
                 style={styles.headerButton}
                 hitSlop={HIT_SLOP}
@@ -344,7 +343,7 @@ const Location = () => {
           onDelete={undefined}
           onEdit={
             isOwnReview
-              ? () => router.push(`/edit-caption?reviewId=${item.id}`)
+              ? () => router.push(routes.editCaption(item.id))
               : undefined
           }
           onShowLikes={() => {}}
@@ -375,7 +374,7 @@ const Location = () => {
             style={styles.addReviewButton}
             onPress={() => {
               // Navigate to review page with location pre-filled
-              const locationParams: any = {
+              const locationParams: ReviewLocationParams = {
                 locationName: displayLocation.name,
                 locationAddress: displayLocation.address || "",
               };
@@ -392,10 +391,7 @@ const Location = () => {
                 locationParams.locationLon = displayLocation.lon.toString();
               }
 
-              router.push({
-                pathname: "/review",
-                params: locationParams,
-              });
+              router.push(routes.review(locationParams));
             }}
           >
             <Text style={styles.addReviewButtonText}>Add Review</Text>

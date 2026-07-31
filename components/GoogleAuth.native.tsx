@@ -9,6 +9,7 @@ import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
+import { routes } from "@/utils/routes";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -40,7 +41,7 @@ export function GoogleAuth() {
         }
 
         AnalyticService.capture("login", { method: "google" });
-        router.replace("/home");
+        router.replace(routes.home());
       } else {
         throw new Error("No ID token present");
       }

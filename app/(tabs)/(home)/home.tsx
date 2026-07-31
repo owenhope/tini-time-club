@@ -38,6 +38,7 @@ import { Button, Input } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -476,15 +477,15 @@ function Home() {
   }, []);
 
   const navigateToLocations = useCallback(() => {
-    router.navigate("/places");
+    router.navigate(routes.places());
   }, [router]);
 
   const navigateToReview = useCallback(() => {
-    router.navigate("/review");
+    router.navigate(routes.review());
   }, [router]);
 
   const navigateToDiscover = useCallback(() => {
-    router.navigate("/discover");
+    router.navigate(routes.discover());
   }, [router]);
 
   // Memoized empty component
@@ -658,7 +659,7 @@ function Home() {
           canDelete={false}
           onEdit={
             isOwnReview
-              ? () => router.push(`/edit-caption?reviewId=${item.id}`)
+              ? () => router.push(routes.editCaption(item.id))
               : undefined
           }
           onShowLikes={handleShowLikes}
@@ -707,7 +708,7 @@ function Home() {
       <Animated.View style={[styles.header, { height: headerHeight }]}>
         <TouchableOpacity
           style={styles.addButtonContainer}
-          onPress={() => router.push("/review")}
+          onPress={() => router.push(routes.review())}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Share a Martini review"

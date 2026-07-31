@@ -5,6 +5,7 @@ import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useProfile } from "@/context/profile-context";
 import { makeStyles } from "@/theme";
+import { routes } from "@/utils/routes";
 
 interface RegularsProps {
   regulars?: Regular[] | null;
@@ -49,9 +50,9 @@ const Regulars: React.FC<RegularsProps> = ({
   // route renders the visitor view, Follow button and all.
   const openRegular = (regular: DisplayRegular) => {
     if (String(profile?.id) === String(regular.profile_id)) {
-      router.navigate("/profile");
+      router.navigate(routes.profile());
     } else {
-      router.push(`/users/${regular.username}`);
+      router.push(routes.user(regular.username));
     }
   };
 

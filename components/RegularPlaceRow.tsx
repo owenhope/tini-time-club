@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import type { ProfileRegularPlace } from "@/services/regularsService";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { makeStyles, useTheme } from "@/theme";
+import { routes } from "@/utils/routes";
 
 const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
   place,
@@ -20,7 +21,7 @@ const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
 
   return (
     <Pressable
-      onPress={() => router.push(`/places/${place.location_id}`)}
+      onPress={() => router.push(routes.place(place.location_id))}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       accessibilityRole="link"
       accessibilityLabel={`Number ${place.rank} regular at ${place.location_name}`}

@@ -37,6 +37,7 @@ import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 // ReviewPreview component for showing live preview with caption input
 interface ReviewFormLocation {
@@ -581,7 +582,7 @@ export default function App() {
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.navigate("/profile");
+        router.navigate(routes.profile());
       }
     } catch (error) {
       reportError("Error submitting review:", error);

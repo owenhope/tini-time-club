@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { makeStyles, useTheme } from "@/theme";
+import { routes } from "@/utils/routes";
 
 interface FavoriteLocationLinkProps {
   location: { id: number; name: string } | null;
@@ -24,7 +25,7 @@ const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
     <View style={styles.favoriteLocationBlock}>
       <Text style={styles.favoritesLabel}>Favorite Location</Text>
       <TouchableOpacity
-        onPress={() => router.push(`/places/${location.id}`)}
+        onPress={() => router.push(routes.place(location.id))}
         style={styles.favoriteLocationLink}
         accessibilityRole="link"
         accessibilityLabel={`Favorite location, ${location.name}`}
