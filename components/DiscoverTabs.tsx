@@ -597,7 +597,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accentSubtle,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: t.colors.textMuted,
     marginLeft: t.spacing.sm,
@@ -624,7 +624,7 @@ const useStyles = makeStyles((t) => ({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     marginLeft: t.spacing.md,
     color: t.colors.text,
   },
@@ -713,30 +713,30 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   resultTitle: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     fontWeight: "600" as const,
     color: t.colors.text,
     marginBottom: 2,
   },
   resultSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 18,
     color: t.colors.textSecondary,
   },
   profileStats: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     fontWeight: "400" as const,
   },
   ratingText: {
     color: t.colors.onAccent,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600" as const,
   },
   reviewCountText: {
     color: t.colors.textSecondary,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "400" as const,
     marginTop: t.spacing.xs,
     textAlign: "center" as const,

@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import {
   View,
   TextInput,
-  Text,
   ViewStyle,
   TextStyle,
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { makeStyles, useTheme } from "@/theme";
+import AppText from "./AppText";
 
 export type InputSize = "small" | "medium" | "large";
 export type InputVariant = "default" | "outlined" | "filled" | "transparent";
@@ -68,7 +68,7 @@ const Input: React.FC<InputProps> = ({
   testID,
 }) => {
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   // Determine if this should be a password input
@@ -155,13 +155,13 @@ const Input: React.FC<InputProps> = ({
   const getTextSize = (): number => {
     switch (size) {
       case "small":
-        return 14;
+        return typography.caption.fontSize;
       case "medium":
-        return 16;
+        return typography.body.fontSize;
       case "large":
-        return 18;
+        return typography.heading.fontSize;
       default:
-        return 16;
+        return typography.body.fontSize;
     }
   };
 
@@ -222,7 +222,12 @@ const Input: React.FC<InputProps> = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text style={[styles.label, { color: getTextColor() }]}>{label}</Text>
+        <AppText
+          variant="caption"
+          style={[styles.label, { color: getTextColor() }]}
+        >
+          {label}
+        </AppText>
       )}
 
       <View style={[styles.inputContainer, getVariantStyles(), style]}>
@@ -258,7 +263,11 @@ const Input: React.FC<InputProps> = ({
         {renderRightIcon()}
       </View>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <AppText variant="label" tone="danger" style={styles.errorText}>
+          {error}
+        </AppText>
+      )}
     </View>
   );
 };
@@ -269,7 +278,6 @@ const useStyles = makeStyles((t) => ({
     marginVertical: t.spacing.sm,
   },
   label: {
-    fontSize: 14,
     fontWeight: "600" as const,
     marginBottom: 6,
     color: t.colors.textSecondary,
@@ -295,7 +303,6 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   errorText: {
-    ...t.typography.label,
     fontWeight: "400" as const,
     letterSpacing: 0,
     color: t.colors.danger,

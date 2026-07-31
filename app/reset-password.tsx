@@ -175,5 +175,5 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.xl - 4,
     lineHeight: 22,
   },
-  error: { color: t.colors.danger, fontSize: 14, marginTop: t.spacing.xs },
+  error: { color: t.colors.danger, fontSize: 13, marginTop: t.spacing.xs },
 }));

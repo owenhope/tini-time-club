@@ -8,6 +8,7 @@ import { makeStyles } from "@/theme";
 interface RegularsProps {
   regulars?: Regular[] | null;
   variant?: "default" | "compact" | "dense";
+  showLabel?: boolean;
 }
 
 type DisplayRegular = Regular & { isPreview?: boolean };
@@ -15,6 +16,7 @@ type DisplayRegular = Regular & { isPreview?: boolean };
 const Regulars: React.FC<RegularsProps> = ({
   regulars,
   variant = "default",
+  showLabel = true,
 }) => {
   const styles = useStyles();
   const router = useRouter();
@@ -50,8 +52,13 @@ const Regulars: React.FC<RegularsProps> = ({
 
   if (variant === "compact") {
     return (
-      <View style={styles.compactSection}>
-        <Text style={styles.label}>Regulars</Text>
+      <View
+        style={[
+          styles.compactSection,
+          !showLabel && styles.compactSectionUnlabeled,
+        ]}
+      >
+        {showLabel ? <Text style={styles.label}>Regulars</Text> : null}
         <View style={styles.compactRow}>
           <View style={styles.avatarStack}>
             {displayRegulars.map((regular, index) => (
@@ -175,6 +182,10 @@ const useStyles = makeStyles((t) => ({
   compactSection: {
     marginTop: t.spacing.sm,
     gap: t.spacing.xs,
+  },
+  compactSectionUnlabeled: {
+    marginTop: 0,
+    gap: 0,
   },
   denseSection: {
     gap: 6,

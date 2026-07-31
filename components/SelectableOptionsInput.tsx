@@ -95,7 +95,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.accent,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     textAlign: "center" as const,
     textTransform: "capitalize" as const,

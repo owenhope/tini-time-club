@@ -276,14 +276,14 @@ const useStyles = makeStyles((t) => ({
     padding: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     marginBottom: t.spacing.sm,
     marginTop: t.spacing.lg,
     color: t.colors.text,
   },
   input: {
-    fontSize: 16,
+    fontSize: 15,
     padding: t.spacing.md,
     borderRadius: t.radius.sm,
     backgroundColor: t.colors.background,
@@ -317,7 +317,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: t.colors.text,
   },
@@ -328,7 +328,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.6,
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: t.colors.onAccent,
   },

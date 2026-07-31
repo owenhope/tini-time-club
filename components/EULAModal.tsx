@@ -251,20 +251,20 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.xl - 4,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold" as const,
     color: t.colors.text,
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
   text: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
     lineHeight: 20,
     marginBottom: t.spacing.md,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     fontStyle: "italic" as const,
     textAlign: "center" as const,
@@ -296,12 +296,12 @@ const useStyles = makeStyles((t) => ({
   },
   acceptButtonText: {
     color: t.colors.onAccent,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
   },
   declineButtonText: {
     color: t.colors.accent,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
   },
   scrollHint: {

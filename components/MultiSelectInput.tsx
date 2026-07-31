@@ -71,7 +71,7 @@ const useStyles = makeStyles((t) => ({
   },
   label: {
     ...t.typography.heading,
-    fontSize: 16,
+    fontSize: 15,
     letterSpacing: 0,
     marginBottom: t.spacing.md,
     color: t.colors.text,
@@ -93,7 +93,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.accent,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
     textTransform: "capitalize" as const,
   },

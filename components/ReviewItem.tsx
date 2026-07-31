@@ -956,7 +956,7 @@ const useStyles = makeStyles((t) => ({
   },
   headerUsername: {
     fontWeight: "bold" as const,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
   },
   headerIdentity: {
@@ -1035,17 +1035,17 @@ const useStyles = makeStyles((t) => ({
   // schemes rather than following colors.text.
   locationName: {
     fontWeight: "bold" as const,
-    fontSize: 22,
+    fontSize: 20,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   locationAddress: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textOnImage,
   },
   ratingLabel: {
     fontWeight: "bold" as const,
-    fontSize: 16,
+    fontSize: 15,
     marginTop: t.spacing.sm,
     marginBottom: t.spacing.xs,
     color: t.colors.textOnImage,
@@ -1063,14 +1063,14 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.raised,
   },
   spiritText: {
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 22,
     fontWeight: "bold" as const,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,
   },
   typeText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold" as const,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,
@@ -1092,35 +1092,35 @@ const useStyles = makeStyles((t) => ({
   },
   likesCount: {
     fontWeight: "bold" as const,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
   },
   captionSection: {
     marginBottom: t.spacing.xs,
   },
   captionText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     color: t.colors.text,
   },
   inlineBody: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 18,
     color: t.colors.text,
     flexShrink: 1,
   },
   captionUsername: {
     fontWeight: "600" as const,
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
   },
   captionBody: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     color: t.colors.text,
   },
   addCaptionText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     color: t.colors.textSecondary,
     fontWeight: "500" as const,
@@ -1129,27 +1129,27 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.xs,
   },
   commentText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     color: t.colors.text,
   },
   commentUsername: {
     fontWeight: "600" as const,
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
   },
   commentBody: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     color: t.colors.text,
   },
   username: {
     fontWeight: "bold" as const,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
   },
   expandableText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     lineHeight: 20,
   },
@@ -1159,12 +1159,12 @@ const useStyles = makeStyles((t) => ({
   },
   moreText: {
     color: t.colors.textSecondary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "400" as const,
   },
   viewAllCommentsText: {
     color: t.colors.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: t.spacing.xs,
   },
   previewContainer: {
@@ -1177,12 +1177,12 @@ const useStyles = makeStyles((t) => ({
   },
   previewUsername: {
     fontWeight: "bold" as const,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   previewComment: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
     lineHeight: 18,
   },

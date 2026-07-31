@@ -137,7 +137,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.sm,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "600" as const,
     color: t.colors.text,
   },
@@ -156,20 +156,20 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold" as const,
     color: t.colors.text,
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
   text: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     lineHeight: 20,
     marginBottom: t.spacing.md,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     fontStyle: "italic" as const,
     textAlign: "center" as const,

@@ -138,7 +138,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold" as const,
     color: t.colors.text,
     marginBottom: 10,
@@ -149,16 +149,16 @@ const useStyles = makeStyles((t) => ({
   },
   optionText: {
     textAlign: "center" as const,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
   },
   cancelButton: { marginTop: 10 },
-  cancelText: { color: t.colors.accent, fontSize: 16 },
+  cancelText: { color: t.colors.accent, fontSize: 15 },
   customInputContainer: {
     width: "100%" as const,
   },
   customInputLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500" as const,
     color: t.colors.text,
     marginBottom: 10,
@@ -170,7 +170,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 15,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     minHeight: 100,
     textAlignVertical: "top" as const,
@@ -190,7 +190,7 @@ const useStyles = makeStyles((t) => ({
   },
   submitButtonText: {
     color: t.colors.onAccent,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     textAlign: "center" as const,
   },
@@ -203,7 +203,7 @@ const useStyles = makeStyles((t) => ({
   },
   backButtonText: {
     color: t.colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     textAlign: "center" as const,
   },

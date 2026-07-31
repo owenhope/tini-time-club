@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import { makeStyles } from "@/theme";
+import AppText from "./AppText";
 
 export interface Metric {
   key: string;
@@ -39,8 +40,12 @@ const MetricRow: React.FC<{
               accessible
               accessibilityLabel={label}
             >
-              <Text style={styles.value}>{metric.value}</Text>
-              <Text style={styles.label}>{metric.label}</Text>
+              <AppText variant="metric" style={styles.value}>
+                {metric.value}
+              </AppText>
+              <AppText variant="caption" tone="secondary" style={styles.label}>
+                {metric.label}
+              </AppText>
             </View>
           );
         }
@@ -58,8 +63,12 @@ const MetricRow: React.FC<{
             accessibilityLabel={label}
             accessibilityHint={`Shows ${metric.label.toLowerCase()}`}
           >
-            <Text style={styles.value}>{metric.value}</Text>
-            <Text style={styles.label}>{metric.label}</Text>
+            <AppText variant="metric" style={styles.value}>
+              {metric.value}
+            </AppText>
+            <AppText variant="caption" tone="secondary" style={styles.label}>
+              {metric.label}
+            </AppText>
           </Pressable>
         );
       })}
@@ -87,13 +96,9 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.6,
   },
   value: {
-    ...t.typography.metric,
-    color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
   label: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
     marginTop: 2,
   },
 }));

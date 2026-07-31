@@ -186,7 +186,7 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     ...t.elevation.card,
   },

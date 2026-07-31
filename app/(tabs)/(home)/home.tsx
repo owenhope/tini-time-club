@@ -931,7 +931,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.accent,
     fontWeight: "500" as const,
   },
@@ -941,12 +941,12 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.danger,
     textAlign: "center" as const,
     marginBottom: 10,
@@ -959,7 +959,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   footerLoaderText: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.accent,
   },
   modalContainer: {
@@ -984,13 +984,13 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
   },
   modalSubTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "normal" as const,
     marginBottom: t.spacing.md,
     color: t.colors.text,
   },
   validationMessage: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.danger,
     textAlign: "center" as const,
     marginTop: t.spacing.sm,
@@ -1037,7 +1037,7 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
     lineHeight: 22,
     maxWidth: 320,
-    letterSpacing: -0.2,
+    letterSpacing: 0,
   },
   stepsContainer: {
     flex: 1,
@@ -1071,7 +1071,7 @@ const useStyles = makeStyles((t) => ({
     fontWeight: "600" as const,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
-    letterSpacing: -0.2,
+    letterSpacing: 0,
   },
   stepDescription: {
     fontSize: 13,

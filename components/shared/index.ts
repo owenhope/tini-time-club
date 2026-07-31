@@ -11,6 +11,13 @@ export type { InputProps, InputSize, InputVariant, InputType } from "./Input";
 
 export { default as Avatar } from "./Avatar";
 
+export { default as AppText } from "./AppText";
+export type {
+  AppTextProps,
+  TypographyVariant,
+  TextTone,
+} from "./AppText";
+
 export { default as VerifiedName } from "./VerifiedName";
 export type { VerifiedNameProps } from "./VerifiedName";
 

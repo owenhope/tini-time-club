@@ -466,7 +466,7 @@ const useStyles = makeStyles((t) => ({
     fontSize: 24,
   },
   overallValueSmall: {
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 22,
   },
   overallHeading: {
@@ -593,7 +593,7 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ["tabular-nums"] as const,
   },
   compactOverallTitle: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
     fontWeight: "600" as const,
   },
@@ -602,14 +602,14 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   compactMetaSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 18,
   },
   onImage: {
     color: t.colors.textOnImage,
   },
   onImageMeta: {
-    fontSize: 14,
+    fontSize: 13,
     color: "rgba(255,255,255,0.85)",
   },
 }));

@@ -55,7 +55,7 @@ const useStyles = makeStyles((t) => ({
   pinText: {
     color: t.colors.onAccent,
     fontWeight: "bold" as const,
-    fontSize: 14,
+    fontSize: 13,
   },
   pinPointer: {
     position: "absolute" as const,

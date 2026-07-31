@@ -401,12 +401,12 @@ const useStyles = makeStyles((t) => ({
   },
   noticeText: {
     color: t.colors.textOnImage,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
   },
   noticeAction: {
     color: t.colors.accent,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700" as const,
   },
   markerContainer: {

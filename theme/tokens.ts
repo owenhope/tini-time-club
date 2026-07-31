@@ -245,17 +245,53 @@ export const radius = {
 } as const;
 
 export const typography = {
-  display: { fontSize: 28, fontWeight: "700", letterSpacing: -0.4 },
-  title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
-  heading: { fontSize: 17, fontWeight: "600", letterSpacing: -0.2 },
-  body: { fontSize: 15, fontWeight: "400" },
-  bodyStrong: { fontSize: 15, fontWeight: "600" },
-  caption: { fontSize: 13, fontWeight: "400" },
-  label: { fontSize: 12, fontWeight: "600", letterSpacing: 0.2 },
+  display: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "700",
+    letterSpacing: 0,
+  },
+  title: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "700",
+    letterSpacing: 0,
+  },
+  heading: {
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: "600",
+    letterSpacing: 0,
+  },
+  body: { fontSize: 15, lineHeight: 20, fontWeight: "400" },
+  bodyStrong: { fontSize: 15, lineHeight: 20, fontWeight: "600" },
+  caption: { fontSize: 13, lineHeight: 18, fontWeight: "400" },
+  label: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
+    letterSpacing: 0,
+  },
+  micro: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: "400",
+    letterSpacing: 0,
+  },
   // Large numerals in metric rows and rating summaries. Tabular figures keep
   // columns from shifting as values change.
-  metric: { fontSize: 20, fontWeight: "700", letterSpacing: -0.3 },
-  metricLarge: { fontSize: 34, fontWeight: "700", letterSpacing: -0.8 },
+  metric: {
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: "700",
+    letterSpacing: 0,
+  },
+  metricLarge: {
+    fontSize: 34,
+    lineHeight: 38,
+    fontWeight: "700",
+    letterSpacing: 0,
+  },
 } as const;
 
 /**

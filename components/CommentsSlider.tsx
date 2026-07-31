@@ -320,13 +320,13 @@ const useStyles = makeStyles((t) => ({
     paddingTop: t.spacing.xxl * 2,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold" as const,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textMuted,
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,
@@ -357,7 +357,7 @@ const useStyles = makeStyles((t) => ({
   },
   username: { fontWeight: "bold" as const, color: t.colors.text },
   timestamp: { color: t.colors.textMuted, fontSize: 12 },
-  commentBody: { fontSize: 14, color: t.colors.text },
+  commentBody: { fontSize: 13, color: t.colors.text },
   inputContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,

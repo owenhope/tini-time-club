@@ -582,7 +582,17 @@ const Location = () => {
               variant="compact"
               overall={displayLocation?.rating}
               reviewCount={displayLocation?.total_ratings ?? 0}
+              compactDecorated={false}
             />
+            {regulars.length > 0 ? (
+              <View style={styles.collapsedRegulars}>
+                <Regulars
+                  regulars={regulars}
+                  variant="compact"
+                  showLabel={false}
+                />
+              </View>
+            ) : null}
           </View>
         </Animated.View>
       </Animated.View>
@@ -647,7 +657,6 @@ const useStyles = makeStyles((t) => ({
     top: 0,
     left: 0,
     right: 0,
-    paddingVertical: t.spacing.sm,
     justifyContent: "center" as const,
   },
   overview: {
@@ -682,6 +691,10 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.heading,
     color: t.colors.text,
     flexShrink: 1,
+  },
+  collapsedRegulars: {
+    flexShrink: 0,
+    alignItems: "flex-end" as const,
   },
   contactLinks: {
     marginHorizontal: t.spacing.lg,
@@ -735,19 +748,19 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.xs,
   },
   locationName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "600" as const,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   priceLevel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500" as const,
     color: t.colors.textSecondary,
     marginLeft: t.spacing.sm,
   },
   locationAddress: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     lineHeight: 20,
     textAlign: "left" as const,
@@ -769,7 +782,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
   },
   contactText: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.onAccent,
     fontWeight: "600" as const,
   },
@@ -803,7 +816,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
   },
   addReviewButton: {
@@ -815,7 +828,7 @@ const useStyles = makeStyles((t) => ({
   },
   addReviewButtonText: {
     color: t.colors.onAccent,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
   },
   headerButton: {

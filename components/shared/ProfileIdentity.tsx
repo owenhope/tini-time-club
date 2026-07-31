@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { Image as ExpoImage } from "expo-image";
 import Avatar from "./Avatar";
+import AppText from "./AppText";
 import { makeStyles, useTheme } from "@/theme";
 
 export interface ProfileIdentityProps {
@@ -102,9 +103,9 @@ const ProfileIdentity: React.FC<ProfileIdentityProps> = ({
 
       <View style={styles.text}>
         {title ? (
-          <Text style={styles.title} numberOfLines={2}>
+          <AppText variant="title" numberOfLines={2}>
             {title}
-          </Text>
+          </AppText>
         ) : titlePlaceholder ? (
           <Pressable
             onPress={onTitlePlaceholderPress}
@@ -112,7 +113,9 @@ const ProfileIdentity: React.FC<ProfileIdentityProps> = ({
             accessibilityLabel={titlePlaceholder}
             style={styles.placeholderHit}
           >
-            <Text style={styles.placeholder}>{titlePlaceholder}</Text>
+            <AppText variant="bodyStrong" tone="accent">
+              {titlePlaceholder}
+            </AppText>
           </Pressable>
         ) : null}
 
@@ -125,18 +128,26 @@ const ProfileIdentity: React.FC<ProfileIdentityProps> = ({
               accessibilityHint={subtitleAccessibilityHint}
               style={styles.placeholderHit}
             >
-              <Text style={styles.subtitleLink} numberOfLines={2}>
+              <AppText
+                variant="body"
+                tone="accent"
+                numberOfLines={2}
+              >
                 {subtitle}
-              </Text>
+              </AppText>
             </Pressable>
           ) : (
-            <Text style={styles.subtitle} numberOfLines={2}>
+            <AppText variant="body" tone="secondary" numberOfLines={2}>
               {subtitle}
-            </Text>
+            </AppText>
           )
         ) : null}
 
-        {imageError ? <Text style={styles.errorText}>{imageError}</Text> : null}
+        {imageError ? (
+          <AppText variant="caption" tone="danger">
+            {imageError}
+          </AppText>
+        ) : null}
       </View>
     </View>
   );
@@ -174,29 +185,9 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     gap: 2,
   },
-  title: {
-    ...t.typography.title,
-    color: t.colors.text,
-  },
-  placeholder: {
-    ...t.typography.bodyStrong,
-    color: t.colors.accent,
-  },
   placeholderHit: {
     minHeight: 44,
     justifyContent: "center" as const,
-  },
-  subtitle: {
-    ...t.typography.body,
-    color: t.colors.textSecondary,
-  },
-  subtitleLink: {
-    ...t.typography.body,
-    color: t.colors.accent,
-  },
-  errorText: {
-    ...t.typography.caption,
-    color: t.colors.danger,
   },
 }));
 

@@ -1,13 +1,13 @@
 import React from "react";
 import {
   Pressable,
-  Text,
   ViewStyle,
   TextStyle,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { makeStyles, useTheme } from "@/theme";
+import AppText, { type TypographyVariant } from "./AppText";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
 export type ButtonVariant =
@@ -149,18 +149,18 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const getTextSize = (): number => {
+  const getTextVariant = (): TypographyVariant => {
     switch (size) {
       case "small":
-        return 14;
+        return "label";
       case "medium":
-        return 16;
+        return "bodyStrong";
       case "large":
-        return 18;
+        return "heading";
       case "xlarge":
-        return 20;
+        return "title";
       default:
-        return 16;
+        return "bodyStrong";
     }
   };
 
@@ -214,16 +214,17 @@ const Button: React.FC<ButtonProps> = ({
             color={getTextColor()}
             style={styles.loadingIndicator}
           />
-          <Text
+          <AppText
+            variant={getTextVariant()}
             style={[
               styles.text,
-              { color: getTextColor(), fontSize: getTextSize() },
+              { color: getTextColor() },
               styles.loadingText,
               textStyle,
             ]}
           >
             {title}
-          </Text>
+          </AppText>
         </>
       );
     }
@@ -231,15 +232,16 @@ const Button: React.FC<ButtonProps> = ({
     return (
       <>
         {iconPosition === "left" && renderIcon()}
-        <Text
+        <AppText
+          variant={getTextVariant()}
           style={[
             styles.text,
-            { color: getTextColor(), fontSize: getTextSize() },
+            { color: getTextColor() },
             textStyle,
           ]}
         >
           {title}
-        </Text>
+        </AppText>
         {iconPosition === "right" && renderIcon()}
       </>
     );

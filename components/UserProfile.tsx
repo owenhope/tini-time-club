@@ -757,7 +757,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   errorTitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },
@@ -774,7 +774,7 @@ const useStyles = makeStyles((t) => ({
   },
   errorLink: {
     color: t.colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
   },
   reviewsContainer: {
     flex: 1,
@@ -787,7 +787,7 @@ const useStyles = makeStyles((t) => ({
     padding: 20,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
   },
   headerButton: {
@@ -796,7 +796,7 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.xs,
   },
   friendText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.onAccent, // Text on the lavender fill
     fontWeight: "600" as const,
   },
@@ -818,7 +818,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.xs,
   },
   bio: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
     lineHeight: 20,
     textAlign: "left" as const,

@@ -431,7 +431,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: t.spacing.xl - 4,
     paddingRight: 50,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     borderWidth: 1,
     borderColor: t.colors.border,
@@ -467,13 +467,13 @@ const useStyles = makeStyles((t) => ({
     marginRight: t.spacing.md,
   },
   placeName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   placeAddress: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
   },
   rightContainer: {
@@ -511,7 +511,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
   },
 }));

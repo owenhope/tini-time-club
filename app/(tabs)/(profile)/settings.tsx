@@ -224,7 +224,7 @@ const useStyles = makeStyles((t) => ({
   },
   menuItemText: {
     ...t.typography.body,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     marginLeft: t.spacing.lg,
     fontWeight: "500" as const,

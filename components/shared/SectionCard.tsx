@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, ViewStyle } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { makeStyles } from "@/theme";
+import AppText from "./AppText";
 
 export interface SectionCardProps {
   title?: string;
@@ -33,13 +34,15 @@ const SectionCard: React.FC<SectionCardProps> = ({
           {title ? (
             // Announced as a heading so screen-reader users can jump between
             // sections instead of reading the whole profile linearly.
-            <Text
+            <AppText
+              variant="label"
+              tone="muted"
               style={styles.title}
               accessibilityRole="header"
               numberOfLines={1}
             >
               {title}
-            </Text>
+            </AppText>
           ) : (
             <View />
           )}
@@ -63,8 +66,6 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.lg,
   },
   title: {
-    ...t.typography.label,
-    color: t.colors.textMuted,
     textTransform: "uppercase" as const,
     flexShrink: 1,
   },

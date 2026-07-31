@@ -285,7 +285,7 @@ const useStyles = makeStyles((t) => ({
     paddingRight: 40,
     height: 44,
     borderRadius: t.radius.sm,
-    fontSize: 16,
+    fontSize: 15,
     ...t.elevation.card,
   },
   clearButton: {
@@ -310,13 +310,13 @@ const useStyles = makeStyles((t) => ({
     borderBottomColor: t.colors.border,
   },
   resultName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500" as const,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   resultAddress: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
   },
 }));

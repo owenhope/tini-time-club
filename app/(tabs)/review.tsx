@@ -1,7 +1,6 @@
 import React, { createElement, useEffect, useState, useMemo } from "react";
 import {
   Keyboard,
-  Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -29,11 +28,11 @@ import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
 import SelectableOptionsInput from "@/components/SelectableOptionsInput";
 import ReviewItem from "@/components/ReviewItem";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
-import { Button } from "@/components/shared";
+import { AppText, Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
@@ -155,7 +154,9 @@ const ReviewPreview = ({
     return (
       <View style={styles.submitLoadingContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={styles.submitLoadingText}>{submissionMessage}</Text>
+        <AppText variant="heading" tone="accent" style={styles.submitLoadingText}>
+          {submissionMessage}
+        </AppText>
       </View>
     );
   }
@@ -185,9 +186,9 @@ const ReviewPreview = ({
             style={styles.captionButton}
             onPress={openCaptionInput}
           >
-            <Text style={styles.captionButtonText}>
+            <AppText variant="bodyStrong" tone="onAccent">
               {values.comment ? "Edit Caption" : "Add Caption"}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ) : (
           <>
@@ -201,9 +202,9 @@ const ReviewPreview = ({
               maxLength={500}
               autoFocus={true}
             />
-            <Text style={styles.characterCount}>
+            <AppText variant="label" tone="secondary" style={styles.characterCount}>
               {tempCaption?.length || 0}/500
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={[
                 styles.saveCaptionButton,
@@ -220,7 +221,9 @@ const ReviewPreview = ({
               }}
               disabled={!tempCaption || tempCaption.trim().length === 0}
             >
-              <Text style={styles.saveCaptionButtonText}>Save Caption</Text>
+              <AppText variant="bodyStrong" tone="onAccent">
+                Save Caption
+              </AppText>
             </TouchableOpacity>
           </>
         )}
@@ -435,9 +438,7 @@ export default function App() {
         .substring(2, 15)}.jpg`;
       const filePath = `${userId}/${randomFileName}`;
 
-      const base64 = await FileSystem.readAsStringAsync(compressedUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const base64 = await new File(compressedUri).base64();
 
       const fileData = decode(base64);
 
@@ -599,12 +600,22 @@ export default function App() {
           {/* Header */}
           {!isSubmitting && (
             <View style={styles.header}>
-              <Text style={styles.title}>{questions[step].title}</Text>
+              <AppText
+                variant="title"
+                style={styles.title}
+                accessibilityRole="header"
+              >
+                {questions[step].title}
+              </AppText>
               {questions[step].title !== "Preview" && (
                 <>
-                  <Text style={styles.subtitle}>
+                  <AppText
+                    variant="caption"
+                    tone="secondary"
+                    style={styles.subtitle}
+                  >
                     Step {step + 1} of {questions.length - 1}
-                  </Text>
+                  </AppText>
                   <View style={styles.progressBar}>
                     <View
                       style={[
@@ -634,17 +645,17 @@ export default function App() {
           >
             {(optionsError || submitError) && (
               <View style={styles.inlineError}>
-                <Text style={styles.inlineErrorText}>
+                <AppText variant="caption" tone="danger" style={styles.inlineErrorText}>
                   {submitError || optionsError}
-                </Text>
+                </AppText>
                 <TouchableOpacity
                   onPress={
                     submitError ? () => setSubmitError(null) : retryLoadOptions
                   }
                 >
-                  <Text style={styles.inlineErrorAction}>
+                  <AppText variant="caption" tone="danger" style={styles.inlineErrorAction}>
                     {submitError ? "Dismiss" : "Retry"}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
             )}
@@ -742,14 +753,10 @@ const useStyles = makeStyles((t) => ({
     borderBottomColor: t.colors.border,
   },
   title: {
-    ...t.typography.display,
-    color: t.colors.text,
     textAlign: "center" as const,
     marginBottom: t.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
-    color: t.colors.textSecondary,
     textAlign: "center" as const,
     marginBottom: 15,
   },
@@ -766,13 +773,9 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.md,
   },
   inlineErrorText: {
-    color: t.colors.danger,
-    fontSize: 14,
     flexShrink: 1,
   },
   inlineErrorAction: {
-    color: t.colors.danger,
-    fontSize: 14,
     fontWeight: "700" as const,
   },
   progressBar: {
@@ -863,13 +866,8 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
     minHeight: 50,
   },
-  captionButtonText: {
-    fontSize: 16,
-    color: t.colors.onAccent,
-    fontWeight: "600" as const,
-  },
   captionInput: {
-    fontSize: 16,
+    ...t.typography.body,
     minHeight: 60,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
@@ -881,17 +879,8 @@ const useStyles = makeStyles((t) => ({
     textAlignVertical: "top" as const,
   },
   characterCount: {
-    fontSize: 12,
-    color: t.colors.textSecondary,
     textAlign: "right" as const,
     marginTop: t.spacing.xs,
-  },
-  hintText: {
-    fontSize: 14,
-    color: t.colors.textSecondary,
-    textAlign: "center" as const,
-    marginTop: t.spacing.sm,
-    fontStyle: "italic" as const,
   },
   saveCaptionButton: {
     alignItems: "center" as const,
@@ -903,11 +892,6 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.md,
     minHeight: 50,
   },
-  saveCaptionButtonText: {
-    fontSize: 16,
-    color: t.colors.onAccent,
-    fontWeight: "600" as const,
-  },
   saveCaptionButtonDisabled: {
     opacity: 0.5,
   },
@@ -918,9 +902,6 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 40,
   },
   submitLoadingText: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: t.colors.accent,
     marginTop: t.spacing.xl - 4,
     textAlign: "center" as const,
   },

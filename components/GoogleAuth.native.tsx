@@ -107,7 +107,7 @@ const useStyles = makeStyles((t) => ({
     height: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
     letterSpacing: 0,
     color: t.isDark ? "#E3E3E3" : "#1F1F1F",

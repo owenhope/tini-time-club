@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
@@ -209,9 +209,7 @@ const Profile = () => {
           return;
         }
 
-        const base64 = await FileSystem.readAsStringAsync(compressedUri, {
-          encoding: "base64",
-        });
+        const base64 = await new File(compressedUri).base64();
 
         const uniqueId = uuidv4();
         const filePath = `${User.id}/avatar_${uniqueId}.jpg`;
@@ -617,7 +615,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.xs,
   },
   bio: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.text,
     lineHeight: 20,
     textAlign: "left" as const,

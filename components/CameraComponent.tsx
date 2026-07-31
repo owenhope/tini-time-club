@@ -304,7 +304,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.5,
   },
   libraryLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700" as const,
     color: t.colors.textOnImage,
   },

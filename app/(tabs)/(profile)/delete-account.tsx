@@ -181,7 +181,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.sm,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "600" as const,
     color: t.colors.text,
   },
@@ -204,7 +204,7 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
   },
   description: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.textSecondary,
     lineHeight: 22,
     marginBottom: t.spacing.lg,
@@ -213,13 +213,13 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 20,
   },
   listItem: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.sm,
     lineHeight: 20,
   },
   warningText: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.danger,
     fontWeight: "600" as const,
     textAlign: "left" as const,
@@ -230,13 +230,13 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
     fontWeight: "500" as const,
   },
   usernameHint: {
-    fontSize: 14,
+    fontSize: 13,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.md,
   },
@@ -250,7 +250,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: 20,
     paddingVertical: t.spacing.md,
-    fontSize: 16,
+    fontSize: 15,
     color: t.colors.text,
     backgroundColor: t.colors.background,
   },
@@ -266,7 +266,7 @@ const useStyles = makeStyles((t) => ({
   },
   deleteButtonText: {
     color: t.colors.textOnAccent,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600" as const,
   },
 }));
