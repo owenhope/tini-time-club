@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { NamedOption, Profile, Review } from "@/types/types";
+import { Profile, Review } from "@/types/types";
 import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -25,41 +25,27 @@ import {
 } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
-import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
-import {
-  getProfileRegularPlaces,
-  type ProfileRegularPlace,
-} from "@/services/regularsService";
-import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
+import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTags";
+import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
+import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 
 const UserProfile = () => {
   const styles = useStyles();
   const { colors, isDark } = useTheme();
-  const [userReviews, setUserReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
-  const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [followersCount, setFollowersCount] = useState<number>(0);
-  const [followingCount, setFollowingCount] = useState<number>(0);
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
-  const [spirits, setSpirits] = useState<NamedOption[]>([]);
-  const [types, setTypes] = useState<NamedOption[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
-  const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
-  const [loadingRegulars, setLoadingRegulars] = useState(true);
-  const [favoriteLocation, setFavoriteLocation] =
-    useState<FavoriteLocationValue | null>(null);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -70,6 +56,30 @@ const UserProfile = () => {
 
   // For this screen, we always show the other user's profile.
   const displayProfile = selectedProfile;
+
+  const {
+    userReviews,
+    setUserReviews,
+    loadingReviews,
+    refreshingReviews,
+    loadUserReviews,
+    regularPlaces,
+    loadingRegulars,
+    loadRegularPlaces,
+    favoriteLocation,
+    spirits,
+    types,
+    followersCount,
+    followingCount,
+    setFollowersCount,
+    loadFollowCounts,
+  } = useProfileScreenData({
+    profileId: displayProfile?.id,
+    viewerId: profile?.id,
+    favoriteLocationId: displayProfile?.favorite_location_id,
+    // Don't exclude blocked users when viewing their profile.
+    reviewOptions: { excludeBlocked: false },
+  });
 
   // Check follow status for the selected user
   useEffect(() => {
@@ -159,31 +169,10 @@ const UserProfile = () => {
 
   // Fetch follower and following counts from the database
   useEffect(() => {
-    const fetchFollowCounts = async () => {
-      if (displayProfile) {
-        const { count: followers, error: errorFollowers } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("following_id", displayProfile.id);
-        if (errorFollowers) {
-          reportError("Error fetching followers count:", errorFollowers);
-        } else {
-          setFollowersCount(followers || 0);
-        }
-        const { count: following, error: errorFollowing } = await supabase
-          .from("followers")
-          .select("*", { count: "exact", head: true })
-          .eq("follower_id", displayProfile.id);
-        if (errorFollowing) {
-          reportError("Error fetching following count:", errorFollowing);
-        } else {
-          setFollowingCount(following || 0);
-        }
-      }
-    };
-
-    fetchFollowCounts();
-  }, [displayProfile]);
+    if (displayProfile) {
+      loadFollowCounts();
+    }
+  }, [displayProfile, loadFollowCounts]);
 
   // Update header with custom title
   useEffect(() => {
@@ -313,43 +302,6 @@ const UserProfile = () => {
     } catch (err) {
       reportError("Unexpected error fetching profile:", err);
       setProfileError("We couldn't load this profile.");
-    }
-  };
-
-  const loadUserReviews = async (userId?: string, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshingReviews(true);
-    } else {
-      setLoadingReviews(true);
-    }
-    if (!userId) {
-      if (isRefresh) {
-        setRefreshingReviews(false);
-      } else {
-        setLoadingReviews(false);
-      }
-      return;
-    }
-    try {
-      const reviewsData = await databaseService.getReviews({
-        userId,
-        // The signed-in user is the viewer: has_liked is computed for them,
-        // not for the profile being viewed.
-        currentUserId: profile?.id,
-        excludeBlocked: false, // Don't exclude blocked users when viewing their profile
-        forceRefresh: isRefresh,
-      });
-
-      // getReviews returns image_url already hydrated to a signed URL.
-      setUserReviews(reviewsData);
-    } catch (err) {
-      reportError("Unexpected error while fetching user reviews:", err);
-    } finally {
-      if (isRefresh) {
-        setRefreshingReviews(false);
-      } else {
-        setLoadingReviews(false);
-      }
     }
   };
 
@@ -490,96 +442,12 @@ const UserProfile = () => {
     return null;
   };
 
-  const loadRegularPlaces = async (profileId: string) => {
-    setLoadingRegulars(true);
-    try {
-      setRegularPlaces(await getProfileRegularPlaces(profileId));
-    } catch (error) {
-      reportError("Error loading profile regular places:", error);
-      setRegularPlaces([]);
-    } finally {
-      setLoadingRegulars(false);
-    }
-  };
-
-  const loadFavoriteLocation = async (locationId?: number | null) => {
-    if (!locationId) {
-      setFavoriteLocation(null);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("locations")
-      .select("id, name, address")
-      .eq("id", locationId)
-      .maybeSingle();
-
-    if (error) {
-      reportError("Error loading profile favorite location:", error);
-      setFavoriteLocation(null);
-      return;
-    }
-    setFavoriteLocation(data);
-  };
-
   useEffect(() => {
     if (displayProfile && displayProfile.id) {
-      loadUserReviews(displayProfile.id);
-      loadRegularPlaces(displayProfile.id);
-      loadFavoriteLocation(displayProfile.favorite_location_id);
+      loadUserReviews();
+      loadRegularPlaces();
     }
-  }, [displayProfile]);
-
-  // Load spirits and types for favorites display
-  useEffect(() => {
-    loadSpiritsAndTypes();
-  }, []);
-
-  const loadSpiritsAndTypes = async () => {
-    try {
-      const [spiritsData, typesData] = await Promise.all([
-        databaseService.getSpirits(),
-        databaseService.getTypes(),
-      ]);
-      setSpirits(spiritsData);
-      setTypes(typesData);
-    } catch (error) {
-      reportError("Error loading spirits and types:", error);
-    }
-  };
-
-  const getSpiritName = (id: number | string) => {
-    const spirit = spirits.find((s) => String(s.id) === String(id));
-    return spirit?.name || String(id);
-  };
-
-  const getTypeName = (id: number | string) => {
-    const type = types.find((t) => String(t.id) === String(id));
-    return type?.name || String(id);
-  };
-
-  // Helper to get favorite arrays (handle both array and JSON string)
-  const getFavoriteSpirits = () => {
-    if (!displayProfile?.favorite_spirits) return [];
-    if (Array.isArray(displayProfile.favorite_spirits))
-      return displayProfile.favorite_spirits;
-    try {
-      return JSON.parse(displayProfile.favorite_spirits);
-    } catch {
-      return [];
-    }
-  };
-
-  const getFavoriteTypes = () => {
-    if (!displayProfile?.favorite_types) return [];
-    if (Array.isArray(displayProfile.favorite_types))
-      return displayProfile.favorite_types;
-    try {
-      return JSON.parse(displayProfile.favorite_types);
-    } catch {
-      return [];
-    }
-  };
+  }, [displayProfile, loadUserReviews, loadRegularPlaces]);
 
   if (profileError) {
     return (
@@ -600,52 +468,17 @@ const UserProfile = () => {
     );
   }
 
-  const favoriteTags =
-    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
-      <View style={styles.favoritesTagsBlock}>
-        {getFavoriteSpirits().length > 0 && (
-          <View style={styles.favoritesTagsGroup}>
-            <Text style={styles.favoritesLabel}>Spirit</Text>
-            <View style={styles.favoritesTagsContainer}>
-              {getFavoriteSpirits().map((spiritId: any) => (
-                <View key={`spirit-${spiritId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-        {getFavoriteTypes().length > 0 && (
-          <View style={styles.favoritesTagsGroup}>
-            <Text style={styles.favoritesLabel}>Type</Text>
-            <View style={styles.favoritesTagsContainer}>
-              {getFavoriteTypes().map((typeId: any) => (
-                <View key={`type-${typeId}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-      </View>
-    ) : null;
+  const hasFavoriteTags =
+    parseFavoriteIds(displayProfile?.favorite_spirits).length > 0 ||
+    parseFavoriteIds(displayProfile?.favorite_types).length > 0;
+
+  const favoriteTags = hasFavoriteTags ? (
+    <FavoriteTags profile={displayProfile} spirits={spirits} types={types} />
+  ) : null;
 
   const favoriteChips = favoriteLocation ? (
     <View style={styles.favoritesSection}>
-      <View style={styles.favoriteLocationBlock}>
-        <Text style={styles.favoritesLabel}>Favorite Location</Text>
-        <TouchableOpacity
-          onPress={() => router.push(`/places/${favoriteLocation.id}`)}
-          style={styles.favoriteLocationLink}
-          accessibilityRole="link"
-          accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
-        >
-          <Ionicons name="location" size={16} color={colors.accent} />
-          <Text style={styles.favoriteLocationText} numberOfLines={1}>
-            {favoriteLocation.name}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <FavoriteLocationLink location={favoriteLocation} />
     </View>
   ) : null;
 
@@ -678,7 +511,7 @@ const UserProfile = () => {
           loading={loadingReviews}
           refreshing={refreshingReviews}
           onRefresh={() => {
-            if (displayProfile?.id) loadUserReviews(displayProfile.id, true);
+            if (displayProfile?.id) loadUserReviews(true);
           }}
           onEdit={(review) =>
             profile && String(profile.id) === String(review.user_id)
@@ -719,9 +552,7 @@ const UserProfile = () => {
           refreshControl={
             <RefreshControl
               refreshing={loadingRegulars}
-              onRefresh={() =>
-                displayProfile?.id && loadRegularPlaces(displayProfile.id)
-              }
+              onRefresh={() => displayProfile?.id && loadRegularPlaces()}
               colors={[colors.accent]}
               tintColor={colors.accent}
             />
@@ -819,56 +650,6 @@ const useStyles = makeStyles((t) => ({
   favoritesSection: {
     paddingHorizontal: t.spacing.lg,
     gap: t.spacing.sm,
-  },
-  favoritesTagsBlock: {
-    // One row always: the Spirit and Type groups sit side by side and their
-    // chips wrap vertically within each group instead of stacking the groups.
-    flexDirection: "row" as const,
-    justifyContent: "flex-end" as const,
-    alignItems: "flex-start" as const,
-    gap: t.spacing.lg,
-  },
-  favoritesTagsGroup: {
-    flexShrink: 1,
-    alignItems: "flex-start" as const,
-    gap: 6,
-  },
-  favoritesLabel: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  favoriteLocationBlock: {
-    // The link centres its text in a 32pt touch target, which already adds
-    // ~6pt of visual space below the label — no extra gap on top of that.
-    gap: 0,
-  },
-  favoritesTagsContainer: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    gap: t.spacing.sm,
-    justifyContent: "flex-end" as const,
-  },
-  tag: {
-    paddingVertical: 6,
-    paddingHorizontal: t.spacing.md,
-    borderRadius: t.radius.lg,
-    backgroundColor: t.colors.accent,
-  },
-  tagText: {
-    fontSize: 12,
-    color: t.colors.onAccent,
-    textTransform: "capitalize" as const,
-  },
-  favoriteLocationLink: {
-    minHeight: 32,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
-  },
-  favoriteLocationText: {
-    ...t.typography.bodyStrong,
-    color: t.colors.accent,
-    flexShrink: 1,
   },
   regularsList: {
     paddingBottom: t.spacing.xxl,

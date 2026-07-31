@@ -15,7 +15,6 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
-import { NamedOption, Review } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation, useFocusEffect } from "expo-router";
@@ -31,35 +30,43 @@ import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
-import {
-  getProfileRegularPlaces,
-  type ProfileRegularPlace,
-} from "@/services/regularsService";
-import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
+import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTags";
+import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
+import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 
 const Profile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [userReviews, setUserReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
-  const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
-  const [followersCount, setFollowersCount] = useState<number>(0);
-  const [followingCount, setFollowingCount] = useState<number>(0);
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
-  const [spirits, setSpirits] = useState<NamedOption[]>([]);
-  const [types, setTypes] = useState<NamedOption[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
-  const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
-  const [loadingRegulars, setLoadingRegulars] = useState(false);
-  const [favoriteLocation, setFavoriteLocation] =
-    useState<FavoriteLocationValue | null>(null);
+  const {
+    userReviews,
+    setUserReviews,
+    loadingReviews,
+    refreshingReviews,
+    loadUserReviews,
+    regularPlaces,
+    loadingRegulars,
+    loadRegularPlaces,
+    favoriteLocation,
+    spirits,
+    types,
+    followersCount,
+    followingCount,
+    loadFollowCounts,
+  } = useProfileScreenData({
+    profileId: profile?.id,
+    viewerId: profile?.id,
+    favoriteLocationId: profile?.favorite_location_id,
+    reviewOptions: { limit: 50, offset: 0 },
+  });
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -115,44 +122,6 @@ const Profile = () => {
   // Focus-refresh staleness gate; pull-to-refresh bypasses it via isRefresh.
   const PROFILE_REFRESH_AFTER = 30 * 1000;
   const lastProfileLoadRef = useRef(0);
-
-  const loadUserReviews = async (userId?: string, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshingReviews(true);
-    } else {
-      setLoadingReviews(true);
-    }
-    if (!userId) {
-      if (isRefresh) {
-        setRefreshingReviews(false);
-      } else {
-        setLoadingReviews(false);
-      }
-      return;
-    }
-    try {
-      const reviewsData = await databaseService.getReviews({
-        userId,
-        // Without the viewer id the server computes has_liked for nobody and
-        // your own liked reviews render with unlit hearts.
-        currentUserId: profile?.id,
-        limit: 50,
-        offset: 0,
-        forceRefresh: isRefresh,
-      });
-
-      // getReviews returns image_url already hydrated to a signed URL.
-      setUserReviews(reviewsData);
-    } catch (err) {
-      reportError("Unexpected error while fetching reviews:", err);
-    } finally {
-      if (isRefresh) {
-        setRefreshingReviews(false);
-      } else {
-        setLoadingReviews(false);
-      }
-    }
-  };
 
   const pickImage = async () => {
     try {
@@ -303,90 +272,6 @@ const Profile = () => {
     </View>
   );
 
-  const loadSpiritsAndTypes = async () => {
-    try {
-      const [spiritsData, typesData] = await Promise.all([
-        databaseService.getSpirits(),
-        databaseService.getTypes(),
-      ]);
-      setSpirits(spiritsData);
-      setTypes(typesData);
-    } catch (error) {
-      reportError("Error loading spirits and types:", error);
-    }
-  };
-
-  const loadRegularPlaces = async (profileId: string) => {
-    setLoadingRegulars(true);
-    try {
-      setRegularPlaces(await getProfileRegularPlaces(profileId));
-    } catch (error) {
-      reportError("Error loading regular places:", error);
-      setRegularPlaces([]);
-    } finally {
-      setLoadingRegulars(false);
-    }
-  };
-
-  const loadFavoriteLocation = async (locationId?: number | null) => {
-    if (!locationId) {
-      setFavoriteLocation(null);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("locations")
-      .select("id, name, address")
-      .eq("id", locationId)
-      .maybeSingle();
-
-    if (error) {
-      reportError("Error loading favorite location:", error);
-      setFavoriteLocation(null);
-      return;
-    }
-    setFavoriteLocation(data);
-  };
-
-  // Reviews, regulars and counts are owned by the focus effect below (which
-  // also covers first mount); this only tracks profile-driven cheap lookups.
-  useEffect(() => {
-    loadFavoriteLocation(profile?.favorite_location_id);
-    loadSpiritsAndTypes();
-  }, [profile]);
-
-  const getSpiritName = (id: number | string) => {
-    const spirit = spirits.find((s) => String(s.id) === String(id));
-    return spirit?.name || String(id);
-  };
-
-  const getTypeName = (id: number | string) => {
-    const type = types.find((t) => String(t.id) === String(id));
-    return type?.name || String(id);
-  };
-
-  // Helper to get favorite arrays (handle both array and JSON string)
-  const getFavoriteSpirits = () => {
-    if (!profile?.favorite_spirits) return [];
-    if (Array.isArray(profile.favorite_spirits))
-      return profile.favorite_spirits;
-    try {
-      return JSON.parse(profile.favorite_spirits);
-    } catch {
-      return [];
-    }
-  };
-
-  const getFavoriteTypes = () => {
-    if (!profile?.favorite_types) return [];
-    if (Array.isArray(profile.favorite_types)) return profile.favorite_types;
-    try {
-      return JSON.parse(profile.favorite_types);
-    } catch {
-      return [];
-    }
-  };
-
   // Load counts, reviews and regulars on focus (including first mount) —
   // but only when stale, so tab-hopping doesn't refire five queries every
   // time the user glances at their profile.
@@ -399,63 +284,22 @@ const Profile = () => {
       if (!isStale) return;
       lastProfileLoadRef.current = Date.now();
 
-      const refreshData = async () => {
-        // The two counts are independent — fetch them together.
-        const [{ count: followers }, { count: following }] = await Promise.all([
-          supabase
-            .from("followers")
-            .select("*", { count: "exact", head: true })
-            .eq("following_id", profile.id),
-          supabase
-            .from("followers")
-            .select("*", { count: "exact", head: true })
-            .eq("follower_id", profile.id),
-        ]);
-
-        setFollowersCount(followers || 0);
-        setFollowingCount(following || 0);
-      };
-
-      refreshData();
-      loadUserReviews(profile.id);
-      loadRegularPlaces(profile.id);
-      // loadUserReviews/loadRegularPlaces intentionally excluded from deps:
-      // they are stable in behavior and including them would re-run this on
-      // every render, defeating the staleness gate.
+      loadFollowCounts();
+      loadUserReviews();
+      loadRegularPlaces();
+      // The loaders intentionally excluded from deps: they are stable in
+      // behavior and including them would re-run this on every render,
+      // defeating the staleness gate.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profile])
   );
 
   const hasFavoriteTags =
-    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0;
+    parseFavoriteIds(profile?.favorite_spirits).length > 0 ||
+    parseFavoriteIds(profile?.favorite_types).length > 0;
 
   const favoriteTags = hasFavoriteTags ? (
-    <View style={styles.favoritesTagsBlock}>
-      {getFavoriteSpirits().length > 0 && (
-        <View style={styles.favoritesTagsGroup}>
-          <Text style={styles.favoritesLabel}>Spirit</Text>
-          <View style={styles.favoritesTagsContainer}>
-            {getFavoriteSpirits().map((spiritId: any) => (
-              <View key={`spirit-${spiritId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-      {getFavoriteTypes().length > 0 && (
-        <View style={styles.favoritesTagsGroup}>
-          <Text style={styles.favoritesLabel}>Type</Text>
-          <View style={styles.favoritesTagsContainer}>
-            {getFavoriteTypes().map((typeId: any) => (
-              <View key={`type-${typeId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-    </View>
+    <FavoriteTags profile={profile} spirits={spirits} types={types} />
   ) : null;
 
   const favoriteChips = (
@@ -483,20 +327,7 @@ const Profile = () => {
         </TouchableOpacity>
       )}
       {favoriteLocation ? (
-        <View style={styles.favoriteLocationBlock}>
-          <Text style={styles.favoritesLabel}>Favorite Location</Text>
-          <TouchableOpacity
-            onPress={() => router.push(`/places/${favoriteLocation.id}`)}
-            style={styles.favoriteLocationLink}
-            accessibilityRole="link"
-            accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
-          >
-            <Ionicons name="location" size={16} color={colors.accent} />
-            <Text style={styles.favoriteLocationText} numberOfLines={1}>
-              {favoriteLocation.name}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <FavoriteLocationLink location={favoriteLocation} />
       ) : (
         <TouchableOpacity
           onPress={() =>
@@ -557,7 +388,7 @@ const Profile = () => {
           emptyComponent={renderEmpty()}
           loading={loadingReviews}
           refreshing={refreshingReviews}
-          onRefresh={() => profile?.id && loadUserReviews(profile.id, true)}
+          onRefresh={() => profile?.id && loadUserReviews(true)}
           canDelete={true}
           onDelete={(review) => confirmDeleteReview(review.id)}
           onEdit={(review) =>
@@ -594,7 +425,7 @@ const Profile = () => {
           refreshControl={
             <RefreshControl
               refreshing={loadingRegulars}
-              onRefresh={() => profile?.id && loadRegularPlaces(profile.id)}
+              onRefresh={() => profile?.id && loadRegularPlaces()}
               colors={[colors.accent]}
               tintColor={colors.accent}
             />
@@ -626,60 +457,10 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.lg,
     gap: t.spacing.xs,
   },
-  favoritesTagsBlock: {
-    // One row always: the Spirit and Type groups sit side by side and their
-    // chips wrap vertically within each group instead of stacking the groups.
-    flexDirection: "row" as const,
-    justifyContent: "flex-end" as const,
-    alignItems: "flex-start" as const,
-    gap: t.spacing.lg,
-  },
-  favoritesTagsGroup: {
-    flexShrink: 1,
-    alignItems: "flex-start" as const,
-    gap: 6,
-  },
-  favoritesLabel: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  favoriteLocationBlock: {
-    // The link centres its text in a 32pt touch target, which already adds
-    // ~6pt of visual space below the label — no extra gap on top of that.
-    gap: 0,
-  },
-  favoritesTagsContainer: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    gap: t.spacing.sm,
-    justifyContent: "flex-end" as const,
-  },
-  tag: {
-    paddingVertical: 6,
-    paddingHorizontal: t.spacing.md,
-    borderRadius: t.radius.lg,
-    backgroundColor: t.colors.accent,
-  },
-  tagText: {
-    fontSize: 12,
-    color: t.colors.onAccent,
-    textTransform: "capitalize" as const,
-  },
   ctaText: {
     ...t.typography.body,
     color: t.colors.accent,
     fontWeight: "600" as const,
-  },
-  favoriteLocationLink: {
-    minHeight: 32,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
-  },
-  favoriteLocationText: {
-    ...t.typography.bodyStrong,
-    color: t.colors.accent,
-    flexShrink: 1,
   },
   regularsList: {
     paddingBottom: t.spacing.xxl,
