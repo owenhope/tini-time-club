@@ -2,6 +2,7 @@ import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import type {
   Comment,
+  LocationRating,
   NamedOption,
   Profile,
   Review,
@@ -447,11 +448,8 @@ class DatabaseService {
 
   /**
    * Get location by ID
-   *
-   * NOTE: Currently uncalled — kept intentionally for an upcoming Location
-   * refactor that will consume it.
    */
-  async getLocation(locationId: string): Promise<any> {
+  async getLocation(locationId: string): Promise<LocationRating> {
     return this.query(
       `location_${locationId}`,
       async () => {

@@ -25,6 +25,19 @@ export interface Profile {
   deleted?: boolean;
 }
 
+/** A row from the location_ratings view (aggregates computed server-side). */
+export interface LocationRating {
+  id: number | string;
+  name: string;
+  address: string | null;
+  lat: number | null;
+  lon: number | null;
+  rating: number;
+  taste_avg: number;
+  presentation_avg: number;
+  total_ratings: number;
+}
+
 /** Minimal author/commenter identity embedded in feed rows. */
 export interface ReviewProfile {
   id: string;

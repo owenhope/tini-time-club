@@ -13,7 +13,6 @@ import {
   RefreshControl,
   Animated,
 } from "react-native";
-import { supabase } from "@/utils/supabase";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
@@ -262,87 +261,24 @@ const Location = () => {
 
   const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
-      // Query locations table directly to include locations with no reviews
-      const { data: locationData, error: locationError } = await supabase
-        .from("locations")
-        .select(
-          `
-          id,
-          name,
-          address,
-          location,
-          reviews!reviews_location_fkey(
-            taste,
-            presentation,
-            state
-          )
-        `
-        )
-        .eq("id", locationId)
-        .maybeSingle();
+      // The location_ratings view computes the averages and coordinates
+      // server-side — the previous hand-rolled query downloaded every review
+      // row for the location just to average two columns in JS.
+      const data = await databaseService.getLocation(locationId);
 
-      if (locationError) {
-        console.error("Error fetching selected location:", locationError);
-        setSelectedLocation(null);
-        return;
-      }
-
-      if (!locationData) {
-        // Location doesn't exist in DB, set to null so displayLocation can use params
-        setSelectedLocation(null);
-        return;
-      }
-
-      // Filter active reviews
-      const activeReviews = (locationData.reviews || []).filter(
-        (r: any) => r.state === 1
-      );
-      const totalRatings = activeReviews.length;
-
-      // Calculate averages if there are reviews
-      let rating: number | undefined;
-      let taste_avg: number | undefined;
-      let presentation_avg: number | undefined;
-
-      if (totalRatings > 0) {
-        const tasteSum = activeReviews.reduce(
-          (sum: number, r: any) => sum + (r.taste || 0),
-          0
-        );
-        const presentationSum = activeReviews.reduce(
-          (sum: number, r: any) => sum + (r.presentation || 0),
-          0
-        );
-
-        taste_avg = tasteSum / totalRatings;
-        presentation_avg = presentationSum / totalRatings;
-        rating = (taste_avg + presentation_avg) / 2;
-      }
-
-      // Extract coordinates from PostGIS POINT if available
-      let lat: number | undefined;
-      let lon: number | undefined;
-      if (locationData.location) {
-        // PostGIS POINT format: "POINT(longitude latitude)"
-        const match = locationData.location.match(
-          /POINT\(([\d.-]+)\s+([\d.-]+)\)/
-        );
-        if (match) {
-          lon = parseFloat(match[1]);
-          lat = parseFloat(match[2]);
-        }
-      }
-
-      // Format location data to match LocationType interface
+      const totalRatings = Number(data.total_ratings) || 0;
       const formattedLocation: LocationType = {
-        id: locationData.id,
-        name: locationData.name,
-        address: locationData.address || undefined,
-        lat,
-        lon,
-        rating,
-        taste_avg,
-        presentation_avg,
+        id: String(data.id),
+        name: data.name,
+        address: data.address || undefined,
+        lat: data.lat ?? undefined,
+        lon: data.lon ?? undefined,
+        // The view reports 0 for review-less locations; the UI wants
+        // "not yet rated", which is the undefined case.
+        rating: totalRatings > 0 ? Number(data.rating) : undefined,
+        taste_avg: totalRatings > 0 ? Number(data.taste_avg) : undefined,
+        presentation_avg:
+          totalRatings > 0 ? Number(data.presentation_avg) : undefined,
         total_ratings: totalRatings,
       };
 
@@ -354,7 +290,8 @@ const Location = () => {
         locationName: formattedLocation.name,
       });
     } catch (err) {
-      console.error("Unexpected error fetching location:", err);
+      // .single() rejects when the location isn't in the DB yet — fall back
+      // to the params-built minimal location via displayLocation.
       setSelectedLocation(null);
     }
   }, []);

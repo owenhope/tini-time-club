@@ -233,22 +233,14 @@ export default function DiscoverTabs({
           }))
         );
       } else {
-        // Query locations table directly to include locations with no reviews
-        // Use a left join to get review counts and ratings
+        // The location_ratings view now includes review-less locations, so
+        // search reads the server-computed averages directly — the previous
+        // query downloaded every review row for up to 20 locations per
+        // keystroke and averaged them in JS.
         const { data: locationsData, error: locationsError } = await supabase
-          .from("locations")
+          .from("location_ratings")
           .select(
-            `
-            id,
-            name,
-            address,
-            location,
-            reviews!reviews_location_fkey(
-              taste,
-              presentation,
-              state
-            )
-          `
+            "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
           )
           .ilike("name", `%${searchQuery}%`)
           .limit(20);
@@ -259,58 +251,21 @@ export default function DiscoverTabs({
           return;
         }
 
-        // Process the data to calculate ratings and format for display
         const processedLocations =
           locationsData?.map((location: any) => {
-            // Filter active reviews
-            const activeReviews = (location.reviews || []).filter(
-              (r: any) => r.state === 1
-            );
-            const totalRatings = activeReviews.length;
-
-            // Calculate averages if there are reviews
-            let rating = null;
-            let taste_avg = null;
-            let presentation_avg = null;
-
-            if (totalRatings > 0) {
-              const tasteSum = activeReviews.reduce(
-                (sum: number, r: any) => sum + (r.taste || 0),
-                0
-              );
-              const presentationSum = activeReviews.reduce(
-                (sum: number, r: any) => sum + (r.presentation || 0),
-                0
-              );
-
-              taste_avg = tasteSum / totalRatings;
-              presentation_avg = presentationSum / totalRatings;
-              rating = (taste_avg + presentation_avg) / 2;
-            }
-
-            // Extract coordinates from PostGIS POINT if available
-            let latitude = null;
-            let longitude = null;
-            if (location.location) {
-              // PostGIS POINT format: "POINT(longitude latitude)"
-              const match = location.location.match(
-                /POINT\(([\d.-]+)\s+([\d.-]+)\)/
-              );
-              if (match) {
-                longitude = parseFloat(match[1]);
-                latitude = parseFloat(match[2]);
-              }
-            }
-
+            const totalRatings = location.total_ratings || 0;
             return {
               id: location.id,
               name: location.name,
               address: location.address,
-              latitude,
-              longitude,
-              rating,
-              taste_avg,
-              presentation_avg,
+              latitude: location.lat,
+              longitude: location.lon,
+              // The view reports 0 averages for review-less locations; the
+              // UI treats null as "not yet rated".
+              rating: totalRatings > 0 ? location.rating : null,
+              taste_avg: totalRatings > 0 ? location.taste_avg : null,
+              presentation_avg:
+                totalRatings > 0 ? location.presentation_avg : null,
               total_ratings: totalRatings,
             };
           }) || [];
