@@ -13,6 +13,7 @@ import {
   subscribeToPushRegistrationRetry,
   subscribeToPushTokenChanges,
 } from "@/services/pushNotificationService";
+import { ensureFridayMartiniReminder } from "@/utils/martiniReminder";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -33,7 +34,10 @@ const LayoutContent = () => {
     if (!profile?.eula_accepted || !profile.username) return;
 
     const syncToken = (requestPermission = false) => {
-      void registerPushNotificationsAsync({ requestPermission });
+      void registerPushNotificationsAsync({ requestPermission }).then(() => {
+        // Local weekly nudge; no-op until notification permission is granted.
+        void ensureFridayMartiniReminder();
+      });
     };
 
     const handleResponse = (response: Notifications.NotificationResponse) => {

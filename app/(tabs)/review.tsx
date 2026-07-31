@@ -38,6 +38,12 @@ import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import CelebrationModal from "@/components/CelebrationModal";
+import {
+  checkRankUp,
+  isRegularAt,
+  type Achievement,
+} from "@/utils/celebrations";
 
 // ReviewPreview component for showing live preview with caption input
 interface ReviewFormLocation {
@@ -257,6 +263,10 @@ export default function App() {
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [celebration, setCelebration] = useState<{
+    achievements: Achievement[];
+    reviewCount: number | null;
+  } | null>(null);
   const opacity = useSharedValue(1);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -501,26 +511,32 @@ export default function App() {
     await Promise.all([getTypes(), getSpirits()]);
   };
 
-  const createReview = async (userId: string, imageUrl: string) => {
-    try {
-      const locationId = await databaseService.createOrGetLocation(
-        watchedValues.location &&
-          typeof watchedValues.location === "object" &&
-          "name" in watchedValues.location &&
-          "address" in watchedValues.location &&
-          "coordinates" in watchedValues.location
-          ? {
-              name: (watchedValues.location as any).name,
-              address: (watchedValues.location as any).address,
-              place_id: (watchedValues.location as any).place_id,
-              location: `POINT(${
-                (watchedValues.location as any).coordinates.longitude
-              } ${(watchedValues.location as any).coordinates.latitude})`,
-            }
-          : null,
-        userId
-      );
+  const resolveLocationId = async (userId: string) => {
+    return databaseService.createOrGetLocation(
+      watchedValues.location &&
+        typeof watchedValues.location === "object" &&
+        "name" in watchedValues.location &&
+        "address" in watchedValues.location &&
+        "coordinates" in watchedValues.location
+        ? {
+            name: (watchedValues.location as any).name,
+            address: (watchedValues.location as any).address,
+            place_id: (watchedValues.location as any).place_id,
+            location: `POINT(${
+              (watchedValues.location as any).coordinates.longitude
+            } ${(watchedValues.location as any).coordinates.latitude})`,
+          }
+        : null,
+      userId
+    );
+  };
 
+  const createReview = async (
+    userId: string,
+    imageUrl: string,
+    locationId: string | null
+  ) => {
+    try {
       const newReview = {
         user_id: userId,
         location: locationId,
@@ -556,7 +572,18 @@ export default function App() {
       }
 
       setSubmissionMessage("Creating review...");
-      const reviewId = await createReview(profile.id, imageUrl);
+      let locationId: string | null = null;
+      try {
+        locationId = await resolveLocationId(profile.id);
+      } catch (error) {
+        reportError("Error resolving location:", error);
+      }
+
+      // Snapshot before the insert so "became a Regular" is detectable.
+      const locationName = (watchedValues.location as any)?.name ?? null;
+      const wasRegular = await isRegularAt(locationId, profile.id);
+
+      const reviewId = await createReview(profile.id, imageUrl, locationId);
       if (!reviewId) {
         setSubmitError("We couldn't save your review. Please try again.");
         setIsSubmitting(false);
@@ -564,19 +591,45 @@ export default function App() {
       }
 
       setSubmissionMessage("Review created successfully!");
-      setIsSubmitting(false);
 
       // Track new review event
       AnalyticService.capture("new_review", {
         reviewId,
         locationId: (watchedValues.location as any)?.id,
-        locationName: (watchedValues.location as any)?.name,
+        locationName,
       });
 
+      // Best-effort achievement detection; failures just skip the party.
+      const [rankCheck, isNowRegular] = await Promise.all([
+        checkRankUp(profile.id),
+        wasRegular
+          ? Promise.resolve(false)
+          : isRegularAt(locationId, profile.id),
+      ]);
+      const achievements: Achievement[] = [];
+      if (rankCheck.rankUp) {
+        achievements.push({ kind: "rank", tier: rankCheck.rankUp });
+      }
+      if (!wasRegular && isNowRegular && locationId != null && locationName) {
+        achievements.push({
+          kind: "regular",
+          locationId: Number(locationId),
+          locationName,
+        });
+      }
+
+      setIsSubmitting(false);
       setStep(0);
       setPhoto(null);
       setIsReviewing(false);
       reset();
+
+      if (achievements.length > 0) {
+        // Navigation happens when the celebration is dismissed.
+        setCelebration({ achievements, reviewCount: rankCheck.newCount });
+        return;
+      }
+
       // Return to wherever the review flow was started (feed, a place
       // profile, ...) instead of always landing on the Profile tab.
       if (router.canGoBack()) {
@@ -591,20 +644,39 @@ export default function App() {
     }
   };
 
+  const dismissCelebration = () => {
+    setCelebration(null);
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.navigate(routes.profile());
+    }
+  };
+
   return (
     <TouchableWithoutFeedback
       style={[styles.container, { paddingTop: insets.top }]}
       onPress={Keyboard.dismiss}
     >
       {!isReviewing ? (
-        <CameraComponent
-          onCapture={(photo) => {
-            setPhoto(photo);
-            setIsReviewing(true);
-            setIsSubmitting(false);
-            setSubmissionMessage("");
-          }}
-        />
+        <>
+          <CameraComponent
+            onCapture={(photo) => {
+              setPhoto(photo);
+              setIsReviewing(true);
+              setIsSubmitting(false);
+              setSubmissionMessage("");
+            }}
+          />
+          {celebration && (
+            <CelebrationModal
+              achievements={celebration.achievements}
+              profile={profile}
+              reviewCount={celebration.reviewCount}
+              onClose={dismissCelebration}
+            />
+          )}
+        </>
       ) : (
         <View style={styles.container}>
           {/* Header */}
