@@ -150,6 +150,8 @@ class DatabaseService {
       offset?: number;
       excludeBlocked?: boolean;
       currentUserId?: string;
+      /** Bypass the cached page (pull-to-refresh); the fresh result still gets cached. */
+      forceRefresh?: boolean;
     } = {}
   ): Promise<any[]> {
     const {
@@ -159,9 +161,19 @@ class DatabaseService {
       offset = 0,
       excludeBlocked = true,
       currentUserId,
+      forceRefresh = false,
     } = options;
 
-    const cacheKey = `reviews_${JSON.stringify(options)}`;
+    // forceRefresh must not change the cache key, or refreshed data would be
+    // stored under a different key than normal reads look up.
+    const cacheKey = `reviews_${JSON.stringify({
+      userId,
+      locationId,
+      limit,
+      offset,
+      excludeBlocked,
+      currentUserId,
+    })}`;
 
     return this.query(
       cacheKey,
@@ -182,7 +194,7 @@ class DatabaseService {
         if (error) throw error;
         return data ?? [];
       },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
+      { cacheDuration: this.USER_DATA_CACHE_DURATION, forceRefresh }
     );
   }
 

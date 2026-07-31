@@ -1,8 +1,11 @@
-import PostHog from "posthog-react-native";
-
-const posthog = new PostHog("phc_QwdU4jjdeNaNc4pafgLb6fsvnzOC0MLflISUONjGR2E", {
-  host: "https://us.i.posthog.com",
-});
+/**
+ * Analytics facade.
+ *
+ * Third-party analytics (PostHog) has been removed; a custom in-house
+ * analytics platform will back this interface eventually. The call sites and
+ * event taxonomy are kept so instrumentation points don't have to be
+ * rediscovered — until then, events are logged in dev and dropped in prod.
+ */
 
 type AnalyticEventType =
   | "login"
@@ -21,16 +24,14 @@ type AnalyticEventType =
 
 const AnalyticService = {
   capture: (event: AnalyticEventType, properties?: Record<string, any>) => {
-    posthog.capture(event, properties);
+    if (__DEV__) {
+      console.log(`[Analytics] ${event}`, properties ?? {});
+    }
   },
 
-  identify: (userId: string, email: string, phone: string, name: string) => {
-    posthog.identify(userId, { email, phone, name });
-  },
+  identify: (_userId: string, _properties?: Record<string, any>) => {},
 
-  reset: () => {
-    posthog.reset();
-  },
+  reset: () => {},
 };
 
 export default AnalyticService;

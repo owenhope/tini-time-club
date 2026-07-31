@@ -477,37 +477,41 @@ const Location = () => {
   ]);
 
   // Shared function to load location reviews
-  const loadLocationReviews = useCallback(async () => {
-    if (!displayLocation?.id) return;
+  const loadLocationReviews = useCallback(
+    async (isRefresh = false) => {
+      if (!displayLocation?.id) return;
 
-    setLoadingReviews(true);
-    try {
-      const reviewsData = await databaseService.getReviews({
-        locationId: displayLocation.id,
-        currentUserId: profile?.id,
-        excludeBlocked: true,
-      });
+      setLoadingReviews(true);
+      try {
+        const reviewsData = await databaseService.getReviews({
+          locationId: displayLocation.id,
+          currentUserId: profile?.id,
+          excludeBlocked: true,
+          forceRefresh: isRefresh,
+        });
 
-      // Get image URLs using cache
-      const imagePaths = reviewsData.map((review: any) => review.image_url);
-      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
+        // Get image URLs using cache
+        const imagePaths = reviewsData.map((review: any) => review.image_url);
+        const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
 
-      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
-        ...review,
-        image_url: imageUrls[review.image_url] || review.image_url,
-      }));
-      setLocationReviews(reviewsWithFullUrl);
-    } catch (err) {
-      console.error("Unexpected error while fetching location reviews:", err);
-    } finally {
-      setLoadingReviews(false);
-    }
-  }, [displayLocation?.id, profile?.id]);
+        const reviewsWithFullUrl = reviewsData.map((review: any) => ({
+          ...review,
+          image_url: imageUrls[review.image_url] || review.image_url,
+        }));
+        setLocationReviews(reviewsWithFullUrl);
+      } catch (err) {
+        console.error("Unexpected error while fetching location reviews:", err);
+      } finally {
+        setLoadingReviews(false);
+      }
+    },
+    [displayLocation?.id, profile?.id]
+  );
 
   const onRefresh = useCallback(() => {
     if (displayLocation?.id) {
       loadedLocationIdRef.current = null; // Reset to allow reload
-      loadLocationReviews();
+      loadLocationReviews(true);
     }
   }, [displayLocation?.id, loadLocationReviews]);
 

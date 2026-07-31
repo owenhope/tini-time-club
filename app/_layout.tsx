@@ -9,13 +9,11 @@ import {
   Alert,
   AppState,
   AppStateStatus,
-  Platform,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import * as TrackingTransparency from "expo-tracking-transparency";
 import * as Linking from "expo-linking";
 import { ThemeProvider, useTheme } from "@/theme";
 import {
@@ -98,19 +96,20 @@ function RootLayoutNav() {
       if (url) void handleAuthUrl(url);
     });
 
-    // Request tracking transparency permission on iOS (non-blocking)
-    if (Platform.OS === "ios") {
-      TrackingTransparency.requestTrackingPermissionsAsync()
-        .then(({ status }) => {
-          console.log("[RootLayout] 📊 Tracking permission status:", status);
-        })
-        .catch((error) => {
-          console.error(
-            "[RootLayout] ❌ Error requesting tracking permission:",
-            error
-          );
-        });
-    }
+    // Watchdog: if auth never reports (e.g. session restore failed in a way
+    // the storage adapter couldn't absorb), don't leave the user on the
+    // splash screen forever — surface the sign-in screen instead.
+    const splashWatchdog = setTimeout(() => {
+      // isReadyRef also covers the paths that mount the app without marking
+      // the initial session handled (password recovery, auth-link errors).
+      if (!hasHandledInitialSession.current && !isReadyRef.current) {
+        hasHandledInitialSession.current = true;
+        console.error("[RootLayout] Auth never initialized; forcing sign-in");
+        setIsReady(true);
+        router.replace("/");
+        void SplashScreen.hideAsync();
+      }
+    }, 5000);
 
     // Listen for authentication state changes - single source of truth
     const {
@@ -136,11 +135,18 @@ function RootLayoutNav() {
         // Wait for Stack to mount
         await new Promise((resolve) => setTimeout(resolve, 200));
 
-        // Navigate based on session. A deep link (password recovery, a shared
-        // review, a profile) already routed us somewhere — don't overwrite it.
+        // Navigate based on session — unless a deep link is being handled.
+        // Auth callbacks navigate from handleAuthUrl, and a routable link
+        // (a shared review, a profile) has already moved us off the entry
+        // route. But an unroutable launch URL must NOT suppress the
+        // redirect, or a signed-in user gets stranded on the welcome screen.
         const launchedViaDeepLink = await Linking.getInitialURL();
+        const isAuthLaunch =
+          !!launchedViaDeepLink && isAuthCallbackUrl(launchedViaDeepLink);
+        const deepLinkRouted =
+          !!launchedViaDeepLink && pathnameRef.current !== "/";
 
-        if (!launchedViaDeepLink) {
+        if (!isAuthLaunch && !deepLinkRouted) {
           if (session) {
             if (pathnameRef.current !== "/home") {
               router.replace("/home");
@@ -211,6 +217,7 @@ function RootLayoutNav() {
     );
 
     return () => {
+      clearTimeout(splashWatchdog);
       subscription.unsubscribe();
       linkingSubscription.remove();
       appStateSubscription?.remove();

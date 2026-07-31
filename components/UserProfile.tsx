@@ -349,8 +349,11 @@ const UserProfile = () => {
     try {
       const reviewsData = await databaseService.getReviews({
         userId,
-        currentUserId: userId,
+        // The signed-in user is the viewer: has_liked is computed for them,
+        // not for the profile being viewed.
+        currentUserId: profile?.id,
         excludeBlocked: false, // Don't exclude blocked users when viewing their profile
+        forceRefresh: isRefresh,
       });
 
       // Get image URLs using cache

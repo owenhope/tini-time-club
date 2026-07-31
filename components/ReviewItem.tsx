@@ -249,7 +249,11 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
   }, [reviewId, hasLoaded]);
 
   const addComment = useCallback((newComment: any) => {
-    setComments((prev) => [...prev, newComment]);
+    // Idempotent: the parent's _commentPatch is re-applied whenever a
+    // recycled row remounts, so the same comment can arrive more than once.
+    setComments((prev) =>
+      prev.some((c) => c.id === newComment.id) ? prev : [...prev, newComment]
+    );
   }, []);
 
   const removeComment = useCallback((commentId: number) => {

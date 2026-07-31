@@ -152,8 +152,12 @@ const Profile = () => {
     try {
       const reviewsData = await databaseService.getReviews({
         userId,
+        // Without the viewer id the server computes has_liked for nobody and
+        // your own liked reviews render with unlit hearts.
+        currentUserId: profile?.id,
         limit: 50,
         offset: 0,
+        forceRefresh: isRefresh,
       });
 
       // Get image URLs using cache

@@ -60,23 +60,33 @@ class LargeSecureStore {
   }
 
   async getItem(key: string): Promise<string | null> {
-    const stored = await AsyncStorage.getItem(key);
-    if (!stored) {
-      return null;
-    }
-
-    const hasEncryptionKey = await SecureStore.getItemAsync(key);
-    if (!hasEncryptionKey) {
-      // Migration path: a session persisted by the old plaintext AsyncStorage
-      // adapter. Re-store it encrypted and keep the user signed in.
-      if (stored.startsWith("{")) {
-        await this.setItem(key, stored);
-        return stored;
+    // A throw here propagates into supabase.auth.getSession(), which then
+    // never emits INITIAL_SESSION — and the app waits on the splash screen
+    // forever. A corrupt/truncated payload (interrupted write, backup
+    // restore) must read as "no session" so the user gets a clean sign-in.
+    try {
+      const stored = await AsyncStorage.getItem(key);
+      if (!stored) {
+        return null;
       }
+
+      const hasEncryptionKey = await SecureStore.getItemAsync(key);
+      if (!hasEncryptionKey) {
+        // Migration path: a session persisted by the old plaintext AsyncStorage
+        // adapter. Re-store it encrypted and keep the user signed in.
+        if (stored.startsWith("{")) {
+          await this.setItem(key, stored);
+          return stored;
+        }
+        return null;
+      }
+
+      return await this.decrypt(key, stored);
+    } catch (error) {
+      console.error("Session storage read failed; forcing re-login:", error);
+      await this.removeItem(key).catch(() => {});
       return null;
     }
-
-    return this.decrypt(key, stored);
   }
 
   async setItem(key: string, value: string): Promise<void> {

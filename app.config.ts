@@ -89,13 +89,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       [
-        "expo-tracking-transparency",
-        {
-          userTrackingPermission:
-            "Allow Tini Time Club to collect app-related data that can be used to deliver personalized Martini reviews, and suggested user profiles to you.",
-        },
-      ],
-      [
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
