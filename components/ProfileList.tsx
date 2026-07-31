@@ -18,6 +18,7 @@ export interface ProfileType {
   username: string;
   avatar_url?: string | null;
   is_verified?: boolean;
+  review_count?: number;
 }
 
 interface ProfileListProps {
@@ -112,7 +113,7 @@ export default function ProfileList({
               avatarPath={item.avatar_url}
               username={item.username}
               size={32}
-              style={styles.avatar}
+              reviewCount={item.review_count}
             />
             <VerifiedName
               name={item.username || "Unknown User"}
@@ -210,12 +211,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     flex: 1,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: t.radius.lg,
-    marginRight: 10,
+    gap: 10,
   },
   username: {
     ...t.typography.bodyStrong,

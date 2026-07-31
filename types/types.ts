@@ -23,6 +23,8 @@ export interface Profile {
   favorite_location_id?: number | null;
   eula_accepted?: boolean | null;
   deleted?: boolean;
+  /** Active review count (trigger-maintained); drives the ranking ring. */
+  review_count?: number;
 }
 
 /** A row from the location_ratings view (aggregates computed server-side). */
@@ -44,6 +46,8 @@ export interface ReviewProfile {
   username: string;
   avatar_url?: string | null;
   is_verified?: boolean;
+  /** Active review count (trigger-maintained); drives the ranking ring. */
+  review_count?: number;
 }
 
 export interface ReviewLocation {

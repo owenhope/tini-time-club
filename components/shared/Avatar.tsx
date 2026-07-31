@@ -2,6 +2,7 @@ import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
 import { makeStyles } from "@/theme";
+import AvatarRing from "./AvatarRing";
 
 interface AvatarProps {
   avatarPath?: string | null;
@@ -9,6 +10,11 @@ interface AvatarProps {
   size?: number;
   style?: any;
   showInitials?: boolean;
+  /**
+   * Active review count for the ranking ring. Every avatar is ringed — the
+   * first tier starts at zero — so a missing count just means the base tier.
+   */
+  reviewCount?: number | null;
 }
 
 const Avatar: React.FC<AvatarProps> = ({
@@ -17,6 +23,7 @@ const Avatar: React.FC<AvatarProps> = ({
   size = 40,
   style,
   showInitials = true,
+  reviewCount,
 }) => {
   const styles = useStyles();
   // Public-bucket URLs are built locally, so the URL exists on first render —
@@ -30,8 +37,8 @@ const Avatar: React.FC<AvatarProps> = ({
   const avatarStyle = useMemo(
     () => [
       styles.avatar,
-      { width: size, height: size, borderRadius: size / 2 },
       style,
+      { width: size, height: size, borderRadius: size / 2 },
     ],
     [styles, size, style]
   );
@@ -39,14 +46,15 @@ const Avatar: React.FC<AvatarProps> = ({
   const placeholderStyle = useMemo(
     () => [
       styles.placeholder,
-      { width: size, height: size, borderRadius: size / 2 },
       style,
+      { width: size, height: size, borderRadius: size / 2 },
     ],
     [styles, size, style]
   );
 
+  let face: React.ReactElement;
   if (avatarUrl && !failed) {
-    return (
+    face = (
       <Image
         source={{ uri: avatarUrl }}
         style={avatarStyle}
@@ -54,24 +62,27 @@ const Avatar: React.FC<AvatarProps> = ({
         onError={() => setFailed(true)}
       />
     );
-  }
-
-  // Initials or default avatar
-  if (showInitials && username) {
-    return (
+  } else if (showInitials && username) {
+    face = (
       <View style={placeholderStyle}>
         <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
           {username.charAt(0).toUpperCase()}
         </Text>
       </View>
     );
+  } else {
+    face = (
+      <Image
+        source={require("@/assets/images/olive_transparent.png")}
+        style={avatarStyle}
+      />
+    );
   }
 
   return (
-    <Image
-      source={require("@/assets/images/olive_transparent.png")}
-      style={avatarStyle}
-    />
+    <AvatarRing reviewCount={reviewCount} size={size}>
+      {face}
+    </AvatarRing>
   );
 };
 

@@ -8,6 +8,9 @@ export interface Regular {
   username: string;
   avatar_url?: string | null;
   is_verified?: boolean;
+  /** Global active review count used for the member rank. */
+  profile_review_count?: number;
+  /** Active reviews at this location, used for regular placement. */
   review_count: number;
 }
 

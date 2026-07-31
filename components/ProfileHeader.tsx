@@ -6,6 +6,7 @@ import {
   type Metric,
 } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
+import { getRankProgress } from "@/utils/ranking";
 
 interface ProfileHeaderProps {
   profile: {
@@ -14,6 +15,7 @@ interface ProfileHeaderProps {
     name?: string | null;
     bio?: string | null;
     avatar_url?: string | null;
+    review_count?: number | null;
   } | null;
   reviewsCount: number;
   followersCount: number;
@@ -22,6 +24,8 @@ interface ProfileHeaderProps {
   onAvatarPress?: () => void;
   avatarLoading?: boolean;
   avatarError?: string | null;
+  /** Development-only visual override used by the profile rank preview. */
+  rankPreviewCount?: number;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
   /** Spirit/type chips; rendered to the right of the name and bio so they
@@ -49,6 +53,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onAvatarPress,
   avatarLoading = false,
   avatarError = null,
+  rankPreviewCount,
   onFollowersPress,
   onFollowingPress,
   tags,
@@ -59,11 +64,17 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   if (!profile) return null;
 
+  // Ranking is driven by the trigger-maintained count when present; the
+  // locally loaded review list (capped by its fetch limit) is the fallback.
+  const rankCount = profile.review_count ?? reviewsCount;
+  const displayedRankCount = rankPreviewCount ?? rankCount;
+  const rank = getRankProgress(displayedRankCount);
+
   const metrics: Metric[] = [
     {
       key: "reviews",
-      value: reviewsCount,
-      label: reviewsCount === 1 ? "Review" : "Reviews",
+      value: rankCount,
+      label: rankCount === 1 ? "Review" : "Reviews",
     },
     {
       key: "followers",
@@ -82,24 +93,55 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <Pressable
-          onPress={isOwnProfile ? onAvatarPress : undefined}
-          disabled={!isOwnProfile}
-          accessibilityRole={isOwnProfile ? "button" : undefined}
-          accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
-          accessibilityState={{ busy: avatarLoading }}
-        >
-          <Avatar
-            avatarPath={profile.avatar_url}
-            username={profile.username}
-            size={AVATAR_SIZE}
-          />
-          {avatarLoading && (
-            <View style={styles.avatarLoading}>
-              <ActivityIndicator size="small" color={colors.onAccent} />
+        <View style={styles.avatarColumn}>
+          <Pressable
+            onPress={isOwnProfile ? onAvatarPress : undefined}
+            disabled={!isOwnProfile}
+            accessibilityRole={isOwnProfile ? "button" : undefined}
+            accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
+            accessibilityState={{ busy: avatarLoading }}
+          >
+            <Avatar
+              avatarPath={profile.avatar_url}
+              username={profile.username}
+              size={AVATAR_SIZE}
+              reviewCount={displayedRankCount}
+            />
+            {avatarLoading && (
+              <View style={styles.avatarLoading}>
+                <ActivityIndicator size="small" color={colors.onAccent} />
+              </View>
+            )}
+          </Pressable>
+          {rank.tier ? (
+            <Text style={[styles.rankName, { color: rank.tier.color }]}>
+              {rank.tier.name}
+            </Text>
+          ) : null}
+          {isOwnProfile && rank.next ? (
+            <View style={styles.rankProgress}>
+              <View
+                style={styles.rankTrack}
+                accessibilityRole="progressbar"
+                accessibilityValue={{
+                  min: rank.tier?.min ?? 0,
+                  max: rank.next.min,
+                  now: displayedRankCount,
+                }}
+              >
+                <View
+                  style={[
+                    styles.rankFill,
+                    {
+                      width: `${Math.round(rank.fraction * 100)}%`,
+                      backgroundColor: rank.next.color,
+                    },
+                  ]}
+                />
+              </View>
             </View>
-          )}
-        </Pressable>
+          ) : null}
+        </View>
         <View style={styles.metrics}>
           <MetricRow metrics={metrics} align="center" />
         </View>
@@ -143,6 +185,10 @@ const useStyles = makeStyles((t) => ({
   metrics: {
     flex: 1,
   },
+  avatarColumn: {
+    alignItems: "center" as const,
+    gap: 6,
+  },
   avatarLoading: {
     ...({ position: "absolute" } as const),
     top: 0,
@@ -153,6 +199,28 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     backgroundColor: t.colors.scrim,
     borderRadius: AVATAR_SIZE / 2,
+  },
+  rankName: {
+    ...t.typography.caption,
+    fontWeight: "700" as const,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+  },
+  rankProgress: {
+    width: AVATAR_SIZE,
+    alignItems: "center" as const,
+    gap: 4,
+  },
+  rankTrack: {
+    width: AVATAR_SIZE,
+    height: 4,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.ratingTrack,
+    overflow: "hidden" as const,
+  },
+  rankFill: {
+    height: "100%" as const,
+    borderRadius: t.radius.pill,
   },
   identityRow: {
     paddingHorizontal: t.spacing.lg,

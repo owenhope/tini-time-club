@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -37,6 +38,24 @@ import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { RANK_TIERS, getRankTier } from "@/utils/ranking";
+
+interface RankPreviewOption {
+  label: string;
+  shortLabel: string;
+  count?: number;
+  color?: string;
+}
+
+const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
+  { label: "Actual", shortLabel: "Live" },
+  ...RANK_TIERS.map((tier) => ({
+    label: tier.name,
+    shortLabel: tier.key === "topShelf" ? "Top" : tier.name,
+    count: tier.min,
+    color: tier.color,
+  })),
+];
 
 const Profile = () => {
   const styles = useStyles();
@@ -49,6 +68,7 @@ const Profile = () => {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
+  const [rankPreviewIndex, setRankPreviewIndex] = useState(0);
   const {
     userReviews,
     setUserReviews,
@@ -356,6 +376,11 @@ const Profile = () => {
     </View>
   );
 
+  const rankPreview = RANK_PREVIEW_OPTIONS[rankPreviewIndex];
+  const actualRankColor =
+    getRankTier(profile?.review_count ?? userReviews.length)?.color ??
+    colors.borderStrong;
+
   // The header is the list header rather than a sibling, so the whole profile
   // scrolls away and the grid gets the full screen.
   const header = (
@@ -369,6 +394,7 @@ const Profile = () => {
         onAvatarPress={pickImage}
         avatarLoading={avatarLoading}
         avatarError={avatarError}
+        rankPreviewCount={__DEV__ ? rankPreview.count : undefined}
         onFollowersPress={() =>
           profile?.username && router.push(routes.followers(profile.username))
         }
@@ -379,6 +405,56 @@ const Profile = () => {
       >
         {favoriteChips}
       </ProfileHeader>
+      {__DEV__ ? (
+        <View style={styles.rankDebug}>
+          <View style={styles.rankDebugHeading}>
+            <Text style={styles.rankDebugLabel}>Rank preview</Text>
+            <Text style={styles.rankDebugValue}>{rankPreview.label}</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rankDebugOptions}
+          >
+            {RANK_PREVIEW_OPTIONS.map((option, index) => {
+              const selected = index === rankPreviewIndex;
+              const ringColor =
+                option.color ??
+                (option.count == null ? actualRankColor : colors.border);
+              return (
+                <TouchableOpacity
+                  key={option.label}
+                  onPress={() => setRankPreviewIndex(index)}
+                  style={[
+                    styles.rankDebugOption,
+                    selected ? styles.rankDebugOptionSelected : null,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Preview ${option.label} rank`}
+                  accessibilityState={{ selected }}
+                >
+                  <View
+                    style={[
+                      styles.rankDebugSwatch,
+                      { borderColor: ringColor },
+                      selected ? styles.rankDebugSwatchSelected : null,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.rankDebugOptionLabel,
+                      selected ? styles.rankDebugOptionLabelSelected : null,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {option.shortLabel}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
       <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
     </>
   );
@@ -458,6 +534,60 @@ const useStyles = makeStyles((t) => ({
   favoritesSection: {
     paddingHorizontal: t.spacing.lg,
     gap: t.spacing.xs,
+  },
+  rankDebug: {
+    paddingVertical: t.spacing.sm,
+    gap: t.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  rankDebugHeading: {
+    paddingHorizontal: t.spacing.lg,
+    flexDirection: "row" as const,
+    alignItems: "baseline" as const,
+    justifyContent: "space-between" as const,
+  },
+  rankDebugLabel: {
+    ...t.typography.caption,
+    color: t.colors.textMuted,
+  },
+  rankDebugValue: {
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
+  },
+  rankDebugOptions: {
+    paddingHorizontal: t.spacing.md,
+    gap: 4,
+  },
+  rankDebugOption: {
+    width: 64,
+    minHeight: 56,
+    paddingVertical: 6,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 4,
+    borderRadius: t.radius.sm,
+  },
+  rankDebugOptionSelected: {
+    backgroundColor: t.colors.accentSubtle,
+  },
+  rankDebugSwatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 3,
+  },
+  rankDebugSwatchSelected: {
+    borderWidth: 4,
+  },
+  rankDebugOptionLabel: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+  },
+  rankDebugOptionLabelSelected: {
+    color: t.colors.text,
+    fontWeight: "700" as const,
   },
   ctaText: {
     ...t.typography.body,

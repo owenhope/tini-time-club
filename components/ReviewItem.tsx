@@ -204,11 +204,13 @@ const AvatarWrapper = memo(
     username,
     isVerified,
     isOwnReview,
+    reviewCount,
   }: {
     avatarUrl: string | null;
     username?: string;
     isVerified?: boolean;
     isOwnReview: boolean;
+    reviewCount?: number | null;
   }) => {
     const router = useRouter();
     const styles = useStyles();
@@ -225,8 +227,8 @@ const AvatarWrapper = memo(
         <Avatar
           avatarPath={avatarUrl}
           username={username}
-          size={40}
-          style={styles.avatar}
+          size={28}
+          reviewCount={reviewCount}
         />
         <VerifiedName
           name={username || "Unknown"}
@@ -765,6 +767,7 @@ const ReviewItemComponent = ({
               username={review.profile?.username}
               isVerified={review.profile?.is_verified}
               isOwnReview={isOwnReview}
+              reviewCount={review.profile?.review_count}
             />
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -892,12 +895,9 @@ const useStyles = makeStyles((t) => ({
   headerProfile: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-  },
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    marginRight: t.spacing.sm,
+    // Gap on the row, not margin on the avatar: the ranking ring wraps the
+    // avatar and would swallow an inner margin.
+    gap: t.spacing.sm,
   },
   imageContainer: {
     width: SCREEN_WIDTH,

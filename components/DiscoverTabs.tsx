@@ -322,8 +322,8 @@ export default function DiscoverTabs({
             <Avatar
               avatarPath={item.avatar_url}
               username={item.username}
-              size={50}
-              style={styles.avatar}
+              size={40}
+              reviewCount={item.review_count}
             />
           </View>
           <View style={styles.textContainer}>
@@ -636,15 +636,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.lg,
   },
   avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     marginRight: t.spacing.md,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
   },
   resultRating: {
     alignItems: "flex-end" as const,

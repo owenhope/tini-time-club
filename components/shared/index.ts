@@ -37,3 +37,5 @@ export type { RatingSliderProps } from "./RatingSlider";
 
 export { default as Skeleton } from "./Skeleton";
 export type { SkeletonProps } from "./Skeleton";
+
+export { default as AvatarRing, ringInset } from "./AvatarRing";

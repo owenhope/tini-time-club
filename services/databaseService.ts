@@ -331,7 +331,7 @@ class DatabaseService {
           .select(
             `
             *,
-            profile:profiles(id, username, avatar_url, is_verified)
+            profile:profiles(id, username, avatar_url, is_verified, review_count)
           `
           )
           .eq("review_id", reviewId)
@@ -398,7 +398,7 @@ class DatabaseService {
       .select(
         `
         *,
-        profile:profiles(id, username, avatar_url, is_verified)
+        profile:profiles(id, username, avatar_url, is_verified, review_count)
       `
       )
       .single();

@@ -69,6 +69,7 @@ const Regulars: React.FC<RegularsProps> = ({
             username: "NorthShoreSips",
             avatar_url: null,
             is_verified: false,
+            profile_review_count: undefined,
             review_count: 1,
             isPreview: true,
           },
@@ -79,6 +80,7 @@ const Regulars: React.FC<RegularsProps> = ({
             username: "MartiniMaven",
             avatar_url: null,
             is_verified: false,
+            profile_review_count: undefined,
             review_count: 1,
             isPreview: true,
           },
@@ -117,6 +119,7 @@ const Regulars: React.FC<RegularsProps> = ({
                   avatarPath={regular.avatar_url}
                   username={regular.username}
                   size={28}
+                  reviewCount={regular.profile_review_count}
                 />
               </Pressable>
             ))}
@@ -139,6 +142,7 @@ const Regulars: React.FC<RegularsProps> = ({
           avatarPath={regular.avatar_url}
           username={regular.username}
           size={26}
+          reviewCount={regular.profile_review_count}
         />
         <View style={styles.identity}>
           <VerifiedName
@@ -179,6 +183,7 @@ const Regulars: React.FC<RegularsProps> = ({
             avatarPath={regular.avatar_url}
             username={regular.username}
             size={34}
+            reviewCount={regular.profile_review_count}
           />
           <View style={styles.identity}>
             <VerifiedName

@@ -51,8 +51,8 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
 
         // followers: people following them. following: people they follow.
         const joinColumn = isFollowers
-          ? "profiles!followers_follower_id_fkey(id, username, avatar_url, is_verified)"
-          : "profiles!followers_following_id_fkey(id, username, avatar_url, is_verified)";
+          ? "profiles!followers_follower_id_fkey(id, username, avatar_url, is_verified, review_count)"
+          : "profiles!followers_following_id_fkey(id, username, avatar_url, is_verified, review_count)";
         const matchColumn = isFollowers ? "following_id" : "follower_id";
 
         const { data, error: listError } = await supabase

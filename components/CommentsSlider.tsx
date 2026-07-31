@@ -191,7 +191,8 @@ export default function CommentsSlider({
               <Avatar
                 avatarPath={avatarPath}
                 username={username}
-                style={styles.avatar}
+                size={32}
+                reviewCount={item.profile?.review_count}
               />
             </TouchableOpacity>
             <View style={styles.commentContent}>
@@ -343,12 +344,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     flex: 1,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: t.radius.lg,
-    marginRight: t.spacing.md,
+    gap: t.spacing.md,
   },
   commentContent: { flex: 1 },
   commentHeaderRow: {
