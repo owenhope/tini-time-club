@@ -19,7 +19,6 @@ class ImageCache {
   private pendingRequests = new Map<string, Promise<string | null>>();
 
   // Cache durations (in milliseconds)
-  private readonly AVATAR_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   private readonly REVIEW_IMAGE_CACHE_DURATION = 90 * 60 * 1000; // 90 minutes (less than signed URL expiry of 2 hours)
   private readonly LOCATION_IMAGE_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
 
@@ -47,34 +46,6 @@ class ImageCache {
   /** @deprecated Use getAvatarUrlSync — this never did any async work. */
   async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
     return this.getAvatarUrlSync(avatarPath);
-  }
-
-  private async fetchAvatarUrl(
-    avatarPath: string,
-    cacheKey: string
-  ): Promise<string> {
-    try {
-      const { data } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(avatarPath);
-
-      const url = data.publicUrl;
-
-      // Cache the result
-      const cached: CachedImage = {
-        url,
-        timestamp: Date.now(),
-        expiresAt: Date.now() + this.AVATAR_CACHE_DURATION,
-      };
-
-      this.memoryCache.set(cacheKey, cached);
-      await this.persistToStorage(cacheKey, cached);
-
-      return url;
-    } catch (error) {
-      console.error("Error fetching avatar URL:", error);
-      throw error;
-    }
   }
 
   /**
@@ -164,18 +135,6 @@ class ImageCache {
         console.error("Error fetching review image URL:", error);
       }
       return null;
-    }
-  }
-
-  /**
-   * Check if a URL is still valid by making a HEAD request
-   */
-  private async isUrlValid(url: string): Promise<boolean> {
-    try {
-      const response = await fetch(url, { method: "HEAD" });
-      return response.ok;
-    } catch (error) {
-      return false;
     }
   }
 
@@ -386,87 +345,6 @@ class ImageCache {
   }
 
   /**
-   * Clear avatar cache for a specific avatar path
-   */
-  async clearAvatarCache(avatarPath: string): Promise<void> {
-    const cacheKey = `avatar_${avatarPath}`;
-
-    // Remove from memory cache
-    this.memoryCache.delete(cacheKey);
-
-    // Remove from AsyncStorage
-    try {
-      await AsyncStorage.removeItem(`image_cache_${cacheKey}`);
-    } catch (error) {
-      console.error("Error clearing avatar cache:", error);
-    }
-  }
-
-  /**
-   * Clear all avatar caches for a specific user
-   */
-  async clearUserAvatarCache(userId: string): Promise<void> {
-    try {
-      // Get all cache keys from AsyncStorage
-      const keys = await AsyncStorage.getAllKeys();
-      const avatarCacheKeys = keys.filter(
-        (key) => key.startsWith("image_cache_avatar_") && key.includes(userId)
-      );
-
-      // Remove from AsyncStorage
-      if (avatarCacheKeys.length > 0) {
-        await AsyncStorage.multiRemove(avatarCacheKeys);
-      }
-
-      // Remove from memory cache
-      const memoryKeysToDelete: string[] = [];
-      for (const [key, value] of this.memoryCache.entries()) {
-        if (key.startsWith("avatar_") && key.includes(userId)) {
-          memoryKeysToDelete.push(key);
-        }
-      }
-
-      memoryKeysToDelete.forEach((key) => {
-        this.memoryCache.delete(key);
-      });
-    } catch (error) {
-      console.error("Error clearing user avatar cache:", error);
-    }
-  }
-
-  /**
-   * Clear all avatar caches (more aggressive approach)
-   */
-  async clearAllAvatarCaches(): Promise<void> {
-    try {
-      // Get all cache keys from AsyncStorage
-      const keys = await AsyncStorage.getAllKeys();
-      const avatarCacheKeys = keys.filter((key) =>
-        key.startsWith("image_cache_avatar_")
-      );
-
-      // Remove from AsyncStorage
-      if (avatarCacheKeys.length > 0) {
-        await AsyncStorage.multiRemove(avatarCacheKeys);
-      }
-
-      // Remove from memory cache
-      const memoryKeysToDelete: string[] = [];
-      for (const [key, value] of this.memoryCache.entries()) {
-        if (key.startsWith("avatar_")) {
-          memoryKeysToDelete.push(key);
-        }
-      }
-
-      memoryKeysToDelete.forEach((key) => {
-        this.memoryCache.delete(key);
-      });
-    } catch (error) {
-      console.error("Error clearing all avatar caches:", error);
-    }
-  }
-
-  /**
    * Clear all caches
    */
   async clearCache(): Promise<void> {
@@ -479,51 +357,6 @@ class ImageCache {
       await AsyncStorage.multiRemove(cacheKeys);
     } catch (error) {
       console.error("Error clearing cache:", error);
-    }
-  }
-
-  /**
-   * Clear expired cache entries
-   */
-  async clearExpiredCache(): Promise<void> {
-    const now = Date.now();
-    const expiredKeys: string[] = [];
-
-    // Clear expired memory cache entries
-    for (const [key, cached] of this.memoryCache.entries()) {
-      if (now >= cached.expiresAt) {
-        expiredKeys.push(key);
-      }
-    }
-
-    expiredKeys.forEach((key) => this.memoryCache.delete(key));
-
-    // Clear expired storage entries
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter((key) => key.startsWith("image_cache_"));
-      const expiredStorageKeys: string[] = [];
-
-      for (const key of cacheKeys) {
-        try {
-          const data = await AsyncStorage.getItem(key);
-          if (data) {
-            const parsed = JSON.parse(data) as CachedImage | CachedSignedUrl;
-            if (now >= parsed.expiresAt) {
-              expiredStorageKeys.push(key);
-            }
-          }
-        } catch (error) {
-          // If we can't parse the data, remove it
-          expiredStorageKeys.push(key);
-        }
-      }
-
-      if (expiredStorageKeys.length > 0) {
-        await AsyncStorage.multiRemove(expiredStorageKeys);
-      }
-    } catch (error) {
-      console.error("Error clearing expired cache:", error);
     }
   }
 

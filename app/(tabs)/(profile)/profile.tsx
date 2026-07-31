@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  Animated,
   ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -17,13 +16,11 @@ import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { Review } from "@/types/types";
-import ReviewItem from "@/components/ReviewItem";
 import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation , useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
-import imageCache from "@/utils/imageCache";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { VerifiedName } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
 import ReviewGrid from "@/components/ReviewGrid";
 import authCache from "@/utils/authCache";
@@ -143,16 +140,8 @@ const Profile = () => {
         forceRefresh: isRefresh,
       });
 
-      // Get image URLs using cache
-      const imagePaths = reviewsData.map((review: any) => review.image_url);
-      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
-        ...review,
-        image_url: imageUrls[review.image_url] || review.image_url,
-      }));
-
-      setUserReviews(reviewsWithFullUrl);
+      // getReviews returns image_url already hydrated to a signed URL.
+      setUserReviews(reviewsData);
     } catch (err) {
       console.error("Unexpected error while fetching reviews:", err);
     } finally {
@@ -628,28 +617,6 @@ const Profile = () => {
 
 const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
-  bioSection: {
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.xs,
-    paddingBottom: t.spacing.xs,
-  },
-  bio: {
-    fontSize: 13,
-    color: t.colors.text,
-    lineHeight: 20,
-    textAlign: "left" as const,
-    fontWeight: "600" as const,
-    width: "100%" as const,
-  },
-  bioCtaContainer: {
-    width: "100%" as const,
-    alignItems: "flex-start" as const,
-  },
-  tagsSection: {
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.xs,
-    paddingBottom: t.spacing.lg,
-  },
   ctaContainer: {
     width: "100%" as const,
     alignItems: "flex-start" as const,
@@ -718,8 +685,6 @@ const useStyles = makeStyles((t) => ({
   regularsList: {
     paddingBottom: t.spacing.xxl,
   },
-  reviewsContainer: { flex: 1 },
-  gridContent: { paddingBottom: 20 },
   emptyContainer: {
     alignItems: "center" as const,
     paddingHorizontal: t.spacing.lg,

@@ -1,19 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
-  Image,
   FlatList,
   Text,
   TouchableOpacity,
   Alert,
-  Animated,
   Platform,
   ActionSheetIOS,
   RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import imageCache from "@/utils/imageCache";
 import { Review } from "@/types/types";
 import ReviewGrid from "@/components/ReviewGrid";
 import CommentsSlider from "@/components/CommentsSlider";
@@ -356,15 +353,8 @@ const UserProfile = () => {
         forceRefresh: isRefresh,
       });
 
-      // Get image URLs using cache
-      const imagePaths = reviewsData.map((review: any) => review.image_url);
-      const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-      const reviewsWithFullUrl = reviewsData.map((review: any) => ({
-        ...review,
-        image_url: imageUrls[review.image_url] || review.image_url,
-      }));
-      setUserReviews(reviewsWithFullUrl);
+      // getReviews returns image_url already hydrated to a signed URL.
+      setUserReviews(reviewsData);
     } catch (err) {
       console.error("Unexpected error while fetching user reviews:", err);
     } finally {
@@ -681,12 +671,6 @@ const UserProfile = () => {
         followersCount={followersCount}
         followingCount={followingCount}
         isOwnProfile={profile ? profile.id === displayProfile?.id : false}
-        doesFollow={doesFollow}
-        followPending={followPending}
-        isBlocked={isBlocked}
-        onFollowPress={toggleFollow}
-        onBlockPress={handleBlockUser}
-        onUnblockPress={handleUnblockUser}
         onFollowersPress={() => router.push(`${pathname}/followers` as never)}
         onFollowingPress={() => router.push(`${pathname}/following` as never)}
         tags={favoriteTags}
@@ -803,12 +787,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
     fontSize: 13,
   },
-  reviewsContainer: {
-    flex: 1,
-  },
-  gridContent: {
-    paddingBottom: 20,
-  },
   emptyContainer: {
     alignItems: "center" as const,
     padding: 20,
@@ -833,16 +811,6 @@ const useStyles = makeStyles((t) => ({
     minWidth: 0,
     gap: 6,
   },
-  headerButton: {
-    marginRight: 10,
-    paddingHorizontal: t.spacing.sm,
-    paddingVertical: t.spacing.xs,
-  },
-  friendText: {
-    fontSize: 15,
-    color: t.colors.onAccent, // Text on the lavender fill
-    fontWeight: "600" as const,
-  },
   headerTitleContainer: {
     alignItems: "center" as const,
   },
@@ -850,23 +818,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 20,
     fontWeight: "bold" as const,
     color: t.colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: t.colors.textMuted,
-  },
-  bioSection: {
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.xs,
-    paddingBottom: t.spacing.xs,
-  },
-  bio: {
-    fontSize: 13,
-    color: t.colors.text,
-    lineHeight: 20,
-    textAlign: "left" as const,
-    fontWeight: "600" as const,
-    width: "100%" as const,
   },
   headerActions: {
     flexDirection: "row" as const,
@@ -881,11 +832,6 @@ const useStyles = makeStyles((t) => ({
   favoritesSection: {
     paddingHorizontal: t.spacing.lg,
     gap: t.spacing.sm,
-  },
-  tagsSection: {
-    paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.xs,
-    paddingBottom: t.spacing.lg,
   },
   favoritesTagsBlock: {
     // One row always: the Spirit and Type groups sit side by side and their

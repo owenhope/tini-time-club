@@ -11,7 +11,6 @@ import {
   FlatList,
   ActivityIndicator,
   Modal,
-  TextInput,
   TouchableOpacity,
   RefreshControl,
   Image,
@@ -29,7 +28,6 @@ import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
-import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import databaseService from "@/services/databaseService";
@@ -204,22 +202,8 @@ function Home() {
           console.log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
         }
 
-        // Generate image URLs using cache
-        const reviewsWithUrls = await (async (reviews: any[]) => {
-          if (reviews.length === 0) return [];
-
-          // Get all image URLs using batch processing
-          const imagePaths = reviews.map((review) => review.image_url);
-          const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-          return reviews.map((review) => ({
-            ...review,
-            image_url: imageUrls[review.image_url] || review.image_url,
-            location: review.location
-              ? { ...review.location, id: review.location.id || "" }
-              : undefined,
-          }));
-        })(reviewsDataFromDB || []);
+        // getReviews returns image_url already hydrated to a signed URL.
+        const reviewsWithUrls = reviewsDataFromDB;
 
         // Update state
         if (refresh) {
@@ -911,20 +895,6 @@ const useStyles = makeStyles((t) => ({
     right: t.spacing.lg,
     padding: t.spacing.sm,
   },
-  devIndicator: {
-    position: "absolute" as const,
-    left: t.spacing.lg,
-    backgroundColor: t.colors.danger,
-    paddingHorizontal: t.spacing.sm,
-    paddingVertical: t.spacing.xs,
-    borderRadius: t.spacing.xs,
-    zIndex: 10,
-  },
-  devText: {
-    color: t.colors.textOnImage,
-    fontSize: 12,
-    fontWeight: "bold" as const,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center" as const,
@@ -940,11 +910,6 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xl - 4,
     alignItems: "center" as const,
     gap: 10,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: t.colors.textSecondary,
-    textAlign: "center" as const,
   },
   errorText: {
     fontSize: 15,
@@ -984,12 +949,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     textAlign: "center" as const,
   },
-  modalSubTitle: {
-    fontSize: 13,
-    fontWeight: "normal" as const,
-    marginBottom: t.spacing.md,
-    color: t.colors.text,
-  },
   validationMessage: {
     fontSize: 13,
     color: t.colors.danger,
@@ -1002,22 +961,6 @@ const useStyles = makeStyles((t) => ({
   },
   validationChecking: {
     color: t.colors.textMuted,
-  },
-  rulesContainer: {
-    marginTop: t.spacing.md,
-    marginBottom: t.spacing.lg,
-    paddingHorizontal: t.spacing.sm,
-  },
-  rulesTitle: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: t.colors.text,
-    marginBottom: 6,
-  },
-  ruleItem: {
-    fontSize: 12,
-    color: t.colors.textSecondary,
-    marginBottom: 2,
   },
   welcomeContainer: {
     flex: 1,

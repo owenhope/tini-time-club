@@ -691,18 +691,6 @@ const useStyles = makeStyles((t) => ({
     height: 40,
     borderRadius: 20,
   },
-  ratingSection: {
-    alignItems: "center" as const,
-    marginRight: t.spacing.md,
-  },
-  ratingContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: t.colors.accent,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
   resultRating: {
     alignItems: "flex-end" as const,
     alignSelf: "flex-start" as const,
@@ -728,17 +716,5 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     color: t.colors.textSecondary,
     fontWeight: "400" as const,
-  },
-  ratingText: {
-    color: t.colors.onAccent,
-    fontSize: 13,
-    fontWeight: "600" as const,
-  },
-  reviewCountText: {
-    color: t.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: "400" as const,
-    marginTop: t.spacing.xs,
-    textAlign: "center" as const,
   },
 }));

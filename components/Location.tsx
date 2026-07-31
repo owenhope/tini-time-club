@@ -21,7 +21,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import imageCache from "@/utils/imageCache";
 import { RatingSummary, Skeleton } from "@/components/shared";
 import useCollapsibleHeader, {
   COLLAPSE_RANGE,
@@ -490,15 +489,8 @@ const Location = () => {
           forceRefresh: isRefresh,
         });
 
-        // Get image URLs using cache
-        const imagePaths = reviewsData.map((review: any) => review.image_url);
-        const imageUrls = await imageCache.getReviewImageUrls(imagePaths);
-
-        const reviewsWithFullUrl = reviewsData.map((review: any) => ({
-          ...review,
-          image_url: imageUrls[review.image_url] || review.image_url,
-        }));
-        setLocationReviews(reviewsWithFullUrl);
+        // getReviews returns image_url already hydrated to a signed URL.
+        setLocationReviews(reviewsData);
       } catch (err) {
         console.error("Unexpected error while fetching location reviews:", err);
       } finally {
@@ -712,9 +704,6 @@ const useStyles = makeStyles((t) => ({
     minWidth: 128,
     maxWidth: 168,
   },
-  collapsible: {
-    gap: t.spacing.xs,
-  },
   collapsedRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -723,122 +712,9 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.xs,
   },
-  collapsedName: {
-    ...t.typography.heading,
-    color: t.colors.text,
-    flexShrink: 1,
-  },
   collapsedRegulars: {
     flexShrink: 0,
     alignItems: "flex-end" as const,
-  },
-  contactLinks: {
-    marginHorizontal: t.spacing.lg,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.xs,
-    backgroundColor: t.colors.surfaceSunken,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderRadius: t.radius.sm,
-  },
-  contactLinkHit: {
-    minHeight: 32,
-    justifyContent: "center" as const,
-  },
-  contactLink: {
-    ...t.typography.body,
-    color: t.colors.accent,
-  },
-  disclosure: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    minHeight: 36,
-    paddingHorizontal: t.spacing.lg,
-  },
-  disclosurePressed: {
-    opacity: 0.6,
-  },
-  disclosureLabel: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  actions: {
-    paddingHorizontal: t.spacing.lg,
-  },
-  profileHeader: {
-    padding: t.spacing.lg,
-  },
-  addressRow: {
-    paddingTop: t.spacing.sm,
-  },
-  addressContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "flex-start" as const,
-  },
-  nameRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    marginBottom: t.spacing.xs,
-  },
-  locationName: {
-    fontSize: 17,
-    fontWeight: "600" as const,
-    color: t.colors.text,
-    marginBottom: t.spacing.xs,
-  },
-  priceLevel: {
-    fontSize: 15,
-    fontWeight: "500" as const,
-    color: t.colors.textSecondary,
-    marginLeft: t.spacing.sm,
-  },
-  locationAddress: {
-    fontSize: 15,
-    color: t.colors.text,
-    lineHeight: 20,
-    textAlign: "left" as const,
-  },
-  contactInfo: {
-    flexDirection: "row" as const,
-    justifyContent: "flex-start" as const,
-    gap: t.spacing.sm,
-    flexWrap: "wrap" as const,
-  },
-  contactButton: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    gap: t.spacing.sm,
-    paddingVertical: t.spacing.sm + 2,
-    paddingHorizontal: t.spacing.lg,
-    borderRadius: t.radius.xl - 4,
-    backgroundColor: t.colors.accent,
-  },
-  contactText: {
-    fontSize: 13,
-    color: t.colors.onAccent,
-    fontWeight: "600" as const,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: t.colors.textSecondary,
-    textAlign: "center" as const,
-    marginTop: t.spacing.xs,
-    fontStyle: "italic" as const,
-  },
-  tagsContainer: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    gap: t.spacing.sm,
-    paddingHorizontal: t.spacing.lg,
-  },
-  loadingTextInline: {
-    ...t.typography.caption,
-    color: t.colors.textMuted,
-    paddingHorizontal: t.spacing.lg,
   },
   reviewsContainer: {
     flex: 1,

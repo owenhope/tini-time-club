@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import imageCache from "@/utils/imageCache";
 
 interface CachedQuery {
   data: any;
@@ -175,7 +175,7 @@ class DatabaseService {
       currentUserId,
     })}`;
 
-    return this.query(
+    const reviews = await this.query<any[]>(
       cacheKey,
       async () => {
         // One round trip: the feed_reviews function joins locations/spirits/
@@ -196,6 +196,18 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION, forceRefresh }
     );
+
+    // Hydrate image paths into signed URLs on the way out — after the cache,
+    // because signed URLs expire on their own schedule. Every review surface
+    // needs this, so it lives here instead of copy-pasted at each call site.
+    if (!reviews?.length) return reviews ?? [];
+    const imageUrls = await imageCache.getReviewImageUrls(
+      reviews.map((review) => review.image_url)
+    );
+    return reviews.map((review) => ({
+      ...review,
+      image_url: imageUrls[review.image_url] || review.image_url,
+    }));
   }
 
   /**
@@ -265,74 +277,6 @@ class DatabaseService {
         return data;
       },
       { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
-    );
-  }
-
-  /**
-   * Get locations with reviews
-   */
-  async getLocationsWithReviews(
-    searchQuery?: string,
-    limit: number = 20
-  ): Promise<any[]> {
-    const cacheKey = `locations_${searchQuery || "all"}`;
-
-    return this.query(
-      cacheKey,
-      async () => {
-        let query = supabase
-          .from("locations")
-          .select(
-            `
-            id,
-            name,
-            address,
-            reviews!reviews_location_fkey(
-              taste,
-              presentation,
-              state
-            )
-          `
-          )
-          .eq("reviews.state", 1)
-          .limit(limit);
-
-        if (searchQuery) {
-          query = query.ilike("name", `%${searchQuery}%`);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        // Process data to calculate averages
-        return data.map((location: any) => {
-          const activeReviews = location.reviews.filter(
-            (r: any) => r.state === 1
-          );
-          const avgTaste =
-            activeReviews.length > 0
-              ? activeReviews.reduce(
-                  (sum: number, r: any) => sum + r.taste,
-                  0
-                ) / activeReviews.length
-              : 0;
-          const avgPresentation =
-            activeReviews.length > 0
-              ? activeReviews.reduce(
-                  (sum: number, r: any) => sum + r.presentation,
-                  0
-                ) / activeReviews.length
-              : 0;
-
-          return {
-            ...location,
-            reviewCount: activeReviews.length,
-            avgTaste: Math.round(avgTaste * 10) / 10,
-            avgPresentation: Math.round(avgPresentation * 10) / 10,
-          };
-        });
-      },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
   }
 
@@ -494,6 +438,9 @@ class DatabaseService {
 
   /**
    * Get location by ID
+   *
+   * NOTE: Currently uncalled — kept intentionally for an upcoming Location
+   * refactor that will consume it.
    */
   async getLocation(locationId: string): Promise<any> {
     return this.query(
@@ -648,20 +595,9 @@ class DatabaseService {
    */
   async clearReviewCaches(): Promise<void> {
     try {
-      // Get all cache keys from AsyncStorage
-      const keys = await AsyncStorage.getAllKeys();
-      const reviewCacheKeys = keys.filter(
-        (key) => key.startsWith("db_query_cache") && key.includes("reviews_")
-      );
-
-      // Remove from AsyncStorage
-      if (reviewCacheKeys.length > 0) {
-        await AsyncStorage.multiRemove(reviewCacheKeys);
-      }
-
       // Remove from memory cache
       const memoryKeysToDelete: string[] = [];
-      for (const [key, value] of this.queryCache.entries()) {
+      for (const key of this.queryCache.keys()) {
         if (key.startsWith("reviews_")) {
           memoryKeysToDelete.push(key);
         }
@@ -681,12 +617,6 @@ class DatabaseService {
   async clearAllCaches(): Promise<void> {
     this.queryCache.clear();
     this.pendingQueries.clear();
-
-    try {
-      await AsyncStorage.removeItem("db_query_cache");
-    } catch (error) {
-      console.error("Error clearing database cache:", error);
-    }
   }
 
   /**

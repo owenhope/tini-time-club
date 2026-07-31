@@ -3,18 +3,15 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useMemo,
   memo,
 } from "react";
 import {
   View,
   Text,
-  Image,
   Dimensions,
   TouchableOpacity,
   Pressable,
   Animated,
-  Modal,
   Alert,
   type StyleProp,
   type TextStyle,
@@ -24,7 +21,6 @@ import { Image as ExpoImage } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
-import imageCache from "@/utils/imageCache";
 import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
@@ -38,7 +34,7 @@ import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { BRAND, makeStyles, useTheme } from "@/theme";
+import { BRAND, HIT_SLOP, makeStyles, useTheme } from "@/theme";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -49,10 +45,6 @@ const ICON_SIZES = {
   small: 20,
   medium: 24,
 } as const;
-
-// Icon-only controls render at 20-24px; this brings the tappable area up
-// toward the 44pt minimum without changing the layout.
-const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 const InlineIdentityText = ({
   username,
@@ -81,51 +73,6 @@ const InlineIdentityText = ({
   );
 };
 
-// Expandable Text Component for Instagram-style captions
-const ExpandableText = ({
-  username,
-  text,
-  maxLines = 2,
-}: {
-  username?: string;
-  text: string;
-  maxLines?: number;
-}) => {
-  const styles = useStyles();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [shouldShowMore, setShouldShowMore] = useState(false);
-
-  const onTextLayout = useCallback(
-    (event: any) => {
-      const { lines } = event.nativeEvent;
-      setShouldShowMore(lines.length > maxLines);
-    },
-    [maxLines]
-  );
-
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded(!isExpanded);
-  }, [isExpanded]);
-
-  return (
-    <Text style={styles.captionText}>
-      {username && <Text style={styles.captionUsername}>{username} </Text>}
-      <Text
-        numberOfLines={isExpanded ? undefined : maxLines}
-        onTextLayout={onTextLayout}
-        style={styles.captionBody}
-      >
-        {text}
-      </Text>
-      {shouldShowMore && (
-        <Text style={styles.moreText} onPress={toggleExpanded}>
-          {isExpanded ? " less" : " more"}
-        </Text>
-      )}
-    </Text>
-  );
-};
-
 interface ReviewItemProps {
   review: Review & { _commentPatch?: any };
   canDelete: boolean;
@@ -144,17 +91,6 @@ interface ReviewItemProps {
   previewMode?: boolean;
   isVisible?: boolean;
 }
-
-// Custom hook for avatar loading
-const useAvatar = (avatarUrl: string | null | undefined) => {
-  // Public-bucket URL construction is synchronous; resolving it in an effect
-  // gave every row's avatar a blank first frame and an extra render.
-  const url = useMemo(
-    () => imageCache.getAvatarUrlSync(avatarUrl ?? null),
-    [avatarUrl]
-  );
-  return { url, loading: false };
-};
 
 /**
  * Likes state for one review.
@@ -977,15 +913,6 @@ const useStyles = makeStyles((t) => ({
     height: "100%" as const,
     backgroundColor: t.colors.imagePlaceholder,
   },
-  topBar: {
-    position: "absolute" as const,
-    top: 0,
-    right: 0,
-    padding: 10,
-    zIndex: 2,
-    flexDirection: "row" as const,
-    gap: t.spacing.sm,
-  },
   overlay: {
     position: "absolute" as const,
     top: 0,
@@ -1038,13 +965,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     color: t.colors.textOnImage,
   },
-  ratingLabel: {
-    fontWeight: "bold" as const,
-    fontSize: 15,
-    marginTop: t.spacing.sm,
-    marginBottom: t.spacing.xs,
-    color: t.colors.textOnImage,
-  },
   eyeIconContainer: {
     position: "absolute" as const,
     bottom: t.spacing.xl - 4,
@@ -1060,12 +980,6 @@ const useStyles = makeStyles((t) => ({
   spiritText: {
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: "bold" as const,
-    color: t.colors.textOnImage,
-    textTransform: "capitalize" as const,
-  },
-  typeText: {
-    fontSize: 15,
     fontWeight: "bold" as const,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,
@@ -1123,39 +1037,14 @@ const useStyles = makeStyles((t) => ({
   commentItem: {
     marginBottom: t.spacing.xs,
   },
-  commentText: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: t.colors.text,
-  },
   commentUsername: {
     fontWeight: "600" as const,
     fontSize: 13,
     color: t.colors.text,
   },
-  commentBody: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: t.colors.text,
-  },
-  username: {
-    fontWeight: "bold" as const,
-    fontSize: 15,
-    color: t.colors.text,
-  },
-  expandableText: {
-    fontSize: 15,
-    color: t.colors.text,
-    lineHeight: 20,
-  },
   timestamp: {
     fontSize: 12,
     color: t.colors.textMuted,
-  },
-  moreText: {
-    color: t.colors.textSecondary,
-    fontSize: 15,
-    fontWeight: "400" as const,
   },
   viewAllCommentsText: {
     color: t.colors.textMuted,
@@ -1164,21 +1053,5 @@ const useStyles = makeStyles((t) => ({
   },
   previewContainer: {
     backgroundColor: t.colors.surface,
-  },
-  previewFooter: {
-    paddingHorizontal: 10,
-    paddingVertical: t.spacing.md,
-    backgroundColor: t.colors.surface,
-  },
-  previewUsername: {
-    fontWeight: "bold" as const,
-    fontSize: 15,
-    color: t.colors.text,
-    marginBottom: t.spacing.xs,
-  },
-  previewComment: {
-    fontSize: 13,
-    color: t.colors.text,
-    lineHeight: 18,
   },
 }));

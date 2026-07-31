@@ -22,12 +22,6 @@ interface ProfileHeaderProps {
   onAvatarPress?: () => void;
   avatarLoading?: boolean;
   avatarError?: string | null;
-  doesFollow?: boolean;
-  followPending?: boolean;
-  isBlocked?: boolean;
-  onFollowPress?: () => void;
-  onBlockPress?: () => void;
-  onUnblockPress?: () => void;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
   /** Spirit/type chips; rendered to the right of the name and bio so they
@@ -41,8 +35,7 @@ const AVATAR_SIZE = 80;
 
 /**
  * Person identity block, in the familiar social-profile arrangement: avatar
- * and counts share the top row, then name and bio, then a compact full-width
- * action row.
+ * and counts share the top row, then name and bio.
  *
  * The username is deliberately not repeated here — it is already the
  * navigation title on both the own-profile and other-user screens.
@@ -56,12 +49,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onAvatarPress,
   avatarLoading = false,
   avatarError = null,
-  doesFollow = false,
-  followPending = false,
-  isBlocked = false,
-  onFollowPress,
-  onBlockPress,
-  onUnblockPress,
   onFollowersPress,
   onFollowingPress,
   tags,
