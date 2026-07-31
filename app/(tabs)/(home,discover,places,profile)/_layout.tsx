@@ -26,6 +26,8 @@ const TITLES: Record<string, string> = {
   "users/[username]/following": "Following",
   settings: "Settings",
   "edit-profile": "Edit Profile",
+  "favorite-location": "Favorite Location",
+  "place-info": "Information",
 };
 
 export default function SharedTabLayout() {

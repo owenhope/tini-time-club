@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,17 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
 import { isAccountGoneError } from "@/utils/accountErrors";
 import MultiSelectInput from "@/components/MultiSelectInput";
+import FavoriteLocationPicker from "@/components/FavoriteLocationPicker";
+import {
+  consumePendingFavoriteLocation,
+  type FavoriteLocationValue,
+} from "@/services/favoriteLocationSelection";
+import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
 
 const EditProfile = () => {
@@ -30,12 +36,23 @@ const EditProfile = () => {
   const [selectedTypes, setSelectedTypes] = useState<(number | string)[]>([]);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [favoriteLocation, setFavoriteLocation] =
+    useState<FavoriteLocationValue | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const pendingFavoriteLocation = consumePendingFavoriteLocation();
+      if (pendingFavoriteLocation !== undefined) {
+        setFavoriteLocation(pendingFavoriteLocation);
+      }
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -84,6 +101,24 @@ const EditProfile = () => {
           }
         }
         setSelectedTypes(favoriteTypes);
+
+        if (profile.favorite_location_id) {
+          const { data: favoriteLocationData, error: favoriteLocationError } =
+            await supabase
+              .from("locations")
+              .select("id, name, address")
+              .eq("id", profile.favorite_location_id)
+              .maybeSingle();
+
+          if (favoriteLocationError) {
+            console.error(
+              "Error loading favorite location:",
+              favoriteLocationError
+            );
+          } else {
+            setFavoriteLocation(favoriteLocationData);
+          }
+        }
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -103,6 +138,7 @@ const EditProfile = () => {
         bio: bio.trim(),
         favorite_spirits: selectedSpirits,
         favorite_types: selectedTypes,
+        favorite_location_id: favoriteLocation?.id ?? null,
       });
 
       // Refresh profile context
@@ -179,6 +215,19 @@ const EditProfile = () => {
             options={types}
             selectedIds={selectedTypes}
             onSelectionChange={setSelectedTypes}
+          />
+
+          <Text style={styles.label}>Favorite Location</Text>
+          <FavoriteLocationPicker
+            value={favoriteLocation}
+            onPress={() =>
+              router.push({
+                pathname: "/favorite-location",
+                params: {
+                  hasFavoriteLocation: favoriteLocation ? "1" : "0",
+                },
+              })
+            }
           />
 
           <View style={styles.buttonContainer}>

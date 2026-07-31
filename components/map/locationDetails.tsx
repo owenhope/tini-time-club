@@ -4,6 +4,7 @@ import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { RatingSummary } from "@/components/shared";
+import Regulars from "@/components/Regulars";
 import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
@@ -36,11 +37,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
           <Text style={styles.name} numberOfLines={1}>
             {loc.name || "No name available"}
             {"\u00a0"}
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.accent}
-            />
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
           </Text>
         </Pressable>
       </Link>
@@ -49,15 +46,29 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
         {address ?? "No address available"}
       </Text>
 
-      <View style={styles.ratings}>
-        <RatingSummary
-          overall={loc.rating}
-          taste={loc.taste_avg}
-          presentation={loc.presentation_avg}
-          reviewCount={loc.total_ratings ?? 0}
-        />
-      </View>
+      <View style={styles.overview}>
+        <View style={styles.overviewColumns}>
+          <View style={styles.ratings}>
+            <RatingSummary
+              overall={loc.rating}
+              taste={loc.taste_avg}
+              presentation={loc.presentation_avg}
+              reviewCount={loc.total_ratings ?? 0}
+              countPlacement="score"
+              showOverallMeta={false}
+              showOverallHeading
+              overallPlacement="right"
+              breakdownLayout="stacked"
+            />
+          </View>
 
+          {loc.regulars?.length ? (
+            <View style={styles.regulars}>
+              <Regulars regulars={loc.regulars} variant="dense" />
+            </View>
+          ) : null}
+        </View>
+      </View>
     </View>
   );
 };
@@ -91,8 +102,22 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
     lineHeight: 20,
   },
-  ratings: {
+  overview: {
     marginTop: t.spacing.sm,
+  },
+  overviewColumns: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.xl,
+  },
+  ratings: {
+    flex: 1,
+    minWidth: 0,
+  },
+  regulars: {
+    width: "42%" as const,
+    minWidth: 128,
+    maxWidth: 168,
   },
 }));
 

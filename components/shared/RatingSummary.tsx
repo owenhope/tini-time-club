@@ -20,6 +20,30 @@ export interface RatingSummaryProps {
   showReviewCount?: boolean;
   /** Start bar animation only when the surrounding content is visible. */
   animateBars?: boolean;
+  /** Show the large overall score row in the full variant. */
+  showOverall?: boolean;
+  /** Show the visible "out of 5 / Overall" text beside the score. */
+  showOverallMeta?: boolean;
+  /** Show an "Overall" heading above the score without the scale metadata. */
+  showOverallHeading?: boolean;
+  /** Show the Taste and Presentation bars in the full variant. */
+  showBreakdown?: boolean;
+  /** Place the review count at the row edge or beneath the overall label. */
+  countPlacement?: "inline" | "meta" | "score";
+  /** Place each rating bar beside or beneath its label. */
+  breakdownLayout?: "inline" | "stacked";
+  /** Controls the visual size of the overall score in the full variant. */
+  overallSize?: "large" | "title" | "small";
+  /** Place the overall score before the breakdown or at its right edge. */
+  overallPlacement?: "start" | "right";
+  /** Include the star icon and dot separators in the compact variant. */
+  compactDecorated?: boolean;
+  /** Arrange compact values in a row or a vertical stack. */
+  compactLayout?: "row" | "stacked";
+  /** Match the compact score to title-sized text when it leads a card. */
+  compactOverallSize?: "default" | "title";
+  /** Match compact supporting text to a card subtitle. */
+  compactMetaSize?: "default" | "subtitle";
 }
 
 const format = (value?: number | null) =>
@@ -47,12 +71,26 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
   tone = "surface",
   showReviewCount = true,
   animateBars = true,
+  showOverall = true,
+  showOverallMeta = true,
+  showOverallHeading = false,
+  showBreakdown = true,
+  countPlacement = "inline",
+  breakdownLayout = "inline",
+  overallSize = "large",
+  overallPlacement = "start",
+  compactDecorated = true,
+  compactLayout = "row",
+  compactOverallSize = "default",
+  compactMetaSize = "default",
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
   const onImage = tone === "onImage";
 
-  const hasAnyRating = overall != null || taste != null || presentation != null;
+  const hasAnyRating =
+    (showOverall && overall != null) ||
+    (showBreakdown && (taste != null || presentation != null));
 
   const countLabel = useMemo(() => {
     if (!showReviewCount || reviewCount == null) return null;
@@ -66,20 +104,31 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
       return countLabel ? `Not yet rated. ${countLabel}.` : "Not yet rated.";
     }
     const parts: string[] = [];
-    if (overall != null)
+    if (showOverall && overall != null)
       parts.push(`Overall ${format(overall)} out of ${RATING_MAX}`);
-    if (taste != null)
+    if (showBreakdown && taste != null)
       parts.push(`Taste ${format(taste)} out of ${RATING_MAX}`);
-    if (presentation != null)
+    if (showBreakdown && presentation != null)
       parts.push(`Presentation ${format(presentation)} out of ${RATING_MAX}`);
     if (countLabel) parts.push(countLabel);
     return `${parts.join(". ")}.`;
-  }, [hasAnyRating, overall, taste, presentation, countLabel]);
+  }, [
+    hasAnyRating,
+    overall,
+    taste,
+    presentation,
+    countLabel,
+    showOverall,
+    showBreakdown,
+  ]);
 
   if (variant === "compact") {
     return (
       <View
-        style={styles.compactRow}
+        style={[
+          styles.compactRow,
+          compactLayout === "stacked" && styles.compactStack,
+        ]}
         accessible
         accessibilityRole="summary"
         accessibilityLabel={a11yLabel}
@@ -88,26 +137,45 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
           <>
             {overall != null && (
               <>
-                <Ionicons
-                  name="star"
-                  size={14}
-                  color={onImage ? colors.textOnImage : colors.accent}
-                />
+                {compactDecorated ? (
+                  <Ionicons
+                    name="star"
+                    size={14}
+                    color={onImage ? colors.textOnImage : colors.accent}
+                  />
+                ) : null}
                 <Text
-                  style={[styles.compactOverall, onImage && styles.onImage]}
+                  style={[
+                    styles.compactOverall,
+                    compactOverallSize === "title" &&
+                      styles.compactOverallTitle,
+                    onImage && styles.onImage,
+                  ]}
                 >
                   {format(overall)}
                 </Text>
               </>
             )}
             {taste != null && (
-              <Text style={[styles.compactMeta, onImage && styles.onImageMeta]}>
-                · Taste {format(taste)}
+              <Text
+                style={[
+                  styles.compactMeta,
+                  compactMetaSize === "subtitle" && styles.compactMetaSubtitle,
+                  onImage && styles.onImageMeta,
+                ]}
+              >
+                {compactDecorated ? "· " : ""}Taste {format(taste)}
               </Text>
             )}
             {presentation != null && (
-              <Text style={[styles.compactMeta, onImage && styles.onImageMeta]}>
-                · Presentation {format(presentation)}
+              <Text
+                style={[
+                  styles.compactMeta,
+                  compactMetaSize === "subtitle" && styles.compactMetaSubtitle,
+                  onImage && styles.onImageMeta,
+                ]}
+              >
+                {compactDecorated ? "· " : ""}Presentation {format(presentation)}
               </Text>
             )}
           </>
@@ -117,8 +185,14 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
           </Text>
         )}
         {countLabel && (
-          <Text style={[styles.compactMeta, onImage && styles.onImageMeta]}>
-            · {countLabel}
+          <Text
+            style={[
+              styles.compactMeta,
+              compactMetaSize === "subtitle" && styles.compactMetaSubtitle,
+              onImage && styles.onImageMeta,
+            ]}
+          >
+            {compactDecorated ? "· " : ""}{countLabel}
           </Text>
         )}
       </View>
@@ -127,7 +201,10 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
 
   return (
     <View
-      style={styles.container}
+      style={[
+        styles.container,
+        overallPlacement === "right" && styles.containerOverallRight,
+      ]}
       accessible
       accessibilityRole="summary"
       accessibilityLabel={a11yLabel}
@@ -136,22 +213,70 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
         <>
           {/* A single review has no aggregate, so the hero is skipped rather
               than rendered as a placeholder dash. */}
-          {overall != null && (
-            <View style={styles.overallRow}>
-              <Text style={[styles.overallValue, onImage && styles.onImage]}>
-                {format(overall)}
-              </Text>
-              <View style={styles.overallMeta}>
+          {showOverall && overall != null && (
+            <View
+              style={[
+                styles.overallRow,
+                overallPlacement === "right" && styles.overallRowRight,
+              ]}
+            >
+              <View style={styles.scoreColumn}>
+                {showOverallHeading ? (
+                  <Text
+                    style={[
+                      styles.overallHeading,
+                      onImage && styles.onImageMeta,
+                    ]}
+                  >
+                    Overall
+                  </Text>
+                ) : null}
                 <Text
-                  style={[styles.overallScale, onImage && styles.onImageMeta]}
+                  style={[
+                    styles.overallValue,
+                    overallSize === "title" && styles.overallValueTitle,
+                    overallSize === "small" && styles.overallValueSmall,
+                    onImage && styles.onImage,
+                  ]}
                 >
-                  out of {RATING_MAX}
+                  {format(overall)}
                 </Text>
-                <Text style={[styles.overallLabel, onImage && styles.onImage]}>
-                  Overall
-                </Text>
+                {countLabel && countPlacement === "score" ? (
+                  <Text
+                    style={[
+                      styles.ratingDetailText,
+                      onImage && styles.onImageMeta,
+                    ]}
+                  >
+                    {countLabel}
+                  </Text>
+                ) : null}
               </View>
-              {countLabel && (
+              {showOverallMeta ? (
+                <View
+                  style={[
+                    styles.overallMeta,
+                    countPlacement === "score" && styles.overallMetaTop,
+                  ]}
+                >
+                  <Text
+                    style={[styles.overallScale, onImage && styles.onImageMeta]}
+                  >
+                    out of {RATING_MAX}
+                  </Text>
+                  <Text style={[styles.overallLabel, onImage && styles.onImage]}>
+                    Overall
+                  </Text>
+                  {countLabel && countPlacement === "meta" ? (
+                    <Text
+                      style={[styles.countMeta, onImage && styles.onImageMeta]}
+                    >
+                      {countLabel}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+              {countLabel && countPlacement === "inline" && (
                 <Text
                   style={[styles.countInline, onImage && styles.onImageMeta]}
                 >
@@ -161,20 +286,29 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
             </View>
           )}
 
-          <View style={styles.bars}>
-            <RatingBar
-              label="Taste"
-              value={taste}
-              onImage={onImage}
-              active={animateBars}
-            />
-            <RatingBar
-              label="Presentation"
-              value={presentation}
-              onImage={onImage}
-              active={animateBars}
-            />
-          </View>
+          {showBreakdown && (
+            <View
+              style={[
+                styles.bars,
+                overallPlacement === "right" && styles.barsOverallRight,
+              ]}
+            >
+              <RatingBar
+                label="Taste"
+                value={taste}
+                onImage={onImage}
+                active={animateBars}
+                layout={breakdownLayout}
+              />
+              <RatingBar
+                label="Presentation"
+                value={presentation}
+                onImage={onImage}
+                active={animateBars}
+                layout={breakdownLayout}
+              />
+            </View>
+          )}
         </>
       ) : (
         <Text style={[styles.emptyText, onImage && styles.onImageMeta]}>
@@ -182,7 +316,7 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
         </Text>
       )}
 
-      {countLabel && overall == null && (
+      {countLabel && (!showOverall || overall == null) && (
         <Text style={[styles.countText, onImage && styles.onImageMeta]}>
           {countLabel}
         </Text>
@@ -196,11 +330,13 @@ const RatingBar = ({
   value,
   onImage,
   active,
+  layout,
 }: {
   label: string;
   value?: number | null;
   onImage: boolean;
   active: boolean;
+  layout: "inline" | "stacked";
 }) => {
   const styles = useStyles();
   const pct = value == null ? 0 : Math.max(0, Math.min(1, value / RATING_MAX));
@@ -227,6 +363,54 @@ const RatingBar = ({
     return () => animation.stop();
   }, [active, pct, fill]);
 
+  const barTrack = (
+    <View
+      style={[
+        styles.barTrack,
+        layout === "inline" && styles.inlineBarTrack,
+        layout === "stacked" && styles.stackedBarTrack,
+        onImage && styles.barTrackOnImage,
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.barFill,
+          onImage && styles.barFillOnImage,
+          {
+            width: fill.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["0%", "100%"],
+            }),
+          },
+        ]}
+      />
+    </View>
+  );
+
+  if (layout === "stacked") {
+    return (
+      <View
+        style={styles.stackedBar}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={styles.stackedBarHeader}>
+          <Text
+            style={[styles.ratingDetailText, onImage && styles.onImageMeta]}
+          >
+            {label}
+          </Text>
+          <Text
+            style={[styles.stackedBarValue, onImage && styles.onImage]}
+          >
+            {format(value) ?? "—"}
+          </Text>
+        </View>
+        {barTrack}
+      </View>
+    );
+  }
+
   return (
     // The parent block already carries a composed label; hide the pieces so
     // the values aren't announced twice.
@@ -236,25 +420,16 @@ const RatingBar = ({
       importantForAccessibility="no-hide-descendants"
     >
       <Text
-        style={[styles.barLabel, onImage && styles.onImageMeta]}
+        style={[
+          styles.ratingDetailText,
+          styles.barLabel,
+          onImage && styles.onImageMeta,
+        ]}
         numberOfLines={1}
       >
         {label}
       </Text>
-      <View style={[styles.barTrack, onImage && styles.barTrackOnImage]}>
-        <Animated.View
-          style={[
-            styles.barFill,
-            onImage && styles.barFillOnImage,
-            {
-              width: fill.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["0%", "100%"],
-              }),
-            },
-          ]}
-        />
-      </View>
+      {barTrack}
       <Text style={[styles.barValue, onImage && styles.onImage]}>
         {format(value) ?? "—"}
       </Text>
@@ -266,18 +441,47 @@ const useStyles = makeStyles((t) => ({
   container: {
     gap: t.spacing.md,
   },
+  containerOverallRight: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+  },
   overallRow: {
+    width: "100%" as const,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
+  },
+  overallRowRight: {
+    width: "auto" as const,
+    order: 2,
+    flexShrink: 0,
   },
   overallValue: {
     ...t.typography.metricLarge,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
+  overallValueTitle: {
+    ...t.typography.title,
+    fontSize: 24,
+  },
+  overallValueSmall: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  overallHeading: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+    lineHeight: 18,
+  },
+  scoreColumn: {
+    alignItems: "flex-start" as const,
+  },
   overallMeta: {
     justifyContent: "center" as const,
+  },
+  overallMetaTop: {
+    alignSelf: "flex-start" as const,
   },
   overallScale: {
     ...t.typography.caption,
@@ -290,22 +494,45 @@ const useStyles = makeStyles((t) => ({
   bars: {
     gap: t.spacing.sm,
   },
+  barsOverallRight: {
+    order: 1,
+    flex: 1,
+    minWidth: 0,
+  },
   barRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
   },
-  barLabel: {
+  stackedBar: {
+    gap: t.spacing.xs,
+  },
+  stackedBarHeader: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.sm,
+  },
+  ratingDetailText: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
+    lineHeight: 18,
+  },
+  barLabel: {
     width: 96,
   },
   barTrack: {
-    flex: 1,
     height: 8,
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.ratingTrack,
     overflow: "hidden" as const,
+  },
+  inlineBarTrack: {
+    flex: 1,
+  },
+  stackedBarTrack: {
+    width: "100%" as const,
+    alignSelf: "stretch" as const,
   },
   barTrackOnImage: {
     backgroundColor: "rgba(255,255,255,0.25)",
@@ -326,6 +553,12 @@ const useStyles = makeStyles((t) => ({
     textAlign: "right" as const,
     fontVariant: ["tabular-nums"] as const,
   },
+  stackedBarValue: {
+    ...t.typography.caption,
+    fontWeight: "700" as const,
+    color: t.colors.text,
+    fontVariant: ["tabular-nums"] as const,
+  },
   countText: {
     ...t.typography.caption,
     color: t.colors.textMuted,
@@ -334,6 +567,10 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     color: t.colors.textSecondary,
     marginLeft: "auto" as const,
+  },
+  countMeta: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
   },
   emptyText: {
     ...t.typography.body,
@@ -345,19 +582,34 @@ const useStyles = makeStyles((t) => ({
     flexWrap: "wrap" as const,
     gap: t.spacing.xs,
   },
+  compactStack: {
+    flexDirection: "column" as const,
+    alignItems: "flex-end" as const,
+    gap: 2,
+  },
   compactOverall: {
     ...t.typography.bodyStrong,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
+  compactOverallTitle: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: "600" as const,
+  },
   compactMeta: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
+  },
+  compactMetaSubtitle: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   onImage: {
     color: t.colors.textOnImage,
   },
   onImageMeta: {
+    fontSize: 14,
     color: "rgba(255,255,255,0.85)",
   },
 }));

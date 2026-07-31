@@ -12,6 +12,8 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
+import Regulars from "@/components/Regulars";
+import { getRegularsByLocation } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -221,7 +223,15 @@ export default function DiscoverTabs({
           })
           .slice(0, 20);
 
-        setLocations(sortedLocations);
+        const regularsByLocation = await getRegularsByLocation(
+          sortedLocations.map((location) => location.id)
+        );
+        setLocations(
+          sortedLocations.map((location) => ({
+            ...location,
+            regulars: regularsByLocation.get(String(location.id)) ?? [],
+          }))
+        );
       } else {
         // Query locations table directly to include locations with no reviews
         // Use a left join to get review counts and ratings
@@ -305,7 +315,15 @@ export default function DiscoverTabs({
             };
           }) || [];
 
-        setLocations(processedLocations);
+        const regularsByLocation = await getRegularsByLocation(
+          processedLocations.map((location) => location.id)
+        );
+        setLocations(
+          processedLocations.map((location) => ({
+            ...location,
+            regulars: regularsByLocation.get(String(location.id)) ?? [],
+          }))
+        );
       }
     } catch (error) {
       console.error("Error fetching locations:", error);
@@ -391,17 +409,19 @@ export default function DiscoverTabs({
               {formatCityRegion(stripNameFromAddress(item.name, item.address))}
             </Text>
           )}
-          {/* Same RatingSummary as the place profile and map sheet — the
-              rating circle here was the last of the old design. */}
-          <View style={styles.resultRating}>
-            <RatingSummary
-              variant="compact"
-              overall={item.rating}
-              reviewCount={item.total_ratings ?? 0}
-            />
-          </View>
+          <Regulars regulars={item.regulars} variant="compact" />
         </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        <View style={styles.resultRating}>
+          <RatingSummary
+            variant="compact"
+            overall={item.rating}
+            reviewCount={item.total_ratings ?? 0}
+            compactDecorated={false}
+            compactLayout="stacked"
+            compactOverallSize="title"
+            compactMetaSize="subtitle"
+          />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -684,19 +704,24 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   resultRating: {
-    marginTop: t.spacing.xs,
+    alignItems: "flex-end" as const,
+    alignSelf: "flex-start" as const,
+    marginLeft: t.spacing.md,
+    flexShrink: 0,
   },
   textContainer: {
     flex: 1,
   },
   resultTitle: {
     fontSize: 16,
+    lineHeight: 20,
     fontWeight: "600" as const,
     color: t.colors.text,
     marginBottom: 2,
   },
   resultSubtitle: {
     fontSize: 14,
+    lineHeight: 18,
     color: t.colors.textSecondary,
   },
   profileStats: {

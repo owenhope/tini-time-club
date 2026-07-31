@@ -5,10 +5,10 @@ import {
   FlatList,
   Pressable,
   Modal,
-  Dimensions,
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  useWindowDimensions,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
 const COLUMNS = 3;
 const GAP = 2;
@@ -76,43 +77,65 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   // hierarchy, so SafeAreaView inside it gets zero insets and the bar rode up
   // under the status bar.
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [active, setActive] = useState<Review | null>(null);
 
   const tileSize =
-    (Dimensions.get("window").width - GAP * (COLUMNS - 1)) / COLUMNS;
+    (windowWidth - GAP * (COLUMNS - 1)) / COLUMNS;
 
   const renderTile = useCallback(
-    ({ item, index }: { item: Review; index: number }) => (
-      <Pressable
-        onPress={() => setActive(item)}
-        style={({ pressed }) => [
-          styles.tile,
-          {
-            width: tileSize,
-            height: tileSize,
-            marginRight: (index + 1) % COLUMNS === 0 ? 0 : GAP,
-          },
-          pressed && styles.tilePressed,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={
-          item.location?.name
-            ? `Review at ${item.location.name}`
-            : "Open review"
-        }
-        accessibilityHint="Opens the full review"
-      >
-        <ExpoImage
-          source={{ uri: item.image_url }}
-          style={styles.tileImage}
-          contentFit="cover"
-          transition={150}
-          cachePolicy="memory-disk"
-          recyclingKey={String(item.id)}
-        />
-      </Pressable>
-    ),
-    [styles, tileSize]
+    ({ item, index }: { item: Review; index: number }) => {
+      const overallScore = calculateOverallRating(
+        item.taste,
+        item.presentation
+      );
+      const scoreLabel = formatRating(overallScore);
+      const locationLabel = item.location?.name
+        ? `Review at ${item.location.name}`
+        : "Open review";
+
+      return (
+        <Pressable
+          onPress={() => setActive(item)}
+          style={({ pressed }) => [
+            styles.tile,
+            {
+              width: tileSize,
+              height: tileSize,
+              marginRight: (index + 1) % COLUMNS === 0 ? 0 : GAP,
+            },
+            pressed && styles.tilePressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            overallScore == null
+              ? locationLabel
+              : `${locationLabel}, overall score ${scoreLabel}`
+          }
+          accessibilityHint="Opens the full review"
+        >
+          <ExpoImage
+            source={{ uri: item.image_url }}
+            style={styles.tileImage}
+            contentFit="cover"
+            transition={150}
+            cachePolicy="memory-disk"
+            recyclingKey={String(item.id)}
+          />
+          {overallScore != null ? (
+            <View style={styles.tileScore} accessibilityElementsHidden>
+              <Ionicons
+                name="star"
+                size={11}
+                color={colors.textOnImage}
+              />
+              <Text style={styles.tileScoreText}>{scoreLabel}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      );
+    },
+    [colors.textOnImage, styles, tileSize]
   );
 
   return (
@@ -210,6 +233,7 @@ const useStyles = makeStyles((t) => ({
   },
   tile: {
     backgroundColor: t.colors.imagePlaceholder,
+    position: "relative" as const,
   },
   tilePressed: {
     opacity: 0.75,
@@ -217,6 +241,26 @@ const useStyles = makeStyles((t) => ({
   tileImage: {
     width: "100%" as const,
     height: "100%" as const,
+  },
+  tileScore: {
+    position: "absolute" as const,
+    top: 6,
+    right: 6,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.scrim,
+  },
+  tileScoreText: {
+    ...t.typography.label,
+    color: t.colors.textOnImage,
+    fontVariant: ["tabular-nums"] as const,
+    textShadowColor: t.colors.overlay,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   sheet: {
     flex: 1,

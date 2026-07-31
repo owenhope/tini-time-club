@@ -21,7 +21,27 @@ import {
 } from "@/utils/locationUtils";
 import { makeStyles, useTheme } from "@/theme";
 
-const LocationInput = ({ control }: { control: any }) => {
+export interface LocationInputValue {
+  name: string;
+  address?: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  place_id: string;
+}
+
+interface LocationInputProps {
+  control: any;
+  disabled?: boolean;
+  onLocationSelected?: (location: LocationInputValue) => void;
+}
+
+const LocationInput = ({
+  control,
+  disabled = false,
+  onLocationSelected,
+}: LocationInputProps) => {
   const styles = useStyles();
   const { colors } = useTheme();
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -32,6 +52,8 @@ const LocationInput = ({ control }: { control: any }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchQueryRef = useRef("");
+  const hasAppliedLocationRef = useRef(false);
 
   // Get user location on mount
   useEffect(() => {
@@ -40,7 +62,18 @@ const LocationInput = ({ control }: { control: any }) => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted" || !mounted) return;
-        const currentLocation = await Location.getCurrentPositionAsync({});
+
+        const lastKnownLocation = await Location.getLastKnownPositionAsync({
+          maxAge: 5 * 60 * 1000,
+        });
+        if (lastKnownLocation && mounted) {
+          setLocation(lastKnownLocation);
+          fetchNearbyPlaces(lastKnownLocation);
+        }
+
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
         if (mounted) {
           setLocation(currentLocation);
           fetchNearbyPlaces(currentLocation);
@@ -112,9 +145,12 @@ const LocationInput = ({ control }: { control: any }) => {
 
         // Text search (finds places anywhere)
         try {
+          const locationBias = location
+            ? `&location=${location.coords.latitude},${location.coords.longitude}&radius=10000`
+            : "";
           const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
             query
-          )}&key=${GOOGLE_MAPS_API_KEY}`;
+          )}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
           const response = await fetch(url);
           const data = await response.json();
           (data.results || []).forEach((place: any) => {
@@ -195,10 +231,21 @@ const LocationInput = ({ control }: { control: any }) => {
     [location]
   );
 
+  useEffect(() => {
+    if (!location || hasAppliedLocationRef.current) return;
+    hasAppliedLocationRef.current = true;
+
+    const activeQuery = searchQueryRef.current;
+    if (activeQuery.length < 2) return;
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    performSearch(activeQuery);
+  }, [location, performSearch]);
+
   // Debounced search handler
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
+      searchQueryRef.current = query;
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
       if (query.length < 2) {
         setSearchResults([]);
@@ -220,6 +267,7 @@ const LocationInput = ({ control }: { control: any }) => {
 
   const handleClearSearch = () => {
     setSearchQuery("");
+    searchQueryRef.current = "";
     setSearchResults([]);
     setIsSearching(false);
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -234,6 +282,8 @@ const LocationInput = ({ control }: { control: any }) => {
     <ScrollView
       style={styles.placesContainer}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
       {places.map((place) => {
         const placeName = place.name || "";
@@ -257,7 +307,7 @@ const LocationInput = ({ control }: { control: any }) => {
               if (selected) {
                 onSelect(null);
               } else if (placeLocation) {
-                onSelect({
+                const nextLocation: LocationInputValue = {
                   name: placeName,
                   address: place.vicinity || place.formatted_address,
                   coordinates: {
@@ -265,9 +315,12 @@ const LocationInput = ({ control }: { control: any }) => {
                     longitude: placeLocation.lng,
                   },
                   place_id: place.place_id, // Store place_id for fetching details later
-                });
+                };
+                onSelect(nextLocation);
+                onLocationSelected?.(nextLocation);
               }
             }}
+            disabled={disabled}
           >
             <View style={styles.placeContent}>
               <View style={styles.placeTextContainer}>
@@ -331,11 +384,13 @@ const LocationInput = ({ control }: { control: any }) => {
               value={searchQuery}
               onChangeText={handleSearch}
               returnKeyType="search"
+              editable={!disabled}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 style={styles.clearButton}
                 onPress={handleClearSearch}
+                disabled={disabled}
               >
                 <Ionicons
                   name="close-circle"

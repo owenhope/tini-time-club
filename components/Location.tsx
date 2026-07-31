@@ -7,11 +7,9 @@ import React, {
 } from "react";
 import {
   View,
-  Image,
   FlatList,
   Text,
   TouchableOpacity,
-  Pressable,
   ActivityIndicator,
   RefreshControl,
   Animated,
@@ -25,23 +23,20 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import imageCache from "@/utils/imageCache";
-import { RatingSummary, ProfileIdentity } from "@/components/shared";
+import { RatingSummary } from "@/components/shared";
 import useCollapsibleHeader, {
   COLLAPSE_RANGE,
 } from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { getPlaceDetailsByNameAndAddress } from "@/utils/locationUtils";
-import { Linking } from "react-native";
-import { makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import Regulars from "@/components/Regulars";
+import {
+  getRegularsByLocation,
+  type Regular,
+} from "@/services/regularsService";
 
 // Helper function to format price level
-
-// Constants
-const DIMENSIONS = {
-  avatar: 100,
-  ratingCircle: 50,
-} as const;
 
 interface LocationType {
   id: string;
@@ -65,20 +60,13 @@ const Location = () => {
   const router = useRouter();
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+  const [regulars, setRegulars] = useState<Regular[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const loadedLocationIdRef = useRef<string | null>(null);
-  const [placeDetails, setPlaceDetails] = useState<{
-    phoneNumber?: string;
-    website?: string;
-    priceLevel?: number;
-    types?: string[];
-  } | null>(null);
-  const [loadingPlaceDetails, setLoadingPlaceDetails] = useState(false);
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const {
     isCollapsed,
     progress: headerProgress,
@@ -155,15 +143,42 @@ const Location = () => {
         // over by headerLeft and headerRight, which are different widths, so
         // it sits off-centre.
         headerTitleAlign: "center",
-        headerRight: () => {
-          if (
-            displayLocation &&
-            "lat" in displayLocation &&
+        headerRight: () => (
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/place-info",
+                  params: {
+                    locationId: displayLocation.id,
+                    name: displayLocation.name,
+                    address: displayLocation.address ?? "",
+                    lat:
+                      "lat" in displayLocation && displayLocation.lat
+                        ? displayLocation.lat.toString()
+                        : "",
+                    lon:
+                      "lon" in displayLocation && displayLocation.lon
+                        ? displayLocation.lon.toString()
+                        : "",
+                  },
+                })
+              }
+              style={styles.headerButton}
+              hitSlop={HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Location information"
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={24}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            {"lat" in displayLocation &&
             "lon" in displayLocation &&
             displayLocation.lat &&
-            displayLocation.lon
-          ) {
-            return (
+            displayLocation.lon ? (
               <TouchableOpacity
                 onPress={() => {
                   // navigate, not push: this switches to the Places tab (or
@@ -178,52 +193,46 @@ const Location = () => {
                     },
                   });
                 }}
-                style={styles.headerButtonRight}
+                style={styles.headerButton}
+                hitSlop={HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Show on map"
               >
                 <Ionicons name="location" size={24} color={colors.text} />
               </TouchableOpacity>
-            );
-          }
-          return null;
-        },
+            ) : null}
+          </View>
+        ),
       });
     }
   }, [displayLocation, headerCityRegion, navigation, router, colors, styles]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
-    setPlaceDetails(null);
     if (locationIdParam) {
       fetchSelectedLocation(locationIdParam);
     }
   }, [locationIdParam]);
 
-  // Fetch place details (phone, website) when location is loaded
   useEffect(() => {
-    if (displayLocation?.name) {
-      setLoadingPlaceDetails(true);
-      getPlaceDetailsByNameAndAddress(
-        displayLocation.name,
-        displayLocation.address
-      )
-        .then((details) => {
-          if (details) {
-            setPlaceDetails({
-              phoneNumber: details.phoneNumber,
-              website: details.website,
-              priceLevel: details.priceLevel,
-              types: details.types,
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching place details:", error);
-        })
-        .finally(() => {
-          setLoadingPlaceDetails(false);
-        });
-    }
-  }, [displayLocation?.name, displayLocation?.address]);
+    if (!displayLocation?.id) return;
+
+    let active = true;
+    getRegularsByLocation([displayLocation.id])
+      .then((grouped) => {
+        if (active) {
+          setRegulars(grouped.get(String(displayLocation.id)) ?? []);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching location regulars:", error);
+        if (active) setRegulars([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [displayLocation?.id]);
 
   const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
@@ -492,36 +501,6 @@ const Location = () => {
     }
   }, [displayLocation?.id, loadLocationReviews]);
 
-  const address = displayLocation?.address
-    ? stripNameFromAddress(
-        displayLocation?.name ?? "",
-        displayLocation?.address ?? ""
-      )
-    : null;
-
-  const openInMaps = () => {
-    if (displayLocation?.lat && displayLocation?.lon) {
-      Linking.openURL(
-        `https://maps.google.com/?q=${displayLocation.lat},${displayLocation.lon}`
-      );
-    } else if (address) {
-      Linking.openURL(
-        `https://maps.google.com/?q=${encodeURIComponent(address)}`
-      );
-    }
-  };
-
-  const prettyWebsite = placeDetails?.website
-    ? placeDetails.website.replace(/^https?:\/\//, "").replace(/\/$/, "")
-    : null;
-
-  const hasContact = !!(
-    placeDetails?.website ||
-    placeDetails?.phoneNumber ||
-    address ||
-    loadingPlaceDetails
-  );
-
   return (
     <View style={styles.container}>
       {/* The header glides between its full and compact form at the speed the
@@ -556,104 +535,29 @@ const Location = () => {
           ]}
         >
           <>
-            <View style={styles.ratingBlock}>
-              <RatingSummary
-                overall={displayLocation?.rating}
-                taste={displayLocation?.taste_avg}
-                presentation={displayLocation?.presentation_avg}
-                reviewCount={displayLocation?.total_ratings ?? 0}
-              />
-            </View>
-
-            {hasContact && (
-              <View style={styles.collapsible}>
-                <Pressable
-                  onPress={() => setDetailsExpanded((prev) => !prev)}
-                  style={({ pressed }: { pressed: boolean }) => [
-                    styles.disclosure,
-                    pressed && styles.disclosurePressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Contact details"
-                  accessibilityState={{ expanded: detailsExpanded }}
-                  accessibilityHint={
-                    detailsExpanded
-                      ? "Hides website, phone and address"
-                      : "Shows website, phone and address"
-                  }
-                >
-                  <Text style={styles.disclosureLabel}>Contact</Text>
-                  <Ionicons
-                    name={detailsExpanded ? "chevron-up" : "chevron-down"}
-                    size={18}
-                    color={colors.textSecondary}
+            <View style={styles.overview}>
+              <View style={styles.overviewColumns}>
+                <View style={styles.ratingBlock}>
+                  <RatingSummary
+                    overall={displayLocation?.rating}
+                    taste={displayLocation?.taste_avg}
+                    presentation={displayLocation?.presentation_avg}
+                    reviewCount={displayLocation?.total_ratings ?? 0}
+                    countPlacement="score"
+                    showOverallMeta={false}
+                    showOverallHeading
+                    overallPlacement="right"
+                    breakdownLayout="stacked"
                   />
-                </Pressable>
+                </View>
 
-                {detailsExpanded && (
-                  <View style={styles.contactLinks}>
-                    {prettyWebsite && (
-                      <Pressable
-                        onPress={() => Linking.openURL(placeDetails!.website!)}
-                        style={({ pressed }: { pressed: boolean }) => [
-                          styles.contactLinkHit,
-                          pressed && styles.disclosurePressed,
-                        ]}
-                        accessibilityRole="link"
-                        accessibilityLabel={`Open the website for ${
-                          displayLocation?.name ?? "this place"
-                        }`}
-                      >
-                        <Text style={styles.contactLink} numberOfLines={1}>
-                          {prettyWebsite}
-                        </Text>
-                      </Pressable>
-                    )}
-
-                    {placeDetails?.phoneNumber && (
-                      <Pressable
-                        onPress={() =>
-                          Linking.openURL(`tel:${placeDetails.phoneNumber}`)
-                        }
-                        style={({ pressed }: { pressed: boolean }) => [
-                          styles.contactLinkHit,
-                          pressed && styles.disclosurePressed,
-                        ]}
-                        accessibilityRole="link"
-                        accessibilityLabel={`Call ${
-                          displayLocation?.name ?? "this place"
-                        } at ${placeDetails.phoneNumber}`}
-                      >
-                        <Text style={styles.contactLink}>
-                          {placeDetails.phoneNumber}
-                        </Text>
-                      </Pressable>
-                    )}
-
-                    {address && (
-                      <Pressable
-                        onPress={openInMaps}
-                        style={({ pressed }: { pressed: boolean }) => [
-                          styles.contactLinkHit,
-                          pressed && styles.disclosurePressed,
-                        ]}
-                        accessibilityRole="link"
-                        accessibilityLabel={address}
-                        accessibilityHint="Opens this address in Maps"
-                      >
-                        <Text style={styles.contactLink}>{address}</Text>
-                      </Pressable>
-                    )}
-
-                    {loadingPlaceDetails && (
-                      <Text style={styles.loadingTextInline}>
-                        Loading contact info...
-                      </Text>
-                    )}
+                {regulars.length > 0 ? (
+                  <View style={styles.regularsBlock}>
+                    <Regulars regulars={regulars} variant="dense" />
                   </View>
-                )}
+                ) : null}
               </View>
-            )}
+            </View>
           </>
         </Animated.View>
 
@@ -746,11 +650,25 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.sm,
     justifyContent: "center" as const,
   },
-  ratingBlock: {
+  overview: {
     paddingHorizontal: t.spacing.lg,
   },
+  overviewColumns: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.xl,
+  },
+  ratingBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  regularsBlock: {
+    width: "42%" as const,
+    minWidth: 128,
+    maxWidth: 168,
+  },
   collapsible: {
-    gap: t.spacing.sm,
+    gap: t.spacing.xs,
   },
   collapsedRow: {
     flexDirection: "row" as const,
@@ -766,11 +684,16 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   contactLinks: {
-    paddingHorizontal: t.spacing.lg,
-    paddingBottom: t.spacing.sm,
+    marginHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    backgroundColor: t.colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    borderRadius: t.radius.sm,
   },
   contactLinkHit: {
-    minHeight: 44,
+    minHeight: 32,
     justifyContent: "center" as const,
   },
   contactLink: {
@@ -781,16 +704,15 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
-    minHeight: 44,
+    minHeight: 36,
     paddingHorizontal: t.spacing.lg,
   },
   disclosurePressed: {
     opacity: 0.6,
   },
   disclosureLabel: {
-    ...t.typography.label,
-    color: t.colors.textMuted,
-    textTransform: "uppercase" as const,
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
   },
   actions: {
     paddingHorizontal: t.spacing.lg,
@@ -896,8 +818,16 @@ const useStyles = makeStyles((t) => ({
     fontSize: 16,
     fontWeight: "600" as const,
   },
-  headerButtonRight: {
-    marginRight: 15,
+  headerButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 2,
+  },
+  headerActions: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
   },
   headerTitleContainer: {
     alignItems: "center" as const,

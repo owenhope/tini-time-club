@@ -29,6 +29,10 @@ import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
+import {
+  getRegularsByLocation,
+  type Regular,
+} from "@/services/regularsService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { makeStyles } from "@/theme";
@@ -58,6 +62,7 @@ interface MapLocation {
   taste_avg?: number | null;
   presentation_avg?: number | null;
   total_ratings?: number | null;
+  regulars?: Regular[];
 }
 
 interface MapBounds {
@@ -267,13 +272,27 @@ function Map() {
       if (error) {
         console.error("Error fetching locations in view:", error);
       } else {
-        fetchedBoundsRef.current = queryBounds;
-        setLocations(
-          (data ?? []).filter(
-            (location: MapLocation) =>
-              Number.isFinite(location.lat) && Number.isFinite(location.long)
-          )
+        const nextLocations = (data ?? []).filter(
+          (location: MapLocation) =>
+            Number.isFinite(location.lat) && Number.isFinite(location.long)
         );
+        fetchedBoundsRef.current = queryBounds;
+        setLocations(nextLocations);
+
+        try {
+          const regularsByLocation = await getRegularsByLocation(
+            nextLocations.map((location: MapLocation) => location.id)
+          );
+          if (requestId !== fetchRequestRef.current) return;
+          setLocations(
+            nextLocations.map((location: MapLocation) => ({
+              ...location,
+              regulars: regularsByLocation.get(String(location.id)) ?? [],
+            }))
+          );
+        } catch (regularsError) {
+          console.error("Error fetching map regulars:", regularsError);
+        }
       }
     }, FETCH_DEBOUNCE_MS);
 

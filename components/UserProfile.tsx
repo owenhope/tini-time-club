@@ -9,6 +9,8 @@ import {
   Animated,
   Platform,
   ActionSheetIOS,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -29,6 +31,15 @@ import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import ProfileContentTabs, {
+  type ProfileContentTab,
+} from "@/components/ProfileContentTabs";
+import RegularPlaceRow from "@/components/RegularPlaceRow";
+import {
+  getProfileRegularPlaces,
+  type ProfileRegularPlace,
+} from "@/services/regularsService";
+import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
 
 interface ProfileType {
   id: string;
@@ -39,6 +50,7 @@ interface ProfileType {
   favorite_types?: any;
   avatar_url?: string | null;
   is_verified?: boolean;
+  favorite_location_id?: number | null;
 }
 
 const UserProfile = () => {
@@ -60,6 +72,11 @@ const UserProfile = () => {
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
+  const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
+  const [loadingRegulars, setLoadingRegulars] = useState(false);
+  const [favoriteLocation, setFavoriteLocation] =
+    useState<FavoriteLocationValue | null>(null);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -494,9 +511,43 @@ const UserProfile = () => {
     return null;
   };
 
+  const loadRegularPlaces = async (profileId: string) => {
+    setLoadingRegulars(true);
+    try {
+      setRegularPlaces(await getProfileRegularPlaces(profileId));
+    } catch (error) {
+      console.error("Error loading profile regular places:", error);
+      setRegularPlaces([]);
+    } finally {
+      setLoadingRegulars(false);
+    }
+  };
+
+  const loadFavoriteLocation = async (locationId?: number | null) => {
+    if (!locationId) {
+      setFavoriteLocation(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("locations")
+      .select("id, name, address")
+      .eq("id", locationId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading profile favorite location:", error);
+      setFavoriteLocation(null);
+      return;
+    }
+    setFavoriteLocation(data);
+  };
+
   useEffect(() => {
     if (displayProfile && displayProfile.id) {
       loadUserReviews(displayProfile.id);
+      loadRegularPlaces(displayProfile.id);
+      loadFavoriteLocation(displayProfile.favorite_location_id);
     }
   }, [displayProfile]);
 
@@ -571,64 +622,116 @@ const UserProfile = () => {
   }
 
   const favoriteChips =
-    getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+    getFavoriteSpirits().length > 0 ||
+    getFavoriteTypes().length > 0 ||
+    favoriteLocation ? (
       <View style={styles.favoritesSection}>
-        <View style={styles.favoritesTagsContainer}>
-          {getFavoriteSpirits().map((spiritId: any) => (
-            <View key={`spirit-${spiritId}`} style={styles.tag}>
-              <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-            </View>
-          ))}
-          {getFavoriteTypes().map((typeId: any) => (
-            <View key={`type-${typeId}`} style={styles.tag}>
-              <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-            </View>
-          ))}
-        </View>
+        {getFavoriteSpirits().length > 0 || getFavoriteTypes().length > 0 ? (
+          <View style={styles.favoritesTagsContainer}>
+            {getFavoriteSpirits().map((spiritId: any) => (
+              <View key={`spirit-${spiritId}`} style={styles.tag}>
+                <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
+              </View>
+            ))}
+            {getFavoriteTypes().map((typeId: any) => (
+              <View key={`type-${typeId}`} style={styles.tag}>
+                <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {favoriteLocation ? (
+          <TouchableOpacity
+            onPress={() => router.push(`/places/${favoriteLocation.id}`)}
+            style={styles.favoriteLocationLink}
+            accessibilityRole="link"
+            accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
+          >
+            <Ionicons name="location" size={16} color={colors.accent} />
+            <Text style={styles.favoriteLocationText} numberOfLines={1}>
+              {favoriteLocation.name}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     ) : null;
 
   // Header scrolls with the grid rather than sitting fixed above it.
   const header = (
-    <ProfileHeader
-      profile={displayProfile}
-      reviewsCount={userReviews.length}
-      followersCount={followersCount}
-      followingCount={followingCount}
-      isOwnProfile={profile ? profile.id === displayProfile?.id : false}
-      doesFollow={doesFollow}
-      followPending={followPending}
-      isBlocked={isBlocked}
-      onFollowPress={toggleFollow}
-      onBlockPress={handleBlockUser}
-      onUnblockPress={handleUnblockUser}
-      onFollowersPress={() => router.push(`${pathname}/followers` as never)}
-      onFollowingPress={() => router.push(`${pathname}/following` as never)}
-    >
-      {favoriteChips}
-    </ProfileHeader>
+    <>
+      <ProfileHeader
+        profile={displayProfile}
+        reviewsCount={userReviews.length}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        isOwnProfile={profile ? profile.id === displayProfile?.id : false}
+        doesFollow={doesFollow}
+        followPending={followPending}
+        isBlocked={isBlocked}
+        onFollowPress={toggleFollow}
+        onBlockPress={handleBlockUser}
+        onUnblockPress={handleUnblockUser}
+        onFollowersPress={() => router.push(`${pathname}/followers` as never)}
+        onFollowingPress={() => router.push(`${pathname}/following` as never)}
+      >
+        {favoriteChips}
+      </ProfileHeader>
+      <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
+    </>
   );
 
   return (
     <View style={styles.container}>
-      <ReviewGrid
-        reviews={userReviews}
-        header={header}
-        emptyComponent={renderEmpty()}
-        loading={loadingReviews}
-        refreshing={refreshingReviews}
-        onRefresh={() => {
-          if (displayProfile?.id) loadUserReviews(displayProfile.id, true);
-        }}
-        onEdit={(review) =>
-          profile && String(profile.id) === String(review.user_id)
-            ? router.push(`/edit-caption?reviewId=${review.id}`)
-            : undefined
-        }
-        onShowComments={handleShowComments}
-        onCommentAdded={handleCommentAdded}
-        onCommentDeleted={handleCommentDeleted}
-      />
+      {activeTab === "reviews" ? (
+        <ReviewGrid
+          reviews={userReviews}
+          header={header}
+          emptyComponent={renderEmpty()}
+          loading={loadingReviews}
+          refreshing={refreshingReviews}
+          onRefresh={() => {
+            if (displayProfile?.id) loadUserReviews(displayProfile.id, true);
+          }}
+          onEdit={(review) =>
+            profile && String(profile.id) === String(review.user_id)
+              ? router.push(`/edit-caption?reviewId=${review.id}`)
+              : undefined
+          }
+          onShowComments={handleShowComments}
+          onCommentAdded={handleCommentAdded}
+          onCommentDeleted={handleCommentDeleted}
+        />
+      ) : (
+        <FlatList
+          data={regularPlaces}
+          keyExtractor={(place) => String(place.location_id)}
+          renderItem={({ item }) => <RegularPlaceRow place={item} />}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              {loadingRegulars ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={styles.emptyText}>
+                  This member is not a top-three regular anywhere yet.
+                </Text>
+              )}
+            </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={loadingRegulars}
+              onRefresh={() =>
+                displayProfile?.id && loadRegularPlaces(displayProfile.id)
+              }
+              colors={[colors.accent]}
+              tintColor={colors.accent}
+            />
+          }
+          contentContainerStyle={styles.regularsList}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {selectedCommentReview && (
         <CommentsSlider
@@ -734,6 +837,7 @@ const useStyles = makeStyles((t) => ({
   },
   favoritesSection: {
     paddingHorizontal: t.spacing.lg,
+    gap: t.spacing.sm,
   },
   tagsSection: {
     paddingHorizontal: t.spacing.lg,
@@ -757,6 +861,20 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
     color: t.colors.onAccent,
     textTransform: "capitalize" as const,
+  },
+  favoriteLocationLink: {
+    minHeight: 32,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+  },
+  favoriteLocationText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.accent,
+    flexShrink: 1,
+  },
+  regularsList: {
+    paddingBottom: t.spacing.xxl,
   },
 }));
 

@@ -26,6 +26,7 @@ import {
   formatRelativeDate,
   formatCityRegion,
 } from "@/utils/helpers";
+import { calculateOverallRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
@@ -393,46 +394,65 @@ const ReviewOverlay = memo(
     animateRatings: boolean;
   }) => {
     const styles = useStyles();
+    const overallScore = calculateOverallRating(
+      review.taste,
+      review.presentation
+    );
 
     return (
       <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-        <Link href={`/places/${review.location?.id}`} asChild>
-          <TouchableOpacity style={styles.locationLinkContainer}>
-            <Text style={styles.locationName}>
-              {review.location?.name || "N/A"}
-              {"\u00a0"}
-              {/* Raw brand lavender rather than colors.accent: this chevron
-                  sits on the dark photo scrim in both schemes. */}
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={BRAND.lavender}
-              />
+        <View style={styles.venueBlock}>
+          <Link href={`/places/${review.location?.id}`} asChild>
+            <TouchableOpacity style={styles.locationLinkContainer}>
+              <Text style={styles.locationName}>
+                {review.location?.name || "N/A"}
+                {"\u00a0"}
+                {/* Raw brand lavender rather than colors.accent: this chevron
+                    sits on the dark photo scrim in both schemes. */}
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={BRAND.lavender}
+                />
+              </Text>
+            </TouchableOpacity>
+          </Link>
+          {review.location?.address && (
+            <Text style={styles.locationAddress}>
+              {formatCityRegion(
+                stripNameFromAddress(
+                  review.location.name,
+                  review.location.address
+                )
+              )}
             </Text>
-          </TouchableOpacity>
-        </Link>
-        {review.location?.address && (
-          <Text style={styles.locationAddress}>
-            {formatCityRegion(
-              stripNameFromAddress(
-                review.location.name,
-                review.location.address
-              )
-            )}
-          </Text>
-        )}
-        <Text style={styles.spiritText}>
-          {review.spirit?.name || "N/A"}, {review.type?.name || "N/A"}
-        </Text>
-        <View style={styles.overlayRatings}>
-          {/* Same RatingSummary the place profile uses, in its on-image tone.
-              No overall hero and no review count: a single review has neither,
-              and inventing an average here would imply data that isn't stored. */}
+          )}
+        </View>
+
+        <View style={styles.reviewRatingBlock}>
+          <View style={styles.reviewAttributes}>
+            <View style={styles.reviewAttribute}>
+              <Text style={styles.attributeHeading}>Spirit</Text>
+              <Text style={styles.spiritText}>
+                {review.spirit?.name || "N/A"}
+              </Text>
+            </View>
+            <View style={styles.reviewAttribute}>
+              <Text style={styles.attributeHeading}>Type</Text>
+              <Text style={styles.spiritText}>
+                {review.type?.name || "N/A"}
+              </Text>
+            </View>
+          </View>
           <RatingSummary
-            overall={null}
+            overall={overallScore}
             taste={review.taste}
             presentation={review.presentation}
             showReviewCount={false}
+            showOverallMeta={false}
+            showOverallHeading
+            overallPlacement="right"
+            breakdownLayout="stacked"
             tone="onImage"
             animateBars={animateRatings}
           />
@@ -582,6 +602,8 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prevProps.review.id === nextProps.review.id &&
     prevProps.review.comment === nextProps.review.comment &&
     prevProps.review.image_url === nextProps.review.image_url &&
+    prevProps.review.taste === nextProps.review.taste &&
+    prevProps.review.presentation === nextProps.review.presentation &&
     prevProps.review._commentPatch === nextProps.review._commentPatch &&
     // Aggregates now arrive with the row; without these a refreshed feed
     // would keep rendering stale like/comment counts.
@@ -969,10 +991,6 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     gap: t.spacing.sm,
   },
-  overlayRatings: {
-    marginTop: t.spacing.sm,
-    maxWidth: 260,
-  },
   overlay: {
     position: "absolute" as const,
     top: 0,
@@ -982,13 +1000,36 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.overlay,
     padding: t.spacing.xl - 4,
     justifyContent: "flex-end" as const,
+    gap: t.spacing.lg,
+  },
+  venueBlock: {
+    gap: t.spacing.xs,
+  },
+  reviewRatingBlock: {
+    width: "100%" as const,
+    maxWidth: 280,
+    gap: t.spacing.md,
+  },
+  reviewAttributes: {
+    flexDirection: "row" as const,
+    gap: t.spacing.md,
+    flexShrink: 1,
+    alignSelf: "flex-start" as const,
+  },
+  reviewAttribute: {
+    flexShrink: 1,
+    alignItems: "flex-start" as const,
+  },
+  attributeHeading: {
+    ...t.typography.caption,
+    lineHeight: 18,
+    color: "rgba(255,255,255,0.85)",
   },
   locationLinkContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     alignSelf: "flex-start" as const,
     maxWidth: "100%" as const,
-    marginBottom: t.spacing.xs,
   },
   // Everything below sits on the photo scrim, so it stays light in both
   // schemes rather than following colors.text.
@@ -1001,7 +1042,6 @@ const useStyles = makeStyles((t) => ({
   locationAddress: {
     fontSize: 14,
     color: t.colors.textOnImage,
-    marginBottom: t.spacing.sm,
   },
   ratingLabel: {
     fontWeight: "bold" as const,
@@ -1023,7 +1063,8 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.raised,
   },
   spiritText: {
-    fontSize: 16,
+    fontSize: 18,
+    lineHeight: 22,
     fontWeight: "bold" as const,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,

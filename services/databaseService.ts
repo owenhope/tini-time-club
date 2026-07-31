@@ -512,6 +512,12 @@ class DatabaseService {
       throw new Error("Location data is required");
     }
 
+    const isMissingPlaceIdColumn = (error: any) =>
+      error?.code === "42703" &&
+      typeof error.message === "string" &&
+      error.message.includes("locations.place_id");
+    let placeIdSupported = true;
+
     // Always try to find existing location by place_id first (most reliable)
     // This is now the primary matching method since all locations have place_id
     if (locationData.place_id) {
@@ -521,7 +527,13 @@ class DatabaseService {
         .eq("place_id", locationData.place_id)
         .maybeSingle();
 
-      if (placeIdError) throw placeIdError;
+      if (placeIdError) {
+        if (isMissingPlaceIdColumn(placeIdError)) {
+          placeIdSupported = false;
+        } else {
+          throw placeIdError;
+        }
+      }
 
       if (existingByPlaceId) {
         return existingByPlaceId.id;
@@ -542,13 +554,17 @@ class DatabaseService {
 
       if (existing) {
         // If we found by name/address but have a place_id, update it for future matches
-        if (locationData.place_id) {
+        if (locationData.place_id && placeIdSupported) {
           const { error: backfillError } = await supabase
             .from("locations")
             .update({ place_id: locationData.place_id })
             .eq("id", existing.id);
           if (backfillError) {
-            console.error("Error backfilling place_id:", backfillError);
+            if (isMissingPlaceIdColumn(backfillError)) {
+              placeIdSupported = false;
+            } else {
+              console.error("Error backfilling place_id:", backfillError);
+            }
           }
         }
         return existing.id;
@@ -560,17 +576,32 @@ class DatabaseService {
       ...locationData,
       created_by: userId,
     };
+    if (!placeIdSupported) {
+      delete insertData.place_id;
+    }
 
     // With a place_id, upsert against the unique index so two concurrent
     // submissions for the same bar resolve to one row instead of racing
     // between the lookup above and this insert.
-    if (locationData.place_id) {
+    if (locationData.place_id && placeIdSupported) {
       const { data, error } = await supabase
         .from("locations")
         .upsert(insertData, { onConflict: "place_id" })
         .select("id")
         .single();
 
+      if (error && isMissingPlaceIdColumn(error)) {
+        const fallbackInsertData = { ...insertData };
+        delete fallbackInsertData.place_id;
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from("locations")
+          .insert(fallbackInsertData)
+          .select("id")
+          .single();
+
+        if (fallbackError) throw fallbackError;
+        return fallbackData.id;
+      }
       if (error) throw error;
       return data.id;
     }

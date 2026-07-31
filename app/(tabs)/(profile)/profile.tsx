@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -30,6 +31,15 @@ import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
 import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import ProfileContentTabs, {
+  type ProfileContentTab,
+} from "@/components/ProfileContentTabs";
+import RegularPlaceRow from "@/components/RegularPlaceRow";
+import {
+  getProfileRegularPlaces,
+  type ProfileRegularPlace,
+} from "@/services/regularsService";
+import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
 
 const Profile = () => {
   const styles = useStyles();
@@ -48,6 +58,11 @@ const Profile = () => {
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [spirits, setSpirits] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
+  const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
+  const [loadingRegulars, setLoadingRegulars] = useState(false);
+  const [favoriteLocation, setFavoriteLocation] =
+    useState<FavoriteLocationValue | null>(null);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -296,14 +311,22 @@ const Profile = () => {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No reviews available.</Text>
+      <View style={styles.emptyCtaIcon}>
+        <Ionicons name="wine-outline" size={28} color={colors.accent} />
+      </View>
+      <Text style={styles.emptyCtaTitle}>Share your first Martini</Text>
+      <TouchableOpacity
+        style={styles.reviewLink}
+        onPress={() => router.navigate("/review")}
+        hitSlop={HIT_SLOP}
+        accessibilityRole="link"
+        accessibilityLabel="Write a review"
+        accessibilityHint="Opens the new review form"
+      >
+        <Text style={styles.reviewLinkText}>Write a review</Text>
+      </TouchableOpacity>
     </View>
   );
-
-  useEffect(() => {
-    if (profile?.id) loadUserReviews(profile.id);
-    loadSpiritsAndTypes();
-  }, [profile]);
 
   const loadSpiritsAndTypes = async () => {
     try {
@@ -317,6 +340,47 @@ const Profile = () => {
       console.error("Error loading spirits and types:", error);
     }
   };
+
+  const loadRegularPlaces = async (profileId: string) => {
+    setLoadingRegulars(true);
+    try {
+      setRegularPlaces(await getProfileRegularPlaces(profileId));
+    } catch (error) {
+      console.error("Error loading regular places:", error);
+      setRegularPlaces([]);
+    } finally {
+      setLoadingRegulars(false);
+    }
+  };
+
+  const loadFavoriteLocation = async (locationId?: number | null) => {
+    if (!locationId) {
+      setFavoriteLocation(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("locations")
+      .select("id, name, address")
+      .eq("id", locationId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading favorite location:", error);
+      setFavoriteLocation(null);
+      return;
+    }
+    setFavoriteLocation(data);
+  };
+
+  useEffect(() => {
+    if (profile?.id) {
+      loadUserReviews(profile.id);
+      loadRegularPlaces(profile.id);
+    }
+    loadFavoriteLocation(profile?.favorite_location_id);
+    loadSpiritsAndTypes();
+  }, [profile]);
 
   const getSpiritName = (id: number | string) => {
     const spirit = spirits.find((s) => String(s.id) === String(id));
@@ -372,6 +436,8 @@ const Profile = () => {
 
         // Refresh reviews
         loadUserReviews(profile.id);
+        loadRegularPlaces(profile.id);
+        loadFavoriteLocation(profile.favorite_location_id);
       };
 
       refreshData();
@@ -415,49 +481,123 @@ const Profile = () => {
           <Text style={styles.ctaText}>Add a bio</Text>
         </TouchableOpacity>
       )}
+      {favoriteLocation ? (
+        <TouchableOpacity
+          onPress={() => router.push(`/places/${favoriteLocation.id}`)}
+          style={styles.favoriteLocationLink}
+          accessibilityRole="link"
+          accessibilityLabel={`Favorite location, ${favoriteLocation.name}`}
+        >
+          <Ionicons name="location" size={16} color={colors.accent} />
+          <Text style={styles.favoriteLocationText} numberOfLines={1}>
+            {favoriteLocation.name}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: "/favorite-location",
+              params: {
+                hasFavoriteLocation: "0",
+                saveImmediately: "1",
+              },
+            })
+          }
+          style={styles.ctaContainer}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Add a favorite location"
+        >
+          <Text style={styles.ctaText}>Add a favorite location</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
   // The header is the list header rather than a sibling, so the whole profile
   // scrolls away and the grid gets the full screen.
   const header = (
-    <ProfileHeader
-      profile={profile}
-      reviewsCount={userReviews.length}
-      followersCount={followersCount}
-      followingCount={followingCount}
-      isOwnProfile={true}
-      onAvatarPress={pickImage}
-      avatarLoading={avatarLoading}
-      avatarError={avatarError}
-      onFollowersPress={() =>
-        profile?.username &&
-        router.push(`/users/${profile.username}/followers`)
-      }
-      onFollowingPress={() =>
-        profile?.username &&
-        router.push(`/users/${profile.username}/following`)
-      }
-    >
-      {favoriteChips}
-    </ProfileHeader>
+    <>
+      <ProfileHeader
+        profile={profile}
+        reviewsCount={userReviews.length}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        isOwnProfile={true}
+        onAvatarPress={pickImage}
+        avatarLoading={avatarLoading}
+        avatarError={avatarError}
+        onFollowersPress={() =>
+          profile?.username &&
+          router.push(`/users/${profile.username}/followers`)
+        }
+        onFollowingPress={() =>
+          profile?.username &&
+          router.push(`/users/${profile.username}/following`)
+        }
+      >
+        {favoriteChips}
+      </ProfileHeader>
+      <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
+    </>
   );
 
   return (
     <View style={styles.container}>
-      <ReviewGrid
-        reviews={userReviews}
-        header={header}
-        emptyComponent={renderEmpty()}
-        loading={loadingReviews}
-        refreshing={refreshingReviews}
-        onRefresh={() => profile?.id && loadUserReviews(profile.id, true)}
-        canDelete={true}
-        onDelete={(review) => confirmDeleteReview(review.id)}
-        onEdit={(review) =>
-          router.push(`/edit-caption?reviewId=${review.id}`)
-        }
-      />
+      {activeTab === "reviews" ? (
+        <ReviewGrid
+          reviews={userReviews}
+          header={header}
+          emptyComponent={renderEmpty()}
+          loading={loadingReviews}
+          refreshing={refreshingReviews}
+          onRefresh={() => profile?.id && loadUserReviews(profile.id, true)}
+          canDelete={true}
+          onDelete={(review) => confirmDeleteReview(review.id)}
+          onEdit={(review) =>
+            router.push(`/edit-caption?reviewId=${review.id}`)
+          }
+        />
+      ) : (
+        <FlatList
+          data={regularPlaces}
+          keyExtractor={(place) => String(place.location_id)}
+          renderItem={({ item }) => <RegularPlaceRow place={item} />}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              {loadingRegulars ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <View style={styles.regularsEmptyContent}>
+                  <View style={styles.emptyCtaIcon}>
+                    <Ionicons
+                      name="ribbon-outline"
+                      size={28}
+                      color={colors.accent}
+                    />
+                  </View>
+                  <Text style={styles.regularsEmptyBody}>
+                    Review the same place often to earn a spot among its top
+                    three Regulars.
+                  </Text>
+                </View>
+              )}
+            </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={loadingRegulars}
+              onRefresh={() => profile?.id && loadRegularPlaces(profile.id)}
+              colors={[colors.accent]}
+              tintColor={colors.accent}
+            />
+          }
+          contentContainerStyle={styles.regularsList}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {selectedReviewId && (
         <LikeSlider
@@ -526,10 +666,63 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.accent,
     fontWeight: "600" as const,
   },
+  favoriteLocationLink: {
+    minHeight: 32,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+  },
+  favoriteLocationText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.accent,
+    flexShrink: 1,
+  },
+  regularsList: {
+    paddingBottom: t.spacing.xxl,
+  },
   reviewsContainer: { flex: 1 },
   gridContent: { paddingBottom: 20 },
-  emptyContainer: { alignItems: "center" as const, padding: 20 },
-  emptyText: { fontSize: 16, color: t.colors.textSecondary },
+  emptyContainer: {
+    alignItems: "center" as const,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.xxl,
+    gap: t.spacing.md,
+  },
+  emptyCtaIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.accentSubtle,
+  },
+  emptyCtaTitle: {
+    ...t.typography.heading,
+    color: t.colors.text,
+    textAlign: "center" as const,
+  },
+  reviewLink: {
+    minHeight: 44,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.sm,
+  },
+  reviewLinkText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.accent,
+  },
+  regularsEmptyContent: {
+    width: "100%" as const,
+    maxWidth: 300,
+    alignItems: "center" as const,
+    gap: t.spacing.md,
+    paddingVertical: t.spacing.md,
+  },
+  regularsEmptyBody: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    lineHeight: 22,
+  },
   headerButton: {
     width: 44,
     height: 44,
