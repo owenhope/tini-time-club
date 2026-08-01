@@ -239,6 +239,51 @@ export const fetchAnalytics = async (days = 30): Promise<AnalyticsData> => {
   };
 };
 
+export interface AdminNotification {
+  id: string;
+  created_at: string;
+  body: string;
+  kind: string | null;
+  username: string | null;
+}
+
+export const fetchRecentNotifications = async (): Promise<
+  AdminNotification[]
+> => {
+  // notifications.user_id references auth.users, so there's no PostgREST
+  // relationship to profiles — resolve usernames in a second query.
+  const { data, error } = await db()
+    .from("notifications")
+    .select("id,created_at,body,kind,user_id")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+
+  const userIds = [...new Set((data ?? []).map((n) => n.user_id))];
+  const { data: profiles } = await db()
+    .from("profiles")
+    .select("id,username")
+    .in("id", userIds);
+  const usernames = new Map(
+    (profiles ?? []).map((p) => [p.id, p.username as string | null])
+  );
+
+  return (data ?? []).map((n) => ({
+    id: n.id,
+    created_at: n.created_at,
+    body: n.body,
+    kind: n.kind,
+    username: usernames.get(n.user_id) ?? null,
+  }));
+};
+
+export const fetchPushTokenCount = async (): Promise<number> => {
+  const { count } = await db()
+    .from("push_tokens")
+    .select("expo_push_token", { count: "exact", head: true });
+  return count ?? 0;
+};
+
 export const fetchProfiles = async (
   search?: string
 ): Promise<AdminProfile[]> => {

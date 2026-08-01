@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Switch,
   TouchableOpacity,
   SafeAreaView,
   Linking,
@@ -14,10 +13,6 @@ import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
-import {
-  isFridayMartiniReminderEnabled,
-  setFridayMartiniReminderEnabled,
-} from "@/utils/martiniReminder";
 import { makeStyles, useTheme, type ThemePreference } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
@@ -32,16 +27,6 @@ const Settings = () => {
   const router = useRouter();
   const styles = useStyles();
   const { colors, preference, setPreference } = useTheme();
-  const [fridayReminder, setFridayReminder] = useState(true);
-
-  useEffect(() => {
-    void isFridayMartiniReminderEnabled().then(setFridayReminder);
-  }, []);
-
-  const toggleFridayReminder = (enabled: boolean) => {
-    setFridayReminder(enabled);
-    void setFridayMartiniReminderEnabled(enabled);
-  };
 
   const handleLogout = async () => {
     try {
@@ -80,6 +65,12 @@ const Settings = () => {
       title: "Edit Profile",
       icon: "person-outline",
       onPress: () => router.push(routes.editProfile()),
+    },
+    {
+      id: "notifications",
+      title: "Notifications",
+      icon: "notifications-outline",
+      onPress: () => router.push(routes.notifications()),
     },
     {
       id: "terms",
@@ -135,24 +126,6 @@ const Settings = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Notifications</Text>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleTextBlock}>
-              <Text style={styles.toggleTitle}>Friday tini reminder</Text>
-              <Text style={styles.toggleSubtitle}>
-                A weekly nudge at 5pm on Fridays
-              </Text>
-            </View>
-            <Switch
-              value={fridayReminder}
-              onValueChange={toggleFridayReminder}
-              trackColor={{ true: colors.accent }}
-              accessibilityLabel="Friday tini reminder"
-            />
           </View>
         </View>
 
@@ -237,26 +210,6 @@ const useStyles = makeStyles((t) => ({
   segmentTextSelected: {
     color: t.colors.text,
     fontWeight: "600" as const,
-  },
-  toggleRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    gap: t.spacing.md,
-  },
-  toggleTextBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  toggleTitle: {
-    ...t.typography.body,
-    fontSize: 15,
-    fontWeight: "500" as const,
-    color: t.colors.text,
-  },
-  toggleSubtitle: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
   },
   menuItem: {
     backgroundColor: t.colors.surface,

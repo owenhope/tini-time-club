@@ -5,7 +5,7 @@ export default function AdminShell({
   active,
   children,
 }: {
-  active: "dashboard" | "users" | "analytics";
+  active: "dashboard" | "users" | "analytics" | "notifications";
   children: React.ReactNode;
 }) {
   const tab = (href: string, key: string, label: string) => (
@@ -34,6 +34,7 @@ export default function AdminShell({
               {tab("/", "dashboard", "Dashboard")}
               {tab("/analytics", "analytics", "Analytics")}
               {tab("/users", "users", "Users")}
+              {tab("/notifications", "notifications", "Notifications")}
             </nav>
           </div>
           <form action={logout}>

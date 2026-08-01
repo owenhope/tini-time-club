@@ -17,13 +17,15 @@ import { warn } from "@/utils/log";
  * registration flow owns the permission prompt).
  */
 
-const REMINDER_ID_PREFIX = "friday-martini";
-// Pre-rotation identifier; cancelled on upgrade so nobody gets two nudges.
-const LEGACY_REMINDER_ID = "friday-martini-reminder";
-// Opt-out flag from Settings; ensure() respects it because the tab layout
-// re-schedules on every app open.
+const REMINDER_ID_PREFIX = "tini-friday";
+// Earlier id schemes ("friday-martini-reminder" single-repeat, then
+// "friday-martini-<date>" at 5pm); cancelled on upgrade so nobody gets
+// double or stale-time nudges.
+const LEGACY_ID_PREFIX = "friday-martini";
+// Opt-out flag from the Notifications screen; ensure() respects it because
+// the tab layout re-schedules on every app open.
 const REMINDER_DISABLED_KEY = "friday-martini-reminder-disabled";
-const REMINDER_HOUR = 17;
+const REMINDER_HOUR = 16;
 const WEEKS_AHEAD = 40;
 
 export async function isFridayMartiniReminderEnabled(): Promise<boolean> {
@@ -64,9 +66,12 @@ export async function ensureFridayMartiniReminder(): Promise<void> {
 
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
 
-    if (scheduled.some((n) => n.identifier === LEGACY_REMINDER_ID)) {
-      await Notifications.cancelScheduledNotificationAsync(LEGACY_REMINDER_ID);
-    }
+    await Promise.all(
+      scheduled
+        .map((n) => n.identifier)
+        .filter((id) => id.startsWith(LEGACY_ID_PREFIX))
+        .map((id) => Notifications.cancelScheduledNotificationAsync(id))
+    );
 
     const existing = new Set(
       scheduled
@@ -102,7 +107,7 @@ export async function cancelFridayMartiniReminder(): Promise<void> {
         .filter(
           (id) =>
             id.startsWith(`${REMINDER_ID_PREFIX}-`) ||
-            id === LEGACY_REMINDER_ID
+            id.startsWith(LEGACY_ID_PREFIX)
         )
         .map((id) => Notifications.cancelScheduledNotificationAsync(id))
     );

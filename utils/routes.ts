@@ -63,6 +63,9 @@ export const routes = {
   /** Settings screen inside the profile stack. */
   settings: () => "/settings" as const satisfies Href,
 
+  /** Notification preferences screen inside the profile stack. */
+  notifications: () => "/notifications" as const satisfies Href,
+
   /** Terms of service screen. */
   terms: () => "/terms" as const satisfies Href,
 

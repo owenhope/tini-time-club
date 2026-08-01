@@ -44,6 +44,55 @@ export async function setVerified(profileId: string, verified: boolean) {
   revalidatePath("/users");
 }
 
+/**
+ * Send a notification to one member or everyone. Inserting into
+ * `notifications` is the whole delivery mechanism: the push edge function
+ * fires off each insert, handles Expo batching/receipts, and the row also
+ * appears in the member's in-app notification list.
+ */
+export async function sendNotification(formData: FormData) {
+  const body = String(formData.get("body") ?? "").trim();
+  const audience = String(formData.get("audience") ?? "");
+  const url = String(formData.get("url") ?? "").trim();
+
+  if (!body || body.length > 180) {
+    redirect("/notifications?error=body");
+  }
+  if (url && !url.startsWith("/")) {
+    redirect("/notifications?error=url");
+  }
+
+  const admin = supabaseAdmin();
+  let userIds: string[] = [];
+  if (audience === "all") {
+    const { data, error } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("deleted", false);
+    if (error) throw new Error(error.message);
+    userIds = (data ?? []).map((p) => p.id);
+  } else {
+    userIds = [audience];
+  }
+  if (userIds.length === 0) redirect("/notifications?error=audience");
+
+  const broadcastId = crypto.randomUUID();
+  const rows = userIds.map((userId) => ({
+    user_id: userId,
+    body,
+    type: 2,
+    kind: "admin_message",
+    data: { kind: "admin_message", ...(url ? { url } : {}) },
+    event_key: `admin:${broadcastId}:${userId}`,
+  }));
+
+  const { error } = await admin.from("notifications").insert(rows);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/notifications");
+  redirect(`/notifications?sent=${rows.length}`);
+}
+
 export async function setDeleted(profileId: string, deleted: boolean) {
   const { error } = await supabaseAdmin()
     .from("profiles")
