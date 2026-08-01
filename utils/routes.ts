@@ -79,6 +79,10 @@ export const routes = {
   editCaption: (reviewId: string | number) =>
     `/edit-caption?reviewId=${reviewId}` as const satisfies Href,
 
+  /** Shared review deep link, also used by public web links. */
+  sharedReview: (reviewId: string | number) =>
+    `/r/${reviewId}` as const satisfies Href,
+
   /** Favorite-location picker. */
   favoriteLocation: (params: FavoriteLocationParams) =>
     ({ pathname: "/favorite-location", params }) as const satisfies Href,

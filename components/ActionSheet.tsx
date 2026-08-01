@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { ActionSheetIOS, Platform } from "react-native";
+import { ActionSheetIOS, Alert, Platform } from "react-native";
 import { useTheme } from "@/theme";
 
 interface ActionSheetProps {
@@ -8,6 +8,7 @@ interface ActionSheetProps {
   onDelete?: () => void;
   onReport?: () => void;
   onEdit?: () => void;
+  onShare?: () => void;
   isOwnReview: boolean;
 }
 
@@ -18,6 +19,7 @@ const ActionSheet = memo(
     onDelete,
     onReport,
     onEdit,
+    onShare,
     isOwnReview,
   }: ActionSheetProps) => {
     // The sheet is drawn by UIKit, so the only themable surface here is which
@@ -26,43 +28,69 @@ const ActionSheet = memo(
     const { isDark } = useTheme();
 
     React.useEffect(() => {
-      if (visible) {
-        if (Platform.OS === "ios") {
-          const options = isOwnReview
-            ? ["Edit Caption", "Delete Review", "Cancel"]
-            : ["Report Review", "Cancel"];
+      if (!visible) return;
 
-          const destructiveButtonIndex = isOwnReview ? 1 : undefined;
-          const cancelButtonIndex = isOwnReview ? 2 : 1;
+      const actions = isOwnReview
+        ? [
+            ...(onShare ? [{ label: "Share Review", action: onShare }] : []),
+            ...(onEdit ? [{ label: "Edit Caption", action: onEdit }] : []),
+            ...(onDelete
+              ? [{ label: "Delete Review", action: onDelete, destructive: true }]
+              : []),
+          ]
+        : [
+            ...(onShare ? [{ label: "Share Review", action: onShare }] : []),
+            ...(onReport ? [{ label: "Report Review", action: onReport }] : []),
+          ];
 
-          ActionSheetIOS.showActionSheetWithOptions(
-            {
-              options,
-              destructiveButtonIndex,
-              cancelButtonIndex,
-              userInterfaceStyle: isDark ? "dark" : "light",
-            },
-            (buttonIndex) => {
-              if (isOwnReview) {
-                if (buttonIndex === 0) {
-                  // Edit Caption
-                  onEdit?.();
-                } else if (buttonIndex === 1) {
-                  // Delete Review
-                  onDelete?.();
-                }
-              } else {
-                if (buttonIndex === 0) {
-                  // Report Review
-                  onReport?.();
-                }
-              }
-              onClose();
+      if (Platform.OS === "ios") {
+        const options = [...actions.map((action) => action.label), "Cancel"];
+        const destructiveButtonIndex = actions.findIndex(
+          (action) => action.destructive
+        );
+        const cancelButtonIndex = options.length - 1;
+
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options,
+            destructiveButtonIndex:
+              destructiveButtonIndex >= 0 ? destructiveButtonIndex : undefined,
+            cancelButtonIndex,
+            userInterfaceStyle: isDark ? "dark" : "light",
+          },
+          (buttonIndex) => {
+            if (buttonIndex < actions.length) {
+              actions[buttonIndex].action();
             }
-          );
-        }
+            onClose();
+          }
+        );
+        return;
       }
-    }, [visible, isOwnReview, isDark, onDelete, onReport, onEdit, onClose]);
+
+      Alert.alert(
+        "Review options",
+        undefined,
+        [
+          ...actions.map((action) => ({
+            text: action.label,
+            style: action.destructive ? ("destructive" as const) : undefined,
+            onPress: action.action,
+          })),
+          { text: "Cancel", style: "cancel" as const },
+        ],
+        { onDismiss: onClose }
+      );
+    }, [
+      visible,
+      isOwnReview,
+      isDark,
+      onDelete,
+      onReport,
+      onEdit,
+      onShare,
+      onClose,
+    ]);
 
     return null;
   }

@@ -222,6 +222,89 @@ class DatabaseService {
   }
 
   /**
+   * Get one public review by id. Used by shared web/deep links, so it does not
+   * require an authenticated viewer; engagement fields are still populated.
+   */
+  async getReview(reviewId: string | number): Promise<Review> {
+    const review = await this.query<any>(
+      `review_${reviewId}`,
+      async () => {
+        const { data, error } = await supabase
+          .from("reviews")
+          .select(
+            `
+            id,
+            comment,
+            image_url,
+            inserted_at,
+            taste,
+            presentation,
+            user_id,
+            location:locations!reviews_location_fkey(id,name,address),
+            spirit:spirits(name),
+            type:types(name),
+            profile:profiles!reviews_user_id_fkey1(id,username,avatar_url,is_verified,review_count,deleted)
+          `
+          )
+          .eq("id", reviewId)
+          .eq("state", 1)
+          .single();
+
+        if (error) throw error;
+        if ((data as any)?.profile?.deleted) {
+          throw new Error("Review author is unavailable.");
+        }
+
+        const [likes, comments, recentComments] = await Promise.all([
+          supabase
+            .from("likes")
+            .select("review_id", { count: "exact", head: true })
+            .eq("review_id", reviewId),
+          supabase
+            .from("comments")
+            .select("id", { count: "exact", head: true })
+            .eq("review_id", reviewId),
+          supabase
+            .from("comments")
+            .select(
+              `
+              id,
+              body,
+              inserted_at,
+              review_id,
+              user_id,
+              profile:profiles(id,username,avatar_url,is_verified,review_count)
+            `
+            )
+            .eq("review_id", reviewId)
+            .order("inserted_at", { ascending: false })
+            .limit(2),
+        ]);
+
+        if (likes.error) throw likes.error;
+        if (comments.error) throw comments.error;
+        if (recentComments.error) throw recentComments.error;
+
+        return {
+          ...data,
+          id: String(data.id),
+          likes_count: likes.count ?? 0,
+          comments_count: comments.count ?? 0,
+          has_liked: false,
+          recent_comments: recentComments.data ?? [],
+        };
+      },
+      { cacheDuration: this.USER_DATA_CACHE_DURATION }
+    );
+
+    const imageUrls = await imageCache.getReviewImageUrls([review.image_url]);
+    return {
+      ...review,
+      image_url: imageUrls[review.image_url] || review.image_url,
+    };
+  }
+
+  /**
    * Get followed user IDs
    */
   async getFollowedUserIds(userId: string): Promise<string[]> {

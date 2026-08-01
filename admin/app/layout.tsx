@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Tini Time Club — Admin",
-  description: "Operations dashboard for Tini Time Club",
+  metadataBase: new URL("https://ttc.hopemediahouse.com"),
+  title: "Tini Time Club",
+  description: "Martini reviews from Tini Time Club.",
+  openGraph: {
+    siteName: "Tini Time Club",
+    type: "website",
+    title: "Tini Time Club",
+    description: "Martini reviews from Tini Time Club.",
+    images: [
+      {
+        url: "/nightlife-martini-table.png",
+        width: 1200,
+        height: 1200,
+        alt: "Martinis on a low-lit table",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tini Time Club",
+    description: "Martini reviews from Tini Time Club.",
+    images: ["/nightlife-martini-table.png"],
+  },
 };
 
 export default function RootLayout({
@@ -23,10 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full bg-stone-50 text-stone-900">{children}</body>
     </html>
   );

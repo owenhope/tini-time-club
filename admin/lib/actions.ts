@@ -15,7 +15,7 @@ export async function login(formData: FormData) {
   ) {
     // Blunt but effective brute-force damper for a single-operator tool.
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    redirect("/login?error=1");
+    redirect("/admin/login?error=1");
   }
 
   const { token, expiresAt } = await createSessionToken();
@@ -26,12 +26,12 @@ export async function login(formData: FormData) {
     expires: expiresAt,
     path: "/",
   });
-  redirect("/");
+  redirect("/admin");
 }
 
 export async function logout() {
   (await cookies()).delete(SESSION_COOKIE);
-  redirect("/login");
+  redirect("/admin/login");
 }
 
 export async function setVerified(profileId: string, verified: boolean) {
@@ -40,8 +40,8 @@ export async function setVerified(profileId: string, verified: boolean) {
     .update({ is_verified: verified })
     .eq("id", profileId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/users/${profileId}`);
-  revalidatePath("/users");
+  revalidatePath(`/admin/users/${profileId}`);
+  revalidatePath("/admin/users");
 }
 
 /**
@@ -56,10 +56,10 @@ export async function sendNotification(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim();
 
   if (!body || body.length > 180) {
-    redirect("/notifications?error=body");
+    redirect("/admin/notifications?error=body");
   }
   if (url && !url.startsWith("/")) {
-    redirect("/notifications?error=url");
+    redirect("/admin/notifications?error=url");
   }
 
   const admin = supabaseAdmin();
@@ -74,7 +74,7 @@ export async function sendNotification(formData: FormData) {
   } else {
     userIds = [audience];
   }
-  if (userIds.length === 0) redirect("/notifications?error=audience");
+  if (userIds.length === 0) redirect("/admin/notifications?error=audience");
 
   const broadcastId = crypto.randomUUID();
   const rows = userIds.map((userId) => ({
@@ -89,8 +89,8 @@ export async function sendNotification(formData: FormData) {
   const { error } = await admin.from("notifications").insert(rows);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/notifications");
-  redirect(`/notifications?sent=${rows.length}`);
+  revalidatePath("/admin/notifications");
+  redirect(`/admin/notifications?sent=${rows.length}`);
 }
 
 export async function setDeleted(profileId: string, deleted: boolean) {
@@ -102,6 +102,6 @@ export async function setDeleted(profileId: string, deleted: boolean) {
     })
     .eq("id", profileId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/users/${profileId}`);
-  revalidatePath("/users");
+  revalidatePath(`/admin/users/${profileId}`);
+  revalidatePath("/admin/users");
 }

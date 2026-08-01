@@ -89,6 +89,10 @@ The long game: TTC membership as identity.
   role) with a metrics dashboard and user management (verify, soft-delete).
   Business claiming dashboards, share pages, and the analytics platform build
   on this app rather than starting new ones. See admin/README.md.
+- ✅ 2026-08-01: public review sharing is wired: app share actions create
+  `ttc.hopemediahouse.com/r/<review-id>` links, public web pages render the
+  review, `/admin` is the protected operator URL, and share analytics track
+  member/channel usage.
 
 ## Guardrails
 

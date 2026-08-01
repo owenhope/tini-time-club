@@ -31,6 +31,7 @@ import databaseService from "@/services/databaseService";
 import { BRAND, HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { shareReviewViaSheet } from "@/utils/reviewShare";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -302,6 +303,26 @@ const CommentButton = memo(
 );
 CommentButton.displayName = "CommentButton";
 
+const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
+  const { colors } = useTheme();
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Share this review"
+      hitSlop={HIT_SLOP}
+    >
+      <Ionicons
+        name="paper-plane-outline"
+        size={ICON_SIZES.medium}
+        color={colors.text}
+      />
+    </TouchableOpacity>
+  );
+});
+ShareButton.displayName = "ShareButton";
+
 const CommentCount = memo(({ count }: { count: number }) => {
   const styles = useStyles();
   return <Text style={styles.likesCount}>{count}</Text>;
@@ -404,6 +425,7 @@ const ReviewFooter = memo(
     onToggleLike,
     onShowLikes,
     onShowComments,
+    onShare,
     onCommentAdded,
     onCommentDeleted,
     onEdit,
@@ -424,6 +446,7 @@ const ReviewFooter = memo(
       onCommentAdded: any,
       onCommentDeleted: any
     ) => void;
+    onShare: () => void;
     onCommentAdded: (reviewId: string, newComment: any) => void;
     onCommentDeleted: (reviewId: string, commentId: number) => void;
     onEdit?: () => void;
@@ -463,6 +486,7 @@ const ReviewFooter = memo(
             <CommentButton onPress={handleShowComments} count={commentCount} />
             {commentCount > 0 && <CommentCount count={commentCount} />}
           </TouchableOpacity>
+          <ShareButton onPress={onShare} />
         </View>
 
         {(hasCaption || (isOwnReview && onEdit)) && (
@@ -710,6 +734,10 @@ const ReviewItemComponent = ({
     [profile, review.id, review.profile?.id]
   );
 
+  const handleShare = useCallback(() => {
+    void shareReviewViaSheet(review);
+  }, [review]);
+
   if (previewMode) {
     return (
       <View style={styles.previewContainer}>
@@ -743,6 +771,7 @@ const ReviewItemComponent = ({
           onToggleLike={() => {}}
           onShowLikes={() => {}}
           onShowComments={() => {}}
+          onShare={() => {}}
           onCommentAdded={() => {}}
           onCommentDeleted={() => {}}
           onEdit={undefined}
@@ -835,6 +864,7 @@ const ReviewItemComponent = ({
             onToggleLike={handleToggleLike}
             onShowLikes={onShowLikes}
             onShowComments={onShowComments}
+            onShare={handleShare}
             onCommentAdded={onCommentAdded}
             onCommentDeleted={onCommentDeleted}
             onEdit={onEdit}
@@ -849,6 +879,7 @@ const ReviewItemComponent = ({
         onClose={() => setActionSheetVisible(false)}
         onDelete={onDelete}
         onEdit={onEdit}
+        onShare={handleShare}
         onReport={() => setReportModalVisible(true)}
         isOwnReview={isOwnReview}
       />

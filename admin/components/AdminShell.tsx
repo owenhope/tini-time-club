@@ -31,10 +31,10 @@ export default function AdminShell({
               <span className="font-normal text-stone-400">admin</span>
             </span>
             <nav className="flex gap-1">
-              {tab("/", "dashboard", "Dashboard")}
-              {tab("/analytics", "analytics", "Analytics")}
-              {tab("/users", "users", "Users")}
-              {tab("/notifications", "notifications", "Notifications")}
+              {tab("/admin", "dashboard", "Dashboard")}
+              {tab("/admin/analytics", "analytics", "Analytics")}
+              {tab("/admin/users", "users", "Users")}
+              {tab("/admin/notifications", "notifications", "Notifications")}
             </nav>
           </div>
           <form action={logout}>

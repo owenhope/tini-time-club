@@ -18,6 +18,16 @@ export interface AdminProfile {
   last_sign_in_at?: string;
 }
 
+export interface AdminReview {
+  id: string | number;
+  comment: string | null;
+  taste: number | null;
+  presentation: number | null;
+  inserted_at: string;
+  state: number | null;
+  location: { name: string | null } | null;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalReviews: number;
@@ -153,10 +163,14 @@ export interface AnalyticsData {
   reviewsByDay: { day: string; count: number }[];
   likesByDay: { day: string; count: number }[];
   commentsByDay: { day: string; count: number }[];
+  sharesByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
   reviewedInRange: number;
+  totalShares: number;
+  shareChannels: { channel: string; count: number }[];
+  topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
   tierDistribution: { tier: string; color: string; count: number }[];
   topReviewers: AdminProfile[];
@@ -176,7 +190,7 @@ export const fetchAnalytics = async (
   const sinceIso = range.since.toISOString();
   const untilIso = range.until.toISOString();
 
-  const [authUsers, reviews, likes, comments, profiles, reviewers] =
+  const [authUsers, reviews, likes, comments, shares, profiles, reviewers] =
     await Promise.all([
       fetchAuthUsers(),
       db()
@@ -195,6 +209,11 @@ export const fetchAnalytics = async (
         .select("inserted_at")
         .gte("inserted_at", sinceIso)
         .lte("inserted_at", untilIso),
+      db()
+        .from("review_share_events")
+        .select("user_id,channel,outcome,shared_at")
+        .gte("shared_at", sinceIso)
+        .lte("shared_at", untilIso),
       db()
         .from("profiles")
         .select("id,review_count,deleted")
@@ -225,6 +244,48 @@ export const fetchAnalytics = async (
     };
   });
 
+  const shareRows = shares.data ?? [];
+  const shareChannels = new Map<string, number>();
+  const sharesByUser = new Map<
+    string,
+    { count: number; last_shared_at: string }
+  >();
+  for (const share of shareRows) {
+    const channel = share.channel ?? "unknown";
+    shareChannels.set(channel, (shareChannels.get(channel) ?? 0) + 1);
+
+    const current = sharesByUser.get(share.user_id);
+    if (!current) {
+      sharesByUser.set(share.user_id, {
+        count: 1,
+        last_shared_at: share.shared_at,
+      });
+    } else {
+      current.count += 1;
+      if (new Date(share.shared_at) > new Date(current.last_shared_at)) {
+        current.last_shared_at = share.shared_at;
+      }
+    }
+  }
+  const topShareEntries = [...sharesByUser.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10);
+  const { data: sharerProfiles } =
+    topShareEntries.length > 0
+      ? await db()
+          .from("profiles")
+          .select(
+            "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+          )
+          .in(
+            "id",
+            topShareEntries.map(([id]) => id)
+          )
+      : { data: [] };
+  const sharerProfileMap = new Map(
+    (sharerProfiles ?? []).map((profile) => [profile.id, profile])
+  );
+
   return {
     signupsByDay: bucketByDay(
       authRows.map((u) => u.created_at),
@@ -246,9 +307,30 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    sharesByDay: bucketByDay(
+      shareRows.map((s) => s.shared_at),
+      range.since,
+      range.until
+    ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
+    totalShares: shareRows.length,
+    shareChannels: [...shareChannels.entries()]
+      .map(([channel, count]) => ({ channel, count }))
+      .sort((a, b) => b.count - a.count),
+    topSharers: topShareEntries
+      .map(([id, stats]) => {
+        const profile = sharerProfileMap.get(id);
+        if (!profile) return null;
+        return {
+          ...profile,
+          ...authUsers.get(id),
+          share_count: stats.count,
+          last_shared_at: stats.last_shared_at,
+        };
+      })
+      .filter(Boolean) as AnalyticsData["topSharers"],
     totalMembers: (profiles.data ?? []).length,
     tierDistribution,
     topReviewers: reviewers,
@@ -462,7 +544,7 @@ export const fetchProfiles = async (
 
 export const fetchProfile = async (
   id: string
-): Promise<{ profile: AdminProfile; reviews: any[] } | null> => {
+): Promise<{ profile: AdminProfile; reviews: AdminReview[] } | null> => {
   const [{ data: profile, error }, authUsers, { data: reviews }] =
     await Promise.all([
       db()
@@ -475,15 +557,27 @@ export const fetchProfile = async (
       fetchAuthUsers(),
       db()
         .from("reviews")
-        .select("id,comment,taste,presentation,inserted_at,state,location(name)")
+        .select(
+          "id,comment,taste,presentation,inserted_at,state,location:locations!reviews_location_fkey(name)"
+        )
         .eq("user_id", id)
         .order("inserted_at", { ascending: false })
         .limit(50),
     ]);
   if (error) throw new Error(error.message);
   if (!profile) return null;
+  const reviewRows = (reviews ?? []) as Array<
+    Omit<AdminReview, "location"> & {
+      location: AdminReview["location"] | AdminReview["location"][];
+    }
+  >;
   return {
     profile: { ...profile, ...authUsers.get(profile.id) },
-    reviews: reviews ?? [],
+    reviews: reviewRows.map((review) => ({
+      ...review,
+      location: Array.isArray(review.location)
+        ? (review.location[0] ?? null)
+        : review.location,
+    })),
   };
 };

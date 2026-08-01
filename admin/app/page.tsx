@@ -1,123 +1,40 @@
-import Link from "next/link";
-import AdminShell from "@/components/AdminShell";
-import LineChart from "@/components/LineChart";
-import RangePicker from "@/components/RangePicker";
-import UserBadge from "@/components/UserBadge";
-import { fetchDashboardStats, fetchTopReviewers } from "@/lib/data";
-import { parseRange } from "@/lib/range";
+import Image from "next/image";
 
-export const dynamic = "force-dynamic";
-
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-2xl border border-stone-200 bg-white p-5">
-    <p className="text-sm text-stone-500">{label}</p>
-    <p className="mt-1 text-3xl font-bold tracking-tight">
-      {value.toLocaleString()}
-    </p>
-  </div>
-);
-
-export default async function Dashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ days?: string; from?: string; to?: string }>;
-}) {
-  const range = parseRange(await searchParams);
-  const [stats, topReviewers] = await Promise.all([
-    fetchDashboardStats(range),
-    fetchTopReviewers(5),
-  ]);
-
+export default function PublicHomePage() {
   return (
-    <AdminShell active="dashboard">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
-        <RangePicker path="/" range={range} />
-      </div>
+    <main className="min-h-screen bg-[#f8f5ef] text-emerald-950">
+      <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-5 py-8 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section>
+          <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">
+            tini time club<span className="text-violet-500">.</span>
+          </p>
+          <h1 className="mt-5 text-5xl font-black tracking-tight md:text-7xl">
+            Find the best Martini in the room.
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-8 text-emerald-900/70">
+            Tini Time Club is where Martini people review the pours, find the
+            regulars, and share the spots worth dressing up for.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href="https://apps.apple.com"
+              className="rounded-lg bg-emerald-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+            >
+              Get the app
+            </a>
+          </div>
+        </section>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <Stat label="Members" value={stats.totalUsers} />
-        <Stat label="Reviews" value={stats.totalReviews} />
-        <Stat label="Locations" value={stats.totalLocations} />
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <LineChart
-          title={`Reviews — ${range.label}`}
-          data={stats.reviewsByDay}
-          unit="reviews"
-        />
-
-        <div className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="font-semibold">Top locations</h2>
-          <ul className="mt-3 divide-y divide-stone-100">
-            {stats.topLocations.map((location, index) => (
-              <li
-                key={location.id}
-                className="flex items-center justify-between py-2.5"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="w-5 text-sm text-stone-400">
-                    {index + 1}
-                  </span>
-                  <span className="font-medium">{location.name}</span>
-                </span>
-                <span className="text-sm text-stone-500">
-                  ★ {Number(location.rating).toFixed(1)} ·{" "}
-                  {location.total_ratings} reviews
-                </span>
-              </li>
-            ))}
-            {stats.topLocations.length === 0 && (
-              <li className="py-2.5 text-sm text-stone-400">
-                No rated locations yet.
-              </li>
-            )}
-          </ul>
+        <div className="relative min-h-[420px] overflow-hidden rounded-[8px] border border-emerald-950/10 shadow-2xl shadow-emerald-950/10">
+          <Image
+            src="/nightlife-martini-table.png"
+            alt="Martinis on a low-lit table"
+            fill
+            priority
+            className="object-cover"
+          />
         </div>
       </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="font-semibold">Newest members</h2>
-          <ul className="mt-3 divide-y divide-stone-100">
-            {stats.newestUsers.map((user) => (
-              <li key={user.id}>
-                <Link
-                  href={`/users/${user.id}`}
-                  className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
-                >
-                  <UserBadge profile={user} />
-                  <span className="text-sm text-stone-500">
-                    {user.created_at
-                      ? new Date(user.created_at).toLocaleDateString()
-                      : "—"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="font-semibold">Top reviewers</h2>
-          <ul className="mt-3 divide-y divide-stone-100">
-            {topReviewers.map((user) => (
-              <li key={user.id}>
-                <Link
-                  href={`/users/${user.id}`}
-                  className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
-                >
-                  <UserBadge profile={user} />
-                  <span className="text-sm font-semibold text-stone-600">
-                    {user.review_count ?? 0}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </AdminShell>
+    </main>
   );
 }
