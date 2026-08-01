@@ -16,6 +16,9 @@ type TabBarProps = {
   navigation: any;
 };
 
+// One size for every tab icon, including Review — the martini PNG matches.
+const ICON_SIZE = 24;
+
 export default function CustomTabBar({
   state,
   descriptors,
@@ -138,14 +141,10 @@ export default function CustomTabBar({
                   ]}
                   resizeMode="contain"
                 />
-              ) : route.name === "review" ? (
-                <View style={styles.oliveButton}>
-                  <Text style={styles.plusIcon}>+</Text>
-                </View>
               ) : (
                 <Ionicons
                   name={getIconName(route.name, isFocused)}
-                  size={19}
+                  size={ICON_SIZE}
                   color={
                     isFocused ? colors.tabBarActive : colors.tabBarInactive
                   }
@@ -158,7 +157,6 @@ export default function CustomTabBar({
                     color: isFocused
                       ? colors.tabBarActive
                       : colors.tabBarInactive,
-                    marginTop: route.name === "review" ? 8 : 6,
                   },
                 ]}
               >
@@ -197,22 +195,7 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
   },
   martiniIcon: {
-    width: 20,
-    height: 20,
-  },
-  oliveButton: {
-    width: 40,
-    height: 40,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    ...t.elevation.raised,
-  },
-  plusIcon: {
-    color: t.colors.onSecondary,
-    fontSize: 24,
-    fontWeight: "600" as const,
-    lineHeight: 26,
+    width: 24,
+    height: 24,
   },
 }));
