@@ -13,14 +13,18 @@ export type Achievement =
   | { kind: "rank"; tier: RankTier }
   | { kind: "regular"; locationId: number; locationName: string };
 
-/** Whether a profile currently holds a Regular spot at a location. */
+/**
+ * Whether a profile currently holds a Regular spot at a location. Always
+ * bypasses the regulars cache: the before/after pair around a review insert
+ * must observe the actual transition, not a cached snapshot.
+ */
 export const isRegularAt = async (
   locationId: number | string | null | undefined,
   profileId: string
 ): Promise<boolean> => {
   if (locationId == null) return false;
   try {
-    const grouped = await getRegularsByLocation([locationId]);
+    const grouped = await getRegularsByLocation([locationId], { maxAgeMs: 0 });
     const regulars = grouped.get(String(Number(locationId))) ?? [];
     return regulars.some((regular) => regular.profile_id === profileId);
   } catch (error) {
