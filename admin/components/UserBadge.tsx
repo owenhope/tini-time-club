@@ -1,4 +1,5 @@
 import type { AdminProfile } from "@/lib/data";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 /** The four in-app rank tiers, mirrored from utils/ranking.ts. */
 const TIERS = [
@@ -32,11 +33,7 @@ export default function UserBadge({ profile }: { profile: AdminProfile }) {
       <span>
         <span className="flex items-center gap-1.5 font-medium">
           {profile.username ?? "(no username)"}
-          {profile.is_verified ? (
-            <span className="text-violet-500" title="Verified">
-              ✓
-            </span>
-          ) : null}
+          {profile.is_verified ? <VerifiedBadge /> : null}
           {profile.deleted ? (
             <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
               deleted

@@ -1,10 +1,11 @@
-// The reminder bank lives with the mobile app; it's a pure TS module (no
-// React Native imports), so the admin reuses it directly — one source of
-// truth for what each Friday will say.
+// Vendored copy of the app's utils/martiniReminders.ts: Vercel builds only
+// upload the admin/ root directory, so a cross-repo import can't resolve
+// there. A jest test in the app repo (utils/__tests__/reminderSync.test.ts)
+// fails if the two files drift.
 export {
   EVERGREEN_REMINDERS,
   SEASONAL_REMINDERS,
   reminderForDate,
   upcomingFridays,
   type ReminderMessage,
-} from "../../utils/martiniReminders";
+} from "./martiniReminders";
