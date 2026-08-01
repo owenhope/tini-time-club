@@ -83,6 +83,13 @@ The long game: TTC membership as identity.
 | 5 | Paid featured locations on the map | P4 ($) | Sell once redemption data proves value |
 | 6 | Referral rewards, swag tiers, club perks | P1, P6 | Needs P5's offer plumbing + analytics platform |
 
+## Status notes
+
+- ✅ 2026-08-01: the web surface exists — `admin/` (Next.js + Supabase service
+  role) with a metrics dashboard and user management (verify, soft-delete).
+  Business claiming dashboards, share pages, and the analytics platform build
+  on this app rather than starting new ones. See admin/README.md.
+
 ## Guardrails
 
 - Never mix paid "Featured" with earned "Top Rated" without labels.
