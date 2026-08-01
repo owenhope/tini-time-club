@@ -50,16 +50,61 @@ describe("getNameMatchScore", () => {
 });
 
 describe("filterRelevantPlaces", () => {
-  it("keeps places that serve alcohol and drops those that do not", () => {
-    const places = [
-      { name: "A Bar", types: ["bar"] },
-      { name: "A Laundromat", types: ["laundry"] },
-      { name: "A Restaurant", types: ["restaurant"] },
-    ];
-    const names = filterRelevantPlaces(places).map((p: any) => p.name);
-    expect(names).toContain("A Bar");
-    expect(names).toContain("A Restaurant");
-    expect(names).not.toContain("A Laundromat");
+  const place = (name: string, types: string[]) => ({ name, types });
+
+  it("keeps cocktail venues", () => {
+    const names = filterRelevantPlaces([
+      place("A Bar", ["bar", "point_of_interest", "establishment"]),
+      place("A Restaurant", ["restaurant", "food", "establishment"]),
+      place("A Club", ["bar", "food", "night_club", "establishment"]),
+    ]).map((p: any) => p.name);
+    expect(names).toEqual(["A Bar", "A Restaurant", "A Club"]);
+  });
+
+  it("keeps hotel bars (Google types hotels as lodging, not hotel)", () => {
+    // Regression: the old include-list said "hotel", which Google never
+    // returns, so hotel venues were silently unfindable in search.
+    const kept = filterRelevantPlaces([
+      place("The Mosser Hotel", [
+        "establishment",
+        "lodging",
+        "point_of_interest",
+      ]),
+    ]);
+    expect(kept.map((p: any) => p.name)).toEqual(["The Mosser Hotel"]);
+  });
+
+  it("keeps venue types outside the query list (wineries etc.)", () => {
+    const kept = filterRelevantPlaces([
+      place("A Winery", ["establishment", "point_of_interest", "food"]),
+    ]);
+    expect(kept).toHaveLength(1);
+  });
+
+  it("drops geography and transit", () => {
+    // Regression: invalid type params made the legacy API return prominence
+    // results, including the city itself — which became selectable.
+    const kept = filterRelevantPlaces([
+      place("San Francisco", ["locality", "political"]),
+      place("Mission District", ["neighborhood", "political"]),
+      place("Market Street", ["route"]),
+      place("Powell Station", [
+        "transit_station",
+        "establishment",
+        "point_of_interest",
+      ]),
+      place("SFO", ["airport", "establishment", "point_of_interest"]),
+    ]);
+    expect(kept).toHaveLength(0);
+  });
+
+  it("drops results with no establishment tag", () => {
+    const kept = filterRelevantPlaces([
+      place("Golden Gate Park", ["park", "point_of_interest"]),
+      place("Untyped", []),
+      { name: "No types at all" },
+    ]);
+    expect(kept).toHaveLength(0);
   });
 
   it("handles an empty list", () => {

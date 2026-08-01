@@ -12,7 +12,7 @@ import * as Location from "expo-location";
 import "react-native-get-random-values";
 import {
   GOOGLE_MAPS_API_KEY,
-  RELEVANT_PLACE_TYPES,
+  NEARBY_BROWSE_TYPES,
   calculateDistance,
   formatDistance,
   getNameMatchScore,
@@ -93,7 +93,7 @@ const LocationInput = ({
     try {
       const { latitude, longitude } = userLocation.coords;
       const results = await Promise.all(
-        RELEVANT_PLACE_TYPES.map(async (type) => {
+        NEARBY_BROWSE_TYPES.map(async (type) => {
           try {
             const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
             const response = await fetch(url);
@@ -105,7 +105,10 @@ const LocationInput = ({
         })
       );
 
-      const allPlaces = results.flat();
+      // Same venue filter as search results — without it the browse list can
+      // offer geography (the legacy API pads type queries with prominent
+      // non-venues, including the city itself).
+      const allPlaces = filterRelevantPlaces(results.flat());
       const uniquePlaces = deduplicatePlaces(allPlaces);
 
       uniquePlaces.sort((a, b) => {
@@ -167,7 +170,7 @@ const LocationInput = ({
         // Nearby search for short queries (if location available)
         if (location && query.length <= 3) {
           const nearbyResults = await Promise.all(
-            RELEVANT_PLACE_TYPES.slice(0, 7).map(async (type) => {
+            NEARBY_BROWSE_TYPES.map(async (type) => {
               try {
                 const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
                   location.coords.latitude

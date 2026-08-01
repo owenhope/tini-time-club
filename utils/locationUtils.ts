@@ -3,17 +3,53 @@ import { reportError } from "./log";
 export const GOOGLE_MAPS_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
-// Place types that serve alcohol
+// Google Places types worth querying for venues that serve cocktails. These
+// must be types the Places API actually recognizes — an invalid type makes
+// the legacy API silently ignore the parameter and return generic
+// prominence results (cities included).
 export const RELEVANT_PLACE_TYPES = [
   "bar",
   "restaurant",
   "night_club",
   "cafe",
-  "lounge",
-  "hotel",
-  "brewery",
-  "meal_takeaway",
+  "lodging",
 ] as const;
+
+// The mount-time "what's near me" browse list only needs the core drinking
+// venues; each extra type is a separate (billed) legacy API request.
+export const NEARBY_BROWSE_TYPES = ["bar", "restaurant", "night_club"] as const;
+
+// Geography and transit — never a place you drink at. Filtering works as an
+// exclude-list so hotel bars ("lodging"), wineries, supper clubs, and other
+// venue types we didn't enumerate still get through; an include-list is how
+// hotel bars became unfindable (Google types hotels as "lodging", and the
+// old list said "hotel").
+const NON_VENUE_TYPES = new Set([
+  "locality",
+  "sublocality",
+  "sublocality_level_1",
+  "political",
+  "country",
+  "administrative_area_level_1",
+  "administrative_area_level_2",
+  "administrative_area_level_3",
+  "colloquial_area",
+  "neighborhood",
+  "postal_code",
+  "postal_town",
+  "route",
+  "street_address",
+  "intersection",
+  "plus_code",
+  "natural_feature",
+  "geocode",
+  "transit_station",
+  "train_station",
+  "bus_station",
+  "subway_station",
+  "light_rail_station",
+  "airport",
+]);
 
 // Calculate distance between two coordinates using Haversine formula
 export const calculateDistance = (
@@ -58,13 +94,19 @@ export const getNameMatchScore = (name: string, query: string): number => {
   return matches.length > 0 ? 50 * (matches.length / queryWords.length) : 0;
 };
 
-// Filter places to only include relevant types
+/**
+ * Keep results that are actual businesses and drop geography/transit.
+ * Google tags every business with "establishment"; cities, neighborhoods,
+ * and streets don't carry it.
+ */
 export const filterRelevantPlaces = (places: any[]): any[] => {
-  return places.filter((place: any) =>
-    (place.types || []).some((type: string) =>
-      RELEVANT_PLACE_TYPES.includes(type as any)
-    )
-  );
+  return places.filter((place: any) => {
+    const types: string[] = place.types || [];
+    return (
+      types.includes("establishment") &&
+      !types.some((type) => NON_VENUE_TYPES.has(type))
+    );
+  });
 };
 
 // Deduplicate places by place_id

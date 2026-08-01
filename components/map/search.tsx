@@ -15,7 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   GOOGLE_MAPS_API_KEY,
-  RELEVANT_PLACE_TYPES,
+  NEARBY_BROWSE_TYPES,
   filterRelevantPlaces,
   getNameMatchScore,
   calculateDistance,
@@ -83,11 +83,14 @@ const Search = forwardRef<any, SearchProps>(
           const seenIds = new Set<string>();
           const results: SearchResult[] = [];
 
-          // Text search (finds places anywhere)
+          // Text search (finds places anywhere, biased toward the viewer)
           try {
+            const locationBias = currentLocation
+              ? `&location=${currentLocation.latitude},${currentLocation.longitude}&radius=10000`
+              : "";
             const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
               query
-            )}&key=${GOOGLE_MAPS_API_KEY}`;
+            )}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
             const response = await fetch(url);
             const data = await response.json();
             (data.results || []).forEach((place: any) => {
@@ -103,7 +106,7 @@ const Search = forwardRef<any, SearchProps>(
           // Nearby search for short queries (if location available)
           if (currentLocation && query.length <= 3) {
             const nearbyResults = await Promise.all(
-              RELEVANT_PLACE_TYPES.slice(0, 7).map(async (type) => {
+              NEARBY_BROWSE_TYPES.map(async (type) => {
                 try {
                   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
                     currentLocation.latitude
