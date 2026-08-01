@@ -100,6 +100,9 @@ The long game: TTC membership as identity.
 - ✅ 2026-08-01: rank-up and Regular celebration moments are analytics-aware:
   celebration views and shares are logged server-side, share sheets include
   public profile links, and admin analytics shows celebration usage by kind.
+- ✅ 2026-08-01: the first invite loop is in place: Settings includes an
+  invite share-sheet action, invite links point at the member's public profile,
+  and admin analytics tracks invite volume/channel usage.
 
 ## Guardrails
 

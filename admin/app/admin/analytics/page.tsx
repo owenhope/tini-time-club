@@ -48,7 +48,7 @@ export default async function AnalyticsPage({
         <RangePicker path="/admin/analytics" range={range} />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-6">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-7">
         <Stat
           label="Active members (7d)"
           value={String(a.activeLast7Days)}
@@ -78,6 +78,11 @@ export default async function AnalyticsPage({
           label="Celebrations"
           value={String(a.totalCelebrations)}
           hint={`${a.celebrationShares} shared`}
+        />
+        <Stat
+          label="Invites"
+          value={String(a.totalInvites)}
+          hint={`${a.inviteChannels.length} channel${a.inviteChannels.length === 1 ? "" : "s"}`}
         />
       </div>
 
@@ -118,6 +123,12 @@ export default async function AnalyticsPage({
           data={a.celebrationsByDay}
           color="#16a34a"
           unit="moments"
+        />
+        <LineChart
+          title="Invites"
+          data={a.invitesByDay}
+          color="#db2777"
+          unit="invites"
         />
       </div>
 
@@ -179,7 +190,7 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-5">
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <h2 className="font-semibold">Review share channels</h2>
           <ul className="mt-3 divide-y divide-stone-100">
@@ -271,6 +282,28 @@ export default async function AnalyticsPage({
             {a.celebrationKinds.length === 0 && (
               <li className="py-2.5 text-sm text-stone-400">
                 No celebration moments in this range.
+              </li>
+            )}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="font-semibold">Invite channels</h2>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {a.inviteChannels.map((channel) => (
+              <li
+                key={channel.channel}
+                className="flex items-center justify-between py-2.5 text-sm"
+              >
+                <span className="font-medium capitalize">
+                  {channel.channel}
+                </span>
+                <span className="text-stone-500">{channel.count}</span>
+              </li>
+            ))}
+            {a.inviteChannels.length === 0 && (
+              <li className="py-2.5 text-sm text-stone-400">
+                No invites in this range.
               </li>
             )}
           </ul>

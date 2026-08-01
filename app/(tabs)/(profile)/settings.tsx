@@ -16,6 +16,8 @@ import { unregisterPushNotificationsAsync } from "@/services/pushNotificationSer
 import { makeStyles, useTheme, type ThemePreference } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { useProfile } from "@/context/profile-context";
+import { shareInviteViaSheet } from "@/utils/inviteShare";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
@@ -27,6 +29,7 @@ const Settings = () => {
   const router = useRouter();
   const styles = useStyles();
   const { colors, preference, setPreference } = useTheme();
+  const { profile } = useProfile();
 
   const handleLogout = async () => {
     try {
@@ -71,6 +74,12 @@ const Settings = () => {
       title: "Notifications",
       icon: "notifications-outline",
       onPress: () => router.push(routes.notifications()),
+    },
+    {
+      id: "invite",
+      title: "Invite a Friend",
+      icon: "paper-plane-outline",
+      onPress: () => void shareInviteViaSheet(profile),
     },
     {
       id: "terms",

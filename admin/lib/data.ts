@@ -176,6 +176,7 @@ export interface AnalyticsData {
   sharesByDay: { day: string; count: number }[];
   profileSharesByDay: { day: string; count: number }[];
   celebrationsByDay: { day: string; count: number }[];
+  invitesByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
@@ -184,8 +185,10 @@ export interface AnalyticsData {
   totalProfileShares: number;
   totalCelebrations: number;
   celebrationShares: number;
+  totalInvites: number;
   shareChannels: { channel: string; count: number }[];
   profileShareChannels: { channel: string; count: number }[];
+  inviteChannels: { channel: string; count: number }[];
   celebrationKinds: { kind: string; count: number; shares: number }[];
   topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
@@ -215,6 +218,7 @@ export const fetchAnalytics = async (
     shares,
     profileShares,
     celebrations,
+    invites,
     profiles,
     reviewers,
   ] =
@@ -252,6 +256,11 @@ export const fetchAnalytics = async (
         .gte("created_at", sinceIso)
         .lte("created_at", untilIso),
       db()
+        .from("invite_share_events")
+        .select("user_id,channel,outcome,created_at")
+        .gte("created_at", sinceIso)
+        .lte("created_at", untilIso),
+      db()
         .from("profiles")
         .select("id,review_count,deleted")
         .eq("deleted", false),
@@ -284,8 +293,10 @@ export const fetchAnalytics = async (
   const shareRows = shares.data ?? [];
   const profileShareRows = profileShares.data ?? [];
   const celebrationRows = celebrations.data ?? [];
+  const inviteRows = invites.data ?? [];
   const shareChannels = new Map<string, number>();
   const profileShareChannels = new Map<string, number>();
+  const inviteChannels = new Map<string, number>();
   const celebrationKinds = new Map<string, { count: number; shares: number }>();
   const sharesByUser = new Map<
     string,
@@ -350,6 +361,25 @@ export const fetchAnalytics = async (
     }
     celebrationKinds.set(kind, current);
   }
+  for (const invite of inviteRows) {
+    const channel = invite.channel ?? "unknown";
+    inviteChannels.set(channel, (inviteChannels.get(channel) ?? 0) + 1);
+
+    if (invite.outcome === "shared") {
+      const current = sharesByUser.get(invite.user_id);
+      if (!current) {
+        sharesByUser.set(invite.user_id, {
+          count: 1,
+          last_shared_at: invite.created_at,
+        });
+      } else {
+        current.count += 1;
+        if (new Date(invite.created_at) > new Date(current.last_shared_at)) {
+          current.last_shared_at = invite.created_at;
+        }
+      }
+    }
+  }
   const topShareEntries = [...sharesByUser.entries()]
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 10);
@@ -407,6 +437,11 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    invitesByDay: bucketByDay(
+      inviteRows.map((invite) => invite.created_at),
+      range.since,
+      range.until
+    ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
@@ -418,10 +453,14 @@ export const fetchAnalytics = async (
     celebrationShares: celebrationRows.filter(
       (event) => event.channel === "sheet" && event.outcome === "shared"
     ).length,
+    totalInvites: inviteRows.length,
     shareChannels: [...shareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
       .sort((a, b) => b.count - a.count),
     profileShareChannels: [...profileShareChannels.entries()]
+      .map(([channel, count]) => ({ channel, count }))
+      .sort((a, b) => b.count - a.count),
+    inviteChannels: [...inviteChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
       .sort((a, b) => b.count - a.count),
     celebrationKinds: [...celebrationKinds.entries()]
