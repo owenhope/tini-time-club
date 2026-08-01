@@ -1,17 +1,21 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import UserBadge from "@/components/UserBadge";
-import { fetchProfiles } from "@/lib/data";
+import { fetchProfiles, USERS_PAGE_SIZE } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { q } = await searchParams;
-  const profiles = await fetchProfiles(q);
+  const { q, page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const { profiles, total } = await fetchProfiles(q, page);
+  const totalPages = Math.max(1, Math.ceil(total / USERS_PAGE_SIZE));
+  const pageUrl = (p: number) =>
+    `/users?${q ? `q=${encodeURIComponent(q)}&` : ""}page=${p}`;
 
   return (
     <AdminShell active="users">
@@ -79,6 +83,31 @@ export default async function UsersPage({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-sm text-stone-500">
+        <span>
+          {total.toLocaleString()} member{total === 1 ? "" : "s"} · page {page}{" "}
+          of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          {page > 1 ? (
+            <Link
+              href={pageUrl(page - 1)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 font-medium text-stone-600 hover:bg-stone-100"
+            >
+              ← Previous
+            </Link>
+          ) : null}
+          {page < totalPages ? (
+            <Link
+              href={pageUrl(page + 1)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 font-medium text-stone-600 hover:bg-stone-100"
+            >
+              Next →
+            </Link>
+          ) : null}
+        </div>
       </div>
     </AdminShell>
   );

@@ -26,13 +26,16 @@ export default async function NotificationsPage({
   searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
   const { sent, error } = await searchParams;
-  const [profiles, notifications, tokenCount, analytics] = await Promise.all([
-    fetchProfiles(),
-    fetchRecentNotifications(),
-    fetchPushTokenCount(),
-    fetchNotificationAnalytics(30),
-  ]);
-  const members = profiles.filter((p) => !p.deleted);
+  const [profilePage, notifications, tokenCount, analytics] =
+    await Promise.all([
+      // The audience dropdown wants everyone; bump the page size well past
+      // the member count until that stops being reasonable.
+      fetchProfiles(undefined, 1, 500),
+      fetchRecentNotifications(),
+      fetchPushTokenCount(),
+      fetchNotificationAnalytics(30),
+    ]);
+  const members = profilePage.profiles.filter((p) => !p.deleted);
 
   const pct = (n: number | null) =>
     n == null ? "—" : `${Math.round(n * 100)}%`;

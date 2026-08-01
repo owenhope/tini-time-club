@@ -1,8 +1,10 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
-import BarChart from "@/components/BarChart";
+import LineChart from "@/components/LineChart";
+import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
 import { fetchAnalytics } from "@/lib/data";
+import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +24,13 @@ const Stat = ({
   </div>
 );
 
-export default async function AnalyticsPage() {
-  const a = await fetchAnalytics(30);
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ days?: string; from?: string; to?: string }>;
+}) {
+  const range = parseRange(await searchParams);
+  const a = await fetchAnalytics(range);
   const pct = (n: number, of: number) =>
     of > 0 ? `${Math.round((n / of) * 100)}%` : "—";
   const tierTotal = Math.max(
@@ -33,8 +40,13 @@ export default async function AnalyticsPage() {
 
   return (
     <AdminShell active="analytics">
-      <h1 className="text-xl font-bold tracking-tight">Analytics</h1>
-      <p className="mt-0.5 text-sm text-stone-500">Last 30 days</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Analytics</h1>
+          <p className="mt-0.5 text-sm text-stone-500">{range.label}</p>
+        </div>
+        <RangePicker path="/analytics" range={range} />
+      </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <Stat
@@ -48,17 +60,17 @@ export default async function AnalyticsPage() {
           hint={`${pct(a.activeLast30Days, a.totalMembers)} of members`}
         />
         <Stat
-          label="Reviewed in the last 30d"
-          value={String(a.reviewedLast30Days)}
-          hint={`${pct(a.reviewedLast30Days, a.totalMembers)} of members posted`}
+          label="Reviewed in range"
+          value={String(a.reviewedInRange)}
+          hint={`${pct(a.reviewedInRange, a.totalMembers)} of members posted`}
         />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <BarChart title="Signups" data={a.signupsByDay} color="bg-emerald-500 hover:bg-emerald-700" />
-        <BarChart title="Reviews" data={a.reviewsByDay} />
-        <BarChart title="Likes" data={a.likesByDay} color="bg-rose-400 hover:bg-rose-600" />
-        <BarChart title="Comments" data={a.commentsByDay} color="bg-amber-400 hover:bg-amber-600" />
+        <LineChart title="Signups" data={a.signupsByDay} color="#059669" />
+        <LineChart title="Reviews" data={a.reviewsByDay} />
+        <LineChart title="Likes" data={a.likesByDay} color="#e11d48" />
+        <LineChart title="Comments" data={a.commentsByDay} color="#d97706" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

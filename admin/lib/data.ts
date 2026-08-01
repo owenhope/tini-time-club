@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { bucketByDay } from "@/components/BarChart";
+import { bucketByDay } from "@/components/LineChart";
+import type { DateRange } from "@/lib/range";
 
 export interface AdminProfile {
   id: string;
@@ -21,7 +22,7 @@ export interface DashboardStats {
   totalUsers: number;
   totalReviews: number;
   totalLocations: number;
-  reviewsLast30Days: { day: string; count: number }[];
+  reviewsByDay: { day: string; count: number }[];
   topLocations: {
     id: number;
     name: string;
@@ -59,10 +60,9 @@ export const fetchAuthUsers = async (): Promise<
   return users;
 };
 
-export const fetchDashboardStats = async (): Promise<DashboardStats> => {
-  const since = new Date();
-  since.setDate(since.getDate() - 30);
-
+export const fetchDashboardStats = async (
+  range: DateRange
+): Promise<DashboardStats> => {
   const [users, reviews, locations, recentReviews, topLocations, authUsers] =
     await Promise.all([
       db()
@@ -78,7 +78,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         .from("reviews")
         .select("inserted_at")
         .eq("state", 1)
-        .gte("inserted_at", since.toISOString()),
+        .gte("inserted_at", range.since.toISOString())
+        .lte("inserted_at", range.until.toISOString()),
       db()
         .from("location_ratings")
         .select("id,name,rating,total_ratings")
@@ -88,18 +89,6 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         .limit(5),
       fetchAuthUsers(),
     ]);
-
-  // Bucket the last 30 days, zero-filled so the chart has no gaps.
-  const byDay = new Map<string, number>();
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    byDay.set(d.toISOString().slice(0, 10), 0);
-  }
-  for (const row of recentReviews.data ?? []) {
-    const day = String(row.inserted_at).slice(0, 10);
-    if (byDay.has(day)) byDay.set(day, (byDay.get(day) ?? 0) + 1);
-  }
 
   const newestIds = [...authUsers.entries()]
     .sort(
@@ -127,13 +116,36 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     totalUsers: users.count ?? 0,
     totalReviews: reviews.count ?? 0,
     totalLocations: locations.count ?? 0,
-    reviewsLast30Days: [...byDay.entries()].map(([day, count]) => ({
-      day,
-      count,
-    })),
+    reviewsByDay: bucketByDay(
+      (recentReviews.data ?? []).map((r) => r.inserted_at),
+      range.since,
+      range.until
+    ),
     topLocations: (topLocations.data ?? []) as DashboardStats["topLocations"],
     newestUsers,
   };
+};
+
+/** Most-reviewing members, for the dashboard and analytics leaderboards. */
+export const fetchTopReviewers = async (
+  limit = 5
+): Promise<AdminProfile[]> => {
+  const [{ data, error }, authUsers] = await Promise.all([
+    db()
+      .from("profiles")
+      .select(
+        "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+      )
+      .eq("deleted", false)
+      .order("review_count", { ascending: false })
+      .limit(limit),
+    fetchAuthUsers(),
+  ]);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as AdminProfile[]).map((profile) => ({
+    ...profile,
+    ...authUsers.get(profile.id),
+  }));
 };
 
 export interface AnalyticsData {
@@ -143,7 +155,8 @@ export interface AnalyticsData {
   commentsByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
-  reviewedLast30Days: number;
+  /** Distinct members who reviewed within the selected range. */
+  reviewedInRange: number;
   totalMembers: number;
   tierDistribution: { tier: string; color: string; count: number }[];
   topReviewers: AdminProfile[];
@@ -157,10 +170,11 @@ const RANK_TIERS = [
   { name: "Top Shelf", min: 150, color: "#8E7CE8" },
 ];
 
-export const fetchAnalytics = async (days = 30): Promise<AnalyticsData> => {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const sinceIso = since.toISOString();
+export const fetchAnalytics = async (
+  range: DateRange
+): Promise<AnalyticsData> => {
+  const sinceIso = range.since.toISOString();
+  const untilIso = range.until.toISOString();
 
   const [authUsers, reviews, likes, comments, profiles, reviewers] =
     await Promise.all([
@@ -169,21 +183,23 @@ export const fetchAnalytics = async (days = 30): Promise<AnalyticsData> => {
         .from("reviews")
         .select("inserted_at,user_id")
         .eq("state", 1)
-        .gte("inserted_at", sinceIso),
-      db().from("likes").select("liked_at").gte("liked_at", sinceIso),
-      db().from("comments").select("inserted_at").gte("inserted_at", sinceIso),
+        .gte("inserted_at", sinceIso)
+        .lte("inserted_at", untilIso),
+      db()
+        .from("likes")
+        .select("liked_at")
+        .gte("liked_at", sinceIso)
+        .lte("liked_at", untilIso),
+      db()
+        .from("comments")
+        .select("inserted_at")
+        .gte("inserted_at", sinceIso)
+        .lte("inserted_at", untilIso),
       db()
         .from("profiles")
         .select("id,review_count,deleted")
         .eq("deleted", false),
-      db()
-        .from("profiles")
-        .select(
-          "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
-        )
-        .eq("deleted", false)
-        .order("review_count", { ascending: false })
-        .limit(10),
+      fetchTopReviewers(10),
     ]);
 
   const now = Date.now();
@@ -212,30 +228,30 @@ export const fetchAnalytics = async (days = 30): Promise<AnalyticsData> => {
   return {
     signupsByDay: bucketByDay(
       authRows.map((u) => u.created_at),
-      days
+      range.since,
+      range.until
     ),
     reviewsByDay: bucketByDay(
       (reviews.data ?? []).map((r) => r.inserted_at),
-      days
+      range.since,
+      range.until
     ),
     likesByDay: bucketByDay(
       (likes.data ?? []).map((l) => l.liked_at),
-      days
+      range.since,
+      range.until
     ),
     commentsByDay: bucketByDay(
       (comments.data ?? []).map((c) => c.inserted_at),
-      days
+      range.since,
+      range.until
     ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
-    reviewedLast30Days: new Set((reviews.data ?? []).map((r) => r.user_id))
-      .size,
+    reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
     totalMembers: (profiles.data ?? []).length,
     tierDistribution,
-    topReviewers: ((reviewers.data ?? []) as AdminProfile[]).map((profile) => ({
-      ...profile,
-      ...authUsers.get(profile.id),
-    })),
+    topReviewers: reviewers,
   };
 };
 
@@ -401,27 +417,37 @@ export const fetchPushTokenCount = async (): Promise<number> => {
   return count ?? 0;
 };
 
+export const USERS_PAGE_SIZE = 50;
+
 export const fetchProfiles = async (
-  search?: string
-): Promise<AdminProfile[]> => {
+  search?: string,
+  page = 1,
+  perPage = USERS_PAGE_SIZE
+): Promise<{ profiles: AdminProfile[]; total: number }> => {
+  const offset = (Math.max(1, page) - 1) * perPage;
   let query = db()
     .from("profiles")
     .select(
-      "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+      "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio",
+      { count: "exact" }
     )
     .order("review_count", { ascending: false })
-    .limit(200);
+    .order("id", { ascending: true })
+    .range(offset, offset + perPage - 1);
   if (search) query = query.ilike("username", `%${search}%`);
 
-  const [{ data, error }, authUsers] = await Promise.all([
+  const [{ data, error, count }, authUsers] = await Promise.all([
     query,
     fetchAuthUsers(),
   ]);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((profile) => ({
-    ...profile,
-    ...authUsers.get(profile.id),
-  }));
+  return {
+    profiles: (data ?? []).map((profile) => ({
+      ...profile,
+      ...authUsers.get(profile.id),
+    })),
+    total: count ?? 0,
+  };
 };
 
 export const fetchProfile = async (

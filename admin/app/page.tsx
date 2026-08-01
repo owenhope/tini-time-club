@@ -1,7 +1,10 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
+import LineChart from "@/components/LineChart";
+import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
-import { fetchDashboardStats } from "@/lib/data";
+import { fetchDashboardStats, fetchTopReviewers } from "@/lib/data";
+import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
@@ -14,54 +17,35 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-const ReviewsChart = ({
-  data,
+export default async function Dashboard({
+  searchParams,
 }: {
-  data: { day: string; count: number }[];
-}) => {
-  const max = Math.max(1, ...data.map((d) => d.count));
-  return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">Reviews — last 30 days</h2>
-        <span className="text-sm text-stone-500">
-          {data.reduce((sum, d) => sum + d.count, 0)} total
-        </span>
-      </div>
-      <div className="mt-4 flex h-32 items-end gap-1">
-        {data.map((d) => (
-          <div
-            key={d.day}
-            title={`${d.day}: ${d.count}`}
-            className="flex-1 rounded-t bg-violet-400 transition hover:bg-violet-600"
-            style={{
-              height: `${(d.count / max) * 100}%`,
-              minHeight: d.count > 0 ? 4 : 1,
-            }}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex justify-between text-xs text-stone-400">
-        <span>{data[0]?.day}</span>
-        <span>{data[data.length - 1]?.day}</span>
-      </div>
-    </div>
-  );
-};
-
-export default async function Dashboard() {
-  const stats = await fetchDashboardStats();
+  searchParams: Promise<{ days?: string; from?: string; to?: string }>;
+}) {
+  const range = parseRange(await searchParams);
+  const [stats, topReviewers] = await Promise.all([
+    fetchDashboardStats(range),
+    fetchTopReviewers(5),
+  ]);
 
   return (
     <AdminShell active="dashboard">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
+        <RangePicker path="/" range={range} />
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <Stat label="Members" value={stats.totalUsers} />
         <Stat label="Reviews" value={stats.totalReviews} />
         <Stat label="Locations" value={stats.totalLocations} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <ReviewsChart data={stats.reviewsLast30Days} />
+        <LineChart
+          title={`Reviews — ${range.label}`}
+          data={stats.reviewsByDay}
+        />
 
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <h2 className="font-semibold">Top locations</h2>
@@ -92,25 +76,46 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5">
-        <h2 className="font-semibold">Newest members</h2>
-        <ul className="mt-3 divide-y divide-stone-100">
-          {stats.newestUsers.map((user) => (
-            <li key={user.id}>
-              <Link
-                href={`/users/${user.id}`}
-                className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
-              >
-                <UserBadge profile={user} />
-                <span className="text-sm text-stone-500">
-                  {user.created_at
-                    ? new Date(user.created_at).toLocaleDateString()
-                    : "—"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="font-semibold">Newest members</h2>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {stats.newestUsers.map((user) => (
+              <li key={user.id}>
+                <Link
+                  href={`/users/${user.id}`}
+                  className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
+                >
+                  <UserBadge profile={user} />
+                  <span className="text-sm text-stone-500">
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleDateString()
+                      : "—"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="font-semibold">Top reviewers</h2>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {topReviewers.map((user) => (
+              <li key={user.id}>
+                <Link
+                  href={`/users/${user.id}`}
+                  className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
+                >
+                  <UserBadge profile={user} />
+                  <span className="text-sm font-semibold text-stone-600">
+                    {user.review_count ?? 0}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </AdminShell>
   );
