@@ -235,17 +235,12 @@ export default function DiscoverTabs({
           }))
         );
       } else {
-        // The location_ratings view now includes review-less locations, so
-        // search reads the server-computed averages directly — the previous
-        // query downloaded every review row for up to 20 locations per
-        // keystroke and averaged them in JS.
-        const { data: locationsData, error: locationsError } = await supabase
-          .from("location_ratings")
-          .select(
-            "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
-          )
-          .ilike("name", `%${searchQuery}%`)
-          .limit(20);
+        // Server-side fuzzy search: matches name or address, tolerates
+        // typos via trigram similarity, and ranks name hits first.
+        const { data: locationsData, error: locationsError } = await supabase.rpc(
+          "search_locations",
+          { p_query: searchQuery, p_limit: 20 }
+        );
 
         if (locationsError) {
           reportError("Error fetching locations:", locationsError);
