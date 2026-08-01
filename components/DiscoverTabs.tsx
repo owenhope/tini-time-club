@@ -249,7 +249,7 @@ export default function DiscoverTabs({
         }
 
         const processedLocations =
-          locationsData?.map((location: any) => {
+          ((locationsData ?? []) as any[]).map((location: any) => {
             const totalRatings = location.total_ratings || 0;
             return {
               id: location.id,
@@ -265,7 +265,7 @@ export default function DiscoverTabs({
                 totalRatings > 0 ? location.presentation_avg : null,
               total_ratings: totalRatings,
             };
-          }) || [];
+          });
 
         const regularsByLocation = await getRegularsByLocation(
           processedLocations.map((location) => location.id)
