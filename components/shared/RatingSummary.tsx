@@ -446,6 +446,9 @@ const useStyles = makeStyles((t) => ({
   containerOverallRight: {
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
+    // Wider than the stacked layout's gap: the large overall numeral needs
+    // clearer separation from the taste/presentation bars beside it.
+    gap: t.spacing.xl,
   },
   overallRow: {
     width: "100%" as const,

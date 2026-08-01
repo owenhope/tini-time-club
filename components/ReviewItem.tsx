@@ -930,7 +930,9 @@ const useStyles = makeStyles((t) => ({
   },
   reviewAttributes: {
     flexDirection: "row" as const,
-    gap: t.spacing.md,
+    // Matches the overall-to-bars gap below so the overlay's two rows share
+    // one rhythm.
+    gap: t.spacing.xl,
     flexShrink: 1,
     alignSelf: "flex-start" as const,
   },
