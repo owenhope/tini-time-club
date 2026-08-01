@@ -9,6 +9,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except the login page and Next internals requires a session.
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico).*)"],
+  // Everything except the login page, Next internals, and the favicon
+  // requires a session.
+  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|icon.png).*)"],
 };

@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { bucketByDay } from "@/components/LineChart";
+import { bucketByDay } from "@/lib/bucket";
 import type { DateRange } from "@/lib/range";
 
 export interface AdminProfile {

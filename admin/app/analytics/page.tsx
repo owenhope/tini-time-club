@@ -67,10 +67,25 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <LineChart title="Signups" data={a.signupsByDay} color="#059669" />
-        <LineChart title="Reviews" data={a.reviewsByDay} />
-        <LineChart title="Likes" data={a.likesByDay} color="#e11d48" />
-        <LineChart title="Comments" data={a.commentsByDay} color="#d97706" />
+        <LineChart
+          title="Signups"
+          data={a.signupsByDay}
+          color="#059669"
+          unit="signups"
+        />
+        <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
+        <LineChart
+          title="Likes"
+          data={a.likesByDay}
+          color="#e11d48"
+          unit="likes"
+        />
+        <LineChart
+          title="Comments"
+          data={a.commentsByDay}
+          color="#d97706"
+          unit="comments"
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
