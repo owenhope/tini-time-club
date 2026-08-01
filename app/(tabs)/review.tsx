@@ -654,29 +654,31 @@ export default function App() {
   };
 
   return (
-    <TouchableWithoutFeedback
-      style={[styles.container, { paddingTop: insets.top }]}
-      onPress={Keyboard.dismiss}
-    >
+    <>
+      {/* The celebration is a sibling, not a child: TouchableWithoutFeedback
+          clones its single child with responder props, which a Fragment or
+          Modal can't accept. */}
+      {celebration && (
+        <CelebrationModal
+          achievements={celebration.achievements}
+          profile={profile}
+          reviewCount={celebration.reviewCount}
+          onClose={dismissCelebration}
+        />
+      )}
+      <TouchableWithoutFeedback
+        style={[styles.container, { paddingTop: insets.top }]}
+        onPress={Keyboard.dismiss}
+      >
       {!isReviewing ? (
-        <>
-          <CameraComponent
-            onCapture={(photo) => {
-              setPhoto(photo);
-              setIsReviewing(true);
-              setIsSubmitting(false);
-              setSubmissionMessage("");
-            }}
-          />
-          {celebration && (
-            <CelebrationModal
-              achievements={celebration.achievements}
-              profile={profile}
-              reviewCount={celebration.reviewCount}
-              onClose={dismissCelebration}
-            />
-          )}
-        </>
+        <CameraComponent
+          onCapture={(photo) => {
+            setPhoto(photo);
+            setIsReviewing(true);
+            setIsSubmitting(false);
+            setSubmissionMessage("");
+          }}
+        />
       ) : (
         <View style={styles.container}>
           {/* Header */}
@@ -826,7 +828,8 @@ export default function App() {
           )}
         </View>
       )}
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </>
   );
 }
 

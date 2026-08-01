@@ -21,13 +21,20 @@ const EditCaption = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ reviewId: string }>();
+  // A caller navigating with an undefined id produces the literal string
+  // "undefined" in the URL, so guard both shapes.
+  const reviewId =
+    params.reviewId && params.reviewId !== "undefined"
+      ? params.reviewId
+      : null;
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const loadReview = useCallback(async () => {
-    if (!params.reviewId) {
-      Alert.alert("Error", "Review ID is missing");
+    if (!reviewId) {
+      // Nothing actionable for the user here — just leave quietly.
+      reportError("edit-caption opened without a reviewId");
       router.back();
       return;
     }
@@ -48,7 +55,7 @@ const EditCaption = () => {
       const { data, error } = await supabase
         .from("reviews")
         .select("id, comment")
-        .eq("id", params.reviewId)
+        .eq("id", reviewId)
         .eq("user_id", user.id)
         .eq("state", 1)
         .maybeSingle();
@@ -69,18 +76,18 @@ const EditCaption = () => {
     } finally {
       setLoading(false);
     }
-  }, [params.reviewId, router]);
+  }, [reviewId, router]);
 
   useEffect(() => {
     void loadReview();
   }, [loadReview]);
 
   const handleSave = async () => {
-    if (!params.reviewId) return;
+    if (!reviewId) return;
 
     try {
       setSaving(true);
-      await databaseService.updateReview(params.reviewId, {
+      await databaseService.updateReview(reviewId, {
         comment: caption.trim(),
       });
 
