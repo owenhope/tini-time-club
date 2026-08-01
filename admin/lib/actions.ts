@@ -13,6 +13,8 @@ export async function login(formData: FormData) {
     !process.env.ADMIN_PASSWORD ||
     password !== process.env.ADMIN_PASSWORD
   ) {
+    // Blunt but effective brute-force damper for a single-operator tool.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     redirect("/login?error=1");
   }
 

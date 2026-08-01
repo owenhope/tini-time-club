@@ -5,7 +5,7 @@ export default function AdminShell({
   active,
   children,
 }: {
-  active: "dashboard" | "users";
+  active: "dashboard" | "users" | "analytics";
   children: React.ReactNode;
 }) {
   const tab = (href: string, key: string, label: string) => (
@@ -32,6 +32,7 @@ export default function AdminShell({
             </span>
             <nav className="flex gap-1">
               {tab("/", "dashboard", "Dashboard")}
+              {tab("/analytics", "analytics", "Analytics")}
               {tab("/users", "users", "Users")}
             </nav>
           </div>

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { bucketByDay } from "@/components/BarChart";
 
 export interface AdminProfile {
   id: string;
@@ -132,6 +133,109 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     })),
     topLocations: (topLocations.data ?? []) as DashboardStats["topLocations"],
     newestUsers,
+  };
+};
+
+export interface AnalyticsData {
+  signupsByDay: { day: string; count: number }[];
+  reviewsByDay: { day: string; count: number }[];
+  likesByDay: { day: string; count: number }[];
+  commentsByDay: { day: string; count: number }[];
+  activeLast7Days: number;
+  activeLast30Days: number;
+  reviewedLast30Days: number;
+  totalMembers: number;
+  tierDistribution: { tier: string; color: string; count: number }[];
+  topReviewers: AdminProfile[];
+}
+
+/** The four in-app rank tiers, mirrored from utils/ranking.ts. */
+const RANK_TIERS = [
+  { name: "Well", min: 0, color: "#B4783A" },
+  { name: "Call", min: 10, color: "#9BA6B2" },
+  { name: "Premium", min: 50, color: "#D4AF37" },
+  { name: "Top Shelf", min: 150, color: "#8E7CE8" },
+];
+
+export const fetchAnalytics = async (days = 30): Promise<AnalyticsData> => {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceIso = since.toISOString();
+
+  const [authUsers, reviews, likes, comments, profiles, reviewers] =
+    await Promise.all([
+      fetchAuthUsers(),
+      db()
+        .from("reviews")
+        .select("inserted_at,user_id")
+        .eq("state", 1)
+        .gte("inserted_at", sinceIso),
+      db().from("likes").select("liked_at").gte("liked_at", sinceIso),
+      db().from("comments").select("inserted_at").gte("inserted_at", sinceIso),
+      db()
+        .from("profiles")
+        .select("id,review_count,deleted")
+        .eq("deleted", false),
+      db()
+        .from("profiles")
+        .select(
+          "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+        )
+        .eq("deleted", false)
+        .order("review_count", { ascending: false })
+        .limit(10),
+    ]);
+
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const authRows = [...authUsers.values()];
+  const activeWithin = (windowDays: number) =>
+    authRows.filter(
+      (u) =>
+        u.last_sign_in_at &&
+        now - new Date(u.last_sign_in_at).getTime() < windowDays * dayMs
+    ).length;
+
+  const tierDistribution = RANK_TIERS.map((tier, index) => {
+    const next = RANK_TIERS[index + 1];
+    return {
+      tier: tier.name,
+      color: tier.color,
+      count: (profiles.data ?? []).filter(
+        (p) =>
+          (p.review_count ?? 0) >= tier.min &&
+          (!next || (p.review_count ?? 0) < next.min)
+      ).length,
+    };
+  });
+
+  return {
+    signupsByDay: bucketByDay(
+      authRows.map((u) => u.created_at),
+      days
+    ),
+    reviewsByDay: bucketByDay(
+      (reviews.data ?? []).map((r) => r.inserted_at),
+      days
+    ),
+    likesByDay: bucketByDay(
+      (likes.data ?? []).map((l) => l.liked_at),
+      days
+    ),
+    commentsByDay: bucketByDay(
+      (comments.data ?? []).map((c) => c.inserted_at),
+      days
+    ),
+    activeLast7Days: activeWithin(7),
+    activeLast30Days: activeWithin(30),
+    reviewedLast30Days: new Set((reviews.data ?? []).map((r) => r.user_id))
+      .size,
+    totalMembers: (profiles.data ?? []).length,
+    tierDistribution,
+    topReviewers: ((reviewers.data ?? []) as AdminProfile[]).map((profile) => ({
+      ...profile,
+      ...authUsers.get(profile.id),
+    })),
   };
 };
 
