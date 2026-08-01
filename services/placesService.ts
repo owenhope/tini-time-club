@@ -153,6 +153,43 @@ export const autocompleteVenues = async (
   }
 };
 
+export interface VenueContact {
+  phoneNumber?: string;
+  internationalPhoneNumber?: string;
+  website?: string;
+}
+
+/**
+ * Contact details (phone/website) for a venue known only by name and
+ * address — one searchText request, replacing the legacy two-step
+ * find-place-id-then-details flow the place-info screen used.
+ */
+export const fetchVenueContact = async (
+  name: string,
+  address?: string | null
+): Promise<VenueContact | null> => {
+  try {
+    const data = await postJson(
+      "/places:searchText",
+      {
+        textQuery: address ? `${name} ${address}` : name,
+        maxResultCount: 1,
+      },
+      "places.id,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri"
+    );
+    const place = data.places?.[0];
+    if (!place) return null;
+    return {
+      phoneNumber: place.nationalPhoneNumber,
+      internationalPhoneNumber: place.internationalPhoneNumber,
+      website: place.websiteUri,
+    };
+  } catch (error) {
+    reportError("Error fetching venue contact:", error);
+    return null;
+  }
+};
+
 /**
  * Resolve a place to coordinates (and viewport). Passing the autocomplete
  * session token here closes that session for billing.

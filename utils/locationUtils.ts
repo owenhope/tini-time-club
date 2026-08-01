@@ -1,22 +1,8 @@
-import { reportError } from "./log";
 // Google Maps API configuration
 export const GOOGLE_MAPS_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
-// Google Places types worth querying for venues that serve cocktails. These
-// must be types the Places API actually recognizes — an invalid type makes
-// the legacy API silently ignore the parameter and return generic
-// prominence results (cities included).
-export const RELEVANT_PLACE_TYPES = [
-  "bar",
-  "restaurant",
-  "night_club",
-  "cafe",
-  "lodging",
-] as const;
-
-// The mount-time "what's near me" browse list only needs the core drinking
-// venues; each extra type is a separate (billed) legacy API request.
+// The "what's near me" browse list only needs the core drinking venues.
 export const NEARBY_BROWSE_TYPES = ["bar", "restaurant", "night_club"] as const;
 
 // Geography and transit — never a place you drink at. Filtering works as an
@@ -137,96 +123,6 @@ export const filterRelevantPlaces = (places: any[]): any[] => {
 // Deduplicate places by place_id
 export const deduplicatePlaces = (places: any[]): any[] => {
   return Array.from(new Map(places.map((p: any) => [p.place_id, p])).values());
-};
-
-/**
- * Find place_id by searching Google Places API with name and address
- */
-export const findPlaceId = async (
-  name: string,
-  address?: string
-): Promise<string | null> => {
-  try {
-    const query = address ? `${name} ${address}` : name;
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === "OK" && data.results && data.results.length > 0) {
-      // Return the first result's place_id
-      return data.results[0].place_id;
-    }
-
-    return null;
-  } catch (error) {
-    reportError("Error finding place_id:", error);
-    return null;
-  }
-};
-
-/**
- * Fetch Place Details from Google Places API
- * Returns phone number, website, and other details for a given place_id
- */
-export const fetchPlaceDetails = async (
-  placeId: string
-): Promise<{
-  phoneNumber?: string;
-  website?: string;
-  internationalPhoneNumber?: string;
-  openingHours?: any;
-  priceLevel?: number;
-  rating?: number;
-  userRatingsTotal?: number;
-  types?: string[];
-} | null> => {
-  try {
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,international_phone_number,website,opening_hours,price_level,rating,user_ratings_total,types&key=${GOOGLE_MAPS_API_KEY}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === "OK" && data.result) {
-      return {
-        phoneNumber: data.result.formatted_phone_number,
-        internationalPhoneNumber: data.result.international_phone_number,
-        website: data.result.website,
-        openingHours: data.result.opening_hours,
-        priceLevel: data.result.price_level,
-        rating: data.result.rating,
-        userRatingsTotal: data.result.user_ratings_total,
-        types: data.result.types,
-      };
-    }
-
-    return null;
-  } catch (error) {
-    reportError("Error fetching place details:", error);
-    return null;
-  }
-};
-
-/**
- * Get place details by name and address (finds place_id first, then fetches details)
- */
-export const getPlaceDetailsByNameAndAddress = async (
-  name: string,
-  address?: string
-): Promise<{
-  phoneNumber?: string;
-  website?: string;
-  internationalPhoneNumber?: string;
-  openingHours?: any;
-  priceLevel?: number;
-  rating?: number;
-  userRatingsTotal?: number;
-  types?: string[];
-} | null> => {
-  const placeId = await findPlaceId(name, address);
-  if (!placeId) return null;
-
-  return fetchPlaceDetails(placeId);
 };
 
 // Filter and format place types for display

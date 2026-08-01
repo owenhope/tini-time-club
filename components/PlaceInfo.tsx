@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { getPlaceDetailsByNameAndAddress } from "@/utils/locationUtils";
+import { fetchVenueContact } from "@/services/placesService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -51,7 +51,7 @@ const PlaceInfo = () => {
     if (!name) return;
 
     let active = true;
-    getPlaceDetailsByNameAndAddress(name, addressParam)
+    fetchVenueContact(name, addressParam)
       .then((details) => {
         if (!active) return;
         setPlaceDetails(
