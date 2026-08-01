@@ -98,11 +98,12 @@ export default function CustomTabBar({
           focused: boolean
         ): keyof typeof Ionicons.glyphMap => {
           switch (routeName) {
-            // "(home)" renders a PNG above and never reaches this switch.
+            // "review" renders the martini PNG above and never reaches this
+            // switch — posting a review is the most martini action there is.
+            case "(home)":
+              return focused ? "home" : "home-outline";
             case "(places)":
               return focused ? "location" : "location-outline";
-            case "review":
-              return focused ? "camera" : "camera-outline";
             case "(discover)":
               return focused ? "search" : "search-outline";
             case "(profile)":
@@ -128,7 +129,7 @@ export default function CustomTabBar({
             style={styles.tab}
           >
             <View style={styles.tabContent}>
-              {route.name === "(home)" ? (
+              {route.name === "review" ? (
                 <Image
                   source={require("@/assets/images/martini_transparent.png")}
                   style={[
