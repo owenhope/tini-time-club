@@ -175,14 +175,18 @@ export interface AnalyticsData {
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
   profileSharesByDay: { day: string; count: number }[];
+  celebrationsByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
   reviewedInRange: number;
   totalShares: number;
   totalProfileShares: number;
+  totalCelebrations: number;
+  celebrationShares: number;
   shareChannels: { channel: string; count: number }[];
   profileShareChannels: { channel: string; count: number }[];
+  celebrationKinds: { kind: string; count: number; shares: number }[];
   topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
   tierDistribution: { tier: string; color: string; count: number }[];
@@ -210,6 +214,7 @@ export const fetchAnalytics = async (
     comments,
     shares,
     profileShares,
+    celebrations,
     profiles,
     reviewers,
   ] =
@@ -242,6 +247,11 @@ export const fetchAnalytics = async (
         .gte("shared_at", sinceIso)
         .lte("shared_at", untilIso),
       db()
+        .from("celebration_events")
+        .select("user_id,kind,channel,outcome,created_at")
+        .gte("created_at", sinceIso)
+        .lte("created_at", untilIso),
+      db()
         .from("profiles")
         .select("id,review_count,deleted")
         .eq("deleted", false),
@@ -273,8 +283,10 @@ export const fetchAnalytics = async (
 
   const shareRows = shares.data ?? [];
   const profileShareRows = profileShares.data ?? [];
+  const celebrationRows = celebrations.data ?? [];
   const shareChannels = new Map<string, number>();
   const profileShareChannels = new Map<string, number>();
+  const celebrationKinds = new Map<string, { count: number; shares: number }>();
   const sharesByUser = new Map<
     string,
     { count: number; last_shared_at: string }
@@ -315,6 +327,28 @@ export const fetchAnalytics = async (
         current.last_shared_at = share.shared_at;
       }
     }
+  }
+  for (const event of celebrationRows) {
+    const kind = event.kind ?? "unknown";
+    const current = celebrationKinds.get(kind) ?? { count: 0, shares: 0 };
+    if (event.outcome === "shown") current.count += 1;
+    if (event.channel === "sheet" && event.outcome === "shared") {
+      current.shares += 1;
+
+      const sharer = sharesByUser.get(event.user_id);
+      if (!sharer) {
+        sharesByUser.set(event.user_id, {
+          count: 1,
+          last_shared_at: event.created_at,
+        });
+      } else {
+        sharer.count += 1;
+        if (new Date(event.created_at) > new Date(sharer.last_shared_at)) {
+          sharer.last_shared_at = event.created_at;
+        }
+      }
+    }
+    celebrationKinds.set(kind, current);
   }
   const topShareEntries = [...sharesByUser.entries()]
     .sort((a, b) => b[1].count - a[1].count)
@@ -366,16 +400,32 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    celebrationsByDay: bucketByDay(
+      celebrationRows
+        .filter((event) => event.outcome === "shown")
+        .map((event) => event.created_at),
+      range.since,
+      range.until
+    ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
     totalShares: shareRows.length,
     totalProfileShares: profileShareRows.length,
+    totalCelebrations: celebrationRows.filter(
+      (event) => event.outcome === "shown"
+    ).length,
+    celebrationShares: celebrationRows.filter(
+      (event) => event.channel === "sheet" && event.outcome === "shared"
+    ).length,
     shareChannels: [...shareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
       .sort((a, b) => b.count - a.count),
     profileShareChannels: [...profileShareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
+      .sort((a, b) => b.count - a.count),
+    celebrationKinds: [...celebrationKinds.entries()]
+      .map(([kind, stats]) => ({ kind, ...stats }))
       .sort((a, b) => b.count - a.count),
     topSharers: topShareEntries
       .map(([id, stats]) => {

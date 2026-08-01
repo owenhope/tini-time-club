@@ -48,7 +48,7 @@ export default async function AnalyticsPage({
         <RangePicker path="/admin/analytics" range={range} />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-5">
+      <div className="mt-4 grid gap-4 sm:grid-cols-6">
         <Stat
           label="Active members (7d)"
           value={String(a.activeLast7Days)}
@@ -73,6 +73,11 @@ export default async function AnalyticsPage({
           label="Profile shares"
           value={String(a.totalProfileShares)}
           hint={`${a.profileShareChannels.length} channel${a.profileShareChannels.length === 1 ? "" : "s"}`}
+        />
+        <Stat
+          label="Celebrations"
+          value={String(a.totalCelebrations)}
+          hint={`${a.celebrationShares} shared`}
         />
       </div>
 
@@ -107,6 +112,12 @@ export default async function AnalyticsPage({
           data={a.profileSharesByDay}
           color="#0891b2"
           unit="shares"
+        />
+        <LineChart
+          title="Celebrations"
+          data={a.celebrationsByDay}
+          color="#16a34a"
+          unit="moments"
         />
       </div>
 
@@ -168,7 +179,7 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="mt-6 grid gap-6 lg:grid-cols-4">
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <h2 className="font-semibold">Review share channels</h2>
           <ul className="mt-3 divide-y divide-stone-100">
@@ -237,6 +248,29 @@ export default async function AnalyticsPage({
             {a.topSharers.length === 0 && (
               <li className="py-2.5 text-sm text-stone-400">
                 No members have shared reviews in this range.
+              </li>
+            )}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="font-semibold">Celebration moments</h2>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {a.celebrationKinds.map((kind) => (
+              <li
+                key={kind.kind}
+                className="flex items-center justify-between py-2.5 text-sm"
+              >
+                <span className="font-medium capitalize">{kind.kind}</span>
+                <span className="text-right text-stone-500">
+                  <span className="block">{kind.count} shown</span>
+                  <span className="text-xs">{kind.shares} shared</span>
+                </span>
+              </li>
+            ))}
+            {a.celebrationKinds.length === 0 && (
+              <li className="py-2.5 text-sm text-stone-400">
+                No celebration moments in this range.
               </li>
             )}
           </ul>

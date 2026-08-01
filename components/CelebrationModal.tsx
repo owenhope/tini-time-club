@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Share, View } from "react-native";
+import { Modal, Platform, Share, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Animated, {
   Easing,
@@ -11,13 +11,21 @@ import Animated, {
 } from "react-native-reanimated";
 import { Avatar, AppText, Button } from "@/components/shared";
 import { makeStyles } from "@/theme";
-import type { Achievement } from "@/utils/celebrations";
+import {
+  logCelebrationEvent,
+  type Achievement,
+} from "@/utils/celebrations";
 import { warn } from "@/utils/log";
+import { publicProfileUrl } from "@/utils/reviewShare";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
   achievements: Achievement[];
-  profile: { username?: string | null; avatar_url?: string | null } | null;
+  profile: {
+    id?: string | null;
+    username?: string | null;
+    avatar_url?: string | null;
+  } | null;
   /** Fresh review count so the celebrated ring matches the new tier. */
   reviewCount: number | null;
   onClose: () => void;
@@ -65,6 +73,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       250,
       withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) })
     );
+    void logCelebrationEvent(achievement, "modal", "shown");
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [achievement, fade, scale]);
 
@@ -88,7 +97,24 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   const onShare = async () => {
     try {
-      await Share.share({ message: share });
+      const url = profile?.username ? publicProfileUrl(profile.username) : null;
+      const content =
+        Platform.OS === "ios"
+          ? {
+              title: "Tini Time Club",
+              message: share,
+              url: url ?? undefined,
+            }
+          : {
+              title: "Tini Time Club",
+              message: url ? `${share}\n\n${url}` : share,
+            };
+      const result = await Share.share(content);
+      await logCelebrationEvent(
+        achievement,
+        "sheet",
+        result.action === Share.sharedAction ? "shared" : "dismissed"
+      );
     } catch (error) {
       warn("Celebration share failed:", error);
     }

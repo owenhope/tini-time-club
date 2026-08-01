@@ -97,6 +97,9 @@ The long game: TTC membership as identity.
   create `ttc.hopemediahouse.com/u/<username>` links, public profile pages
   render recent reviews with app deep links, and admin analytics track profile
   share usage alongside review sharing.
+- ✅ 2026-08-01: rank-up and Regular celebration moments are analytics-aware:
+  celebration views and shares are logged server-side, share sheets include
+  public profile links, and admin analytics shows celebration usage by kind.
 
 ## Guardrails
 
