@@ -244,37 +244,154 @@ export interface AdminNotification {
   created_at: string;
   body: string;
   kind: string | null;
+  /** Username for single-recipient rows; null for grouped broadcasts. */
   username: string | null;
+  recipients: number;
+  opened: number;
 }
 
 export const fetchRecentNotifications = async (): Promise<
   AdminNotification[]
 > => {
   // notifications.user_id references auth.users, so there's no PostgREST
-  // relationship to profiles — resolve usernames in a second query.
+  // relationship to profiles — resolve usernames in a second query. Admin
+  // broadcasts write one row per recipient sharing an
+  // `admin:<broadcastId>:<userId>` event_key; collapse those into one entry
+  // with recipient/open counts.
   const { data, error } = await db()
     .from("notifications")
-    .select("id,created_at,body,kind,user_id")
+    .select("id,created_at,body,kind,user_id,event_key")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
   if (error) throw new Error(error.message);
 
   const userIds = [...new Set((data ?? []).map((n) => n.user_id))];
-  const { data: profiles } = await db()
-    .from("profiles")
-    .select("id,username")
-    .in("id", userIds);
+  const notificationIds = (data ?? []).map((n) => n.id);
+  const [{ data: profiles }, { data: opens }] = await Promise.all([
+    db().from("profiles").select("id,username").in("id", userIds),
+    db()
+      .from("notification_opens")
+      .select("notification_id")
+      .in("notification_id", notificationIds),
+  ]);
   const usernames = new Map(
     (profiles ?? []).map((p) => [p.id, p.username as string | null])
   );
+  const openedIds = new Set(
+    (opens ?? []).map((o) => o.notification_id as string)
+  );
 
-  return (data ?? []).map((n) => ({
-    id: n.id,
-    created_at: n.created_at,
-    body: n.body,
-    kind: n.kind,
-    username: usernames.get(n.user_id) ?? null,
-  }));
+  const broadcastKey = (eventKey: string | null): string | null => {
+    const match = eventKey?.match(/^admin:([0-9a-f-]{36}):/);
+    return match ? match[1] : null;
+  };
+
+  const grouped = new Map<string, AdminNotification>();
+  for (const n of data ?? []) {
+    const key = broadcastKey(n.event_key) ?? n.id;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.recipients += 1;
+      existing.opened += openedIds.has(n.id) ? 1 : 0;
+      existing.username = null; // more than one recipient
+    } else {
+      grouped.set(key, {
+        id: key,
+        created_at: n.created_at,
+        body: n.body,
+        kind: n.kind,
+        username: usernames.get(n.user_id) ?? null,
+        recipients: 1,
+        opened: openedIds.has(n.id) ? 1 : 0,
+      });
+    }
+  }
+  return [...grouped.values()].slice(0, 50);
+};
+
+export interface NotificationKindStats {
+  kind: string;
+  sent: number;
+  opened: number;
+  /** null when sends aren't tracked server-side (local reminders). */
+  openRate: number | null;
+}
+
+export interface NotificationAnalytics {
+  totalSent: number;
+  totalOpened: number;
+  /** % of opens followed by a review from that member within 24h. */
+  openToReviewRate: number | null;
+  byKind: NotificationKindStats[];
+}
+
+export const fetchNotificationAnalytics = async (
+  days = 30
+): Promise<NotificationAnalytics> => {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const sinceIso = since.toISOString();
+
+  const [sent, opens, reviews] = await Promise.all([
+    db().from("notifications").select("kind").gte("created_at", sinceIso),
+    db()
+      .from("notification_opens")
+      .select("kind,user_id,opened_at")
+      .gte("opened_at", sinceIso),
+    db()
+      .from("reviews")
+      .select("user_id,inserted_at")
+      .eq("state", 1)
+      .gte("inserted_at", sinceIso),
+  ]);
+
+  const sentByKind = new Map<string, number>();
+  for (const row of sent.data ?? []) {
+    const kind = row.kind ?? "unknown";
+    sentByKind.set(kind, (sentByKind.get(kind) ?? 0) + 1);
+  }
+  const openedByKind = new Map<string, number>();
+  for (const row of opens.data ?? []) {
+    const kind = row.kind ?? "unknown";
+    openedByKind.set(kind, (openedByKind.get(kind) ?? 0) + 1);
+  }
+
+  const kinds = [
+    ...new Set([...sentByKind.keys(), ...openedByKind.keys()]),
+  ].sort();
+  const byKind = kinds.map((kind) => {
+    const sentCount = sentByKind.get(kind) ?? 0;
+    const openedCount = openedByKind.get(kind) ?? 0;
+    return {
+      kind,
+      sent: sentCount,
+      opened: openedCount,
+      openRate: sentCount > 0 ? openedCount / sentCount : null,
+    };
+  });
+
+  // Conversion: an open counts if that member posted a review within 24h.
+  const dayMs = 24 * 60 * 60 * 1000;
+  const reviewsByUser = new Map<string, number[]>();
+  for (const review of reviews.data ?? []) {
+    const times = reviewsByUser.get(review.user_id) ?? [];
+    times.push(new Date(review.inserted_at).getTime());
+    reviewsByUser.set(review.user_id, times);
+  }
+  const openRows = opens.data ?? [];
+  const converted = openRows.filter((open) => {
+    const openedAt = new Date(open.opened_at).getTime();
+    return (reviewsByUser.get(open.user_id) ?? []).some(
+      (t) => t >= openedAt && t <= openedAt + dayMs
+    );
+  }).length;
+
+  return {
+    totalSent: (sent.data ?? []).length,
+    totalOpened: openRows.length,
+    openToReviewRate: openRows.length > 0 ? converted / openRows.length : null,
+    byKind,
+  };
 };
 
 export const fetchPushTokenCount = async (): Promise<number> => {

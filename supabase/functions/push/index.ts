@@ -281,7 +281,8 @@ async function sendExpoPushes(
         to,
         title: "Tini Time Club",
         body: notification.body,
-        data: notification.data ?? {},
+        // notificationId lets the app attribute the tap when logging opens.
+        data: { ...(notification.data ?? {}), notificationId: notification.id },
         sound: "default",
         channelId: "default",
       }))

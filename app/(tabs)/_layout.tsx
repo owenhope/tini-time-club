@@ -14,6 +14,7 @@ import {
   subscribeToPushTokenChanges,
 } from "@/services/pushNotificationService";
 import { ensureFridayMartiniReminder } from "@/utils/martiniReminder";
+import { logNotificationOpen } from "@/utils/notificationOpens";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -41,6 +42,7 @@ const LayoutContent = () => {
     };
 
     const handleResponse = (response: Notifications.NotificationResponse) => {
+      logNotificationOpen(response);
       const route = getNotificationRoute(response);
       // getNotificationRoute only returns strings matching an allowlist of
       // internal routes, so this cast narrows a validated string, not junk.
