@@ -76,9 +76,45 @@ describe("filterRelevantPlaces", () => {
 
   it("keeps venue types outside the query list (wineries etc.)", () => {
     const kept = filterRelevantPlaces([
-      place("A Winery", ["establishment", "point_of_interest", "food"]),
+      place("A Winery", ["establishment", "point_of_interest", "winery"]),
     ]);
     expect(kept).toHaveLength(1);
+  });
+
+  it("drops establishments that don't serve drinks", () => {
+    // Regression: "mosser" surfaced a real-estate office, a spa, and an
+    // apartment building above the actual hotel bar.
+    const kept = filterRelevantPlaces([
+      place("Mosser companies", [
+        "establishment",
+        "service",
+        "point_of_interest",
+        "real_estate_agency",
+      ]),
+      place("THE 'MOSSER SPA", [
+        "massage",
+        "service",
+        "spa",
+        "point_of_interest",
+        "massage_spa",
+        "establishment",
+      ]),
+      place("Mosser Towers casa 2", [
+        "apartment_building",
+        "service",
+        "establishment",
+        "apartment_complex",
+        "point_of_interest",
+      ]),
+      place("A Dessert Shop", [
+        "dessert_shop",
+        "food",
+        "store",
+        "establishment",
+        "point_of_interest",
+      ]),
+    ]);
+    expect(kept).toHaveLength(0);
   });
 
   it("drops geography and transit", () => {

@@ -94,17 +94,42 @@ export const getNameMatchScore = (name: string, query: string): number => {
   return matches.length > 0 ? 50 * (matches.length / queryWords.length) : 0;
 };
 
+// Venue categories where cocktails plausibly get served. Google appends the
+// generic category ("restaurant", "hotel", "lodging", "bar") alongside the
+// specific one ("steak_house", "resort_hotel"), so matching the generics is
+// safe — hotel bars keep passing via hotel/lodging. Offices, spas, and
+// apartment buildings carry none of these and drop out.
+const DRINK_VENUE_TYPES = new Set([
+  "bar",
+  "pub",
+  "wine_bar",
+  "night_club",
+  "restaurant",
+  "cafe",
+  "coffee_shop",
+  "hotel",
+  "lodging",
+  "resort_hotel",
+  "casino",
+  "winery",
+  "brewery",
+  "bowling_alley",
+  "event_venue",
+  "banquet_hall",
+]);
+
 /**
- * Keep results that are actual businesses and drop geography/transit.
- * Google tags every business with "establishment"; cities, neighborhoods,
- * and streets don't carry it.
+ * Keep results that are businesses where a cocktail could plausibly be
+ * served: tagged "establishment" (which geography never is), not
+ * geography/transit, and carrying at least one drink-venue category.
  */
 export const filterRelevantPlaces = (places: any[]): any[] => {
   return places.filter((place: any) => {
     const types: string[] = place.types || [];
     return (
       types.includes("establishment") &&
-      !types.some((type) => NON_VENUE_TYPES.has(type))
+      !types.some((type) => NON_VENUE_TYPES.has(type)) &&
+      types.some((type) => DRINK_VENUE_TYPES.has(type))
     );
   });
 };

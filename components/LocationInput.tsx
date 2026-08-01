@@ -11,14 +11,19 @@ import { Controller } from "react-hook-form";
 import * as Location from "expo-location";
 import "react-native-get-random-values";
 import {
-  GOOGLE_MAPS_API_KEY,
-  NEARBY_BROWSE_TYPES,
   calculateDistance,
   formatDistance,
   getNameMatchScore,
   filterRelevantPlaces,
   deduplicatePlaces,
 } from "@/utils/locationUtils";
+import {
+  autocompleteVenues,
+  fetchVenue,
+  newSessionToken,
+  searchNearbyVenues,
+  type PlaceResult,
+} from "@/services/placesService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -55,6 +60,9 @@ const LocationInput = ({
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchQueryRef = useRef("");
   const hasAppliedLocationRef = useRef(false);
+  // One autocomplete billing session per typing interaction.
+  const sessionTokenRef = useRef<string | null>(null);
+  const [isResolvingId, setIsResolvingId] = useState<string | null>(null);
 
   // Get user location on mount
   useEffect(() => {
@@ -88,52 +96,21 @@ const LocationInput = ({
     };
   }, []);
 
-  // Fetch nearby places
+  // Fetch nearby places: one distance-ranked searchNearby request. The venue
+  // filter still applies so the browse list never offers geography.
   const fetchNearbyPlaces = async (userLocation: Location.LocationObject) => {
     try {
       const { latitude, longitude } = userLocation.coords;
-      const results = await Promise.all(
-        NEARBY_BROWSE_TYPES.map(async (type) => {
-          try {
-            const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            return data.results || [];
-          } catch {
-            return [];
-          }
-        })
-      );
-
-      // Same venue filter as search results — without it the browse list can
-      // offer geography (the legacy API pads type queries with prominent
-      // non-venues, including the city itself).
-      const allPlaces = filterRelevantPlaces(results.flat());
-      const uniquePlaces = deduplicatePlaces(allPlaces);
-
-      uniquePlaces.sort((a, b) => {
-        const distA = calculateDistance(
-          latitude,
-          longitude,
-          a.geometry?.location?.lat || 0,
-          a.geometry?.location?.lng || 0
-        );
-        const distB = calculateDistance(
-          latitude,
-          longitude,
-          b.geometry?.location?.lat || 0,
-          b.geometry?.location?.lng || 0
-        );
-        return distA - distB;
-      });
-
-      setNearbyPlaces(uniquePlaces);
+      const places = await searchNearbyVenues({ latitude, longitude });
+      setNearbyPlaces(deduplicatePlaces(filterRelevantPlaces(places)));
     } catch (error) {
       reportError("Error fetching nearby places:", error);
     }
   };
 
-  // Search for places
+  // Search-as-you-type via Autocomplete (New). One session token spans the
+  // whole typing interaction and is closed by the details fetch on selection,
+  // which is what gets the per-session billing rate.
   const performSearch = useCallback(
     async (query: string) => {
       if (query.length < 2) {
@@ -144,84 +121,31 @@ const LocationInput = ({
 
       setIsSearching(true);
       try {
-        const seenIds = new Set<string>();
-        const results: any[] = [];
-
-        // Text search (finds places anywhere)
-        try {
-          const locationBias = location
-            ? `&location=${location.coords.latitude},${location.coords.longitude}&radius=10000`
-            : "";
-          const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-            query
-          )}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
-          const response = await fetch(url);
-          const data = await response.json();
-          (data.results || []).forEach((place: any) => {
-            if (place.place_id && !seenIds.has(place.place_id)) {
-              seenIds.add(place.place_id);
-              results.push(place);
-            }
-          });
-        } catch (error) {
-          reportError("Error in text search:", error);
+        if (!sessionTokenRef.current) {
+          sessionTokenRef.current = newSessionToken();
         }
-
-        // Nearby search for short queries (if location available)
-        if (location && query.length <= 3) {
-          const nearbyResults = await Promise.all(
-            NEARBY_BROWSE_TYPES.map(async (type) => {
-              try {
-                const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
-                  location.coords.latitude
-                },${
-                  location.coords.longitude
-                }&radius=10000&type=${type}&keyword=${encodeURIComponent(
-                  query
-                )}&key=${GOOGLE_MAPS_API_KEY}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                return data.results || [];
-              } catch {
-                return [];
+        const predictions = await autocompleteVenues(
+          query,
+          sessionTokenRef.current,
+          location
+            ? {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
               }
-            })
-          );
-          nearbyResults.flat().forEach((place: any) => {
-            if (place.place_id && !seenIds.has(place.place_id)) {
-              seenIds.add(place.place_id);
-              results.push(place);
-            }
-          });
-        }
+            : null
+        );
 
-        // Filter and sort
-        const filtered = filterRelevantPlaces(results);
+        // Predictions carry types, so the geography filter applies as-is.
+        const filtered = filterRelevantPlaces(predictions);
 
         filtered.sort((a, b) => {
           const scoreA = getNameMatchScore(a.name || "", query);
           const scoreB = getNameMatchScore(b.name || "", query);
           if (scoreA !== scoreB) return scoreB - scoreA;
-          if (
-            location?.coords &&
-            a.geometry?.location &&
-            b.geometry?.location
-          ) {
-            const distA = calculateDistance(
-              location.coords.latitude,
-              location.coords.longitude,
-              a.geometry.location.lat,
-              a.geometry.location.lng
-            );
-            const distB = calculateDistance(
-              location.coords.latitude,
-              location.coords.longitude,
-              b.geometry.location.lat,
-              b.geometry.location.lng
-            );
-            return distA - distB;
-          }
-          return 0;
+          return (
+            (a.distance_meters ?? Number.MAX_SAFE_INTEGER) -
+            (b.distance_meters ?? Number.MAX_SAFE_INTEGER)
+          );
         });
 
         setSearchResults(filtered);
@@ -274,7 +198,40 @@ const LocationInput = ({
     searchQueryRef.current = "";
     setSearchResults([]);
     setIsSearching(false);
+    sessionTokenRef.current = null;
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+  };
+
+  // Autocomplete predictions have no coordinates; resolve on selection. The
+  // details call also terminates the autocomplete billing session.
+  const selectPlace = async (
+    place: PlaceResult,
+    onSelect: (data: LocationInputValue | null) => void
+  ) => {
+    let resolved = place;
+    if (!place.geometry?.location) {
+      setIsResolvingId(place.place_id);
+      const details = await fetchVenue(
+        place.place_id,
+        sessionTokenRef.current ?? undefined
+      );
+      sessionTokenRef.current = null;
+      setIsResolvingId(null);
+      if (!details?.geometry?.location) return;
+      resolved = { ...place, ...details };
+    }
+
+    const nextLocation: LocationInputValue = {
+      name: resolved.name,
+      address: resolved.vicinity || resolved.formatted_address,
+      coordinates: {
+        latitude: resolved.geometry!.location.lat,
+        longitude: resolved.geometry!.location.lng,
+      },
+      place_id: resolved.place_id,
+    };
+    onSelect(nextLocation);
+    onLocationSelected?.(nextLocation);
   };
 
   // Render place list
@@ -293,15 +250,19 @@ const LocationInput = ({
         const placeName = place.name || "";
         const selected = selectedValue?.name === placeName;
         const placeLocation = place.geometry?.location;
+        // Autocomplete predictions ship an origin distance; nearby results
+        // have coordinates to compute one from.
         const distance =
-          location?.coords && placeLocation
-            ? calculateDistance(
-                location.coords.latitude,
-                location.coords.longitude,
-                placeLocation.lat,
-                placeLocation.lng
-              )
-            : null;
+          place.distance_meters != null
+            ? place.distance_meters / 1000
+            : location?.coords && placeLocation
+              ? calculateDistance(
+                  location.coords.latitude,
+                  location.coords.longitude,
+                  placeLocation.lat,
+                  placeLocation.lng
+                )
+              : null;
 
         return (
           <TouchableOpacity
@@ -310,21 +271,11 @@ const LocationInput = ({
             onPress={() => {
               if (selected) {
                 onSelect(null);
-              } else if (placeLocation) {
-                const nextLocation: LocationInputValue = {
-                  name: placeName,
-                  address: place.vicinity || place.formatted_address,
-                  coordinates: {
-                    latitude: placeLocation.lat,
-                    longitude: placeLocation.lng,
-                  },
-                  place_id: place.place_id, // Store place_id for fetching details later
-                };
-                onSelect(nextLocation);
-                onLocationSelected?.(nextLocation);
+              } else {
+                void selectPlace(place, onSelect);
               }
             }}
-            disabled={disabled}
+            disabled={disabled || isResolvingId !== null}
           >
             <View style={styles.placeContent}>
               <View style={styles.placeTextContainer}>

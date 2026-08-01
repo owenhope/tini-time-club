@@ -13,13 +13,13 @@ import {
   FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { filterRelevantPlaces, getNameMatchScore } from "@/utils/locationUtils";
 import {
-  GOOGLE_MAPS_API_KEY,
-  NEARBY_BROWSE_TYPES,
-  filterRelevantPlaces,
-  getNameMatchScore,
-  calculateDistance,
-} from "@/utils/locationUtils";
+  autocompleteVenues,
+  fetchVenue,
+  newSessionToken,
+  type PlaceResult,
+} from "@/services/placesService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -56,9 +56,10 @@ const Search = forwardRef<any, SearchProps>(
     const styles = useStyles();
     const { colors } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const sessionTokenRef = useRef<string | null>(null);
 
     // Expose clear method via ref
     React.useImperativeHandle(ref, () => ({
@@ -80,84 +81,24 @@ const Search = forwardRef<any, SearchProps>(
 
         setIsSearching(true);
         try {
-          const seenIds = new Set<string>();
-          const results: SearchResult[] = [];
-
-          // Text search (finds places anywhere, biased toward the viewer)
-          try {
-            const locationBias = currentLocation
-              ? `&location=${currentLocation.latitude},${currentLocation.longitude}&radius=10000`
-              : "";
-            const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-              query
-            )}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            (data.results || []).forEach((place: any) => {
-              if (place.place_id && !seenIds.has(place.place_id)) {
-                seenIds.add(place.place_id);
-                results.push(place);
-              }
-            });
-          } catch (error) {
-            reportError("Error in text search:", error);
+          if (!sessionTokenRef.current) {
+            sessionTokenRef.current = newSessionToken();
           }
+          const predictions = await autocompleteVenues(
+            query,
+            sessionTokenRef.current,
+            currentLocation
+          );
 
-          // Nearby search for short queries (if location available)
-          if (currentLocation && query.length <= 3) {
-            const nearbyResults = await Promise.all(
-              NEARBY_BROWSE_TYPES.map(async (type) => {
-                try {
-                  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${
-                    currentLocation.latitude
-                  },${
-                    currentLocation.longitude
-                  }&radius=10000&type=${type}&keyword=${encodeURIComponent(
-                    query
-                  )}&key=${GOOGLE_MAPS_API_KEY}`;
-                  const response = await fetch(url);
-                  const data = await response.json();
-                  return data.results || [];
-                } catch {
-                  return [];
-                }
-              })
-            );
-            nearbyResults.flat().forEach((place: any) => {
-              if (place.place_id && !seenIds.has(place.place_id)) {
-                seenIds.add(place.place_id);
-                results.push(place);
-              }
-            });
-          }
-
-          // Filter and sort (same logic as LocationInput)
-          const filtered = filterRelevantPlaces(results);
-
+          const filtered = filterRelevantPlaces(predictions);
           filtered.sort((a, b) => {
             const scoreA = getNameMatchScore(a.name || "", query);
             const scoreB = getNameMatchScore(b.name || "", query);
             if (scoreA !== scoreB) return scoreB - scoreA;
-            if (
-              currentLocation &&
-              a.geometry?.location &&
-              b.geometry?.location
-            ) {
-              const distA = calculateDistance(
-                currentLocation.latitude,
-                currentLocation.longitude,
-                a.geometry.location.lat,
-                a.geometry.location.lng
-              );
-              const distB = calculateDistance(
-                currentLocation.latitude,
-                currentLocation.longitude,
-                b.geometry.location.lat,
-                b.geometry.location.lng
-              );
-              return distA - distB;
-            }
-            return 0;
+            return (
+              (a.distance_meters ?? Number.MAX_SAFE_INTEGER) -
+              (b.distance_meters ?? Number.MAX_SAFE_INTEGER)
+            );
           });
 
           setSearchResults(filtered.slice(0, 5)); // Limit to 5 results for autocomplete
@@ -194,10 +135,16 @@ const Search = forwardRef<any, SearchProps>(
       []
     );
 
-    const handleSelectPlace = (place: SearchResult) => {
-      if (!place.geometry?.location) return;
+    const handleSelectPlace = async (place: PlaceResult) => {
+      // Predictions carry no coordinates; the details fetch resolves them
+      // and terminates the autocomplete billing session.
+      const resolved = place.geometry?.location
+        ? place
+        : await fetchVenue(place.place_id, sessionTokenRef.current ?? undefined);
+      sessionTokenRef.current = null;
+      if (!resolved?.geometry?.location) return;
 
-      const { location, viewport } = place.geometry;
+      const { location, viewport } = resolved.geometry;
 
       let newRegion = {
         latitude: location.lat,
