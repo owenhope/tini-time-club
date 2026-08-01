@@ -174,12 +174,15 @@ export interface AnalyticsData {
   likesByDay: { day: string; count: number }[];
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
+  profileSharesByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
   reviewedInRange: number;
   totalShares: number;
+  totalProfileShares: number;
   shareChannels: { channel: string; count: number }[];
+  profileShareChannels: { channel: string; count: number }[];
   topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
   tierDistribution: { tier: string; color: string; count: number }[];
@@ -200,7 +203,16 @@ export const fetchAnalytics = async (
   const sinceIso = range.since.toISOString();
   const untilIso = range.until.toISOString();
 
-  const [authUsers, reviews, likes, comments, shares, profiles, reviewers] =
+  const [
+    authUsers,
+    reviews,
+    likes,
+    comments,
+    shares,
+    profileShares,
+    profiles,
+    reviewers,
+  ] =
     await Promise.all([
       fetchAuthUsers(),
       db()
@@ -221,6 +233,11 @@ export const fetchAnalytics = async (
         .lte("inserted_at", untilIso),
       db()
         .from("review_share_events")
+        .select("user_id,channel,outcome,shared_at")
+        .gte("shared_at", sinceIso)
+        .lte("shared_at", untilIso),
+      db()
+        .from("profile_share_events")
         .select("user_id,channel,outcome,shared_at")
         .gte("shared_at", sinceIso)
         .lte("shared_at", untilIso),
@@ -255,7 +272,9 @@ export const fetchAnalytics = async (
   });
 
   const shareRows = shares.data ?? [];
+  const profileShareRows = profileShares.data ?? [];
   const shareChannels = new Map<string, number>();
+  const profileShareChannels = new Map<string, number>();
   const sharesByUser = new Map<
     string,
     { count: number; last_shared_at: string }
@@ -263,6 +282,26 @@ export const fetchAnalytics = async (
   for (const share of shareRows) {
     const channel = share.channel ?? "unknown";
     shareChannels.set(channel, (shareChannels.get(channel) ?? 0) + 1);
+
+    const current = sharesByUser.get(share.user_id);
+    if (!current) {
+      sharesByUser.set(share.user_id, {
+        count: 1,
+        last_shared_at: share.shared_at,
+      });
+    } else {
+      current.count += 1;
+      if (new Date(share.shared_at) > new Date(current.last_shared_at)) {
+        current.last_shared_at = share.shared_at;
+      }
+    }
+  }
+  for (const share of profileShareRows) {
+    const channel = share.channel ?? "unknown";
+    profileShareChannels.set(
+      channel,
+      (profileShareChannels.get(channel) ?? 0) + 1
+    );
 
     const current = sharesByUser.get(share.user_id);
     if (!current) {
@@ -322,11 +361,20 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    profileSharesByDay: bucketByDay(
+      profileShareRows.map((s) => s.shared_at),
+      range.since,
+      range.until
+    ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
     totalShares: shareRows.length,
+    totalProfileShares: profileShareRows.length,
     shareChannels: [...shareChannels.entries()]
+      .map(([channel, count]) => ({ channel, count }))
+      .sort((a, b) => b.count - a.count),
+    profileShareChannels: [...profileShareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
       .sort((a, b) => b.count - a.count),
     topSharers: topShareEntries

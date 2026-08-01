@@ -48,7 +48,7 @@ export default async function AnalyticsPage({
         <RangePicker path="/admin/analytics" range={range} />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-4">
+      <div className="mt-4 grid gap-4 sm:grid-cols-5">
         <Stat
           label="Active members (7d)"
           value={String(a.activeLast7Days)}
@@ -68,6 +68,11 @@ export default async function AnalyticsPage({
           label="Review shares"
           value={String(a.totalShares)}
           hint={`${a.shareChannels.length} channel${a.shareChannels.length === 1 ? "" : "s"}`}
+        />
+        <Stat
+          label="Profile shares"
+          value={String(a.totalProfileShares)}
+          hint={`${a.profileShareChannels.length} channel${a.profileShareChannels.length === 1 ? "" : "s"}`}
         />
       </div>
 
@@ -95,6 +100,12 @@ export default async function AnalyticsPage({
           title="Review shares"
           data={a.sharesByDay}
           color="#7c3aed"
+          unit="shares"
+        />
+        <LineChart
+          title="Profile shares"
+          data={a.profileSharesByDay}
+          color="#0891b2"
           unit="shares"
         />
       </div>
@@ -157,9 +168,9 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="font-semibold">Share channels</h2>
+          <h2 className="font-semibold">Review share channels</h2>
           <ul className="mt-3 divide-y divide-stone-100">
             {a.shareChannels.map((channel) => (
               <li
@@ -175,6 +186,28 @@ export default async function AnalyticsPage({
             {a.shareChannels.length === 0 && (
               <li className="py-2.5 text-sm text-stone-400">
                 No shares in this range.
+              </li>
+            )}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+          <h2 className="font-semibold">Profile share channels</h2>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {a.profileShareChannels.map((channel) => (
+              <li
+                key={channel.channel}
+                className="flex items-center justify-between py-2.5 text-sm"
+              >
+                <span className="font-medium capitalize">
+                  {channel.channel}
+                </span>
+                <span className="text-stone-500">{channel.count}</span>
+              </li>
+            ))}
+            {a.profileShareChannels.length === 0 && (
+              <li className="py-2.5 text-sm text-stone-400">
+                No profile shares in this range.
               </li>
             )}
           </ul>

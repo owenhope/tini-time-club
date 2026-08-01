@@ -93,6 +93,10 @@ The long game: TTC membership as identity.
   `ttc.hopemediahouse.com/r/<review-id>` links, public web pages render the
   review, `/admin` is the protected operator URL, and share analytics track
   member/channel usage.
+- ✅ 2026-08-01: public profile sharing is wired: app profile share actions
+  create `ttc.hopemediahouse.com/u/<username>` links, public profile pages
+  render recent reviews with app deep links, and admin analytics track profile
+  share usage alongside review sharing.
 
 ## Guardrails
 

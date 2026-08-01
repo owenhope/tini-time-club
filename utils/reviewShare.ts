@@ -1,4 +1,5 @@
 import { Alert, Linking, Platform, Share } from "react-native";
+import type { Profile } from "@/types/types";
 import type { Review } from "@/types/types";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import { warn } from "@/utils/log";
@@ -9,6 +10,9 @@ export const TTC_WEB_ORIGIN =
 
 export const publicReviewUrl = (reviewId: string | number) =>
   `${TTC_WEB_ORIGIN.replace(/\/$/, "")}/r/${encodeURIComponent(String(reviewId))}`;
+
+export const publicProfileUrl = (username: string) =>
+  `${TTC_WEB_ORIGIN.replace(/\/$/, "")}/u/${encodeURIComponent(username)}`;
 
 type ShareChannel = "sheet" | "email" | "instagram";
 
@@ -36,6 +40,53 @@ const reviewShareText = (review: Review) => {
   const score = calculateOverallRating(review.taste, review.presentation);
   const scoreText = score == null ? "" : ` ${formatRating(score)}/5.`;
   return `${username} reviewed ${place} on Tini Time Club.${scoreText}`;
+};
+
+const logProfileShare = async (
+  profileId: string,
+  channel: ShareChannel,
+  outcome: string
+) => {
+  const { error } = await supabase.rpc("log_profile_share", {
+    p_profile_id: profileId,
+    p_channel: channel,
+    p_outcome: outcome,
+  });
+  if (error) warn("Profile share analytics failed:", error);
+};
+
+const profileShareText = (profile: Pick<Profile, "username" | "review_count">) => {
+  const count = profile.review_count ?? 0;
+  const reviewText =
+    count > 0
+      ? ` ${count} Martini review${count === 1 ? "" : "s"}.`
+      : ".";
+  return `Check out @${profile.username} on Tini Time Club.${reviewText}`;
+};
+
+export const shareProfileViaSheet = async (
+  profile: Pick<Profile, "id" | "username" | "review_count">
+) => {
+  const url = publicProfileUrl(profile.username);
+  const text = profileShareText(profile);
+  const content =
+    Platform.OS === "ios"
+      ? {
+          title: "Tini Time Club profile",
+          message: text,
+          url,
+        }
+      : {
+          title: "Tini Time Club profile",
+          message: `${text}\n\n${url}`,
+        };
+
+  const result = await Share.share(content);
+  await logProfileShare(
+    profile.id,
+    "sheet",
+    result.action === Share.sharedAction ? "shared" : "dismissed"
+  );
 };
 
 export const shareReviewViaSheet = async (review: Review) => {
