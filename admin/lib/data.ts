@@ -28,6 +28,16 @@ export interface AdminReview {
   location: { name: string | null } | null;
 }
 
+export interface SharePreviewReview {
+  id: string;
+  comment: string | null;
+  inserted_at: string;
+  taste: number | null;
+  presentation: number | null;
+  location: { name: string | null } | null;
+  profile: { username: string | null } | null;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalReviews: number;
@@ -507,6 +517,51 @@ export const fetchPushTokenCount = async (): Promise<number> => {
     .from("push_tokens")
     .select("expo_push_token", { count: "exact", head: true });
   return count ?? 0;
+};
+
+export const fetchSharePreviewReviews = async (
+  limit = 20
+): Promise<SharePreviewReview[]> => {
+  const { data, error } = await db()
+    .from("reviews")
+    .select(
+      "id,comment,inserted_at,taste,presentation,location:locations!reviews_location_fkey(name),profile:profiles!reviews_user_id_fkey1(username,deleted)"
+    )
+    .eq("state", 1)
+    .order("inserted_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as Array<
+    Omit<SharePreviewReview, "id" | "location" | "profile"> & {
+      id: string | number;
+      location:
+        | SharePreviewReview["location"]
+        | SharePreviewReview["location"][];
+      profile:
+        | (SharePreviewReview["profile"] & { deleted?: boolean | null })
+        | (SharePreviewReview["profile"] & { deleted?: boolean | null })[];
+    }
+  >;
+
+  return rows
+    .map((review) => {
+      const location = Array.isArray(review.location)
+        ? (review.location[0] ?? null)
+        : review.location;
+      const profile = Array.isArray(review.profile)
+        ? (review.profile[0] ?? null)
+        : review.profile;
+
+      if (profile?.deleted) return null;
+      return {
+        ...review,
+        id: String(review.id),
+        location,
+        profile: profile ? { username: profile.username } : null,
+      };
+    })
+    .filter(Boolean) as SharePreviewReview[];
 };
 
 export const USERS_PAGE_SIZE = 50;
