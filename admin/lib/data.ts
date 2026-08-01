@@ -266,19 +266,24 @@ export interface AdminNotification {
   opened: number;
 }
 
-export const fetchRecentNotifications = async (): Promise<
-  AdminNotification[]
-> => {
+export const NOTIFICATIONS_PAGE_SIZE = 50;
+
+export const fetchRecentNotifications = async (
+  page = 1,
+  perPage = NOTIFICATIONS_PAGE_SIZE
+): Promise<{ notifications: AdminNotification[]; total: number }> => {
   // notifications.user_id references auth.users, so there's no PostgREST
   // relationship to profiles — resolve usernames in a second query. Admin
   // broadcasts write one row per recipient sharing an
   // `admin:<broadcastId>:<userId>` event_key; collapse those into one entry
-  // with recipient/open counts.
+  // with recipient/open counts. Pagination happens over the *grouped* list,
+  // so fetch a generous window of raw rows and slice after grouping —
+  // revisit if raw volume outgrows this.
   const { data, error } = await db()
     .from("notifications")
     .select("id,created_at,body,kind,user_id,event_key")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(2000);
   if (error) throw new Error(error.message);
 
   const userIds = [...new Set((data ?? []).map((n) => n.user_id))];
@@ -322,7 +327,12 @@ export const fetchRecentNotifications = async (): Promise<
       });
     }
   }
-  return [...grouped.values()].slice(0, 50);
+  const all = [...grouped.values()];
+  const offset = (Math.max(1, page) - 1) * perPage;
+  return {
+    notifications: all.slice(offset, offset + perPage),
+    total: all.length,
+  };
 };
 
 export interface NotificationKindStats {

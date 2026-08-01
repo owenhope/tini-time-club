@@ -1,4 +1,5 @@
 import AdminShell from "@/components/AdminShell";
+import Pagination, { parsePerPage } from "@/components/Pagination";
 import {
   fetchNotificationAnalytics,
   fetchProfiles,
@@ -23,26 +24,43 @@ const ERRORS: Record<string, string> = {
 export default async function NotificationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{
+    sent?: string;
+    error?: string;
+    rpage?: string;
+    rper?: string;
+    upage?: string;
+    uper?: string;
+  }>;
 }) {
-  const { sent, error } = await searchParams;
-  const [profilePage, notifications, tokenCount, analytics] =
-    await Promise.all([
-      // The audience dropdown wants everyone; bump the page size well past
-      // the member count until that stops being reasonable.
-      fetchProfiles(undefined, 1, 500),
-      fetchRecentNotifications(),
-      fetchPushTokenCount(),
-      fetchNotificationAnalytics(30),
-    ]);
+  const params = await searchParams;
+  const { sent, error } = params;
+  const rPage = Math.max(1, Number(params.rpage) || 1);
+  const rPer = parsePerPage(params.rper);
+  const uPage = Math.max(1, Number(params.upage) || 1);
+  const uPer = parsePerPage(params.uper);
+
+  const [profilePage, recent, tokenCount, analytics] = await Promise.all([
+    // The audience dropdown wants everyone; bump the page size well past
+    // the member count until that stops being reasonable.
+    fetchProfiles(undefined, 1, 500),
+    fetchRecentNotifications(rPage, rPer),
+    fetchPushTokenCount(),
+    fetchNotificationAnalytics(30),
+  ]);
   const members = profilePage.profiles.filter((p) => !p.deleted);
+  const notifications = recent.notifications;
 
   const pct = (n: number | null) =>
     n == null ? "—" : `${Math.round(n * 100)}%`;
-  const fridays = upcomingFridays(new Date(), 52, 16);
+  const allFridays = upcomingFridays(new Date(), 52, 16);
+  const fridays = allFridays.slice((uPage - 1) * uPer, uPage * uPer);
   const seasonalMessages = new Set(
     SEASONAL_REMINDERS.map((rule) => rule.message.title)
   );
+  // Each table's pagination links carry the other's params along.
+  const upcomingBase = `rpage=${rPage}&rper=${rPer}`;
+  const recentBase = `upage=${uPage}&uper=${uPer}`;
 
   return (
     <AdminShell active="notifications">
@@ -180,7 +198,7 @@ export default async function NotificationsPage({
             (Fridays 4pm, member-local time)
           </span>
         </h2>
-        <div className="max-h-96 overflow-y-auto">
+        <div>
           <table className="w-full text-left text-sm">
             <tbody className="divide-y divide-stone-100">
               {fridays.map((friday) => {
@@ -212,6 +230,16 @@ export default async function NotificationsPage({
             </tbody>
           </table>
         </div>
+        <Pagination
+          path="/notifications"
+          baseQuery={upcomingBase}
+          pageParam="upage"
+          perParam="uper"
+          page={uPage}
+          perPage={uPer}
+          total={allFridays.length}
+          noun="upcoming reminders"
+        />
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white">
@@ -275,6 +303,16 @@ export default async function NotificationsPage({
             )}
           </tbody>
         </table>
+        <Pagination
+          path="/notifications"
+          baseQuery={recentBase}
+          pageParam="rpage"
+          perParam="rper"
+          page={rPage}
+          perPage={rPer}
+          total={recent.total}
+          noun="notifications"
+        />
       </div>
     </AdminShell>
   );
