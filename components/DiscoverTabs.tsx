@@ -387,23 +387,24 @@ export default function DiscoverTabs({
         {/* Tab Headers */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "locations" && styles.activeTabLocations,
-            ]}
+            style={[styles.tab, activeTab === "locations" && styles.tabActive]}
             onPress={() => onTabChange("locations")}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === "locations" }}
           >
             <Ionicons
               name="location-outline"
               size={20}
               color={
-                activeTab === "locations" ? colors.accent : colors.textMuted
+                activeTab === "locations"
+                  ? colors.onHighlight
+                  : colors.textSecondary
               }
             />
             <Text
               style={[
                 styles.tabText,
-                activeTab === "locations" && styles.activeTabTextLocations,
+                activeTab === "locations" && styles.tabTextActive,
               ]}
             >
               Places
@@ -411,23 +412,24 @@ export default function DiscoverTabs({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "profiles" && styles.activeTabProfiles,
-            ]}
+            style={[styles.tab, activeTab === "profiles" && styles.tabActive]}
             onPress={() => onTabChange("profiles")}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === "profiles" }}
           >
             <Ionicons
               name="people-outline"
               size={20}
               color={
-                activeTab === "profiles" ? colors.secondary : colors.textMuted
+                activeTab === "profiles"
+                  ? colors.onHighlight
+                  : colors.textSecondary
               }
             />
             <Text
               style={[
                 styles.tabText,
-                activeTab === "profiles" && styles.activeTabTextProfiles,
+                activeTab === "profiles" && styles.tabTextActive,
               ]}
             >
               Profiles
@@ -553,27 +555,30 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    paddingVertical: t.spacing.md,
+    paddingVertical: t.spacing.md - 2,
     paddingHorizontal: t.spacing.lg,
     borderRadius: t.radius.pill,
+    // The selected half carries a 2px border; the unselected half reserves the
+    // same space so selection doesn't nudge the labels.
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  activeTabProfiles: {
-    backgroundColor: t.colors.secondarySubtle,
-  },
-  activeTabLocations: {
-    backgroundColor: t.colors.accentSubtle,
+  // Selection is the system's selected Chip: chartreuse fill, 2px green
+  // border, green ink. Both halves take it — a chartreuse fill always carries
+  // onHighlight, never the chartreuse itself.
+  tabActive: {
+    backgroundColor: t.colors.highlight,
+    borderColor: t.colors.accent,
   },
   tabText: {
     fontSize: 15,
     fontFamily: fonts.semibold,
-    color: t.colors.textMuted,
+    color: t.colors.textSecondary,
     marginLeft: t.spacing.sm,
   },
-  activeTabTextProfiles: {
-    color: t.colors.secondary,
-  },
-  activeTabTextLocations: {
-    color: t.colors.accent,
+  tabTextActive: {
+    fontFamily: fonts.bold,
+    color: t.colors.onHighlight,
   },
   searchBar: {
     flexDirection: "row" as const,
