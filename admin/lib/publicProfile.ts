@@ -10,7 +10,13 @@ export interface PublicProfileReview {
   inserted_at: string;
   taste: number | null;
   presentation: number | null;
-  location: { id: number; name: string | null; address: string | null } | null;
+  location: {
+    id: number;
+    name: string | null;
+    address: string | null;
+    rating?: number | null;
+    total_ratings?: number | null;
+  } | null;
 }
 
 export interface PublicProfile {
@@ -106,6 +112,16 @@ export const fetchPublicProfile = async (
         const location = Array.isArray(review.location)
           ? (review.location[0] ?? null)
           : review.location;
+        let locationRating: { rating: number; total_ratings: number } | null =
+          null;
+        if (location?.id) {
+          const { data } = await supabaseAdmin()
+            .from("location_ratings")
+            .select("rating,total_ratings")
+            .eq("id", location.id)
+            .maybeSingle();
+          locationRating = data;
+        }
         let imagePublicUrl: string | null = null;
         if (review.image_url) {
           const { data: signed } = await supabaseAdmin()
@@ -115,7 +131,13 @@ export const fetchPublicProfile = async (
         }
         return {
           ...review,
-          location,
+          location: location
+            ? {
+                ...location,
+                rating: locationRating?.rating ?? null,
+                total_ratings: locationRating?.total_ratings ?? 0,
+              }
+            : location,
           id: String(review.id),
           image_public_url: imagePublicUrl,
         };

@@ -54,6 +54,9 @@ export interface ReviewLocation {
   id: string;
   name: string;
   address?: string;
+  /** Current aggregate TTC rating for this venue. */
+  rating?: number | null;
+  total_ratings?: number | null;
 }
 
 export interface Comment {

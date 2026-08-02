@@ -10,7 +10,13 @@ export interface PublicReview {
   inserted_at: string;
   taste: number | null;
   presentation: number | null;
-  location: { id: number; name: string | null; address: string | null } | null;
+  location: {
+    id: number;
+    name: string | null;
+    address: string | null;
+    rating: number | null;
+    total_ratings: number | null;
+  } | null;
   spirit: { name: string | null } | null;
   type: { name: string | null } | null;
   profile: {
@@ -56,6 +62,20 @@ export const fetchPublicReview = async (
 
   if (error || !review || review.profile?.deleted) notFound();
 
+  let location = review.location;
+  if (review.location?.id) {
+    const { data: locationRating } = await supabaseAdmin()
+      .from("location_ratings")
+      .select("rating,total_ratings")
+      .eq("id", review.location.id)
+      .maybeSingle();
+    location = {
+      ...review.location,
+      rating: locationRating?.rating ?? null,
+      total_ratings: locationRating?.total_ratings ?? 0,
+    };
+  }
+
   let imagePublicUrl: string | null = null;
   if (review.image_url) {
     const { data: signed } = await supabaseAdmin()
@@ -67,6 +87,7 @@ export const fetchPublicReview = async (
   return {
     ...review,
     id: String(review.id),
+    location,
     image_public_url: imagePublicUrl,
   };
 };

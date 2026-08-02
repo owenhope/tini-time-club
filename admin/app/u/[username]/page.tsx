@@ -16,6 +16,9 @@ export const dynamic = "force-dynamic";
 const PUBLIC_ORIGIN = "https://ttc.hopemediahouse.com";
 const FALLBACK_IMAGE = "/nightlife-martini-table.png";
 
+const formatRating = (rating?: number | null) =>
+  rating == null ? "—" : Number(rating).toFixed(1);
+
 export async function generateMetadata({
   params,
 }: {
@@ -164,6 +167,11 @@ export default async function PublicProfilePage({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {profile.reviews.map((review) => {
               const overall = reviewOverall(review);
+              const venueRating =
+                review.location?.rating != null &&
+                (review.location.total_ratings ?? 0) > 0
+                  ? Number(review.location.rating)
+                  : null;
               return (
                 <article
                   key={review.id}
@@ -185,6 +193,11 @@ export default async function PublicProfilePage({
                     <p className="mt-1 text-xs text-emerald-900/60">
                       {overall == null ? "Review" : `${overall.toFixed(1)}/5`}
                     </p>
+                    {venueRating != null ? (
+                      <p className="mt-1 text-xs font-semibold text-emerald-900/70">
+                        {formatRating(venueRating)} venue
+                      </p>
+                    ) : null}
                   </div>
                 </article>
               );

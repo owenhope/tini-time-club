@@ -103,6 +103,9 @@ The long game: TTC membership as identity.
 - ✅ 2026-08-01: the first invite loop is in place: Settings includes an
   invite share-sheet action, invite links point at the member's public profile,
   and admin analytics tracks invite volume/channel usage.
+- ✅ 2026-08-01: review share URLs now use an app-style review card with the
+  review photo as the primary share preview image, and review surfaces show the
+  venue's current aggregate rating.
 
 ## Guardrails
 

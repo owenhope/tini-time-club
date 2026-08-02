@@ -23,7 +23,7 @@ import {
   formatRelativeDate,
   formatCityRegion,
 } from "@/utils/helpers";
-import { calculateOverallRating } from "@/utils/ratingUtils";
+import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
@@ -347,6 +347,11 @@ const ReviewOverlay = memo(
       review.taste,
       review.presentation
     );
+    const locationReviewCount = review.location?.total_ratings ?? 0;
+    const locationRating =
+      review.location?.rating != null && locationReviewCount > 0
+        ? Number(review.location.rating)
+        : null;
 
     return (
       <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
@@ -376,6 +381,19 @@ const ReviewOverlay = memo(
               )}
             </Text>
           )}
+          {locationRating != null ? (
+            <View style={styles.locationRatingPill}>
+              <Ionicons name="star" size={13} color={BRAND.lavender} />
+              <Text style={styles.locationRatingText}>
+                {formatRating(locationRating)} venue rating
+              </Text>
+              <Text style={styles.locationRatingMeta}>
+                {locationReviewCount === 1
+                  ? "1 review"
+                  : `${locationReviewCount} reviews`}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.reviewRatingBlock}>
@@ -563,6 +581,8 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prev.likes_count === next.likes_count &&
     prev.comments_count === next.comments_count &&
     prev.has_liked === next.has_liked &&
+    prev.location?.rating === next.location?.rating &&
+    prev.location?.total_ratings === next.location?.total_ratings &&
     prev.profile?.is_verified === next.profile?.is_verified &&
     prevProps.canDelete === nextProps.canDelete &&
     prevProps.hideHeader === nextProps.hideHeader &&
@@ -993,6 +1013,27 @@ const useStyles = makeStyles((t) => ({
   locationAddress: {
     fontSize: 13,
     color: t.colors.textOnImage,
+  },
+  locationRatingPill: {
+    alignSelf: "flex-start" as const,
+    minHeight: 28,
+    maxWidth: "100%" as const,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: t.radius.pill,
+    backgroundColor: "rgba(8, 31, 28, 0.72)",
+  },
+  locationRatingText: {
+    ...t.typography.caption,
+    color: t.colors.textOnImage,
+    fontWeight: "700" as const,
+  },
+  locationRatingMeta: {
+    ...t.typography.caption,
+    color: "rgba(255,255,255,0.78)",
   },
   eyeIconContainer: {
     position: "absolute" as const,

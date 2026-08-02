@@ -255,7 +255,10 @@ class DatabaseService {
           throw new Error("Review author is unavailable.");
         }
 
-        const [likes, comments, recentComments] = await Promise.all([
+        const location = Array.isArray(data.location)
+          ? (data.location[0] ?? null)
+          : data.location;
+        const [likes, comments, recentComments, locationRating] = await Promise.all([
           supabase
             .from("likes")
             .select("review_id", { count: "exact", head: true })
@@ -279,15 +282,30 @@ class DatabaseService {
             .eq("review_id", reviewId)
             .order("inserted_at", { ascending: false })
             .limit(2),
+          location?.id
+            ? supabase
+                .from("location_ratings")
+                .select("rating,total_ratings")
+                .eq("id", location.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
         ]);
 
         if (likes.error) throw likes.error;
         if (comments.error) throw comments.error;
         if (recentComments.error) throw recentComments.error;
+        if (locationRating.error) throw locationRating.error;
 
         return {
           ...data,
           id: String(data.id),
+          location: location
+            ? {
+                ...location,
+                rating: locationRating.data?.rating ?? null,
+                total_ratings: locationRating.data?.total_ratings ?? 0,
+              }
+            : location,
           likes_count: likes.count ?? 0,
           comments_count: comments.count ?? 0,
           has_liked: false,

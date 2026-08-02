@@ -16,6 +16,14 @@ export const dynamic = "force-dynamic";
 const PUBLIC_ORIGIN = "https://ttc.hopemediahouse.com";
 const FALLBACK_IMAGE = "/nightlife-martini-table.png";
 
+const formatRating = (rating?: number | null) =>
+  rating == null ? "—" : Number(rating).toFixed(1);
+
+const reviewCountLabel = (count?: number | null) => {
+  const n = count ?? 0;
+  return n === 1 ? "1 review" : `${n} reviews`;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -35,7 +43,7 @@ export async function generateMetadata({
     score == null
       ? "Open this Tini Time Club review."
       : `Taste ${review.taste}/5 · Presentation ${review.presentation}/5 on Tini Time Club.`;
-  const image = review.image_public_url ?? FALLBACK_IMAGE;
+  const image = `${canonicalUrl}/opengraph-image`;
   const imageAlt = `Review at ${place}`;
 
   return {
@@ -82,78 +90,138 @@ export default async function PublicReviewPage({
   const review = await fetchPublicReview(reviewId);
   const appUrl = nativeReviewUrl(review.id);
   const overall = reviewOverall(review);
+  const venueRating =
+    review.location?.rating != null && (review.location.total_ratings ?? 0) > 0
+      ? Number(review.location.rating)
+      : null;
 
   return (
-    <main className="min-h-screen bg-[#f8f5ef] text-emerald-950">
+    <main className="min-h-screen bg-[#f8f5ef] text-[#08261f]">
       <OpenInAppAttempt url={appUrl} />
-      <div className="mx-auto grid min-h-screen max-w-5xl items-center gap-8 px-5 py-8 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <section>
-          <Link href="/" className="text-sm font-semibold text-emerald-800">
-            tini time club<span className="text-violet-500">.</span>
+      <div className="mx-auto flex min-h-screen max-w-[520px] flex-col px-4 py-5">
+        <header className="mb-4 flex items-center justify-between">
+          <Link href="/" className="text-[15px] font-black tracking-tight">
+            tini time club<span className="text-[#8e7ce8]">.</span>
           </Link>
-          <h1 className="mt-6 text-4xl font-black tracking-tight md:text-6xl">
-            {review.location?.name ?? "Martini review"}
-          </h1>
-          <p className="mt-3 max-w-xl text-lg text-emerald-900/70">
-            {review.profile?.username
-              ? `Reviewed by @${review.profile.username}`
-              : "Shared from Tini Time Club"}
-            {overall == null ? "" : ` · ${overall.toFixed(1)}/5`}
-          </p>
+          <a
+            href={appUrl}
+            className="rounded-lg bg-[#08261f] px-3 py-2 text-xs font-bold text-white"
+          >
+            Open in app
+          </a>
+        </header>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href={appUrl}
-              className="rounded-lg bg-emerald-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
-            >
-              Open in app
-            </a>
-            <a
-              href="https://apps.apple.com"
-              className="rounded-lg border border-emerald-950/20 bg-white px-5 py-3 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50"
-            >
-              Get the app
-            </a>
+        <article className="overflow-hidden rounded-[8px] border border-black/10 bg-white shadow-2xl shadow-black/10">
+          <div className="flex items-center justify-between px-3 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#08261f] text-sm font-black text-white ring-2 ring-[#8e7ce8]">
+                {(review.profile?.username ?? "T").slice(0, 1).toUpperCase()}
+              </div>
+              <p className="truncate text-[15px] font-bold">
+                @{review.profile?.username ?? "tini-time"}
+              </p>
+            </div>
+            <div className="flex gap-1.5 text-xl leading-none text-[#08261f]">
+              <span>•••</span>
+            </div>
           </div>
-        </section>
 
-        <article className="overflow-hidden rounded-[8px] border border-emerald-950/10 bg-white shadow-2xl shadow-emerald-950/10">
+          <div className="relative aspect-square bg-[#d9d1fb]">
           {review.image_public_url ? (
             <img
               src={review.image_public_url}
               alt={`Review at ${review.location?.name ?? "a Martini spot"}`}
-              className="aspect-square w-full object-cover"
+              className="h-full w-full object-cover"
             />
           ) : (
-            <div className="aspect-square w-full bg-emerald-950/10" />
+            <img
+              src={FALLBACK_IMAGE}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           )}
-          <div className="space-y-4 p-5">
-            <div className="flex items-center justify-between gap-4">
+            <div className="absolute inset-0 flex flex-col justify-end gap-5 bg-black/42 p-5 text-white">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900/50">
-                  Overall
-                </p>
-                <p className="text-3xl font-black">
-                  {overall == null ? "—" : overall.toFixed(1)}
-                </p>
+                <h1 className="text-[22px] font-black leading-tight">
+                  {review.location?.name ?? "Martini review"}
+                </h1>
+                {review.location?.address ? (
+                  <p className="mt-1 text-[13px] text-white/86">
+                    {review.location.address}
+                  </p>
+                ) : null}
+                {venueRating != null ? (
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#08261f]/80 px-3 py-1.5 text-xs font-bold">
+                    <span className="text-[#d9d1fb]">★</span>
+                    <span>{formatRating(venueRating)} venue rating</span>
+                    <span className="font-medium text-white/75">
+                      {reviewCountLabel(review.location?.total_ratings)}
+                    </span>
+                  </div>
+                ) : null}
               </div>
-              <div className="text-right text-sm text-emerald-900/60">
-                <p>{review.spirit?.name ?? "Spirit"}</p>
-                <p>{review.type?.name ?? "Type"}</p>
+
+              <div className="flex items-end justify-between gap-5">
+                <div className="flex gap-8">
+                  <div>
+                    <p className="text-[12px] text-white/80">Spirit</p>
+                    <p className="text-[17px] font-bold capitalize">
+                      {review.spirit?.name ?? "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-white/80">Type</p>
+                    <p className="text-[17px] font-bold capitalize">
+                      {review.type?.name ?? "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[12px] font-semibold text-white/80">
+                    Overall
+                  </p>
+                  <p className="text-[34px] font-black leading-none">
+                    {formatRating(overall)}
+                  </p>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3 p-3">
+            <div className="flex items-center gap-3 text-[22px] leading-none">
+              <span>♡</span>
+              <span>💬</span>
+              <span>✈</span>
+            </div>
             {review.comment ? (
-              <p className="text-base leading-7 text-emerald-950">
-                “{review.comment}”
+              <p className="text-[15px] leading-6">
+                <span className="font-bold">
+                  @{review.profile?.username ?? "tini-time"}
+                </span>{" "}
+                {review.comment}
               </p>
             ) : null}
-            {review.location?.address ? (
-              <p className="text-sm text-emerald-900/55">
-                {review.location.address}
-              </p>
-            ) : null}
+            <p className="text-[11px] font-medium uppercase text-black/45">
+              Shared from Tini Time Club
+            </p>
           </div>
         </article>
+
+        <div className="mt-4 flex gap-3">
+          <a
+            href={appUrl}
+            className="flex-1 rounded-lg bg-[#08261f] px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-[#134238]"
+          >
+            Open in app
+          </a>
+          <a
+            href="https://apps.apple.com"
+            className="flex-1 rounded-lg border border-black/15 bg-white px-5 py-3 text-center text-sm font-bold transition hover:bg-black/5"
+          >
+            Get the app
+          </a>
+        </div>
       </div>
     </main>
   );
