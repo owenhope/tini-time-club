@@ -1,7 +1,11 @@
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
-import { GOOGLE_MAPS_API_KEY, NEARBY_BROWSE_TYPES } from "@/utils/locationUtils";
+import {
+  GOOGLE_MAPS_API_KEY,
+  NEARBY_BROWSE_TYPES,
+} from "@/utils/locationUtils";
 import { reportError } from "@/utils/log";
+import { normalizeVenueName } from "@/utils/venueName";
 
 /**
  * Places API (New) client. Replaces the deprecated legacy Places endpoints:
@@ -21,7 +25,10 @@ const PLACES_BASE = "https://places.googleapis.com/v1";
 /** Legacy-shaped place used across the app's location UIs. */
 export interface PlaceResult {
   place_id: string;
+  /** Normalised for display and storage — the API shouts, we don't. */
   name: string;
+  /** Exactly what the API returned, kept for search matching. */
+  raw_name: string;
   formatted_address?: string;
   vicinity?: string;
   geometry?: {
@@ -58,7 +65,8 @@ const postJson = async (path: string, body: unknown, fieldMask?: string) => {
 
 const mapNewPlace = (place: any): PlaceResult => ({
   place_id: place.id,
-  name: place.displayName?.text ?? "",
+  name: normalizeVenueName(place.displayName?.text),
+  raw_name: place.displayName?.text ?? "",
   formatted_address: place.formattedAddress,
   types: place.types ?? [],
   geometry: place.location
@@ -138,15 +146,16 @@ export const autocompleteVenues = async (
     return (data.suggestions ?? [])
       .map((s: any) => s.placePrediction)
       .filter(Boolean)
-      .map(
-        (p: any): PlaceResult => ({
-          place_id: p.placeId,
-          name: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
-          formatted_address: p.structuredFormat?.secondaryText?.text,
-          types: p.types ?? [],
-          distance_meters: p.distanceMeters,
-        })
-      );
+      .map((p: any): PlaceResult => ({
+        place_id: p.placeId,
+        name: normalizeVenueName(
+          p.structuredFormat?.mainText?.text ?? p.text?.text
+        ),
+        raw_name: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+        formatted_address: p.structuredFormat?.secondaryText?.text,
+        types: p.types ?? [],
+        distance_meters: p.distanceMeters,
+      }));
   } catch (error) {
     reportError("Error autocompleting venues:", error);
     return [];
