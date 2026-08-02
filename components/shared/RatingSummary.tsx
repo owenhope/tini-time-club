@@ -419,13 +419,12 @@ const RatingBar = ({
       >
         <View style={styles.stackedBarHeader}>
           <Text
-            // The bar page puts three columns on a 402pt screen, leaving this
-            // one about 89pt — narrower than "Presentation" at 13pt. Let the
-            // label shrink a couple of points rather than break mid-word
-            // ("Presentati / on") or clip to an ellipsis.
+            // These columns get very narrow — about 89pt on the bar page and
+            // ~62pt in the map sheet — so the label is set a size down and
+            // kept on one line. Auto-shrinking was worse: it sized each label
+            // independently, so "Taste" stayed put while "Presentation"
+            // shrank, and the pair no longer matched.
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
             style={[
               styles.ratingDetailText,
               styles.stackedBarLabel,
@@ -561,9 +560,9 @@ const useStyles = makeStyles((t) => ({
     width: 96,
   },
   stackedBarLabel: {
-    // Grow into the spare room rather than shrink: with flexShrink the label
-    // gave up width it did not need to and clipped to "Presenta…".
     flex: 1,
+    fontSize: 11,
+    lineHeight: 15,
   },
   barTrack: {
     height: 8,
