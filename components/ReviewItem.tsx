@@ -35,6 +35,12 @@ import { shareReviewViaSheet } from "@/utils/reviewShare";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
+/**
+ * The card is inset by the 20px screen gutter on both sides, so its photo is
+ * narrower than the screen — it is no longer the full-bleed image the feed
+ * used to run edge to edge.
+ */
+const CARD_WIDTH = SCREEN_WIDTH - 20 * 2;
 const DOUBLE_TAP_DELAY = 300;
 const ANIMATION_DURATION = 300;
 
@@ -869,6 +875,7 @@ const ReviewItemComponent = ({
   return (
     <>
       <Pressable
+        style={styles.card}
         onPress={handlePress}
         onLongPress={handleLongPress}
         onPressOut={handlePressOut}
@@ -983,8 +990,23 @@ const ReviewItem = memo(ReviewItemComponent, areEqual);
 export default ReviewItem;
 
 const useStyles = makeStyles((t) => ({
+  /**
+   * A review is a card on paper, not a full-bleed block: hairline edge, low
+   * green-tinted shadow, clipped to the card radius so the photo's corners
+   * follow it.
+   */
+  card: {
+    marginHorizontal: t.spacing.gutter,
+    marginBottom: t.spacing.lg,
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+    overflow: "hidden" as const,
+    ...t.elevation.card,
+  },
   header: {
-    paddingHorizontal: 10,
+    paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.md,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
@@ -1015,8 +1037,8 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   imageContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH, // Instagram-style 1:1 aspect ratio
+    width: CARD_WIDTH,
+    height: CARD_WIDTH, // 1:1
     position: "relative" as const,
   },
   reviewImage: {

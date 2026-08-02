@@ -34,7 +34,7 @@ import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
-import { Button, Input } from "@/components/shared";
+import { Button, Input, SectionHeader } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
@@ -597,6 +597,29 @@ function Home() {
   }, [firstLoadDone, loading, refreshing, error, loadReviews]);
 
   // Memoized footer component for loading more
+  /**
+   * The club's welcome block, in the system's flat-colour register: an
+   * uppercase tracked eyebrow over a lowercase display headline, which is the
+   * wordmark's own voice.
+   */
+  const renderFeedHeader = useCallback(
+    () => (
+      <View style={styles.feedHeader}>
+        <View style={styles.tiniBanner}>
+          <Text style={styles.tiniEyebrow}>
+            {new Date().toLocaleDateString(undefined, { weekday: "long" })}
+          </Text>
+          <Text style={styles.tiniHeadline}>it&rsquo;s tini time 🍸</Text>
+          <Text style={styles.tiniSubline}>
+            Find a coupe with your name on it.
+          </Text>
+        </View>
+        <SectionHeader eyebrow="The club" title="From your people" />
+      </View>
+    ),
+    [styles]
+  );
+
   const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
@@ -758,6 +781,7 @@ function Home() {
         }
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
+        ListHeaderComponent={reviews.length > 0 ? renderFeedHeader : null}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={true}
@@ -917,6 +941,35 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.danger,
     textAlign: "center" as const,
     marginBottom: 10,
+  },
+  feedHeader: {
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.md,
+    paddingBottom: t.spacing.lg,
+    gap: t.spacing.lg,
+  },
+  // One flat-colour block per screen, in the "club / insider" deep green.
+  tiniBanner: {
+    backgroundColor: t.colors.surfaceInkDeep,
+    borderRadius: t.radius.card,
+    paddingHorizontal: t.spacing.gutter,
+    paddingVertical: t.spacing.lg,
+    gap: t.spacing.sm,
+  },
+  tiniEyebrow: {
+    ...t.typography.eyebrow,
+    color: t.colors.highlight,
+  },
+  tiniHeadline: {
+    ...t.typography.display,
+    fontSize: 30,
+    lineHeight: 30,
+    color: t.colors.onInk,
+  },
+  tiniSubline: {
+    ...t.typography.caption,
+    color: t.colors.onInk,
+    opacity: 0.8,
   },
   footerLoader: {
     flexDirection: "row" as const,
