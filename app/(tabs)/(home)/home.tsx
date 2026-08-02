@@ -940,7 +940,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
     paddingVertical: t.spacing.xl - 4,
     paddingHorizontal: 40,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.sheet,
     width: "90%" as const,
     alignItems: "center" as const,
   },
@@ -992,7 +992,7 @@ const useStyles = makeStyles((t) => ({
   },
   stepCard: {
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.card,
     padding: t.spacing.xl - 4,
     marginBottom: t.spacing.lg,
     flexDirection: "row" as const,
@@ -1004,7 +1004,7 @@ const useStyles = makeStyles((t) => ({
   stepIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: t.radius.xl,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     alignItems: "center" as const,
     justifyContent: "center" as const,

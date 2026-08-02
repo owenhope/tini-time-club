@@ -198,7 +198,7 @@ const useStyles = makeStyles((t) => ({
   },
   profileCard: {
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.card,
     padding: t.spacing.md,
     marginBottom: t.spacing.sm,
     flexDirection: "row" as const,

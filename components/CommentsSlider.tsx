@@ -301,8 +301,8 @@ const useStyles = makeStyles((t) => ({
   },
   sheetBackground: {
     backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
+    borderTopLeftRadius: t.radius.sheet,
+    borderTopRightRadius: t.radius.sheet,
   },
   sheetHandle: {
     width: 40,
@@ -319,7 +319,7 @@ const useStyles = makeStyles((t) => ({
   // the resting snap.
   emptyStateContainer: {
     alignItems: "center" as const,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingTop: t.spacing.xxl * 2,
   },
   emptyTitle: {

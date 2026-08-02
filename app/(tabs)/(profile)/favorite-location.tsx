@@ -152,7 +152,7 @@ const useStyles = makeStyles((t) => ({
   },
   content: {
     flex: 1,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingTop: t.spacing.lg,
   },
   removeButton: {

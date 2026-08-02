@@ -289,7 +289,7 @@ const useStyles = makeStyles((t) => ({
     fontFamily: fonts.regular,
     fontSize: 15,
     padding: t.spacing.md,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.background,
     borderWidth: 1,
     borderColor: t.colors.border,
@@ -314,7 +314,7 @@ const useStyles = makeStyles((t) => ({
   button: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },

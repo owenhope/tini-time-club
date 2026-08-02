@@ -53,7 +53,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,

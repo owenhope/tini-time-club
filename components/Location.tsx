@@ -622,7 +622,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   overview: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
   },
   overviewColumns: {
     flexDirection: "row" as const,
@@ -643,7 +643,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.xs,
   },
   collapsedRegulars: {

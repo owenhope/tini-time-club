@@ -857,7 +857,7 @@ const useStyles = makeStyles((t) => ({
   },
   inlineError: {
     backgroundColor: t.colors.dangerSubtle,
-    borderRadius: t.radius.sm + 2,
+    borderRadius: t.radius.input,
     paddingVertical: t.spacing.sm + 2,
     paddingHorizontal: 14,
     marginHorizontal: t.spacing.lg,
@@ -950,7 +950,7 @@ const useStyles = makeStyles((t) => ({
   },
   captionInputContainer: {
     backgroundColor: t.colors.background,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.input,
   },
   captionButton: {
     alignItems: "center" as const,
@@ -966,7 +966,7 @@ const useStyles = makeStyles((t) => ({
     minHeight: 60,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
     borderColor: t.colors.border,

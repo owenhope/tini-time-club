@@ -429,8 +429,8 @@ const useStyles = makeStyles((t) => ({
   },
   sheetBackground: {
     backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
+    borderTopLeftRadius: t.radius.sheet,
+    borderTopRightRadius: t.radius.sheet,
   },
   sheetHandle: {
     width: 40,

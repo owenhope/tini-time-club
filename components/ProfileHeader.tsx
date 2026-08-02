@@ -177,7 +177,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.xl,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
   },
   metrics: {
     flex: 1,
@@ -220,7 +220,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
   },
   identityRow: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     gap: t.spacing.md,
@@ -247,7 +247,7 @@ const useStyles = makeStyles((t) => ({
   error: {
     ...t.typography.caption,
     color: t.colors.danger,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
   },
 }));
 

@@ -86,8 +86,8 @@ const useStyles = makeStyles((t) => ({
   },
   sheetBackground: {
     backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.lg,
-    borderTopRightRadius: t.radius.lg,
+    borderTopLeftRadius: t.radius.sheet,
+    borderTopRightRadius: t.radius.sheet,
   },
   sheetHandle: {
     width: 40,
@@ -96,7 +96,7 @@ const useStyles = makeStyles((t) => ({
   },
   content: {
     flex: 1,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingBottom: t.spacing.lg,
   },
 }));

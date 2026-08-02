@@ -110,7 +110,7 @@ const useStyles = makeStyles((t) => ({
   tag: {
     paddingVertical: 6,
     paddingHorizontal: t.spacing.md,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
   },
   tagText: {

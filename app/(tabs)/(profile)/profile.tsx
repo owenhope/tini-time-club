@@ -534,7 +534,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   favoritesSection: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.xs,
   },
   rankDebug: {
@@ -545,7 +545,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   rankDebugHeading: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     flexDirection: "row" as const,
     alignItems: "baseline" as const,
     justifyContent: "space-between" as const,
@@ -569,7 +569,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "center" as const,
     gap: 4,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.pill,
   },
   rankDebugOptionSelected: {
     backgroundColor: t.colors.accentSubtle,
@@ -601,14 +601,14 @@ const useStyles = makeStyles((t) => ({
   },
   emptyContainer: {
     alignItems: "center" as const,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.xxl,
     gap: t.spacing.md,
   },
   emptyCtaIcon: {
     width: 48,
     height: 48,
-    borderRadius: t.radius.xl,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.accentSubtle,

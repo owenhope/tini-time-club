@@ -253,7 +253,7 @@ const useStyles = makeStyles((t) => ({
     gap: 3,
     paddingHorizontal: 6,
     paddingVertical: t.spacing.xs,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.scrimStrong,
   },
   tileScoreText: {
@@ -273,7 +273,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.sm,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,

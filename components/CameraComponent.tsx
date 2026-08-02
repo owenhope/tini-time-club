@@ -273,7 +273,7 @@ const useStyles = makeStyles((t) => ({
     bottom: 0,
     left: 0,
     justifyContent: "space-between" as const,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
   },
   topControls: {
     flexDirection: "row" as const,

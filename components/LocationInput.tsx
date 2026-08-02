@@ -448,7 +448,7 @@ const useStyles = makeStyles((t) => ({
   ratingCircle: {
     width: 32,
     height: 32,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     justifyContent: "center" as const,
     alignItems: "center" as const,

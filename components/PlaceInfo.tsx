@@ -193,7 +193,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
   },
   content: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.xl,
     gap: t.spacing.xl,
   },
@@ -212,7 +212,7 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden" as const,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.md,
     backgroundColor: t.colors.surface,
   },
   row: {

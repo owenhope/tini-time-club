@@ -198,14 +198,14 @@ const useStyles = makeStyles((t) => ({
   segmented: {
     flexDirection: "row" as const,
     backgroundColor: t.colors.surfaceSunken,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.pill,
     padding: t.spacing.xs,
     gap: t.spacing.xs,
   },
   segment: {
     flex: 1,
     paddingVertical: t.spacing.sm + 2,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
   },
   segmentSelected: {

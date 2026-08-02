@@ -599,7 +599,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
     paddingVertical: t.spacing.md,
     paddingHorizontal: 28,
-    borderRadius: t.radius.xl,
+    borderRadius: t.radius.pill,
   },
   errorButtonText: {
     color: t.colors.onAccent,
@@ -625,7 +625,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.border,
@@ -651,7 +651,7 @@ const useStyles = makeStyles((t) => ({
     paddingRight: t.spacing.xs,
   },
   headerFollow: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     minHeight: 36,
   },
   headerIconButton: {
@@ -661,7 +661,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   favoritesSection: {
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.sm,
   },
   regularsList: {

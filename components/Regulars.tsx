@@ -284,7 +284,7 @@ const useStyles = makeStyles((t) => ({
   stackedAvatar: {
     borderWidth: 2,
     borderColor: t.colors.surface,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.pill,
   },
   avatarOverlap: {
     marginLeft: -8,

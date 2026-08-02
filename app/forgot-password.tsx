@@ -165,7 +165,7 @@ const useStyles = makeStyles((t) => ({
     marginVertical: t.spacing.xs,
   },
   input: {
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.input,
     borderCurve: "continuous" as const,
     backgroundColor: t.colors.surfaceRaised,
   },

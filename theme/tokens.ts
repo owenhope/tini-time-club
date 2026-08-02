@@ -280,28 +280,61 @@ export const darkColors: ThemeColors = {
   like: palette.red400,
 };
 
+/**
+ * 4px base. The design system's working scale is 4/8/12/16/20/24/32/40/48/64/
+ * 80/96; `gutter` is the 20px side padding every mobile screen uses.
+ */
 export const spacing = {
   xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
+  gutter: 20,
   xl: 24,
   xxl: 32,
   xxxl: 48,
+  huge: 64,
+  giant: 80,
 } as const;
 
+/**
+ * Controls are pill, surfaces are soft-square — the scale below is the design
+ * system's, so `card`/`sheet`/`thumb`/`input` are the semantic names for the
+ * steps rather than a second, disagreeing set of numbers.
+ */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  xs: 6,
+  sm: 10,
+  md: 16,
+  lg: 22,
+  xl: 28,
   pill: 999,
-  // Brand-semantic radii — controls are pill, surfaces are soft-square.
-  input: 10,
-  thumb: 16, // thumbnails
-  card: 22,
-  sheet: 28, // sheets / modals
+  input: 10, // === sm
+  thumb: 16, // === md — thumbnails
+  card: 22, // === lg
+  sheet: 28, // === xl — sheets / modals
 } as const;
+
+/**
+ * Motion. Fast and confident: press is 120ms, state changes 180ms, sheets and
+ * route transitions 280ms. `spring` is reserved for the two celebratory
+ * moments (a review posting, a rank-up) and never used for navigation.
+ */
+export const duration = {
+  fast: 120,
+  base: 180,
+  slow: 280,
+} as const;
+
+/** Cubic-bezier control points, for Easing.bezier(...spread). */
+export const easing = {
+  out: [0.2, 0.8, 0.3, 1],
+  inOut: [0.6, 0, 0.3, 1],
+  spring: [0.22, 1.3, 0.36, 1],
+} as const;
+
+/** Filled controls darken and shrink slightly on press. No ripple. */
+export const PRESS_SCALE = 0.97;
 
 /**
  * Font families. Figtree (variable 300–900) stands in for the wordmark's

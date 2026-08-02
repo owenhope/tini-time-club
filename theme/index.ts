@@ -14,6 +14,9 @@ export {
   typography,
   fonts,
   elevation,
+  duration,
+  easing,
+  PRESS_SCALE,
   HIT_SLOP,
   type ThemeColors,
 } from "./tokens";

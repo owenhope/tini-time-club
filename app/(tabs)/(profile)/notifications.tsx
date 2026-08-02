@@ -64,7 +64,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.card,
     paddingHorizontal: t.spacing.lg,
     paddingVertical: t.spacing.lg,
   },

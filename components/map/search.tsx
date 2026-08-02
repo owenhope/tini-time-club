@@ -238,7 +238,7 @@ const useStyles = makeStyles((t) => ({
     paddingLeft: t.spacing.xl - 4,
     paddingRight: 40,
     height: 44,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.pill,
     fontFamily: fonts.regular,
     fontSize: 15,
     ...t.elevation.card,
@@ -251,7 +251,7 @@ const useStyles = makeStyles((t) => ({
   },
   resultsContainer: {
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.md,
     marginTop: t.spacing.xs,
     maxHeight: 200,
     ...t.elevation.card,

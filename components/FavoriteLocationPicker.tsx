@@ -64,7 +64,7 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.sm,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.md,
     backgroundColor: t.colors.background,
   },
   pressed: {

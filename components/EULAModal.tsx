@@ -234,7 +234,7 @@ const useStyles = makeStyles((t) => ({
   },
   modalContent: {
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.sheet,
     width: "100%" as const,
     maxHeight: "90%" as const,
     padding: t.spacing.xl - 4,

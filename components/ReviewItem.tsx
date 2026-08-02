@@ -1098,7 +1098,7 @@ const useStyles = makeStyles((t) => ({
     right: t.spacing.xl - 4,
     width: 40,
     height: 40,
-    borderRadius: t.radius.xl - 4,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.scrimStrong,
     justifyContent: "center" as const,
     alignItems: "center" as const,
