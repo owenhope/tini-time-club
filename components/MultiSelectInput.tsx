@@ -76,11 +76,9 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
   },
   label: {
-    ...t.typography.heading,
-    fontSize: 15,
-    letterSpacing: 0,
+    ...t.typography.eyebrow,
     marginBottom: t.spacing.md,
-    color: t.colors.text,
+    color: t.colors.textSecondary,
   },
   scrollContent: {
     paddingRight: t.spacing.xl - 4,
@@ -95,7 +93,8 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   selectedButton: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.highlight,
+    borderWidth: 2,
     borderColor: t.colors.accent,
   },
   buttonText: {
@@ -105,7 +104,7 @@ const useStyles = makeStyles((t) => ({
     textTransform: "capitalize" as const,
   },
   selectedButtonText: {
-    color: t.colors.onAccent,
+    color: t.colors.onHighlight,
     fontFamily: fonts.semibold,
   },
 }));

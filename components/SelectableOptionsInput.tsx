@@ -90,19 +90,21 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
+  // The system's selected state: chartreuse fill behind a 2px green border.
+  // A solid green fill reads as a primary button, not a selected option.
   selectedButton: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.highlight,
+    borderWidth: 2,
     borderColor: t.colors.accent,
   },
   buttonText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.text,
     textAlign: "center" as const,
     textTransform: "capitalize" as const,
   },
   selectedButtonText: {
-    color: t.colors.onAccent,
+    color: t.colors.onHighlight,
     fontFamily: fonts.semibold,
   },
 }));

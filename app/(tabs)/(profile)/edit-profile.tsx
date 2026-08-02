@@ -278,12 +278,13 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     padding: 20,
   },
+  // Field labels are utility type: the system reserves uppercase tracking
+  // for exactly this and keeps sentence case for content.
   label: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.eyebrow,
+    color: t.colors.textSecondary,
     marginBottom: t.spacing.sm,
     marginTop: t.spacing.lg,
-    color: t.colors.text,
   },
   input: {
     fontFamily: fonts.regular,
@@ -298,8 +299,9 @@ const useStyles = makeStyles((t) => ({
   bioInput: {
     minHeight: 100,
   },
+  // A count is a measurement — the system puts those in mono.
   characterCount: {
-    fontFamily: fonts.regular,
+    ...t.typography.mono,
     fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,

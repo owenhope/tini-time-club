@@ -193,8 +193,9 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.border,
     color: t.colors.text,
   },
+  // A count is a measurement — mono, per the system.
   characterCount: {
-    fontFamily: fonts.regular,
+    ...t.typography.mono,
     fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
