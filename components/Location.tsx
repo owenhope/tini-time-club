@@ -149,23 +149,29 @@ const Location = () => {
         // While the hero is on screen it carries the identity, so the bar
         // stays empty rather than setting the name twice; once the hero has
         // scrolled away the bar picks it back up.
-        headerTitle: () =>
-          isCollapsed ? (
-            <View style={styles.headerTitleContainer}>
-              <Text
-                style={styles.headerTitle}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {displayLocation.name}
+        // Hidden rather than absent: an empty headerTitle falls back to the
+        // route name, and "places/[place]" is not a venue.
+        headerTitle: () => (
+          <View
+            style={[
+              styles.headerTitleContainer,
+              !isCollapsed && styles.headerTitleHidden,
+            ]}
+          >
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {displayLocation.name}
+            </Text>
+            {headerCityRegion ? (
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {headerCityRegion}
               </Text>
-              {headerCityRegion ? (
-                <Text style={styles.headerSubtitle} numberOfLines={1}>
-                  {headerCityRegion}
-                </Text>
-              ) : null}
-            </View>
-          ) : null,
+            ) : null}
+          </View>
+        ),
         // Without this the custom title view is laid out in the space left
         // over by headerLeft and headerRight, which are different widths, so
         // it sits off-centre.
@@ -773,6 +779,9 @@ const useStyles = makeStyles((t) => ({
   headerTitleContainer: {
     alignItems: "center" as const,
     justifyContent: "center" as const,
+  },
+  headerTitleHidden: {
+    opacity: 0,
   },
   headerTitle: {
     ...t.typography.heading,
