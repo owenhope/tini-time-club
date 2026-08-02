@@ -380,95 +380,106 @@ export default function DiscoverTabs({
 
   return (
     <View style={styles.container}>
-      {/* Tab Headers */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "locations" && styles.activeTabLocations,
-          ]}
-          onPress={() => onTabChange("locations")}
-        >
-          <Ionicons
-            name="location-outline"
-            size={20}
-            color={activeTab === "locations" ? colors.accent : colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "locations" && styles.activeTabTextLocations,
-            ]}
-          >
-            Places
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "profiles" && styles.activeTabProfiles,
-          ]}
-          onPress={() => onTabChange("profiles")}
-        >
-          <Ionicons
-            name="people-outline"
-            size={20}
-            color={
-              activeTab === "profiles" ? colors.secondary : colors.textMuted
-            }
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "profiles" && styles.activeTabTextProfiles,
-            ]}
-          >
-            Profiles
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={
-            activeTab === "locations"
-              ? "Search for places"
-              : "Search for people"
-          }
-          value={query}
-          onChangeText={onQueryChange}
-          placeholderTextColor={colors.textMuted}
-        />
-        {activeTab === "locations" && (
+      {/* Search chrome sits on the brand green; results below stay on paper,
+          which is the system's "one background colour per surface" rule
+          applied to a screen that has two jobs. */}
+      <View style={styles.inkHeader}>
+        {/* Tab Headers */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.nearbyButton, nearby && styles.nearbyButtonActive]}
-            onPress={() => setNearby(!nearby)}
-            activeOpacity={0.7}
+            style={[
+              styles.tab,
+              activeTab === "locations" && styles.activeTabLocations,
+            ]}
+            onPress={() => onTabChange("locations")}
           >
             <Ionicons
-              name="location"
-              size={16}
-              color={nearby ? colors.accent : colors.textMuted}
+              name="location-outline"
+              size={20}
+              color={
+                activeTab === "locations" ? colors.accent : colors.textMuted
+              }
             />
             <Text
-              style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
+              style={[
+                styles.tabText,
+                activeTab === "locations" && styles.activeTabTextLocations,
+              ]}
             >
-              Nearby
+              Places
             </Text>
           </TouchableOpacity>
-        )}
-        {query !== "" && (
+
           <TouchableOpacity
-            onPress={() => onQueryChange("")}
-            activeOpacity={0.7}
+            style={[
+              styles.tab,
+              activeTab === "profiles" && styles.activeTabProfiles,
+            ]}
+            onPress={() => onTabChange("profiles")}
           >
-            <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+            <Ionicons
+              name="people-outline"
+              size={20}
+              color={
+                activeTab === "profiles" ? colors.secondary : colors.textMuted
+              }
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "profiles" && styles.activeTabTextProfiles,
+              ]}
+            >
+              Profiles
+            </Text>
           </TouchableOpacity>
-        )}
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={
+              activeTab === "locations"
+                ? "Search for places"
+                : "Search for people"
+            }
+            value={query}
+            onChangeText={onQueryChange}
+            placeholderTextColor={colors.textMuted}
+          />
+          {activeTab === "locations" && (
+            <TouchableOpacity
+              style={[styles.nearbyButton, nearby && styles.nearbyButtonActive]}
+              onPress={() => setNearby(!nearby)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="location"
+                size={16}
+                color={nearby ? colors.accent : colors.textMuted}
+              />
+              <Text
+                style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
+              >
+                Nearby
+              </Text>
+            </TouchableOpacity>
+          )}
+          {query !== "" && (
+            <TouchableOpacity
+              onPress={() => onQueryChange("")}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Tab Content */}
@@ -485,8 +496,8 @@ export default function DiscoverTabs({
                 loading={loading}
                 message={
                   query
-                    ? `No people matching "${query}".`
-                    : "No profiles to show yet."
+                    ? `Nobody here by that name. Try another.`
+                    : "The club's quiet. Go find someone."
                 }
               />
             }
@@ -505,8 +516,8 @@ export default function DiscoverTabs({
                   query
                     ? `No places matching "${query}".`
                     : nearby
-                      ? "No places near you yet. Try turning off Nearby."
-                      : "No places to show yet."
+                      ? "Nothing poured near you yet. Widen the net \u2014 turn off Nearby."
+                      : "No bars on the board yet. Be the first to log one."
                 }
               />
             }
@@ -521,11 +532,15 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
   },
+  inkHeader: {
+    backgroundColor: t.colors.surfaceInk,
+    paddingBottom: t.spacing.md,
+  },
   tabContainer: {
     flexDirection: "row" as const,
     backgroundColor: t.colors.surface,
-    marginHorizontal: t.spacing.xl - 4,
-    marginTop: t.spacing.xl - 4,
+    marginHorizontal: t.spacing.gutter,
+    marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
     borderRadius: t.radius.pill,
     ...t.elevation.card,
@@ -564,11 +579,11 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     backgroundColor: t.colors.surface,
-    marginHorizontal: t.spacing.xl - 4,
+    marginHorizontal: t.spacing.gutter,
     marginTop: t.spacing.sm,
-    marginBottom: t.spacing.sm,
+    marginBottom: 0,
     paddingHorizontal: t.spacing.lg,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     height: 48,
     ...t.elevation.card,
     borderWidth: 1,
@@ -604,7 +619,8 @@ const useStyles = makeStyles((t) => ({
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: t.spacing.xl - 4,
+    paddingHorizontal: t.spacing.gutter,
+    backgroundColor: t.colors.background,
   },
   listState: {
     paddingTop: t.spacing.xxxl,
