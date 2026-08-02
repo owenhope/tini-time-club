@@ -34,7 +34,6 @@ import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
-import { shareProfileViaSheet } from "@/utils/reviewShare";
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -202,19 +201,6 @@ const UserProfile = () => {
               }
               style={styles.headerFollow}
             />
-            <TouchableOpacity
-              onPress={() => void shareProfileViaSheet(displayProfile)}
-              style={styles.headerIconButton}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel={`Share ${displayProfile.username}'s profile`}
-            >
-              <Ionicons
-                name="paper-plane-outline"
-                size={21}
-                color={colors.text}
-              />
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={showProfileMenu}
               style={styles.headerIconButton}

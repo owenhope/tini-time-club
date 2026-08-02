@@ -1,6 +1,6 @@
 import { Platform, Share } from "react-native";
 import type { Profile } from "@/types/types";
-import { publicProfileUrl, TTC_WEB_ORIGIN } from "@/utils/reviewShare";
+import { TTC_WEB_ORIGIN } from "@/utils/reviewShare";
 import { warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 
@@ -8,9 +8,10 @@ type InviteProfile = Pick<Profile, "id" | "username" | "review_count"> | null;
 
 const appUrl = () => TTC_WEB_ORIGIN.replace(/\/$/, "");
 
+/** The club's landing page, tagged with who sent the invite. */
 const inviteTargetUrl = (profile: InviteProfile) => {
-  if (!profile?.username) return appUrl();
-  const url = new URL(publicProfileUrl(profile.username));
+  if (!profile?.id) return appUrl();
+  const url = new URL(appUrl());
   url.searchParams.set("invite", profile.id);
   return url.toString();
 };

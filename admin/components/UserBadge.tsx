@@ -22,16 +22,17 @@ export default function UserBadge({ profile }: { profile: AdminProfile }) {
   const initial = (profile.username ?? "?").charAt(0).toUpperCase();
 
   return (
-    <span className="flex items-center gap-3">
+    <span className="flex min-w-0 items-center gap-3">
+      {/* shrink-0: in a narrow flex row the ring flattens into an oval. */}
       <span
-        className="flex h-9 w-9 items-center justify-center rounded-full border-[3px] bg-stone-100 text-sm font-semibold text-stone-600"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] bg-stone-100 text-sm font-semibold text-stone-600"
         style={{ borderColor: tier.color }}
         title={`${tier.name} — ${profile.review_count ?? 0} reviews`}
       >
         {initial}
       </span>
-      <span>
-        <span className="flex items-center gap-1.5 font-medium">
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5 truncate font-medium">
           {profile.username ?? "(no username)"}
           {profile.is_verified ? <VerifiedBadge /> : null}
           {profile.deleted ? (
@@ -40,7 +41,7 @@ export default function UserBadge({ profile }: { profile: AdminProfile }) {
             </span>
           ) : null}
         </span>
-        <span className="block text-xs text-stone-500">
+        <span className="block truncate text-xs text-stone-500">
           {tier.name} · {profile.review_count ?? 0} reviews
           {profile.email ? ` · ${profile.email}` : ""}
         </span>

@@ -16,7 +16,7 @@ import {
   type Achievement,
 } from "@/utils/celebrations";
 import { warn } from "@/utils/log";
-import { publicProfileUrl } from "@/utils/reviewShare";
+import { TTC_WEB_ORIGIN } from "@/utils/reviewShare";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
@@ -97,17 +97,18 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   const onShare = async () => {
     try {
-      const url = profile?.username ? publicProfileUrl(profile.username) : null;
+      // Profiles have no public page, so a milestone links to the club itself.
+      const url = TTC_WEB_ORIGIN.replace(/\/$/, "");
       const content =
         Platform.OS === "ios"
           ? {
               title: "Tini Time Club",
               message: share,
-              url: url ?? undefined,
+              url,
             }
           : {
               title: "Tini Time Club",
-              message: url ? `${share}\n\n${url}` : share,
+              message: `${share}\n\n${url}`,
             };
       const result = await Share.share(content);
       await logCelebrationEvent(

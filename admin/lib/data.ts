@@ -38,12 +38,6 @@ export interface SharePreviewReview {
   profile: { username: string | null } | null;
 }
 
-export interface SharePreviewProfile {
-  username: string;
-  name: string | null;
-  review_count: number | null;
-}
-
 const db = supabaseAdmin;
 
 /** auth.users rows keyed by id — email + signup date live there. */
@@ -228,21 +222,28 @@ export interface AnalyticsData {
   likesByDay: { day: string; count: number }[];
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
-  profileSharesByDay: { day: string; count: number }[];
   invitesByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
   reviewedInRange: number;
   totalShares: number;
-  totalProfileShares: number;
   totalInvites: number;
   shareChannels: { channel: string; count: number }[];
-  profileShareChannels: { channel: string; count: number }[];
   inviteChannels: { channel: string; count: number }[];
   topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
-  tierDistribution: { tier: string; color: string; count: number }[];
+  tierDistribution: {
+    tier: string;
+    color: string;
+    count: number;
+    /** Review count that earns the tier. */
+    min: number;
+    /** Last review count still inside the tier; null at the top. */
+    max: number | null;
+    /** The tier above, and the review count that reaches it. */
+    next: { tier: string; min: number } | null;
+  }[];
   topReviewers: AdminProfile[];
   /** Signups inside the range, for the growth section. */
   signupsInRange: number;
@@ -256,7 +257,6 @@ export interface AnalyticsData {
     likes: number;
     comments: number;
     shares: number;
-    profileShares: number;
     invites: number;
   };
 }
@@ -281,7 +281,6 @@ export const fetchAnalytics = async (
     likes,
     comments,
     shares,
-    profileShares,
     celebrations,
     invites,
     profiles,
@@ -311,11 +310,6 @@ export const fetchAnalytics = async (
         .gte("shared_at", sinceIso)
         .lte("shared_at", untilIso),
       db()
-        .from("profile_share_events")
-        .select("user_id,channel,outcome,shared_at")
-        .gte("shared_at", sinceIso)
-        .lte("shared_at", untilIso),
-      db()
         .from("celebration_events")
         .select("user_id,kind,channel,outcome,created_at")
         .gte("created_at", sinceIso)
@@ -340,14 +334,12 @@ export const fetchAnalytics = async (
     priorLikes,
     priorComments,
     priorShares,
-    priorProfileShares,
     priorInvites,
   ] = await Promise.all([
     countBetween("reviews", "inserted_at", prior.since, prior.until, true),
     countBetween("likes", "liked_at", prior.since, prior.until),
     countBetween("comments", "inserted_at", prior.since, prior.until),
     countBetween("review_share_events", "shared_at", prior.since, prior.until),
-    countBetween("profile_share_events", "shared_at", prior.since, prior.until),
     countBetween("invite_share_events", "created_at", prior.since, prior.until),
   ]);
 
@@ -371,15 +363,16 @@ export const fetchAnalytics = async (
           (p.review_count ?? 0) >= tier.min &&
           (!next || (p.review_count ?? 0) < next.min)
       ).length,
+      min: tier.min,
+      max: next ? next.min - 1 : null,
+      next: next ? { tier: next.name, min: next.min } : null,
     };
   });
 
   const shareRows = shares.data ?? [];
-  const profileShareRows = profileShares.data ?? [];
   const celebrationRows = celebrations.data ?? [];
   const inviteRows = invites.data ?? [];
   const shareChannels = new Map<string, number>();
-  const profileShareChannels = new Map<string, number>();
   const inviteChannels = new Map<string, number>();
   const sharesByUser = new Map<
     string,
@@ -388,26 +381,6 @@ export const fetchAnalytics = async (
   for (const share of shareRows) {
     const channel = share.channel ?? "unknown";
     shareChannels.set(channel, (shareChannels.get(channel) ?? 0) + 1);
-
-    const current = sharesByUser.get(share.user_id);
-    if (!current) {
-      sharesByUser.set(share.user_id, {
-        count: 1,
-        last_shared_at: share.shared_at,
-      });
-    } else {
-      current.count += 1;
-      if (new Date(share.shared_at) > new Date(current.last_shared_at)) {
-        current.last_shared_at = share.shared_at;
-      }
-    }
-  }
-  for (const share of profileShareRows) {
-    const channel = share.channel ?? "unknown";
-    profileShareChannels.set(
-      channel,
-      (profileShareChannels.get(channel) ?? 0) + 1
-    );
 
     const current = sharesByUser.get(share.user_id);
     if (!current) {
@@ -504,11 +477,6 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
-    profileSharesByDay: bucketByDay(
-      profileShareRows.map((s) => s.shared_at),
-      range.since,
-      range.until
-    ),
     invitesByDay: bucketByDay(
       inviteRows.map((invite) => invite.created_at),
       range.since,
@@ -518,12 +486,8 @@ export const fetchAnalytics = async (
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
     totalShares: shareRows.length,
-    totalProfileShares: profileShareRows.length,
     totalInvites: inviteRows.length,
     shareChannels: [...shareChannels.entries()]
-      .map(([channel, count]) => ({ channel, count }))
-      .sort((a, b) => b.count - a.count),
-    profileShareChannels: [...profileShareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
       .sort((a, b) => b.count - a.count),
     inviteChannels: [...inviteChannels.entries()]
@@ -559,7 +523,6 @@ export const fetchAnalytics = async (
       likes: priorLikes.count ?? 0,
       comments: priorComments.count ?? 0,
       shares: priorShares.count ?? 0,
-      profileShares: priorProfileShares.count ?? 0,
       invites: priorInvites.count ?? 0,
     },
   };
@@ -782,28 +745,6 @@ export const fetchSharePreviewReviews = async (
     .filter(Boolean) as SharePreviewReview[];
 };
 
-/** Busiest members first — the profiles whose share pages have content. */
-export const fetchSharePreviewProfiles = async (
-  limit = 20
-): Promise<SharePreviewProfile[]> => {
-  const { data, error } = await db()
-    .from("profiles")
-    .select("username,name,review_count")
-    .eq("deleted", false)
-    .not("username", "is", null)
-    .order("review_count", { ascending: false, nullsFirst: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
-
-  return (data ?? [])
-    .filter((profile) => profile.username)
-    .map(({ username, name, review_count }) => ({
-      username: username as string,
-      name: name ?? null,
-      review_count: review_count ?? null,
-    }));
-};
-
 export const USERS_PAGE_SIZE = 50;
 
 export const fetchProfiles = async (
@@ -935,6 +876,188 @@ export interface AdminLocation {
   rating: number | null;
   total_ratings: number;
 }
+
+export interface LatestLocation {
+  id: number;
+  name: string | null;
+  address: string | null;
+  inserted_at: string | null;
+}
+
+export interface LatestActivity {
+  members: AdminProfile[];
+  reviews: AdminReviewRow[];
+  locations: LatestLocation[];
+}
+
+/**
+ * The newest members, reviews and locations, for the dashboard's three
+ * recent-activity lists. Signup order comes from auth.users, since profiles
+ * has no created_at.
+ */
+export const fetchLatestActivity = async (
+  limit = 10
+): Promise<LatestActivity> => {
+  const [authUsers, reviews, locations] = await Promise.all([
+    fetchAuthUsers(),
+    fetchAllReviews(undefined, 1, limit),
+    db()
+      .from("locations")
+      .select("id,name,address,inserted_at")
+      .order("inserted_at", { ascending: false, nullsFirst: false })
+      .limit(limit),
+  ]);
+  if (locations.error) throw new Error(locations.error.message);
+
+  const newestIds = [...authUsers.entries()]
+    .sort(
+      (a, b) =>
+        new Date(b[1].created_at ?? 0).getTime() -
+        new Date(a[1].created_at ?? 0).getTime()
+    )
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  const { data: newestProfiles, error: profileError } = await db()
+    .from("profiles")
+    .select(
+      "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+    )
+    .in("id", newestIds);
+  if (profileError) throw new Error(profileError.message);
+
+  // Ordered by the auth.users sort, not by the `in` result order.
+  const members = newestIds
+    .map((id) => {
+      const profile = (newestProfiles ?? []).find((p) => p.id === id);
+      if (!profile) return null;
+      return { ...profile, ...authUsers.get(id) } as AdminProfile;
+    })
+    .filter(Boolean) as AdminProfile[];
+
+  return {
+    members,
+    reviews: reviews.reviews,
+    locations: (locations.data ?? []) as LatestLocation[],
+  };
+};
+
+export interface TopReview extends AdminReviewRow {
+  likes: number;
+  comments: number;
+}
+
+export interface TopLocation {
+  id: number;
+  name: string | null;
+  rating: number | null;
+  total_ratings: number;
+}
+
+/**
+ * Minimum reviews before a location can rank. Mirrors the app's Discover
+ * list (components/DiscoverTabs.tsx) — one five-star review should not
+ * outrank a well-reviewed bar.
+ */
+const TOP_LOCATION_MIN_RATINGS = 2;
+
+export interface TopActivity {
+  members: AdminProfile[];
+  reviews: TopReview[];
+  locations: TopLocation[];
+}
+
+/**
+ * The leaderboard counterpart to fetchLatestActivity: most-reviewing members,
+ * most-engaged reviews, most-reviewed locations. Likes and comments are
+ * tallied in memory — fine at current scale, revisit alongside fetchAuthUsers.
+ */
+export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
+  const [members, likes, comments, locations] = await Promise.all([
+    fetchTopReviewers(limit),
+    db().from("likes").select("review_id"),
+    db().from("comments").select("review_id"),
+    // Ranked exactly as the app's Discover list: highest rated first, review
+    // count only as the tiebreaker, and nothing under the minimum sample.
+    db()
+      .from("location_ratings")
+      .select("id,name,rating,total_ratings")
+      .gte("total_ratings", TOP_LOCATION_MIN_RATINGS)
+      .not("rating", "is", null)
+      .order("rating", { ascending: false })
+      .order("total_ratings", { ascending: false })
+      .limit(limit),
+  ]);
+  if (likes.error) throw new Error(likes.error.message);
+  if (comments.error) throw new Error(comments.error.message);
+  if (locations.error) throw new Error(locations.error.message);
+
+  const engagement = new Map<string, { likes: number; comments: number }>();
+  const tally = (reviewId: unknown, key: "likes" | "comments") => {
+    if (reviewId == null) return;
+    const id = String(reviewId);
+    const row = engagement.get(id) ?? { likes: 0, comments: 0 };
+    row[key] += 1;
+    engagement.set(id, row);
+  };
+  for (const row of likes.data ?? []) tally(row.review_id, "likes");
+  for (const row of comments.data ?? []) tally(row.review_id, "comments");
+
+  const ranked = [...engagement.entries()]
+    .sort(
+      (a, b) =>
+        b[1].likes - a[1].likes ||
+        b[1].comments - a[1].comments ||
+        Number(b[0]) - Number(a[0])
+    )
+    .slice(0, limit);
+
+  let topReviews: TopReview[] = [];
+  if (ranked.length > 0) {
+    const { data, error } = await db()
+      .from("reviews")
+      .select(
+        `id,comment,taste,presentation,inserted_at,state,
+         location:locations!reviews_location_fkey(id,name),
+         profile:profiles!reviews_user_id_fkey1(id,username)`
+      )
+      .in(
+        "id",
+        ranked.map(([id]) => id)
+      );
+    if (error) throw new Error(error.message);
+
+    // Reordered to the engagement ranking, which `in` does not preserve.
+    topReviews = ranked
+      .map(([id, counts]) => {
+        const row = (data ?? []).find((r) => String(r.id) === id);
+        if (!row) return null;
+        return {
+          id: String(row.id),
+          comment: row.comment,
+          taste: row.taste,
+          presentation: row.presentation,
+          inserted_at: row.inserted_at,
+          state: row.state,
+          location: one(row.location),
+          profile: one(row.profile),
+          ...counts,
+        };
+      })
+      .filter(Boolean) as TopReview[];
+  }
+
+  return {
+    members,
+    reviews: topReviews,
+    locations: (locations.data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      rating: row.rating ?? null,
+      total_ratings: row.total_ratings ?? 0,
+    })),
+  };
+};
 
 /** All locations with their aggregate rating, for the admin Locations section. */
 export const fetchLocations = async (

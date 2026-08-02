@@ -342,12 +342,7 @@ const InlineIdentityText = ({
   bodyClass: string;
 }) => (
   <p className={bodyClass} style={{ color: TEXT }}>
-    <a
-      href={`/u/${encodeURIComponent(username)}`}
-      className={`${usernameClass} hover:underline`}
-    >
-      {username}
-    </a>
+    <span className={usernameClass}>{username}</span>
     {isVerified ? <VerifiedBadge size={13} /> : null} {body}
   </p>
 );
@@ -403,20 +398,14 @@ export default function ReviewShareCard({
 
       {/* Header — mobile: px 10 / py 12, avatar 28 with rank ring */}
       <div className="flex items-center justify-between bg-white px-[10px] py-3">
-        <a
-          href={`/u/${encodeURIComponent(username)}`}
-          className="flex min-w-0 items-center gap-2"
-        >
+        <span className="flex min-w-0 items-center gap-2">
           <AvatarWithRing
             avatarUrl={review.profile?.avatar_public_url ?? null}
             username={review.profile?.username ?? null}
             reviewCount={review.profile?.review_count ?? null}
             size={28}
           />
-          <p
-            className="truncate text-[15px] font-bold hover:underline"
-            style={{ color: TEXT }}
-          >
+          <p className="truncate text-[15px] font-bold" style={{ color: TEXT }}>
             {username}
             {review.profile?.is_verified ? (
               <>
@@ -425,7 +414,7 @@ export default function ReviewShareCard({
               </>
             ) : null}
           </p>
-        </a>
+        </span>
         <span className="p-1">
           <EllipsisIcon size={20} />
         </span>

@@ -39,7 +39,6 @@ import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { RANK_TIERS, getRankTier } from "@/utils/ranking";
-import { shareProfileViaSheet } from "@/utils/reviewShare";
 
 interface RankPreviewOption {
   label: string;
@@ -126,19 +125,6 @@ const Profile = () => {
         headerLeft: () => null,
         headerRight: () => (
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => void shareProfileViaSheet(profile)}
-              style={styles.headerButton}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Share profile"
-            >
-              <Ionicons
-                name="paper-plane-outline"
-                size={22}
-                color={colors.text}
-              />
-            </TouchableOpacity>
             <TouchableOpacity
               // navigation.navigate targets the sibling screen in this tab's
               // stack; expo-router's useNavigation() has no typed param list,

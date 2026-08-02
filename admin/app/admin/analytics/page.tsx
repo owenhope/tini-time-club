@@ -197,18 +197,13 @@ export default async function AnalyticsPage({
             id="sharing"
             link={{ href: "/admin/share-preview", label: "Share preview" }}
             title="Sharing & referral"
-            description="The growth loops: review shares, profile shares, and invites."
+            description="The growth loops: review shares and invites."
           >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <MetricTile
                 label="Review shares"
                 value={a.totalShares}
                 previous={a.previous.shares}
-              />
-              <MetricTile
-                label="Profile shares"
-                value={a.totalProfileShares}
-                previous={a.previous.profileShares}
               />
               <MetricTile
                 label="Invites"
@@ -216,17 +211,11 @@ export default async function AnalyticsPage({
                 previous={a.previous.invites}
               />
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2">
               <LineChart
                 title="Review shares"
                 data={a.sharesByDay}
                 color="#7c3aed"
-                unit="shares"
-              />
-              <LineChart
-                title="Profile shares"
-                data={a.profileSharesByDay}
-                color="#0891b2"
                 unit="shares"
               />
               <LineChart
@@ -236,7 +225,7 @@ export default async function AnalyticsPage({
                 unit="invites"
               />
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2">
               <BreakdownList
                 title="Review share channels"
                 rows={a.shareChannels.map((channel) => ({
@@ -245,15 +234,6 @@ export default async function AnalyticsPage({
                   value: String(channel.count),
                 }))}
                 empty="No shares in this range."
-              />
-              <BreakdownList
-                title="Profile share channels"
-                rows={a.profileShareChannels.map((channel) => ({
-                  key: channel.channel,
-                  label: channel.channel,
-                  value: String(channel.count),
-                }))}
-                empty="No profile shares in this range."
               />
               <BreakdownList
                 title="Invite channels"
@@ -301,7 +281,7 @@ export default async function AnalyticsPage({
             id="ranking"
             link={{ href: "/admin/users", label: "All users" }}
             title="Ranking"
-            description="How members are distributed across the four avatar-ring tiers."
+            description="How members are distributed across the four avatar-ring tiers, and the review count each tier takes."
           >
             <div className="rounded-2xl border border-stone-200 bg-white p-5">
               <div className="flex h-4 overflow-hidden rounded-full bg-stone-100">
@@ -318,21 +298,33 @@ export default async function AnalyticsPage({
                   ) : null
                 )}
               </div>
-              <ul className="mt-4 space-y-2">
+              <ul className="mt-4 divide-y divide-stone-100">
                 {a.tierDistribution.map((tier) => (
                   <li
                     key={tier.tier}
-                    className="flex items-center justify-between text-sm"
+                    className="flex items-baseline justify-between gap-4 py-2.5 text-sm"
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex min-w-0 items-baseline gap-2">
                       <span
-                        className="h-3 w-3 rounded-full"
+                        className="h-3 w-3 shrink-0 translate-y-0.5 rounded-full"
                         style={{ backgroundColor: tier.color }}
                       />
-                      {tier.tier}
+                      <span className="font-medium">{tier.tier}</span>
+                      <span className="text-stone-400">
+                        {tier.max == null
+                          ? `${tier.min}+ reviews`
+                          : `${tier.min}–${tier.max} reviews`}
+                      </span>
                     </span>
-                    <span className="text-stone-500">
-                      {tier.count} · {pct(tier.count, tierTotal)}
+                    <span className="shrink-0 text-right">
+                      <span className="text-stone-500">
+                        {tier.count} · {pct(tier.count, tierTotal)}
+                      </span>
+                      <span className="block text-xs text-stone-400">
+                        {tier.next
+                          ? `${tier.next.tier} at ${tier.next.min}`
+                          : "Top tier"}
+                      </span>
                     </span>
                   </li>
                 ))}
