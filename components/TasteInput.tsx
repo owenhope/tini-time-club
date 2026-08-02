@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { Controller } from "react-hook-form";
-import RatingSlider from "@/components/shared/RatingSlider";
+import VerdictBlock from "@/components/shared/VerdictBlock";
 import { makeStyles } from "@/theme";
 
 const TasteInput = ({ control }: { control: any }) => {
@@ -11,7 +11,8 @@ const TasteInput = ({ control }: { control: any }) => {
       name="taste"
       render={({ field: { onChange, value } }) => (
         <View style={styles.inputContainer}>
-          <RatingSlider
+          <VerdictBlock
+            eyebrow="Your verdict"
             value={value}
             onChange={onChange}
             accessibilityLabel="Taste rating"

@@ -17,6 +17,9 @@ export interface RatingPipsProps {
   onRate?: (value: number) => void;
   /** Pips sit on a photo scrim or a green ground. */
   onDark?: boolean;
+  /** Explicit olive-body colour, for grounds neither default nor onDark
+   *  covers — the purple verdict block, where green fails contrast. */
+  bodyColor?: string;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }
@@ -27,13 +30,14 @@ export interface RatingPipsProps {
  * everywhere. An olive body with the pimento sitting off-centre, hollow when
  * the rating hasn't reached it.
  */
-const Olive: React.FC<{ size: number; filled: boolean; onDark?: boolean }> = ({
-  size,
-  filled,
-  onDark,
-}) => {
+const Olive: React.FC<{
+  size: number;
+  filled: boolean;
+  onDark?: boolean;
+  bodyColor?: string;
+}> = ({ size, filled, onDark, bodyColor }) => {
   const { colors } = useTheme();
-  const body = onDark ? colors.textOnImage : colors.accent;
+  const body = bodyColor ?? (onDark ? colors.textOnImage : colors.accent);
 
   return (
     <View
@@ -72,6 +76,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   showValue,
   onRate,
   onDark,
+  bodyColor,
   style,
   accessibilityLabel,
 }) => {
@@ -102,7 +107,12 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             accessibilityLabel={`Rate ${n} of ${max}`}
             accessibilityState={{ selected: n <= filledThrough }}
           >
-            <Olive size={size} filled={n <= filledThrough} onDark={onDark} />
+            <Olive
+              size={size}
+              filled={n <= filledThrough}
+              onDark={onDark}
+              bodyColor={bodyColor}
+            />
           </Pressable>
         ) : (
           <Olive
@@ -110,6 +120,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             size={size}
             filled={n <= filledThrough}
             onDark={onDark}
+            bodyColor={bodyColor}
           />
         )
       )}

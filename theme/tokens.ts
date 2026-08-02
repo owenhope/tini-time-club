@@ -122,6 +122,12 @@ export interface ThemeColors {
   surfaceInk: string; // green-700 — "club / insider" ground
   surfaceInkDeep: string; // green-900
   onInk: string; // text on green surfaces
+  /**
+   * Ink for the purple surface. Green on purple is the system's approved
+   * *lockup* pairing, but at 2.9:1 it fails as text — so a purple block takes
+   * near-black green in light and paper in dark.
+   */
+  onBrand: string;
 
   // Status
   danger: string;
@@ -201,6 +207,7 @@ export const lightColors: ThemeColors = {
   onHighlight: palette.green700,
 
   surfaceBrand: palette.purple500,
+  onBrand: palette.green900, // 5.51:1 on purple-500
   surfaceInk: palette.green700,
   surfaceInkDeep: palette.green900,
   onInk: palette.paper050,
@@ -268,6 +275,7 @@ export const darkColors: ThemeColors = {
   onHighlight: palette.green900,
 
   surfaceBrand: palette.purple700,
+  onBrand: palette.paper050, // 5.82:1 on purple-700
   surfaceInk: palette.green800,
   surfaceInkDeep: "#0E1712",
   onInk: palette.paper050,

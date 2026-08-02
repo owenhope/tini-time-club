@@ -72,6 +72,11 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   ["tabBarActive on tabBar", c.tabBarActive, c.tabBar],
   ["tabBarInactive on tabBar", c.tabBarInactive, c.tabBar],
   ["onAccentTonal on accentTonal", c.onAccentTonal, c.accentTonal],
+  // The composer's purple block. Green on purple is the system's approved
+  // lockup pairing but only 2.9:1, so the ink is deliberately not `accent`.
+  ["onBrand on surfaceBrand", c.onBrand, c.surfaceBrand],
+  ["onInk on surfaceInk", c.onInk, c.surfaceInk],
+  ["onInk on surfaceInkDeep", c.onInk, c.surfaceInkDeep],
 ];
 
 const largePairs = (c: ThemeColors): [string, string, string][] => [

@@ -54,6 +54,9 @@ export { default as MetricRow } from "./MetricRow";
 export type { Metric } from "./MetricRow";
 
 export { default as RatingSlider } from "./RatingSlider";
+
+export { default as VerdictBlock } from "./VerdictBlock";
+export type { VerdictBlockProps } from "./VerdictBlock";
 export type { RatingSliderProps } from "./RatingSlider";
 
 export { default as Skeleton } from "./Skeleton";

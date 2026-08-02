@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { Controller } from "react-hook-form";
-import RatingSlider from "@/components/shared/RatingSlider";
+import VerdictBlock from "@/components/shared/VerdictBlock";
 import { makeStyles } from "@/theme";
 
 const PresentationInput = ({ control }: { control: any }) => {
@@ -11,7 +11,8 @@ const PresentationInput = ({ control }: { control: any }) => {
       name="presentation"
       render={({ field: { onChange, value } }) => (
         <View style={styles.inputContainer}>
-          <RatingSlider
+          <VerdictBlock
+            eyebrow="Presentation"
             value={value}
             onChange={onChange}
             accessibilityLabel="Presentation rating"
