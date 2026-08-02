@@ -6,7 +6,7 @@ import RatingPips from "./RatingPips";
 
 export const RATING_MAX = 5;
 
-export type RatingSummaryVariant = "full" | "compact";
+export type RatingSummaryVariant = "full" | "compact" | "headline";
 export type RatingSummaryTone = "surface" | "onImage";
 
 export interface RatingSummaryProps {
@@ -122,6 +122,80 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
     showOverall,
     showBreakdown,
   ]);
+
+  /**
+   * The venue header block: score and meters each take a full-width row of
+   * their own. The three-column arrangement it replaces gave the meters ~89pt
+   * on the bar page and ~62pt in the map sheet, so "Presentation" truncated to
+   * "Pre…" — the label lost before the number did. Nothing has to shrink here,
+   * and the same block fits any sheet height.
+   */
+  if (variant === "headline") {
+    return (
+      <View
+        style={styles.headline}
+        accessible
+        accessibilityRole="summary"
+        accessibilityLabel={a11yLabel}
+      >
+        {overall != null ? (
+          <View style={styles.headlineTop}>
+            <Text
+              style={[
+                styles.headlineScore,
+                onImage && styles.headlineScoreOnInk,
+              ]}
+            >
+              {format(overall)}
+            </Text>
+            <View style={styles.headlineMeta}>
+              <Text
+                style={[
+                  styles.headlineEyebrow,
+                  onImage && styles.headlineEyebrowOnInk,
+                ]}
+              >
+                Overall
+              </Text>
+              {countLabel ? (
+                <Text
+                  style={[
+                    styles.headlineCount,
+                    onImage && styles.headlineCountOnInk,
+                  ]}
+                >
+                  {countLabel}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        ) : (
+          <Text style={[styles.emptyText, onImage && styles.onImageMeta]}>
+            Not yet rated
+          </Text>
+        )}
+
+        {showBreakdown && (taste != null || presentation != null) ? (
+          <View style={styles.headlineBars}>
+            <RatingBar
+              label="Taste"
+              value={taste}
+              onImage={onImage}
+              active={animateBars}
+              layout="headline"
+            />
+            <RatingBar
+              label="Presentation"
+              value={presentation}
+              onImage={onImage}
+              active={animateBars}
+              layout="headline"
+            />
+          </View>
+        ) : null}
+      </View>
+    );
+  }
 
   if (variant === "compact") {
     return (
@@ -359,7 +433,7 @@ const RatingBar = ({
   value?: number | null;
   onImage: boolean;
   active: boolean;
-  layout: "inline" | "stacked";
+  layout: "inline" | "stacked" | "headline";
 }) => {
   const styles = useStyles();
   const pct = value == null ? 0 : Math.max(0, Math.min(1, value / RATING_MAX));
@@ -391,7 +465,9 @@ const RatingBar = ({
       style={[
         styles.barTrack,
         layout === "inline" && styles.inlineBarTrack,
-        layout === "stacked" && styles.stackedBarTrack,
+        (layout === "stacked" || layout === "headline") &&
+          styles.stackedBarTrack,
+        layout === "headline" && styles.headlineBarTrack,
         onImage && styles.barTrackOnImage,
       ]}
     >
@@ -409,6 +485,38 @@ const RatingBar = ({
       />
     </View>
   );
+
+  if (layout === "headline") {
+    return (
+      <View
+        style={styles.headlineBar}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={styles.stackedBarHeader}>
+          {/* Full width, so the label sets at the system's eyebrow size and
+              never has to truncate. */}
+          <Text
+            style={[
+              styles.headlineEyebrow,
+              onImage && styles.headlineEyebrowOnInk,
+            ]}
+          >
+            {label}
+          </Text>
+          <Text
+            style={[
+              styles.headlineBarValue,
+              onImage && styles.headlineBarValueOnInk,
+            ]}
+          >
+            {format(value) ?? "—"}
+          </Text>
+        </View>
+        {barTrack}
+      </View>
+    );
+  }
 
   if (layout === "stacked") {
     return (
@@ -471,6 +579,66 @@ const RatingBar = ({
 const useStyles = makeStyles((t) => ({
   container: {
     gap: t.spacing.md,
+  },
+  headline: {
+    gap: t.spacing.lg,
+  },
+  headlineTop: {
+    flexDirection: "row" as const,
+    alignItems: "flex-end" as const,
+    gap: t.spacing.lg - 2,
+  },
+  // The aggregate is the loudest thing on the block, so it gets the display
+  // cut rather than the metric one.
+  headlineScore: {
+    ...t.typography.displayLarge,
+    fontSize: 46,
+    lineHeight: 40,
+    color: t.colors.text,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  headlineScoreOnInk: {
+    color: t.colors.ratingFillOnInk,
+  },
+  headlineMeta: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+    paddingBottom: 3,
+  },
+  headlineEyebrow: {
+    ...t.typography.eyebrow,
+    color: t.colors.textMuted,
+  },
+  headlineEyebrowOnInk: {
+    // Sage rather than paper: the eyebrow is supporting type, and green-300
+    // clears 7:1 on the green ground without competing with the value.
+    color: t.colors.accentOnImage,
+  },
+  // Counts and scores are data, so they set in mono per the system.
+  headlineCount: {
+    ...t.typography.mono,
+    color: t.colors.textSecondary,
+  },
+  headlineCountOnInk: {
+    color: t.colors.onInk,
+  },
+  headlineBars: {
+    gap: t.spacing.md - 2,
+  },
+  headlineBar: {
+    gap: 5,
+  },
+  headlineBarTrack: {
+    height: 7,
+  },
+  headlineBarValue: {
+    ...t.typography.mono,
+    color: t.colors.text,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  headlineBarValueOnInk: {
+    color: t.colors.onInk,
   },
   containerOverallRight: {
     flexDirection: "row" as const,

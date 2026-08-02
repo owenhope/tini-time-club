@@ -28,7 +28,7 @@ import useCollapsibleHeader, {
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
-import Regulars, { RegularsSkeleton } from "@/components/Regulars";
+import Regulars, { RegularsRailSkeleton } from "@/components/Regulars";
 import {
   getRegularsByLocation,
   type Regular,
@@ -496,33 +496,28 @@ const Location = () => {
           ]}
         >
           <>
+            {/* Full-width rows rather than three columns competing for 402pt:
+                the score and each meter get the whole gutter-to-gutter width,
+                and the regulars become a rail underneath. */}
             <View style={styles.overview}>
-              <View style={styles.overviewColumns}>
-                <View style={styles.ratingBlock}>
-                  <RatingSummary
-                    overall={displayLocation?.rating}
-                    taste={displayLocation?.taste_avg}
-                    presentation={displayLocation?.presentation_avg}
-                    reviewCount={displayLocation?.total_ratings ?? 0}
-                    tone="onImage"
-                    countPlacement="score"
-                    showOverallMeta={false}
-                    showOverallHeading
-                    overallPlacement="right"
-                    breakdownLayout="stacked"
-                  />
-                </View>
+              <RatingSummary
+                variant="headline"
+                overall={displayLocation?.rating}
+                taste={displayLocation?.taste_avg}
+                presentation={displayLocation?.presentation_avg}
+                reviewCount={displayLocation?.total_ratings ?? 0}
+                tone="onImage"
+              />
 
-                {loadingRegulars ? (
-                  <View style={styles.regularsBlock}>
-                    <RegularsSkeleton />
-                  </View>
-                ) : regulars.length > 0 ? (
-                  <View style={styles.regularsBlock}>
-                    <Regulars regulars={regulars} variant="dense" onInk />
-                  </View>
-                ) : null}
-              </View>
+              {loadingRegulars ? (
+                <View style={styles.regularsRail}>
+                  <RegularsRailSkeleton onInk />
+                </View>
+              ) : regulars.length > 0 ? (
+                <View style={styles.regularsRail}>
+                  <Regulars regulars={regulars} variant="rail" onInk />
+                </View>
+              ) : null}
             </View>
           </>
         </Animated.View>
@@ -631,22 +626,12 @@ const useStyles = makeStyles((t) => ({
   },
   overview: {
     paddingHorizontal: t.spacing.gutter,
+    gap: t.spacing.lg,
   },
-  overviewColumns: {
-    flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
-    // Tight, because the bars column has to fit the word "Presentation"
-    // beside its value before it starts truncating.
-    gap: t.spacing.md,
-  },
-  ratingBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  regularsBlock: {
-    width: "38%" as const,
-    minWidth: 120,
-    maxWidth: 150,
+  regularsRail: {
+    borderTopWidth: 1,
+    borderTopColor: t.colors.ratingTrackOnInk,
+    paddingTop: t.spacing.lg - 2,
   },
   collapsedRow: {
     flexDirection: "row" as const,

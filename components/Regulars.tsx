@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
@@ -9,7 +9,7 @@ import { routes } from "@/utils/routes";
 
 interface RegularsProps {
   regulars?: Regular[] | null;
-  variant?: "default" | "compact" | "dense";
+  variant?: "default" | "compact" | "dense" | "rail";
   showLabel?: boolean;
   /** Rendered on a green ground, where the default greys disappear. */
   onInk?: boolean;
@@ -35,6 +35,30 @@ export const RegularsSkeleton = () => {
           </View>
         </View>
       ))}
+    </View>
+  );
+};
+
+/** Rail-shaped placeholder, so the venue header doesn't grow when regulars land. */
+export const RegularsRailSkeleton = ({
+  onInk = false,
+}: {
+  onInk?: boolean;
+}) => {
+  const styles = useStyles();
+  return (
+    <View style={styles.railSection}>
+      <Text style={[styles.eyebrow, onInk && styles.eyebrowOnInk]}>
+        Regulars
+      </Text>
+      <View style={styles.railRow}>
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={styles.railPerson}>
+            <Skeleton circle height={42} />
+            <Skeleton width={44} height={9} />
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
@@ -132,6 +156,56 @@ const Regulars: React.FC<RegularsProps> = ({
     );
   }
 
+  /**
+   * The venue header's rail: name under the face, scrolling sideways past the
+   * third, so a busy venue costs the header no extra height.
+   */
+  if (variant === "rail") {
+    return (
+      <View style={styles.railSection}>
+        {showLabel ? (
+          <Text style={[styles.eyebrow, onInk && styles.eyebrowOnInk]}>
+            Regulars
+          </Text>
+        ) : null}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.railRow}
+        >
+          {displayRegulars.map((regular) => (
+            <Pressable
+              key={regular.profile_id}
+              onPress={
+                regular.isPreview ? undefined : () => openRegular(regular)
+              }
+              style={({ pressed }) => [
+                styles.railPerson,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole={regular.isPreview ? "text" : "link"}
+              accessibilityLabel={`${regular.username}, regular with ${regular.review_count} reviews`}
+            >
+              <Avatar
+                avatarPath={regular.avatar_url}
+                username={regular.username}
+                size={42}
+                reviewCount={regular.profile_review_count}
+                onInk={onInk}
+              />
+              <Text
+                style={[styles.railUsername, onInk && styles.onInkText]}
+                numberOfLines={1}
+              >
+                {regular.username}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
   if (variant === "dense") {
     const renderDenseRegular = (regular: DisplayRegular) => (
       <Pressable
@@ -224,6 +298,32 @@ const useStyles = makeStyles((t) => ({
   label: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
+  },
+  railSection: {
+    gap: 9,
+  },
+  eyebrow: {
+    ...t.typography.eyebrow,
+    color: t.colors.textMuted,
+  },
+  eyebrowOnInk: {
+    color: t.colors.accentOnImage,
+  },
+  railRow: {
+    flexDirection: "row" as const,
+    gap: t.spacing.lg - 2,
+    paddingRight: t.spacing.gutter,
+  },
+  railPerson: {
+    width: 60,
+    alignItems: "center" as const,
+    gap: 5,
+  },
+  railUsername: {
+    ...t.typography.micro,
+    fontFamily: fonts.semibold,
+    color: t.colors.text,
+    maxWidth: 60,
   },
   person: {
     minHeight: 42,

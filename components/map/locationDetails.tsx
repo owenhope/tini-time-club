@@ -4,7 +4,6 @@ import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { stripNameFromAddress } from "@/utils/helpers";
 import { RatingSummary } from "@/components/shared";
-import Regulars, { RegularsSkeleton } from "@/components/Regulars";
 import { makeStyles, useTheme } from "@/theme";
 
 interface LocationDetailsProps {
@@ -46,35 +45,16 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
         {address ?? "No address available"}
       </Text>
 
+      {/* The same stacked block as the bar page, minus the rail: a sheet has
+          less width than the page did, so the columns truncated here first. */}
       <View style={styles.overview}>
-        <View style={styles.overviewColumns}>
-          <View style={styles.ratings}>
-            <RatingSummary
-              overall={loc.rating}
-              taste={loc.taste_avg}
-              presentation={loc.presentation_avg}
-              reviewCount={loc.total_ratings ?? 0}
-              countPlacement="score"
-              showOverallMeta={false}
-              showOverallHeading
-              overallPlacement="right"
-              breakdownLayout="stacked"
-            />
-          </View>
-
-          {loc.regulars === undefined ? (
-            // Regulars arrive in a second fetch after the pins; hold their
-            // column open so the rating block doesn't stretch full width and
-            // then snap back when they land.
-            <View style={styles.regulars}>
-              <RegularsSkeleton />
-            </View>
-          ) : loc.regulars.length ? (
-            <View style={styles.regulars}>
-              <Regulars regulars={loc.regulars} variant="dense" />
-            </View>
-          ) : null}
-        </View>
+        <RatingSummary
+          variant="headline"
+          overall={loc.rating}
+          taste={loc.taste_avg}
+          presentation={loc.presentation_avg}
+          reviewCount={loc.total_ratings ?? 0}
+        />
       </View>
     </View>
   );
@@ -110,21 +90,7 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 20,
   },
   overview: {
-    marginTop: t.spacing.sm,
-  },
-  overviewColumns: {
-    flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
-    gap: t.spacing.xl,
-  },
-  ratings: {
-    flex: 1,
-    minWidth: 0,
-  },
-  regulars: {
-    width: "42%" as const,
-    minWidth: 128,
-    maxWidth: 168,
+    marginTop: t.spacing.md,
   },
 }));
 

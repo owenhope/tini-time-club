@@ -15,6 +15,12 @@ interface AvatarProps {
    * first tier starts at zero — so a missing count just means the base tier.
    */
   reviewCount?: number | null;
+  /**
+   * Sits on a green ground. The initials disc is normally the brand green,
+   * which on a green surface leaves the ring wrapped around nothing; on ink it
+   * takes the sage fill with near-black-green initials instead.
+   */
+  onInk?: boolean;
 }
 
 const Avatar: React.FC<AvatarProps> = ({
@@ -24,6 +30,7 @@ const Avatar: React.FC<AvatarProps> = ({
   style,
   showInitials = true,
   reviewCount,
+  onInk = false,
 }) => {
   const styles = useStyles();
   // Public-bucket URLs are built locally, so the URL exists on first render —
@@ -46,10 +53,11 @@ const Avatar: React.FC<AvatarProps> = ({
   const placeholderStyle = useMemo(
     () => [
       styles.placeholder,
+      onInk && styles.placeholderOnInk,
       style,
       { width: size, height: size, borderRadius: size / 2 },
     ],
-    [styles, size, style]
+    [styles, size, style, onInk]
   );
 
   let face: React.ReactElement;
@@ -65,7 +73,13 @@ const Avatar: React.FC<AvatarProps> = ({
   } else if (showInitials && username) {
     face = (
       <View style={placeholderStyle}>
-        <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
+        <Text
+          style={[
+            styles.initials,
+            onInk && styles.initialsOnInk,
+            { fontSize: size * 0.4 },
+          ]}
+        >
           {username.charAt(0).toUpperCase()}
         </Text>
       </View>
@@ -95,9 +109,15 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
+  placeholderOnInk: {
+    backgroundColor: t.colors.accentOnImage,
+  },
   initials: {
     fontFamily: fonts.semibold,
     color: t.colors.onAccent,
+  },
+  initialsOnInk: {
+    color: t.colors.surfaceInkDeep,
   },
 }));
 
