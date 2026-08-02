@@ -18,6 +18,11 @@ interface ProfileHeaderProps {
   followingCount: number;
   isOwnProfile: boolean;
   onAvatarPress?: () => void;
+  /**
+   * Development-only escape hatch: long-pressing the avatar reveals the rank
+   * swatches, which are no longer part of the shipped layout.
+   */
+  onAvatarLongPress?: () => void;
   avatarLoading?: boolean;
   avatarError?: string | null;
   /** Development-only visual override used by the profile rank preview. */
@@ -47,6 +52,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   followingCount,
   isOwnProfile,
   onAvatarPress,
+  onAvatarLongPress,
   avatarLoading = false,
   avatarError = null,
   rankPreviewCount,
@@ -92,7 +98,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <View style={styles.avatarColumn}>
           <Pressable
             onPress={isOwnProfile ? onAvatarPress : undefined}
-            disabled={!isOwnProfile}
+            onLongPress={onAvatarLongPress}
+            disabled={!isOwnProfile && !onAvatarLongPress}
             accessibilityRole={isOwnProfile ? "button" : undefined}
             accessibilityLabel={
               isOwnProfile ? "Change profile photo" : undefined

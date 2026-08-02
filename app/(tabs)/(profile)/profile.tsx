@@ -70,6 +70,10 @@ const Profile = () => {
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
   const [rankPreviewIndex, setRankPreviewIndex] = useState(0);
+  // The swatches are a ring-colour checker, not a feature. They stay out of
+  // the shipped layout entirely; in a dev build a long-press on the avatar
+  // brings them back.
+  const [rankPreviewOpen, setRankPreviewOpen] = useState(false);
   const {
     userReviews,
     setUserReviews,
@@ -405,7 +409,12 @@ const Profile = () => {
         onAvatarPress={pickImage}
         avatarLoading={avatarLoading}
         avatarError={avatarError}
-        rankPreviewCount={__DEV__ ? rankPreview.count : undefined}
+        onAvatarLongPress={
+          __DEV__ ? () => setRankPreviewOpen((open) => !open) : undefined
+        }
+        rankPreviewCount={
+          __DEV__ && rankPreviewOpen ? rankPreview.count : undefined
+        }
         onFollowersPress={() =>
           profile?.username && router.push(routes.followers(profile.username))
         }
@@ -416,7 +425,7 @@ const Profile = () => {
       >
         {favoriteChips}
       </ProfileHeader>
-      {__DEV__ ? (
+      {__DEV__ && rankPreviewOpen ? (
         <View style={styles.rankDebug}>
           <View style={styles.rankDebugHeading}>
             <Text style={styles.rankDebugLabel}>Rank preview</Text>
