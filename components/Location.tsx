@@ -21,7 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import { RatingSummary, Skeleton } from "@/components/shared";
+import { RatingSummary, Skeleton, StickerBadge } from "@/components/shared";
 import useCollapsibleHeader, {
   COLLAPSE_RANGE,
 } from "@/hooks/useCollapsibleHeader";
@@ -131,38 +131,41 @@ const Location = () => {
     locationIdParam,
   ]);
 
-  const headerCityRegion = formatCityRegion(
-    displayLocation?.address
-      ? stripNameFromAddress(
-          displayLocation?.name ?? "",
-          displayLocation.address
-        )
-      : null
-  );
+  const strippedAddress = displayLocation?.address
+    ? stripNameFromAddress(displayLocation?.name ?? "", displayLocation.address)
+    : null;
+
+  const headerCityRegion = formatCityRegion(strippedAddress);
+
+  // The hero splits the address the way the block reads it: the street line
+  // runs under the name, the city rides the sticker.
+  const heroStreet = strippedAddress?.split(",")[0]?.trim() || null;
+  const heroCity = headerCityRegion.split(",")[0]?.trim() || null;
 
   // Update header with custom title and back button
   useEffect(() => {
     if (displayLocation?.name) {
       navigation.setOptions({
-        // The nav bar carries the identity: name over city/region. The body
-        // therefore doesn't repeat the name — that duplication was the whole
-        // problem — and the otherwise-empty bar earns its space.
-        headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <Text
-              style={styles.headerTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {displayLocation.name}
-            </Text>
-            {headerCityRegion ? (
-              <Text style={styles.headerSubtitle} numberOfLines={1}>
-                {headerCityRegion}
+        // While the hero is on screen it carries the identity, so the bar
+        // stays empty rather than setting the name twice; once the hero has
+        // scrolled away the bar picks it back up.
+        headerTitle: () =>
+          isCollapsed ? (
+            <View style={styles.headerTitleContainer}>
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {displayLocation.name}
               </Text>
-            ) : null}
-          </View>
-        ),
+              {headerCityRegion ? (
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
+                  {headerCityRegion}
+                </Text>
+              ) : null}
+            </View>
+          ) : null,
         // Without this the custom title view is laid out in the space left
         // over by headerLeft and headerRight, which are different widths, so
         // it sits off-centre.
@@ -225,14 +228,23 @@ const Location = () => {
             ) : null}
           </View>
         ),
+        // Continues the hero's deep green rather than sitting on it as a seam.
         headerStyle: {
-          backgroundColor: colors.surfaceInk,
+          backgroundColor: colors.surfaceInkDeep,
         },
         headerShadowVisible: false,
         headerTintColor: colors.onInk,
       });
     }
-  }, [displayLocation, headerCityRegion, navigation, router, colors, styles]);
+  }, [
+    displayLocation,
+    headerCityRegion,
+    isCollapsed,
+    navigation,
+    router,
+    colors,
+    styles,
+  ]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -496,6 +508,43 @@ const Location = () => {
           ]}
         >
           <>
+            {/* `locations` has no image column, and borrowing a member's
+                review photo would make the venue look like it endorsed one
+                person's Tuesday. The brand stands in instead: deep green, the
+                name in the display cut, the sticker pinned at a tilt. A venue
+                photo, if one ever lands, drops in behind this with the
+                existing scrim and nothing moves. */}
+            <View style={styles.hero}>
+              <View style={styles.heroTop}>
+                <StickerBadge
+                  topText="On the list"
+                  bottomText={heroCity}
+                  size={88}
+                  tilt={-9}
+                  style={styles.heroSticker}
+                />
+              </View>
+              <View style={styles.heroIdentity}>
+                <Text
+                  style={[
+                    styles.heroName,
+                    // A long name wraps to a second line and drops a step
+                    // rather than growing the block.
+                    (displayLocation?.name?.length ?? 0) > 22 &&
+                      styles.heroNameLong,
+                  ]}
+                  numberOfLines={2}
+                >
+                  {displayLocation?.name}
+                </Text>
+                {heroStreet ? (
+                  <Text style={styles.heroAddress} numberOfLines={1}>
+                    {heroStreet}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+
             {/* Full-width rows rather than three columns competing for 402pt:
                 the score and each meter get the whole gutter-to-gutter width,
                 and the regulars become a rail underneath. */}
@@ -613,9 +662,39 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceInk,
   },
   expandedHeader: {
-    paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.md,
     gap: t.spacing.lg,
+  },
+  // Fixed height: the name changes size, the block doesn't.
+  hero: {
+    height: 230,
+    backgroundColor: t.colors.surfaceInkDeep,
+    paddingHorizontal: t.spacing.gutter,
+    paddingVertical: t.spacing.lg + 2,
+    justifyContent: "space-between" as const,
+  },
+  heroTop: {
+    flexDirection: "row" as const,
+    justifyContent: "flex-end" as const,
+  },
+  heroSticker: {
+    marginTop: -4,
+  },
+  heroIdentity: {
+    gap: t.spacing.sm,
+  },
+  heroName: {
+    ...t.typography.display,
+    lineHeight: 31,
+    color: t.colors.onInk,
+  },
+  heroNameLong: {
+    fontSize: 28,
+    lineHeight: 26,
+  },
+  heroAddress: {
+    ...t.typography.mono,
+    color: t.colors.accentOnImage,
   },
   collapsedOverlay: {
     position: "absolute" as const,

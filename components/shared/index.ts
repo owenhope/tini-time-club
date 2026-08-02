@@ -41,6 +41,9 @@ export type { ChipProps } from "./Chip";
 export { default as Badge } from "./Badge";
 export type { BadgeProps, BadgeTone } from "./Badge";
 
+export { default as StickerBadge } from "./StickerBadge";
+export type { StickerBadgeProps } from "./StickerBadge";
+
 export { default as StatCard } from "./StatCard";
 export type { StatCardProps } from "./StatCard";
 
