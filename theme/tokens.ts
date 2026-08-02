@@ -148,6 +148,16 @@ export interface ThemeColors {
   ratingTrack: string;
   ratingFill: string;
   /**
+   * The same meter on a green surface or a photo scrim. `ratingFill` is the
+   * pimento on paper; on green the pimento muddies and white reads as neutral
+   * chrome, so the fill becomes the chartreuse — still the rating accent, just
+   * the one that belongs to that ground. Fixed in both schemes, like every
+   * other chartreuse use.
+   */
+  ratingFillOnInk: string;
+  /** The meter's track on a green surface or scrim: 18% of the paper ink. */
+  ratingTrackOnInk: string;
+  /**
    * Outline of an unearned olive pip. The filled olive body is `accent`; this
    * is the hollow state, soft enough to read as "not yet" without being
    * mistaken for a filled pip.
@@ -228,6 +238,8 @@ export const lightColors: ThemeColors = {
   ratingPipEmpty: palette.green300,
   ratingPipDot: palette.pimento500, // 2.24:1 on the green-700 olive — hue, not luminance
   ratingFill: palette.pimento600, // the pimento — ratings accent
+  ratingFillOnInk: palette.chartreuse500,
+  ratingTrackOnInk: "rgba(250,249,246,0.18)",
 
   tabBar: palette.white,
   tabBarActive: palette.green700,
@@ -296,6 +308,8 @@ export const darkColors: ThemeColors = {
   ratingPipEmpty: "#4E6F60",
   ratingPipDot: "#A33F14", // 2.93:1 on the sage olive body dark mode uses
   ratingFill: "#EF8A54", // pimento, lifted for dark
+  ratingFillOnInk: palette.chartreuse500,
+  ratingTrackOnInk: "rgba(250,249,246,0.18)",
 
   tabBar: "#16241D",
   tabBarActive: palette.green300,

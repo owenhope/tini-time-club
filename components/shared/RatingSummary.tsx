@@ -578,15 +578,18 @@ const useStyles = makeStyles((t) => ({
     alignSelf: "stretch" as const,
   },
   barTrackOnImage: {
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: t.colors.ratingTrackOnInk,
   },
   barFill: {
     height: "100%" as const,
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.ratingFill,
   },
+  // One rule for the meter: the rating accent for whichever ground it is on.
+  // White here read as neutral chrome and left the accent showing on only one
+  // of the two screens that draw the same two numbers.
   barFillOnImage: {
-    backgroundColor: t.colors.textOnImage,
+    backgroundColor: t.colors.ratingFillOnInk,
   },
   barValue: {
     ...t.typography.caption,
