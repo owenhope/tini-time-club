@@ -249,7 +249,7 @@ const useStyles = makeStyles((t) => ({
   input: {
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: 25,
+    borderRadius: t.radius.input,
     paddingHorizontal: 20,
     paddingVertical: t.spacing.md,
     fontFamily: fonts.regular,
@@ -260,7 +260,7 @@ const useStyles = makeStyles((t) => ({
   deleteButton: {
     backgroundColor: t.colors.danger,
     paddingVertical: t.spacing.lg,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     marginTop: 20,
   },

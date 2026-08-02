@@ -383,7 +383,7 @@ const useStyles = makeStyles((t) => ({
   searchInput: {
     backgroundColor: t.colors.surfaceSunken,
     height: 50,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.xl - 4,
     paddingRight: 50,
     fontFamily: fonts.regular,

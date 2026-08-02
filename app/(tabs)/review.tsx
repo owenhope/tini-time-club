@@ -876,13 +876,13 @@ const useStyles = makeStyles((t) => ({
   progressBar: {
     height: 4,
     backgroundColor: t.colors.border,
-    borderRadius: 2,
+    borderRadius: t.radius.pill,
     overflow: "hidden" as const,
   },
   progressFill: {
     height: "100%" as const,
     backgroundColor: t.colors.accent,
-    borderRadius: 2,
+    borderRadius: t.radius.pill,
   },
   content: {
     flex: 1,
@@ -930,7 +930,7 @@ const useStyles = makeStyles((t) => ({
   quitButtonVisual: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.dangerSubtle,
@@ -957,7 +957,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: t.spacing.md,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     minHeight: 50,
   },
@@ -982,7 +982,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: t.spacing.md,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     marginTop: t.spacing.md,
     minHeight: 50,

@@ -281,7 +281,7 @@ const useStyles = makeStyles((t) => ({
   button: {
     flex: 1,
     height: 50,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },

@@ -379,7 +379,7 @@ const useStyles = makeStyles((t) => ({
     height: 40,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: 20,
+    borderRadius: t.radius.pill,
     paddingHorizontal: 15,
     marginRight: 10,
     color: t.colors.text,

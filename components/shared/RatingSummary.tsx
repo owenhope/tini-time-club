@@ -419,7 +419,18 @@ const RatingBar = ({
       >
         <View style={styles.stackedBarHeader}>
           <Text
-            style={[styles.ratingDetailText, onImage && styles.onImageMeta]}
+            // The bar page puts three columns on a 402pt screen, leaving this
+            // one about 89pt — narrower than "Presentation" at 13pt. Let the
+            // label shrink a couple of points rather than break mid-word
+            // ("Presentati / on") or clip to an ellipsis.
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            style={[
+              styles.ratingDetailText,
+              styles.stackedBarLabel,
+              onImage && styles.onImageMeta,
+            ]}
           >
             {label}
           </Text>
@@ -548,6 +559,11 @@ const useStyles = makeStyles((t) => ({
   },
   barLabel: {
     width: 96,
+  },
+  stackedBarLabel: {
+    // Grow into the spare room rather than shrink: with flexShrink the label
+    // gave up width it did not need to and clipped to "Presenta…".
+    flex: 1,
   },
   barTrack: {
     height: 8,

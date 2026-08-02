@@ -418,7 +418,7 @@ const useStyles = makeStyles((t) => ({
   pin: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     justifyContent: "center" as const,
     alignItems: "center" as const,

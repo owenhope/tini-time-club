@@ -14,6 +14,7 @@ import {
   Animated,
 } from "react-native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import ReviewItem from "@/components/ReviewItem";
 import CommentsSlider from "@/components/CommentsSlider";
 import { Ionicons } from "@expo/vector-icons";
@@ -194,7 +195,7 @@ const Location = () => {
               <Ionicons
                 name="information-circle-outline"
                 size={24}
-                color={colors.text}
+                color={colors.onInk}
               />
             </TouchableOpacity>
             {"lat" in displayLocation &&
@@ -219,11 +220,16 @@ const Location = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Show on map"
               >
-                <Ionicons name="location" size={24} color={colors.text} />
+                <Ionicons name="location" size={24} color={colors.onInk} />
               </TouchableOpacity>
             ) : null}
           </View>
         ),
+        headerStyle: {
+          backgroundColor: colors.surfaceInk,
+        },
+        headerShadowVisible: false,
+        headerTintColor: colors.onInk,
       });
     }
   }, [displayLocation, headerCityRegion, navigation, router, colors, styles]);
@@ -455,6 +461,7 @@ const Location = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" />
       {/* The header glides between its full and compact form at the speed the
           user scrolls: the container height interpolates between the two
           measured states while their contents crossfade. */}
@@ -495,6 +502,7 @@ const Location = () => {
                     taste={displayLocation?.taste_avg}
                     presentation={displayLocation?.presentation_avg}
                     reviewCount={displayLocation?.total_ratings ?? 0}
+                    tone="onImage"
                     countPlacement="score"
                     showOverallMeta={false}
                     showOverallHeading
@@ -509,7 +517,7 @@ const Location = () => {
                   </View>
                 ) : regulars.length > 0 ? (
                   <View style={styles.regularsBlock}>
-                    <Regulars regulars={regulars} variant="dense" />
+                    <Regulars regulars={regulars} variant="dense" onInk />
                   </View>
                 ) : null}
               </View>
@@ -605,9 +613,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
   },
   header: {
-    backgroundColor: t.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
+    backgroundColor: t.colors.surfaceInk,
   },
   expandedHeader: {
     paddingTop: t.spacing.lg,
@@ -627,16 +633,18 @@ const useStyles = makeStyles((t) => ({
   overviewColumns: {
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
-    gap: t.spacing.xl,
+    // Tight, because the bars column has to fit the word "Presentation"
+    // beside its value before it starts truncating.
+    gap: t.spacing.md,
   },
   ratingBlock: {
     flex: 1,
     minWidth: 0,
   },
   regularsBlock: {
-    width: "42%" as const,
-    minWidth: 128,
-    maxWidth: 168,
+    width: "38%" as const,
+    minWidth: 120,
+    maxWidth: 150,
   },
   collapsedRow: {
     flexDirection: "row" as const,
@@ -662,21 +670,19 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   emptyText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
   },
   addReviewButton: {
     backgroundColor: t.colors.accent,
+    borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.xl,
     paddingVertical: t.spacing.md,
-    borderRadius: 25,
     marginTop: t.spacing.sm,
   },
   addReviewButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
-    fontSize: 15,
-    fontFamily: fonts.semibold,
   },
   headerButton: {
     width: 44,
@@ -695,12 +701,13 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitle: {
     ...t.typography.heading,
-    color: t.colors.text,
+    color: t.colors.onInk,
     flexShrink: 1,
   },
   headerSubtitle: {
     ...t.typography.caption,
-    color: t.colors.textSecondary,
+    color: t.colors.onInk,
+    opacity: 0.8,
     flexShrink: 1,
   },
   skeletonCardHeader: {

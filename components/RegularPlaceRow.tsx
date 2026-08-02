@@ -65,7 +65,7 @@ const useStyles = makeStyles((t) => ({
   rankBadge: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.accentSubtle,

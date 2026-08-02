@@ -82,7 +82,7 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.lg,
     paddingHorizontal: t.spacing.xl - 4,
     marginBottom: t.spacing.md,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     borderWidth: 1,
     borderColor: t.colors.border,
     backgroundColor: t.colors.surface,

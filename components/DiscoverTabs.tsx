@@ -628,11 +628,9 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   listStateText: {
+    ...t.typography.body,
     color: t.colors.textSecondary,
-    fontFamily: fonts.regular,
-    fontSize: 15,
     textAlign: "center" as const,
-    lineHeight: 22,
   },
   listContainer: {
     paddingVertical: t.spacing.lg,
@@ -640,7 +638,7 @@ const useStyles = makeStyles((t) => ({
   resultCard: {
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.card,
-    marginBottom: t.spacing.sm,
+    marginBottom: t.spacing.md,
     ...t.elevation.card,
     borderWidth: 1,
     borderColor: t.colors.border,
@@ -663,7 +661,7 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   resultTitle: {
-    ...t.typography.bodyStrong,
+    ...t.typography.heading,
     color: t.colors.text,
     marginBottom: 2,
   },
@@ -672,8 +670,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   profileStats: {
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
-    fontFamily: fonts.regular,
   },
 }));

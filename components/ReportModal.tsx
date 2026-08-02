@@ -132,7 +132,7 @@ const useStyles = makeStyles((t) => ({
   modalContent: {
     backgroundColor: t.colors.surface,
     padding: t.spacing.xl - 4,
-    borderRadius: 25,
+    borderRadius: t.radius.sheet,
     width: "85%" as const,
     maxHeight: "80%" as const,
     alignItems: "center" as const,
@@ -168,7 +168,7 @@ const useStyles = makeStyles((t) => ({
   customInput: {
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: 25,
+    borderRadius: t.radius.input,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 15,
     fontFamily: fonts.regular,
@@ -187,7 +187,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.danger,
     paddingVertical: t.spacing.md,
     paddingHorizontal: t.spacing.xl - 4,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     flex: 1,
   },
   submitButtonText: {
@@ -200,7 +200,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
     paddingVertical: t.spacing.md,
     paddingHorizontal: t.spacing.xl - 4,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     flex: 1,
   },
   backButtonText: {

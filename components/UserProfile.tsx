@@ -17,6 +17,7 @@ import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Button, Skeleton, VerifiedName } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
@@ -180,6 +181,7 @@ const UserProfile = () => {
             name={displayProfile.username}
             isVerified={displayProfile.is_verified}
             badgeSize={15}
+            onDark
             style={styles.headerTitleContainer}
             textStyle={styles.headerTitle}
           />
@@ -189,7 +191,7 @@ const UserProfile = () => {
             <Button
               title={doesFollow ? "Following" : "Follow"}
               size="small"
-              variant={doesFollow ? "tonal" : "primary"}
+              variant={doesFollow ? "tonal" : "onInk"}
               loading={followPending}
               onPress={toggleFollow}
               accessibilityLabel={
@@ -209,15 +211,18 @@ const UserProfile = () => {
               <Ionicons
                 name="ellipsis-horizontal"
                 size={22}
-                color={colors.text}
+                color={colors.onInk}
               />
             </TouchableOpacity>
           </View>
         ),
+        // Continues the identity block's deep green rather than sitting on
+        // it as a white seam, same as the own-profile screen.
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceInkDeep,
         },
-        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        headerTintColor: colors.onInk,
       });
     }
   }, [
@@ -507,6 +512,8 @@ const UserProfile = () => {
 
   return (
     <View style={styles.container}>
+      {/* The identity block runs green up behind the status bar. */}
+      <StatusBar style="light" />
       {activeTab === "reviews" ? (
         <ReviewGrid
           reviews={userReviews}
@@ -642,7 +649,7 @@ const useStyles = makeStyles((t) => ({
   headerTitle: {
     fontSize: 20,
     fontFamily: fonts.bold,
-    color: t.colors.text,
+    color: t.colors.onInk,
   },
   headerActions: {
     flexDirection: "row" as const,

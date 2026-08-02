@@ -285,7 +285,7 @@ const useStyles = makeStyles((t) => ({
   inputContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    borderRadius: 25,
+    borderRadius: t.radius.pill,
     position: "relative" as const,
   },
   input: {

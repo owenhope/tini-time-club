@@ -47,7 +47,7 @@ const useStyles = makeStyles((t) => ({
     position: "absolute" as const,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     justifyContent: "center" as const,
     alignItems: "center" as const,

@@ -368,6 +368,14 @@ function RootLayoutNav() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.accent,
+          headerShadowVisible: false,
+          headerTitleStyle: {
+            color: colors.text,
+            fontFamily: fonts.bold,
+            fontSize: 17,
+          },
         }}
       >
         {/* Lives in the root stack rather than a tab stack so it can be

@@ -589,7 +589,7 @@ const useStyles = makeStyles((t) => ({
   rankDebugSwatch: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: t.radius.pill,
     borderWidth: 3,
   },
   rankDebugSwatchSelected: {

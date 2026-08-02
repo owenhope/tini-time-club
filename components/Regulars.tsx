@@ -11,6 +11,8 @@ interface RegularsProps {
   regulars?: Regular[] | null;
   variant?: "default" | "compact" | "dense";
   showLabel?: boolean;
+  /** Rendered on a green ground, where the default greys disappear. */
+  onInk?: boolean;
 }
 
 type DisplayRegular = Regular & { isPreview?: boolean };
@@ -40,6 +42,7 @@ export const RegularsSkeleton = () => {
 const Regulars: React.FC<RegularsProps> = ({
   regulars,
   variant = "default",
+  onInk = false,
   showLabel = true,
 }) => {
   const styles = useStyles();
@@ -149,9 +152,10 @@ const Regulars: React.FC<RegularsProps> = ({
             name={regular.username}
             isVerified={regular.is_verified}
             badgeSize={12}
-            textStyle={styles.denseUsername}
+            onDark={onInk}
+            textStyle={[styles.denseUsername, onInk && styles.onInkText]}
           />
-          <Text style={styles.denseReviewCount}>
+          <Text style={[styles.denseReviewCount, onInk && styles.onInkMeta]}>
             {regular.review_count}{" "}
             {regular.review_count === 1 ? "review" : "reviews"}
           </Text>
@@ -161,7 +165,7 @@ const Regulars: React.FC<RegularsProps> = ({
 
     return (
       <View style={styles.denseSection}>
-        <Text style={styles.label}>Regulars</Text>
+        <Text style={[styles.label, onInk && styles.onInkMeta]}>Regulars</Text>
         {displayRegulars.map(renderDenseRegular)}
       </View>
     );
@@ -266,10 +270,15 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   denseReviewCount: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    lineHeight: 13,
+    ...t.typography.micro,
     color: t.colors.textSecondary,
+  },
+  onInkText: {
+    color: t.colors.onInk,
+  },
+  onInkMeta: {
+    color: t.colors.onInk,
+    opacity: 0.8,
   },
   compactRow: {
     minHeight: 30,

@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { useTheme } from "@/theme";
+import { fonts, useTheme } from "@/theme";
 
 /**
  * One layout serving every tab's stack via expo-router's array syntax, so the
@@ -19,7 +19,13 @@ export const unstable_settings = {
 
 // These roots draw their own chrome (the profile root keeps the stack
 // header for its title + settings button).
-const HEADERLESS = new Set(["home", "discover", "places", "terms", "delete-account"]);
+const HEADERLESS = new Set([
+  "home",
+  "discover",
+  "places",
+  "terms",
+  "delete-account",
+]);
 
 const TITLES: Record<string, string> = {
   "users/[username]/followers": "Followers",
@@ -37,9 +43,16 @@ export default function SharedTabLayout() {
     <Stack
       screenOptions={({ route }) => ({
         headerBackButtonDisplayMode: "minimal",
-        headerTintColor: colors.text,
+        headerTintColor: colors.accent,
         headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.text },
+        // Without an explicit family every nav title falls back to system SF —
+        // the weight cannot be inferred from a static Figtree family.
+        headerTitleStyle: {
+          color: colors.text,
+          fontFamily: fonts.bold,
+          fontSize: 17,
+        },
+        headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },
         headerShown: !HEADERLESS.has(route.name),
         ...(TITLES[route.name] ? { title: TITLES[route.name] } : {}),

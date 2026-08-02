@@ -78,7 +78,12 @@ const LayoutContent = () => {
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
+        headerTintColor: colors.accent,
+        headerTitleStyle: {
+          color: colors.text,
+          fontFamily: fonts.bold,
+          fontSize: 17,
+        },
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarStyle: { backgroundColor: colors.tabBar },
         sceneStyle: { backgroundColor: colors.background },

@@ -1022,8 +1022,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   headerUsername: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
+    ...t.typography.heading,
     color: t.colors.text,
   },
   headerIdentity: {
@@ -1090,14 +1089,12 @@ const useStyles = makeStyles((t) => ({
   // Everything below sits on the photo scrim, so it stays light in both
   // schemes rather than following colors.text.
   locationName: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
+    ...t.typography.title,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   locationAddress: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textOnImage,
   },
   locationRatingRow: {
@@ -1127,15 +1124,16 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.raised,
   },
   spiritText: {
-    fontSize: 17,
-    lineHeight: 22,
-    fontFamily: fonts.bold,
+    ...t.typography.heading,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,
   },
   footer: {
     backgroundColor: t.colors.surface,
-    padding: 10,
+    paddingHorizontal: t.spacing.lg,
+    paddingVertical: t.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.divider,
   },
   actionRow: {
     flexDirection: "row" as const,
@@ -1149,8 +1147,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.xs,
   },
   likesCount: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   captionSection: {
@@ -1166,8 +1163,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   captionUsername: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   captionBody: {
@@ -1175,28 +1171,25 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   addCaptionText: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: t.colors.textSecondary,
+    ...t.typography.body,
     fontFamily: fonts.medium,
+    color: t.colors.textSecondary,
   },
   commentItem: {
     marginBottom: t.spacing.xs,
   },
   commentUsername: {
+    ...t.typography.caption,
     fontFamily: fonts.semibold,
-    fontSize: 13,
     color: t.colors.text,
   },
   timestamp: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
+    ...t.typography.micro,
     color: t.colors.textMuted,
   },
   viewAllCommentsText: {
+    ...t.typography.caption,
     color: t.colors.textMuted,
-    fontFamily: fonts.regular,
-    fontSize: 13,
     marginBottom: t.spacing.xs,
   },
   previewContainer: {

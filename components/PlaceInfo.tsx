@@ -231,7 +231,7 @@ const useStyles = makeStyles((t) => ({
   icon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.accentSubtle,
