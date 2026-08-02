@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { Avatar, MetricRow, type Metric } from "@/components/shared";
+import { Avatar, StatCard, type Metric } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
 
@@ -112,7 +112,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             )}
           </Pressable>
           {rank.tier ? (
-            <Text style={[styles.rankName, { color: rank.tier.color }]}>
+            /* The sheen, not the base tier colour: on the deep-green ground
+               bronze and Top land at 3.4–3.7:1, under AA for 11px type. The
+               light end of each tier's gradient clears 6:1. */
+            <Text style={[styles.rankName, { color: rank.tier.sheen }]}>
               {rank.tier.name}
             </Text>
           ) : null}
@@ -141,7 +144,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           ) : null}
         </View>
         <View style={styles.metrics}>
-          <MetricRow metrics={metrics} align="center" />
+          {metrics.map((m) => (
+            <StatCard
+              key={m.key}
+              tone="ink"
+              value={m.value}
+              label={m.label}
+              onPress={m.onPress}
+            />
+          ))}
         </View>
       </View>
 
@@ -167,20 +178,24 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
+  // The "club / insider" ground — the system's deep green, which is the
+  // strongest brand signal the app has and belongs on the identity block.
   container: {
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.md,
-    gap: t.spacing.md,
-    backgroundColor: t.colors.surface,
+    paddingTop: t.spacing.lg,
+    paddingBottom: t.spacing.xl,
+    gap: t.spacing.lg,
+    backgroundColor: t.colors.surfaceInkDeep,
   },
   topRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.xl,
+    gap: t.spacing.lg,
     paddingHorizontal: t.spacing.gutter,
   },
   metrics: {
     flex: 1,
+    flexDirection: "row" as const,
+    gap: t.spacing.sm,
   },
   avatarColumn: {
     alignItems: "center" as const,
@@ -198,9 +213,9 @@ const useStyles = makeStyles((t) => ({
     borderRadius: AVATAR_SIZE / 2,
   },
   rankName: {
-    ...t.typography.caption,
+    ...t.typography.eyebrow,
     fontFamily: fonts.bold,
-    color: t.colors.textSecondary,
+    color: t.colors.onInk,
     textAlign: "center" as const,
   },
   rankProgress: {
@@ -235,18 +250,25 @@ const useStyles = makeStyles((t) => ({
     maxWidth: "65%" as const,
     alignItems: "flex-end" as const,
   },
+  // Display weight, lowercase — the wordmark's own voice, per the system's
+  // rule that display headlines are lowercase.
   name: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
+    ...t.typography.display,
+    fontSize: 26,
+    lineHeight: 26,
+    color: t.colors.onInk,
   },
   bio: {
     ...t.typography.body,
-    color: t.colors.text,
+    color: t.colors.onInk,
     lineHeight: 20,
+    opacity: 0.85,
   },
   error: {
     ...t.typography.caption,
-    color: t.colors.danger,
+    // On the deep-green ground the danger red drops below AA, so errors here
+    // take the paper ink and lean on placement to read as a problem.
+    color: t.colors.onInk,
     paddingHorizontal: t.spacing.gutter,
   },
 }));

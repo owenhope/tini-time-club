@@ -30,7 +30,7 @@ const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
         accessibilityRole="link"
         accessibilityLabel={`Favorite location, ${location.name}`}
       >
-        <Ionicons name="location" size={16} color={colors.accent} />
+        <Ionicons name="location" size={16} color={colors.highlight} />
         <Text style={styles.favoriteLocationText} numberOfLines={1}>
           {location.name}
         </Text>
@@ -45,9 +45,12 @@ const useStyles = makeStyles((t) => ({
     // ~6pt of visual space below the label — no extra gap on top of that.
     gap: 0,
   },
+  // Rendered inside ProfileHeader's deep-green block, so the label and link
+  // take paper ink and the chartreuse highlight rather than greys and green.
   favoritesLabel: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
+    ...t.typography.eyebrow,
+    color: t.colors.onInk,
+    opacity: 0.7,
   },
   favoriteLocationLink: {
     minHeight: 32,
@@ -57,7 +60,7 @@ const useStyles = makeStyles((t) => ({
   },
   favoriteLocationText: {
     ...t.typography.bodyStrong,
-    color: t.colors.accent,
+    color: t.colors.highlight,
     flexShrink: 1,
   },
 }));

@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { StatusBar } from "expo-status-bar";
 import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
@@ -118,6 +119,7 @@ const Profile = () => {
             name={profile.username}
             isVerified={profile.is_verified}
             badgeSize={15}
+            onDark
             style={styles.headerTitleContainer}
             textStyle={styles.headerTitle}
           />
@@ -136,14 +138,21 @@ const Profile = () => {
               accessibilityRole="button"
               accessibilityLabel="Profile settings"
             >
-              <Ionicons name="settings-outline" size={24} color={colors.text} />
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={colors.onInk}
+              />
             </TouchableOpacity>
           </View>
         ),
+        // The nav bar continues the identity block's deep-green ground rather
+        // than sitting on it as a white seam.
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceInkDeep,
         },
-        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        headerTintColor: colors.onInk,
       });
     }
   }, [profile, navigation, colors, styles]);
@@ -463,6 +472,9 @@ const Profile = () => {
 
   return (
     <View style={styles.container}>
+      {/* The identity block runs the deep green up behind the status bar, so
+          its content has to be light in both schemes. */}
+      <StatusBar style="light" />
       {activeTab === "reviews" ? (
         <ReviewGrid
           reviews={userReviews}
@@ -591,9 +603,10 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     fontFamily: fonts.bold,
   },
+  // Sits inside ProfileHeader's deep-green block.
   ctaText: {
     ...t.typography.body,
-    color: t.colors.accent,
+    color: t.colors.highlight,
     fontFamily: fonts.semibold,
   },
   regularsList: {
@@ -655,7 +668,7 @@ const useStyles = makeStyles((t) => ({
   headerTitle: {
     fontSize: 20,
     fontFamily: fonts.bold,
-    color: t.colors.text,
+    color: t.colors.onInk,
   },
 }));
 

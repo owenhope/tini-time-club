@@ -97,9 +97,12 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-start" as const,
     gap: 6,
   },
+  // This block only ever renders inside ProfileHeader, which sits on the
+  // deep-green ground — hence the paper ink rather than the muted greys.
   favoritesLabel: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
+    ...t.typography.eyebrow,
+    color: t.colors.onInk,
+    opacity: 0.7,
   },
   favoritesTagsContainer: {
     flexDirection: "row" as const,
@@ -107,16 +110,18 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
     justifyContent: "flex-end" as const,
   },
+  // Chartreuse on green is the system's approved pairing for a pill that has
+  // to pop off an ink ground; brand green on green disappears.
   tag: {
     paddingVertical: 6,
     paddingHorizontal: t.spacing.md,
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.highlight,
   },
   tagText: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.bold,
     fontSize: 12,
-    color: t.colors.onAccent,
+    color: t.colors.onHighlight,
     textTransform: "capitalize" as const,
   },
 }));
