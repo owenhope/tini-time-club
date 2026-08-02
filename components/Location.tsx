@@ -376,7 +376,7 @@ const Location = () => {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            Nobody's given a verdict here yet. Be first.
+            Nobody&rsquo;s given a verdict here yet. Be first.
           </Text>
           <TouchableOpacity
             style={styles.addReviewButton}
