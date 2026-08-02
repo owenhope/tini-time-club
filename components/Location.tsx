@@ -618,7 +618,16 @@ const Location = () => {
           contentContainerStyle={[
             styles.gridContent,
             listViewportH > 0
-              ? { minHeight: listViewportH + COLLAPSE_RANGE }
+              ? {
+                  // The list's viewport grows by whatever the header gives
+                  // back as it collapses, so the runway has to cover that as
+                  // well as the collapse distance — otherwise a short list
+                  // runs out of scroll and the header rests half-faded.
+                  minHeight:
+                    listViewportH +
+                    COLLAPSE_RANGE +
+                    Math.max(0, expandedHeaderH - collapsedHeaderH),
+                }
               : null,
           ]}
           ListEmptyComponent={renderEmpty}
