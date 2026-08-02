@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
 import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
-import { Skeleton } from "@/components/shared";
+import { RatingPips, Skeleton } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
 const COLUMNS = 3;
@@ -123,7 +123,13 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           />
           {overallScore != null ? (
             <View style={styles.tileScore} accessibilityElementsHidden>
-              <Ionicons name="star" size={11} color={colors.textOnImage} />
+              <RatingPips
+                value={1}
+                max={1}
+                size={11}
+                onDark
+                accessibilityLabel=""
+              />
               <Text style={styles.tileScoreText}>{scoreLabel}</Text>
             </View>
           ) : null}

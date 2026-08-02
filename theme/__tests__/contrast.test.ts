@@ -81,6 +81,9 @@ const largePairs = (c: ThemeColors): [string, string, string][] => [
   // The bar fill must be distinguishable from its track, since the bar is a
   // graphical object conveying the rating value.
   ["ratingFill on ratingTrack", c.ratingFill, c.ratingTrack],
+  // A filled olive carries the rating, so it must be tellable from the surface
+  // behind it. Its pimento does not — see the dedicated test below.
+  ["olive body on surface", c.accent, c.surface],
 ];
 
 /**
@@ -93,6 +96,7 @@ const decorativePairs = (c: ThemeColors): [string, string, string][] => [
   ["border on surface", c.border, c.surface],
   ["borderStrong on surface", c.borderStrong, c.surface],
   ["divider on background", c.divider, c.background],
+  ["ratingPipEmpty on surface", c.ratingPipEmpty, c.surface],
 ];
 
 describe.each([
@@ -126,6 +130,20 @@ describe.each([
     ).toBeGreaterThanOrEqual(2.5);
     expect(contrast(colors.disabledText, colors.disabledSurface)).toBeLessThan(
       AA_BODY
+    );
+  });
+
+  /**
+   * The pimento inside a filled olive is a hue accent, not information — the
+   * rating is carried by how many olives are filled, so WCAG 1.4.11 does not
+   * apply to the dot. Orange on green is barely a luminance contrast at all
+   * (the design system's own pairing is 2.24:1), but the dot still has to be
+   * *visible* or the olive stops looking like an olive, which is the whole
+   * point of using it instead of a star.
+   */
+  it("keeps the pimento visible inside the olive", () => {
+    expect(contrast(colors.ratingPipDot, colors.accent)).toBeGreaterThanOrEqual(
+      2
     );
   });
 

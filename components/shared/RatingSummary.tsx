@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { View, Text, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, makeStyles, useTheme } from "@/theme";
+import RatingPips from "./RatingPips";
 
 export const RATING_MAX = 5;
 
@@ -138,10 +139,12 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
             {overall != null && (
               <>
                 {compactDecorated ? (
-                  <Ionicons
-                    name="star"
-                    size={14}
-                    color={onImage ? colors.textOnImage : colors.accent}
+                  <RatingPips
+                    value={1}
+                    max={1}
+                    size={13}
+                    onDark={onImage}
+                    accessibilityLabel=""
                   />
                 ) : null}
                 <Text

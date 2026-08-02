@@ -141,6 +141,19 @@ export interface ThemeColors {
   // Ratings
   ratingTrack: string;
   ratingFill: string;
+  /**
+   * Outline of an unearned olive pip. The filled olive body is `accent`; this
+   * is the hollow state, soft enough to read as "not yet" without being
+   * mistaken for a filled pip.
+   */
+  ratingPipEmpty: string;
+  /**
+   * The pimento inside a filled olive. Orange on green is a hue contrast, not
+   * a luminance one — the design's own pairing is 2.24:1 — so this is a
+   * decorative detail, never a carrier of the rating. Dark mode needs a deeper
+   * pimento because the olive body lightens to sage there.
+   */
+  ratingPipDot: string;
 
   // Component-specific
   tabBar: string;
@@ -205,6 +218,8 @@ export const lightColors: ThemeColors = {
   disabledText: "#8A908D", // ~3.0:1 on disabledSurface (disabled is exempt)
 
   ratingTrack: palette.paper200,
+  ratingPipEmpty: palette.green300,
+  ratingPipDot: palette.pimento500, // 2.24:1 on the green-700 olive — hue, not luminance
   ratingFill: palette.pimento600, // the pimento — ratings accent
 
   tabBar: palette.white,
@@ -270,6 +285,8 @@ export const darkColors: ThemeColors = {
   disabledText: "#6E857B",
 
   ratingTrack: "#2A3B33",
+  ratingPipEmpty: "#4E6F60",
+  ratingPipDot: "#A33F14", // 2.93:1 on the sage olive body dark mode uses
   ratingFill: "#EF8A54", // pimento, lifted for dark
 
   tabBar: "#16241D",

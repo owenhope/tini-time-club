@@ -6,12 +6,19 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { PRESS_SCALE, fonts, makeStyles, useTheme } from "@/theme";
 import AppText, { type TypographyVariant } from "./AppText";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
 export type ButtonVariant =
-  "primary" | "tonal" | "secondary" | "outline" | "ghost" | "danger";
+  | "primary"
+  | "tonal"
+  | "secondary"
+  /** Chartreuse on a green ground — the CTA for `surfaceInk` blocks. */
+  | "onInk"
+  | "outline"
+  | "ghost"
+  | "danger";
 export type ButtonIconPosition = "left" | "right" | "none";
 
 export interface ButtonProps {
@@ -107,10 +114,17 @@ const Button: React.FC<ButtonProps> = ({
           backgroundColor: colors.secondary,
           borderWidth: 0,
         };
+      case "onInk":
+        return {
+          backgroundColor: colors.highlight,
+          borderWidth: 0,
+        };
       case "outline":
         return {
           backgroundColor: "transparent",
-          borderWidth: 1,
+          // 2px — the system uses a solid green outline as the secondary action
+          // and reserves 1px hairlines for surface edges.
+          borderWidth: 2,
           borderColor: colors.accent,
         };
       case "ghost":
@@ -139,6 +153,8 @@ const Button: React.FC<ButtonProps> = ({
         return colors.onAccentTonal;
       case "secondary":
         return colors.onSecondary;
+      case "onInk":
+        return colors.onHighlight;
       case "danger":
         return colors.textOnAccent;
       case "outline":
@@ -286,6 +302,8 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.disabledSurface,
   },
   pressed: {
+    // The system specifies a 0.97 shrink on press, no ripple.
+    transform: [{ scale: PRESS_SCALE }],
     opacity: 0.85,
     backgroundColor: t.colors.pressed,
   },
