@@ -1192,7 +1192,14 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textMuted,
     marginBottom: t.spacing.xs,
   },
+  // The composer's preview must look like what actually lands in the feed:
+  // same card, same edge, same clipped corners.
   previewContainer: {
     backgroundColor: t.colors.surface,
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    overflow: "hidden" as const,
+    ...t.elevation.card,
   },
 }));

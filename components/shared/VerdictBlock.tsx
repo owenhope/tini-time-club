@@ -12,8 +12,8 @@ export interface VerdictBlockProps {
   onChange: (value: number) => void;
   /** One line per rating, 1–5. Shown under the pips as the reader rates. */
   labels: readonly string[];
-  /** Shown while nothing is rated yet. */
-  placeholder?: string;
+  /** Shown while nothing is rated yet — each step asks its own question. */
+  placeholder: string;
   accessibilityLabel: string;
 }
 
@@ -31,7 +31,7 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
   value,
   onChange,
   labels,
-  placeholder = "Taste. Presentation. Judgment.",
+  placeholder,
   accessibilityLabel,
 }) => {
   const styles = useStyles();
@@ -49,6 +49,7 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
         size={34}
         onRate={onChange}
         bodyColor={colors.onBrand}
+        emptyColor={colors.onBrand}
         accessibilityLabel={accessibilityLabel}
       />
       <AppText variant="bodyStrong" style={styles.ink}>

@@ -20,6 +20,8 @@ export interface RatingPipsProps {
   /** Explicit olive-body colour, for grounds neither default nor onDark
    *  covers — the purple verdict block, where green fails contrast. */
   bodyColor?: string;
+  /** Outline colour for hollow pips, for the same reason. */
+  emptyColor?: string;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }
@@ -35,7 +37,8 @@ const Olive: React.FC<{
   filled: boolean;
   onDark?: boolean;
   bodyColor?: string;
-}> = ({ size, filled, onDark, bodyColor }) => {
+  emptyColor?: string;
+}> = ({ size, filled, onDark, bodyColor, emptyColor }) => {
   const { colors } = useTheme();
   const body = bodyColor ?? (onDark ? colors.textOnImage : colors.accent);
 
@@ -49,7 +52,7 @@ const Olive: React.FC<{
         borderRadius: "50%",
         backgroundColor: filled ? body : "transparent",
         borderWidth: filled ? 0 : 2,
-        borderColor: colors.ratingPipEmpty,
+        borderColor: emptyColor ?? colors.ratingPipEmpty,
       }}
     >
       {filled ? (
@@ -77,6 +80,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   onRate,
   onDark,
   bodyColor,
+  emptyColor,
   style,
   accessibilityLabel,
 }) => {
@@ -112,6 +116,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
               filled={n <= filledThrough}
               onDark={onDark}
               bodyColor={bodyColor}
+              emptyColor={emptyColor}
             />
           </Pressable>
         ) : (
@@ -121,6 +126,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             filled={n <= filledThrough}
             onDark={onDark}
             bodyColor={bodyColor}
+            emptyColor={emptyColor}
           />
         )
       )}

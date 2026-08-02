@@ -693,9 +693,11 @@ export default function App() {
                 </AppText>
                 {questions[step].title !== "Preview" && (
                   <>
+                    {/* Tiny tracked utility type — the system reserves
+                        uppercase for exactly this. */}
                     <AppText
-                      variant="caption"
-                      tone="secondary"
+                      variant="eyebrow"
+                      tone="accent"
                       style={styles.subtitle}
                     >
                       Step {step + 1} of {questions.length - 1}

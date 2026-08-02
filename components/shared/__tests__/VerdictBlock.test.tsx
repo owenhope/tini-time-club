@@ -29,13 +29,14 @@ const build = (value: number, onChange = jest.fn()) =>
       value={value}
       onChange={onChange}
       labels={LABELS}
+      placeholder="Be honest. It can take it."
       accessibilityLabel="Taste rating"
     />
   );
 
 describe("VerdictBlock", () => {
   it("shows the placeholder until something is rated", () => {
-    expect(texts(build(0))).toContain("Taste. Presentation. Judgment.");
+    expect(texts(build(0))).toContain("Be honest. It can take it.");
   });
 
   it("shows the label for the current rating", () => {

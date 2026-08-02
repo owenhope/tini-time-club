@@ -15,6 +15,7 @@ const TasteInput = ({ control }: { control: any }) => {
             eyebrow="Your verdict"
             value={value}
             onChange={onChange}
+            placeholder={"Be honest. It can take it."}
             accessibilityLabel="Taste rating"
             labels={[
               "Absolutely undrinkable",

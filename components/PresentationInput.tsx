@@ -15,6 +15,7 @@ const PresentationInput = ({ control }: { control: any }) => {
             eyebrow="Presentation"
             value={value}
             onChange={onChange}
+            placeholder={"Did it look the part?"}
             accessibilityLabel="Presentation rating"
             labels={[
               "Messy disaster",
