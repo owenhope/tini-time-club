@@ -41,6 +41,13 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
  * used to run edge to edge.
  */
 const CARD_WIDTH = SCREEN_WIDTH - 20 * 2;
+/**
+ * 4:3. A taller photo pushed the like / comment / share row under the tab bar
+ * on a 6.1", so the card's primary affordance was never on screen at first
+ * paint; 4:3 gives back the footer's height and its padding. Uploads are
+ * stored uncropped and centre-crop here via `contentFit="cover"`.
+ */
+const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
 const DOUBLE_TAP_DELAY = 300;
 const ANIMATION_DURATION = 300;
 
@@ -1037,7 +1044,7 @@ const useStyles = makeStyles((t) => ({
   },
   imageContainer: {
     width: CARD_WIDTH,
-    height: CARD_WIDTH, // 1:1
+    height: PHOTO_HEIGHT, // 4:3
     position: "relative" as const,
   },
   reviewImage: {
