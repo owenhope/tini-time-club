@@ -221,12 +221,9 @@ const ReviewPreview = ({
             >
               {tempCaption?.length || 0}/500
             </AppText>
-            <TouchableOpacity
-              style={[
-                styles.saveCaptionButton,
-                (!tempCaption || tempCaption.trim().length === 0) &&
-                  styles.saveCaptionButtonDisabled,
-              ]}
+            <Button
+              title="Save caption"
+              style={styles.saveCaptionButton}
               onPress={() => {
                 if (tempCaption && tempCaption.trim().length > 0) {
                   setValue("comment", tempCaption.trim(), {
@@ -236,11 +233,8 @@ const ReviewPreview = ({
                 }
               }}
               disabled={!tempCaption || tempCaption.trim().length === 0}
-            >
-              <AppText variant="bodyStrong" tone="onAccent">
-                Save Caption
-              </AppText>
-            </TouchableOpacity>
+              disabledReason="Write a caption first — it goes out with the review."
+            />
           </>
         )}
       </View>
@@ -980,17 +974,7 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.xs,
   },
   saveCaptionButton: {
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingVertical: t.spacing.md,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
     marginTop: t.spacing.md,
-    minHeight: 50,
-  },
-  saveCaptionButtonDisabled: {
-    opacity: 0.5,
   },
   submitLoadingContainer: {
     flex: 1,

@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Pressable,
+  View,
   ViewStyle,
   TextStyle,
   ActivityIndicator,
@@ -33,6 +34,12 @@ export interface ButtonProps {
   iconColor?: string;
   iconSize?: number;
   fullWidth?: boolean;
+  /**
+   * Why the button can't be pressed, set under it while `disabled`. A
+   * disabled control that doesn't say what it is waiting for just reads as
+   * broken.
+   */
+  disabledReason?: string;
   style?: ViewStyle;
   textStyle?: TextStyle;
   /** Overrides the label as the screen-reader name (e.g. icon-heavy buttons). */
@@ -52,6 +59,7 @@ const Button: React.FC<ButtonProps> = ({
   iconColor,
   iconSize,
   fullWidth = false,
+  disabledReason,
   style,
   textStyle,
   accessibilityLabel,
@@ -146,6 +154,11 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const getTextColor = (): string => {
+    // Disabled is its own pair — disabledSurface under disabledText — in
+    // every variant. A dimmed green fill still reads as a live primary
+    // button, and people tap it.
+    if (disabled) return colors.disabledText;
+
     switch (variant) {
       case "primary":
         return colors.onAccent;
@@ -261,13 +274,15 @@ const Button: React.FC<ButtonProps> = ({
 
   const isInactive = disabled || loading;
 
-  return (
+  const button = (
     <Pressable
       onPress={onPress}
       disabled={isInactive}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityHint={accessibilityHint}
+      accessibilityHint={
+        accessibilityHint ?? (disabled ? disabledReason : undefined)
+      }
       accessibilityState={{ disabled: isInactive, busy: loading }}
       style={({ pressed }) => [
         styles.button,
@@ -283,6 +298,17 @@ const Button: React.FC<ButtonProps> = ({
     >
       {renderContent()}
     </Pressable>
+  );
+
+  if (!disabled || !disabledReason) return button;
+
+  return (
+    <View style={[styles.withReason, fullWidth && styles.fullWidth]}>
+      {button}
+      <AppText variant="caption" tone="muted" style={styles.reason}>
+        {disabledReason}
+      </AppText>
+    </View>
   );
 };
 
@@ -300,6 +326,12 @@ const useStyles = makeStyles((t) => ({
   disabled: {
     backgroundColor: t.colors.disabledSurface,
     borderColor: t.colors.disabledSurface,
+  },
+  withReason: {
+    gap: t.spacing.sm + 2,
+  },
+  reason: {
+    textAlign: "center" as const,
   },
   pressed: {
     // The system specifies a 0.97 shrink on press, no ripple.
