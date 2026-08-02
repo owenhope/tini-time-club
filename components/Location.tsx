@@ -375,7 +375,9 @@ const Location = () => {
     if (locationReviews.length === 0 && displayLocation?.name) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No reviews yet.</Text>
+          <Text style={styles.emptyText}>
+            Nobody's given a verdict here yet. Be first.
+          </Text>
           <TouchableOpacity
             style={styles.addReviewButton}
             onPress={() => {

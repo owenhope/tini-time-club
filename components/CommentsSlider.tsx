@@ -273,9 +273,9 @@ export default function CommentsSlider({
           renderItem={renderComment}
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyTitle}>LEAVE A COMMENT</Text>
+              <Text style={styles.emptyTitle}>Say something</Text>
               <Text style={styles.emptySubtitle}>
-                Share your thoughts and be the first to join the conversation.
+                Nobody&rsquo;s weighed in yet. Your move.
               </Text>
             </View>
           }
@@ -322,9 +322,10 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.gutter,
     paddingTop: t.spacing.xxl * 2,
   },
+  // Was all-caps; the system reserves uppercase for tiny utility type and
+  // wants an empty state to read as a nudge, not a shouted instruction.
   emptyTitle: {
-    fontSize: 17,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
   },

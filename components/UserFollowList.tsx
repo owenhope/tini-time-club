@@ -114,7 +114,9 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
     return (
       <View style={styles.centered}>
         <Text style={styles.statusText}>
-          {isFollowers ? "No followers yet." : "Not following anyone yet."}
+          {isFollowers
+            ? "Nobody's following yet. The club rewards the loud."
+            : "Not following anyone. Go find your people."}
         </Text>
       </View>
     );

@@ -438,7 +438,7 @@ const UserProfile = () => {
     if (userReviews.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No reviews available.</Text>
+          <Text style={styles.emptyText}>Nothing poured here yet.</Text>
         </View>
       );
     }
@@ -555,7 +555,7 @@ const UserProfile = () => {
             ) : (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
-                  This member is not a top-three regular anywhere yet.
+                  No stool with their name on it — yet.
                 </Text>
               </View>
             )
