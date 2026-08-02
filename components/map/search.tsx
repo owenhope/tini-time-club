@@ -20,7 +20,7 @@ import {
   newSessionToken,
   type PlaceResult,
 } from "@/services/placesService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 interface SearchProps {
@@ -140,7 +140,10 @@ const Search = forwardRef<any, SearchProps>(
       // and terminates the autocomplete billing session.
       const resolved = place.geometry?.location
         ? place
-        : await fetchVenue(place.place_id, sessionTokenRef.current ?? undefined);
+        : await fetchVenue(
+            place.place_id,
+            sessionTokenRef.current ?? undefined
+          );
       sessionTokenRef.current = null;
       if (!resolved?.geometry?.location) return;
 
@@ -236,6 +239,7 @@ const useStyles = makeStyles((t) => ({
     paddingRight: 40,
     height: 44,
     borderRadius: t.radius.sm,
+    fontFamily: fonts.regular,
     fontSize: 15,
     ...t.elevation.card,
   },
@@ -262,11 +266,12 @@ const useStyles = makeStyles((t) => ({
   },
   resultName: {
     fontSize: 15,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   resultAddress: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
   },

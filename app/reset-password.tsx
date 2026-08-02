@@ -10,7 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { Button, Input } from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -167,7 +167,7 @@ const useStyles = makeStyles((t) => ({
   },
   title: {
     fontSize: 24,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     marginBottom: t.spacing.md,
     textAlign: "center" as const,

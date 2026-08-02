@@ -1,0 +1,48 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Display — Cards, badges, ratings, rows" subtitle="Card, Badge, Chip, RatingPips, Avatar, StatCard, ListRow" -->
+<!doctype html><html><head><meta charset="utf-8"><title>Display</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--surface-page);padding:18px 20px}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.stack{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-eyebrow);letter-spacing:var(--tracking-eyebrow);text-transform:uppercase;color:var(--green-500)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Card, Badge, Chip, RatingPips, Avatar, SectionHeader, StatCard, ListRow } = window.TiniTimeClubDesignSystem_1636c5;
+function Demo(){
+  const [sel,setSel]=React.useState('Extra dirty');
+  const [r,setR]=React.useState(4);
+  return(
+  <div className="stack">
+    <SectionHeader eyebrow="Near you" title="Open right now" action="See all" />
+    <div className="row">
+      {['Extra dirty','Gin','Vodka','Twist'].map(t=><Chip key={t} selected={sel===t} onClick={()=>setSel(t)}>{t}</Chip>)}
+      <Badge tone="chartreuse">Top shelf</Badge>
+      <Badge tone="hot" icon="flame">Trending</Badge>
+      <Badge tone="green">Regular</Badge>
+      <Badge tone="outline">Classic</Badge>
+    </div>
+    <div className="row" style={{gap:20}}>
+      <RatingPips value={4.5} showValue />
+      <RatingPips value={r} size={24} onRate={setR} />
+      <Avatar name="Nadia Fereday" ring />
+      <Avatar name="Milo Grant" />
+      <StatCard value="128" label="Tinis logged" />
+      <div style={{background:'var(--green-700)',padding:10,borderRadius:'var(--radius-md)'}}><StatCard value="7" label="Bars regular at" tone="ink" /></div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'1.1fr 1fr',gap:16}}>
+      <Card interactive padding={16}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+          <h3>Dirty Gibson</h3><Badge tone="muted">Gin</Badge>
+        </div>
+        <p style={{font:'var(--type-body-sm)',color:'var(--text-muted)',marginTop:4}}>Bar Basso · Milan</p>
+        <div style={{marginTop:10}}><RatingPips value={5} showValue /></div>
+      </Card>
+      <div>
+        <ListRow leading={<Avatar name="Milo Grant" size={34} />} title="Milo Grant" subtitle="Rated 12 tinis this month" chevron />
+        <ListRow leading={<Avatar name="Ines Vo" size={34} />} title="Ines Vo" subtitle="New review at Silver Lyan" trailing={<RatingPips value={4} />} />
+      </div>
+    </div>
+  </div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

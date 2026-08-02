@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Core — Buttons, icon buttons, logo" subtitle="Pill buttons, tones, sizes, states" -->
+<!doctype html><html><head><meta charset="utf-8"><title>Core</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--surface-page);padding:18px 20px}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.stack{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-eyebrow);letter-spacing:var(--tracking-eyebrow);text-transform:uppercase;color:var(--green-500)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Logo, AppIcon } = window.TiniTimeClubDesignSystem_1636c5;
+function Demo(){return(
+<div className="stack">
+  <div className="row">
+    <Button tone="primary">Rate this tini</Button>
+    <Button tone="highlight" icon="martini">Find a coupe</Button>
+    <Button tone="secondary">Save to journal</Button>
+    <Button tone="ghost" iconAfter="arrow-right">See all</Button>
+    <Button tone="primary" disabled>Disabled</Button>
+  </div>
+  <div className="row">
+    <Button size="sm">Small</Button>
+    <Button size="md">Medium</Button>
+    <Button size="lg">Large</Button>
+    <span style={{background:'var(--green-700)',padding:'10px 14px',borderRadius:'var(--radius-md)'}}><Button tone="onInk" size="sm" icon="plus">Post a review</Button></span>
+  </div>
+  <div className="row">
+    <IconButton icon="heart" label="Save" />
+    <IconButton icon="heart" label="Saved" active />
+    <IconButton icon="share-2" label="Share" tone="secondary" />
+    <IconButton icon="plus" label="Add" tone="primary" />
+    <span style={{background:'var(--green-700)',padding:8,borderRadius:'var(--radius-pill)'}}><IconButton icon="bell" label="Alerts" tone="onInk" /></span>
+    <span style={{flex:1}} />
+    <Logo tone="green" width={104} />
+    <AppIcon colorway="purple" size={44} />
+    <AppIcon colorway="green" size={44} />
+    <AppIcon colorway="chartreuse" size={44} />
+  </div>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

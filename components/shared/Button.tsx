@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import AppText, { type TypographyVariant } from "./AppText";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
@@ -234,11 +234,7 @@ const Button: React.FC<ButtonProps> = ({
         {iconPosition === "left" && renderIcon()}
         <AppText
           variant={getTextVariant()}
-          style={[
-            styles.text,
-            { color: getTextColor() },
-            textStyle,
-          ]}
+          style={[styles.text, { color: getTextColor() }, textStyle]}
         >
           {title}
         </AppText>
@@ -297,7 +293,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.9,
   },
   text: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     textAlign: "center" as const,
   },
   iconLeft: {

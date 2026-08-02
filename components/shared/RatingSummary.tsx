@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { View, Text, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 
 export const RATING_MAX = 5;
 
@@ -488,6 +488,7 @@ const useStyles = makeStyles((t) => ({
     fontSize: 24,
   },
   overallValueSmall: {
+    ...t.typography.title,
     fontSize: 17,
     lineHeight: 22,
   },
@@ -571,7 +572,7 @@ const useStyles = makeStyles((t) => ({
   },
   barValue: {
     ...t.typography.caption,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     width: 32,
     textAlign: "right" as const,
@@ -579,7 +580,7 @@ const useStyles = makeStyles((t) => ({
   },
   stackedBarValue: {
     ...t.typography.caption,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },

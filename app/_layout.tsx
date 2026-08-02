@@ -22,10 +22,24 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  useFonts,
+  Figtree_300Light,
+  Figtree_400Regular,
+  Figtree_500Medium,
+  Figtree_600SemiBold,
+  Figtree_700Bold,
+  Figtree_800ExtraBold,
+  Figtree_900Black,
+} from "@expo-google-fonts/figtree";
+import {
+  DMMono_400Regular,
+  DMMono_500Medium,
+} from "@expo-google-fonts/dm-mono";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
-import { ThemeProvider, useTheme } from "@/theme";
+import { ThemeProvider, fonts, useTheme } from "@/theme";
 import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
@@ -78,10 +92,11 @@ const errorBoundaryStyles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     color: "#1a1a1a",
   },
   body: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: "#555555",
     textAlign: "center",
@@ -90,8 +105,8 @@ const errorBoundaryStyles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 28,
     paddingVertical: 12,
-    borderRadius: 24,
-    backgroundColor: "#6c5ce7",
+    borderRadius: 999,
+    backgroundColor: "#336654",
   },
   buttonPressed: {
     opacity: 0.8,
@@ -99,7 +114,7 @@ const errorBoundaryStyles = StyleSheet.create({
   buttonText: {
     color: "#ffffff",
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
 });
 
@@ -116,6 +131,17 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();
+  const [fontsLoaded] = useFonts({
+    Figtree_300Light,
+    Figtree_400Regular,
+    Figtree_500Medium,
+    Figtree_600SemiBold,
+    Figtree_700Bold,
+    Figtree_800ExtraBold,
+    Figtree_900Black,
+    DMMono_400Regular,
+    DMMono_500Medium,
+  });
   const router = useRouter();
   const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
@@ -329,8 +355,9 @@ function RootLayoutNav() {
     };
   }, [router]);
 
-  // Return null to keep native splash visible until ready (per Expo docs)
-  if (!isReady) {
+  // Return null to keep native splash visible until ready (per Expo docs).
+  // Also wait on the brand fonts so first paint isn't in the system face.
+  if (!isReady || !fontsLoaded) {
     return null;
   }
 

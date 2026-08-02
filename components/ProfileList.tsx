@@ -11,7 +11,7 @@ import { useProfile } from "@/context/profile-context";
 import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 export interface ProfileType {
   id: string;
@@ -188,6 +188,7 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
     ...t.elevation.card,
@@ -236,7 +237,7 @@ const useStyles = makeStyles((t) => ({
   buttonText: {
     color: t.colors.onAccent,
     fontSize: 13,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   followingButtonText: {
     color: t.colors.textSecondary,

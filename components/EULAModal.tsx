@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 
 interface EULAModalProps {
   visible: boolean;
@@ -241,7 +241,7 @@ const useStyles = makeStyles((t) => ({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     textAlign: "center" as const,
     marginBottom: t.spacing.xl - 4,
@@ -252,18 +252,20 @@ const useStyles = makeStyles((t) => ({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
   text: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.text,
     lineHeight: 20,
     marginBottom: t.spacing.md,
   },
   footerText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
     fontStyle: "italic" as const,
@@ -297,14 +299,15 @@ const useStyles = makeStyles((t) => ({
   acceptButtonText: {
     color: t.colors.onAccent,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   declineButtonText: {
     color: t.colors.accent,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   scrollHint: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "center" as const,

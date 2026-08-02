@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 
 const Terms = () => {
   const styles = useStyles();
@@ -138,7 +138,7 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
   },
   placeholder: {
@@ -150,25 +150,27 @@ const useStyles = makeStyles((t) => ({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     textAlign: "center" as const,
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
   text: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
     lineHeight: 20,
     marginBottom: t.spacing.md,
   },
   footerText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
     fontStyle: "italic" as const,

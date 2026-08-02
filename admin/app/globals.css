@@ -1,11 +1,70 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+/*
+ * Tini Time Club — admin brand foundation.
+ *
+ * The admin was built on Tailwind's stock emerald / violet / stone / red
+ * ramps. Rather than rewrite every utility across a dozen pages, we redefine
+ * those ramps to the brand palette here, so existing classes cascade to brand
+ * colour at once:
+ *   emerald → brand green (THE brand: fills, ink, active nav)
+ *   violet  → brand purple (the wordmark dot, focus accents)
+ *   stone   → warm paper greys + green-tinted ink
+ *   red     → brand danger
+ * Brand system: green #336654 is the brand; purple #B6A3E2 is a background;
+ * chartreuse #F2FF71 is the highlight/CTA; pimento #E8763D is the rating dot.
+ */
+
+@theme {
+  /* Fonts — Figtree (wordmark stand-in) + DM Mono, wired in layout.tsx. */
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), "SFMono-Regular", Consolas, monospace;
+
+  /* --- Green (mapped onto `emerald-*`) --- */
+  /* 900 is THE brand green (primary fill); 800 is its darker hover. */
+  --color-emerald-50: #dce9e3;
+  --color-emerald-100: #c9ddd3;
+  --color-emerald-500: #4b8570;
+  --color-emerald-600: #4b8570;
+  --color-emerald-700: #2a5445;
+  --color-emerald-800: #27493b;
+  --color-emerald-900: #336654;
+  --color-emerald-950: #1c3a2e;
+
+  /* --- Purple (mapped onto `violet-*`) --- */
+  --color-violet-100: #ede7f8;
+  --color-violet-300: #d3c7ee;
+  --color-violet-500: #b6a3e2; /* brand purple — the wordmark dot */
+  --color-violet-600: #6b53a8; /* darkened for text legibility */
+  --color-violet-700: #5a4691;
+  --color-violet-800: #4a3877;
+
+  /* --- Neutrals (mapped onto `stone-*`) — warm paper + green-tinted ink --- */
+  --color-stone-50: #faf9f6; /* page */
+  --color-stone-100: #f2f1ee;
+  --color-stone-200: #e5e6e8; /* the grey from the logo sheets */
+  --color-stone-300: #cfd1d4;
+  --color-stone-400: #8a918d; /* muted meta text (large / secondary) */
+  --color-stone-500: #6e7472; /* body-muted — 4.6:1 on white */
+  --color-stone-600: #545b57;
+  --color-stone-700: #3f4b46;
+  --color-stone-900: #1c3a2e; /* darkest ink — brand dark green */
+
+  /* --- Danger (mapped onto `red-*`) --- */
+  --color-red-50: #fbeae9;
+  --color-red-100: #f7d8d6;
+  --color-red-600: #c6443f;
+  --color-red-700: #a5322e;
+
+  /* --- Brand extras available as utilities (bg-chartreuse, etc.) --- */
+  --color-chartreuse: #f2ff71;
+  --color-chartreuse-dark: #d6e640;
+  --color-pimento: #e8763d;
+  --color-brand-green: #336654;
+  --color-brand-purple: #b6a3e2;
+  --color-paper: #faf9f6;
 }
 
-/* The admin is a light-only tool; Tailwind utilities set all colors. */
 body {
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }

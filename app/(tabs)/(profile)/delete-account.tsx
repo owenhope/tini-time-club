@@ -14,7 +14,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -181,7 +181,7 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
   },
   placeholder: {
@@ -197,12 +197,13 @@ const useStyles = makeStyles((t) => ({
   },
   warningTitle: {
     fontSize: 20,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.danger,
     marginTop: t.spacing.md,
     textAlign: "center" as const,
   },
   description: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
     lineHeight: 22,
@@ -212,6 +213,7 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 20,
   },
   listItem: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.sm,
@@ -220,7 +222,7 @@ const useStyles = makeStyles((t) => ({
   warningText: {
     fontSize: 15,
     color: t.colors.danger,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     textAlign: "left" as const,
     marginBottom: 30,
     lineHeight: 22,
@@ -232,15 +234,16 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
   },
   usernameHint: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.md,
   },
   username: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.accent,
   },
   input: {
@@ -249,6 +252,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: 20,
     paddingVertical: t.spacing.md,
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
     backgroundColor: t.colors.background,
@@ -266,7 +270,7 @@ const useStyles = makeStyles((t) => ({
   deleteButtonText: {
     color: t.colors.textOnAccent,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
 }));
 

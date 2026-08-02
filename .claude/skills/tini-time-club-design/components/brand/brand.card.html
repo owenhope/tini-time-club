@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Brand motifs — Tilt pills, sticker, bento" subtitle="Poster devices lifted from the brand inspiration" -->
+<!doctype html><html><head><meta charset="utf-8"><title>Brand motifs</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--surface-page);padding:18px 20px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { TiltPillStack, StickerBadge, BentoGrid, BentoTile, StatCard, Logo, Button } = window.TiniTimeClubDesignSystem_1636c5;
+function Demo(){return(
+<div style={{display:'grid',gridTemplateColumns:'300px 1fr',gap:18,alignItems:'start'}}>
+  <div style={{background:'var(--green-900)',borderRadius:'var(--radius-xl)',padding:'24px 20px'}}>
+    <TiltPillStack items={["Dirty","Dry","Gibson"]} size={30} tones={["chartreuse","green","paper"]} />
+  </div>
+  <BentoGrid columns={3}>
+    <BentoTile tone="green" span={2}>
+      <span style={{font:'var(--type-body-sm)',opacity:.8}}>Reviews poured</span>
+      <span style={{font:'var(--type-display-2)',letterSpacing:'var(--tracking-display)',color:'var(--chartreuse-500)'}}>99.9k</span>
+    </BentoTile>
+    <BentoTile tone="photo" rowSpan={2} image="../../assets/photo-martini-lamp.jpg" style={{alignItems:'flex-end',justifyContent:'flex-start',padding:12}}>
+      <StickerBadge size={92} tilt={-8} />
+    </BentoTile>
+    <BentoTile tone="chartreuse">
+      <span style={{font:'var(--type-h3)',letterSpacing:'var(--tracking-heading)'}}>Make it dirty</span>
+    </BentoTile>
+    <BentoTile tone="paper" style={{alignItems:'flex-start',gap:10}}>
+      <Logo tone="green" width={92} />
+      <Button size="sm">Explore</Button>
+    </BentoTile>
+  </BentoGrid>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

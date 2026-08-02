@@ -1,0 +1,6 @@
+/* Tini Time Club webfonts.
+   SUBSTITUTION: the wordmark is set in a heavy geometric grotesque we were not
+   given font files for. Figtree (Google Fonts, variable 300-900) is the nearest
+   available match — rectangular tittles, angled terminals, tight round bowls.
+   Swap in the real family here when files are supplied. */
+@import url("https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap");

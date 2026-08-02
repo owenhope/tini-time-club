@@ -6,7 +6,7 @@ import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { AvatarRefreshProvider } from "@/context/avatar-refresh-context";
 import * as Notifications from "expo-notifications";
 import CustomTabBar from "@/components/CustomTabBar";
-import { useTheme } from "@/theme";
+import { fonts, useTheme } from "@/theme";
 import {
   getNotificationRoute,
   registerPushNotificationsAsync,
@@ -129,7 +129,7 @@ const LayoutContent = () => {
                 style={{
                   color: colors.onSecondary,
                   fontSize: 28,
-                  fontWeight: "bold",
+                  fontFamily: fonts.bold,
                   lineHeight: 28,
                 }}
               >

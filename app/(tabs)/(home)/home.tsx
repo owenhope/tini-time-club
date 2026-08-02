@@ -36,7 +36,7 @@ import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
 import { Button, Input } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -904,7 +904,7 @@ const useStyles = makeStyles((t) => ({
   loadingText: {
     fontSize: 15,
     color: t.colors.accent,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
   },
   emptyContainer: {
     padding: t.spacing.xl - 4,
@@ -912,6 +912,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   errorText: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.danger,
     textAlign: "center" as const,
@@ -925,6 +926,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   footerLoaderText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.accent,
   },
@@ -944,12 +946,13 @@ const useStyles = makeStyles((t) => ({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     marginBottom: t.spacing.md,
     color: t.colors.text,
     textAlign: "center" as const,
   },
   validationMessage: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.danger,
     textAlign: "center" as const,
@@ -976,7 +979,7 @@ const useStyles = makeStyles((t) => ({
   },
   heroSubtitle: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
     textAlign: "center" as const,
     lineHeight: 22,
@@ -1012,12 +1015,13 @@ const useStyles = makeStyles((t) => ({
   },
   stepTitle: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
     letterSpacing: 0,
   },
   stepDescription: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textMuted,
     lineHeight: 19,

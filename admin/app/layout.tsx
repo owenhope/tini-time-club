@@ -1,5 +1,22 @@
 import type { Metadata } from "next";
+import { Figtree, DM_Mono } from "next/font/google";
 import "./globals.css";
+
+// Figtree stands in for the wordmark's geometric grotesque; DM Mono for
+// measurements, counts and timestamps. Exposed as CSS vars consumed in
+// globals.css (--font-sans / --font-mono).
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tinitimeclub.com"),
@@ -33,7 +50,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html
+      lang="en"
+      className={`h-full antialiased ${figtree.variable} ${dmMono.variable}`}
+    >
       <body className="min-h-full bg-stone-50 text-stone-900">{children}</body>
     </html>
   );

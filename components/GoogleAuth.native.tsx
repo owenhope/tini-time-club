@@ -8,7 +8,7 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 export function GoogleAuth() {
@@ -109,7 +109,7 @@ const useStyles = makeStyles((t) => ({
   },
   label: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     letterSpacing: 0,
     color: t.isDark ? "#E3E3E3" : "#1F1F1F",
   },

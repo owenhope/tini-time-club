@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import AppText from "./AppText";
 
 export type InputSize = "small" | "medium" | "large";
@@ -278,7 +278,7 @@ const useStyles = makeStyles((t) => ({
     marginVertical: t.spacing.sm,
   },
   label: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     marginBottom: 6,
     color: t.colors.textSecondary,
   },
@@ -292,6 +292,7 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     paddingHorizontal: 0,
     color: t.colors.text,
+    fontFamily: fonts.regular,
   },
   leftIcon: {
     marginLeft: t.spacing.lg,
@@ -303,7 +304,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   errorText: {
-    fontWeight: "400" as const,
+    fontFamily: fonts.regular,
     letterSpacing: 0,
     color: t.colors.danger,
     marginTop: t.spacing.xs,

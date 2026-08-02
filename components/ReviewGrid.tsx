@@ -254,7 +254,7 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 6,
     paddingVertical: t.spacing.xs,
     borderRadius: t.radius.sm,
-    backgroundColor: t.colors.scrim,
+    backgroundColor: t.colors.scrimStrong,
   },
   tileScoreText: {
     ...t.typography.label,

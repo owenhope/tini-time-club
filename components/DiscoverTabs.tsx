@@ -15,7 +15,7 @@ import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
 import { getRegularsByLocation } from "@/services/regularsService";
 import * as Location from "expo-location";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -237,10 +237,11 @@ export default function DiscoverTabs({
       } else {
         // Server-side fuzzy search: matches name or address, tolerates
         // typos via trigram similarity, and ranks name hits first.
-        const { data: locationsData, error: locationsError } = await supabase.rpc(
-          "search_locations",
-          { p_query: searchQuery, p_limit: 20 }
-        );
+        const { data: locationsData, error: locationsError } =
+          await supabase.rpc("search_locations", {
+            p_query: searchQuery,
+            p_limit: 20,
+          });
 
         if (locationsError) {
           reportError("Error fetching locations:", locationsError);
@@ -248,8 +249,8 @@ export default function DiscoverTabs({
           return;
         }
 
-        const processedLocations =
-          ((locationsData ?? []) as any[]).map((location: any) => {
+        const processedLocations = ((locationsData ?? []) as any[]).map(
+          (location: any) => {
             const totalRatings = location.total_ratings || 0;
             return {
               id: location.id,
@@ -265,7 +266,8 @@ export default function DiscoverTabs({
                 totalRatings > 0 ? location.presentation_avg : null,
               total_ratings: totalRatings,
             };
-          });
+          }
+        );
 
         const regularsByLocation = await getRegularsByLocation(
           processedLocations.map((location) => location.id)
@@ -548,7 +550,7 @@ const useStyles = makeStyles((t) => ({
   },
   tabText: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.textMuted,
     marginLeft: t.spacing.sm,
   },
@@ -574,6 +576,7 @@ const useStyles = makeStyles((t) => ({
   },
   searchInput: {
     flex: 1,
+    fontFamily: fonts.regular,
     fontSize: 15,
     marginLeft: t.spacing.md,
     color: t.colors.text,
@@ -610,6 +613,7 @@ const useStyles = makeStyles((t) => ({
   },
   listStateText: {
     color: t.colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 15,
     textAlign: "center" as const,
     lineHeight: 22,
@@ -654,6 +658,6 @@ const useStyles = makeStyles((t) => ({
   profileStats: {
     fontSize: 13,
     color: t.colors.textSecondary,
-    fontWeight: "400" as const,
+    fontFamily: fonts.regular,
   },
 }));

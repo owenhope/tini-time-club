@@ -13,7 +13,7 @@ import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
-import { makeStyles, useTheme, type ThemePreference } from "@/theme";
+import { fonts, makeStyles, type ThemePreference, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { useProfile } from "@/context/profile-context";
@@ -218,7 +218,7 @@ const useStyles = makeStyles((t) => ({
   },
   segmentTextSelected: {
     color: t.colors.text,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   menuItem: {
     backgroundColor: t.colors.surface,
@@ -244,7 +244,7 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     color: t.colors.text,
     marginLeft: t.spacing.lg,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
   },
   deleteText: {
     color: t.colors.danger,

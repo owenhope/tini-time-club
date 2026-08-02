@@ -1,7 +1,7 @@
 import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 import AvatarRing from "./AvatarRing";
 
 interface AvatarProps {
@@ -96,7 +96,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   initials: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.onAccent,
   },
 }));

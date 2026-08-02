@@ -12,6 +12,7 @@ export {
   spacing,
   radius,
   typography,
+  fonts,
   elevation,
   HIT_SLOP,
   type ThemeColors,

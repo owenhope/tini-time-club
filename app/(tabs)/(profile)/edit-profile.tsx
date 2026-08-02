@@ -21,7 +21,7 @@ import {
   type FavoriteLocationValue,
 } from "@/services/favoriteLocationSelection";
 import { supabase } from "@/utils/supabase";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -280,12 +280,13 @@ const useStyles = makeStyles((t) => ({
   },
   label: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     marginBottom: t.spacing.sm,
     marginTop: t.spacing.lg,
     color: t.colors.text,
   },
   input: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     padding: t.spacing.md,
     borderRadius: t.radius.sm,
@@ -298,6 +299,7 @@ const useStyles = makeStyles((t) => ({
     minHeight: 100,
   },
   characterCount: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
@@ -321,7 +323,7 @@ const useStyles = makeStyles((t) => ({
   },
   cancelButtonText: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
   },
   saveButton: {
@@ -332,7 +334,7 @@ const useStyles = makeStyles((t) => ({
   },
   saveButtonText: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.onAccent,
   },
 }));

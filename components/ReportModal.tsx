@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 
 interface ReportModalProps {
   visible: boolean;
@@ -139,7 +139,7 @@ const useStyles = makeStyles((t) => ({
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     marginBottom: 10,
   },
@@ -149,6 +149,7 @@ const useStyles = makeStyles((t) => ({
   },
   optionText: {
     textAlign: "center" as const,
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
   },
@@ -159,7 +160,7 @@ const useStyles = makeStyles((t) => ({
   },
   customInputLabel: {
     fontSize: 15,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
     color: t.colors.text,
     marginBottom: 10,
     textAlign: "center" as const,
@@ -170,6 +171,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 15,
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
     minHeight: 100,
@@ -191,7 +193,7 @@ const useStyles = makeStyles((t) => ({
   submitButtonText: {
     color: t.colors.onAccent,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     textAlign: "center" as const,
   },
   backButton: {
@@ -204,7 +206,7 @@ const useStyles = makeStyles((t) => ({
   backButtonText: {
     color: t.colors.text,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     textAlign: "center" as const,
   },
 }));

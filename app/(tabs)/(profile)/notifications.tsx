@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, Switch, Text, View } from "react-native";
 import { Stack } from "expo-router";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import {
   isFridayMartiniReminderEnabled,
   setFridayMartiniReminderEnabled,
@@ -75,7 +75,7 @@ const useStyles = makeStyles((t) => ({
   rowTitle: {
     ...t.typography.body,
     fontSize: 15,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
     color: t.colors.text,
   },
   rowSubtitle: {

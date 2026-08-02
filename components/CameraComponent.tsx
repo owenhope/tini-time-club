@@ -17,7 +17,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 interface CameraComponentProps {
@@ -253,7 +253,7 @@ const useStyles = makeStyles((t) => ({
   },
   permissionTitle: {
     fontSize: 24,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.textOnImage,
   },
   infoText: {
@@ -300,7 +300,7 @@ const useStyles = makeStyles((t) => ({
   },
   libraryLabel: {
     fontSize: 13,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.textOnImage,
   },
   captureButton: {

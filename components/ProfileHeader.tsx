@@ -1,11 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import {
-  Avatar,
-  MetricRow,
-  type Metric,
-} from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import { Avatar, MetricRow, type Metric } from "@/components/shared";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
 
 interface ProfileHeaderProps {
@@ -98,7 +94,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             onPress={isOwnProfile ? onAvatarPress : undefined}
             disabled={!isOwnProfile}
             accessibilityRole={isOwnProfile ? "button" : undefined}
-            accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
+            accessibilityLabel={
+              isOwnProfile ? "Change profile photo" : undefined
+            }
             accessibilityState={{ busy: avatarLoading }}
           >
             <Avatar
@@ -164,7 +162,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       {children}
 
       {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
-
     </View>
   );
 };
@@ -202,7 +199,7 @@ const useStyles = makeStyles((t) => ({
   },
   rankName: {
     ...t.typography.caption,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },

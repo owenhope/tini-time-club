@@ -6,7 +6,7 @@ import {
   RegisterOptions,
 } from "react-hook-form";
 import { Text, TouchableOpacity, View } from "react-native";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 
 type Option = {
   id: number | string;
@@ -95,6 +95,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.accent,
   },
   buttonText: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
     textAlign: "center" as const,
@@ -102,7 +103,7 @@ const useStyles = makeStyles((t) => ({
   },
   selectedButtonText: {
     color: t.colors.onAccent,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
 }));
 

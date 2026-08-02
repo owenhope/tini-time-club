@@ -14,7 +14,7 @@ import ReviewItem from "@/components/ReviewItem";
 import { Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import type { Review } from "@/types/types";
-import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
@@ -103,7 +103,10 @@ export default function SharedReviewScreen() {
         <View style={styles.center}>
           <Text style={styles.errorTitle}>Review unavailable</Text>
           <Text style={styles.errorBody}>{error}</Text>
-          <Button title="Go to the club" onPress={() => router.replace(routes.home())} />
+          <Button
+            title="Go to the club"
+            onPress={() => router.replace(routes.home())}
+          />
         </View>
       ) : review ? (
         <>
@@ -155,7 +158,7 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
     color: t.colors.text,
     fontSize: 17,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   content: {
     paddingBottom: t.spacing.xxl,
@@ -170,10 +173,11 @@ const useStyles = makeStyles((t) => ({
   errorTitle: {
     color: t.colors.text,
     fontSize: 20,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   errorBody: {
     color: t.colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 15,
     textAlign: "center" as const,
   },

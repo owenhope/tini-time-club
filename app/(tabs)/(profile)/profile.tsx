@@ -26,7 +26,7 @@ import ReviewGrid from "@/components/ReviewGrid";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -589,12 +589,12 @@ const useStyles = makeStyles((t) => ({
   },
   rankDebugOptionLabelSelected: {
     color: t.colors.text,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   ctaText: {
     ...t.typography.body,
     color: t.colors.accent,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   regularsList: {
     paddingBottom: t.spacing.xxl,
@@ -654,7 +654,7 @@ const useStyles = makeStyles((t) => ({
   headerTitleContainer: { alignItems: "center" as const },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
   },
 }));

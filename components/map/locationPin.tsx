@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { View, Text } from "react-native";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 
 interface LocationPinProps {
   loc: {
@@ -54,7 +54,7 @@ const useStyles = makeStyles((t) => ({
   },
   pinText: {
     color: t.colors.onAccent,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     fontSize: 13,
   },
   pinPointer: {

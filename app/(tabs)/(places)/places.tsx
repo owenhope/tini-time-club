@@ -35,7 +35,7 @@ import {
 } from "@/services/regularsService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 import { reportError } from "@/utils/log";
 
 const LOWER_LONSDALE_COORDINATES = {
@@ -402,13 +402,14 @@ const useStyles = makeStyles((t) => ({
   },
   noticeText: {
     color: t.colors.textOnImage,
+    fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 20,
   },
   noticeAction: {
     color: t.colors.accent,
     fontSize: 13,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   markerContainer: {
     flexDirection: "row" as const,

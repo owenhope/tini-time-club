@@ -28,7 +28,7 @@ import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { BRAND, HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
@@ -356,6 +356,7 @@ const ReviewOverlay = memo(
     animateRatings: boolean;
   }) => {
     const styles = useStyles();
+    const { colors } = useTheme();
     const [fallbackLocationRating, setFallbackLocationRating] = useState<{
       rating: number | null;
       total_ratings: number | null;
@@ -400,11 +401,7 @@ const ReviewOverlay = memo(
       return () => {
         active = false;
       };
-    }, [
-      fallbackLocationRating,
-      review.location?.id,
-      review.location?.rating,
-    ]);
+    }, [fallbackLocationRating, review.location?.id, review.location?.rating]);
 
     return (
       <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
@@ -426,12 +423,12 @@ const ReviewOverlay = memo(
               <Text style={styles.locationName}>
                 {review.location?.name || "N/A"}
                 {"\u00a0"}
-                {/* Raw brand lavender rather than colors.accent: this chevron
-                    sits on the dark photo scrim in both schemes. */}
+                {/* accentOnImage rather than colors.accent: this chevron sits
+                    on the dark photo scrim in both schemes. */}
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={BRAND.lavender}
+                  color={colors.accentOnImage}
                 />
               </Text>
             </TouchableOpacity>
@@ -1003,7 +1000,7 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   headerUsername: {
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     fontSize: 15,
     color: t.colors.text,
   },
@@ -1071,12 +1068,13 @@ const useStyles = makeStyles((t) => ({
   // Everything below sits on the photo scrim, so it stays light in both
   // schemes rather than following colors.text.
   locationName: {
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     fontSize: 20,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   locationAddress: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textOnImage,
   },
@@ -1088,7 +1086,7 @@ const useStyles = makeStyles((t) => ({
   locationRatingText: {
     ...t.typography.caption,
     color: t.colors.textOnImage,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   locationRatingMeta: {
     ...t.typography.caption,
@@ -1101,7 +1099,7 @@ const useStyles = makeStyles((t) => ({
     width: 40,
     height: 40,
     borderRadius: t.radius.xl - 4,
-    backgroundColor: t.colors.scrim,
+    backgroundColor: t.colors.scrimStrong,
     justifyContent: "center" as const,
     alignItems: "center" as const,
     ...t.elevation.raised,
@@ -1109,7 +1107,7 @@ const useStyles = makeStyles((t) => ({
   spiritText: {
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.textOnImage,
     textTransform: "capitalize" as const,
   },
@@ -1129,7 +1127,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.xs,
   },
   likesCount: {
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     fontSize: 15,
     color: t.colors.text,
   },
@@ -1146,7 +1144,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   captionUsername: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     fontSize: 15,
     color: t.colors.text,
   },
@@ -1158,22 +1156,24 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     lineHeight: 20,
     color: t.colors.textSecondary,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
   },
   commentItem: {
     marginBottom: t.spacing.xs,
   },
   commentUsername: {
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     fontSize: 13,
     color: t.colors.text,
   },
   timestamp: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: t.colors.textMuted,
   },
   viewAllCommentsText: {
     color: t.colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
     marginBottom: t.spacing.xs,
   },

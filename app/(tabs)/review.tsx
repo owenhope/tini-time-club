@@ -35,7 +35,7 @@ import { useProfile } from "@/context/profile-context";
 import { AppText, Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import CelebrationModal from "@/components/CelebrationModal";
@@ -670,164 +670,166 @@ export default function App() {
         style={[styles.container, { paddingTop: insets.top }]}
         onPress={Keyboard.dismiss}
       >
-      {!isReviewing ? (
-        <CameraComponent
-          onCapture={(photo) => {
-            setPhoto(photo);
-            setIsReviewing(true);
-            setIsSubmitting(false);
-            setSubmissionMessage("");
-          }}
-        />
-      ) : (
-        <View style={styles.container}>
-          {/* Header */}
-          {!isSubmitting && (
-            <View style={styles.header}>
-              <AppText
-                variant="title"
-                style={styles.title}
-                accessibilityRole="header"
-              >
-                {questions[step].title}
-              </AppText>
-              {questions[step].title !== "Preview" && (
-                <>
-                  <AppText
-                    variant="caption"
-                    tone="secondary"
-                    style={styles.subtitle}
-                  >
-                    Step {step + 1} of {questions.length - 1}
-                  </AppText>
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${
-                            ((step + 1) / (questions.length - 1)) * 100
-                          }%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                </>
-              )}
-            </View>
-          )}
-
-          {/* Content */}
-          <AnimatedReanimated.View
-            style={[
-              styles.content,
-              questions[step].title === "Preview" && styles.previewContent,
-              questions[step].title === "Where was this served?" &&
-                styles.locationContent,
-              animatedStyle,
-            ]}
-          >
-            {(optionsError || submitError) && (
-              <View style={styles.inlineError}>
+        {!isReviewing ? (
+          <CameraComponent
+            onCapture={(photo) => {
+              setPhoto(photo);
+              setIsReviewing(true);
+              setIsSubmitting(false);
+              setSubmissionMessage("");
+            }}
+          />
+        ) : (
+          <View style={styles.container}>
+            {/* Header */}
+            {!isSubmitting && (
+              <View style={styles.header}>
                 <AppText
-                  variant="caption"
-                  tone="danger"
-                  style={styles.inlineErrorText}
+                  variant="title"
+                  style={styles.title}
+                  accessibilityRole="header"
                 >
-                  {submitError || optionsError}
+                  {questions[step].title}
                 </AppText>
-                <TouchableOpacity
-                  onPress={
-                    submitError ? () => setSubmitError(null) : retryLoadOptions
-                  }
-                >
-                  <AppText
-                    variant="caption"
-                    tone="danger"
-                    style={styles.inlineErrorAction}
-                  >
-                    {submitError ? "Dismiss" : "Retry"}
-                  </AppText>
-                </TouchableOpacity>
+                {questions[step].title !== "Preview" && (
+                  <>
+                    <AppText
+                      variant="caption"
+                      tone="secondary"
+                      style={styles.subtitle}
+                    >
+                      Step {step + 1} of {questions.length - 1}
+                    </AppText>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${
+                              ((step + 1) / (questions.length - 1)) * 100
+                            }%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
             )}
 
-            {questions[step].Component &&
-              createElement(questions[step].Component, {
-                control,
-                ...formState,
-              })}
-          </AnimatedReanimated.View>
-
-          {/* Footer */}
-          {!isSubmitting && (
-            <View style={styles.footer}>
-              <Animated.View style={styles.navigation}>
-                <View style={styles.navLeft}>
-                  {step > 0 && (
-                    <Button
-                      title="Back"
-                      onPress={prevStep}
-                      variant="ghost"
-                      size="medium"
-                      icon="chevron-back"
-                      iconPosition="left"
-                    />
-                  )}
+            {/* Content */}
+            <AnimatedReanimated.View
+              style={[
+                styles.content,
+                questions[step].title === "Preview" && styles.previewContent,
+                questions[step].title === "Where was this served?" &&
+                  styles.locationContent,
+                animatedStyle,
+              ]}
+            >
+              {(optionsError || submitError) && (
+                <View style={styles.inlineError}>
+                  <AppText
+                    variant="caption"
+                    tone="danger"
+                    style={styles.inlineErrorText}
+                  >
+                    {submitError || optionsError}
+                  </AppText>
+                  <TouchableOpacity
+                    onPress={
+                      submitError
+                        ? () => setSubmitError(null)
+                        : retryLoadOptions
+                    }
+                  >
+                    <AppText
+                      variant="caption"
+                      tone="danger"
+                      style={styles.inlineErrorAction}
+                    >
+                      {submitError ? "Dismiss" : "Retry"}
+                    </AppText>
+                  </TouchableOpacity>
                 </View>
+              )}
 
-                <TouchableOpacity
-                  style={styles.quitButton}
-                  onPress={confirmDiscardReview}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Discard review"
-                >
-                  <View style={styles.quitButtonVisual}>
-                    <Ionicons
-                      name="trash-outline"
-                      size={16}
-                      color={colors.danger}
-                    />
+              {questions[step].Component &&
+                createElement(questions[step].Component, {
+                  control,
+                  ...formState,
+                })}
+            </AnimatedReanimated.View>
+
+            {/* Footer */}
+            {!isSubmitting && (
+              <View style={styles.footer}>
+                <Animated.View style={styles.navigation}>
+                  <View style={styles.navLeft}>
+                    {step > 0 && (
+                      <Button
+                        title="Back"
+                        onPress={prevStep}
+                        variant="ghost"
+                        size="medium"
+                        icon="chevron-back"
+                        iconPosition="left"
+                      />
+                    )}
                   </View>
-                </TouchableOpacity>
 
-                <View style={styles.navRight}>
-                  {step < questions.length - 1 ? (
-                    <Button
-                      title="Next"
-                      onPress={nextStep}
-                      variant="primary"
-                      size="medium"
-                      icon="chevron-forward"
-                      iconPosition="right"
-                    />
-                  ) : (
-                    <Button
-                      title="Submit"
-                      onPress={() => {
-                        // Validate comment before submission
-                        const commentValue = watchedValues.comment?.trim();
-                        if (!commentValue || commentValue.length === 0) {
-                          // Show error or prevent submission
-                          return;
+                  <TouchableOpacity
+                    style={styles.quitButton}
+                    onPress={confirmDiscardReview}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Discard review"
+                  >
+                    <View style={styles.quitButtonVisual}>
+                      <Ionicons
+                        name="trash-outline"
+                        size={16}
+                        color={colors.danger}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.navRight}>
+                    {step < questions.length - 1 ? (
+                      <Button
+                        title="Next"
+                        onPress={nextStep}
+                        variant="primary"
+                        size="medium"
+                        icon="chevron-forward"
+                        iconPosition="right"
+                      />
+                    ) : (
+                      <Button
+                        title="Submit"
+                        onPress={() => {
+                          // Validate comment before submission
+                          const commentValue = watchedValues.comment?.trim();
+                          if (!commentValue || commentValue.length === 0) {
+                            // Show error or prevent submission
+                            return;
+                          }
+                          handleSubmit(handleUploadAndCreateReview)();
+                        }}
+                        variant="primary"
+                        size="medium"
+                        disabled={
+                          !watchedValues.comment ||
+                          watchedValues.comment.trim().length === 0
                         }
-                        handleSubmit(handleUploadAndCreateReview)();
-                      }}
-                      variant="primary"
-                      size="medium"
-                      disabled={
-                        !watchedValues.comment ||
-                        watchedValues.comment.trim().length === 0
-                      }
-                    />
-                  )}
-                </View>
-              </Animated.View>
-            </View>
-          )}
-        </View>
-      )}
+                      />
+                    )}
+                  </View>
+                </Animated.View>
+              </View>
+            )}
+          </View>
+        )}
       </TouchableWithoutFeedback>
     </>
   );
@@ -869,7 +871,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   inlineErrorAction: {
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
   },
   progressBar: {
     height: 4,

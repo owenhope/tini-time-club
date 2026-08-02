@@ -24,7 +24,7 @@ import {
   searchNearbyVenues,
   type PlaceResult,
 } from "@/services/placesService";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 export interface LocationInputValue {
@@ -386,6 +386,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 25,
     paddingHorizontal: t.spacing.xl - 4,
     paddingRight: 50,
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.text,
     borderWidth: 1,
@@ -423,11 +424,12 @@ const useStyles = makeStyles((t) => ({
   },
   placeName: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   placeAddress: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textSecondary,
   },
@@ -436,7 +438,7 @@ const useStyles = makeStyles((t) => ({
   },
   distanceText: {
     fontSize: 12,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.xs,
   },
@@ -455,7 +457,7 @@ const useStyles = makeStyles((t) => ({
   },
   ratingText: {
     fontSize: 12,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.onAccent,
   },
   selectedPlaceText: {
@@ -466,6 +468,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   loadingText: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
   },

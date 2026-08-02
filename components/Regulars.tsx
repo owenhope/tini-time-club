@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useProfile } from "@/context/profile-context";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 import { routes } from "@/utils/routes";
 
 interface RegularsProps {
@@ -239,7 +239,7 @@ const useStyles = makeStyles((t) => ({
   rank: {
     width: 22,
     ...t.typography.caption,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     color: t.colors.accent,
   },
   identity: {
@@ -262,10 +262,11 @@ const useStyles = makeStyles((t) => ({
   denseUsername: {
     fontSize: 13,
     lineHeight: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
   },
   denseReviewCount: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 13,
     color: t.colors.textSecondary,

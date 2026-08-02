@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 import type { NamedOption } from "@/types/types";
 
 /**
@@ -114,6 +114,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
   },
   tagText: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: t.colors.onAccent,
     textTransform: "capitalize" as const,

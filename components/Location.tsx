@@ -26,7 +26,7 @@ import useCollapsibleHeader, {
 } from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import Regulars, { RegularsSkeleton } from "@/components/Regulars";
 import {
   getRegularsByLocation,
@@ -662,6 +662,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   emptyText: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
   },
@@ -675,7 +676,7 @@ const useStyles = makeStyles((t) => ({
   addReviewButtonText: {
     color: t.colors.onAccent,
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
   },
   headerButton: {
     width: 44,

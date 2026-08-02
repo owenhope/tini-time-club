@@ -19,8 +19,30 @@ const luminance = (hex: string): number => {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
+/**
+ * Composite a translucent `rgba(...)` token down onto its opaque background.
+ * Borders and dividers are authored as alpha over a surface, and a ratio taken
+ * against the raw token is meaningless — what the eye sees is the blend.
+ */
+const flatten = (color: string, backdrop: string): string => {
+  const parts = color.match(
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/
+  );
+  if (!parts) return color;
+  const alpha = parts[4] === undefined ? 1 : parseFloat(parts[4]);
+  const base = backdrop.replace("#", "");
+  const channels = [0, 1, 2].map((i) => {
+    const fg = parseInt(parts[i + 1], 10);
+    const bg = parseInt(base.slice(i * 2, i * 2 + 2), 16);
+    return Math.round(fg * alpha + bg * (1 - alpha));
+  });
+  return `#${channels.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+};
+
 const contrast = (a: string, b: string): number => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  const [hi, lo] = [luminance(flatten(a, b)), luminance(b)].sort(
+    (x, y) => y - x
+  );
   return (hi + 0.05) / (lo + 0.05);
 };
 
@@ -43,13 +65,13 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   ["accent on surface", c.accent, c.surface],
   ["accent on background", c.accent, c.background],
   ["onAccent on accent", c.onAccent, c.accent],
-  ["secondary on surface", c.secondary, c.surface],
+  // `secondary` (chartreuse) is deliberately absent: it is a fill, never text
+  // on a light surface. What has to be legible is the ink laid on top of it.
   ["onSecondary on secondary", c.onSecondary, c.secondary],
   ["danger on surface", c.danger, c.surface],
   ["tabBarActive on tabBar", c.tabBarActive, c.tabBar],
   ["tabBarInactive on tabBar", c.tabBarInactive, c.tabBar],
   ["onAccentTonal on accentTonal", c.onAccentTonal, c.accentTonal],
-  ["disabledText on disabledSurface", c.disabledText, c.disabledSurface],
 ];
 
 const largePairs = (c: ThemeColors): [string, string, string][] => [
@@ -90,6 +112,21 @@ describe.each([
 
   it.each(decorativePairs(colors))("%s is perceptible", (_label, fg, bg) => {
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(VISIBLE);
+  });
+
+  /**
+   * WCAG 1.4.3 exempts disabled controls from the contrast minimum, and the
+   * palette leans on that — disabled text is meant to read as unavailable.
+   * It still has to be visible enough to read the label, so it gets a floor of
+   * its own rather than being dropped from the suite.
+   */
+  it("keeps disabled text readable without meeting AA", () => {
+    expect(
+      contrast(colors.disabledText, colors.disabledSurface)
+    ).toBeGreaterThanOrEqual(2.5);
+    expect(contrast(colors.disabledText, colors.disabledSurface)).toBeLessThan(
+      AA_BODY
+    );
   });
 
   it("uses distinct surface steps so elevation is visible", () => {

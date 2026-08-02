@@ -17,19 +17,17 @@ import CommentsSlider from "@/components/CommentsSlider";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Button, Skeleton, VerifiedName } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  useRouter,
-  useLocalSearchParams,
-  useNavigation,
-} from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
-import FavoriteTags, { parseFavoriteIds } from "@/components/profile/FavoriteTags";
+import FavoriteTags, {
+  parseFavoriteIds,
+} from "@/components/profile/FavoriteTags";
 import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
@@ -592,6 +590,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   errorTitle: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
@@ -604,11 +603,12 @@ const useStyles = makeStyles((t) => ({
   },
   errorButtonText: {
     color: t.colors.onAccent,
-    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
     fontSize: 15,
   },
   errorLink: {
     color: t.colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   emptyContainer: {
@@ -616,6 +616,7 @@ const useStyles = makeStyles((t) => ({
     padding: 20,
   },
   emptyText: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
   },
@@ -640,7 +641,7 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
   },
   headerActions: {

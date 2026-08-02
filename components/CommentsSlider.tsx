@@ -18,7 +18,7 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -324,11 +324,12 @@ const useStyles = makeStyles((t) => ({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: "bold" as const,
+    fontFamily: fonts.bold,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
   },
   emptySubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 13,
     color: t.colors.textMuted,
     textAlign: "center" as const,
@@ -353,9 +354,17 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 2,
     flexWrap: "wrap" as const,
   },
-  username: { fontWeight: "bold" as const, color: t.colors.text },
-  timestamp: { color: t.colors.textMuted, fontSize: 12 },
-  commentBody: { fontSize: 13, color: t.colors.text },
+  username: { fontFamily: fonts.bold, color: t.colors.text },
+  timestamp: {
+    color: t.colors.textMuted,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+  },
+  commentBody: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: t.colors.text,
+  },
   inputContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -375,6 +384,6 @@ const useStyles = makeStyles((t) => ({
     marginRight: 10,
     color: t.colors.text,
   },
-  sendButton: { color: t.colors.text, fontWeight: "bold" as const },
+  sendButton: { color: t.colors.text, fontFamily: fonts.bold },
   deleteIcon: { paddingLeft: t.spacing.sm, paddingTop: 2 },
 }));

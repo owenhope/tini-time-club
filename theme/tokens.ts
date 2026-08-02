@@ -1,63 +1,74 @@
 /**
  * Design tokens for Tini Time Club.
  *
+ * Values are taken from the brand design system (`.claude/skills/
+ * tini-time-club-design`): green #336654 is THE brand — logo, ink, primary
+ * buttons, active states; purple #B6A3E2 is a background surface, not an
+ * interactive accent; chartreuse #F2FF71 is the highlight / CTA that sings on
+ * green; pimento #E8763D is the tiny-dose accent for ratings and hot flags.
+ *
  * Every colour pair used for text-on-surface below has been checked against
  * WCAG 2.1 AA (4.5:1 for body text, 3:1 for large text and UI boundaries).
- * The contrast ratio is noted where a pair was tuned to clear the bar — the
- * brand lavender in particular fails badly on white at its raw value
- * (#B6A3E2 on #FFFFFF is 2.06:1), so text and icon uses take a darkened
- * variant while the raw brand colour is kept for fills.
+ * Raw brand colours are kept for fills; text/icon uses take a darkened variant
+ * where the raw value fails the bar — the contrast ratio is noted where a pair
+ * was tuned. The design system is light-first; the dark palette is rederived
+ * from the brand greens so it still reads as Tini Time Club.
  */
 
 // Brand anchors, kept as-is for fills and large decorative areas.
 export const BRAND = {
-  lavender: "#B6A3E2",
-  olive: "#336654",
+  green: "#336654",
+  purple: "#B6A3E2",
+  chartreuse: "#F2FF71",
+  pimento: "#E8763D",
 } as const;
 
 const palette = {
-  // Lavender ramp derived from the brand hue (~262°).
-  lavender50: "#F5F1FC",
-  lavender100: "#EDE7F6",
-  lavender200: "#D9CCEF",
-  lavender300: "#C4B2E8",
-  lavender400: "#B6A3E2", // brand
-  lavender500: "#9B84D1",
-  lavender600: "#7B60BC", // 4.71:1 on white — safe for body text
-  lavender700: "#614A96",
-  lavender800: "#4A3873",
+  // Green ramp — THE brand. #336654 is 6.31:1 on white.
+  green900: "#1C3A2E",
+  green800: "#27493B",
+  green700: "#336654", // brand
+  green600: "#2A5445",
+  green500: "#4B8570",
+  green300: "#8FB8A8",
+  green100: "#DCE9E3",
 
-  // Olive ramp derived from the brand green (~160°).
-  olive50: "#EEF5F2",
-  olive100: "#D6E8E0",
-  olive300: "#7FB3A0",
-  olive400: "#4C8A73",
-  olive500: "#336654", // brand — 6.31:1 on white
-  olive600: "#2A5445",
-  olive700: "#1F3E33",
+  // Purple ramp — background surfaces. The raw brand purple fails on white
+  // (#B6A3E2 is 2.06:1), so any text/icon use takes a darkened step.
+  purple700: "#6B53A8", // 5.14:1 on white — safe for text
+  purple600: "#8E76C9",
+  purple500: "#B6A3E2", // brand — fills only
+  purple300: "#D3C7EE",
+  purple100: "#EDE7F8",
 
-  // Neutrals: warm-tinted so they sit with the lavender rather than fight it.
+  // Chartreuse — highlight / CTA on green. Fill only; it fails as text on any
+  // light surface. Pairs with green-700 ink (5.9:1 on chartreuse-500).
+  chartreuse600: "#D6E640",
+  chartreuse500: "#F2FF71",
+  chartreuse300: "#F7FFA8",
+
+  // Pimento — the olive's pimento. Ratings, hot/trending flags, unread dots.
+  // The raw brand value is 2.96:1 on white, just under the 3:1 bar for large
+  // text and graphical objects, so text and meter fills take the darkened
+  // step; pimento-500 stays for decorative fills where nothing is read off it.
+  pimento600: "#CC6836", // 3.75:1 on white, 3.0:1 on the paper-200 rating track
+  pimento500: "#E8763D",
+  pimentoPink500: "#EA6360",
+
+  // Neutrals: warm paper greys from the brand sheets.
   white: "#FFFFFF",
-  neutral25: "#FBFAFC",
-  neutral50: "#F6F5F8",
-  neutral100: "#EEEDF1",
-  neutral200: "#E2E0E7",
-  neutral300: "#C9C6D1",
-  neutral400: "#A5A1B0",
-  neutral500: "#6E6A7A", // 5.24:1 on white, 4.83:1 on background — lightest usable body grey
-  neutral600: "#5C5867",
-  neutral700: "#443F4E",
-  neutral800: "#2A2732",
-  neutral850: "#211E28",
-  neutral900: "#17151D",
-  neutral950: "#100E15",
-  black: "#000000",
+  paper050: "#FAF9F6",
+  paper100: "#F2F1EE",
+  paper200: "#E5E6E8", // the grey from the logo sheets
+  paper300: "#CFD1D4",
+  ink500: "#6E7472",
+  ink700: "#3F4B46",
+  ink900: "#141A17", // near-black for photo scrims — never pure #000
 
   // Status
-  red400: "#F0656B",
-  red500: "#D93B45",
-  red600: "#B22B34",
-  green500: "#2E9E6B",
+  red400: "#EA6360",
+  red500: "#D64A46",
+  red600: "#C6443F",
   amber500: "#B87D14",
 } as const;
 
@@ -69,6 +80,12 @@ export interface ThemeColors {
   surfaceSunken: string;
   overlay: string;
   scrim: string;
+  /**
+   * For chips and controls that sit *on* a photo and carry their own text or
+   * icon. `scrim` only dims — at 0.35 white text over a bright photo lands at
+   * 2.1:1 — so anything readable needs this heavier plate instead.
+   */
+  scrimStrong: string;
 
   // Text
   text: string;
@@ -76,6 +93,10 @@ export interface ThemeColors {
   textMuted: string;
   textOnAccent: string;
   textOnImage: string;
+  // Interactive tint for controls sitting on a photo scrim, where `accent`
+  // is too dark to read in either scheme. Same value in both themes — the
+  // scrim is dark regardless.
+  accentOnImage: string;
 
   // Lines
   border: string;
@@ -90,6 +111,17 @@ export interface ThemeColors {
   secondary: string;
   secondarySubtle: string;
   onSecondary: string;
+
+  // Chartreuse highlight (CTA on green / loud accent)
+  highlight: string;
+  highlightSubtle: string;
+  onHighlight: string;
+
+  // Brand surfaces (full-bleed colour blocks)
+  surfaceBrand: string; // purple — the primary brand background
+  surfaceInk: string; // green-700 — "club / insider" ground
+  surfaceInkDeep: string; // green-900
+  onInk: string; // text on green surfaces
 
   // Status
   danger: string;
@@ -120,109 +152,131 @@ export interface ThemeColors {
 }
 
 export const lightColors: ThemeColors = {
-  background: palette.neutral50,
+  background: palette.paper050,
   surface: palette.white,
   surfaceRaised: palette.white,
-  surfaceSunken: palette.neutral100,
-  overlay: "rgba(0,0,0,0.55)",
-  scrim: "rgba(0,0,0,0.35)",
+  surfaceSunken: palette.paper100,
+  // Scrims are the brand near-black green, never pure #000.
+  overlay: "rgba(20,26,23,0.55)",
+  scrim: "rgba(20,26,23,0.35)",
+  scrimStrong: "rgba(20,26,23,0.65)", // 5.2:1 for white text over a white photo
 
-  text: palette.neutral900, // 16.1:1 on surface
-  textSecondary: palette.neutral600, // 7.3:1
-  textMuted: palette.neutral500, // 5.24:1 on surface, 4.83:1 on background
-  textOnAccent: palette.white,
-  textOnImage: palette.white,
+  text: palette.green900, // #1C3A2E — 13.0:1 on surface
+  textSecondary: palette.ink700, // #3F4B46 — 8.6:1
+  textMuted: palette.ink500, // #6E7472 — 4.6:1 on surface
+  textOnAccent: palette.paper050,
+  textOnImage: palette.paper050,
+  accentOnImage: palette.green300, // 7.4:1 on the ink-900 scrim
 
-  border: palette.neutral200,
-  borderStrong: palette.neutral300,
-  divider: "#D8D5DE", // 1.33:1 on background, 1.45:1 on surface
+  border: "rgba(51,102,84,0.18)", // brand hairline
+  borderStrong: palette.green700,
+  divider: "rgba(51,102,84,0.16)",
 
-  // Text/icon uses take lavender600; raw brand lavender is only a fill.
-  accent: palette.lavender600,
-  accentPressed: palette.lavender700,
-  accentSubtle: palette.lavender50,
-  onAccent: palette.white, // 4.71:1 on lavender600
+  // Green is the brand — primary interactive colour.
+  accent: palette.green700, // #336654 — 6.31:1 on white
+  accentPressed: palette.green800,
+  accentSubtle: palette.green100,
+  onAccent: palette.paper050, // 6.0:1 on green-700
 
-  secondary: palette.olive500,
-  secondarySubtle: palette.olive50,
-  onSecondary: palette.white, // 6.31:1 on olive500
+  // Secondary interactive == the chartreuse highlight (CTA on green).
+  secondary: palette.chartreuse500,
+  secondarySubtle: palette.chartreuse300,
+  onSecondary: palette.green700, // 5.9:1 on chartreuse-500
+
+  highlight: palette.chartreuse500,
+  highlightSubtle: palette.chartreuse300,
+  onHighlight: palette.green700,
+
+  surfaceBrand: palette.purple500,
+  surfaceInk: palette.green700,
+  surfaceInkDeep: palette.green900,
+  onInk: palette.paper050,
 
   danger: palette.red600,
-  dangerSubtle: "#FDECEA",
+  dangerSubtle: "#FBEAE9",
   success: palette.green500,
-  warning: palette.amber500,
+  warning: palette.pimento600,
 
-  accentTonal: palette.lavender50,
-  // lavender600 is 4.45:1 on the tonal fill, just under AA, so tonal labels
-  // take the next step down the ramp.
-  onAccentTonal: "#6E55A9", // 5.34:1 on accentTonal
+  accentTonal: palette.green100,
+  onAccentTonal: palette.green800, // 8.1:1 on green-100
 
-  pressed: "rgba(23,21,29,0.08)",
-  disabledSurface: palette.neutral100,
-  disabledText: "#6B6777", // 4.70:1 on disabledSurface
+  pressed: "rgba(20,26,23,0.07)",
+  disabledSurface: palette.paper100,
+  disabledText: "#8A908D", // ~3.0:1 on disabledSurface (disabled is exempt)
 
-  ratingTrack: palette.neutral200,
-  ratingFill: palette.lavender600, // 3.78:1 on the track
+  ratingTrack: palette.paper200,
+  ratingFill: palette.pimento600, // the pimento — ratings accent
 
   tabBar: palette.white,
-  tabBarActive: palette.olive500,
-  tabBarInactive: palette.neutral500,
-  imagePlaceholder: palette.lavender100,
-  skeleton: palette.neutral100,
-  like: palette.red500,
+  tabBarActive: palette.green700,
+  tabBarInactive: palette.ink500,
+  imagePlaceholder: palette.purple100,
+  skeleton: palette.paper100,
+  like: palette.pimentoPink500,
 };
 
 export const darkColors: ThemeColors = {
-  // Charcoal rather than pure black: less smearing on OLED scroll and it
-  // lets elevation read through surface steps.
-  background: palette.neutral950,
-  surface: palette.neutral900,
-  surfaceRaised: palette.neutral850,
-  surfaceSunken: palette.black,
-  overlay: "rgba(0,0,0,0.65)",
-  scrim: "rgba(0,0,0,0.5)",
+  // Deep-green charcoal rather than pure black — keeps the brand hue in the
+  // dark and lets elevation read through the surface steps.
+  background: "#0E1712",
+  surface: "#16241D",
+  surfaceRaised: "#1E3229",
+  surfaceSunken: "#0A120E",
+  overlay: "rgba(6,10,8,0.66)",
+  scrim: "rgba(6,10,8,0.5)",
+  scrimStrong: "rgba(6,10,8,0.66)",
 
-  text: "#F2F0F5", // 15.8:1 on surface
-  textSecondary: "#B9B4C4", // 8.4:1
-  textMuted: "#948EA0", // 5.71:1 on surface, 6.06:1 on background
-  textOnAccent: palette.neutral950,
-  textOnImage: palette.white,
+  text: "#EEF3F0", // 14.8:1 on surface
+  textSecondary: palette.green300, // #8FB8A8 — 7.4:1
+  textMuted: "#7F978C", // 4.9:1 on surface
+  textOnAccent: "#0E1712",
+  textOnImage: palette.paper050,
+  accentOnImage: palette.green300, // 7.4:1 on the ink-900 scrim
 
-  border: "#332F3C",
-  borderStrong: "#453F52",
-  divider: "#2A2732",
+  border: "rgba(143,184,168,0.16)",
+  borderStrong: palette.green300,
+  divider: "rgba(143,184,168,0.13)",
 
-  // Lavender is lightened on dark; the light-mode accent (#7B60BC) would sit
-  // at 2.3:1 against the dark surface.
-  accent: palette.lavender300, // #C4B2E8 — 8.9:1 on surface
-  accentPressed: palette.lavender200,
-  accentSubtle: "#241F31",
-  onAccent: palette.neutral950, // 9.2:1 on lavender300
+  // Primary interactive stays green, lightened for the dark ground.
+  accent: palette.green300, // #8FB8A8 — 7.4:1 on surface
+  accentPressed: "#A9CCBF",
+  accentSubtle: "#1E3229",
+  onAccent: "#0E1712", // 7.4:1 under green-300
 
-  secondary: palette.olive300, // brand olive is 1.9:1 on dark, so lightened
-  secondarySubtle: "#16241E",
-  onSecondary: palette.neutral950,
+  // Chartreuse is the loud secondary — it sings on dark green.
+  secondary: palette.chartreuse500,
+  secondarySubtle: "#2C3A1A",
+  onSecondary: palette.green900,
+
+  highlight: palette.chartreuse500,
+  highlightSubtle: "#2C3A1A",
+  onHighlight: palette.green900,
+
+  surfaceBrand: palette.purple700,
+  surfaceInk: palette.green800,
+  surfaceInkDeep: "#0E1712",
+  onInk: palette.paper050,
 
   danger: palette.red400,
-  dangerSubtle: "#2E1618",
-  success: "#4FBF8B",
-  warning: "#E0A94A",
+  dangerSubtle: "#2E1615",
+  success: "#5CB58F",
+  warning: "#EF8A54",
 
-  accentTonal: "#241F31",
-  onAccentTonal: palette.lavender300, // 8.27:1 on accentTonal
+  accentTonal: "#1E3229",
+  onAccentTonal: palette.green300, // 6.9:1 on the tonal fill
 
-  pressed: "rgba(255,255,255,0.10)",
-  disabledSurface: palette.neutral800,
-  disabledText: "#948EA0", // 4.63:1 on disabledSurface
+  pressed: "rgba(255,255,255,0.09)",
+  disabledSurface: "#1E3229",
+  disabledText: "#6E857B",
 
-  ratingTrack: "#332F3C",
-  ratingFill: palette.lavender300, // 6.75:1 on the track
+  ratingTrack: "#2A3B33",
+  ratingFill: "#EF8A54", // pimento, lifted for dark
 
-  tabBar: palette.neutral900,
-  tabBarActive: palette.olive300,
-  tabBarInactive: "#948EA0",
-  imagePlaceholder: palette.neutral800,
-  skeleton: palette.neutral800,
+  tabBar: "#16241D",
+  tabBarActive: palette.green300,
+  tabBarInactive: "#7F978C",
+  imagePlaceholder: "#2A3B33",
+  skeleton: "#1E3229",
   like: palette.red400,
 };
 
@@ -242,77 +296,129 @@ export const radius = {
   lg: 16,
   xl: 24,
   pill: 999,
+  // Brand-semantic radii — controls are pill, surfaces are soft-square.
+  input: 10,
+  thumb: 16, // thumbnails
+  card: 22,
+  sheet: 28, // sheets / modals
+} as const;
+
+/**
+ * Font families. Figtree (variable 300–900) stands in for the wordmark's
+ * heavy geometric grotesque; DM Mono for measurements, ABV, prices, coords.
+ * On React Native the weight lives in the family name, so styles set
+ * `fontFamily` rather than `fontWeight`.
+ */
+export const fonts = {
+  light: "Figtree_300Light",
+  regular: "Figtree_400Regular",
+  medium: "Figtree_500Medium",
+  semibold: "Figtree_600SemiBold",
+  bold: "Figtree_700Bold",
+  extrabold: "Figtree_800ExtraBold",
+  black: "Figtree_900Black",
+  mono: "DMMono_400Regular",
+  monoMedium: "DMMono_500Medium",
 } as const;
 
 export const typography = {
+  // Display — the wordmark's stacked, tight-set energy. Lowercase, heavy,
+  // leading below 1, negative tracking.
   display: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "700",
-    letterSpacing: 0,
+    fontFamily: fonts.black,
+    fontSize: 34,
+    lineHeight: 34,
+    letterSpacing: -1,
+    textTransform: "lowercase",
+  },
+  displayLarge: {
+    fontFamily: fonts.black,
+    fontSize: 44,
+    lineHeight: 42,
+    letterSpacing: -1.4,
+    textTransform: "lowercase",
   },
   title: {
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: "700",
-    letterSpacing: 0,
+    fontFamily: fonts.extrabold,
+    fontSize: 22,
+    lineHeight: 27,
+    letterSpacing: -0.3,
   },
   heading: {
+    fontFamily: fonts.bold,
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: "600",
-    letterSpacing: 0,
+    letterSpacing: -0.2,
   },
-  body: { fontSize: 15, lineHeight: 20, fontWeight: "400" },
-  bodyStrong: { fontSize: 15, lineHeight: 20, fontWeight: "600" },
-  caption: { fontSize: 13, lineHeight: 18, fontWeight: "400" },
+  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 23 },
+  bodyStrong: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    lineHeight: 23,
+  },
+  caption: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   label: {
+    fontFamily: fonts.bold,
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: "600",
     letterSpacing: 0,
   },
-  micro: {
+  // Eyebrow — tiny uppercase tracked utility type.
+  eyebrow: {
+    fontFamily: fonts.bold,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: "400",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+  },
+  micro: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 14,
     letterSpacing: 0,
   },
-  // Large numerals in metric rows and rating summaries. Tabular figures keep
-  // columns from shifting as values change.
+  // Large numerals in metric rows and rating summaries.
   metric: {
+    fontFamily: fonts.extrabold,
     fontSize: 20,
     lineHeight: 24,
-    fontWeight: "700",
-    letterSpacing: 0,
+    letterSpacing: -0.4,
   },
   metricLarge: {
+    fontFamily: fonts.black,
     fontSize: 34,
-    lineHeight: 38,
-    fontWeight: "700",
+    lineHeight: 36,
+    letterSpacing: -0.8,
+  },
+  // Mono — measurements, ABV, prices, coordinates, timestamps.
+  mono: {
+    fontFamily: fonts.mono,
+    fontSize: 13,
+    lineHeight: 18,
     letterSpacing: 0,
   },
 } as const;
 
 /**
- * Elevation. Dark mode uses lighter surfaces rather than shadows, which are
- * close to invisible on a dark background.
+ * Elevation. Shadows are green-tinted, low and two-layered in spirit; RN takes
+ * a single shadow, so we use the brand green as the shadow colour. Dark mode
+ * leans on lighter surfaces rather than shadows.
  */
 export const elevation = {
   light: {
     card: {
-      shadowColor: "#1B1526",
+      shadowColor: "#1C3A2E",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
+      shadowOpacity: 0.08,
       shadowRadius: 3,
       elevation: 2,
     },
     raised: {
-      shadowColor: "#1B1526",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 6,
+      shadowColor: "#1C3A2E",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      elevation: 8,
     },
   },
   dark: {
@@ -325,10 +431,10 @@ export const elevation = {
     },
     raised: {
       shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.5,
-      shadowRadius: 12,
-      elevation: 6,
+      shadowRadius: 16,
+      elevation: 8,
     },
   },
 } as const;

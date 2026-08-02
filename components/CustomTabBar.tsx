@@ -2,7 +2,7 @@ import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import * as Haptics from "expo-haptics";
 
 /**
@@ -191,7 +191,7 @@ const useStyles = makeStyles((t) => ({
   },
   tabLabel: {
     ...t.typography.caption,
-    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
     marginTop: t.spacing.sm - 2,
     textAlign: "center" as const,
   },

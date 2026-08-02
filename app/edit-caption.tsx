@@ -13,7 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import databaseService from "@/services/databaseService";
 import { supabase } from "@/utils/supabase";
-import { makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 const EditCaption = () => {
@@ -24,9 +24,7 @@ const EditCaption = () => {
   // A caller navigating with an undefined id produces the literal string
   // "undefined" in the URL, so guard both shapes.
   const reviewId =
-    params.reviewId && params.reviewId !== "undefined"
-      ? params.reviewId
-      : null;
+    params.reviewId && params.reviewId !== "undefined" ? params.reviewId : null;
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -180,11 +178,12 @@ const useStyles = makeStyles((t) => ({
   },
   label: {
     fontSize: 17,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     marginBottom: t.spacing.md,
     color: t.colors.text,
   },
   input: {
+    fontFamily: fonts.regular,
     fontSize: 15,
     minHeight: 120,
     padding: t.spacing.md,
@@ -195,6 +194,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   characterCount: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
@@ -218,7 +218,7 @@ const useStyles = makeStyles((t) => ({
   },
   cancelButtonText: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.text,
   },
   saveButton: {
@@ -229,7 +229,7 @@ const useStyles = makeStyles((t) => ({
   },
   saveButtonText: {
     fontSize: 15,
-    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     color: t.colors.onAccent,
   },
 }));
