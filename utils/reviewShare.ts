@@ -6,7 +6,7 @@ import { warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 
 export const TTC_WEB_ORIGIN =
-  process.env.EXPO_PUBLIC_TTC_WEB_ORIGIN ?? "https://ttc.hopemediahouse.com";
+  process.env.EXPO_PUBLIC_TTC_WEB_ORIGIN ?? "https://tinitimeclub.com";
 
 export const publicReviewUrl = (reviewId: string | number) =>
   `${TTC_WEB_ORIGIN.replace(/\/$/, "")}/r/${encodeURIComponent(String(reviewId))}`;

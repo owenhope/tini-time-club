@@ -212,11 +212,14 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
       accessibilityLabel={a11yLabel}
     >
       {hasAnyRating ? (
-        <>
-          {/* A single review has no aggregate, so the hero is skipped rather
-              than rendered as a placeholder dash. */}
-          {showOverall && overall != null && (
+        // React Native has no flexbox `order`, so the placement is expressed
+        // in render order: bars first puts the overall score on the right.
+        (() => {
+          // A single review has no aggregate, so the hero is skipped rather
+          // than rendered as a placeholder dash.
+          const overallBlock = showOverall && overall != null && (
             <View
+              key="overall"
               style={[
                 styles.overallRow,
                 overallPlacement === "right" && styles.overallRowRight,
@@ -288,10 +291,11 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
                 </Text>
               )}
             </View>
-          )}
+          );
 
-          {showBreakdown && (
+          const barsBlock = showBreakdown && (
             <View
+              key="bars"
               style={[
                 styles.bars,
                 overallPlacement === "right" && styles.barsOverallRight,
@@ -312,8 +316,20 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
                 layout={breakdownLayout}
               />
             </View>
-          )}
-        </>
+          );
+
+          return overallPlacement === "right" ? (
+            <>
+              {barsBlock}
+              {overallBlock}
+            </>
+          ) : (
+            <>
+              {overallBlock}
+              {barsBlock}
+            </>
+          );
+        })()
       ) : (
         <Text style={[styles.emptyText, onImage && styles.onImageMeta]}>
           Not yet rated
@@ -445,10 +461,12 @@ const useStyles = makeStyles((t) => ({
   },
   containerOverallRight: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
-    // Wider than the stacked layout's gap: the large overall numeral needs
-    // clearer separation from the taste/presentation bars beside it.
-    gap: t.spacing.xl,
+    // Bottom-aligned so the large numeral finishes level with the last bar
+    // rather than floating above it.
+    alignItems: "flex-end" as const,
+    // Much wider than the stacked layout's gap: the large overall numeral
+    // needs clear separation from the taste/presentation bars beside it.
+    gap: t.spacing.xl * 3,
   },
   overallRow: {
     width: "100%" as const,
@@ -458,7 +476,6 @@ const useStyles = makeStyles((t) => ({
   },
   overallRowRight: {
     width: "auto" as const,
-    order: 2,
     flexShrink: 0,
   },
   overallValue: {
@@ -503,7 +520,6 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   barsOverallRight: {
-    order: 1,
     flex: 1,
     minWidth: 0,
   },

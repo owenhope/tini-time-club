@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ttc.hopemediahouse.com"),
+  metadataBase: new URL("https://tinitimeclub.com"),
   title: "Tini Time Club",
   description: "Martini reviews from Tini Time Club.",
   openGraph: {

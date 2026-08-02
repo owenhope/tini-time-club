@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { logout } from "@/lib/actions";
 
+const TOOLS = [
+  { href: "/admin/notifications", key: "notifications", label: "Notifications" },
+  { href: "/admin/share-preview", key: "share-preview", label: "Share preview" },
+] as const;
+
 export default function AdminShell({
   active,
   children,
@@ -8,6 +13,8 @@ export default function AdminShell({
   active:
     | "dashboard"
     | "users"
+    | "reviews"
+    | "locations"
     | "analytics"
     | "notifications"
     | "share-preview";
@@ -26,6 +33,8 @@ export default function AdminShell({
     </Link>
   );
 
+  const toolsActive = TOOLS.some((tool) => tool.key === active);
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-stone-200 bg-white">
@@ -39,8 +48,38 @@ export default function AdminShell({
               {tab("/admin", "dashboard", "Dashboard")}
               {tab("/admin/analytics", "analytics", "Analytics")}
               {tab("/admin/users", "users", "Users")}
-              {tab("/admin/notifications", "notifications", "Notifications")}
-              {tab("/admin/share-preview", "share-preview", "Share preview")}
+              {tab("/admin/reviews", "reviews", "Reviews")}
+              {tab("/admin/locations", "locations", "Locations")}
+              {/* Hover/focus dropdown — server-rendered, no client JS. */}
+              <div className="group relative">
+                <button
+                  type="button"
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                    toolsActive
+                      ? "bg-emerald-900 text-white"
+                      : "text-stone-600 hover:bg-stone-200"
+                  }`}
+                >
+                  Tools <span aria-hidden>▾</span>
+                </button>
+                <div className="invisible absolute left-0 top-full z-10 pt-1 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                  <div className="flex min-w-40 flex-col rounded-xl border border-stone-200 bg-white p-1 shadow-lg">
+                    {TOOLS.map((tool) => (
+                      <Link
+                        key={tool.key}
+                        href={tool.href}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                          active === tool.key
+                            ? "bg-emerald-900 text-white"
+                            : "text-stone-600 hover:bg-stone-100"
+                        }`}
+                      >
+                        {tool.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </nav>
           </div>
           <form action={logout}>

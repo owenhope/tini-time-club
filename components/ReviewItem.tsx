@@ -49,19 +49,32 @@ const InlineIdentityText = ({
   body,
   usernameStyle,
   bodyStyle,
+  onUsernamePress,
 }: {
   username: string;
   isVerified?: boolean | null;
   body: string;
   usernameStyle: StyleProp<TextStyle>;
   bodyStyle?: StyleProp<TextStyle>;
+  /** Omit for the viewer's own name, which has nowhere to navigate to. */
+  onUsernamePress?: () => void;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
 
   return (
     <Text style={[styles.inlineBody, bodyStyle]}>
-      <Text style={usernameStyle}>{username}</Text>
+      <Text
+        style={usernameStyle}
+        onPress={onUsernamePress}
+        suppressHighlighting={!onUsernamePress}
+        accessibilityRole={onUsernamePress ? "link" : undefined}
+        accessibilityLabel={
+          onUsernamePress ? `View ${username}'s profile` : undefined
+        }
+      >
+        {username}
+      </Text>
       {isVerified ? (
         <MaterialIcons name="verified" size={13} color={colors.accent} />
       ) : null}
@@ -343,19 +356,71 @@ const ReviewOverlay = memo(
     animateRatings: boolean;
   }) => {
     const styles = useStyles();
+    const [fallbackLocationRating, setFallbackLocationRating] = useState<{
+      rating: number | null;
+      total_ratings: number | null;
+    } | null>(null);
     const overallScore = calculateOverallRating(
       review.taste,
       review.presentation
     );
-    const locationReviewCount = review.location?.total_ratings ?? 0;
+    const locationReviewCount =
+      review.location?.total_ratings ??
+      fallbackLocationRating?.total_ratings ??
+      0;
     const locationRating =
-      review.location?.rating != null && locationReviewCount > 0
-        ? Number(review.location.rating)
+      (review.location?.rating ?? fallbackLocationRating?.rating) != null &&
+      locationReviewCount > 0
+        ? Number(review.location?.rating ?? fallbackLocationRating?.rating)
         : null;
+
+    useEffect(() => {
+      let active = true;
+      if (
+        review.location?.rating != null ||
+        review.location?.id == null ||
+        fallbackLocationRating != null
+      ) {
+        return;
+      }
+
+      supabase
+        .from("location_ratings")
+        .select("rating,total_ratings")
+        .eq("id", review.location.id)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (!active || error || !data) return;
+          setFallbackLocationRating({
+            rating: data.rating ?? null,
+            total_ratings: data.total_ratings ?? 0,
+          });
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [
+      fallbackLocationRating,
+      review.location?.id,
+      review.location?.rating,
+    ]);
 
     return (
       <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
         <View style={styles.venueBlock}>
+          {locationRating != null ? (
+            <View style={styles.locationRatingRow}>
+              <Text style={styles.locationRatingText}>
+                {formatRating(locationRating)}
+              </Text>
+              <Text style={styles.locationRatingMeta}>
+                {locationReviewCount === 1
+                  ? "1 review"
+                  : `${locationReviewCount} reviews`}
+              </Text>
+            </View>
+          ) : null}
           <Link href={`/places/${review.location?.id}`} asChild>
             <TouchableOpacity style={styles.locationLinkContainer}>
               <Text style={styles.locationName}>
@@ -381,19 +446,6 @@ const ReviewOverlay = memo(
               )}
             </Text>
           )}
-          {locationRating != null ? (
-            <View style={styles.locationRatingPill}>
-              <Ionicons name="star" size={13} color={BRAND.lavender} />
-              <Text style={styles.locationRatingText}>
-                {formatRating(locationRating)} venue rating
-              </Text>
-              <Text style={styles.locationRatingMeta}>
-                {locationReviewCount === 1
-                  ? "1 review"
-                  : `${locationReviewCount} reviews`}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={styles.reviewRatingBlock}>
@@ -472,6 +524,15 @@ const ReviewFooter = memo(
     loadCommentsIfNeeded: () => void;
   }) => {
     const styles = useStyles();
+    const router = useRouter();
+
+    // Shared route: resolves inside whichever tab stack is rendering.
+    const openProfile = useCallback(
+      (username?: string | null) => {
+        if (username) router.push(routes.user(username));
+      },
+      [router]
+    );
 
     const handleShowComments = useCallback(() => {
       loadCommentsIfNeeded(); // Ensure comments are loaded before showing
@@ -516,6 +577,11 @@ const ReviewFooter = memo(
                 body={review.comment}
                 usernameStyle={styles.captionUsername}
                 bodyStyle={styles.captionText}
+                onUsernamePress={
+                  isOwnReview
+                    ? undefined
+                    : () => openProfile(review.profile?.username)
+                }
               />
             ) : (
               <TouchableOpacity onPress={onEdit}>
@@ -540,6 +606,7 @@ const ReviewFooter = memo(
                   isVerified={c.profile?.is_verified}
                   body={c.body}
                   usernameStyle={styles.commentUsername}
+                  onUsernamePress={() => openProfile(c.profile?.username)}
                 />
               </TouchableOpacity>
             ))}
@@ -976,7 +1043,6 @@ const useStyles = makeStyles((t) => ({
   },
   reviewRatingBlock: {
     width: "100%" as const,
-    maxWidth: 280,
     gap: t.spacing.md,
   },
   reviewAttributes: {
@@ -1014,17 +1080,10 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     color: t.colors.textOnImage,
   },
-  locationRatingPill: {
-    alignSelf: "flex-start" as const,
-    minHeight: 28,
-    maxWidth: "100%" as const,
+  locationRatingRow: {
     flexDirection: "row" as const,
-    alignItems: "center" as const,
+    alignItems: "baseline" as const,
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: t.radius.pill,
-    backgroundColor: "rgba(8, 31, 28, 0.72)",
   },
   locationRatingText: {
     ...t.typography.caption,
@@ -1037,7 +1096,7 @@ const useStyles = makeStyles((t) => ({
   },
   eyeIconContainer: {
     position: "absolute" as const,
-    bottom: t.spacing.xl - 4,
+    top: t.spacing.xl - 4,
     right: t.spacing.xl - 4,
     width: 40,
     height: 40,

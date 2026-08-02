@@ -13,7 +13,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const PUBLIC_ORIGIN = "https://ttc.hopemediahouse.com";
+const PUBLIC_ORIGIN = "https://tinitimeclub.com";
 const FALLBACK_IMAGE = "/nightlife-martini-table.png";
 
 const formatRating = (rating?: number | null) =>

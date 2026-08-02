@@ -2,6 +2,13 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+export interface PublicReviewComment {
+  id: number;
+  body: string;
+  username: string | null;
+  is_verified: boolean | null;
+}
+
 export interface PublicReview {
   id: string;
   comment: string | null;
@@ -10,6 +17,9 @@ export interface PublicReview {
   inserted_at: string;
   taste: number | null;
   presentation: number | null;
+  likes_count: number;
+  comments_count: number;
+  recent_comments: PublicReviewComment[];
   location: {
     id: number;
     name: string | null;
@@ -24,16 +34,28 @@ export interface PublicReview {
     username: string | null;
     is_verified: boolean | null;
     deleted: boolean | null;
+    avatar_public_url: string | null;
+    review_count: number | null;
   } | null;
 }
 
-export const reviewOverall = (review: PublicReview): number | null => {
+export const reviewOverall = (review: {
+  taste: number | null;
+  presentation: number | null;
+}): number | null => {
   if (review.taste == null || review.presentation == null) return null;
   return Math.round(((review.taste + review.presentation) / 2) * 10) / 10;
 };
 
 export const nativeReviewUrl = (reviewId: string | number) =>
   `tini-time-club:///r/${encodeURIComponent(String(reviewId))}`;
+
+/** Avatars live in a public bucket; the URL can be built without a query. */
+const avatarPublicUrl = (avatarPath: string | null | undefined): string | null =>
+  avatarPath
+    ? supabaseAdmin().storage.from("avatars").getPublicUrl(avatarPath).data
+        .publicUrl
+    : null;
 
 export const fetchPublicReview = async (
   reviewId: string
@@ -51,43 +73,102 @@ export const fetchPublicReview = async (
       location:locations!reviews_location_fkey(id,name,address),
       spirit:spirits(name),
       type:types(name),
-      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted)
+      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted,avatar_url,review_count)
     `
     )
     .eq("id", reviewId)
     .eq("state", 1)
     .single();
 
-  const review = data as unknown as Omit<PublicReview, "image_public_url">;
+  const review = data as unknown as Omit<
+    PublicReview,
+    | "image_public_url"
+    | "likes_count"
+    | "comments_count"
+    | "recent_comments"
+    | "profile"
+  > & {
+    profile:
+      | (NonNullable<PublicReview["profile"]> & { avatar_url: string | null })
+      | null;
+  };
 
   if (error || !review || review.profile?.deleted) notFound();
 
-  let location = review.location;
-  if (review.location?.id) {
-    const { data: locationRating } = await supabaseAdmin()
-      .from("location_ratings")
-      .select("rating,total_ratings")
-      .eq("id", review.location.id)
-      .maybeSingle();
-    location = {
-      ...review.location,
-      rating: locationRating?.rating ?? null,
-      total_ratings: locationRating?.total_ratings ?? 0,
-    };
-  }
+  const [
+    { count: likesCount },
+    { count: commentsCount },
+    { data: recentComments },
+    locationRatingResult,
+    signedImageResult,
+  ] = await Promise.all([
+    supabaseAdmin()
+      .from("likes")
+      .select("review_id", { count: "exact", head: true })
+      .eq("review_id", review.id),
+    supabaseAdmin()
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("review_id", review.id),
+    supabaseAdmin()
+      .from("comments")
+      .select("id,body,profile:profiles(username,is_verified,deleted)")
+      .eq("review_id", review.id)
+      .order("inserted_at", { ascending: false })
+      .limit(2),
+    review.location?.id
+      ? supabaseAdmin()
+          .from("location_ratings")
+          .select("rating,total_ratings")
+          .eq("id", review.location.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    review.image_url
+      ? supabaseAdmin()
+          .storage.from("review_images")
+          .createSignedUrl(review.image_url, 60 * 60)
+      : Promise.resolve({ data: null }),
+  ]);
 
-  let imagePublicUrl: string | null = null;
-  if (review.image_url) {
-    const { data: signed } = await supabaseAdmin()
-      .storage.from("review_images")
-      .createSignedUrl(review.image_url, 60 * 60);
-    imagePublicUrl = signed?.signedUrl ?? null;
-  }
+  const location = review.location
+    ? {
+        ...review.location,
+        rating: locationRatingResult.data?.rating ?? null,
+        total_ratings: locationRatingResult.data?.total_ratings ?? 0,
+      }
+    : null;
+
+  const comments: PublicReviewComment[] = (recentComments ?? [])
+    .map((row) => {
+      const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
+      if (profile?.deleted) return null;
+      return {
+        id: row.id as number,
+        body: String(row.body ?? ""),
+        username: profile?.username ?? null,
+        is_verified: profile?.is_verified ?? null,
+      };
+    })
+    .filter(Boolean) as PublicReviewComment[];
 
   return {
     ...review,
     id: String(review.id),
     location,
-    image_public_url: imagePublicUrl,
+    image_public_url: signedImageResult.data?.signedUrl ?? null,
+    likes_count: likesCount ?? 0,
+    comments_count: commentsCount ?? 0,
+    // Oldest-first, matching the mobile footer's preview order.
+    recent_comments: comments.reverse(),
+    profile: review.profile
+      ? {
+          id: review.profile.id,
+          username: review.profile.username,
+          is_verified: review.profile.is_verified,
+          deleted: review.profile.deleted,
+          avatar_public_url: avatarPublicUrl(review.profile.avatar_url),
+          review_count: review.profile.review_count,
+        }
+      : null,
   };
 };

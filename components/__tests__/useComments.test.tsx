@@ -16,10 +16,20 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   setItem: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock("@/utils/supabase", () => ({
-  supabase: { from: jest.fn() },
-  supabaseProjectRef: "testref",
-}));
+// Chainable stub: the overlay looks up a venue's aggregate rating when the
+// feed row didn't carry one, so `from()` has to survive .select().eq()…
+jest.mock("@/utils/supabase", () => {
+  const chain: Record<string, jest.Mock> = {};
+  for (const method of ["select", "eq", "upsert", "delete", "insert"]) {
+    chain[method] = jest.fn(() => chain);
+  }
+  chain.maybeSingle = jest.fn(() => Promise.resolve({ data: null, error: null }));
+  chain.single = chain.maybeSingle;
+  return {
+    supabase: { from: jest.fn(() => chain) },
+    supabaseProjectRef: "testref",
+  };
+});
 
 jest.mock("@/utils/log", () => ({
   log: jest.fn(),

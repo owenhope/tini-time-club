@@ -38,18 +38,10 @@ export interface SharePreviewReview {
   profile: { username: string | null } | null;
 }
 
-export interface DashboardStats {
-  totalUsers: number;
-  totalReviews: number;
-  totalLocations: number;
-  reviewsByDay: { day: string; count: number }[];
-  topLocations: {
-    id: number;
-    name: string;
-    rating: number;
-    total_ratings: number;
-  }[];
-  newestUsers: AdminProfile[];
+export interface SharePreviewProfile {
+  username: string;
+  name: string | null;
+  review_count: number | null;
 }
 
 const db = supabaseAdmin;
@@ -80,69 +72,131 @@ export const fetchAuthUsers = async (): Promise<
   return users;
 };
 
-export const fetchDashboardStats = async (
-  range: DateRange
-): Promise<DashboardStats> => {
-  const [users, reviews, locations, recentReviews, topLocations, authUsers] =
-    await Promise.all([
-      db()
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("deleted", false),
-      db()
-        .from("reviews")
-        .select("id", { count: "exact", head: true })
-        .eq("state", 1),
-      db().from("locations").select("id", { count: "exact", head: true }),
-      db()
-        .from("reviews")
-        .select("inserted_at")
-        .eq("state", 1)
-        .gte("inserted_at", range.since.toISOString())
-        .lte("inserted_at", range.until.toISOString()),
-      db()
-        .from("location_ratings")
-        .select("id,name,rating,total_ratings")
-        .gt("total_ratings", 0)
-        .order("total_ratings", { ascending: false })
-        .order("rating", { ascending: false })
-        .limit(5),
-      fetchAuthUsers(),
-    ]);
+export interface KpiMetric {
+  /** All-time total, ignoring the selected range. */
+  total: number;
+  /** Added within the selected range. */
+  current: number;
+  /** Added within the equal-length window immediately before it. */
+  previous: number;
+  byDay: { day: string; count: number }[];
+}
 
-  const newestIds = [...authUsers.entries()]
-    .sort(
-      (a, b) =>
-        new Date(b[1].created_at ?? 0).getTime() -
-        new Date(a[1].created_at ?? 0).getTime()
-    )
-    .slice(0, 5)
-    .map(([id]) => id);
-  const { data: newestProfiles } = await db()
-    .from("profiles")
-    .select(
-      "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
-    )
-    .in("id", newestIds);
-  const newestUsers = newestIds
-    .map((id) => {
-      const profile = (newestProfiles ?? []).find((p) => p.id === id);
-      if (!profile) return null;
-      return { ...profile, ...authUsers.get(id) } as AdminProfile;
-    })
-    .filter(Boolean) as AdminProfile[];
+export interface DashboardKpis {
+  users: KpiMetric;
+  reviews: KpiMetric;
+  locations: KpiMetric;
+}
+
+/** The equal-length window immediately preceding `range`. */
+const previousWindow = (range: DateRange) => {
+  const until = new Date(range.since.getTime() - 1);
+  const since = new Date(range.since);
+  since.setDate(since.getDate() - range.days);
+  return { since, until };
+};
+
+const countBetween = (
+  table: string,
+  column: string,
+  since: Date,
+  until: Date,
+  activeOnly = false
+) => {
+  // `*` rather than a named column: `likes` has no id, and head:true means
+  // no rows come back regardless.
+  let query = db()
+    .from(table)
+    .select("*", { count: "exact", head: true })
+    .gte(column, since.toISOString())
+    .lte(column, until.toISOString());
+  if (activeOnly) query = query.eq("state", 1);
+  return query;
+};
+
+/**
+ * The three headline KPIs — members, reviews, locations — each as an all-time
+ * total plus this-window and previous-window counts so the dashboard can show
+ * growth without a second round of queries.
+ *
+ * Signup dates come from auth.users: `profiles` has no created_at column.
+ */
+export const fetchDashboardKpis = async (
+  range: DateRange
+): Promise<DashboardKpis> => {
+  const prior = previousWindow(range);
+
+  const [
+    authUsers,
+    totalMembers,
+    totalReviews,
+    totalLocations,
+    reviewsInRange,
+    locationsInRange,
+    priorReviews,
+    priorLocations,
+  ] = await Promise.all([
+    fetchAuthUsers(),
+    db()
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("deleted", false),
+    db()
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("state", 1),
+    db().from("locations").select("id", { count: "exact", head: true }),
+    db()
+      .from("reviews")
+      .select("inserted_at")
+      .eq("state", 1)
+      .gte("inserted_at", range.since.toISOString())
+      .lte("inserted_at", range.until.toISOString()),
+    db()
+      .from("locations")
+      .select("inserted_at")
+      .gte("inserted_at", range.since.toISOString())
+      .lte("inserted_at", range.until.toISOString()),
+    countBetween("reviews", "inserted_at", prior.since, prior.until, true),
+    countBetween("locations", "inserted_at", prior.since, prior.until),
+  ]);
+
+  const signups = [...authUsers.values()]
+    .map((user) => user.created_at)
+    .filter(Boolean) as string[];
+  const within = (from: Date, to: Date) =>
+    signups.filter((ts) => {
+      const at = new Date(ts).getTime();
+      return at >= from.getTime() && at <= to.getTime();
+    }).length;
 
   return {
-    totalUsers: users.count ?? 0,
-    totalReviews: reviews.count ?? 0,
-    totalLocations: locations.count ?? 0,
-    reviewsByDay: bucketByDay(
-      (recentReviews.data ?? []).map((r) => r.inserted_at),
-      range.since,
-      range.until
-    ),
-    topLocations: (topLocations.data ?? []) as DashboardStats["topLocations"],
-    newestUsers,
+    users: {
+      total: totalMembers.count ?? 0,
+      current: within(range.since, range.until),
+      previous: within(prior.since, prior.until),
+      byDay: bucketByDay(signups, range.since, range.until),
+    },
+    reviews: {
+      total: totalReviews.count ?? 0,
+      current: (reviewsInRange.data ?? []).length,
+      previous: priorReviews.count ?? 0,
+      byDay: bucketByDay(
+        (reviewsInRange.data ?? []).map((row) => row.inserted_at),
+        range.since,
+        range.until
+      ),
+    },
+    locations: {
+      total: totalLocations.count ?? 0,
+      current: (locationsInRange.data ?? []).length,
+      previous: priorLocations.count ?? 0,
+      byDay: bucketByDay(
+        (locationsInRange.data ?? []).map((row) => row.inserted_at),
+        range.since,
+        range.until
+      ),
+    },
   };
 };
 
@@ -175,7 +229,6 @@ export interface AnalyticsData {
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
   profileSharesByDay: { day: string; count: number }[];
-  celebrationsByDay: { day: string; count: number }[];
   invitesByDay: { day: string; count: number }[];
   activeLast7Days: number;
   activeLast30Days: number;
@@ -183,17 +236,29 @@ export interface AnalyticsData {
   reviewedInRange: number;
   totalShares: number;
   totalProfileShares: number;
-  totalCelebrations: number;
-  celebrationShares: number;
   totalInvites: number;
   shareChannels: { channel: string; count: number }[];
   profileShareChannels: { channel: string; count: number }[];
   inviteChannels: { channel: string; count: number }[];
-  celebrationKinds: { kind: string; count: number; shares: number }[];
   topSharers: (AdminProfile & { share_count: number; last_shared_at: string })[];
   totalMembers: number;
   tierDistribution: { tier: string; color: string; count: number }[];
   topReviewers: AdminProfile[];
+  /** Signups inside the range, for the growth section. */
+  signupsInRange: number;
+  /**
+   * The same metrics over the equal-length window immediately before the
+   * range, so every feature can be shown as progressing or regressing.
+   */
+  previous: {
+    signups: number;
+    reviews: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    profileShares: number;
+    invites: number;
+  };
 }
 
 /** The four in-app rank tiers, mirrored from utils/ranking.ts. */
@@ -267,6 +332,25 @@ export const fetchAnalytics = async (
       fetchTopReviewers(10),
     ]);
 
+  // Previous equal-length window, counts only — enough to say whether each
+  // feature is progressing without pulling a second set of rows.
+  const prior = previousWindow(range);
+  const [
+    priorReviews,
+    priorLikes,
+    priorComments,
+    priorShares,
+    priorProfileShares,
+    priorInvites,
+  ] = await Promise.all([
+    countBetween("reviews", "inserted_at", prior.since, prior.until, true),
+    countBetween("likes", "liked_at", prior.since, prior.until),
+    countBetween("comments", "inserted_at", prior.since, prior.until),
+    countBetween("review_share_events", "shared_at", prior.since, prior.until),
+    countBetween("profile_share_events", "shared_at", prior.since, prior.until),
+    countBetween("invite_share_events", "created_at", prior.since, prior.until),
+  ]);
+
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
   const authRows = [...authUsers.values()];
@@ -297,7 +381,6 @@ export const fetchAnalytics = async (
   const shareChannels = new Map<string, number>();
   const profileShareChannels = new Map<string, number>();
   const inviteChannels = new Map<string, number>();
-  const celebrationKinds = new Map<string, { count: number; shares: number }>();
   const sharesByUser = new Map<
     string,
     { count: number; last_shared_at: string }
@@ -339,27 +422,23 @@ export const fetchAnalytics = async (
       }
     }
   }
+  // Celebrations have no section of their own, but a milestone shared from
+  // the celebration sheet is still a share — it counts toward Top sharers.
   for (const event of celebrationRows) {
-    const kind = event.kind ?? "unknown";
-    const current = celebrationKinds.get(kind) ?? { count: 0, shares: 0 };
-    if (event.outcome === "shown") current.count += 1;
-    if (event.channel === "sheet" && event.outcome === "shared") {
-      current.shares += 1;
+    if (event.channel !== "sheet" || event.outcome !== "shared") continue;
 
-      const sharer = sharesByUser.get(event.user_id);
-      if (!sharer) {
-        sharesByUser.set(event.user_id, {
-          count: 1,
-          last_shared_at: event.created_at,
-        });
-      } else {
-        sharer.count += 1;
-        if (new Date(event.created_at) > new Date(sharer.last_shared_at)) {
-          sharer.last_shared_at = event.created_at;
-        }
+    const sharer = sharesByUser.get(event.user_id);
+    if (!sharer) {
+      sharesByUser.set(event.user_id, {
+        count: 1,
+        last_shared_at: event.created_at,
+      });
+    } else {
+      sharer.count += 1;
+      if (new Date(event.created_at) > new Date(sharer.last_shared_at)) {
+        sharer.last_shared_at = event.created_at;
       }
     }
-    celebrationKinds.set(kind, current);
   }
   for (const invite of inviteRows) {
     const channel = invite.channel ?? "unknown";
@@ -430,13 +509,6 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
-    celebrationsByDay: bucketByDay(
-      celebrationRows
-        .filter((event) => event.outcome === "shown")
-        .map((event) => event.created_at),
-      range.since,
-      range.until
-    ),
     invitesByDay: bucketByDay(
       inviteRows.map((invite) => invite.created_at),
       range.since,
@@ -447,12 +519,6 @@ export const fetchAnalytics = async (
     reviewedInRange: new Set((reviews.data ?? []).map((r) => r.user_id)).size,
     totalShares: shareRows.length,
     totalProfileShares: profileShareRows.length,
-    totalCelebrations: celebrationRows.filter(
-      (event) => event.outcome === "shown"
-    ).length,
-    celebrationShares: celebrationRows.filter(
-      (event) => event.channel === "sheet" && event.outcome === "shared"
-    ).length,
     totalInvites: inviteRows.length,
     shareChannels: [...shareChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
@@ -462,9 +528,6 @@ export const fetchAnalytics = async (
       .sort((a, b) => b.count - a.count),
     inviteChannels: [...inviteChannels.entries()]
       .map(([channel, count]) => ({ channel, count }))
-      .sort((a, b) => b.count - a.count),
-    celebrationKinds: [...celebrationKinds.entries()]
-      .map(([kind, stats]) => ({ kind, ...stats }))
       .sort((a, b) => b.count - a.count),
     topSharers: topShareEntries
       .map(([id, stats]) => {
@@ -481,6 +544,24 @@ export const fetchAnalytics = async (
     totalMembers: (profiles.data ?? []).length,
     tierDistribution,
     topReviewers: reviewers,
+    signupsInRange: authRows.filter((user) => {
+      if (!user.created_at) return false;
+      const at = new Date(user.created_at).getTime();
+      return at >= range.since.getTime() && at <= range.until.getTime();
+    }).length,
+    previous: {
+      signups: authRows.filter((user) => {
+        if (!user.created_at) return false;
+        const at = new Date(user.created_at).getTime();
+        return at >= prior.since.getTime() && at <= prior.until.getTime();
+      }).length,
+      reviews: priorReviews.count ?? 0,
+      likes: priorLikes.count ?? 0,
+      comments: priorComments.count ?? 0,
+      shares: priorShares.count ?? 0,
+      profileShares: priorProfileShares.count ?? 0,
+      invites: priorInvites.count ?? 0,
+    },
   };
 };
 
@@ -701,6 +782,28 @@ export const fetchSharePreviewReviews = async (
     .filter(Boolean) as SharePreviewReview[];
 };
 
+/** Busiest members first — the profiles whose share pages have content. */
+export const fetchSharePreviewProfiles = async (
+  limit = 20
+): Promise<SharePreviewProfile[]> => {
+  const { data, error } = await db()
+    .from("profiles")
+    .select("username,name,review_count")
+    .eq("deleted", false)
+    .not("username", "is", null)
+    .order("review_count", { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .filter((profile) => profile.username)
+    .map(({ username, name, review_count }) => ({
+      username: username as string,
+      name: name ?? null,
+      review_count: review_count ?? null,
+    }));
+};
+
 export const USERS_PAGE_SIZE = 50;
 
 export const fetchProfiles = async (
@@ -771,5 +874,110 @@ export const fetchProfile = async (
         ? (review.location[0] ?? null)
         : review.location,
     })),
+  };
+};
+
+export interface AdminReviewRow {
+  id: string;
+  comment: string | null;
+  taste: number | null;
+  presentation: number | null;
+  inserted_at: string;
+  state: number | null;
+  location: { id: number; name: string | null } | null;
+  profile: { id: string; username: string | null } | null;
+}
+
+const one = <T>(value: T | T[] | null | undefined): T | null =>
+  Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+
+/** All reviews, newest first, for the admin Reviews section. */
+export const fetchAllReviews = async (
+  search?: string,
+  page = 1,
+  perPage = USERS_PAGE_SIZE
+): Promise<{ reviews: AdminReviewRow[]; total: number }> => {
+  const offset = (Math.max(1, page) - 1) * perPage;
+  let query = db()
+    .from("reviews")
+    .select(
+      `id,comment,taste,presentation,inserted_at,state,
+       location:locations!reviews_location_fkey(id,name),
+       profile:profiles!reviews_user_id_fkey1(id,username)`,
+      { count: "exact" }
+    )
+    .order("inserted_at", { ascending: false })
+    .range(offset, offset + perPage - 1);
+  if (search) query = query.ilike("comment", `%${search}%`);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(error.message);
+
+  return {
+    reviews: (data ?? []).map((row) => ({
+      id: String(row.id),
+      comment: row.comment,
+      taste: row.taste,
+      presentation: row.presentation,
+      inserted_at: row.inserted_at,
+      state: row.state,
+      location: one(row.location),
+      profile: one(row.profile),
+    })),
+    total: count ?? 0,
+  };
+};
+
+export interface AdminLocation {
+  id: number;
+  name: string | null;
+  address: string | null;
+  rating: number | null;
+  total_ratings: number;
+}
+
+/** All locations with their aggregate rating, for the admin Locations section. */
+export const fetchLocations = async (
+  search?: string,
+  page = 1,
+  perPage = USERS_PAGE_SIZE
+): Promise<{ locations: AdminLocation[]; total: number }> => {
+  const offset = (Math.max(1, page) - 1) * perPage;
+  let query = db()
+    .from("locations")
+    .select("id,name,address", { count: "exact" })
+    .order("name", { ascending: true })
+    .range(offset, offset + perPage - 1);
+  if (search) query = query.ilike("name", `%${search}%`);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(error.message);
+
+  const rows = data ?? [];
+  const ids = rows.map((row) => row.id);
+  const ratings = new Map<number, { rating: number | null; total: number }>();
+  if (ids.length > 0) {
+    const { data: ratingRows, error: ratingError } = await db()
+      .from("location_ratings")
+      .select("id,rating,total_ratings")
+      .in("id", ids);
+    if (ratingError) throw new Error(ratingError.message);
+    for (const row of ratingRows ?? []) {
+      ratings.set(row.id, {
+        rating: row.rating ?? null,
+        total: row.total_ratings ?? 0,
+      });
+    }
+  }
+
+  return {
+    locations: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      address: row.address,
+      rating: ratings.get(row.id)?.rating ?? null,
+      total_ratings: ratings.get(row.id)?.total ?? 0,
+    })),
+    total: count ?? 0,
   };
 };
