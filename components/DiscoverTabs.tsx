@@ -11,10 +11,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
+import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
 import { getRegularsByLocation } from "@/services/regularsService";
 import * as Location from "expo-location";
+import { formatRating } from "@/utils/ratingUtils";
+import { getRankTier } from "@/utils/ranking";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
@@ -308,6 +310,9 @@ export default function DiscoverTabs({
   }, [activeTab, query, nearby, userLocation]);
 
   const renderProfile = ({ item }: { item: any }) => {
+    const reviewCount = item.review_count || 0;
+    const tier = getRankTier(reviewCount);
+
     return (
       <TouchableOpacity
         style={styles.resultCard}
@@ -319,8 +324,8 @@ export default function DiscoverTabs({
             <Avatar
               avatarPath={item.avatar_url}
               username={item.username}
-              size={40}
-              reviewCount={item.review_count}
+              size={48}
+              reviewCount={reviewCount}
             />
           </View>
           <View style={styles.textContainer}>
@@ -329,9 +334,10 @@ export default function DiscoverTabs({
               isVerified={item.is_verified}
               textStyle={styles.resultTitle}
             />
-            <Text style={styles.profileStats}>
-              {item.review_count || 0} reviews • {item.follower_count || 0}{" "}
-              followers
+            {/* Counts and rank are data: mono, one line, correctly plural. */}
+            <Text style={styles.profileStats} numberOfLines={1}>
+              {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
+              {tier ? ` · ${tier.name}` : ""}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -355,24 +361,30 @@ export default function DiscoverTabs({
     >
       <View style={styles.cardContent}>
         <View style={styles.textContainer}>
-          <Text style={styles.resultTitle}>{item.name}</Text>
+          <Text style={styles.resultTitle} numberOfLines={1}>
+            {item.name}
+          </Text>
           {item.address && (
-            <Text style={styles.resultSubtitle}>
+            <Text style={styles.resultSubtitle} numberOfLines={1}>
               {formatCityRegion(stripNameFromAddress(item.name, item.address))}
             </Text>
           )}
+          {/* Olives and the aggregate on one line, the way the design's
+              place rows read — the stacked column beside the name was a
+              second hierarchy competing with the first. */}
+          <View style={styles.resultRating}>
+            <RatingPips
+              value={item.rating ?? 0}
+              size={12}
+              accessibilityLabel=""
+            />
+            <Text style={styles.resultScore}>
+              {item.rating != null
+                ? `${formatRating(item.rating)} · ${item.total_ratings ?? 0}`
+                : "Not yet rated"}
+            </Text>
+          </View>
           <Regulars regulars={item.regulars} variant="compact" />
-        </View>
-        <View style={styles.resultRating}>
-          <RatingSummary
-            variant="compact"
-            overall={item.rating}
-            reviewCount={item.total_ratings ?? 0}
-            compactDecorated={false}
-            compactLayout="stacked"
-            compactOverallSize="title"
-            compactMetaSize="subtitle"
-          />
         </View>
       </View>
     </TouchableOpacity>
@@ -669,10 +681,15 @@ const useStyles = makeStyles((t) => ({
     marginRight: t.spacing.md,
   },
   resultRating: {
-    alignItems: "flex-end" as const,
-    alignSelf: "flex-start" as const,
-    marginLeft: t.spacing.md,
-    flexShrink: 0,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+    marginTop: 2,
+  },
+  resultScore: {
+    ...t.typography.mono,
+    fontSize: 11.5,
+    color: t.colors.textMuted,
   },
   textContainer: {
     flex: 1,
@@ -687,7 +704,8 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   profileStats: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
+    ...t.typography.mono,
+    fontSize: 12,
+    color: t.colors.textMuted,
   },
 }));

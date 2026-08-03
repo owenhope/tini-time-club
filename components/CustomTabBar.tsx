@@ -113,6 +113,34 @@ export default function CustomTabBar({
           }
         };
 
+        // Composing is the app's one loud action, so it takes the brand's
+        // loudest colour and sits proud of the bar rather than queueing up
+        // as a fifth grey icon.
+        if (route.name === "review") {
+          return (
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={
+                options.tabBarAccessibilityLabel ?? "Write a review"
+              }
+              testID={options.tabBarTestID}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.composeTab}
+            >
+              <View style={styles.compose}>
+                <Image
+                  source={require("@/assets/images/martini_transparent.png")}
+                  style={styles.martiniIcon}
+                  resizeMode="contain"
+                />
+              </View>
+            </TouchableOpacity>
+          );
+        }
+
         return (
           <TouchableOpacity
             key={route.key}
@@ -129,28 +157,11 @@ export default function CustomTabBar({
             style={styles.tab}
           >
             <View style={styles.tabContent}>
-              {route.name === "review" ? (
-                <Image
-                  source={require("@/assets/images/martini_transparent.png")}
-                  style={[
-                    styles.martiniIcon,
-                    {
-                      tintColor: isFocused
-                        ? colors.tabBarActive
-                        : colors.tabBarInactive,
-                    },
-                  ]}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Ionicons
-                  name={getIconName(route.name, isFocused)}
-                  size={ICON_SIZE}
-                  color={
-                    isFocused ? colors.tabBarActive : colors.tabBarInactive
-                  }
-                />
-              )}
+              <Ionicons
+                name={getIconName(route.name, isFocused)}
+                size={ICON_SIZE}
+                color={isFocused ? colors.tabBarActive : colors.tabBarInactive}
+              />
               <Text
                 style={[
                   styles.tabLabel,
@@ -195,8 +206,25 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.sm - 2,
     textAlign: "center" as const,
   },
+  composeTab: {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  compose: {
+    width: 46,
+    height: 46,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.highlight,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    // Proud of the bar, as drawn.
+    marginTop: -10,
+    ...t.elevation.card,
+  },
   martiniIcon: {
     width: 24,
     height: 24,
+    tintColor: t.colors.onHighlight,
   },
 }));
