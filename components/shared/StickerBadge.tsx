@@ -37,10 +37,14 @@ const StickerBadge: React.FC<StickerBadgeProps> = ({
   const { colors } = useTheme();
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
 
-  // The arc is a fixed length, so the type steps down rather than running off
-  // the end of it when a city name is long.
+  // Each arc is about 190 units of the 200-unit viewBox, so the type is sized
+  // to fit the longer of the two rather than running off the end of it: at
+  // this weight a glyph is ~0.62em wide, plus the 3-unit letterspacing.
   const longest = Math.max(topText.length, bottomText?.length ?? 0);
-  const fontSize = longest > 16 ? 18 : longest > 12 ? 21 : 25;
+  const fontSize = Math.max(
+    11,
+    Math.min(25, Math.round((190 / Math.max(longest, 1) - 3) / 0.62))
+  );
 
   return (
     <View
