@@ -3,12 +3,59 @@
 Captures taken on iPhone 17 (iOS 26.5) against the development backend, on
 `new-design-system`. Light and dark for every screen the work touched.
 
-Two passes are recorded here:
+Three passes are recorded here, newest first.
 
-1. **The review's eight table items** (`templates/screen-fixes/REVIEW.md`).
-2. **The screens themselves** (`templates/app-screens/AppScreens.dc.html`),
-   which the first pass hadn't been measured against — that is where most of
-   what follows came from.
+---
+
+# Pass 3 — the brand's own colour order, and the composer
+
+## The palette is re-ranked — `e502977`
+
+**Purple is primary** (buttons, links, active states, the tab bar), green is
+the secondary that owns the club's ground surfaces, chartreuse is the loud
+third for CTAs on green, selected pills and the compose button. The design
+system's sheets rank these the other way round; `theme/tokens.ts` documents
+this as a deliberate departure rather than letting it read as drift.
+
+Four things stay green on purpose: the **olives** (a purple olive is not an
+olive), the verified marks, the avatar initials disc, and the selected
+chip/segment edge — a chartreuse fill carries green ink, so a purple border
+would put a third colour on one 34pt control.
+
+Light mode's interactive purple is **purple-700**, not the brand tint: raw
+#B6A3E2 is 2.06:1 on white. Dark mode uses the tint, which clears 7:1 on the
+dark ground.
+
+## The composer is one page — `0324a84`
+
+The five-step wizard is gone. Photo with a Retake chip, a Where row, Spirit
+and Type cards, the purple taste block, the presentation block on paper, the
+caption — with Cancel and Post in the bar. Picking a bar, spirit or type
+opens a page sheet over the page, so you return to the row you tapped. Post
+names what's still missing instead of sitting greyed out.
+
+The presentation block takes the paper tone so the screen carries one purple
+surface, not two.
+
+**Captures:** `07-composer-*`.
+
+## The rest
+
+- **Overall, not TTC** — jargon on the one number a member reads first.
+- **A greeting for each day** (`utils/tiniTime.ts`), in the club's voice, with
+  a test pinning the rules: second person, fragments, one emoji at the end.
+- **City and country** wherever a location appears — "North Vancouver, Canada"
+  rather than a region code only locals read. A venue only shows its country
+  if the stored address has one; rows saved before this show the city alone
+  until they're re-resolved.
+- **The review card** carries the venue's own score (a plate top-left with its
+  overall and review count, kept apart from the review's two scores) and the
+  venue chip carries the name over its city.
+- **The venue hero** lost its sticker and is 148pt, so the aggregates are on
+  screen with the name. The "Rate the martini here" CTA came out.
+- **Follow moved into the profile block.** iOS 26 wraps adjacent header items
+  in one grey glass capsule, so a chartreuse button in the nav bar read as
+  disabled chrome — the review flagged exactly this.
 
 ---
 
@@ -16,141 +63,101 @@ Two passes are recorded here:
 
 ## Feed card — `2560f38`
 
-**Files:** `components/ReviewItem.tsx`
+The card was still the pre-system layout, with every score stacked on the
+photo under a scrim. As drawn: a 46pt ringed avatar, the handle, a mono
+timestamp, the tier badge; a photo carrying only the venue on a `scrimStrong`
+plate and the spirit/type pills; **taste and presentation as olives** below it
+under eyebrow labels with the blended score beside them; the caption; the
+actions under a hairline.
 
-The card was still the pre-system layout: every score stacked on the photo
-under a scrim. As drawn, it is now
-
-- a 46pt ringed avatar, the handle, a **mono timestamp**, the tier badge, then
-  the overflow control;
-- a photo carrying **only** the venue on a `scrimStrong` plate (bottom-left)
-  and the spirit/type pills — chartreuse and scrim — bottom-right;
-- **taste and presentation as olives** below the photo under eyebrow labels,
-  with the blended TTC numeral at the right;
-- the caption, then the actions under a hairline at the foot.
-
-The two axes had been drawn as *bars*, which is the place aggregate's
-treatment. A review is olives. This is the single biggest correction in the
-pass.
-
-The photo takes the drawn **16:11**, not the 4:3 of pass-1 item 3 — with the
-scores now below the image, 16:11 is what keeps like/comment/share above the
-tab bar. The eye toggle went with the overlay it existed to hide.
-
-**Captures:** `01-feed-*`, `08-composer-preview-light` (same card, composer).
+Bars were the place aggregate's treatment. A review is olives. The photo takes
+the drawn 16:11, which is what keeps the actions above the tab bar now that
+the scores sit below the image.
 
 ## Place detail — `b8c50e7`
 
-**Files:** `components/Location.tsx`, `components/ReviewGrid.tsx` (reused)
-
-- The aggregates are a **soft-square green card inset on paper**, not a
-  full-bleed band. That is the screen's one flat-colour block.
-- A primary **"Rate the martini here"** under it, as drawn.
-- Reviews are the **three-up grid** the profile uses, under a section header —
-  your call, and it also matches how the rest of the app shows a body of work.
-- The header scrolls away with the grid instead of collapsing in place, which
-  retired the measured-height animation and its scroll-runway workaround. The
-  nav bar still picks up the venue name once the hero has gone.
-
-**Captures:** `07-bar-detail-*`.
+The aggregates are a soft-square green card inset on paper — the screen's one
+flat-colour block — and reviews are the same three-up grid the profile uses.
+The header scrolls away with the grid rather than collapsing in place.
 
 ## Profile — `278f437`
 
-**Files:** `components/ProfileHeader.tsx`, `components/ProfileContentTabs.tsx`,
-`components/shared/StatCard.tsx`, `components/shared/AppText.tsx`
+84pt avatar beside the name, the handle in mono, the tier as a badge in that
+tier's own colour; a full-width progress bar labelled at both ends; the three
+stats as tiles across the width. The content tabs became the system's pill
+segmented control, and Regulars is plural.
 
-Reviews / followers / following looked nothing like the drawing because the
-whole header was arranged differently. Top to bottom now:
+## Places, Discover, tab bar — `08d2ee3`, `a2a7d2a`
 
-- 84pt avatar beside the name (24/900), the **handle in mono**, and the tier
-  as a badge **in that tier's own colour**;
-- a **full-width progress bar labelled at both ends** — "1 review" / "9 to
-  Call" — replacing the unlabelled 4px sliver under the avatar;
-- the three stats as **tiles across the full width**, values in metric and
-  labels as sage eyebrows.
-
-The content tabs became the system's **pill segmented control** (they were
-underlined tabs, which is a different system's idea), and the Regulars tab is
-finally plural.
-
-**Captures:** `04-profile-*`.
-
-## Places and Discover headers — `08d2ee3`
-
-**Files:** `app/(tabs)/(places)/places.tsx`, `components/DiscoverTabs.tsx`,
-`components/map/search.tsx`
-
-Places opened straight onto a full-bleed map — no name, no search, pins under
-the status bar. Discover had a segmented control and never said what screen it
-was. Both now carry the drawn green header: the screen's name in the lowercase
-display cut, search beneath. Places mounts `components/map/search.tsx`, which
-was already written and imported by nothing.
-
-**Captures:** `05-places-*`, `02-discover-places-*`, `03-discover-profiles-*`.
-
-## Tab bar and Discover rows — `a2a7d2a`
-
-**Files:** `components/CustomTabBar.tsx`, `components/DiscoverTabs.tsx`
-
-The centre tab is the drawn **chartreuse circle**, raised proud of the bar.
-Discover's rows take the drawn line: larger avatar, and one mono line carrying
-the data — "1 review · Well", **pluralised** (pass-1 §6) and with the tier
-named. Place rows show olives and the aggregate inline instead of a second
-score column competing with the name.
-
-## Type fixes — `7971e36`, `e2b2970`, `ba5ad32`
-
-- **The aggregate numeral was clipped at the top.** Leading below the point
-  size doesn't tighten type in React Native, it crops the line box. Leading
-  now matches the point size; the tightness comes from negative margin. Same
-  fix on the venue name.
-- The sticker's curved text is sized to the arc, so "North Vancouver" fits.
+Both tab roots gained the drawn green header — the screen's name in the
+lowercase display cut with search beneath. Places mounts the place search that
+was already written and imported by nothing. The centre tab is the raised
+chartreuse compose button, and Discover's rows carry one mono data line with
+the counts correctly plural.
 
 ---
 
 # Pass 1 — the review's table
 
-| Commit | Item | Files |
-|---|---|---|
-| `9c82ceb` | 1 — segment contrast | `DiscoverTabs.tsx` |
-| `a23d80c` | 2 — rank preview behind a long-press | `profile.tsx`, `ProfileHeader.tsx` |
-| `8bcf9ee` | 3 — feed photo aspect | `ReviewItem.tsx` (since superseded by 16:11) |
-| `d21c3b9` | 4 — meter fill | `theme/tokens.ts`, `RatingSummary.tsx` |
-| `29833fa` | 5 — header restack | `RatingSummary.tsx`, `Regulars.tsx`, `Avatar.tsx`, `Location.tsx`, `locationDetails.tsx` |
-| `1b6ea02` | 6 — typographic hero | `Location.tsx`, `StickerBadge.tsx` |
-| `8a15f34` | 7 — name normalisation | `utils/venueName.ts`, `placesService.ts` |
-| `03636eb` | 8 — disabled button | `Button.tsx`, `review.tsx` |
+| Commit | Item |
+|---|---|
+| `9c82ceb` | 1 — segment contrast |
+| `a23d80c` | 2 — rank preview behind a long-press |
+| `8bcf9ee` | 3 — feed photo aspect (since superseded by 16:11) |
+| `d21c3b9` | 4 — meter fill |
+| `29833fa` | 5 — header restack |
+| `1b6ea02` | 6 — typographic hero |
+| `8a15f34` | 7 — name normalisation |
+| `03636eb` | 8 — disabled button |
 
-Both halves of the Discover segment take the selected Chip's chartreuse fill,
-2px green border and green ink; the meter is `ratingFillOnInk` (chartreuse) on
-green and photo scrims and the pimento on paper; the venue header stacks
-full-width rows so "Presentation" can't truncate; venue names are title-cased
-at the Places boundary with `raw_name` kept for search; disabled controls take
-`disabledSurface` + `disabledText` and state their reason.
+The meter is `ratingFillOnInk` (chartreuse) on green and photo scrims and the
+pimento on paper; the venue header stacks full-width rows so "Presentation"
+can't truncate; venue names are title-cased at the Places boundary with
+`raw_name` kept for search; disabled controls take `disabledSurface` +
+`disabledText` and state their reason.
 
 ---
 
-## Flagged
+# The cleanup pass
 
-- **The white circle on the profile is data, not a bug.** Pass-1 §6 called it a
-  "bio glyph"; it is the member's own `name` field, which contains a
-  white-circle character. Nothing to fix in the app.
-- **Upload-side cropping still isn't done.** The composer stores the capture
-  uncropped and the card centre-crops on display, which covers old and new
-  uploads identically.
-- **The map sheet has no Regulars.** Dropping the rail there is what the
-  screen-fixes drawing says, but it removed a feature rather than relaying it.
-- **Not built:** the place page's Reviews / Info segmented control (the info
-  screen already has a nav button), the Places screen's filter icon and chip
-  row (no filter feature exists to wire them to), and review item 5's
-  `scrimStrong` plate — which the feed card's rebuild makes moot, since no
-  copy sits on the photo any more except the two chips, both of which carry
-  their own plate.
-- **The composer is still a five-step wizard**, where the design draws one
-  page. That is a product decision older than this pass; the purple taste
-  block and paper presentation block inside it do follow the system.
+An audit of the whole app followed the redesign. What it found, and what was
+done about it:
+
+- **Blocking was implemented twice** (`f81409e`), and the app used the copy
+  that skipped the cache invalidation — so the person you just blocked kept
+  appearing in your feed until the 15-minute cache expired. Both blocking and
+  reporting now go through the service that owns those caches.
+- **Sign-out cleared one cache of three** (`2328af3`). A second account on the
+  same device could be served the previous member's feed pages, profiles,
+  blocked list and avatar URLs. `clearUserCaches()` empties all three.
+- **The two profile screens each had their own body** (`76f9b93`), and the
+  copies had drifted: the own-profile one never wired comment handling up, so
+  opening one of your own reviews gave you a comment button that did nothing.
+- **~1,500 lines of dead code** (`ca95026`): RatingSummary went 828 → 282 (two
+  variants and 14 props nothing rendered), plus EmptyState, ListRow,
+  MetricRow, RatingSlider, StickerBadge, blockUtils and Regulars' dense
+  column.
+- **The core state was untyped** (`57a9ebd`). profile-context is .tsx now, and
+  typing it caught a missing null guard on the composer's upload path.
+  avatar-refresh-context went too — it wrapped the whole tab tree with no
+  consumers.
+- **`withRegulars()`** (`ba0808f`) replaces the same map-and-merge written out
+  at four call sites.
+
+## Still outstanding
+
+- **`AppText` is used by nobody who needs it** — 54 raw `<Text>` across the
+  four big screens, which is what the ~110 raw-`fontSize` lint warnings
+  actually are. A mass rewrite is higher risk than value right now.
+- **14 `react-hooks/exhaustive-deps` warnings**, several on the feed's
+  loaders. These want fixing one at a time — adding a dep to the wrong effect
+  turns a stale read into a loop.
+- **`@react-native-picker/picker`** is unused but autolinked, so removing it
+  needs a dev-client rebuild.
+- **`CODEBASE_AUDIT.md` and `NAVIGATION_PLAN.md`** both describe finished work
+  and read as current.
 
 ## Checks
 
-`npm test` — 197 passed, 15 suites. `npx tsc --noEmit` — clean. `npx eslint` on
-the touched files — 0 errors.
+`npm test` — 204 passed, 17 suites. `npx tsc --noEmit` — clean. `npx eslint`
+over app/components/utils/services/hooks/theme/context — 0 errors.
