@@ -21,7 +21,6 @@ import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import EULAModal from "@/components/EULAModal";
-import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +30,7 @@ import { Button, Input, SectionHeader } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
+import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 
@@ -433,8 +433,8 @@ function Home() {
     // User declined EULA - they should be logged out
     try {
       await unregisterPushNotificationsAsync();
-      // Clear cache first
-      await authCache.invalidateCache();
+      // Every cache that holds this member's data, not just the auth one.
+      await clearUserCaches();
       // Sign out - navigation will be handled by auth state change in root layout
       await supabase.auth.signOut();
     } catch (error) {

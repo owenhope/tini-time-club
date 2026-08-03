@@ -11,10 +11,10 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
-import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { fonts, makeStyles, type ThemePreference, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
 import { useProfile } from "@/context/profile-context";
 import { shareInviteViaSheet } from "@/utils/inviteShare";
@@ -37,8 +37,8 @@ const Settings = () => {
 
       await unregisterPushNotificationsAsync();
 
-      // Clear cache first
-      await authCache.invalidateCache();
+      // Every cache that holds this member's data, not just the auth one.
+      await clearUserCaches();
 
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();

@@ -12,10 +12,10 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import authCache from "@/utils/authCache";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
 
 const DeleteAccount = () => {
@@ -62,8 +62,8 @@ const DeleteAccount = () => {
 
               await unregisterPushNotificationsAsync();
 
-              // Clear cache first
-              await authCache.invalidateCache();
+              // Every cache that holds this member's data.
+              await clearUserCaches();
 
               // Sign out the user
               const { error: signOutError } = await supabase.auth.signOut();
