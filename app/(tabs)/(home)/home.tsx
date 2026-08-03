@@ -39,6 +39,7 @@ import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { getTiniTimeGreeting } from "@/utils/tiniTime";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -602,23 +603,25 @@ function Home() {
    * uppercase tracked eyebrow over a lowercase display headline, which is the
    * wordmark's own voice.
    */
-  const renderFeedHeader = useCallback(
-    () => (
+  const renderFeedHeader = useCallback(() => {
+    // A different greeting every day of the week — the block is the first
+    // thing the club says to you, and saying the same thing seven days
+    // running is how a welcome stops being read.
+    const greeting = getTiniTimeGreeting();
+
+    return (
       <View style={styles.feedHeader}>
         <View style={styles.tiniBanner}>
           <Text style={styles.tiniEyebrow}>
             {new Date().toLocaleDateString(undefined, { weekday: "long" })}
           </Text>
-          <Text style={styles.tiniHeadline}>it&rsquo;s tini time 🍸</Text>
-          <Text style={styles.tiniSubline}>
-            Find a coupe with your name on it.
-          </Text>
+          <Text style={styles.tiniHeadline}>{greeting.headline}</Text>
+          <Text style={styles.tiniSubline}>{greeting.subline}</Text>
         </View>
         <SectionHeader eyebrow="The club" title="From your people" />
       </View>
-    ),
-    [styles]
-  );
+    );
+  }, [styles]);
 
   const renderFooter = useCallback(() => {
     if (!loadingMore) return null;

@@ -423,7 +423,7 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
       style={styles.scores}
       accessible
       accessibilityRole="summary"
-      accessibilityLabel={`Taste ${review.taste} out of ${PIPS_MAX}. Presentation ${review.presentation} out of ${PIPS_MAX}. TTC ${formatRating(overall)}.`}
+      accessibilityLabel={`Taste ${review.taste} out of ${PIPS_MAX}. Presentation ${review.presentation} out of ${PIPS_MAX}. Overall ${formatRating(overall)}.`}
     >
       <View style={styles.scoreAxis}>
         <Text style={styles.scoreLabel}>Taste</Text>
@@ -439,7 +439,7 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
       </View>
       <View style={styles.scoreOverall}>
         <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
-        <Text style={styles.scoreLabel}>TTC</Text>
+        <Text style={styles.scoreLabel}>Overall</Text>
       </View>
     </View>
   );
