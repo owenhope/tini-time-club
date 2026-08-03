@@ -36,7 +36,7 @@ interface ProfileHeaderProps {
   children?: React.ReactNode;
 }
 
-const AVATAR_SIZE = 80;
+const AVATAR_SIZE = 84;
 
 /**
  * Person identity block, in the familiar social-profile arrangement: avatar
@@ -94,85 +94,102 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Identity first, at the size the design sets it: the face, the name,
+          the handle and the tier the member holds. */}
       <View style={styles.topRow}>
-        <View style={styles.avatarColumn}>
-          <Pressable
-            onPress={isOwnProfile ? onAvatarPress : undefined}
-            onLongPress={onAvatarLongPress}
-            disabled={!isOwnProfile && !onAvatarLongPress}
-            accessibilityRole={isOwnProfile ? "button" : undefined}
-            accessibilityLabel={
-              isOwnProfile ? "Change profile photo" : undefined
-            }
-            accessibilityState={{ busy: avatarLoading }}
-          >
-            <Avatar
-              avatarPath={profile.avatar_url}
-              username={profile.username}
-              size={AVATAR_SIZE}
-              reviewCount={displayedRankCount}
-            />
-            {avatarLoading && (
-              <View style={styles.avatarLoading}>
-                <ActivityIndicator size="small" color={colors.onAccent} />
-              </View>
-            )}
-          </Pressable>
+        <Pressable
+          onPress={isOwnProfile ? onAvatarPress : undefined}
+          onLongPress={onAvatarLongPress}
+          disabled={!isOwnProfile && !onAvatarLongPress}
+          accessibilityRole={isOwnProfile ? "button" : undefined}
+          accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
+          accessibilityState={{ busy: avatarLoading }}
+        >
+          <Avatar
+            avatarPath={profile.avatar_url}
+            username={profile.username}
+            size={AVATAR_SIZE}
+            reviewCount={displayedRankCount}
+            onInk
+          />
+          {avatarLoading && (
+            <View style={styles.avatarLoading}>
+              <ActivityIndicator size="small" color={colors.onAccent} />
+            </View>
+          )}
+        </Pressable>
+
+        <View style={styles.identity}>
+          <Text style={styles.name} numberOfLines={1}>
+            {profile.name || profile.username}
+          </Text>
+          <Text style={styles.handle} numberOfLines={1}>
+            @{profile.username}
+          </Text>
           {rank.tier ? (
-            /* The sheen, not the base tier colour: on the deep-green ground
-               bronze and Top land at 3.4–3.7:1, under AA for 11px type. The
-               light end of each tier's gradient clears 6:1. */
-            <Text style={[styles.rankName, { color: rank.tier.sheen }]}>
-              {rank.tier.name}
-            </Text>
-          ) : null}
-          {isOwnProfile && rank.next ? (
-            <View style={styles.rankProgress}>
-              <View
-                style={styles.rankTrack}
-                accessibilityRole="progressbar"
-                accessibilityValue={{
-                  min: rank.tier?.min ?? 0,
-                  max: rank.next.min,
-                  now: displayedRankCount,
-                }}
-              >
-                <View
-                  style={[
-                    styles.rankFill,
-                    {
-                      width: `${Math.round(rank.fraction * 100)}%`,
-                      backgroundColor: rank.next.color,
-                    },
-                  ]}
-                />
-              </View>
+            /* The tier's own hex, like a medal — it reads the same in both
+               schemes. Near-black green ink on all four. */
+            <View
+              style={[styles.tierBadge, { backgroundColor: rank.tier.color }]}
+            >
+              <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
             </View>
           ) : null}
         </View>
-        <View style={styles.metrics}>
-          {metrics.map((m) => (
-            <StatCard
-              key={m.key}
-              tone="ink"
-              value={m.value}
-              label={m.label}
-              onPress={m.onPress}
-            />
-          ))}
-        </View>
       </View>
 
-      {(profile.name || profile.bio || tags) && (
-        <View style={styles.identityRow}>
-          <View style={styles.identity}>
-            {profile.name ? (
-              <Text style={styles.name} numberOfLines={1}>
-                {profile.name}
-              </Text>
-            ) : null}
-            {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+      {isOwnProfile && rank.next ? (
+        <View style={styles.rankProgress}>
+          <View style={styles.rankLabels}>
+            <Text style={styles.rankCount}>
+              {rankCount} {rankCount === 1 ? "review" : "reviews"}
+            </Text>
+            <Text style={styles.rankRemaining}>
+              {rank.remaining} to {rank.next.name}
+            </Text>
           </View>
+          <View
+            style={styles.rankTrack}
+            accessibilityRole="progressbar"
+            accessibilityLabel={`${rank.remaining} reviews to ${rank.next.name}`}
+            accessibilityValue={{
+              min: rank.tier?.min ?? 0,
+              max: rank.next.min,
+              now: displayedRankCount,
+            }}
+          >
+            <View
+              style={[
+                styles.rankFill,
+                {
+                  width: `${Math.round(rank.fraction * 100)}%`,
+                  backgroundColor: rank.next.color,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.metrics}>
+        {metrics.map((m) => (
+          <StatCard
+            key={m.key}
+            tone="ink"
+            value={m.value}
+            label={m.label}
+            onPress={m.onPress}
+          />
+        ))}
+      </View>
+
+      {(profile.bio || tags) && (
+        <View style={styles.identityRow}>
+          {profile.bio ? (
+            <Text style={styles.bio} numberOfLines={3}>
+              {profile.bio}
+            </Text>
+          ) : null}
           {tags ? <View style={styles.identityTags}>{tags}</View> : null}
         </View>
       )}
@@ -190,6 +207,7 @@ const useStyles = makeStyles((t) => ({
   container: {
     paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.xl,
+    paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.lg,
     backgroundColor: t.colors.surfaceInkDeep,
   },
@@ -197,16 +215,10 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.lg,
-    paddingHorizontal: t.spacing.gutter,
   },
   metrics: {
-    flex: 1,
     flexDirection: "row" as const,
-    gap: t.spacing.sm,
-  },
-  avatarColumn: {
-    alignItems: "center" as const,
-    gap: 6,
+    gap: 9,
   },
   avatarLoading: {
     ...({ position: "absolute" } as const),
@@ -219,22 +231,43 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrim,
     borderRadius: AVATAR_SIZE / 2,
   },
-  rankName: {
-    ...t.typography.eyebrow,
-    fontFamily: fonts.bold,
-    color: t.colors.onInk,
-    textAlign: "center" as const,
+  tierBadge: {
+    alignSelf: "flex-start" as const,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.md - 1,
+    paddingVertical: 6,
+    marginTop: 2,
   },
+  tierBadgeText: {
+    ...t.typography.eyebrow,
+    fontSize: 10,
+    color: t.colors.surfaceInkDeep,
+  },
+  // Full width, and labelled at both ends: a bare 4px sliver under the
+  // avatar never said what it was counting towards.
   rankProgress: {
-    width: AVATAR_SIZE,
-    alignItems: "center" as const,
-    gap: 4,
+    gap: 7,
+  },
+  rankLabels: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "baseline" as const,
+    gap: t.spacing.sm,
+  },
+  rankCount: {
+    ...t.typography.label,
+    fontFamily: fonts.semibold,
+    color: t.colors.accentOnImage,
+  },
+  rankRemaining: {
+    ...t.typography.label,
+    fontFamily: fonts.semibold,
+    color: t.colors.highlight,
   },
   rankTrack: {
-    width: AVATAR_SIZE,
-    height: 4,
+    height: 8,
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.ratingTrack,
+    backgroundColor: t.colors.ratingTrackOnInk,
     overflow: "hidden" as const,
   },
   rankFill: {
@@ -242,7 +275,6 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
   },
   identityRow: {
-    paddingHorizontal: t.spacing.gutter,
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     gap: t.spacing.md,
@@ -250,23 +282,28 @@ const useStyles = makeStyles((t) => ({
   identity: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 5,
   },
   identityTags: {
     flexShrink: 1,
     maxWidth: "65%" as const,
     alignItems: "flex-end" as const,
   },
-  // Display weight, lowercase — the wordmark's own voice, per the system's
-  // rule that display headlines are lowercase.
   name: {
-    ...t.typography.display,
-    fontSize: 26,
-    lineHeight: 26,
+    fontSize: 24,
+    lineHeight: 28,
+    fontFamily: fonts.black,
+    letterSpacing: -0.7,
     color: t.colors.onInk,
+  },
+  // Handles are data — they set in mono, like every other identifier.
+  handle: {
+    ...t.typography.mono,
+    color: t.colors.accentOnImage,
   },
   bio: {
     ...t.typography.body,
+    flex: 1,
     color: t.colors.onInk,
     lineHeight: 20,
     opacity: 0.85,
@@ -276,7 +313,6 @@ const useStyles = makeStyles((t) => ({
     // On the deep-green ground the danger red drops below AA, so errors here
     // take the paper ink and lean on placement to read as a problem.
     color: t.colors.onInk,
-    paddingHorizontal: t.spacing.gutter,
   },
 }));
 

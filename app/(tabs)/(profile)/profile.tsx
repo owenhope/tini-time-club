@@ -554,8 +554,8 @@ const useStyles = makeStyles((t) => ({
     minHeight: 32,
     justifyContent: "center" as const,
   },
+  // The header owns the screen gutter now, so its children sit flush.
   favoritesSection: {
-    paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.xs,
   },
   rankDebug: {

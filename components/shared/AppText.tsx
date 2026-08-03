@@ -10,7 +10,9 @@ export type TextTone =
   | "accent"
   | "danger"
   | "onAccent"
-  | "onImage";
+  | "onImage"
+  /** Supporting type on a green ground or a photo scrim. */
+  | "accentOnImage";
 
 export interface AppTextProps extends TextProps {
   variant?: TypographyVariant;
@@ -36,10 +38,14 @@ const AppText: React.FC<AppTextProps> = ({
     danger: colors.danger,
     onAccent: colors.onAccent,
     onImage: colors.textOnImage,
+    accentOnImage: colors.accentOnImage,
   } as const;
 
   return (
-    <Text style={[type[variant], { color: toneColors[tone] }, style]} {...props} />
+    <Text
+      style={[type[variant], { color: toneColors[tone] }, style]}
+      {...props}
+    />
   );
 };
 

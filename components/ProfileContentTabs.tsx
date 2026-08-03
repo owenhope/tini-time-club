@@ -9,6 +9,16 @@ interface ProfileContentTabsProps {
   onChange: (tab: ProfileContentTab) => void;
 }
 
+const TABS: { key: ProfileContentTab; label: string }[] = [
+  { key: "reviews", label: "Reviews" },
+  { key: "regulars", label: "Regulars" },
+];
+
+/**
+ * The system's segmented control: a sunken pill track with the selected half
+ * filled chartreuse and set in green ink. Controls are pill — this used to be
+ * a pair of underlined tabs, which is a different system's idea.
+ */
 const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
   activeTab,
   onChange,
@@ -17,38 +27,25 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
 
   return (
     <View style={styles.tabs}>
-      <Pressable
-        style={[styles.tab, activeTab === "reviews" && styles.activeTab]}
-        onPress={() => onChange("reviews")}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: activeTab === "reviews" }}
-        accessibilityLabel="Reviews"
-      >
-        <Text
-          style={[
-            styles.tabLabel,
-            activeTab === "reviews" && styles.activeLabel,
-          ]}
-        >
-          Reviews
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === "regulars" && styles.activeTab]}
-        onPress={() => onChange("regulars")}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: activeTab === "regulars" }}
-        accessibilityLabel="Regular"
-      >
-        <Text
-          style={[
-            styles.tabLabel,
-            activeTab === "regulars" && styles.activeLabel,
-          ]}
-        >
-          Regular
-        </Text>
-      </Pressable>
+      {TABS.map(({ key, label }) => {
+        const selected = activeTab === key;
+        return (
+          <Pressable
+            key={key}
+            style={[styles.tab, selected && styles.tabSelected]}
+            onPress={() => onChange(key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            accessibilityLabel={label}
+          >
+            <Text
+              style={[styles.tabLabel, selected && styles.tabLabelSelected]}
+            >
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 };
@@ -56,30 +53,31 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
 const useStyles = makeStyles((t) => ({
   tabs: {
     flexDirection: "row" as const,
+    gap: 6,
+    marginHorizontal: t.spacing.gutter,
     marginTop: t.spacing.lg,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: t.colors.border,
-    backgroundColor: t.colors.surface,
+    marginBottom: t.spacing.md,
+    padding: t.spacing.xs,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.surfaceSunken,
   },
   tab: {
     flex: 1,
-    minHeight: 48,
-    flexDirection: "row" as const,
+    minHeight: 40,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    borderRadius: t.radius.pill,
   },
-  activeTab: {
-    borderBottomColor: t.colors.accent,
+  tabSelected: {
+    backgroundColor: t.colors.highlight,
   },
   tabLabel: {
     ...t.typography.bodyStrong,
-    color: t.colors.textMuted,
+    fontSize: 13,
+    color: t.colors.textSecondary,
   },
-  activeLabel: {
-    color: t.colors.accent,
+  tabLabelSelected: {
+    color: t.colors.onHighlight,
   },
 }));
 
