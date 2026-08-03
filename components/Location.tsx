@@ -14,12 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import {
-  Button,
-  RatingSummary,
-  SectionHeader,
-  StickerBadge,
-} from "@/components/shared";
+import { Button, RatingSummary, SectionHeader } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -101,10 +96,8 @@ const Location = () => {
 
   const headerCityRegion = formatCityRegion(strippedAddress);
 
-  // The hero splits the address the way the block reads it: the street line
-  // runs under the name, the city rides the sticker.
+  // The street line runs under the name; the city is the nav bar's job.
   const heroStreet = strippedAddress?.split(",")[0]?.trim() || null;
-  const heroCity = headerCityRegion.split(",")[0]?.trim() || null;
 
   // Update header with custom title and back button
   useEffect(() => {
@@ -431,15 +424,6 @@ const Location = () => {
                 photo, if one ever lands, drops in behind this with the
                 existing scrim and nothing moves. */}
             <View style={styles.hero}>
-              <View style={styles.heroTop}>
-                <StickerBadge
-                  topText="On the list"
-                  bottomText={heroCity}
-                  size={88}
-                  tilt={-9}
-                  style={styles.heroSticker}
-                />
-              </View>
               <View style={styles.heroIdentity}>
                 <Text
                   style={[
@@ -543,20 +527,14 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.lg,
     gap: t.spacing.lg,
   },
-  // Fixed height: the name changes size, the block doesn't.
+  // Fixed height: the name changes size, the block doesn't. Short enough
+  // that the aggregates are on screen with it.
   hero: {
-    height: 230,
+    height: 148,
     backgroundColor: t.colors.surfaceInkDeep,
     paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.lg + 2,
-    justifyContent: "space-between" as const,
-  },
-  heroTop: {
-    flexDirection: "row" as const,
     justifyContent: "flex-end" as const,
-  },
-  heroSticker: {
-    marginTop: -4,
   },
   heroIdentity: {
     gap: t.spacing.sm,

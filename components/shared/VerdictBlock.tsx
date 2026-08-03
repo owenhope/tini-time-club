@@ -4,6 +4,8 @@ import { makeStyles, useTheme } from "@/theme";
 import AppText from "./AppText";
 import RatingPips, { PIPS_MAX } from "./RatingPips";
 
+export type VerdictBlockTone = "brand" | "paper";
+
 export interface VerdictBlockProps {
   /** Uppercase tracked label — "Your verdict", "Presentation". */
   eyebrow: string;
@@ -15,6 +17,11 @@ export interface VerdictBlockProps {
   /** Shown while nothing is rated yet — each step asks its own question. */
   placeholder: string;
   accessibilityLabel: string;
+  /**
+   * `brand` is the purple block. One screen never carries two of them, so the
+   * second rating on the composer takes `paper`.
+   */
+  tone?: VerdictBlockTone;
 }
 
 /**
@@ -33,26 +40,29 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
   labels,
   placeholder,
   accessibilityLabel,
+  tone = "brand",
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
   const line = value >= 1 ? labels[Math.round(value) - 1] : placeholder;
+  const onPaper = tone === "paper";
+  const ink = onPaper ? styles.inkPaper : styles.ink;
 
   return (
-    <View style={styles.block}>
-      <AppText variant="eyebrow" style={styles.ink}>
+    <View style={[styles.block, onPaper && styles.blockPaper]}>
+      <AppText variant="eyebrow" style={onPaper ? styles.eyebrowPaper : ink}>
         {eyebrow}
       </AppText>
       <RatingPips
         value={value}
         max={PIPS_MAX}
-        size={34}
+        size={onPaper ? 30 : 34}
         onRate={onChange}
-        bodyColor={colors.onBrand}
-        emptyColor={colors.onBrand}
+        bodyColor={onPaper ? colors.accent : colors.onBrand}
+        emptyColor={onPaper ? colors.ratingPipEmpty : colors.onBrand}
         accessibilityLabel={accessibilityLabel}
       />
-      <AppText variant="bodyStrong" style={styles.ink}>
+      <AppText variant="bodyStrong" style={ink}>
         {line}
       </AppText>
     </View>
@@ -69,11 +79,25 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.card,
     backgroundColor: t.colors.surfaceBrand,
   },
+  blockPaper: {
+    backgroundColor: t.colors.surface,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    paddingVertical: t.spacing.lg + 2,
+  },
   // Green on purple is the system's approved lockup pairing but only 2.9:1
   // as text, so the block's ink is `onBrand`: near-black green in light,
   // paper in dark, both clearing 5.5:1.
   ink: {
     color: t.colors.onBrand,
+    textAlign: "center" as const,
+  },
+  inkPaper: {
+    color: t.colors.text,
+    textAlign: "center" as const,
+  },
+  eyebrowPaper: {
+    color: t.colors.textMuted,
     textAlign: "center" as const,
   },
 }));
