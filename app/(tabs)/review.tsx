@@ -1,24 +1,17 @@
-import React, { createElement, useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
   ActivityIndicator,
   Alert,
-  Animated,
   ScrollView,
-  StyleSheet,
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "@/utils/supabase";
-import AnimatedReanimated, {
-  runOnJS,
-  useSharedValue,
-  withTiming,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+import { Image as ExpoImage } from "expo-image";
 import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -27,15 +20,15 @@ import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
 import SelectableOptionsInput from "@/components/SelectableOptionsInput";
-import ReviewItem from "@/components/ReviewItem";
 import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
-import { AppText, Button } from "@/components/shared";
+import { AppText } from "@/components/shared";
+import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import CelebrationModal from "@/components/CelebrationModal";
@@ -45,7 +38,6 @@ import {
   type Achievement,
 } from "@/utils/celebrations";
 
-// ReviewPreview component for showing live preview with caption input
 interface ReviewFormLocation {
   name: string;
   address: string;
@@ -63,191 +55,11 @@ interface ReviewFormValues {
   comment: string;
 }
 
-const ReviewPreview = ({
-  values,
-  spirits,
-  types,
-  photo,
-  profile,
-  control,
-  watch,
-  setValue,
-  isSubmitting,
-  submissionMessage,
-}: {
-  values: any;
-  spirits: any[];
-  types: any[];
-  photo: string | null;
-  profile: any;
-  control: any;
-  watch: any;
-  setValue: any;
-  isSubmitting?: boolean;
-  submissionMessage?: string;
-}) => {
-  const styles = useStyles();
-  const { colors } = useTheme();
-  const [isCaptionFocused, setIsCaptionFocused] = useState(false);
-  const [tempCaption, setTempCaption] = useState("");
-
-  // Create a mock review object for the preview - use form values directly
-  const mockReview = useMemo(
-    () =>
-      ({
-        id: "preview",
-        user_id: profile?.id || "",
-        image_url: photo || "",
-        comment: isCaptionFocused ? tempCaption : values.comment || "",
-        taste: values.taste || 0,
-        presentation: values.presentation || 0,
-        inserted_at: new Date().toISOString(),
-        profile: {
-          id: profile?.id || "",
-          username: profile?.username || "You",
-          avatar_url: profile?.avatar_url || null,
-        },
-        spirit: spirits.find((s) => s.id === values.spirit) || {
-          name: "Unknown",
-        },
-        type: types.find((t) => t.id === values.type) || { name: "Unknown" },
-        location: values.location
-          ? {
-              id: "preview-location",
-              name: values.location.name,
-              address: values.location.address,
-            }
-          : {
-              id: "preview-location",
-              name: "Unknown Location",
-              address: "",
-            },
-      }) as any,
-    [values, spirits, types, photo, profile, isCaptionFocused, tempCaption]
-  );
-
-  // Mock handlers for the preview (they won't do anything)
-  const mockHandlers = {
-    onDelete: () => {},
-    onEdit: () => {},
-    onShowLikes: () => {},
-    onShowComments: () => {},
-    onCommentAdded: () => {},
-    onCommentDeleted: () => {},
-  };
-
-  const scrollViewRef = React.useRef<ScrollView>(null);
-
-  const handleCaptionFocus = () => {
-    setIsCaptionFocused(true);
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  const handleCaptionBlur = () => {
-    setIsCaptionFocused(false);
-  };
-
-  const openCaptionInput = () => {
-    setTempCaption(values.comment || "");
-    setIsCaptionFocused(true);
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  // Show loading state when submitting
-  if (isSubmitting) {
-    return (
-      <View style={styles.submitLoadingContainer}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <AppText
-          variant="heading"
-          tone="accent"
-          style={styles.submitLoadingText}
-        >
-          {submissionMessage}
-        </AppText>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView
-      ref={scrollViewRef}
-      style={styles.previewContainer}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      {!isCaptionFocused && (
-        <View style={styles.previewWrapper}>
-          <View style={styles.scaledReviewContainer}>
-            <ReviewItem
-              review={mockReview}
-              canDelete={false}
-              previewMode={true}
-              {...mockHandlers}
-            />
-          </View>
-        </View>
-      )}
-      <View style={styles.captionInputContainer}>
-        {!isCaptionFocused ? (
-          <TouchableOpacity
-            style={styles.captionButton}
-            onPress={openCaptionInput}
-          >
-            <AppText variant="bodyStrong" tone="onAccent">
-              {values.comment ? "Edit Caption" : "Add Caption"}
-            </AppText>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <TextInput
-              style={styles.captionInput}
-              multiline={true}
-              placeholder="Write a caption... (required)"
-              placeholderTextColor={colors.textMuted}
-              onChangeText={setTempCaption}
-              value={tempCaption}
-              maxLength={500}
-              autoFocus={true}
-            />
-            <AppText
-              variant="label"
-              tone="secondary"
-              style={styles.characterCount}
-            >
-              {tempCaption?.length || 0}/500
-            </AppText>
-            <Button
-              title="Save caption"
-              style={styles.saveCaptionButton}
-              onPress={() => {
-                if (tempCaption && tempCaption.trim().length > 0) {
-                  setValue("comment", tempCaption.trim(), {
-                    shouldValidate: true,
-                  });
-                  setIsCaptionFocused(false);
-                }
-              }}
-              disabled={!tempCaption || tempCaption.trim().length === 0}
-              disabledReason="Write a caption first — it goes out with the review."
-            />
-          </>
-        )}
-      </View>
-    </ScrollView>
-  );
-};
-
 export default function App() {
   const styles = useStyles();
   const { colors } = useTheme();
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
-  const [step, setStep] = useState(0);
   type Option = { id: number; name: string };
 
   const [types, setTypes] = useState<Option[]>([]);
@@ -256,17 +68,15 @@ export default function App() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [celebration, setCelebration] = useState<{
     achievements: Achievement[];
     reviewCount: number | null;
   } | null>(null);
-  const opacity = useSharedValue(1);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { profile } = useProfile();
 
-  const { control, handleSubmit, reset, trigger, formState, watch, setValue } =
+  const { control, handleSubmit, reset, watch, setValue } =
     useForm<ReviewFormValues>({
       mode: "onChange",
       defaultValues: {
@@ -305,69 +115,44 @@ export default function App() {
     }
   }, [params.locationName, params.locationAddress, setValue]);
 
-  interface Question {
-    title: string;
-    key?: "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
-    Component: React.ComponentType<any>;
-  }
+  /** Which picker sheet is open, if any. */
+  const [picker, setPicker] = useState<"where" | "spirit" | "type" | null>(
+    null
+  );
 
-  const questions: Question[] = [
-    {
-      title: "Where was this served?",
-      key: "location",
-      Component: LocationInput,
-    },
-    {
-      title: "Which Spirit?",
-      key: "spirit",
-      Component: () => (
-        <SelectableOptionsInput
-          control={control}
-          name="spirit"
-          options={spirits}
-        />
-      ),
-    },
-    {
-      title: "Which Type?",
-      key: "type",
-      Component: () => (
-        <SelectableOptionsInput control={control} name="type" options={types} />
-      ),
-    },
-    {
-      title: "Presentation Rating",
-      key: "presentation",
-      Component: PresentationInput,
-    },
-    { title: "Taste Rating", key: "taste", Component: TasteInput },
-    {
-      title: "Preview",
-      Component: (props) => (
-        <ReviewPreview
-          values={watchedValues}
-          spirits={spirits}
-          types={types}
-          photo={photo}
-          profile={profile}
-          control={control}
-          watch={watch}
-          setValue={setValue}
-          isSubmitting={isSubmitting}
-          submissionMessage={submissionMessage}
-          {...props}
-        />
-      ),
-    },
-  ];
+  const spiritName =
+    spirits.find((s) => String(s.id) === String(watchedValues.spirit))?.name ??
+    null;
+  const typeName =
+    types.find((t) => String(t.id) === String(watchedValues.type))?.name ??
+    null;
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
+  // Everything the review needs before it can be posted. The Post control
+  // says which piece is missing rather than just sitting there greyed out.
+  const missing = !photo
+    ? "a photo"
+    : !watchedValues.location
+      ? "where you drank it"
+      : !watchedValues.spirit
+        ? "a spirit"
+        : !watchedValues.type
+          ? "a type"
+          : !watchedValues.taste
+            ? "a taste score"
+            : !watchedValues.presentation
+              ? "a presentation score"
+              : !watchedValues.comment?.trim()
+                ? "a few words"
+                : null;
+
+  // Picking closes the sheet — there is nothing else to do in it.
+  useEffect(() => {
+    if (picker === "spirit" && watchedValues.spirit) setPicker(null);
+    if (picker === "type" && watchedValues.type) setPicker(null);
+  }, [picker, watchedValues.spirit, watchedValues.type]);
 
   // Reset the component back to the camera view and clear any submission state.
   const cancelCapture = () => {
-    setStep(0);
     setPhoto(null);
     setIsReviewing(false);
     setIsSubmitting(false);
@@ -385,53 +170,6 @@ export default function App() {
       ]
     );
   };
-
-  const nextStep = async () => {
-    // For the preview step (last step), validate comment field
-    if (step === questions.length - 1) {
-      // Validate that comment is not empty
-      const commentValue = watchedValues.comment?.trim();
-      if (!commentValue || commentValue.length === 0) {
-        // Don't proceed if comment is empty
-        return;
-      }
-      const isValid = await trigger("comment");
-      if (!isValid) return;
-    } else if (questions[step].key) {
-      const isValid = await trigger(questions[step].key as any);
-      if (!isValid) return;
-    }
-
-    if (step < questions.length - 1) {
-      setIsTransitioning(true);
-      // Fade out
-      opacity.value = withTiming(0, { duration: 400 }, () => {
-        runOnJS(setStep)(step + 1);
-      });
-    }
-  };
-
-  const prevStep = () => {
-    if (step > 0) {
-      setIsTransitioning(true);
-      // Fade out
-      opacity.value = withTiming(0, { duration: 400 }, () => {
-        runOnJS(setStep)(step - 1);
-      });
-    }
-  };
-
-  // Handle fade in when step changes
-  useEffect(() => {
-    if (isTransitioning) {
-      // Small delay to ensure content is rendered
-      const timer = setTimeout(() => {
-        opacity.value = withTiming(1, { duration: 400 });
-        setIsTransitioning(false);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [step, isTransitioning]);
 
   const uploadImage = async (userId: string) => {
     try {
@@ -613,7 +351,6 @@ export default function App() {
       }
 
       setIsSubmitting(false);
-      setStep(0);
       setPhoto(null);
       setIsReviewing(false);
       reset();
@@ -649,9 +386,8 @@ export default function App() {
 
   return (
     <>
-      {/* The celebration is a sibling, not a child: TouchableWithoutFeedback
-          clones its single child with responder props, which a Fragment or
-          Modal can't accept. */}
+      {/* The celebration is a sibling, not a child: the composer's own
+          scroll view would clip it. */}
       {celebration && (
         <CelebrationModal
           achievements={celebration.achievements}
@@ -660,76 +396,73 @@ export default function App() {
           onClose={dismissCelebration}
         />
       )}
-      <TouchableWithoutFeedback
-        style={[styles.container, { paddingTop: insets.top }]}
-        onPress={Keyboard.dismiss}
-      >
-        {!isReviewing ? (
-          <CameraComponent
-            onCapture={(photo) => {
-              setPhoto(photo);
-              setIsReviewing(true);
-              setIsSubmitting(false);
-              setSubmissionMessage("");
-            }}
-          />
-        ) : (
-          <View style={styles.container}>
-            {/* Header */}
-            {!isSubmitting && (
-              <View style={styles.header}>
-                <AppText
-                  variant="title"
-                  style={styles.title}
-                  accessibilityRole="header"
-                >
-                  {questions[step].title}
-                </AppText>
-                {questions[step].title !== "Preview" && (
-                  <>
-                    {/* Tiny tracked utility type — the system reserves
-                        uppercase for exactly this. */}
-                    <AppText
-                      variant="eyebrow"
-                      tone="accent"
-                      style={styles.subtitle}
-                    >
-                      Step {step + 1} of {questions.length - 1}
-                    </AppText>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${
-                              ((step + 1) / (questions.length - 1)) * 100
-                            }%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </>
-                )}
-              </View>
-            )}
 
-            {/* Content */}
-            <AnimatedReanimated.View
-              style={[
-                styles.content,
-                questions[step].title === "Preview" && styles.previewContent,
-                questions[step].title === "Where was this served?" &&
-                  styles.locationContent,
-                animatedStyle,
-              ]}
+      {!isReviewing ? (
+        <CameraComponent
+          onCapture={(captured) => {
+            setPhoto(captured);
+            setIsReviewing(true);
+            setIsSubmitting(false);
+            setSubmissionMessage("");
+          }}
+        />
+      ) : isSubmitting ? (
+        <View style={[styles.container, styles.submitting]}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <AppText variant="heading" tone="accent" style={styles.submitText}>
+            {submissionMessage}
+          </AppText>
+        </View>
+      ) : (
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          {/* One page, top to bottom: the photo, where it was, what was in
+              it, the two verdicts, and what you have to say. Cancel and Post
+              live in the bar rather than a wizard's footer. */}
+          <View style={styles.navBar}>
+            <TouchableOpacity
+              onPress={confirmDiscardReview}
+              hitSlop={HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Discard review"
+            >
+              <AppText variant="bodyStrong" tone="secondary">
+                Cancel
+              </AppText>
+            </TouchableOpacity>
+            <AppText variant="heading" accessibilityRole="header">
+              New review
+            </AppText>
+            <TouchableOpacity
+              onPress={() => handleSubmit(handleUploadAndCreateReview)()}
+              disabled={missing !== null}
+              hitSlop={HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Post review"
+              accessibilityHint={missing ? `Still needs ${missing}` : undefined}
+              accessibilityState={{ disabled: missing !== null }}
+            >
+              <AppText
+                variant="bodyStrong"
+                style={missing ? styles.postDisabled : styles.post}
+              >
+                Post
+              </AppText>
+            </TouchableOpacity>
+          </View>
+
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={insets.top + 44}
+          >
+            <ScrollView
+              contentContainerStyle={styles.page}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               {(optionsError || submitError) && (
                 <View style={styles.inlineError}>
-                  <AppText
-                    variant="caption"
-                    tone="danger"
-                    style={styles.inlineErrorText}
-                  >
+                  <AppText variant="caption" tone="danger">
                     {submitError || optionsError}
                   </AppText>
                   <TouchableOpacity
@@ -750,83 +483,176 @@ export default function App() {
                 </View>
               )}
 
-              {questions[step].Component &&
-                createElement(questions[step].Component, {
-                  control,
-                  ...formState,
-                })}
-            </AnimatedReanimated.View>
-
-            {/* Footer */}
-            {!isSubmitting && (
-              <View style={styles.footer}>
-                <Animated.View style={styles.navigation}>
-                  <View style={styles.navLeft}>
-                    {step > 0 && (
-                      <Button
-                        title="Back"
-                        onPress={prevStep}
-                        variant="ghost"
-                        size="medium"
-                        icon="chevron-back"
-                        iconPosition="left"
-                      />
-                    )}
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.quitButton}
-                    onPress={confirmDiscardReview}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel="Discard review"
-                  >
-                    <View style={styles.quitButtonVisual}>
-                      <Ionicons
-                        name="trash-outline"
-                        size={16}
-                        color={colors.danger}
-                      />
-                    </View>
-                  </TouchableOpacity>
-
-                  <View style={styles.navRight}>
-                    {step < questions.length - 1 ? (
-                      <Button
-                        title="Next"
-                        onPress={nextStep}
-                        variant="primary"
-                        size="medium"
-                        icon="chevron-forward"
-                        iconPosition="right"
-                      />
-                    ) : (
-                      <Button
-                        title="Submit"
-                        onPress={() => {
-                          // Validate comment before submission
-                          const commentValue = watchedValues.comment?.trim();
-                          if (!commentValue || commentValue.length === 0) {
-                            // Show error or prevent submission
-                            return;
-                          }
-                          handleSubmit(handleUploadAndCreateReview)();
-                        }}
-                        variant="primary"
-                        size="medium"
-                        disabled={
-                          !watchedValues.comment ||
-                          watchedValues.comment.trim().length === 0
-                        }
-                      />
-                    )}
-                  </View>
-                </Animated.View>
+              <View style={styles.photoFrame}>
+                {photo ? (
+                  <ExpoImage
+                    source={{ uri: photo }}
+                    style={styles.photo}
+                    contentFit="cover"
+                  />
+                ) : null}
+                <TouchableOpacity
+                  style={styles.retake}
+                  onPress={cancelCapture}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retake the photo"
+                >
+                  <Ionicons
+                    name="camera-outline"
+                    size={15}
+                    color={colors.textOnImage}
+                  />
+                  <AppText variant="label" tone="onImage">
+                    Retake
+                  </AppText>
+                </TouchableOpacity>
               </View>
-            )}
-          </View>
-        )}
-      </TouchableWithoutFeedback>
+
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => setPicker("where")}
+                accessibilityRole="button"
+                accessibilityLabel="Choose where this was served"
+              >
+                <Ionicons name="location" size={19} color={colors.accent} />
+                <View style={styles.rowBody}>
+                  <AppText variant="eyebrow" tone="muted">
+                    Where
+                  </AppText>
+                  <AppText
+                    variant="bodyStrong"
+                    tone={watchedValues.location ? "default" : "muted"}
+                    numberOfLines={1}
+                  >
+                    {(watchedValues.location as any)?.name ?? "Pick a bar"}
+                  </AppText>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              <View style={styles.pair}>
+                <TouchableOpacity
+                  style={styles.pairCard}
+                  onPress={() => setPicker("spirit")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a spirit"
+                >
+                  <AppText variant="eyebrow" tone="muted">
+                    Spirit
+                  </AppText>
+                  <AppText
+                    variant="bodyStrong"
+                    tone={spiritName ? "default" : "muted"}
+                    numberOfLines={1}
+                  >
+                    {spiritName ?? "Pick one"}
+                  </AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.pairCard}
+                  onPress={() => setPicker("type")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a type"
+                >
+                  <AppText variant="eyebrow" tone="muted">
+                    Type
+                  </AppText>
+                  <AppText
+                    variant="bodyStrong"
+                    tone={typeName ? "default" : "muted"}
+                    numberOfLines={1}
+                  >
+                    {typeName ?? "Pick one"}
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+
+              <TasteInput control={control} />
+              <PresentationInput control={control} />
+
+              <Controller
+                control={control}
+                name="comment"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.captionCard}>
+                    <TextInput
+                      style={styles.captionInput}
+                      placeholder="Say more about it…"
+                      placeholderTextColor={colors.textMuted}
+                      value={value}
+                      onChangeText={onChange}
+                      multiline
+                      maxLength={500}
+                      textAlignVertical="top"
+                    />
+                  </View>
+                )}
+              />
+
+              {missing ? (
+                <AppText variant="caption" tone="muted" style={styles.missing}>
+                  Still needs {missing}.
+                </AppText>
+              ) : null}
+            </ScrollView>
+          </KeyboardAvoidingView>
+
+          {/* The pickers are sheets over the page, so the page never loses
+              its place — you come back to the row you tapped. */}
+          <Modal
+            visible={picker !== null}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setPicker(null)}
+          >
+            <View style={styles.sheet}>
+              <View style={styles.sheetBar}>
+                <TouchableOpacity
+                  onPress={() => setPicker(null)}
+                  hitSlop={HIT_SLOP}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <AppText variant="heading">
+                  {picker === "where"
+                    ? "Where was this served?"
+                    : picker === "spirit"
+                      ? "Which spirit?"
+                      : "Which type?"}
+                </AppText>
+                <View style={styles.sheetBarSpacer} />
+              </View>
+
+              <View style={styles.sheetBody}>
+                {picker === "where" ? (
+                  <LocationInput
+                    control={control}
+                    onLocationSelected={() => setPicker(null)}
+                  />
+                ) : picker === "spirit" ? (
+                  <SelectableOptionsInput
+                    control={control}
+                    name="spirit"
+                    options={spirits}
+                  />
+                ) : picker === "type" ? (
+                  <SelectableOptionsInput
+                    control={control}
+                    name="type"
+                    options={types}
+                  />
+                ) : null}
+              </View>
+            </View>
+          </Modal>
+        </View>
+      )}
     </>
   );
 }
@@ -836,154 +662,140 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     backgroundColor: t.colors.background,
   },
-  header: {
-    paddingTop: 70,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingBottom: t.spacing.sm + 2,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
+  flex: {
+    flex: 1,
   },
-  title: {
+  submitting: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: t.spacing.lg,
+    paddingHorizontal: t.spacing.xxl,
+  },
+  submitText: {
     textAlign: "center" as const,
-    marginBottom: t.spacing.sm,
   },
-  subtitle: {
-    textAlign: "center" as const,
-    marginBottom: 15,
-  },
-  inlineError: {
-    backgroundColor: t.colors.dangerSubtle,
-    borderRadius: t.radius.input,
-    paddingVertical: t.spacing.sm + 2,
-    paddingHorizontal: 14,
-    marginHorizontal: t.spacing.lg,
-    marginBottom: t.spacing.md,
+  navBar: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.md,
+    paddingBottom: t.spacing.md,
   },
-  inlineErrorText: {
-    flexShrink: 1,
+  post: {
+    color: t.colors.accent,
+  },
+  postDisabled: {
+    color: t.colors.disabledText,
+  },
+  page: {
+    paddingHorizontal: t.spacing.gutter,
+    paddingBottom: t.spacing.xxxl,
+    gap: t.spacing.lg - 2,
+  },
+  // 16:11 and soft-square, so the composer shows the crop the card will.
+  photoFrame: {
+    width: "100%" as const,
+    aspectRatio: 16 / 11,
+    borderRadius: t.radius.card,
+    overflow: "hidden" as const,
+    backgroundColor: t.colors.imagePlaceholder,
+  },
+  photo: {
+    width: "100%" as const,
+    height: "100%" as const,
+  },
+  retake: {
+    position: "absolute" as const,
+    right: t.spacing.md,
+    bottom: t.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 7,
+    paddingHorizontal: t.spacing.lg - 2,
+    paddingVertical: 9,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.scrimStrong,
+  },
+  row: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.md - 1,
+    padding: t.spacing.lg - 2,
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  rowBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  pair: {
+    flexDirection: "row" as const,
+    gap: t.spacing.sm,
+  },
+  pairCard: {
+    flex: 1,
+    gap: 3,
+    paddingHorizontal: t.spacing.md + 1,
+    paddingVertical: t.spacing.md - 1,
+    borderRadius: t.radius.thumb,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  captionCard: {
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+    paddingHorizontal: t.spacing.lg - 1,
+    paddingVertical: t.spacing.md + 2,
+  },
+  captionInput: {
+    ...t.typography.body,
+    fontSize: 14,
+    minHeight: 66,
+    color: t.colors.text,
+  },
+  missing: {
+    textAlign: "center" as const,
+  },
+  inlineError: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+    padding: t.spacing.md,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.dangerSubtle,
   },
   inlineErrorAction: {
     fontFamily: fonts.bold,
   },
-  progressBar: {
-    height: 4,
-    backgroundColor: t.colors.border,
-    borderRadius: t.radius.pill,
-    overflow: "hidden" as const,
-  },
-  progressFill: {
-    height: "100%" as const,
-    backgroundColor: t.colors.accent,
-    borderRadius: t.radius.pill,
-  },
-  content: {
+  sheet: {
     flex: 1,
-    paddingHorizontal: t.spacing.xl - 4,
-    overflow: "hidden" as const,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  previewContent: {
-    paddingTop: t.spacing.sm + 2, // Minimal padding for preview step
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  locationContent: {
-    justifyContent: "flex-start" as const,
-    alignItems: "stretch" as const,
-    paddingTop: t.spacing.xl - 4,
-  },
-  footer: {
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingVertical: t.spacing.sm + 2,
-    borderTopWidth: 1,
-    borderTopColor: t.colors.border,
-    height: 70,
-  },
-  navigation: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "center" as const,
-  },
-  navLeft: {
-    flex: 1,
-    alignItems: "flex-start" as const,
-  },
-  navRight: {
-    flex: 1,
-    alignItems: "flex-end" as const,
-  },
-  quitButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  quitButtonVisual: {
-    width: 28,
-    height: 28,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.dangerSubtle,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.colors.danger,
-  },
-  previewContainer: {
-    flex: 1,
-    width: "100%" as const,
-  },
-  previewWrapper: {
-    flex: 1,
-    overflow: "hidden" as const,
-  },
-  scaledReviewContainer: {
-    transformOrigin: "top center",
-  },
-  captionInputContainer: {
     backgroundColor: t.colors.background,
-    borderRadius: t.radius.input,
   },
-  captionButton: {
+  sheetBar: {
+    flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingHorizontal: t.spacing.xl - 4,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+    paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.md,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
-    minHeight: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.divider,
   },
-  captionInput: {
-    ...t.typography.body,
-    minHeight: 60,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.sm,
-    borderRadius: t.radius.input,
-    backgroundColor: t.colors.surfaceSunken,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    color: t.colors.text,
-    textAlignVertical: "top" as const,
+  sheetBarSpacer: {
+    width: 24,
   },
-  characterCount: {
-    textAlign: "right" as const,
-    marginTop: t.spacing.xs,
-  },
-  saveCaptionButton: {
-    marginTop: t.spacing.md,
-  },
-  submitLoadingContainer: {
+  sheetBody: {
     flex: 1,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    paddingHorizontal: 40,
-  },
-  submitLoadingText: {
-    marginTop: t.spacing.xl - 4,
-    textAlign: "center" as const,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.lg,
   },
 }));
