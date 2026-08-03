@@ -176,7 +176,7 @@ const Search = forwardRef<any, SearchProps>(
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.textInput}
-            placeholder="Search"
+            placeholder="Search bars and neighbourhoods"
             value={searchQuery}
             onChangeText={handleSearch}
             placeholderTextColor={colors.textMuted}

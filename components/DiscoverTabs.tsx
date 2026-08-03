@@ -384,6 +384,10 @@ export default function DiscoverTabs({
           which is the system's "one background colour per surface" rule
           applied to a screen that has two jobs. */}
       <View style={styles.inkHeader}>
+        {/* The screen names itself, in the display cut, the way every tab
+            root does — the segmented control alone left the header mute. */}
+        <Text style={styles.screenTitle}>discover</Text>
+
         {/* Tab Headers */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -536,13 +540,21 @@ const useStyles = makeStyles((t) => ({
   },
   inkHeader: {
     backgroundColor: t.colors.surfaceInk,
+    paddingTop: t.spacing.sm,
     paddingBottom: t.spacing.md,
+  },
+  screenTitle: {
+    ...t.typography.display,
+    fontSize: 30,
+    lineHeight: 32,
+    color: t.colors.onInk,
+    paddingHorizontal: t.spacing.gutter,
   },
   tabContainer: {
     flexDirection: "row" as const,
     backgroundColor: t.colors.surface,
     marginHorizontal: t.spacing.gutter,
-    marginTop: t.spacing.lg,
+    marginTop: t.spacing.md,
     marginBottom: t.spacing.sm,
     borderRadius: t.radius.pill,
     ...t.elevation.card,

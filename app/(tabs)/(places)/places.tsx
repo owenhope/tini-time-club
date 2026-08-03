@@ -33,8 +33,10 @@ import {
   getRegularsByLocation,
   type Regular,
 } from "@/services/regularsService";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams } from "expo-router";
+import Search from "@/components/map/search";
 import { fonts, makeStyles } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -93,7 +95,9 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
 
 function Map() {
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const searchRef = useRef<any>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
   const [locations, setLocations] = useState<MapLocation[]>([]);
@@ -138,6 +142,13 @@ function Map() {
   const onRegionChangeComplete = useCallback((newRegion: Region) => {
     regionRef.current = newRegion;
     setRegion(newRegion);
+  }, []);
+
+  /** A search hit recentres the map; the pins for it arrive with the region. */
+  const handleSearchPlaceSelected = useCallback((newRegion: Region) => {
+    Keyboard.dismiss();
+    regionRef.current = newRegion;
+    mapRef.current?.animateToRegion(newRegion, 350);
   }, []);
 
   const markerElements = useMemo(
@@ -306,7 +317,22 @@ function Map() {
   }, [locationResolved, region]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      {/* Every tab root wears the same green header: the screen's name in the
+          display cut, then the search field on the ink. The map used to start
+          under the status bar with nothing naming the screen at all. */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <Text style={styles.headerTitle}>places</Text>
+        <Search
+          ref={searchRef}
+          onPlaceSelected={handleSearchPlaceSelected}
+          currentLocation={{
+            latitude: region.latitude,
+            longitude: region.longitude,
+          }}
+        />
+      </View>
       <View
         style={{ flex: 1 }}
         onLayout={(event) => {
@@ -373,11 +399,31 @@ function Map() {
           </BottomSheetScrollView>
         </BottomSheet>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const useStyles = makeStyles((t) => ({
+  // No background of its own: the map renders at a negative z-index, so
+  // anything painted here would cover it.
+  screen: {
+    flex: 1,
+  },
+  header: {
+    backgroundColor: t.colors.surfaceInk,
+    paddingHorizontal: t.spacing.md,
+    paddingBottom: t.spacing.md,
+    gap: t.spacing.xs,
+  },
+  // Lowercase, black weight, tight — the wordmark's own voice, and the same
+  // treatment every other tab root's title takes.
+  headerTitle: {
+    ...t.typography.display,
+    fontSize: 30,
+    lineHeight: 32,
+    color: t.colors.onInk,
+    paddingHorizontal: t.spacing.sm,
+  },
   mapLoading: {
     position: "absolute" as const,
     top: 0,
