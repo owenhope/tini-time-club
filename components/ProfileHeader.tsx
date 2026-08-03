@@ -34,6 +34,13 @@ interface ProfileHeaderProps {
   tags?: React.ReactNode;
   /** Rendered between the bio and the action row (favourite location, etc.). */
   children?: React.ReactNode;
+  /**
+   * The one thing you can do to this person — Follow, on someone else's
+   * profile. It sits in the block rather than the nav bar: iOS 26 wraps
+   * adjacent header items in a single grey glass capsule, which reads as
+   * disabled chrome around a chartreuse button.
+   */
+  action?: React.ReactNode;
 }
 
 /** One of the three stat tiles under the identity block. */
@@ -68,6 +75,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onFollowingPress,
   tags,
   children,
+  action,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -134,15 +142,18 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Text style={styles.handle} numberOfLines={1}>
             @{profile.username}
           </Text>
-          {rank.tier ? (
-            /* The tier's own hex, like a medal — it reads the same in both
-               schemes. Near-black green ink on all four. */
-            <View
-              style={[styles.tierBadge, { backgroundColor: rank.tier.color }]}
-            >
-              <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
-            </View>
-          ) : null}
+          <View style={styles.identityFoot}>
+            {rank.tier ? (
+              /* The tier's own hex, like a medal — it reads the same in both
+                 schemes. Near-black green ink on all four. */
+              <View
+                style={[styles.tierBadge, { backgroundColor: rank.tier.color }]}
+              >
+                <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
+              </View>
+            ) : null}
+            {action}
+          </View>
         </View>
       </View>
 
@@ -239,12 +250,16 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrim,
     borderRadius: AVATAR_SIZE / 2,
   },
+  identityFoot: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+    marginTop: 2,
+  },
   tierBadge: {
-    alignSelf: "flex-start" as const,
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.md - 1,
     paddingVertical: 6,
-    marginTop: 2,
   },
   tierBadgeText: {
     ...t.typography.eyebrow,

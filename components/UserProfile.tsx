@@ -183,19 +183,6 @@ const UserProfile = () => {
         ),
         headerRight: () => (
           <View style={styles.headerActions}>
-            <Button
-              title={doesFollow ? "Following" : "Follow"}
-              size="small"
-              variant={doesFollow ? "tonal" : "onInk"}
-              loading={followPending}
-              onPress={toggleFollow}
-              accessibilityLabel={
-                doesFollow
-                  ? `Unfollow ${displayProfile.username}`
-                  : `Follow ${displayProfile.username}`
-              }
-              style={styles.headerFollow}
-            />
             <TouchableOpacity
               onPress={showProfileMenu}
               style={styles.headerIconButton}
@@ -437,6 +424,20 @@ const UserProfile = () => {
           router.push(routes.following(displayProfile.username))
         }
         tags={favoriteTags}
+        action={
+          <Button
+            title={doesFollow ? "Following" : "Follow"}
+            size="small"
+            variant={doesFollow ? "tonal" : "onInk"}
+            loading={followPending}
+            onPress={toggleFollow}
+            accessibilityLabel={
+              doesFollow
+                ? `Unfollow ${displayProfile?.username}`
+                : `Follow ${displayProfile?.username}`
+            }
+          />
+        }
       >
         {favoriteChips}
       </ProfileHeader>
@@ -534,10 +535,6 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     gap: t.spacing.md,
     paddingRight: t.spacing.xs,
-  },
-  headerFollow: {
-    paddingHorizontal: t.spacing.gutter,
-    minHeight: 36,
   },
   headerIconButton: {
     width: 36,
