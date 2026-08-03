@@ -15,6 +15,7 @@ import { Image as ExpoImage } from "expo-image";
 import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useGoBack } from "@/hooks/useAppNavigation";
 import CameraComponent from "@/components/CameraComponent";
 import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
@@ -73,6 +74,7 @@ export default function App() {
     reviewCount: number | null;
   } | null>(null);
   const router = useRouter();
+  const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile } = useProfile();
 
@@ -151,8 +153,8 @@ export default function App() {
     if (picker === "type" && watchedValues.type) setPicker(null);
   }, [picker, watchedValues.spirit, watchedValues.type]);
 
-  // Reset the component back to the camera view and clear any submission state.
-  const cancelCapture = () => {
+  /** Back to the camera, keeping the flow open — this is Retake. */
+  const retake = () => {
     setPhoto(null);
     setIsReviewing(false);
     setIsSubmitting(false);
@@ -166,7 +168,14 @@ export default function App() {
       "Your photo and review details will be lost.",
       [
         { text: "Keep editing", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: cancelCapture },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            retake();
+            goBack();
+          },
+        },
       ]
     );
   };
@@ -403,6 +412,7 @@ export default function App() {
 
       {!isReviewing ? (
         <CameraComponent
+          onClose={goBack}
           onCapture={(captured) => {
             setPhoto(captured);
             setIsReviewing(true);
@@ -497,7 +507,7 @@ export default function App() {
                 ) : null}
                 <TouchableOpacity
                   style={styles.retake}
-                  onPress={cancelCapture}
+                  onPress={retake}
                   accessibilityRole="button"
                   accessibilityLabel="Retake the photo"
                 >

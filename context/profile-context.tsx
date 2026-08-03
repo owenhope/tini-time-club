@@ -75,9 +75,10 @@ export const ProfileProvider = ({
         return;
       }
 
+      // No session yet: the provider now sits above the auth screens too, so
+      // signed-out is a normal state here rather than a failure.
       const user = await authCache.getUser();
       if (!user) {
-        reportError("No user found while fetching the profile");
         setLoading(false);
         return;
       }

@@ -1,7 +1,9 @@
 import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
+import { routes } from "@/utils/routes";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import * as Haptics from "expo-haptics";
 
@@ -25,12 +27,42 @@ export default function CustomTabBar({
   navigation,
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const styles = useStyles();
   const { colors } = useTheme();
 
+  const middle = Math.ceil(state.routes.length / 2);
+
+  /**
+   * Composing is the app's one loud action, so it takes the brand's loudest
+   * colour and sits proud of the bar. It is a button, not a tab: the composer
+   * is presented over whatever you were looking at, so cancelling returns you
+   * there rather than leaving a draft parked in a tab you thought you left.
+   */
+  const composeButton = (
+    <TouchableOpacity
+      key="compose"
+      accessibilityRole="button"
+      accessibilityLabel="Write a review"
+      onPress={() => {
+        Haptics.selectionAsync();
+        router.push(routes.review());
+      }}
+      style={styles.composeTab}
+    >
+      <View style={styles.compose}>
+        <Image
+          source={require("@/assets/images/martini_transparent.png")}
+          style={styles.martiniIcon}
+          resizeMode="contain"
+        />
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
-      {state.routes.map((route, index) => {
+      {state.routes.flatMap((route, index) => {
         const { options } = descriptors[route.key];
         const label =
           typeof options.tabBarLabel === "string"
@@ -113,35 +145,7 @@ export default function CustomTabBar({
           }
         };
 
-        // Composing is the app's one loud action, so it takes the brand's
-        // loudest colour and sits proud of the bar rather than queueing up
-        // as a fifth grey icon.
-        if (route.name === "review") {
-          return (
-            <TouchableOpacity
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={
-                options.tabBarAccessibilityLabel ?? "Write a review"
-              }
-              testID={options.tabBarTestID}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={styles.composeTab}
-            >
-              <View style={styles.compose}>
-                <Image
-                  source={require("@/assets/images/martini_transparent.png")}
-                  style={styles.martiniIcon}
-                  resizeMode="contain"
-                />
-              </View>
-            </TouchableOpacity>
-          );
-        }
-
-        return (
+        const tab = (
           <TouchableOpacity
             key={route.key}
             accessibilityRole="tab"
@@ -177,6 +181,8 @@ export default function CustomTabBar({
             </View>
           </TouchableOpacity>
         );
+
+        return index + 1 === middle ? [tab, composeButton] : [tab];
       })}
     </View>
   );

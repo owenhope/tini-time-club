@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Image, View, Text } from "react-native";
 import { Tabs, useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ProfileProvider, useProfile } from "@/context/profile-context";
+import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
 import CustomTabBar from "@/components/CustomTabBar";
 import { fonts, useTheme } from "@/theme";
@@ -114,36 +114,6 @@ const LayoutContent = () => {
         }}
       />
       <Tabs.Screen
-        name="review"
-        options={{
-          title: "Review",
-          headerShown: false,
-          tabBarIcon: ({ size, color }) => (
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: colors.secondary,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.onSecondary,
-                  fontSize: 28,
-                  fontFamily: fonts.bold,
-                  lineHeight: 28,
-                }}
-              >
-                +
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="(discover)"
         options={{
           title: "Discover",
@@ -167,10 +137,4 @@ const LayoutContent = () => {
   );
 };
 
-const Layout = () => (
-  <ProfileProvider>
-    <LayoutContent />
-  </ProfileProvider>
-);
-
-export default Layout;
+export default LayoutContent;

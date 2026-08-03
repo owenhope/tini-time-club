@@ -22,9 +22,14 @@ import { reportError } from "@/utils/log";
 
 interface CameraComponentProps {
   onCapture: (photo: string) => void;
+  /** Leave the composer. The camera is the first step of a presented flow. */
+  onClose?: () => void;
 }
 
-export default function CameraComponent({ onCapture }: CameraComponentProps) {
+export default function CameraComponent({
+  onCapture,
+  onClose,
+}: CameraComponentProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -178,8 +183,22 @@ export default function CameraComponent({ onCapture }: CameraComponentProps) {
           ]}
         >
           <View style={styles.topControls}>
+            {onClose ? (
+              <Pressable
+                style={styles.controlButton}
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <FontAwesome6
+                  name="xmark"
+                  size={20}
+                  color={colors.textOnImage}
+                />
+              </Pressable>
+            ) : null}
             <Pressable
-              style={styles.controlButton}
+              style={[styles.controlButton, onClose && styles.controlButtonGap]}
               onPress={toggleFacing}
               accessibilityRole="button"
               accessibilityLabel="Switch camera"
@@ -279,6 +298,10 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
+  },
+  controlButtonGap: {
+    marginRight: "auto" as const,
+    marginLeft: t.spacing.sm,
   },
   controlButton: {
     minWidth: 48,

@@ -39,6 +39,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
+import { ProfileProvider } from "@/context/profile-context";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
 import {
   createSessionFromAuthUrl,
@@ -123,7 +124,12 @@ export default function RootLayout() {
     // Required by @gorhom/bottom-sheet's gestures (the map sheet).
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <RootLayoutNav />
+        {/* At the root, not inside the tabs: the composer and the caption
+            editor are presented over the tabs from the root stack, and they
+            need the same signed-in member the tabs do. */}
+        <ProfileProvider>
+          <RootLayoutNav />
+        </ProfileProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
@@ -378,6 +384,16 @@ function RootLayoutNav() {
           },
         }}
       >
+        {/* Composing is a task, not a place: presented over whatever you
+            were looking at, so cancelling returns you there instead of
+            leaving a half-written draft parked in a tab. */}
+        <Stack.Screen
+          name="review"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
         {/* Lives in the root stack rather than a tab stack so it can be
             pushed from any tab and back returns to wherever it was opened. */}
         <Stack.Screen
