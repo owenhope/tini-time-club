@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  FlatList,
   Text,
   TouchableOpacity,
   Alert,
   Platform,
   ActionSheetIOS,
-  RefreshControl,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { Profile, Review } from "@/types/types";
-import ReviewGrid from "@/components/ReviewGrid";
-import CommentsSlider from "@/components/CommentsSlider";
+import { Profile } from "@/types/types";
+import ProfileBody from "@/components/profile/ProfileBody";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Button, Skeleton, VerifiedName } from "@/components/shared";
+import { Button, VerifiedName } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
@@ -26,7 +23,6 @@ import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
-import RegularPlaceRow from "@/components/RegularPlaceRow";
 import FavoriteTags, {
   parseFavoriteIds,
 } from "@/components/profile/FavoriteTags";
@@ -42,8 +38,6 @@ const UserProfile = () => {
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [selectedCommentReview, setSelectedCommentReview] =
-    useState<Review | null>(null);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
 
@@ -309,37 +303,6 @@ const UserProfile = () => {
     }
   };
 
-  const handleShowComments = (
-    reviewId: string,
-    onCommentAdded: any,
-    onCommentDeleted: any
-  ) => {
-    const review = userReviews.find((r) => r.id === reviewId);
-    if (review) {
-      setSelectedCommentReview(review);
-    }
-  };
-
-  const handleCommentAdded = (reviewId: string, newComment: any) => {
-    setUserReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId
-          ? { ...r, _commentPatch: { action: "add", data: newComment } }
-          : r
-      )
-    );
-  };
-
-  const handleCommentDeleted = (reviewId: string, commentId: number) => {
-    setUserReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId
-          ? { ...r, _commentPatch: { action: "delete", id: commentId } }
-          : r
-      )
-    );
-  };
-
   const handleBlockUser = async () => {
     if (!profile || !displayProfile) return;
 
@@ -485,73 +448,33 @@ const UserProfile = () => {
     <View style={styles.container}>
       {/* The identity block runs green up behind the status bar. */}
       <StatusBar style="light" />
-      {activeTab === "reviews" ? (
-        <ReviewGrid
-          reviews={userReviews}
-          header={header}
-          emptyComponent={renderEmpty()}
-          loading={loadingReviews}
-          refreshing={refreshingReviews}
-          onRefresh={() => {
-            if (displayProfile?.id) loadUserReviews(true);
-          }}
-          onEdit={(review) =>
-            profile && String(profile.id) === String(review.user_id)
-              ? router.push(routes.editCaption(review.id))
-              : undefined
-          }
-          onShowComments={handleShowComments}
-          onCommentAdded={handleCommentAdded}
-          onCommentDeleted={handleCommentDeleted}
-        />
-      ) : (
-        <FlatList
-          data={regularPlaces}
-          keyExtractor={(place) => String(place.location_id)}
-          renderItem={({ item }) => <RegularPlaceRow place={item} />}
-          ListHeaderComponent={header}
-          ListEmptyComponent={
-            loadingRegulars ? (
-              <View>
-                {[0, 1, 2].map((i) => (
-                  <View key={i} style={styles.skeletonPlaceRow}>
-                    <Skeleton circle height={38} />
-                    <View style={styles.skeletonPlaceContent}>
-                      <Skeleton width="55%" height={13} />
-                      <Skeleton width="35%" height={10} />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  No stool with their name on it — yet.
-                </Text>
-              </View>
-            )
-          }
-          refreshControl={
-            <RefreshControl
-              refreshing={loadingRegulars}
-              onRefresh={() => displayProfile?.id && loadRegularPlaces()}
-              colors={[colors.accent]}
-              tintColor={colors.accent}
-            />
-          }
-          contentContainerStyle={styles.regularsList}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {selectedCommentReview && (
-        <CommentsSlider
-          review={selectedCommentReview}
-          onClose={() => setSelectedCommentReview(null)}
-          onCommentAdded={handleCommentAdded}
-          onCommentDeleted={handleCommentDeleted}
-        />
-      )}
+      <ProfileBody
+        activeTab={activeTab}
+        header={header}
+        reviews={userReviews}
+        setReviews={setUserReviews}
+        loadingReviews={loadingReviews}
+        refreshingReviews={refreshingReviews}
+        onRefreshReviews={() => {
+          if (displayProfile?.id) loadUserReviews(true);
+        }}
+        emptyReviews={renderEmpty()}
+        regularPlaces={regularPlaces}
+        loadingRegulars={loadingRegulars}
+        onRefreshRegulars={() => displayProfile?.id && loadRegularPlaces()}
+        emptyRegulars={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              No stool with their name on it — yet.
+            </Text>
+          </View>
+        }
+        onEdit={(review) =>
+          profile && String(profile.id) === String(review.user_id)
+            ? router.push(routes.editCaption(review.id))
+            : undefined
+        }
+      />
     </View>
   );
 };
@@ -598,22 +521,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     color: t.colors.textSecondary,
   },
-  skeletonPlaceRow: {
-    minHeight: 76,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.md,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
-    backgroundColor: t.colors.surface,
-  },
-  skeletonPlaceContent: {
-    flex: 1,
-    minWidth: 0,
-    gap: 6,
-  },
   headerTitleContainer: {
     alignItems: "center" as const,
   },
@@ -641,9 +548,6 @@ const useStyles = makeStyles((t) => ({
   // The header owns the screen gutter now, so its children sit flush.
   favoritesSection: {
     gap: t.spacing.sm,
-  },
-  regularsList: {
-    paddingBottom: t.spacing.xxl,
   },
 }));
 

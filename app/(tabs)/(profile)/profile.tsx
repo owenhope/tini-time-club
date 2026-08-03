@@ -1,15 +1,6 @@
 import "react-native-get-random-values";
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  FlatList,
-  Text,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
 import { File } from "expo-file-system";
@@ -23,7 +14,7 @@ import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import { VerifiedName } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
-import ReviewGrid from "@/components/ReviewGrid";
+import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
@@ -31,7 +22,6 @@ import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
-import RegularPlaceRow from "@/components/RegularPlaceRow";
 import FavoriteTags, {
   parseFavoriteIds,
 } from "@/components/profile/FavoriteTags";
@@ -463,57 +453,39 @@ const Profile = () => {
       {/* The identity block runs the deep green up behind the status bar, so
           its content has to be light in both schemes. */}
       <StatusBar style="light" />
-      {activeTab === "reviews" ? (
-        <ReviewGrid
-          reviews={userReviews}
-          header={header}
-          emptyComponent={renderEmpty()}
-          loading={loadingReviews}
-          refreshing={refreshingReviews}
-          onRefresh={() => profile?.id && loadUserReviews(true)}
-          canDelete={true}
-          onDelete={(review) => confirmDeleteReview(review.id)}
-          onEdit={(review) => router.push(routes.editCaption(review.id))}
-        />
-      ) : (
-        <FlatList
-          data={regularPlaces}
-          keyExtractor={(place) => String(place.location_id)}
-          renderItem={({ item }) => <RegularPlaceRow place={item} />}
-          ListHeaderComponent={header}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              {loadingRegulars ? (
-                <ActivityIndicator size="small" color={colors.accent} />
-              ) : (
-                <View style={styles.regularsEmptyContent}>
-                  <View style={styles.emptyCtaIcon}>
-                    <Ionicons
-                      name="ribbon-outline"
-                      size={28}
-                      color={colors.accent}
-                    />
-                  </View>
-                  <Text style={styles.regularsEmptyBody}>
-                    Review the same place often to earn a spot among its top
-                    three Regulars.
-                  </Text>
-                </View>
-              )}
+      <ProfileBody
+        activeTab={activeTab}
+        header={header}
+        reviews={userReviews}
+        setReviews={setUserReviews}
+        loadingReviews={loadingReviews}
+        refreshingReviews={refreshingReviews}
+        onRefreshReviews={() => profile?.id && loadUserReviews(true)}
+        emptyReviews={renderEmpty()}
+        regularPlaces={regularPlaces}
+        loadingRegulars={loadingRegulars}
+        onRefreshRegulars={() => profile?.id && loadRegularPlaces()}
+        emptyRegulars={
+          <View style={styles.emptyContainer}>
+            <View style={styles.regularsEmptyContent}>
+              <View style={styles.emptyCtaIcon}>
+                <Ionicons
+                  name="ribbon-outline"
+                  size={28}
+                  color={colors.accent}
+                />
+              </View>
+              <Text style={styles.regularsEmptyBody}>
+                Review the same place often to earn a spot among its top three
+                Regulars.
+              </Text>
             </View>
-          }
-          refreshControl={
-            <RefreshControl
-              refreshing={loadingRegulars}
-              onRefresh={() => profile?.id && loadRegularPlaces()}
-              colors={[colors.accent]}
-              tintColor={colors.accent}
-            />
-          }
-          contentContainerStyle={styles.regularsList}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+          </View>
+        }
+        canDelete
+        onDelete={(review) => confirmDeleteReview(review.id)}
+        onEdit={(review) => router.push(routes.editCaption(review.id))}
+      />
 
       {selectedReviewId && (
         <LikeSlider
@@ -596,9 +568,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.highlight,
     fontFamily: fonts.semibold,
-  },
-  regularsList: {
-    paddingBottom: t.spacing.xxl,
   },
   emptyContainer: {
     alignItems: "center" as const,
