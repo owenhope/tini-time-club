@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -16,7 +10,6 @@ import {
   Image,
   Alert,
   Animated,
-  type ViewToken,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
@@ -90,33 +83,6 @@ function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
-  const [visibleReviewIds, setVisibleReviewIds] = useState<Set<string>>(
-    () => new Set()
-  );
-  const viewabilityConfig = useMemo(
-    () => ({ itemVisiblePercentThreshold: 50, minimumViewTime: 100 }),
-    []
-  );
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const next = new Set(
-        viewableItems
-          .filter((token) => token.isViewable)
-          .map((token) => String((token.item as Review).id))
-      );
-
-      setVisibleReviewIds((current) => {
-        if (
-          current.size === next.size &&
-          [...current].every((id) => next.has(id))
-        ) {
-          return current;
-        }
-        return next;
-      });
-    },
-    []
-  );
   // Same scroll-following collapse as every other shrinking header.
   const { progress: headerProgress, onScroll: handleScroll } =
     useCollapsibleHeader();
@@ -692,7 +658,6 @@ function Home() {
           onShowComments={() => handleShowComments(item)}
           onCommentAdded={handleCommentAdded}
           onCommentDeleted={handleCommentDeleted}
-          isVisible={visibleReviewIds.has(String(item.id))}
         />
       );
     },
@@ -703,7 +668,6 @@ function Home() {
       handleShowComments,
       handleCommentAdded,
       handleCommentDeleted,
-      visibleReviewIds,
     ]
   );
 
@@ -796,9 +760,6 @@ function Home() {
         // dozen screens of content and photo decodes before first paint.
         initialNumToRender={3}
         windowSize={5}
-        extraData={visibleReviewIds}
-        viewabilityConfig={viewabilityConfig}
-        onViewableItemsChanged={onViewableItemsChanged}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />

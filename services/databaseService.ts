@@ -258,19 +258,20 @@ class DatabaseService {
         const location = Array.isArray(data.location)
           ? (data.location[0] ?? null)
           : data.location;
-        const [likes, comments, recentComments, locationRating] = await Promise.all([
-          supabase
-            .from("likes")
-            .select("review_id", { count: "exact", head: true })
-            .eq("review_id", reviewId),
-          supabase
-            .from("comments")
-            .select("id", { count: "exact", head: true })
-            .eq("review_id", reviewId),
-          supabase
-            .from("comments")
-            .select(
-              `
+        const [likes, comments, recentComments, locationRating] =
+          await Promise.all([
+            supabase
+              .from("likes")
+              .select("review_id", { count: "exact", head: true })
+              .eq("review_id", reviewId),
+            supabase
+              .from("comments")
+              .select("id", { count: "exact", head: true })
+              .eq("review_id", reviewId),
+            supabase
+              .from("comments")
+              .select(
+                `
               id,
               body,
               inserted_at,
@@ -278,18 +279,18 @@ class DatabaseService {
               user_id,
               profile:profiles(id,username,avatar_url,is_verified,review_count)
             `
-            )
-            .eq("review_id", reviewId)
-            .order("inserted_at", { ascending: false })
-            .limit(2),
-          location?.id
-            ? supabase
-                .from("location_ratings")
-                .select("rating,total_ratings")
-                .eq("id", location.id)
-                .maybeSingle()
-            : Promise.resolve({ data: null, error: null }),
-        ]);
+              )
+              .eq("review_id", reviewId)
+              .order("inserted_at", { ascending: false })
+              .limit(2),
+            location?.id
+              ? supabase
+                  .from("location_ratings")
+                  .select("rating,total_ratings")
+                  .eq("id", location.id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+          ]);
 
         if (likes.error) throw likes.error;
         if (comments.error) throw comments.error;
@@ -385,9 +386,7 @@ class DatabaseService {
     return this.query(
       "types",
       async () => {
-        const { data, error } = await supabase
-          .from("types")
-          .select("id, name");
+        const { data, error } = await supabase.from("types").select("id, name");
 
         if (error) throw error;
         return data;
@@ -528,7 +527,11 @@ class DatabaseService {
   }
 
   /**
-   * Block a user
+   * Block a user.
+   *
+   * Go through here rather than writing to `blocks` directly: the blocked-id
+   * list is cached, and a write that skips the invalidation leaves the feed
+   * still showing the person you just blocked.
    */
   async blockUser(blockerId: string, blockedId: string): Promise<void> {
     const { error } = await supabase.from("blocks").insert([
@@ -541,6 +544,20 @@ class DatabaseService {
     if (error) throw error;
 
     // Invalidate caches
+    this.queryCache.delete(`blocked_${blockerId}`);
+    this.invalidateUserCaches(blockerId);
+  }
+
+  /** Undo a block, invalidating the same caches. */
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    const { error } = await supabase
+      .from("blocks")
+      .delete()
+      .eq("blocker_id", blockerId)
+      .eq("blocked_id", blockedId);
+
+    if (error) throw error;
+
     this.queryCache.delete(`blocked_${blockerId}`);
     this.invalidateUserCaches(blockerId);
   }

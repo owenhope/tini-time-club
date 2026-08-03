@@ -21,6 +21,7 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
@@ -352,19 +353,9 @@ const UserProfile = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              // Insert block record
-              const { error } = await supabase.from("blocks").insert([
-                {
-                  blocker_id: profile.id,
-                  blocked_id: displayProfile.id,
-                },
-              ]);
-
-              if (error) {
-                reportError("Error blocking user:", error);
-                Alert.alert("Error", "Unable to block user. Please try again.");
-                return;
-              }
+              // Through the service, not straight to the table: it owns the
+              // blocked-list cache the feed filters on.
+              await databaseService.blockUser(profile.id, displayProfile.id);
 
               // Also unfollow if currently following
               if (doesFollow) {
@@ -378,11 +369,8 @@ const UserProfile = () => {
 
               setIsBlocked(true);
             } catch (err) {
-              reportError("Unexpected error blocking user:", err);
-              Alert.alert(
-                "Error",
-                "An unexpected error occurred. Please try again."
-              );
+              reportError("Error blocking user:", err);
+              Alert.alert("Error", "Unable to block user. Please try again.");
             }
           },
         },
@@ -402,28 +390,11 @@ const UserProfile = () => {
           text: "Unblock",
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from("blocks")
-                .delete()
-                .eq("blocker_id", profile.id)
-                .eq("blocked_id", displayProfile.id);
-
-              if (error) {
-                reportError("Error unblocking user:", error);
-                Alert.alert(
-                  "Error",
-                  "Unable to unblock user. Please try again."
-                );
-                return;
-              }
-
+              await databaseService.unblockUser(profile.id, displayProfile.id);
               setIsBlocked(false);
             } catch (err) {
-              reportError("Unexpected error unblocking user:", err);
-              Alert.alert(
-                "Error",
-                "An unexpected error occurred. Please try again."
-              );
+              reportError("Error unblocking user:", err);
+              Alert.alert("Error", "Unable to unblock user. Please try again.");
             }
           },
         },

@@ -114,10 +114,8 @@ interface ReviewItemProps {
   ) => void;
   onCommentAdded: (reviewId: string, newComment: any) => void;
   onCommentDeleted: (reviewId: string, commentId: number) => void;
-  hideHeader?: boolean;
-  hideFooter?: boolean;
+  /** The composer's live preview: no header, no actions, no interaction. */
   previewMode?: boolean;
-  isVisible?: boolean;
 }
 
 /**
@@ -672,10 +670,7 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prev.location?.total_ratings === next.location?.total_ratings &&
     prev.profile?.is_verified === next.profile?.is_verified &&
     prevProps.canDelete === nextProps.canDelete &&
-    prevProps.hideHeader === nextProps.hideHeader &&
-    prevProps.hideFooter === nextProps.hideFooter &&
-    prevProps.previewMode === nextProps.previewMode &&
-    prevProps.isVisible === nextProps.isVisible
+    prevProps.previewMode === nextProps.previewMode
   );
 };
 
@@ -688,8 +683,6 @@ const ReviewItemComponent = ({
   onShowComments,
   onCommentAdded,
   onCommentDeleted,
-  hideHeader = false,
-  hideFooter = false,
   previewMode = false,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
@@ -776,34 +769,27 @@ const ReviewItemComponent = ({
       if (!profile) return;
 
       try {
-        const reportData = {
+        // Through the service, like every other write.
+        await databaseService.createReport({
           reporter_id: profile.id,
           review_id: review.id,
           creator_id: review.profile?.id,
           reason: customReason || reason,
           created_at: new Date().toISOString(),
-        };
+        });
 
-        const { error } = await supabase.from("reports").insert([reportData]);
-
-        if (error) {
-          reportError("Error submitting report:", error);
-          Alert.alert("Error", "Failed to submit report. Please try again.");
-        } else {
-          // Track report event
-          AnalyticService.capture("report", {
-            reviewId: review.id,
-            reason: customReason || reason,
-            targetUserId: review.profile?.id,
-          });
-          Alert.alert(
-            "Report Submitted",
-            "Thank you for your report. We will review it shortly."
-          );
-        }
+        AnalyticService.capture("report", {
+          reviewId: review.id,
+          reason: customReason || reason,
+          targetUserId: review.profile?.id,
+        });
+        Alert.alert(
+          "Report Submitted",
+          "Thank you for your report. We will review it shortly."
+        );
       } catch (error) {
-        reportError("Unexpected error submitting report:", error);
-        Alert.alert("Error", "An unexpected error occurred. Please try again.");
+        reportError("Error submitting report:", error);
+        Alert.alert("Error", "Failed to submit report. Please try again.");
       }
     },
     [profile, review.id, review.profile?.id]
@@ -856,7 +842,7 @@ const ReviewItemComponent = ({
   return (
     <>
       <Pressable style={styles.card} onPress={handlePress}>
-        {!hideHeader && (
+        {
           <View style={styles.header}>
             <AvatarWrapper
               avatarUrl={review.profile?.avatar_url || null}
@@ -883,7 +869,7 @@ const ReviewItemComponent = ({
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        }
 
         <View style={styles.imageContainer}>
           <ExpoImage
@@ -900,7 +886,7 @@ const ReviewItemComponent = ({
 
         <ReviewScores review={review} />
 
-        {!hideFooter && (
+        {
           <ReviewFooter
             review={review}
             hasLiked={hasLiked}
@@ -919,7 +905,7 @@ const ReviewItemComponent = ({
             isOwnReview={isOwnReview}
             loadCommentsIfNeeded={loadCommentsIfNeeded}
           />
-        )}
+        }
       </Pressable>
 
       <ActionSheet
