@@ -122,11 +122,11 @@ function Home() {
     useCollapsibleHeader();
   const logoScale = headerProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.75],
+    outputRange: [1, 0.82],
   });
   const headerHeight = headerProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [68, 48],
+    outputRange: [56, 44],
   });
 
   useEffect(() => {
@@ -756,7 +756,8 @@ function Home() {
               transform: [{ scale: logoScale }],
             },
           ]}
-          resizeMode="cover"
+          // Contain, not cover: the mark is square and a wide box cropped it.
+          resizeMode="contain"
         />
         <TouchableOpacity
           style={styles.searchIconContainer}
@@ -897,20 +898,17 @@ function Home() {
 
 const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
+  // A plain bar: compose left, the wordmark centred, search right. No
+  // shadow — the banner below it is what separates the header from the feed.
   header: {
     flexDirection: "row" as const,
-    shadowOffset: { width: 0, height: 0.25 },
-    shadowOpacity: 0.25,
-    shadowRadius: 1,
-    paddingTop: t.spacing.xs,
-    paddingBottom: t.spacing.sm,
-    paddingHorizontal: t.spacing.sm,
+    paddingHorizontal: t.spacing.md,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
   headerLogo: {
-    width: 60,
-    height: 60,
+    width: 96,
+    height: 42,
   },
   addButtonContainer: {
     position: "absolute" as const,

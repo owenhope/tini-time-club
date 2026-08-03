@@ -104,8 +104,9 @@ const useStyles = makeStyles((t) => ({
   avatar: {
     resizeMode: "cover" as const,
   },
+  // The initials disc is the club's green, not the primary purple.
   placeholder: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.secondary,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },

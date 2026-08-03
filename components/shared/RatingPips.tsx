@@ -40,7 +40,9 @@ const Olive: React.FC<{
   emptyColor?: string;
 }> = ({ size, filled, onDark, bodyColor, emptyColor }) => {
   const { colors } = useTheme();
-  const body = bodyColor ?? (onDark ? colors.textOnImage : colors.accent);
+  // The olive is green — `secondary`, not `accent`. The brand's primary is
+  // the purple, and a purple olive is not an olive.
+  const body = bodyColor ?? (onDark ? colors.textOnImage : colors.secondary);
 
   return (
     <View

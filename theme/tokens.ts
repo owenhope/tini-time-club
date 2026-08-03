@@ -2,10 +2,17 @@
  * Design tokens for Tini Time Club.
  *
  * Values are taken from the brand design system (`.claude/skills/
- * tini-time-club-design`): green #336654 is THE brand — logo, ink, primary
- * buttons, active states; purple #B6A3E2 is a background surface, not an
- * interactive accent; chartreuse #F2FF71 is the highlight / CTA that sings on
- * green; pimento #E8763D is the tiny-dose accent for ratings and hot flags.
+ * tini-time-club-design`), with one deliberate departure from it: the brand
+ * ranks the colours **purple primary, green secondary, chartreuse accent**.
+ * The system sheets treat green as the primary interactive and purple as a
+ * background-only surface; here purple carries the interactive weight
+ * (buttons, links, active states), green owns the club's ground surfaces and
+ * the olives, and chartreuse stays the loud third — CTAs on green, selected
+ * pills, the compose button. Pimento remains the tiny-dose rating accent.
+ *
+ * Purple needs a darker step to carry text or white labels: the raw brand
+ * #B6A3E2 is 2.06:1 on white, so light mode's interactive purple is
+ * purple-700 and the brand tint stays for fills.
  *
  * Every colour pair used for text-on-surface below has been checked against
  * WCAG 2.1 AA (4.5:1 for body text, 3:1 for large text and UI boundaries).
@@ -33,11 +40,13 @@ const palette = {
   green300: "#8FB8A8",
   green100: "#DCE9E3",
 
-  // Purple ramp — background surfaces. The raw brand purple fails on white
-  // (#B6A3E2 is 2.06:1), so any text/icon use takes a darkened step.
-  purple700: "#6B53A8", // 5.14:1 on white — safe for text
+  // Purple ramp — the primary interactive colour, and the brand's background
+  // surface. The raw brand purple fails on white (#B6A3E2 is 2.06:1), so
+  // anything carrying text or a white label takes a darkened step.
+  purple800: "#54408A", // pressed step under purple-700
+  purple700: "#6B53A8", // 5.14:1 on white — primary in light
   purple600: "#8E76C9",
-  purple500: "#B6A3E2", // brand — fills only
+  purple500: "#B6A3E2", // brand — fills, and primary in dark
   purple300: "#D3C7EE",
   purple100: "#EDE7F8",
 
@@ -201,16 +210,16 @@ export const lightColors: ThemeColors = {
   borderStrong: palette.green700,
   divider: "rgba(51,102,84,0.16)",
 
-  // Green is the brand — primary interactive colour.
-  accent: palette.green700, // #336654 — 6.31:1 on white
-  accentPressed: palette.green800,
-  accentSubtle: palette.green100,
-  onAccent: palette.paper050, // 6.0:1 on green-700
+  // Purple is the primary interactive colour: buttons, links, active states.
+  accent: palette.purple700, // #6B53A8 — 5.14:1 on white
+  accentPressed: palette.purple800,
+  accentSubtle: palette.purple100,
+  onAccent: palette.paper050, // 4.9:1 on purple-700
 
-  // Secondary interactive == the chartreuse highlight (CTA on green).
-  secondary: palette.chartreuse500,
-  secondarySubtle: palette.chartreuse300,
-  onSecondary: palette.green700, // 5.9:1 on chartreuse-500
+  // Green is the secondary: the club's own colour, and the olives'.
+  secondary: palette.green700, // #336654 — 6.31:1 on white
+  secondarySubtle: palette.green100,
+  onSecondary: palette.paper050, // 6.0:1 on green-700
 
   highlight: palette.chartreuse500,
   highlightSubtle: palette.chartreuse300,
@@ -227,8 +236,8 @@ export const lightColors: ThemeColors = {
   success: palette.green500,
   warning: palette.pimento600,
 
-  accentTonal: palette.green100,
-  onAccentTonal: palette.green800, // 8.1:1 on green-100
+  accentTonal: palette.purple100,
+  onAccentTonal: palette.purple700, // 4.8:1 on purple-100
 
   pressed: "rgba(20,26,23,0.07)",
   disabledSurface: palette.paper100,
@@ -242,7 +251,7 @@ export const lightColors: ThemeColors = {
   ratingTrackOnInk: "rgba(250,249,246,0.18)",
 
   tabBar: palette.white,
-  tabBarActive: palette.green700,
+  tabBarActive: palette.purple700,
   tabBarInactive: palette.ink500,
   imagePlaceholder: palette.purple100,
   skeleton: palette.paper100,
@@ -271,16 +280,17 @@ export const darkColors: ThemeColors = {
   borderStrong: palette.green300,
   divider: "rgba(143,184,168,0.13)",
 
-  // Primary interactive stays green, lightened for the dark ground.
-  accent: palette.green300, // #8FB8A8 — 7.4:1 on surface
-  accentPressed: "#A9CCBF",
-  accentSubtle: "#1E3229",
-  onAccent: "#0E1712", // 7.4:1 under green-300
+  // Primary interactive is the purple, at the brand tint — dark enough
+  // ground that #B6A3E2 clears 7:1 without the darkened step light needs.
+  accent: palette.purple500, // #B6A3E2 — 7.9:1 on surface
+  accentPressed: palette.purple300,
+  accentSubtle: "#2A2340",
+  onAccent: "#140E24", // 8.6:1 under purple-500
 
-  // Chartreuse is the loud secondary — it sings on dark green.
-  secondary: palette.chartreuse500,
-  secondarySubtle: "#2C3A1A",
-  onSecondary: palette.green900,
+  // Green is the secondary here too, lightened for the dark ground.
+  secondary: palette.green300, // #8FB8A8 — 7.4:1 on surface
+  secondarySubtle: "#1E3229",
+  onSecondary: "#0E1712", // 7.4:1 under green-300
 
   highlight: palette.chartreuse500,
   highlightSubtle: "#2C3A1A",
@@ -297,8 +307,8 @@ export const darkColors: ThemeColors = {
   success: "#5CB58F",
   warning: "#EF8A54",
 
-  accentTonal: "#1E3229",
-  onAccentTonal: palette.green300, // 6.9:1 on the tonal fill
+  accentTonal: "#2A2340",
+  onAccentTonal: palette.purple300, // 7.6:1 on the tonal fill
 
   pressed: "rgba(255,255,255,0.09)",
   disabledSurface: "#1E3229",
@@ -312,7 +322,7 @@ export const darkColors: ThemeColors = {
   ratingTrackOnInk: "rgba(250,249,246,0.18)",
 
   tabBar: "#16241D",
-  tabBarActive: palette.green300,
+  tabBarActive: palette.purple500,
   tabBarInactive: "#7F978C",
   imagePlaceholder: "#2A3B33",
   skeleton: "#1E3229",

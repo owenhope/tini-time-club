@@ -123,11 +123,13 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           />
           {overallScore != null ? (
             <View style={styles.tileScore} accessibilityElementsHidden>
+              {/* Sage, not paper: the olive is green wherever it appears,
+                  and on the dark plate the light green is the legible one. */}
               <RatingPips
                 value={1}
                 max={1}
                 size={11}
-                onDark
+                bodyColor={colors.accentOnImage}
                 accessibilityLabel=""
               />
               <Text style={styles.tileScoreText}>{scoreLabel}</Text>
@@ -182,27 +184,29 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         }
       />
 
+      {/* A page sheet, not a full-screen push: a review opened from a grid is
+          a peek, and the platform's own swipe-down closes it. */}
       <Modal
         visible={active !== null}
         animationType="slide"
-        presentationStyle="fullScreen"
+        presentationStyle="pageSheet"
         onRequestClose={() => setActive(null)}
       >
         <View style={styles.sheet}>
-          <View style={[styles.sheetBar, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.sheetBar}>
             <Pressable
               onPress={() => setActive(null)}
               hitSlop={HIT_SLOP}
               accessibilityRole="button"
-              accessibilityLabel="Back"
+              accessibilityLabel="Close"
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
+              <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
             <Text style={styles.sheetTitle} numberOfLines={1}>
               {active?.location?.name ?? "Review"}
             </Text>
-            {/* Balances the back button so the title stays centred. */}
+            {/* Balances the close button so the title stays centred. */}
             <View style={styles.backButton} />
           </View>
 

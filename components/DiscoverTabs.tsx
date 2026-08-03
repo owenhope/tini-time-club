@@ -592,7 +592,9 @@ const useStyles = makeStyles((t) => ({
   // onHighlight, never the chartreuse itself.
   tabActive: {
     backgroundColor: t.colors.highlight,
-    borderColor: t.colors.accent,
+    // Green, not the primary purple: chartreuse and green is the system's
+    // own selected pairing and the ink on the fill is green too.
+    borderColor: t.colors.secondary,
   },
   tabText: {
     fontSize: 15,

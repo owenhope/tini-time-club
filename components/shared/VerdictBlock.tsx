@@ -58,7 +58,7 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
         max={PIPS_MAX}
         size={onPaper ? 30 : 34}
         onRate={onChange}
-        bodyColor={onPaper ? colors.accent : colors.onBrand}
+        bodyColor={onPaper ? colors.secondary : colors.onBrand}
         emptyColor={onPaper ? colors.ratingPipEmpty : colors.onBrand}
         accessibilityLabel={accessibilityLabel}
       />

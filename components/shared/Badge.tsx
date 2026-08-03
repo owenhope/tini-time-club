@@ -21,13 +21,13 @@ const Badge: React.FC<BadgeProps> = ({ label, tone = "green", style }) => {
 
   const fills: Record<BadgeTone, string> = {
     chartreuse: colors.highlight,
-    green: colors.accent,
+    green: colors.secondary,
     muted: colors.accentTonal,
     pimento: colors.warning,
   };
   const inks: Record<BadgeTone, string> = {
     chartreuse: colors.onHighlight,
-    green: colors.onAccent,
+    green: colors.onSecondary,
     muted: colors.onAccentTonal,
     pimento: colors.textOnImage,
   };

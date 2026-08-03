@@ -52,7 +52,7 @@ const VerifiedName: React.FC<VerifiedNameProps> = ({
         <MaterialIcons
           name="verified"
           size={badgeSize}
-          color={onDark ? colors.highlight : colors.accent}
+          color={onDark ? colors.highlight : colors.secondary}
           style={styles.badge}
           accessibilityElementsHidden
         />

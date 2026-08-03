@@ -23,7 +23,11 @@ import {
 } from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
-import { formatRelativeDate } from "@/utils/helpers";
+import {
+  formatCityRegion,
+  formatRelativeDate,
+  stripNameFromAddress,
+} from "@/utils/helpers";
 import { getRankTier } from "@/utils/ranking";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
@@ -90,7 +94,7 @@ const InlineIdentityText = ({
         {username}
       </Text>
       {isVerified ? (
-        <MaterialIcons name="verified" size={13} color={colors.accent} />
+        <MaterialIcons name="verified" size={13} color={colors.secondary} />
       ) : null}
       <Text> {body}</Text>
     </Text>
@@ -378,33 +382,78 @@ const CommentCount = memo(({ count }: { count: number }) => {
 const PhotoChips = memo(({ review }: { review: Review }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  // Where in the world it was poured — a venue name alone means nothing to
+  // anyone who doesn't already drink there.
+  const cityCountry = review.location?.address
+    ? formatCityRegion(
+        stripNameFromAddress(review.location.name, review.location.address)
+      )
+    : null;
+
+  const venueCount = review.location?.total_ratings ?? 0;
+  const venueRating =
+    review.location?.rating != null && venueCount > 0
+      ? Number(review.location.rating)
+      : null;
 
   return (
-    <View style={styles.photoFooter}>
-      <Link href={`/places/${review.location?.id}`} asChild>
-        <TouchableOpacity style={styles.venueChip} activeOpacity={0.8}>
-          <Ionicons name="location" size={15} color={colors.accentOnImage} />
-          <Text style={styles.venueChipText} numberOfLines={1}>
-            {review.location?.name || "N/A"}
+    <>
+      {/* How the place is doing overall, kept apart from this review's own
+          two scores below the photo so the two aren't read as one. */}
+      {venueRating != null ? (
+        <View
+          style={styles.venueScore}
+          accessible
+          accessibilityLabel={`This place scores ${formatRating(
+            venueRating
+          )} from ${venueCount} ${venueCount === 1 ? "review" : "reviews"}`}
+        >
+          <RatingPips
+            value={1}
+            max={1}
+            size={11}
+            bodyColor={colors.accentOnImage}
+            accessibilityLabel=""
+          />
+          <Text style={styles.venueScoreText}>
+            {formatRating(venueRating)} · {venueCount}
           </Text>
-        </TouchableOpacity>
-      </Link>
+        </View>
+      ) : null}
 
-      <View style={styles.photoPills}>
-        {review.spirit?.name ? (
-          <View style={[styles.photoPill, styles.photoPillLoud]}>
-            <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
-              {review.spirit.name}
-            </Text>
-          </View>
-        ) : null}
-        {review.type?.name ? (
-          <View style={styles.photoPill}>
-            <Text style={styles.photoPillText}>{review.type.name}</Text>
-          </View>
-        ) : null}
+      <View style={styles.photoFooter}>
+        <Link href={`/places/${review.location?.id}`} asChild>
+          <TouchableOpacity style={styles.venueChip} activeOpacity={0.8}>
+            <Ionicons name="location" size={15} color={colors.accentOnImage} />
+            <View style={styles.venueChipLines}>
+              <Text style={styles.venueChipText} numberOfLines={1}>
+                {review.location?.name || "N/A"}
+              </Text>
+              {cityCountry ? (
+                <Text style={styles.venueChipMeta} numberOfLines={1}>
+                  {cityCountry}
+                </Text>
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        </Link>
+
+        <View style={styles.photoPills}>
+          {review.spirit?.name ? (
+            <View style={[styles.photoPill, styles.photoPillLoud]}>
+              <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
+                {review.spirit.name}
+              </Text>
+            </View>
+          ) : null}
+          {review.type?.name ? (
+            <View style={styles.photoPill}>
+              <Text style={styles.photoPillText}>{review.type.name}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
-    </View>
+    </>
   );
 });
 PhotoChips.displayName = "PhotoChips";
@@ -976,6 +1025,24 @@ const useStyles = makeStyles((t) => ({
   // The only things left on the photo: where it was, and what was in it. One
   // row, so a long venue name gives way to the pills instead of running under
   // them.
+  venueScore: {
+    position: "absolute" as const,
+    left: t.spacing.md,
+    top: t.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    paddingHorizontal: t.spacing.md - 2,
+    paddingVertical: 6,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.scrimStrong,
+  },
+  venueScoreText: {
+    ...t.typography.mono,
+    fontSize: 12,
+    lineHeight: 15,
+    color: t.colors.textOnImage,
+  },
   photoFooter: {
     position: "absolute" as const,
     left: t.spacing.md,
@@ -997,11 +1064,22 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.scrimStrong,
   },
+  venueChipLines: {
+    flexShrink: 1,
+    gap: 1,
+  },
   venueChipText: {
     fontSize: 13,
     lineHeight: 16,
     fontFamily: fonts.bold,
     color: t.colors.textOnImage,
+    flexShrink: 1,
+  },
+  venueChipMeta: {
+    ...t.typography.mono,
+    fontSize: 10.5,
+    lineHeight: 14,
+    color: t.colors.accentOnImage,
     flexShrink: 1,
   },
   photoPills: {
@@ -1055,7 +1133,9 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 28,
     fontFamily: fonts.black,
     letterSpacing: -1,
-    color: t.colors.accent,
+    // The score belongs to the olives beside it, so it takes their green
+    // rather than the primary purple.
+    color: t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   footer: {

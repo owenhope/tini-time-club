@@ -50,7 +50,7 @@ describe("RatingPips", () => {
   it("fills pips up to the rounded value", () => {
     const tree = render(<RatingPips value={3} />);
     const filled = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === lightColors.accent
+      (n) => n.props.style.backgroundColor === lightColors.secondary
     );
     expect(filled).toHaveLength(3);
   });
@@ -58,7 +58,7 @@ describe("RatingPips", () => {
   it("rounds halves to the nearest whole olive", () => {
     const tree = render(<RatingPips value={3.5} />);
     const filled = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === lightColors.accent
+      (n) => n.props.style.backgroundColor === lightColors.secondary
     );
     expect(filled).toHaveLength(4);
   });

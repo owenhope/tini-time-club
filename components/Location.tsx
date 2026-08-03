@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import { Button, RatingSummary, SectionHeader } from "@/components/shared";
+import { RatingSummary, SectionHeader } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -94,10 +94,9 @@ const Location = () => {
     ? stripNameFromAddress(displayLocation?.name ?? "", displayLocation.address)
     : null;
 
+  // City and country place the venue for everyone; the street only places it
+  // for someone already standing on it.
   const headerCityRegion = formatCityRegion(strippedAddress);
-
-  // The street line runs under the name; the city is the nav bar's job.
-  const heroStreet = strippedAddress?.split(",")[0]?.trim() || null;
 
   // Update header with custom title and back button
   useEffect(() => {
@@ -313,29 +312,6 @@ const Location = () => {
     []
   );
 
-  /** The composer, with this venue already filled in. */
-  const openComposer = useCallback(() => {
-    if (!displayLocation?.name) return;
-
-    const locationParams: ReviewLocationParams = {
-      locationName: displayLocation.name,
-      locationAddress: displayLocation.address || "",
-    };
-
-    if (displayLocation.lat && displayLocation.lon) {
-      locationParams.locationLat = displayLocation.lat.toString();
-      locationParams.locationLon = displayLocation.lon.toString();
-    }
-
-    router.push(routes.review(locationParams));
-  }, [
-    displayLocation?.name,
-    displayLocation?.address,
-    displayLocation?.lat,
-    displayLocation?.lon,
-    router,
-  ]);
-
   const renderEmpty = useCallback(() => {
     if (locationReviews.length === 0 && displayLocation?.name) {
       return (
@@ -437,9 +413,9 @@ const Location = () => {
                 >
                   {displayLocation?.name}
                 </Text>
-                {heroStreet ? (
+                {headerCityRegion ? (
                   <Text style={styles.heroAddress} numberOfLines={1}>
-                    {heroStreet}
+                    {headerCityRegion}
                   </Text>
                 ) : null}
               </View>
@@ -469,15 +445,6 @@ const Location = () => {
                   </View>
                 ) : null}
               </View>
-
-              <Button
-                title="Rate the martini here"
-                onPress={openComposer}
-                size="large"
-                icon="wine-outline"
-                iconPosition="left"
-                fullWidth
-              />
 
               <SectionHeader
                 eyebrow={

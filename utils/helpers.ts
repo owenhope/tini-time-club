@@ -74,6 +74,14 @@ const COUNTRY_ABBREVIATIONS = new Set(["USA", "UK", "UAE", "CAN", "AUS"]);
 const isRegionCode = (part: string): boolean =>
   /^[A-Z]{2,3}$/.test(part) && !COUNTRY_ABBREVIATIONS.has(part);
 
+/**
+ * "City, Country" from a Places-style address.
+ *
+ * A venue is placed by the city it's in and the country that city is in —
+ * "North Vancouver, Canada" reads to everyone, where a bare region code only
+ * reads to locals. The region is dropped, not shown alongside, so the line
+ * stays short enough for a chip.
+ */
 export const formatCityRegion = (address?: string | null): string => {
   if (!address) return "";
 
@@ -85,25 +93,29 @@ export const formatCityRegion = (address?: string | null): string => {
   if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0];
 
-  const working = [...parts];
+  const last = stripPostalCode(parts[parts.length - 1]);
+  // A trailing region code means the country was never in the string — and a
+  // two-part address is a street and a city, never a city and a country.
+  const hasCountry = !isRegionCode(last) && parts.length >= 3;
+  const country = hasCountry ? last : "";
 
-  // Drop a trailing country when one is present.
-  if (
-    working.length >= 3 &&
-    !isRegionCode(stripPostalCode(working[working.length - 1]))
-  ) {
-    working.pop();
-  }
-
-  const region = stripPostalCode(working[working.length - 1]);
-  const city = working.length >= 2 ? working[working.length - 2] : "";
+  // Walk back past the country and any region code to the city.
+  const beforeCountry = hasCountry ? parts.slice(0, -1) : parts;
+  const tail = beforeCountry[beforeCountry.length - 1]
+    ? stripPostalCode(beforeCountry[beforeCountry.length - 1])
+    : "";
+  const city =
+    isRegionCode(tail) && beforeCountry.length >= 2
+      ? beforeCountry[beforeCountry.length - 2]
+      : tail;
 
   // Two-part addresses are ambiguous: "Vancouver, BC" is city+region, but
-  // "401 Main Street, Columbia" is street+city. Only pair them up when the
-  // trailing part actually looks like a region code.
-  if (working.length === 2 && !isRegionCode(region)) {
-    return region;
+  // "401 Main Street, Columbia" is street+city.
+  if (!country) {
+    return isRegionCode(last) && parts.length >= 2
+      ? [parts[parts.length - 2], last].filter(Boolean).join(", ")
+      : last;
   }
 
-  return [city, region].filter(Boolean).join(", ");
+  return [city, country].filter(Boolean).join(", ");
 };

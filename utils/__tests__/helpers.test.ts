@@ -67,33 +67,42 @@ describe("formatRelativeDate", () => {
 // Cases taken from real rows in the locations table.
 describe("formatCityRegion", () => {
   it.each([
-    ["855 Main St, West Vancouver, BC V7T 0A5, Canada", "West Vancouver, BC"],
-    ["201 Concourse Blvd, Dresher, PA 19025, United States", "Dresher, PA"],
-    ["4238 Wilson Blvd #1130, Arlington, VA 22203, USA", "Arlington, VA"],
-    ["Como Taperia, East 7th Avenue, Vancouver, BC, Canada", "Vancouver, BC"],
-    ["SIDECUT Steakhouse, Blackcomb Way, Whistler, BC, Canada", "Whistler, BC"],
+    [
+      "855 Main St, West Vancouver, BC V7T 0A5, Canada",
+      "West Vancouver, Canada",
+    ],
+    [
+      "201 Concourse Blvd, Dresher, PA 19025, United States",
+      "Dresher, United States",
+    ],
+    ["4238 Wilson Blvd #1130, Arlington, VA 22203, USA", "Arlington, USA"],
+    ["Como Taperia, East 7th Avenue, Vancouver, BC, Canada", "Vancouver, Canada"],
+    [
+      "SIDECUT Steakhouse, Blackcomb Way, Whistler, BC, Canada",
+      "Whistler, Canada",
+    ],
     [
       "Castelli's Ristorante, California 111, Palm Desert, CA, USA",
-      "Palm Desert, CA",
+      "Palm Desert, USA",
     ],
-    ["1038 Canada Pl, Vancouver, BC V6C 0E2, Canada", "Vancouver, BC"],
-  ])("reduces %s", (input, expected) => {
+    ["1038 Canada Pl, Vancouver, BC V6C 0E2, Canada", "Vancouver, Canada"],
+  ])("reduces %s to city and country", (input, expected) => {
     expect(formatCityRegion(input)).toBe(expected);
   });
 
-  it("handles a non-US/CA address without a region code", () => {
+  it("handles an address whose city carries no region code", () => {
     expect(
       formatCityRegion(
         "76/8-9 Soi Si Bamphen, Thung Maha Mek, Sathon, Bangkok 10120, Thailand"
       )
-    ).toBe("Sathon, Bangkok");
+    ).toBe("Bangkok, Thailand");
   });
 
   it("does not mistake a street for a city in a two-part address", () => {
     expect(formatCityRegion("401 Main Street, Columbia")).toBe("Columbia");
   });
 
-  it("keeps a genuine two-part city and region", () => {
+  it("keeps a genuine two-part city and region when no country is given", () => {
     expect(formatCityRegion("Vancouver, BC")).toBe("Vancouver, BC");
   });
 
@@ -103,3 +112,4 @@ describe("formatCityRegion", () => {
     expect(formatCityRegion("")).toBe("");
   });
 });
+

@@ -85,7 +85,9 @@ const useStyles = makeStyles((t) => ({
   selected: {
     backgroundColor: t.colors.highlight,
     borderWidth: 2,
-    borderColor: t.colors.accent,
+    // The chartreuse fill carries green ink, so it takes a green edge too —
+    // the primary purple would be a third colour on one 34pt control.
+    borderColor: t.colors.secondary,
   },
   disabled: {
     opacity: 0.38,
