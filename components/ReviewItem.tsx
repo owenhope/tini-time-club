@@ -5,7 +5,6 @@ import {
   Dimensions,
   TouchableOpacity,
   Pressable,
-  Animated,
   Alert,
   type StyleProp,
   type TextStyle,
@@ -15,14 +14,17 @@ import { Image as ExpoImage } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
-import { Avatar, RatingSummary, VerifiedName } from "@/components/shared";
+import {
+  Avatar,
+  Badge,
+  RatingPips,
+  PIPS_MAX,
+  VerifiedName,
+} from "@/components/shared";
 import { Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
-import {
-  stripNameFromAddress,
-  formatRelativeDate,
-  formatCityRegion,
-} from "@/utils/helpers";
+import { formatRelativeDate } from "@/utils/helpers";
+import { getRankTier } from "@/utils/ranking";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
@@ -42,14 +44,13 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
  */
 const CARD_WIDTH = SCREEN_WIDTH - 20 * 2;
 /**
- * 4:3. A taller photo pushed the like / comment / share row under the tab bar
- * on a 6.1", so the card's primary affordance was never on screen at first
- * paint; 4:3 gives back the footer's height and its padding. Uploads are
- * stored uncropped and centre-crop here via `contentFit="cover"`.
+ * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
+ * comment / share row under the tab bar on a 6.1" — with the scores now
+ * sitting below the image as well, the photo has to give that height back.
+ * Uploads are stored uncropped and centre-crop here via `contentFit="cover"`.
  */
-const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 3) / 4);
+const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 11) / 16);
 const DOUBLE_TAP_DELAY = 300;
-const ANIMATION_DURATION = 300;
 
 const ICON_SIZES = {
   small: 20,
@@ -232,12 +233,14 @@ const AvatarWrapper = memo(
     isVerified,
     isOwnReview,
     reviewCount,
+    postedAt,
   }: {
     avatarUrl: string | null;
     username?: string;
     isVerified?: boolean;
     isOwnReview: boolean;
     reviewCount?: number | null;
+    postedAt?: string | null;
   }) => {
     const router = useRouter();
     const styles = useStyles();
@@ -254,15 +257,23 @@ const AvatarWrapper = memo(
         <Avatar
           avatarPath={avatarUrl}
           username={username}
-          size={28}
+          size={46}
           reviewCount={reviewCount}
         />
-        <VerifiedName
-          name={username || "Unknown"}
-          isVerified={isVerified}
-          style={styles.headerIdentity}
-          textStyle={styles.headerUsername}
-        />
+        <View style={styles.headerIdentity}>
+          <VerifiedName
+            name={username || "Unknown"}
+            isVerified={isVerified}
+            textStyle={styles.headerUsername}
+          />
+          {/* Timestamps are data, so they set in mono — and they belong up
+              here beside the poster, not orphaned under the comments. */}
+          {postedAt ? (
+            <Text style={styles.headerTimestamp}>
+              {formatRelativeDate(postedAt)}
+            </Text>
+          ) : null}
+        </View>
       </View>
     );
 
@@ -271,7 +282,11 @@ const AvatarWrapper = memo(
     }
 
     return (
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.7}
+        style={styles.headerProfileTap}
+      >
         {content}
       </TouchableOpacity>
     );
@@ -354,143 +369,82 @@ const CommentCount = memo(({ count }: { count: number }) => {
   return <Text style={styles.likesCount}>{count}</Text>;
 });
 
-const ReviewOverlay = memo(
-  ({
-    review,
-    overlayOpacity,
-    onToggleOverlay,
-    isOverlayVisible,
-    animateRatings,
-  }: {
-    review: Review;
-    overlayOpacity: Animated.Value;
-    onToggleOverlay: () => void;
-    isOverlayVisible: boolean;
-    animateRatings: boolean;
-  }) => {
-    const styles = useStyles();
-    const { colors } = useTheme();
-    const [fallbackLocationRating, setFallbackLocationRating] = useState<{
-      rating: number | null;
-      total_ratings: number | null;
-    } | null>(null);
-    const overallScore = calculateOverallRating(
-      review.taste,
-      review.presentation
-    );
-    const locationReviewCount =
-      review.location?.total_ratings ??
-      fallbackLocationRating?.total_ratings ??
-      0;
-    const locationRating =
-      (review.location?.rating ?? fallbackLocationRating?.rating) != null &&
-      locationReviewCount > 0
-        ? Number(review.location?.rating ?? fallbackLocationRating?.rating)
-        : null;
+/**
+ * What sits *on* the photo: the venue on a scrimStrong plate bottom-left, the
+ * spirit and type as pills bottom-right. Nothing else \u2014 the scores moved off
+ * the image and onto the card below it, where their contrast is a constant
+ * rather than a property of the picture.
+ */
+const PhotoChips = memo(({ review }: { review: Review }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
 
-    useEffect(() => {
-      let active = true;
-      if (
-        review.location?.rating != null ||
-        review.location?.id == null ||
-        fallbackLocationRating != null
-      ) {
-        return;
-      }
+  return (
+    <View style={styles.photoFooter}>
+      <Link href={`/places/${review.location?.id}`} asChild>
+        <TouchableOpacity style={styles.venueChip} activeOpacity={0.8}>
+          <Ionicons name="location" size={15} color={colors.accentOnImage} />
+          <Text style={styles.venueChipText} numberOfLines={1}>
+            {review.location?.name || "N/A"}
+          </Text>
+        </TouchableOpacity>
+      </Link>
 
-      supabase
-        .from("location_ratings")
-        .select("rating,total_ratings")
-        .eq("id", review.location.id)
-        .maybeSingle()
-        .then(({ data, error }) => {
-          if (!active || error || !data) return;
-          setFallbackLocationRating({
-            rating: data.rating ?? null,
-            total_ratings: data.total_ratings ?? 0,
-          });
-        });
-
-      return () => {
-        active = false;
-      };
-    }, [fallbackLocationRating, review.location?.id, review.location?.rating]);
-
-    return (
-      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-        <View style={styles.venueBlock}>
-          {locationRating != null ? (
-            <View style={styles.locationRatingRow}>
-              <Text style={styles.locationRatingText}>
-                {formatRating(locationRating)}
-              </Text>
-              <Text style={styles.locationRatingMeta}>
-                {locationReviewCount === 1
-                  ? "1 review"
-                  : `${locationReviewCount} reviews`}
-              </Text>
-            </View>
-          ) : null}
-          <Link href={`/places/${review.location?.id}`} asChild>
-            <TouchableOpacity style={styles.locationLinkContainer}>
-              <Text style={styles.locationName}>
-                {review.location?.name || "N/A"}
-                {"\u00a0"}
-                {/* accentOnImage rather than colors.accent: this chevron sits
-                    on the dark photo scrim in both schemes. */}
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.accentOnImage}
-                />
-              </Text>
-            </TouchableOpacity>
-          </Link>
-          {review.location?.address && (
-            <Text style={styles.locationAddress}>
-              {formatCityRegion(
-                stripNameFromAddress(
-                  review.location.name,
-                  review.location.address
-                )
-              )}
+      <View style={styles.photoPills}>
+        {review.spirit?.name ? (
+          <View style={[styles.photoPill, styles.photoPillLoud]}>
+            <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
+              {review.spirit.name}
             </Text>
-          )}
-        </View>
-
-        <View style={styles.reviewRatingBlock}>
-          <View style={styles.reviewAttributes}>
-            <View style={styles.reviewAttribute}>
-              <Text style={styles.attributeHeading}>Spirit</Text>
-              <Text style={styles.spiritText}>
-                {review.spirit?.name || "N/A"}
-              </Text>
-            </View>
-            <View style={styles.reviewAttribute}>
-              <Text style={styles.attributeHeading}>Type</Text>
-              <Text style={styles.spiritText}>
-                {review.type?.name || "N/A"}
-              </Text>
-            </View>
           </View>
-          <RatingSummary
-            overall={overallScore}
-            taste={review.taste}
-            presentation={review.presentation}
-            showReviewCount={false}
-            showOverallMeta={false}
-            showOverallHeading
-            overallPlacement="right"
-            breakdownLayout="stacked"
-            tone="onImage"
-            animateBars={animateRatings}
-          />
-        </View>
-      </Animated.View>
-    );
-  }
-);
-ReviewOverlay.displayName = "ReviewOverlay";
+        ) : null}
+        {review.type?.name ? (
+          <View style={styles.photoPill}>
+            <Text style={styles.photoPillText}>{review.type.name}</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+});
+PhotoChips.displayName = "PhotoChips";
+
+/**
+ * The two axes as olives \u2014 the brand's own scale \u2014 with the blended TTC score
+ * beside them. A review is two scores, so the card shows two, and the derived
+ * number never replaces them.
+ */
+const ReviewScores = memo(({ review }: { review: Review }) => {
+  const styles = useStyles();
+  const overall = calculateOverallRating(review.taste, review.presentation);
+
+  return (
+    <View
+      style={styles.scores}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={`Taste ${review.taste} out of ${PIPS_MAX}. Presentation ${review.presentation} out of ${PIPS_MAX}. TTC ${formatRating(overall)}.`}
+    >
+      <View style={styles.scoreAxis}>
+        <Text style={styles.scoreLabel}>Taste</Text>
+        <RatingPips value={review.taste ?? 0} size={15} accessibilityLabel="" />
+      </View>
+      <View style={styles.scoreAxis}>
+        <Text style={styles.scoreLabel}>Presentation</Text>
+        <RatingPips
+          value={review.presentation ?? 0}
+          size={15}
+          accessibilityLabel=""
+        />
+      </View>
+      <View style={styles.scoreOverall}>
+        <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
+        <Text style={styles.scoreLabel}>TTC</Text>
+      </View>
+    </View>
+  );
+});
+ReviewScores.displayName = "ReviewScores";
 CommentCount.displayName = "CommentCount";
 
 const ReviewFooter = memo(
@@ -563,21 +517,6 @@ const ReviewFooter = memo(
 
     return (
       <View style={styles.footer}>
-        <View style={styles.actionRow}>
-          <LikeButton hasLiked={hasLiked} onPress={onToggleLike} />
-          <TouchableOpacity onPress={handleShowLikes}>
-            <CommentCount count={likesCount} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleShowComments}
-            style={styles.commentButtonContainer}
-          >
-            <CommentButton onPress={handleShowComments} count={commentCount} />
-            {commentCount > 0 && <CommentCount count={commentCount} />}
-          </TouchableOpacity>
-          <ShareButton onPress={onShare} />
-        </View>
-
         {(hasCaption || (isOwnReview && onEdit)) && (
           <View style={styles.captionSection}>
             {hasCaption ? (
@@ -631,9 +570,31 @@ const ReviewFooter = memo(
           </>
         )}
 
-        <Text style={styles.timestamp}>
-          {formatRelativeDate(review.inserted_at)}
-        </Text>
+        {/* The actions sit under a hairline at the foot of the card, where
+            the design puts them — and where they stay above the tab bar. */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            onPress={handleShowLikes}
+            onLongPress={onToggleLike}
+            style={styles.action}
+            activeOpacity={0.7}
+          >
+            <LikeButton hasLiked={hasLiked} onPress={onToggleLike} />
+            <Text style={[styles.actionCount, hasLiked && styles.actionLiked]}>
+              {likesCount}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShowComments}
+            style={styles.action}
+            activeOpacity={0.7}
+          >
+            <CommentButton onPress={handleShowComments} count={commentCount} />
+            <Text style={styles.actionCount}>{commentCount}</Text>
+          </TouchableOpacity>
+          <View style={styles.actionSpacer} />
+          <ShareButton onPress={onShare} />
+        </View>
       </View>
     );
   }
@@ -681,17 +642,15 @@ const ReviewItemComponent = ({
   hideHeader = false,
   hideFooter = false,
   previewMode = false,
-  isVisible = true,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
   const styles = useStyles();
   const { colors } = useTheme();
-  const overlayOpacity = useRef(new Animated.Value(1)).current;
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(true);
   const lastTapRef = useRef<number>(0);
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
+  const tier = getRankTier(review.profile?.review_count);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -719,16 +678,6 @@ const ReviewItemComponent = ({
   const loadCommentsIfNeeded = useCallback(() => {
     if (!hasLoaded) fetchComments();
   }, [hasLoaded, fetchComments]);
-
-  // Toggle overlay visibility
-  const toggleOverlay = useCallback(() => {
-    setIsOverlayVisible(!isOverlayVisible);
-    Animated.timing(overlayOpacity, {
-      toValue: isOverlayVisible ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [isOverlayVisible, overlayOpacity]);
 
   // Handle comment patches
   useEffect(() => {
@@ -772,26 +721,6 @@ const ReviewItemComponent = ({
     }
     lastTapRef.current = now;
   }, [handleToggleLike]);
-
-  const animateOpacity = useCallback(
-    (toValue: number) => {
-      Animated.timing(overlayOpacity, {
-        toValue,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: true,
-      }).start();
-    },
-    [overlayOpacity]
-  );
-
-  const handleLongPress = useCallback(() => {
-    setIsOverlayVisible(false);
-    animateOpacity(0);
-  }, [animateOpacity]);
-  const handlePressOut = useCallback(() => {
-    setIsOverlayVisible(true);
-    animateOpacity(1);
-  }, [animateOpacity]);
 
   const handleReportSubmit = useCallback(
     async (reason: string, customReason?: string) => {
@@ -848,14 +777,10 @@ const ReviewItemComponent = ({
             cachePolicy="memory-disk"
             recyclingKey={review.id}
           />
-          <ReviewOverlay
-            review={review}
-            overlayOpacity={overlayOpacity}
-            onToggleOverlay={toggleOverlay}
-            isOverlayVisible={isOverlayVisible}
-            animateRatings={isVisible}
-          />
+          <PhotoChips review={review} />
         </View>
+
+        <ReviewScores review={review} />
 
         <ReviewFooter
           review={review}
@@ -881,12 +806,7 @@ const ReviewItemComponent = ({
 
   return (
     <>
-      <Pressable
-        style={styles.card}
-        onPress={handlePress}
-        onLongPress={handleLongPress}
-        onPressOut={handlePressOut}
-      >
+      <Pressable style={styles.card} onPress={handlePress}>
         {!hideHeader && (
           <View style={styles.header}>
             <AvatarWrapper
@@ -895,8 +815,10 @@ const ReviewItemComponent = ({
               isVerified={review.profile?.is_verified}
               isOwnReview={isOwnReview}
               reviewCount={review.profile?.review_count}
+              postedAt={review.inserted_at}
             />
             <View style={styles.headerActions}>
+              {tier ? <Badge label={tier.name} tone="green" /> : null}
               <TouchableOpacity
                 onPress={() => setActionSheetVisible(true)}
                 style={styles.actionButton}
@@ -907,7 +829,7 @@ const ReviewItemComponent = ({
                 <Ionicons
                   name="ellipsis-horizontal"
                   size={ICON_SIZES.small}
-                  color={colors.text}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -924,31 +846,10 @@ const ReviewItemComponent = ({
             cachePolicy="memory-disk"
             recyclingKey={review.id}
           />
-          <ReviewOverlay
-            review={review}
-            overlayOpacity={overlayOpacity}
-            onToggleOverlay={toggleOverlay}
-            isOverlayVisible={isOverlayVisible}
-            animateRatings={isVisible}
-          />
-          {/* Eye icon to toggle overlay - always visible */}
-          <TouchableOpacity
-            style={styles.eyeIconContainer}
-            onPress={toggleOverlay}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isOverlayVisible ? "Hide review details" : "Show review details"
-            }
-            hitSlop={HIT_SLOP}
-          >
-            <Ionicons
-              name={isOverlayVisible ? "eye" : "eye-off"}
-              size={20}
-              color={colors.textOnImage}
-            />
-          </TouchableOpacity>
+          <PhotoChips review={review} />
         </View>
+
+        <ReviewScores review={review} />
 
         {!hideFooter && (
           <ReviewFooter
@@ -1013,34 +914,54 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   header: {
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.md,
+    paddingLeft: t.spacing.lg - 1,
+    paddingRight: t.spacing.md,
+    paddingTop: t.spacing.md + 1,
+    paddingBottom: t.spacing.md,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
+    gap: t.spacing.sm,
     backgroundColor: t.colors.surface,
   },
   headerActions: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.sm,
+    gap: t.spacing.xs,
   },
   actionButton: {
     padding: t.spacing.xs,
   },
   headerUsername: {
-    ...t.typography.heading,
+    fontSize: 15,
+    lineHeight: 18,
+    fontFamily: fonts.extrabold,
+    letterSpacing: -0.15,
     color: t.colors.text,
   },
+  headerTimestamp: {
+    ...t.typography.mono,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textMuted,
+  },
   headerIdentity: {
-    alignSelf: "center" as const,
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  headerProfileTap: {
+    flex: 1,
+    minWidth: 0,
   },
   headerProfile: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     // Gap on the row, not margin on the avatar: the ranking ring wraps the
     // avatar and would swallow an inner margin.
-    gap: t.spacing.sm,
+    gap: t.spacing.md - 1,
   },
   imageContainer: {
     width: CARD_WIDTH,
@@ -1052,106 +973,126 @@ const useStyles = makeStyles((t) => ({
     height: "100%" as const,
     backgroundColor: t.colors.imagePlaceholder,
   },
-  overlay: {
+  // The only things left on the photo: where it was, and what was in it. One
+  // row, so a long venue name gives way to the pills instead of running under
+  // them.
+  photoFooter: {
     position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: t.colors.overlay,
-    padding: t.spacing.xl - 4,
-    justifyContent: "flex-end" as const,
-    gap: t.spacing.lg,
-  },
-  venueBlock: {
-    gap: t.spacing.xs,
-  },
-  reviewRatingBlock: {
-    width: "100%" as const,
-    gap: t.spacing.md,
-  },
-  reviewAttributes: {
+    left: t.spacing.md,
+    right: t.spacing.md,
+    bottom: t.spacing.md,
     flexDirection: "row" as const,
-    // Matches the overall-to-bars gap below so the overlay's two rows share
-    // one rhythm.
-    gap: t.spacing.xl,
+    alignItems: "flex-end" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.sm,
+  },
+  venueChip: {
     flexShrink: 1,
-    alignSelf: "flex-start" as const,
-  },
-  reviewAttribute: {
-    flexShrink: 1,
-    alignItems: "flex-start" as const,
-  },
-  attributeHeading: {
-    ...t.typography.caption,
-    lineHeight: 18,
-    color: "rgba(255,255,255,0.85)",
-  },
-  locationLinkContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    alignSelf: "flex-start" as const,
-    maxWidth: "100%" as const,
-  },
-  // Everything below sits on the photo scrim, so it stays light in both
-  // schemes rather than following colors.text.
-  locationName: {
-    ...t.typography.title,
-    color: t.colors.textOnImage,
-    flexShrink: 1,
-  },
-  locationAddress: {
-    ...t.typography.caption,
-    color: t.colors.textOnImage,
-  },
-  locationRatingRow: {
-    flexDirection: "row" as const,
-    alignItems: "baseline" as const,
-    gap: 6,
-  },
-  locationRatingText: {
-    ...t.typography.caption,
-    color: t.colors.textOnImage,
-    fontFamily: fonts.bold,
-  },
-  locationRatingMeta: {
-    ...t.typography.caption,
-    color: "rgba(255,255,255,0.78)",
-  },
-  eyeIconContainer: {
-    position: "absolute" as const,
-    top: t.spacing.xl - 4,
-    right: t.spacing.xl - 4,
-    width: 40,
-    height: 40,
+    gap: 7,
+    paddingLeft: t.spacing.md - 1,
+    paddingRight: t.spacing.lg - 2,
+    paddingVertical: t.spacing.sm,
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.scrimStrong,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    ...t.elevation.raised,
   },
-  spiritText: {
-    ...t.typography.heading,
+  venueChipText: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontFamily: fonts.bold,
     color: t.colors.textOnImage,
-    textTransform: "capitalize" as const,
+    flexShrink: 1,
+  },
+  photoPills: {
+    flexShrink: 0,
+    flexDirection: "row" as const,
+    gap: 6,
+  },
+  photoPill: {
+    paddingHorizontal: t.spacing.md - 1,
+    paddingVertical: 7,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.scrimStrong,
+  },
+  photoPillLoud: {
+    backgroundColor: t.colors.highlight,
+  },
+  photoPillText: {
+    ...t.typography.eyebrow,
+    fontSize: 10.5,
+    letterSpacing: 1,
+    color: t.colors.textOnImage,
+  },
+  photoPillLoudText: {
+    color: t.colors.onHighlight,
+  },
+  // A review is two scores. They read as olives — the brand's own scale —
+  // with the blended TTC number beside them, never instead of them.
+  scores: {
+    flexDirection: "row" as const,
+    alignItems: "flex-end" as const,
+    gap: t.spacing.lg,
+    paddingHorizontal: t.spacing.lg,
+    paddingTop: t.spacing.lg - 2,
+    backgroundColor: t.colors.surface,
+  },
+  scoreAxis: {
+    gap: 7,
+  },
+  scoreLabel: {
+    ...t.typography.eyebrow,
+    fontSize: 10,
+    color: t.colors.textMuted,
+  },
+  scoreOverall: {
+    flex: 1,
+    alignItems: "flex-end" as const,
+    gap: 3,
+  },
+  scoreOverallValue: {
+    fontSize: 26,
+    lineHeight: 28,
+    fontFamily: fonts.black,
+    letterSpacing: -1,
+    color: t.colors.accent,
+    fontVariant: ["tabular-nums"] as const,
   },
   footer: {
     backgroundColor: t.colors.surface,
     paddingHorizontal: t.spacing.lg,
-    paddingVertical: t.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: t.colors.divider,
+    paddingTop: t.spacing.md - 1,
   },
+  // A hairline separates the actions from the reading matter above them,
+  // rather than boxing the whole footer.
   actionRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    marginBottom: t.spacing.xs,
-    gap: t.spacing.sm,
+    gap: t.spacing.lg + 2,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.divider,
+    marginTop: t.spacing.md - 1,
+    paddingTop: t.spacing.md - 1,
+    paddingBottom: t.spacing.md + 1,
   },
-  commentButtonContainer: {
+  action: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.xs,
+    gap: 6,
+    minHeight: 28,
+  },
+  actionSpacer: {
+    flex: 1,
+  },
+  actionCount: {
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
+    color: t.colors.textSecondary,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  actionLiked: {
+    color: t.colors.like,
   },
   likesCount: {
     ...t.typography.bodyStrong,
@@ -1162,6 +1103,8 @@ const useStyles = makeStyles((t) => ({
   },
   captionText: {
     ...t.typography.body,
+    fontSize: 14,
+    lineHeight: 21,
     color: t.colors.text,
   },
   inlineBody: {
