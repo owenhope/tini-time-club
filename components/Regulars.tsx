@@ -1,11 +1,9 @@
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { useRouter } from "expo-router";
 import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
-import { useProfile } from "@/context/profile-context";
+import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { fonts, makeStyles } from "@/theme";
-import { routes } from "@/utils/routes";
 
 interface RegularsProps {
   regulars?: Regular[] | null;
@@ -48,18 +46,10 @@ const Regulars: React.FC<RegularsProps> = ({
   showLabel = true,
 }) => {
   const styles = useStyles();
-  const router = useRouter();
-  const { profile } = useProfile();
+  const openProfile = useOpenProfile();
 
-  // Your own row lands on your Profile tab — the shared /users/[username]
-  // route renders the visitor view, Follow button and all.
-  const openRegular = (regular: DisplayRegular) => {
-    if (String(profile?.id) === String(regular.profile_id)) {
-      router.navigate(routes.profile());
-    } else {
-      router.push(routes.user(regular.username));
-    }
-  };
+  const openRegular = (regular: DisplayRegular) =>
+    openProfile(regular.username, regular.profile_id);
 
   if (!regulars?.length) return null;
 

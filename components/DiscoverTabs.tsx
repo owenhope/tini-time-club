@@ -18,6 +18,7 @@ import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
 import { getRankTier } from "@/utils/ranking";
 import { fonts, makeStyles, useTheme } from "@/theme";
+import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -74,6 +75,7 @@ export default function DiscoverTabs({
     | undefined
   >(undefined); // undefined = not attempted, null = denied/failed, object = success
   const router = useRouter();
+  const openProfile = useOpenProfile();
 
   // Get user location on component mount
   useEffect(() => {
@@ -300,7 +302,7 @@ export default function DiscoverTabs({
     return (
       <TouchableOpacity
         style={styles.resultCard}
-        onPress={() => router.navigate(routes.user(item.username))}
+        onPress={() => openProfile(item.username, item.id)}
         activeOpacity={0.7}
       >
         <View style={styles.cardContent}>

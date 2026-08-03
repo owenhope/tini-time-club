@@ -10,7 +10,8 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { useGoBack } from "@/hooks/useAppNavigation";
 import databaseService from "@/services/databaseService";
 import { supabase } from "@/utils/supabase";
 import { fonts, makeStyles, useTheme } from "@/theme";
@@ -19,7 +20,7 @@ import { reportError } from "@/utils/log";
 const EditCaption = () => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const router = useRouter();
+  const goBack = useGoBack();
   const params = useLocalSearchParams<{ reviewId: string }>();
   // A caller navigating with an undefined id produces the literal string
   // "undefined" in the URL, so guard both shapes.
@@ -33,7 +34,7 @@ const EditCaption = () => {
     if (!reviewId) {
       // Nothing actionable for the user here — just leave quietly.
       reportError("edit-caption opened without a reviewId");
-      router.back();
+      goBack();
       return;
     }
 
@@ -46,7 +47,7 @@ const EditCaption = () => {
       if (userError) throw userError;
       if (!user) {
         Alert.alert("Error", "Please sign in again to edit this review");
-        router.back();
+        goBack();
         return;
       }
 
@@ -62,7 +63,7 @@ const EditCaption = () => {
 
       if (!data) {
         Alert.alert("Error", "You can only edit your own reviews");
-        router.back();
+        goBack();
         return;
       }
 
@@ -70,11 +71,11 @@ const EditCaption = () => {
     } catch (error) {
       reportError("Error loading review:", error);
       Alert.alert("Error", "Failed to load review");
-      router.back();
+      goBack();
     } finally {
       setLoading(false);
     }
-  }, [reviewId, router]);
+  }, [reviewId, goBack]);
 
   useEffect(() => {
     void loadReview();
@@ -89,7 +90,7 @@ const EditCaption = () => {
         comment: caption.trim(),
       });
 
-      router.back();
+      goBack();
     } catch (error) {
       reportError("Error updating caption:", error);
       Alert.alert("Error", "Failed to update caption");
@@ -134,7 +135,7 @@ const EditCaption = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
-              onPress={() => router.back()}
+              onPress={() => goBack()}
               disabled={saving}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>

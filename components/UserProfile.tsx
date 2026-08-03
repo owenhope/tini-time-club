@@ -18,6 +18,7 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
+import { useGoBack } from "@/hooks/useAppNavigation";
 import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
@@ -43,6 +44,7 @@ const UserProfile = () => {
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
+  const goBack = useGoBack();
   const navigation = useNavigation();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
@@ -377,7 +379,7 @@ const UserProfile = () => {
         >
           <Text style={styles.errorButtonText}>Try again</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={goBack}>
           <Text style={styles.errorLink}>Go back</Text>
         </TouchableOpacity>
       </View>

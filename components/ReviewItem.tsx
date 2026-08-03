@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import {
@@ -34,7 +34,7 @@ import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { routes } from "@/utils/routes";
+import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
 
 // Constants
@@ -231,26 +231,24 @@ const AvatarWrapper = memo(
     avatarUrl,
     username,
     isVerified,
-    isOwnReview,
+    authorId,
     reviewCount,
     postedAt,
   }: {
     avatarUrl: string | null;
     username?: string;
     isVerified?: boolean;
-    isOwnReview: boolean;
+    authorId?: string | null;
     reviewCount?: number | null;
     postedAt?: string | null;
   }) => {
-    const router = useRouter();
+    const openProfile = useOpenProfile();
     const styles = useStyles();
 
-    const handlePress = useCallback(() => {
-      if (!isOwnReview && username) {
-        // Shared route: resolves inside whichever tab stack is rendering.
-        router.push(routes.user(username));
-      }
-    }, [isOwnReview, username, router]);
+    const handlePress = useCallback(
+      () => openProfile(username, authorId),
+      [openProfile, username, authorId]
+    );
 
     const content = (
       <View style={styles.headerProfile}>
@@ -276,10 +274,6 @@ const AvatarWrapper = memo(
         </View>
       </View>
     );
-
-    if (isOwnReview) {
-      return content;
-    }
 
     return (
       <TouchableOpacity
@@ -533,15 +527,9 @@ const ReviewFooter = memo(
     loadCommentsIfNeeded: () => void;
   }) => {
     const styles = useStyles();
-    const router = useRouter();
 
     // Shared route: resolves inside whichever tab stack is rendering.
-    const openProfile = useCallback(
-      (username?: string | null) => {
-        if (username) router.push(routes.user(username));
-      },
-      [router]
-    );
+    const openProfile = useOpenProfile();
 
     const handleShowComments = useCallback(() => {
       loadCommentsIfNeeded(); // Ensure comments are loaded before showing
@@ -571,10 +559,8 @@ const ReviewFooter = memo(
                 body={review.comment}
                 usernameStyle={styles.captionUsername}
                 bodyStyle={styles.captionText}
-                onUsernamePress={
-                  isOwnReview
-                    ? undefined
-                    : () => openProfile(review.profile?.username)
+                onUsernamePress={() =>
+                  openProfile(review.profile?.username, review.profile?.id)
                 }
               />
             ) : (
@@ -600,7 +586,9 @@ const ReviewFooter = memo(
                   isVerified={c.profile?.is_verified}
                   body={c.body}
                   usernameStyle={styles.commentUsername}
-                  onUsernamePress={() => openProfile(c.profile?.username)}
+                  onUsernamePress={() =>
+                    openProfile(c.profile?.username, c.profile?.id)
+                  }
                 />
               </TouchableOpacity>
             ))}
@@ -845,7 +833,7 @@ const ReviewItemComponent = ({
               avatarUrl={review.profile?.avatar_url || null}
               username={review.profile?.username}
               isVerified={review.profile?.is_verified}
-              isOwnReview={isOwnReview}
+              authorId={review.profile?.id}
               reviewCount={review.profile?.review_count}
               postedAt={review.inserted_at}
             />

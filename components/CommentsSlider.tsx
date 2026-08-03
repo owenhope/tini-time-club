@@ -10,17 +10,16 @@ import BottomSheet, {
   type BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
 import { useProfile } from "@/context/profile-context";
+import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import ReportModal from "@/components/ReportModal";
-import { useRouter } from "expo-router";
 import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Review } from "@/types/types";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
-import { routes } from "@/utils/routes";
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -77,7 +76,7 @@ export default function CommentsSlider({
   onCommentAdded,
 }: CommentsSliderProps) {
   const { profile } = useProfile();
-  const router = useRouter();
+  const openProfile = useOpenProfile();
   const styles = useStyles();
   const { colors } = useTheme();
   const [comments, setComments] = useState<any[]>([]);
@@ -153,15 +152,8 @@ export default function CommentsSlider({
     ]);
   };
 
-  const navigateToUserProfile = (username: string, userId: string) => {
-    // Don't navigate if it's the current user's profile
-    if (profile?.id === userId) return;
-
-    if (username) {
-      // Shared route: resolves inside whichever tab stack is rendering.
-      router.push(routes.user(username));
-    }
-  };
+  const navigateToUserProfile = (username: string, userId: string) =>
+    openProfile(username, userId);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
