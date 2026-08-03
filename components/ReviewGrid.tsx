@@ -12,7 +12,6 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { Image as ExpoImage } from "expo-image";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
@@ -73,10 +72,6 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  // Read here, not inside the Modal: a RN Modal renders in its own view
-  // hierarchy, so SafeAreaView inside it gets zero insets and the bar rode up
-  // under the status bar.
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const [active, setActive] = useState<Review | null>(null);
 

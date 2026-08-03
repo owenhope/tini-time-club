@@ -41,11 +41,14 @@ const summaryLabel = (tree: renderer.ReactTestRenderer): string => {
 };
 
 describe("RatingSummary", () => {
-  it("states the scale rather than leaving a bare number", () => {
+  it("labels the score and both meters", () => {
     const tree = render(
       <RatingSummary overall={4.2} taste={4.1} presentation={4.4} />
     );
-    expect(textContent(tree)).toContain("out of 5");
+    const text = textContent(tree);
+    expect(text).toContain("Overall");
+    expect(text).toContain("Taste");
+    expect(text).toContain("Presentation");
   });
 
   it("composes one screen-reader sentence covering every value", () => {
@@ -88,17 +91,8 @@ describe("RatingSummary", () => {
     expect(text).toContain("3.3");
   });
 
-  it("compact variant carries the same composed label", () => {
-    const tree = render(
-      <RatingSummary
-        overall={4.2}
-        taste={4.1}
-        presentation={4.4}
-        reviewCount={47}
-        variant="compact"
-      />
-    );
-    expect(summaryLabel(tree)).toContain("Overall 4.2 out of 5");
-    expect(summaryLabel(tree)).toContain("47 reviews");
+  it("states the scale in the composed label, not as chrome", () => {
+    const tree = render(<RatingSummary overall={4.2} taste={4.1} />);
+    expect(summaryLabel(tree)).toContain("out of 5");
   });
 });

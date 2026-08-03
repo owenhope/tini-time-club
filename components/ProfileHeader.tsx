@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { Avatar, StatCard, type Metric } from "@/components/shared";
+import { Avatar, StatCard } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
 
@@ -34,6 +34,14 @@ interface ProfileHeaderProps {
   tags?: React.ReactNode;
   /** Rendered between the bio and the action row (favourite location, etc.). */
   children?: React.ReactNode;
+}
+
+/** One of the three stat tiles under the identity block. */
+interface Metric {
+  key: string;
+  value: number | string;
+  label: string;
+  onPress?: () => void;
 }
 
 const AVATAR_SIZE = 84;

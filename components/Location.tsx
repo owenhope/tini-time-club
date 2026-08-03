@@ -25,7 +25,7 @@ import {
   type Regular,
 } from "@/services/regularsService";
 import { reportError } from "@/utils/log";
-import { routes, type ReviewLocationParams } from "@/utils/routes";
+import { routes } from "@/utils/routes";
 
 // Helper function to format price level
 
@@ -269,7 +269,7 @@ const Location = () => {
         locationId: formattedLocation.id,
         locationName: formattedLocation.name,
       });
-    } catch (err) {
+    } catch {
       // .single() rejects when the location isn't in the DB yet — fall back
       // to the params-built minimal location via displayLocation.
       setSelectedLocation(null);
@@ -427,7 +427,6 @@ const Location = () => {
                   competing for 402pt, and the regulars as a rail underneath. */}
               <View style={styles.overviewCard}>
                 <RatingSummary
-                  variant="headline"
                   overall={displayLocation?.rating}
                   taste={displayLocation?.taste_avg}
                   presentation={displayLocation?.presentation_avg}

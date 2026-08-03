@@ -61,7 +61,6 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
 const Profile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const [avatar, setAvatar] = useState<string | null>(null);
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
@@ -95,25 +94,6 @@ const Profile = () => {
     favoriteLocationId: profile?.favorite_location_id,
     reviewOptions: { limit: 50, offset: 0 },
   });
-
-  useEffect(() => {
-    if (profile?.avatar_url) {
-      try {
-        const publicUrl = supabase.storage
-          .from("avatars")
-          .getPublicUrl(profile.avatar_url).data.publicUrl;
-        setAvatar(publicUrl);
-        setAvatarError(null);
-      } catch (error) {
-        reportError("Error fetching avatar URL:", error);
-        setAvatarError("Couldn't load your photo");
-      }
-    } else {
-      // No avatar set yet — not an error, the placeholder initial is shown.
-      setAvatar(null);
-      setAvatarError(null);
-    }
-  }, [profile?.avatar_url]);
 
   useEffect(() => {
     if (profile) {
@@ -252,7 +232,6 @@ const Profile = () => {
         // Clear review caches to ensure fresh avatar data in reviews
         await databaseService.clearReviewCaches();
 
-        setAvatar(urlData.publicUrl);
         setAvatarError(null);
         setAvatarLoading(false);
 

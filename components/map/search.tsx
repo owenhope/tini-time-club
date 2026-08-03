@@ -33,23 +33,6 @@ interface SearchProps {
   currentLocation: { latitude: number; longitude: number } | null;
 }
 
-interface SearchResult {
-  place_id: string;
-  name: string;
-  formatted_address?: string;
-  vicinity?: string;
-  geometry?: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-    viewport?: {
-      northeast: { lat: number; lng: number };
-      southwest: { lat: number; lng: number };
-    };
-  };
-  types?: string[];
-}
 
 const Search = forwardRef<any, SearchProps>(
   ({ onPlaceSelected, currentLocation }, ref) => {
@@ -57,7 +40,7 @@ const Search = forwardRef<any, SearchProps>(
     const { colors } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+    const [, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sessionTokenRef = useRef<string | null>(null);
 

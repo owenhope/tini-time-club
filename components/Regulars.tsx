@@ -9,35 +9,13 @@ import { routes } from "@/utils/routes";
 
 interface RegularsProps {
   regulars?: Regular[] | null;
-  variant?: "default" | "compact" | "dense" | "rail";
+  variant?: "default" | "compact" | "rail";
   showLabel?: boolean;
   /** Rendered on a green ground, where the default greys disappear. */
   onInk?: boolean;
 }
 
 type DisplayRegular = Regular & { isPreview?: boolean };
-
-/**
- * Placeholder for the dense Regulars column while regulars load, sized to the
- * loaded rows so the surrounding layout doesn't shift when data arrives.
- */
-export const RegularsSkeleton = () => {
-  const styles = useStyles();
-  return (
-    <View style={styles.denseSection}>
-      <Skeleton width={52} height={12} />
-      {[0, 1, 2].map((i) => (
-        <View key={i} style={styles.densePerson}>
-          <Skeleton circle height={26} />
-          <View style={styles.skeletonIdentity}>
-            <Skeleton width="80%" height={10} />
-            <Skeleton width="50%" height={8} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-};
 
 /** Rail-shaped placeholder, so the venue header doesn't grow when regulars land. */
 export const RegularsRailSkeleton = ({
@@ -206,45 +184,6 @@ const Regulars: React.FC<RegularsProps> = ({
     );
   }
 
-  if (variant === "dense") {
-    const renderDenseRegular = (regular: DisplayRegular) => (
-      <Pressable
-        key={regular.profile_id}
-        onPress={regular.isPreview ? undefined : () => openRegular(regular)}
-        style={({ pressed }) => [styles.densePerson, pressed && styles.pressed]}
-        accessibilityRole={regular.isPreview ? "text" : "link"}
-        accessibilityLabel={`${regular.username}, regular with ${regular.review_count} reviews`}
-      >
-        <Avatar
-          avatarPath={regular.avatar_url}
-          username={regular.username}
-          size={26}
-          reviewCount={regular.profile_review_count}
-        />
-        <View style={styles.identity}>
-          <VerifiedName
-            name={regular.username}
-            isVerified={regular.is_verified}
-            badgeSize={12}
-            onDark={onInk}
-            textStyle={[styles.denseUsername, onInk && styles.onInkText]}
-          />
-          <Text style={[styles.denseReviewCount, onInk && styles.onInkMeta]}>
-            {regular.review_count}{" "}
-            {regular.review_count === 1 ? "review" : "reviews"}
-          </Text>
-        </View>
-      </Pressable>
-    );
-
-    return (
-      <View style={styles.denseSection}>
-        <Text style={[styles.label, onInk && styles.onInkMeta]}>Regulars</Text>
-        {displayRegulars.map(renderDenseRegular)}
-      </View>
-    );
-  }
-
   return (
     <View style={styles.section}>
       <Text style={styles.label}>Regulars</Text>
@@ -292,9 +231,6 @@ const useStyles = makeStyles((t) => ({
     marginTop: 0,
     gap: 0,
   },
-  denseSection: {
-    gap: 6,
-  },
   label: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
@@ -331,12 +267,6 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     gap: t.spacing.sm,
   },
-  densePerson: {
-    minHeight: 30,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.sm,
-  },
   pressed: {
     opacity: 0.6,
   },
@@ -350,27 +280,12 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     minWidth: 0,
   },
-  skeletonIdentity: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
   username: {
     ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   reviewCount: {
     ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  denseUsername: {
-    fontSize: 13,
-    lineHeight: 15,
-    fontFamily: fonts.semibold,
-    color: t.colors.text,
-  },
-  denseReviewCount: {
-    ...t.typography.micro,
     color: t.colors.textSecondary,
   },
   onInkText: {

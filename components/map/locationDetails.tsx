@@ -49,7 +49,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({ loc }) => {
           less width than the page did, so the columns truncated here first. */}
       <View style={styles.overview}>
         <RatingSummary
-          variant="headline"
           overall={loc.rating}
           taste={loc.taste_avg}
           presentation={loc.presentation_avg}

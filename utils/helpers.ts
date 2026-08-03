@@ -1,8 +1,3 @@
-interface StripNameFromAddressParams {
-  name: string;
-  address: string;
-}
-
 interface StripNameFromAddressFunction {
   (name: string, address: string): string;
 }

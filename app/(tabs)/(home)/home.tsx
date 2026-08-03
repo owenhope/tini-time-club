@@ -152,7 +152,6 @@ function Home() {
 
       try {
         const start = nextPage * PAGE_SIZE;
-        const end = start + PAGE_SIZE - 1;
 
         // Get reviews using optimized database service
         const reviewsDataFromDB = await databaseService.getReviews({
