@@ -29,10 +29,7 @@ import { mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
-import {
-  getRegularsByLocation,
-  type Regular,
-} from "@/services/regularsService";
+import { withRegulars, type Regular } from "@/services/regularsService";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams } from "expo-router";
@@ -284,7 +281,7 @@ function Map() {
       if (error) {
         reportError("Error fetching locations in view:", error);
       } else {
-        const nextLocations = (data ?? []).filter(
+        const nextLocations: MapLocation[] = (data ?? []).filter(
           (location: MapLocation) =>
             Number.isFinite(location.lat) && Number.isFinite(location.long)
         );
@@ -292,16 +289,9 @@ function Map() {
         setLocations(nextLocations);
 
         try {
-          const regularsByLocation = await getRegularsByLocation(
-            nextLocations.map((location: MapLocation) => location.id)
-          );
+          const withTheirRegulars = await withRegulars(nextLocations);
           if (requestId !== fetchRequestRef.current) return;
-          setLocations(
-            nextLocations.map((location: MapLocation) => ({
-              ...location,
-              regulars: regularsByLocation.get(String(location.id)) ?? [],
-            }))
-          );
+          setLocations(withTheirRegulars);
         } catch (regularsError) {
           reportError("Error fetching map regulars:", regularsError);
         }

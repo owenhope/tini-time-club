@@ -13,7 +13,7 @@ import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
-import { getRegularsByLocation } from "@/services/regularsService";
+import { withRegulars } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
 import { getRankTier } from "@/utils/ranking";
@@ -227,15 +227,7 @@ export default function DiscoverTabs({
           })
           .slice(0, 20);
 
-        const regularsByLocation = await getRegularsByLocation(
-          sortedLocations.map((location) => location.id)
-        );
-        setLocations(
-          sortedLocations.map((location) => ({
-            ...location,
-            regulars: regularsByLocation.get(String(location.id)) ?? [],
-          }))
-        );
+        setLocations(await withRegulars(sortedLocations));
       } else {
         // Server-side fuzzy search: matches name or address, tolerates
         // typos via trigram similarity, and ranks name hits first.
@@ -271,15 +263,7 @@ export default function DiscoverTabs({
           }
         );
 
-        const regularsByLocation = await getRegularsByLocation(
-          processedLocations.map((location) => location.id)
-        );
-        setLocations(
-          processedLocations.map((location) => ({
-            ...location,
-            regulars: regularsByLocation.get(String(location.id)) ?? [],
-          }))
-        );
+        setLocations(await withRegulars(processedLocations));
       }
     } catch (error) {
       reportError("Error fetching locations:", error);

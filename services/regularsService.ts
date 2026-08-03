@@ -28,6 +28,27 @@ export interface ProfileRegularPlace {
 const REGULARS_CACHE_TTL_MS = 2 * 60 * 1000;
 const regularsCache = new Map<string, { at: number; regulars: Regular[] }>();
 
+/**
+ * Attach each location's regulars to it in one round trip.
+ *
+ * Four call sites were writing this same map-and-merge by hand — and the
+ * `?? []` matters: a location with no regulars has to end up with an empty
+ * array, not undefined, or the row renders its loading skeleton forever.
+ */
+export async function withRegulars<T extends { id: number | string }>(
+  locations: T[],
+  options?: { maxAgeMs?: number }
+): Promise<(T & { regulars: Regular[] })[]> {
+  const grouped = await getRegularsByLocation(
+    locations.map((location) => location.id),
+    options
+  );
+  return locations.map((location) => ({
+    ...location,
+    regulars: grouped.get(String(location.id)) ?? [],
+  }));
+}
+
 export async function getRegularsByLocation(
   locationIds: (number | string)[],
   { maxAgeMs = REGULARS_CACHE_TTL_MS }: { maxAgeMs?: number } = {}
