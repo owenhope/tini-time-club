@@ -74,8 +74,12 @@ jest.mock("@/components/shared", () => {
   const { Text: RNText } = require("react-native");
   return {
     Avatar: () => null,
+    Badge: () => null,
+    RatingPips: () => null,
+    PIPS_MAX: 5,
     RatingSummary: () => null,
-    VerifiedName: ({ name }: any) => ReactActual.createElement(RNText, null, name),
+    VerifiedName: ({ name }: any) =>
+      ReactActual.createElement(RNText, null, name),
   };
 });
 
