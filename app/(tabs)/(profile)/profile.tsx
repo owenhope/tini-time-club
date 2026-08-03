@@ -207,11 +207,11 @@ const Profile = () => {
 
         if (updateResult.error) {
           reportError("Error updating profile:", updateResult.error);
-          setAvatarError(
-            `Profile update failed: ${
-              updateResult.error.message || updateResult.error
-            }`
-          );
+          const reason =
+            updateResult.error instanceof Error
+              ? updateResult.error.message
+              : String(updateResult.error);
+          setAvatarError(`Profile update failed: ${reason}`);
           setAvatarLoading(false);
           return;
         }

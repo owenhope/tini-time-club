@@ -289,7 +289,11 @@ export default function App() {
     }
   };
 
-  const handleUploadAndCreateReview = async (formData: any) => {
+  const handleUploadAndCreateReview = async () => {
+    // Post is disabled without a signed-in member; the guard is here so the
+    // upload path can't be entered with a null profile at all.
+    if (!profile) return;
+
     try {
       setIsSubmitting(true);
       setSubmitError(null);
