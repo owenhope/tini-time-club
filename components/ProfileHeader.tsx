@@ -41,6 +41,13 @@ interface ProfileHeaderProps {
    * disabled chrome around a chartreuse button.
    */
   action?: React.ReactNode;
+  /** Sits on the title row — settings on your own profile. */
+  titleAction?: React.ReactNode;
+  /**
+   * Safe-area top inset. The own-profile screen has no nav bar — the block
+   * titles it — so the block has to clear the status bar itself.
+   */
+  topInset?: number;
 }
 
 /** One of the three stat tiles under the identity block. */
@@ -76,6 +83,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   tags,
   children,
   action,
+  titleAction,
+  topInset = 0,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -109,9 +118,26 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   ];
 
   return (
-    <View style={styles.container}>
-      {/* Identity first, at the size the design sets it: the face, the name,
-          the handle and the tier the member holds. */}
+    <View style={[styles.container, { paddingTop: topInset + 16 }]}>
+      {/* The screen names itself the way Places and Discover do — the handle
+          in the display cut — and the settings control shares its row. */}
+      <View style={styles.titleRow}>
+        {/* Scaled to the handle it has to carry: a short one gets the full
+            display size, a long one shrinks to fit rather than truncating.
+            Measured by glyph, not character count, so "WWWWWWWW" and
+            "iiiiiiii" both land right. */}
+        <Text
+          style={styles.screenTitle}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.55}
+        >
+          {profile.username}
+        </Text>
+        {titleAction}
+      </View>
+
+      {/* Then the face, the name and the tier the member holds. */}
       <View style={styles.topRow}>
         <Pressable
           onPress={isOwnProfile ? onAvatarPress : undefined}
@@ -138,9 +164,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <View style={styles.identity}>
           <Text style={styles.name} numberOfLines={1}>
             {profile.name || profile.username}
-          </Text>
-          <Text style={styles.handle} numberOfLines={1}>
-            @{profile.username}
           </Text>
           <View style={styles.identityFoot}>
             {rank.tier ? (
@@ -229,6 +252,22 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.lg,
     backgroundColor: t.colors.surfaceInkDeep,
+  },
+  titleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+  },
+  // The display cut is lowercase by rule, but a handle is a name: it keeps
+  // whatever case its owner chose.
+  screenTitle: {
+    ...t.typography.display,
+    fontSize: 30,
+    lineHeight: 34,
+    textTransform: "none" as const,
+    color: t.colors.onInk,
+    flexShrink: 1,
   },
   topRow: {
     flexDirection: "row" as const,

@@ -12,7 +12,7 @@ import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
 import ProfileBody from "@/components/profile/ProfileBody";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Button, VerifiedName } from "@/components/shared";
+import { Button } from "@/components/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
@@ -171,16 +171,8 @@ const UserProfile = () => {
   useEffect(() => {
     if (displayProfile) {
       navigation.setOptions({
-        headerTitle: () => (
-          <VerifiedName
-            name={displayProfile.username}
-            isVerified={displayProfile.is_verified}
-            badgeSize={15}
-            onDark
-            style={styles.headerTitleContainer}
-            textStyle={styles.headerTitle}
-          />
-        ),
+        // The block titles the screen; the bar keeps only the controls.
+        headerTitle: () => null,
         headerRight: () => (
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -521,9 +513,6 @@ const useStyles = makeStyles((t) => ({
     fontFamily: fonts.regular,
     fontSize: 15,
     color: t.colors.textSecondary,
-  },
-  headerTitleContainer: {
-    alignItems: "center" as const,
   },
   headerTitle: {
     fontSize: 20,

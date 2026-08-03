@@ -9,9 +9,8 @@ import {
   RefreshControl,
   Image,
   Alert,
-  Animated,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
@@ -27,8 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
 import { Button, Input, SectionHeader } from "@/components/shared";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
@@ -52,7 +50,8 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 
 function Home() {
   const styles = useStyles();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { profile, updateProfile, acceptEULA } = useProfile();
   const router = useRouter();
   const [selectedCommentReview, setSelectedCommentReview] =
@@ -83,21 +82,18 @@ function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
-  // Same scroll-following collapse as every other shrinking header.
-  const { progress: headerProgress, onScroll: handleScroll } =
-    useCollapsibleHeader();
-  const logoScale = headerProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.82],
-  });
-  const headerHeight = headerProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [56, 44],
-  });
+  // A different line every day of the week — the block is the first thing the
+  // club says to you, and saying the same thing seven days running is how a
+  // welcome stops being read.
+  const greeting = getTiniTimeGreeting();
 
   useEffect(() => {
     if (profile?.id) {
-      loadReviews(true);
+      // Silent: the pull-to-refresh spinner belongs to a pull. A load the app
+      // started itself has the first-run loader (or nothing) to show for it,
+      // and flipping `refreshing` here left the control parked on screen,
+      // pushing the feed down by its height.
+      loadReviews(true, true);
     }
   }, [profile?.id]);
 
@@ -568,25 +564,14 @@ function Home() {
    * uppercase tracked eyebrow over a lowercase display headline, which is the
    * wordmark's own voice.
    */
-  const renderFeedHeader = useCallback(() => {
-    // A different greeting every day of the week — the block is the first
-    // thing the club says to you, and saying the same thing seven days
-    // running is how a welcome stops being read.
-    const greeting = getTiniTimeGreeting();
-
-    return (
+  const renderFeedHeader = useCallback(
+    () => (
       <View style={styles.feedHeader}>
-        <View style={styles.tiniBanner}>
-          <Text style={styles.tiniEyebrow}>
-            {new Date().toLocaleDateString(undefined, { weekday: "long" })}
-          </Text>
-          <Text style={styles.tiniHeadline}>{greeting.headline}</Text>
-          <Text style={styles.tiniSubline}>{greeting.subline}</Text>
-        </View>
         <SectionHeader eyebrow="The club" title="From your people" />
       </View>
-    );
-  }, [styles]);
+    ),
+    [styles]
+  );
 
   const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
@@ -692,46 +677,45 @@ function Home() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header with add button, logo and search icon */}
-      <Animated.View style={[styles.header, { height: headerHeight }]}>
-        <TouchableOpacity
-          style={styles.addButtonContainer}
-          onPress={() => router.push(routes.review())}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Share a Martini review"
-        >
-          <Ionicons name="add" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Animated.Image
-          key={isDark ? "home-logo-dark" : "home-logo-light"}
-          accessibilityRole="header"
-          accessibilityLabel="Tini Time Club"
-          source={require("@/assets/images/tini-time-logo-2x.png")}
-          // The logo artwork is dark green; on the dark surface it drops to
-          // roughly 1.5:1. Tint it to the text colour there. Light mode keeps
-          // the original two-colour mark.
-          style={[
-            styles.headerLogo,
-            {
-              tintColor: isDark ? colors.text : undefined,
-              transform: [{ scale: logoScale }],
-            },
-          ]}
-          // Contain, not cover: the mark is square and a wide box cropped it.
-          resizeMode="contain"
-        />
-        <TouchableOpacity
-          style={styles.searchIconContainer}
-          onPress={navigateToDiscover}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Search people and places"
-        >
-          <Ionicons name="search-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </Animated.View>
+    <View style={styles.container}>
+      {/* The same green header every tab root wears: the club's line for the
+          day where the other screens put their name, with compose and search
+          on the row above it. */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity
+            onPress={() => router.push(routes.review())}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="Share a Martini review"
+          >
+            <Ionicons name="add" size={26} color={colors.onInk} />
+          </TouchableOpacity>
+          <Image
+            accessibilityRole="header"
+            accessibilityLabel="Tini Time Club"
+            source={require("@/assets/images/tini-time-logo-2x.png")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <TouchableOpacity
+            onPress={navigateToDiscover}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="Search people and places"
+          >
+            <Ionicons name="search-outline" size={24} color={colors.onInk} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.greeting}>
+          <Text style={styles.greetingEyebrow}>
+            {new Date().toLocaleDateString(undefined, { weekday: "long" })}
+          </Text>
+          <Text style={styles.greetingHeadline}>{greeting.headline}</Text>
+          <Text style={styles.greetingSubline}>{greeting.subline}</Text>
+        </View>
+      </View>
 
       <FlatList
         ref={flatListRef}
@@ -759,8 +743,6 @@ function Home() {
         // dozen screens of content and photo decodes before first paint.
         initialNumToRender={3}
         windowSize={5}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
       />
 
       <EULAModal
@@ -852,7 +834,7 @@ function Home() {
           }}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -860,77 +842,67 @@ const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
   // A plain bar: compose left, the wordmark centred, search right. No
   // shadow — the banner below it is what separates the header from the feed.
+  // Green, like every other tab root's header, and it carries the greeting
+  // where the others carry their name.
   header: {
+    backgroundColor: t.colors.surfaceInk,
+    paddingHorizontal: t.spacing.gutter,
+    paddingBottom: t.spacing.lg,
+    gap: t.spacing.md,
+  },
+  headerTop: {
     flexDirection: "row" as const,
-    paddingHorizontal: t.spacing.md,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
+    justifyContent: "space-between" as const,
   },
   headerLogo: {
-    width: 96,
-    height: 42,
+    width: 74,
+    height: 34,
+    tintColor: t.colors.onInk,
   },
-  addButtonContainer: {
-    position: "absolute" as const,
-    left: t.spacing.lg,
-    padding: t.spacing.sm,
+  greeting: {
+    gap: 6,
   },
-  searchIconContainer: {
-    position: "absolute" as const,
-    right: t.spacing.lg,
-    padding: t.spacing.sm,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    gap: 10,
-  },
-  loadingText: {
-    fontSize: 15,
-    color: t.colors.accent,
-    fontFamily: fonts.medium,
-  },
-  emptyContainer: {
-    padding: t.spacing.xl - 4,
-    alignItems: "center" as const,
-    gap: 10,
-  },
-  errorText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: t.colors.danger,
-    textAlign: "center" as const,
-    marginBottom: 10,
-  },
-  feedHeader: {
-    paddingHorizontal: t.spacing.gutter,
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.lg,
-    gap: t.spacing.lg,
-  },
-  // One flat-colour block per screen, in the "club / insider" deep green.
-  tiniBanner: {
-    backgroundColor: t.colors.surfaceInkDeep,
-    borderRadius: t.radius.card,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.lg,
-    gap: t.spacing.sm,
-  },
-  tiniEyebrow: {
+  greetingEyebrow: {
     ...t.typography.eyebrow,
     color: t.colors.highlight,
   },
-  tiniHeadline: {
+  greetingHeadline: {
     ...t.typography.display,
     fontSize: 30,
-    lineHeight: 30,
+    lineHeight: 34,
     color: t.colors.onInk,
   },
-  tiniSubline: {
+  greetingSubline: {
     ...t.typography.caption,
-    color: t.colors.onInk,
-    opacity: 0.8,
+    color: t.colors.accentOnImage,
+  },
+  feedHeader: {
+    paddingTop: t.spacing.lg,
+    paddingBottom: t.spacing.md,
+    paddingHorizontal: t.spacing.gutter,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: t.spacing.md,
+    backgroundColor: t.colors.background,
+  },
+  loadingText: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+  },
+  emptyContainer: {
+    alignItems: "center" as const,
+    paddingHorizontal: t.spacing.gutter,
+    paddingVertical: t.spacing.xxl,
+    gap: t.spacing.md,
+  },
+  errorText: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
   },
   footerLoader: {
     flexDirection: "row" as const,

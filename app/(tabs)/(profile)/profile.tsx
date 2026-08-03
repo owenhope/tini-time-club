@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
@@ -12,7 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
-import { VerifiedName } from "@/components/shared";
 import ProfileHeader from "@/components/ProfileHeader";
 import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
@@ -51,6 +51,7 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
 const Profile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
@@ -85,51 +86,11 @@ const Profile = () => {
     reviewOptions: { limit: 50, offset: 0 },
   });
 
+  // No nav bar: the identity block titles the screen, the way Places and
+  // Discover do.
   useEffect(() => {
-    if (profile) {
-      navigation.setOptions({
-        headerTitle: () => (
-          <VerifiedName
-            name={profile.username}
-            isVerified={profile.is_verified}
-            badgeSize={15}
-            onDark
-            style={styles.headerTitleContainer}
-            textStyle={styles.headerTitle}
-          />
-        ),
-        headerLeft: () => null,
-        headerRight: () => (
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              // navigation.navigate targets the sibling screen in this tab's
-              // stack; expo-router's useNavigation() has no typed param list,
-              // so the cast is unavoidable without switching to router.push
-              // (which would change back behavior).
-              onPress={() => navigation.navigate("settings" as never)}
-              style={styles.headerButton}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Profile settings"
-            >
-              <Ionicons
-                name="settings-outline"
-                size={24}
-                color={colors.onInk}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-        // The nav bar continues the identity block's deep-green ground rather
-        // than sitting on it as a white seam.
-        headerStyle: {
-          backgroundColor: colors.surfaceInkDeep,
-        },
-        headerShadowVisible: false,
-        headerTintColor: colors.onInk,
-      });
-    }
-  }, [profile, navigation, colors, styles]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   // Focus-refresh staleness gate; pull-to-refresh bypasses it via isRefresh.
   const PROFILE_REFRESH_AFTER = 30 * 1000;
@@ -378,6 +339,17 @@ const Profile = () => {
         onAvatarPress={pickImage}
         avatarLoading={avatarLoading}
         avatarError={avatarError}
+        topInset={insets.top}
+        titleAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate("settings" as never)}
+            hitSlop={HIT_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="Profile settings"
+          >
+            <Ionicons name="settings-outline" size={24} color={colors.onInk} />
+          </TouchableOpacity>
+        }
         onAvatarLongPress={
           __DEV__ ? () => setRankPreviewOpen((open) => !open) : undefined
         }

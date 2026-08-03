@@ -16,7 +16,6 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import {
   Avatar,
-  Badge,
   RatingPips,
   PIPS_MAX,
   VerifiedName,
@@ -28,7 +27,6 @@ import {
   formatRelativeDate,
   stripNameFromAddress,
 } from "@/utils/helpers";
-import { getRankTier } from "@/utils/ranking";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
@@ -692,7 +690,6 @@ const ReviewItemComponent = ({
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const lastTapRef = useRef<number>(0);
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
-  const tier = getRankTier(review.profile?.review_count);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -853,7 +850,6 @@ const ReviewItemComponent = ({
               postedAt={review.inserted_at}
             />
             <View style={styles.headerActions}>
-              {tier ? <Badge label={tier.name} tone="green" /> : null}
               <TouchableOpacity
                 onPress={() => setActionSheetVisible(true)}
                 style={styles.actionButton}
