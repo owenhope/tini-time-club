@@ -593,7 +593,11 @@ const useStyles = makeStyles((t) => ({
   headlineScore: {
     ...t.typography.displayLarge,
     fontSize: 46,
-    lineHeight: 40,
+    // Leading below the point size clips the numerals' tops in RN — the
+    // display cut's tight leading has to be bought with negative margin, not
+    // by squeezing the line box.
+    lineHeight: 48,
+    marginBottom: -6,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },

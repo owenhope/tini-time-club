@@ -698,14 +698,16 @@ const useStyles = makeStyles((t) => ({
   heroIdentity: {
     gap: t.spacing.sm,
   },
+  // Leading is never below the point size: RN clips the line box rather than
+  // letting the glyphs overhang it.
   heroName: {
     ...t.typography.display,
-    lineHeight: 31,
+    lineHeight: 36,
     color: t.colors.onInk,
   },
   heroNameLong: {
     fontSize: 28,
-    lineHeight: 26,
+    lineHeight: 30,
   },
   heroAddress: {
     ...t.typography.mono,
