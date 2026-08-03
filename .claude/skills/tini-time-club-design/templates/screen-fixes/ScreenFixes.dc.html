@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Screen fixes" description="Designed answers to the four open questions in the as-built screen review — bar hero, the taste/presentation column, uppercase venue names, disabled buttons." -->
+<helmet>
+<script src="./ds-base.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=DM+Mono:wght@400;500&display=swap">
+<style>body{margin:0}*{box-sizing:border-box}h1,h2,h3,p{margin:0}</style>
+</helmet>
+<div style="min-height:100vh;background:#F2F1EE;font-family:Figtree,system-ui,sans-serif;padding:48px 40px 90px">
+<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:52px;max-width:720px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.16em;text-transform:uppercase;color:#336654">Tini Time Club · design answers</span>
+<h1 style="font:900 44px/0.95 Figtree;letter-spacing:-.03em;text-transform:lowercase;color:#1C3A2E">every fix, drawn</h1>
+<p style="font:400 15px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">The app is on the system. This is everything the as-built review flagged — the four open questions plus the five screen issues, each now with a drawn solution rather than a description. Each section states the problem, shows what is on screen today, and proposes the fix. Left column is as-built; right column is the proposal.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:72px">
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">Question 2 · the real blocker</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Stop competing for width. Stack the header.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">Three columns — meters, overall, regulars — share 402pt on the bar page and far less in the map sheet, so &ldquo;Presentation&rdquo; truncates to &ldquo;Pre&hellip;&rdquo;. This is a layout problem, so the answer is a layout: the overall score and the two meters occupy one full-width row each, and the regulars become a horizontal avatar rail underneath. Nothing has to shrink, and the same block works at any sheet height.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · truncates</span>
+<div style="width:390px;background:#336654;border-radius:22px;padding:18px 20px;display:flex;gap:14px;align-items:flex-start">
+<div style="width:118px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 13px/1 Figtree;color:#DCE9E3">Taste</span><span style="font:700 14px/1 Figtree;color:#FAF9F6">5.0</span></div><div style="height:6px;border-radius:999px;background:rgba(250,249,246,.2);overflow:hidden"><div style="width:100%;height:100%;background:#FAF9F6"></div></div></div>
+<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 13px/1 Figtree;color:#DCE9E3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px">Presentation</span><span style="font:700 14px/1 Figtree;color:#FAF9F6">5.0</span></div><div style="height:6px;border-radius:999px;background:rgba(250,249,246,.2);overflow:hidden"><div style="width:100%;height:100%;background:#FAF9F6"></div></div></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:76px"><span style="font:400 12.5px/1 Figtree;color:#DCE9E3">Overall</span><span style="font:900 34px/1 Figtree;letter-spacing:-.04em;color:#FAF9F6">5.0</span><span style="font:400 11.5px/1 Figtree;color:#8FB8A8">1 review</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<span style="font:400 12.5px/1 Figtree;color:#DCE9E3">Regulars</span>
+<div style="display:flex;align-items:center;gap:7px"><span style="width:26px;height:26px;border-radius:50%;background:#8FB8A8;flex:0 0 auto"></span><span style="font:600 11.5px/1.25 Figtree;color:#FAF9F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">NorthShoreSips</span></div>
+<div style="display:flex;align-items:center;gap:7px"><span style="width:26px;height:26px;border-radius:50%;background:#8FB8A8;flex:0 0 auto"></span><span style="font:600 11.5px/1.25 Figtree;color:#FAF9F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">MartiniMaven</span></div>
+</div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">~89pt for the meter column on the bar page, ~62pt in the map sheet. The label loses before the number does.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · full width</span>
+<div style="width:390px;background:#336654;border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:flex-end;gap:14px">
+<span style="font:900 46px/0.85 Figtree;letter-spacing:-.045em;color:#F2FF71">5.0</span>
+<div style="flex:1;display:flex;flex-direction:column;gap:3px;padding-bottom:3px"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">Overall</span><span style="font:500 12.5px/1 'DM Mono',monospace;color:#DCE9E3">1 review</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">Taste</span><span style="font:500 12.5px/1 'DM Mono',monospace;color:#FAF9F6">5.0</span></div><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:100%;height:100%;background:#F2FF71"></div></div></div>
+<div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">Presentation</span><span style="font:500 12.5px/1 'DM Mono',monospace;color:#FAF9F6">5.0</span></div><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:100%;height:100%;background:#F2FF71"></div></div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px;border-top:1px solid rgba(250,249,246,.18);padding-top:14px">
+<span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">Regulars</span>
+<div style="display:flex;gap:14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:60px"><div style="width:42px;height:42px;border-radius:50%;background:conic-gradient(from 200deg,#EDF2F7,#9BA6B2,#5F6B78,#9BA6B2,#EDF2F7);padding:2.5px"><div style="width:100%;height:100%;border-radius:50%;background:#336654;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:#8FB8A8;display:flex;align-items:center;justify-content:center;font:800 14px/1 Figtree;color:#1C3A2E">O</div></div></div><span style="font:600 10.5px/1 Figtree;color:#FAF9F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">Odope</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:60px"><div style="width:42px;height:42px;border-radius:50%;background:conic-gradient(from 200deg,#E3B27C,#B4783A,#6F4518,#B4783A,#E3B27C);padding:2.5px"><div style="width:100%;height:100%;border-radius:50%;background:#336654;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:#8FB8A8;display:flex;align-items:center;justify-content:center;font:800 12px/1 Figtree;color:#1C3A2E">NS</div></div></div><span style="font:600 10.5px/1 Figtree;color:#FAF9F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">NorthShore</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:60px"><div style="width:42px;height:42px;border-radius:50%;background:conic-gradient(from 200deg,#E3B27C,#B4783A,#6F4518,#B4783A,#E3B27C);padding:2.5px"><div style="width:100%;height:100%;border-radius:50%;background:#336654;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:#8FB8A8;display:flex;align-items:center;justify-content:center;font:800 12px/1 Figtree;color:#1C3A2E">MM</div></div></div><span style="font:600 10.5px/1 Figtree;color:#FAF9F6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">MartiniM&hellip;</span></div>
+</div>
+</div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Both labels get the full 350pt and set at the system&rsquo;s eyebrow size. The avatar rail scrolls horizontally past three, so a busy venue costs no height. In the map sheet, drop the rail and keep the first two rows.</p>
+</div>
+
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">New · contrast bug</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">The selected segment is invisible.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">On Discover, the selected pill takes the chartreuse fill but keeps a pale label, so &ldquo;Profiles&rdquo; sits at roughly 1.3:1 on its own background — the selected tab is the one you cannot read. Chartreuse is a fill that always carries green-700 ink (<span style="font-family:'DM Mono',monospace;font-size:13px">onSecondary</span>, 5.9:1). The unselected half needs the same treatment in reverse: green ink on paper, not a ghost.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · ~1.3:1</span>
+<div style="background:#336654;border-radius:22px;padding:18px 16px">
+<div style="display:flex;background:#FFFFFF;border-radius:999px;padding:5px">
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;font:700 15px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="map-pin" size="18px" hint-size="18px,18px"></x-import>Places</span>
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;border-radius:999px;background:#F2FF71;font:700 15px/1 Figtree;color:#F7FFA8"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="users" size="18px" hint-size="18px,18px"></x-import>Profiles</span>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · 5.9:1</span>
+<div style="background:#336654;border-radius:22px;padding:18px 16px">
+<div style="display:flex;background:#FFFFFF;border-radius:999px;padding:5px">
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;font:600 15px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="map-pin" size="18px" hint-size="18px,18px"></x-import>Places</span>
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;border-radius:999px;background:#F2FF71;border:2px solid #336654;font:700 15px/1 Figtree;color:#336654"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="users" size="18px" hint-size="18px,18px"></x-import>Profiles</span>
+</div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Same pairing the system already uses for a selected Chip — chartreuse fill, 2px green border, green ink — so the two controls stop disagreeing.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">Review item 2 · dev tool shipping</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">The rank preview row leaves the profile.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">Live / Well / Call / Premium / Top with an &ldquo;Actual&rdquo; toggle is a ring-colour checker, and it sits between the identity block and the tabs where a real feature would go. Delete it from the shipped layout: identity block runs straight into the tabs. Keep the tool behind <span style="font-family:'DM Mono',monospace;font-size:13px">__DEV__</span>, reachable by long-pressing the avatar, so nothing is lost.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built</span>
+<div style="width:390px;background:#FFFFFF;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:52px;height:52px;border-radius:50%;background:#8FB8A8;display:flex;align-items:center;justify-content:center;font:800 17px/1 Figtree;color:#1C3A2E">O</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:800 18px/1.15 Figtree;color:#1C3A2E">Odope</span><span style="font:400 13px/1 Figtree;color:#6E7472">14 reviews · 3 regulars</span></div></div>
+<div style="border:1px dashed #C9A227;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:#FBF7E8">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 11px/1 Figtree;letter-spacing:.1em;text-transform:uppercase;color:#8A6D1F">Rank preview</span><span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 Figtree;color:#8A6D1F">Actual<span style="width:26px;height:15px;border-radius:999px;background:#E4D9AE;padding:2px;display:inline-flex;justify-content:flex-end"><span style="width:11px;height:11px;border-radius:50%;background:#8A6D1F"></span></span></span></div>
+<div style="display:flex;gap:6px"><span style="flex:1;height:22px;border-radius:6px;background:#DDE3E0"></span><span style="flex:1;height:22px;border-radius:6px;background:#CDD6D2"></span><span style="flex:1;height:22px;border-radius:6px;background:#E3B27C"></span><span style="flex:1;height:22px;border-radius:6px;background:#C9C9CE"></span><span style="flex:1;height:22px;border-radius:6px;background:#E8CE6B"></span></div>
+</div>
+<div style="display:flex;gap:20px;border-bottom:1px solid rgba(51,102,84,.18);padding-bottom:8px"><span style="font:700 14px/1 Figtree;color:#1C3A2E">Reviews</span><span style="font:500 14px/1 Figtree;color:#6E7472">Regulars</span></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">It occupies the most valuable strip on the profile and does nothing for the member looking at it.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed</span>
+<div style="width:390px;background:#FFFFFF;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:52px;height:52px;border-radius:50%;background:conic-gradient(from 200deg,#E3B27C,#B4783A,#6F4518,#B4783A,#E3B27C);padding:3px"><span style="display:flex;width:100%;height:100%;border-radius:50%;background:#8FB8A8;align-items:center;justify-content:center;font:800 17px/1 Figtree;color:#1C3A2E">O</span></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:800 18px/1.15 Figtree;color:#1C3A2E">Odope</span><span style="font:400 13px/1 Figtree;color:#6E7472">14 reviews · 3 regulars</span></div></div>
+<div style="display:flex;gap:20px;border-bottom:1px solid rgba(51,102,84,.18);padding-bottom:8px"><span style="font:700 14px/1 Figtree;color:#1C3A2E;border-bottom:2px solid #336654;padding-bottom:6px;margin-bottom:-8px">Reviews</span><span style="font:500 14px/1 Figtree;color:#6E7472">Regulars</span></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">The tier now reads from the ring on the avatar, which is where it belongs. Long-press the avatar in a dev build to get the swatches back.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">Review item 3 · always half-hidden</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Feed photo goes to 4:3 so the actions clear the fold.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">At 4:5 the card is taller than a 6.1&Prime; viewport, so like / comment / share is sliced by the tab bar on first paint — the primary engagement affordance is the one thing you never see. 4:3 gives back about 78pt, which is exactly the footer plus its padding.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · 4:5</span>
+<div style="width:250px;height:330px;position:relative;border-radius:22px;overflow:hidden;background:#FFFFFF;border:1px solid rgba(51,102,84,.18)">
+<div style="height:230px;background:repeating-linear-gradient(135deg,#DCE9E3 0 9px,#CFE0D8 9px 18px);display:flex;align-items:center;justify-content:center"><span style="font:500 10px/1 'DM Mono',monospace;color:#6E7472">review photo 4:5</span></div>
+<div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px"><span style="font:800 14px/1.2 Figtree;color:#1C3A2E">Copper Spirit Distillery</span><span style="font:400 12px/1.2 Figtree;color:#6E7472">Dirty gin martini</span><div style="display:flex;align-items:center;gap:16px;padding-top:4px"><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="heart" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import>12</span><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="message-circle" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import>3</span><span style="flex:1"></span><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="share-2" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import></div></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:#FAF9F6;border-top:1px solid rgba(51,102,84,.18);display:flex;align-items:center;justify-content:space-around"><span style="width:20px;height:20px;border-radius:6px;background:#336654"></span><span style="width:20px;height:20px;border-radius:6px;background:#C9D2CE"></span><span style="width:20px;height:20px;border-radius:6px;background:#C9D2CE"></span><span style="width:20px;height:20px;border-radius:50%;background:#C9D2CE"></span></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">The action row lands under the tab bar. Every card needs a scroll before it can be liked.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · 4:3</span>
+<div style="width:250px;height:330px;position:relative;border-radius:22px;overflow:hidden;background:#FFFFFF;border:1px solid rgba(51,102,84,.18)">
+<div style="height:170px;background:repeating-linear-gradient(135deg,#DCE9E3 0 9px,#CFE0D8 9px 18px);display:flex;align-items:center;justify-content:center"><span style="font:500 10px/1 'DM Mono',monospace;color:#6E7472">review photo 4:3</span></div>
+<div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px"><span style="font:800 14px/1.2 Figtree;color:#1C3A2E">Copper Spirit Distillery</span><span style="font:400 12px/1.2 Figtree;color:#6E7472">Dirty gin martini</span><div style="display:flex;align-items:center;gap:16px;padding-top:4px"><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="heart" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import>12</span><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px/1 Figtree;color:#3F4B46"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="message-circle" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import>3</span><span style="flex:1"></span><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="share-2" size="15px" color="#3F4B46" hint-size="15px,15px"></x-import></div></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:#FAF9F6;border-top:1px solid rgba(51,102,84,.18);display:flex;align-items:center;justify-content:space-around"><span style="width:20px;height:20px;border-radius:6px;background:#336654"></span><span style="width:20px;height:20px;border-radius:6px;background:#C9D2CE"></span><span style="width:20px;height:20px;border-radius:6px;background:#C9D2CE"></span><span style="width:20px;height:20px;border-radius:50%;background:#C9D2CE"></span></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Photo, caption and actions all sit above the tab bar. Crop to 4:3 centre on upload; existing 4:5 uploads centre-crop on display.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">Review item 4 · one value, two colours</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Meter fill follows the surface, not the screen.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">The bar page draws taste and presentation in white on green; the map sheet draws the same two numbers in pimento on white. One rule instead: <span style="font-family:'DM Mono',monospace;font-size:13px">ratingFill</span> is chartreuse on green surfaces and pimento-500 on paper. The meter then always reads as the rating accent, wherever it appears.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · white here, pimento there</span>
+<div style="display:flex;gap:12px">
+<div style="flex:1;background:#336654;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">Bar page</span><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:88%;height:100%;background:#FAF9F6"></div></div><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:72%;height:100%;background:#FAF9F6"></div></div></div>
+<div style="flex:1;background:#FFFFFF;border:1px solid rgba(51,102,84,.18);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">Map sheet</span><div style="height:7px;border-radius:999px;background:#E4E7E5;overflow:hidden"><div style="width:88%;height:100%;background:#E8763D"></div></div><div style="height:7px;border-radius:999px;background:#E4E7E5;overflow:hidden"><div style="width:72%;height:100%;background:#E8763D"></div></div></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">White reads as neutral chrome on green; the accent only appears on one of the two screens.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · one rule</span>
+<div style="display:flex;gap:12px">
+<div style="flex:1;background:#336654;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#8FB8A8">On green</span><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:88%;height:100%;background:#F2FF71"></div></div><div style="height:7px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden"><div style="width:72%;height:100%;background:#F2FF71"></div></div></div>
+<div style="flex:1;background:#FFFFFF;border:1px solid rgba(51,102,84,.18);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">On paper</span><div style="height:7px;border-radius:999px;background:#E4E7E5;overflow:hidden"><div style="width:88%;height:100%;background:#E8763D"></div></div><div style="height:7px;border-radius:999px;background:#E4E7E5;overflow:hidden"><div style="width:72%;height:100%;background:#E8763D"></div></div></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Both are the rating accent for their surface, so the meter carries the same meaning in the sheet and on the page. Track stays at 18% ink.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#E8763D">Review item 5 · ~2:1 on bright photos</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Overlay copy moves onto a solid plate.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">Venue name, spirit and both meters currently float on the photo under a gradient — fine on a dark pour, near 2:1 on a bright one. Stop gambling on the image: the bottom block sits on a solid <span style="font-family:'DM Mono',monospace;font-size:13px">scrimStrong</span> panel with the photo above it. Contrast becomes a constant instead of a property of the picture.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · gradient only</span>
+<div style="width:280px;height:230px;border-radius:22px;overflow:hidden;position:relative;background:repeating-linear-gradient(135deg,#F4F6F2 0 9px,#E8EDE8 9px 18px)">
+<span style="position:absolute;top:10px;left:12px;font:500 10px/1 'DM Mono',monospace;color:#9AA29D">bright review photo</span>
+<div style="position:absolute;left:0;right:0;bottom:0;height:118px;background:linear-gradient(to top,rgba(20,26,23,.42) 0%,rgba(20,26,23,.16) 45%,rgba(20,26,23,0) 100%)"></div>
+<div style="position:absolute;left:14px;right:14px;bottom:12px;display:flex;flex-direction:column;gap:6px"><span style="font:800 17px/1.15 Figtree;color:#FFFFFF">Copper Spirit Distillery</span><span style="font:400 12.5px/1 Figtree;color:#EFEFEF">Dirty gin martini</span><div style="height:6px;border-radius:999px;background:rgba(255,255,255,.35);overflow:hidden;margin-top:2px"><div style="width:88%;height:100%;background:#FFFFFF"></div></div></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">White on a pale highlight; the meter track disappears entirely.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · solid plate</span>
+<div style="width:280px;height:230px;border-radius:22px;overflow:hidden;display:flex;flex-direction:column">
+<div style="flex:1;background:repeating-linear-gradient(135deg,#F4F6F2 0 9px,#E8EDE8 9px 18px);position:relative"><span style="position:absolute;top:10px;left:12px;font:500 10px/1 'DM Mono',monospace;color:#9AA29D">bright review photo</span></div>
+<div style="background:#141A17;padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px"><span style="font:800 17px/1.15 Figtree;color:#FAF9F6">Copper Spirit Distillery</span><span style="font:400 12.5px/1 Figtree;color:#B9C4BE">Dirty gin martini</span><div style="height:6px;border-radius:999px;background:rgba(250,249,246,.18);overflow:hidden;margin-top:2px"><div style="width:88%;height:100%;background:#F2FF71"></div></div></div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Type sits at 14:1 no matter what was photographed, and the meter picks up the on-green rule from the previous fix.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Question 1</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">A venue with no photo gets a typographic hero.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty"><span style="font-family:'DM Mono',monospace;font-size:13px">locations</span> has no image column, and borrowing a member&rsquo;s review photo makes the venue look like it endorsed one person&rsquo;s Tuesday. Use the brand instead: a deep-green block, the name set lowercase in the display cut, the sticker badge pinned at a tilt. It is cheaper than venue photography and more on-brand than a stock bar shot. If a venue photo ever lands, the same block takes it as a background with the existing scrim — no relayout.</p>
+</div>
+<div style="display:grid;grid-template-columns:390px 390px;gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built · no hero</span>
+<div style="width:390px;background:#336654;border-radius:22px 22px 0 0;padding:16px 20px 20px;display:flex;align-items:center;gap:12px">
+<span style="width:38px;height:38px;border-radius:50%;background:rgba(250,249,246,.22);flex:0 0 auto"></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:800 17px/1.2 Figtree;color:#FAF9F6">Copper Spirit Distillery</span><span style="font:400 13px/1 Figtree;color:#DCE9E3">Bowen Island</span></div>
+<span style="width:76px;height:38px;border-radius:999px;background:rgba(250,249,246,.22);flex:0 0 auto"></span>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;text-wrap:pretty">Functional, but the venue arrives with no presence — it reads as a settings header.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed · typographic hero</span>
+<div style="width:390px;height:230px;background:#1C3A2E;border-radius:22px 22px 0 0;position:relative;overflow:hidden;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="display:flex;align-items:flex-start;justify-content:space-between">
+<span style="width:38px;height:38px;border-radius:50%;background:rgba(250,249,246,.14);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.Icon" name="chevron-left" size="20px" color="#FAF9F6" hint-size="20px,20px"></x-import></span>
+<div style="margin-top:-4px"><x-import component-from-global-scope="TiniTimeClubDesignSystem_1636c5.StickerBadge" topText="On the list" bottomText="Bowen Island" size="88" tilt="-9" hint-size="88px,88px"></x-import></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font:900 34px/0.92 Figtree;letter-spacing:-.04em;text-transform:lowercase;color:#FAF9F6">copper spirit distillery</h3>
+<span style="font:400 13px/1.35 'DM Mono',monospace;color:#8FB8A8">441 Bowen Island Trunk Road</span>
+</div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#3F4B46;text-wrap:pretty">Height is fixed at 230, so a long name wraps to two lines and drops the display size one step rather than growing the block.</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Question 3</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Title-case venue names on the way in, not on the way out.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">The Places API shouts. Normalise once at the service boundary rather than fighting it per screen: if a name is more than 80% uppercase, title-case it, keeping words of 2–3 letters that were already all-caps intact so acronyms survive. Store the normalised name; keep the raw string for search matching.</p>
+</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:stretch">
+<div style="width:390px;background:#FFFFFF;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+<span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">From the API</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">COPPER CHIMNEY INDIAN RESTAURANT</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">ONE65 SF</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">O&rsquo; BY CLAUDE LE TOHIC</span>
+</div>
+<div style="width:390px;background:#DCE9E3;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+<span style="font:700 10px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Normalised</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">Copper Chimney Indian Restaurant</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">ONE65 SF</span>
+<span style="font:800 17px/1.25 Figtree;color:#1C3A2E">O&rsquo; by Claude Le Tohic</span>
+</div>
+</div>
+<p style="font:400 12.5px/1.5 Figtree;color:#6E7472;max-width:820px;text-wrap:pretty">&ldquo;ONE65 SF&rdquo; survives because both tokens are short and already uppercase; the lowercase joiners in the third come from a small stop-word list (by, of, the, at, on, and, le, la, de).</p>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:660px">
+<span style="font:800 12px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Question 4</span>
+<h2 style="font:800 26px/1.15 Figtree;letter-spacing:-.02em;color:#1C3A2E">Disabled means the disabled surface, everywhere.</h2>
+<p style="font:400 14.5px/1.55 Figtree;color:#3F4B46;text-wrap:pretty">A dimmed green fill still reads as a live primary button — people tap it. Use <span style="font-family:'DM Mono',monospace;font-size:13px">disabledSurface</span> + <span style="font-family:'DM Mono',monospace;font-size:13px">disabledText</span>, the same pair the rest of the app uses, and put the reason under it so the state explains itself.</p>
+</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+<div style="width:390px;display:flex;flex-direction:column;gap:10px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#6E7472">As built</span>
+<div style="background:#FAF9F6;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:18px">
+<div style="height:52px;border-radius:999px;background:#8FB8A8;display:flex;align-items:center;justify-content:center;font:700 15px/1 Figtree;color:#FAF9F6">Save Caption</div>
+</div>
+</div>
+<div style="width:390px;display:flex;flex-direction:column;gap:10px">
+<span style="font:700 11px/1 Figtree;letter-spacing:.14em;text-transform:uppercase;color:#336654">Proposed</span>
+<div style="background:#FAF9F6;border:1px solid rgba(51,102,84,.18);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px">
+<div style="height:52px;border-radius:999px;background:#F2F1EE;display:flex;align-items:center;justify-content:center;font:700 15px/1 Figtree;color:#8A908D">Save caption</div>
+<span style="font:400 12.5px/1.4 Figtree;color:#6E7472;text-align:center">Write a caption first &mdash; it goes out with the review.</span>
+</div>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:1400}}"></script>
+</body>
+</html>
