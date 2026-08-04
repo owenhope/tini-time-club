@@ -157,6 +157,7 @@ const Search = forwardRef<any, SearchProps>(
     return (
       <View style={styles.container}>
         <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <TextInput
             style={styles.textInput}
             placeholder="Search bars and neighbourhoods"
@@ -208,29 +209,28 @@ const Search = forwardRef<any, SearchProps>(
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 0,
-    padding: t.spacing.sm,
     zIndex: 1,
   },
   searchContainer: {
-    position: "relative" as const,
-    padding: t.spacing.xs,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: t.colors.surface,
+    paddingHorizontal: t.spacing.lg,
+    borderRadius: t.radius.pill,
+    height: 48,
+    ...t.elevation.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
   },
   textInput: {
-    backgroundColor: t.colors.surface,
+    flex: 1,
     color: t.colors.text,
-    paddingLeft: t.spacing.xl - 4,
-    paddingRight: 40,
-    height: 44,
-    borderRadius: t.radius.pill,
     fontFamily: fonts.regular,
     fontSize: 15,
-    ...t.elevation.card,
+    marginLeft: t.spacing.md,
   },
   clearButton: {
-    position: "absolute" as const,
-    right: 15,
-    top: 15,
-    zIndex: 100,
+    marginLeft: t.spacing.sm,
   },
   resultsContainer: {
     backgroundColor: t.colors.surface,

@@ -12,7 +12,7 @@ import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
 import ProfileBody from "@/components/profile/ProfileBody";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Button } from "@/components/shared";
+import { Chip } from "@/components/shared";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
@@ -396,11 +396,12 @@ const UserProfile = () => {
         }
         tags={favoriteTags}
         action={
-          <Button
-            title={doesFollow ? "Following" : "Follow"}
-            size="small"
-            variant={doesFollow ? "tonal" : "onInk"}
-            loading={followPending}
+          <Chip
+            label={doesFollow ? "Following" : "Follow"}
+            selected={!doesFollow}
+            onInk={doesFollow}
+            icon={doesFollow ? "checkmark" : undefined}
+            disabled={followPending}
             onPress={toggleFollow}
             accessibilityLabel={
               doesFollow

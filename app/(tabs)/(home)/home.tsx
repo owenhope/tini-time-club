@@ -14,7 +14,7 @@ import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
 import { Review } from "@/types/types";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
@@ -53,6 +53,10 @@ function Home() {
   const { colors } = useTheme();
   const { profile, updateProfile, acceptEULA } = useProfile();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    postedReviewId?: string;
+    feedRefresh?: string;
+  }>();
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
@@ -67,6 +71,7 @@ function Home() {
     isChecking: boolean;
   }>({ isValid: false, message: "", isChecking: false });
   const flatListRef = useRef<FlatList>(null);
+  const handledFeedRefreshRef = useRef<string | null>(null);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -216,6 +221,24 @@ function Home() {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
   }, []);
+
+  const feedRefreshToken = Array.isArray(params.feedRefresh)
+    ? params.feedRefresh[0]
+    : params.feedRefresh;
+
+  useEffect(() => {
+    if (!profile?.id || !feedRefreshToken) return;
+    if (handledFeedRefreshRef.current === feedRefreshToken) return;
+
+    handledFeedRefreshRef.current = feedRefreshToken;
+
+    const refreshPostedReview = async () => {
+      await loadReviews(true, true);
+      requestAnimationFrame(scrollToTop);
+    };
+
+    void refreshPostedReview();
+  }, [feedRefreshToken, loadReviews, profile?.id, scrollToTop]);
 
   useFocusEffect(
     useCallback(() => {

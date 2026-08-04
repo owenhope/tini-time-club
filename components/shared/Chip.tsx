@@ -13,6 +13,7 @@ export interface ChipProps {
   onInk?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }
 
 /**
@@ -27,6 +28,7 @@ const Chip: React.FC<ChipProps> = ({
   onInk,
   disabled,
   style,
+  accessibilityLabel,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -44,7 +46,7 @@ const Chip: React.FC<ChipProps> = ({
       disabled={disabled || !onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected, disabled: !!disabled }}
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       style={({ pressed }) => [
         styles.chip,
         onInk && styles.onInk,

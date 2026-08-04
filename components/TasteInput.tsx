@@ -12,7 +12,7 @@ const TasteInput = ({ control }: { control: any }) => {
       render={({ field: { onChange, value } }) => (
         <View style={styles.inputContainer}>
           <VerdictBlock
-            eyebrow="Your verdict"
+            tone="paper"
             value={value}
             onChange={onChange}
             placeholder={"Be honest. It can take it."}

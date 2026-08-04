@@ -17,7 +17,6 @@ import AppHeader from "@/components/nav/AppHeader";
 import { withRegulars } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
-import { getRankTier } from "@/utils/ranking";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { reportError } from "@/utils/log";
@@ -298,7 +297,6 @@ export default function DiscoverTabs({
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = item.review_count || 0;
-    const tier = getRankTier(reviewCount);
 
     return (
       <TouchableOpacity
@@ -321,10 +319,9 @@ export default function DiscoverTabs({
               isVerified={item.is_verified}
               textStyle={styles.resultTitle}
             />
-            {/* Counts and rank are data: mono, one line, correctly plural. */}
+            {/* Counts are data: mono, one line, correctly plural. */}
             <Text style={styles.profileStats} numberOfLines={1}>
               {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
-              {tier ? ` · ${tier.name}` : ""}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -367,7 +364,9 @@ export default function DiscoverTabs({
             />
             <Text style={styles.resultScore}>
               {item.rating != null
-                ? `${formatRating(item.rating)} · ${item.total_ratings ?? 0}`
+                ? `${formatRating(item.rating)} · ${item.total_ratings ?? 0} ${
+                    item.total_ratings === 1 ? "review" : "reviews"
+                  }`
                 : "Not yet rated"}
             </Text>
           </View>

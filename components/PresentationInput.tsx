@@ -12,10 +12,7 @@ const PresentationInput = ({ control }: { control: any }) => {
       render={({ field: { onChange, value } }) => (
         <View style={styles.inputContainer}>
           <VerdictBlock
-            // Paper, not purple: the composer's taste block is the screen's
-            // one purple surface and two would fight.
             tone="paper"
-            eyebrow="And the presentation?"
             value={value}
             onChange={onChange}
             placeholder={"Coupe, garnish, the whole arrival."}

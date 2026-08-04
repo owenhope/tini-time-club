@@ -8,7 +8,7 @@ export type VerdictBlockTone = "brand" | "paper";
 
 export interface VerdictBlockProps {
   /** Uppercase tracked label — "Your verdict", "Presentation". */
-  eyebrow: string;
+  eyebrow?: string;
   /** 0 = not yet rated. */
   value: number;
   onChange: (value: number) => void;
@@ -50,13 +50,15 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
 
   return (
     <View style={[styles.block, onPaper && styles.blockPaper]}>
-      <AppText variant="eyebrow" style={onPaper ? styles.eyebrowPaper : ink}>
-        {eyebrow}
-      </AppText>
+      {eyebrow ? (
+        <AppText variant="eyebrow" style={onPaper ? styles.eyebrowPaper : ink}>
+          {eyebrow}
+        </AppText>
+      ) : null}
       <RatingPips
         value={value}
         max={PIPS_MAX}
-        size={onPaper ? 30 : 34}
+        size={42}
         onRate={onChange}
         bodyColor={onPaper ? colors.secondary : colors.onBrand}
         emptyColor={onPaper ? colors.ratingPipEmpty : colors.onBrand}

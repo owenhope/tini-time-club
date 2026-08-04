@@ -264,18 +264,20 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           ))}
         </View>
 
-        {(profile.bio || tags) && (
-          <View style={styles.identityRow}>
-            {profile.bio ? (
-              <Text style={styles.bio} numberOfLines={3}>
-                {profile.bio}
-              </Text>
+        {profile.bio ? (
+          <Text style={styles.bio} numberOfLines={3}>
+            {profile.bio}
+          </Text>
+        ) : null}
+
+        {(children || tags) && (
+          <View style={styles.favoritesRow}>
+            {children ? (
+              <View style={styles.favoritesMain}>{children}</View>
             ) : null}
-            {tags ? <View style={styles.identityTags}>{tags}</View> : null}
+            {tags ? <View style={styles.favoriteTags}>{tags}</View> : null}
           </View>
         )}
-
-        {children}
 
         {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
       </View>
@@ -362,19 +364,24 @@ const useStyles = makeStyles((t) => ({
     height: "100%" as const,
     borderRadius: t.radius.pill,
   },
-  identityRow: {
+  favoritesRow: {
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
-    gap: t.spacing.md,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.lg,
+  },
+  favoritesMain: {
+    flex: 1,
+    minWidth: 0,
   },
   identity: {
     flex: 1,
     minWidth: 0,
     gap: 5,
   },
-  identityTags: {
+  favoriteTags: {
     flexShrink: 1,
-    maxWidth: "65%" as const,
+    maxWidth: "58%" as const,
     alignItems: "flex-end" as const,
   },
   name: {
@@ -391,7 +398,7 @@ const useStyles = makeStyles((t) => ({
   },
   bio: {
     ...t.typography.body,
-    flex: 1,
+    width: "100%" as const,
     color: t.colors.onInk,
     lineHeight: 20,
     opacity: 0.85,

@@ -41,12 +41,21 @@ export type PlacesMapParams = {
   locationId: string | number;
 }
 
+/** Params that tell the feed to force-refresh after a new post. */
+export type HomeParams = {
+  postedReviewId?: string;
+  feedRefresh?: string;
+}
+
 export const routes = {
   /** Welcome / sign-in landing screen. */
   welcome: () => "/" as const satisfies Href,
 
   /** Main feed tab. */
-  home: () => "/home" as const satisfies Href,
+  home: (params?: HomeParams) =>
+    (params
+      ? ({ pathname: "/home", params } as const)
+      : ("/home" as const)) satisfies Href,
 
   /** Auth (email sign-in/sign-up) screen. */
   auth: () => "/auth" as const satisfies Href,
