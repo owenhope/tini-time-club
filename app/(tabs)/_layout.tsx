@@ -4,7 +4,7 @@ import { Tabs, useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
-import CustomTabBar from "@/components/CustomTabBar";
+import TabBar from "@/components/nav/TabBar";
 import { fonts, useTheme } from "@/theme";
 import {
   getNotificationRoute,
@@ -87,7 +87,7 @@ const LayoutContent = () => {
         tabBarStyle: { backgroundColor: colors.tabBar },
         sceneStyle: { backgroundColor: colors.background },
       }}
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={(props) => <TabBar {...props} />}
     >
       <Tabs.Screen
         name="(home)"
