@@ -700,12 +700,10 @@ function Home() {
 
   return (
     <View style={styles.container}>
-      {/* Header A, with the club's line for the day where the other roots put
-          their name. No trailing control: compose is the pour button and
-          search is the Discover tab, so both had a home already. */}
+      {/* Header A. No trailing control: compose is the pour button and search
+          is the Discover tab, so both had a home already. */}
       <AppHeader
         variant="large"
-        eyebrow={new Date().toLocaleDateString(undefined, { weekday: "long" })}
         title={greeting.headline}
         meta={greeting.subline}
       />

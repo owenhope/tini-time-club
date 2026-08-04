@@ -5,26 +5,27 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { View, Text } from "react-native";
+import { Pressable, View, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import { RatingSummary, SectionHeader } from "@/components/shared";
+import { Avatar, SectionHeader, Skeleton } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { makeStyles } from "@/theme";
-import Regulars, { RegularsRailSkeleton } from "@/components/Regulars";
 import {
   getRegularsByLocation,
   type Regular,
 } from "@/services/regularsService";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { formatRating } from "@/utils/ratingUtils";
+import RegularsSlider from "@/components/RegularsSlider";
 
 // Helper function to format price level
 
@@ -52,6 +53,7 @@ const Location = () => {
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [regulars, setRegulars] = useState<Regular[]>([]);
   const [loadingRegulars, setLoadingRegulars] = useState<boolean>(true);
+  const [regularsOpen, setRegularsOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
@@ -97,6 +99,12 @@ const Location = () => {
   // City and country place the venue for everyone; the street only places it
   // for someone already standing on it.
   const headerCityRegion = formatCityRegion(strippedAddress);
+  const reviewCount = displayLocation?.total_ratings ?? 0;
+  const reviewLabel = `${reviewCount} ${
+    reviewCount === 1 ? "review" : "reviews"
+  }`;
+  const hasRating = displayLocation?.rating != null && reviewCount > 0;
+  const regularPreview = regulars.slice(0, 3);
 
   /**
    * The two controls the venue carries, in the order the drawing puts them.
@@ -348,23 +356,82 @@ const Location = () => {
               />
 
               <View style={styles.venueHeaderContent}>
-                <RatingSummary
-                  overall={displayLocation?.rating}
-                  taste={displayLocation?.taste_avg}
-                  presentation={displayLocation?.presentation_avg}
-                  reviewCount={displayLocation?.total_ratings ?? 0}
-                  tone="onImage"
-                />
+                <View style={styles.venueStatsRow}>
+                  <View
+                    style={styles.metricBlock}
+                    accessible
+                    accessibilityRole="summary"
+                    accessibilityLabel={
+                      hasRating
+                        ? `Overall ${formatRating(
+                            displayLocation?.rating
+                          )} from ${reviewLabel}`
+                        : "Not yet rated"
+                    }
+                  >
+                    <Text style={styles.venueEyebrow}>Overall</Text>
+                    <Text style={styles.venueScore}>
+                      {hasRating ? formatRating(displayLocation?.rating) : "--"}
+                    </Text>
+                    <Text style={styles.venueReviewCount}>{reviewLabel}</Text>
+                  </View>
 
-                {loadingRegulars ? (
-                  <View style={styles.regularsRail}>
-                    <RegularsRailSkeleton onInk />
-                  </View>
-                ) : regulars.length > 0 ? (
-                  <View style={styles.regularsRail}>
-                    <Regulars regulars={regulars} variant="rail" onInk />
-                  </View>
-                ) : null}
+                  {loadingRegulars ? (
+                    <View style={styles.regularsBlock}>
+                      <Text style={styles.venueEyebrow}>Regulars</Text>
+                      <View style={styles.regularAvatars}>
+                        {[0, 1, 2].map((index) => (
+                          <View
+                            key={index}
+                            style={[
+                              styles.regularAvatar,
+                              index > 0 && styles.regularAvatarOverlap,
+                            ]}
+                          >
+                            <Skeleton circle height={32} />
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : regularPreview.length > 0 ? (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.regularsBlock,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => setRegularsOpen(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Show regulars at ${displayLocation?.name}`}
+                    >
+                      <Text style={styles.venueEyebrow}>Regulars</Text>
+                      <View
+                        style={styles.regularAvatars}
+                        accessibilityLabel={`${regularPreview.length} regulars`}
+                      >
+                        {regularPreview.map((regular, index) => (
+                          <View
+                            key={
+                              regular.profile_id ??
+                              `${regular.username}-${index}`
+                            }
+                            style={[
+                              styles.regularAvatar,
+                              index > 0 && styles.regularAvatarOverlap,
+                            ]}
+                          >
+                            <Avatar
+                              avatarPath={regular.avatar_url}
+                              username={regular.username}
+                              reviewCount={regular.profile_review_count}
+                              size={32}
+                              onInk
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             </View>
 
@@ -385,6 +452,13 @@ const Location = () => {
           </View>
         }
       />
+      {regularsOpen && regularPreview.length > 0 ? (
+        <RegularsSlider
+          regulars={regularPreview}
+          locationName={displayLocation?.name}
+          onClose={() => setRegularsOpen(false)}
+        />
+      ) : null}
     </View>
   );
 };
@@ -400,12 +474,49 @@ const useStyles = makeStyles((t) => ({
   venueHeaderContent: {
     paddingHorizontal: t.spacing.gutter,
     paddingBottom: t.spacing.xl,
+  },
+  venueStatsRow: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    justifyContent: "space-between" as const,
     gap: t.spacing.lg,
   },
-  regularsRail: {
-    borderTopWidth: 1,
-    borderTopColor: t.colors.ratingTrackOnInk,
-    paddingTop: t.spacing.lg - 2,
+  metricBlock: {
+    gap: t.spacing.xs,
+  },
+  venueEyebrow: {
+    ...t.typography.eyebrow,
+    fontSize: 10,
+    color: t.colors.onInk,
+  },
+  venueScore: {
+    ...t.typography.metricLarge,
+    color: t.colors.onInk,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  venueReviewCount: {
+    ...t.typography.mono,
+    color: t.colors.onInk,
+  },
+  regularsBlock: {
+    alignItems: "flex-end" as const,
+    gap: t.spacing.sm,
+    paddingTop: 1,
+  },
+  pressed: {
+    opacity: 0.65,
+  },
+  regularAvatars: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    minHeight: 38,
+  },
+  regularAvatar: {
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.surfaceInkDeep,
+  },
+  regularAvatarOverlap: {
+    marginLeft: -8,
   },
   reviewsIntro: {
     backgroundColor: t.colors.surface,

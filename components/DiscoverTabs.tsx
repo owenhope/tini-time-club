@@ -19,7 +19,7 @@ import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
 /**
@@ -87,6 +87,7 @@ export default function DiscoverTabs({
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         // If permission denied, set a flag to indicate we should show all locations
+        setNearby(false);
         setUserLocation(null);
         return;
       }
@@ -98,8 +99,9 @@ export default function DiscoverTabs({
       };
       setUserLocation(userCoords);
     } catch (error) {
-      reportError("Error getting location:", error);
+      warn("Current location unavailable; showing all places instead.", error);
       // On error, set to null so we can still show locations without nearby filtering
+      setNearby(false);
       setUserLocation(null);
     }
   };

@@ -347,12 +347,12 @@ const useStyles = makeStyles((t) => ({
   rankCount: {
     ...t.typography.label,
     fontFamily: fonts.semibold,
-    color: t.colors.accentOnImage,
+    color: t.colors.onInk,
   },
   rankRemaining: {
     ...t.typography.label,
     fontFamily: fonts.semibold,
-    color: t.colors.highlight,
+    color: t.colors.onInk,
   },
   rankTrack: {
     height: 8,
@@ -394,7 +394,7 @@ const useStyles = makeStyles((t) => ({
   // Handles are data — they set in mono, like every other identifier.
   handle: {
     ...t.typography.mono,
-    color: t.colors.accentOnImage,
+    color: t.colors.onInk,
   },
   bio: {
     ...t.typography.body,

@@ -98,11 +98,10 @@ const useStyles = makeStyles((t) => ({
     gap: 6,
   },
   // This block only ever renders inside ProfileHeader, which sits on the
-  // deep-green ground — hence the paper ink rather than the muted greys.
+  // deep-green ground — hence the paper ink rather than muted or accent text.
   favoritesLabel: {
     ...t.typography.eyebrow,
     color: t.colors.onInk,
-    opacity: 0.7,
   },
   favoritesTagsContainer: {
     flexDirection: "row" as const,

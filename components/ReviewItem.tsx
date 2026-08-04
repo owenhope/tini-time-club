@@ -390,6 +390,21 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
 
   return (
     <>
+      <View style={styles.photoPills}>
+        {review.spirit?.name ? (
+          <View style={[styles.photoPill, styles.photoPillLoud]}>
+            <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
+              {review.spirit.name}
+            </Text>
+          </View>
+        ) : null}
+        {review.type?.name ? (
+          <View style={styles.photoPill}>
+            <Text style={styles.photoPillText}>{review.type.name}</Text>
+          </View>
+        ) : null}
+      </View>
+
       <View style={styles.photoFooter}>
         <Link href={`/places/${review.location?.id}`} asChild>
           <TouchableOpacity
@@ -403,11 +418,15 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
                 : review.location?.name || "Place"
             }
           >
-            <Ionicons name="location" size={15} color={colors.accentOnImage} />
             <View style={styles.venueChipLines}>
               <Text style={styles.venueChipText} numberOfLines={1}>
                 {review.location?.name || "N/A"}
               </Text>
+              {cityCountry ? (
+                <Text style={styles.venueChipMeta} numberOfLines={1}>
+                  {cityCountry}
+                </Text>
+              ) : null}
               {venueRating != null ? (
                 <View style={styles.venueChipRating}>
                   <RatingPips
@@ -422,29 +441,9 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
                   </Text>
                 </View>
               ) : null}
-              {cityCountry ? (
-                <Text style={styles.venueChipMeta} numberOfLines={1}>
-                  {cityCountry}
-                </Text>
-              ) : null}
             </View>
           </TouchableOpacity>
         </Link>
-
-        <View style={styles.photoPills}>
-          {review.spirit?.name ? (
-            <View style={[styles.photoPill, styles.photoPillLoud]}>
-              <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
-                {review.spirit.name}
-              </Text>
-            </View>
-          ) : null}
-          {review.type?.name ? (
-            <View style={styles.photoPill}>
-              <Text style={styles.photoPillText}>{review.type.name}</Text>
-            </View>
-          ) : null}
-        </View>
       </View>
     </>
   );
@@ -480,8 +479,8 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
         />
       </View>
       <View style={styles.scoreOverall}>
-        <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
         <Text style={styles.scoreLabel}>Overall</Text>
+        <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
       </View>
     </View>
   );
@@ -588,7 +587,8 @@ const ReviewFooter = memo(
                   username={c.profile?.username || "Unknown"}
                   isVerified={c.profile?.is_verified}
                   body={c.body}
-                  usernameStyle={styles.commentUsername}
+                  usernameStyle={styles.captionUsername}
+                  bodyStyle={styles.captionText}
                   onUsernamePress={() =>
                     openProfile(c.profile?.username, c.profile?.id)
                   }
@@ -1009,11 +1009,12 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   venueChip: {
+    maxWidth: "100%" as const,
     flexShrink: 1,
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     gap: 7,
-    paddingLeft: t.spacing.md - 1,
+    paddingLeft: t.spacing.md,
     paddingRight: t.spacing.md,
     paddingVertical: t.spacing.sm,
     borderRadius: t.radius.lg,
@@ -1052,6 +1053,9 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   photoPills: {
+    position: "absolute" as const,
+    top: t.spacing.md,
+    right: t.spacing.md,
     flexShrink: 0,
     flexDirection: "row" as const,
     gap: 6,
@@ -1078,8 +1082,8 @@ const useStyles = makeStyles((t) => ({
   // with the blended TTC number beside them, never instead of them.
   scores: {
     flexDirection: "row" as const,
-    alignItems: "flex-end" as const,
-    gap: t.spacing.lg,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.xl,
     paddingHorizontal: t.spacing.lg,
     paddingTop: t.spacing.lg - 2,
     backgroundColor: t.colors.surface,
@@ -1176,11 +1180,6 @@ const useStyles = makeStyles((t) => ({
   },
   commentItem: {
     marginBottom: t.spacing.xs,
-  },
-  commentUsername: {
-    ...t.typography.caption,
-    fontFamily: fonts.semibold,
-    color: t.colors.text,
   },
   timestamp: {
     ...t.typography.micro,

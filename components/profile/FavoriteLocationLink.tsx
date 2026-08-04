@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { makeStyles, useTheme } from "@/theme";
+import { makeStyles } from "@/theme";
 import { routes } from "@/utils/routes";
 
 interface FavoriteLocationLinkProps {
@@ -16,7 +15,6 @@ interface FavoriteLocationLinkProps {
  */
 const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
   const styles = useStyles();
-  const { colors } = useTheme();
   const router = useRouter();
 
   if (!location) return null;
@@ -30,7 +28,6 @@ const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
         accessibilityRole="link"
         accessibilityLabel={`Favorite location, ${location.name}`}
       >
-        <Ionicons name="location" size={16} color={colors.highlight} />
         <Text style={styles.favoriteLocationText} numberOfLines={1}>
           {location.name}
         </Text>
@@ -46,11 +43,10 @@ const useStyles = makeStyles((t) => ({
     gap: 0,
   },
   // Rendered inside ProfileHeader's deep-green block, so the label and link
-  // take paper ink and the chartreuse highlight rather than greys and green.
+  // take paper ink rather than grey or accent text.
   favoritesLabel: {
     ...t.typography.eyebrow,
     color: t.colors.onInk,
-    opacity: 0.7,
   },
   favoriteLocationLink: {
     minHeight: 32,

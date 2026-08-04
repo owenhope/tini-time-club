@@ -98,6 +98,28 @@ describe("formatCityRegion", () => {
     ).toBe("Bangkok, Thailand");
   });
 
+  it("keeps Turkish district and city slash pairs without postal clutter", () => {
+    expect(
+      formatCityRegion("34710 Kadikoy/Istanbul, Caferaga Mahallesi")
+    ).toBe("Kadikoy, Istanbul");
+  });
+
+  it("finds Turkish district and city slash pairs after a venue prefix", () => {
+    expect(
+      formatCityRegion(
+        "Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Caferağa Mahallesi"
+      )
+    ).toBe("Kadiköy, İstanbul");
+  });
+
+  it("uses the city side of a Turkish slash pair when country is present", () => {
+    expect(
+      formatCityRegion(
+        "Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Türkiye"
+      )
+    ).toBe("İstanbul, Türkiye");
+  });
+
   it("does not mistake a street for a city in a two-part address", () => {
     expect(formatCityRegion("401 Main Street, Columbia")).toBe("Columbia");
   });
@@ -112,4 +134,3 @@ describe("formatCityRegion", () => {
     expect(formatCityRegion("")).toBe("");
   });
 });
-

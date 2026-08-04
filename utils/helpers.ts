@@ -63,6 +63,43 @@ const stripPostalCode = (part: string): string =>
     .replace(/\s+\d{4,6}(-\d{4})?\s*$/, "")
     .trim();
 
+const STREET_PATTERN =
+  /\b(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|pl|place|ln|lane|mews|concourse|soi|cad|caddesi|sokak|sk\.?|mahallesi)\b/i;
+
+const hasLetter = (part: string): boolean => /[^\W\d_]/u.test(part);
+
+const cityPairFromSlashPart = (part: string): string | null => {
+  const slashParts = part
+    .split("/")
+    .map((item) => stripPostalCode(item.trim()))
+    .filter(Boolean);
+
+  if (slashParts.length < 2) return null;
+
+  const cityPair = slashParts
+    .slice(-2)
+    .map((item) => item.replace(/^\d{4,6}\s+/, "").trim())
+    .filter(Boolean);
+
+  if (
+    cityPair.length === 2 &&
+    cityPair.every(hasLetter) &&
+    cityPair.every((item) => !STREET_PATTERN.test(item))
+  ) {
+    return cityPair.join(", ");
+  }
+
+  return null;
+};
+
+const cityFromSlashPart = (part: string): string | null => {
+  const cityPair = cityPairFromSlashPart(part);
+  if (!cityPair) return null;
+
+  const pairParts = cityPair.split(",").map((item) => item.trim());
+  return pairParts[pairParts.length - 1] ?? null;
+};
+
 // Country abbreviations that would otherwise pass the region-code test.
 const COUNTRY_ABBREVIATIONS = new Set(["USA", "UK", "UAE", "CAN", "AUS"]);
 
@@ -91,7 +128,8 @@ export const formatCityRegion = (address?: string | null): string => {
   const last = stripPostalCode(parts[parts.length - 1]);
   // A trailing region code means the country was never in the string — and a
   // two-part address is a street and a city, never a city and a country.
-  const hasCountry = !isRegionCode(last) && parts.length >= 3;
+  const hasCountry =
+    !isRegionCode(last) && !STREET_PATTERN.test(last) && parts.length >= 3;
   const country = hasCountry ? last : "";
 
   // Walk back past the country and any region code to the city.
@@ -99,14 +137,26 @@ export const formatCityRegion = (address?: string | null): string => {
   const tail = beforeCountry[beforeCountry.length - 1]
     ? stripPostalCode(beforeCountry[beforeCountry.length - 1])
     : "";
-  const city =
+  const rawCity =
     isRegionCode(tail) && beforeCountry.length >= 2
       ? beforeCountry[beforeCountry.length - 2]
       : tail;
+  const city = cityFromSlashPart(rawCity) ?? rawCity;
 
   // Two-part addresses are ambiguous: "Vancouver, BC" is city+region, but
   // "401 Main Street, Columbia" is street+city.
   if (!country) {
+    // Turkish addresses often arrive as
+    // "34710 Kadikoy/Istanbul, ..." where the city is in a slash pair and the
+    // country is omitted. The venue name may still be the first comma part, so
+    // scan for the first safe city pair instead of only checking the prefix.
+    const slashCityPair = parts.map(cityPairFromSlashPart).find(Boolean);
+    if (slashCityPair) return slashCityPair;
+
+    if (parts.length >= 2 && STREET_PATTERN.test(parts[0])) {
+      return stripPostalCode(parts[1]);
+    }
+
     return isRegionCode(last) && parts.length >= 2
       ? [parts[parts.length - 2], last].filter(Boolean).join(", ")
       : last;

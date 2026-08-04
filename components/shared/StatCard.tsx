@@ -32,11 +32,9 @@ const StatCard: React.FC<StatCardProps> = ({
       <AppText variant="metric" tone={onInk ? "onImage" : "default"}>
         {value}
       </AppText>
-      {/* On ink the label is an eyebrow in sage — the tile is a stat block,
-          not a caption, and sage keeps it supporting rather than shouting. */}
       <AppText
         variant={onInk ? "eyebrow" : "micro"}
-        tone={onInk ? "accentOnImage" : "muted"}
+        tone={onInk ? "onImage" : "muted"}
       >
         {label}
       </AppText>

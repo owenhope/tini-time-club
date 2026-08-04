@@ -8,10 +8,25 @@ import { createClient } from "@supabase/supabase-js";
 import { AppState } from "react-native";
 import { log, reportError } from "./log";
 
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as
-  string | undefined;
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as
-  string | undefined;
+const expoExtra = Constants.expoConfig?.extra as
+  | Record<string, unknown>
+  | undefined;
+const manifestExtra = Constants.manifest2?.extra as
+  | {
+      expoClient?: {
+        extra?: Record<string, unknown>;
+      };
+    }
+  | undefined;
+const manifestExpoExtra = manifestExtra?.expoClient?.extra;
+const supabaseUrl =
+  (expoExtra?.supabaseUrl as string | undefined) ??
+  (manifestExpoExtra?.supabaseUrl as string | undefined) ??
+  process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  (expoExtra?.supabaseAnonKey as string | undefined) ??
+  (manifestExpoExtra?.supabaseAnonKey as string | undefined) ??
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Supabase runtime configuration is missing");

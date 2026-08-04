@@ -30,11 +30,12 @@ import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { withRegulars, type Regular } from "@/services/regularsService";
+import RegularsSlider from "@/components/RegularsSlider";
 import { useLocalSearchParams } from "expo-router";
 import Search from "@/components/map/search";
 import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles } from "@/theme";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 
 const LOWER_LONSDALE_COORDINATES = {
   latitude: 49.3104,
@@ -50,6 +51,9 @@ const INITIAL_REGION: Region = {
 const SHEET_HEIGHT = 240;
 const FETCH_DEBOUNCE_MS = 250;
 const FETCH_PADDING = 0.35;
+const CLUSTER_FIT_PADDING = 1.8;
+const CLUSTER_MIN_DELTA = 0.008;
+const CLUSTER_FALLBACK_ZOOM = 0.4;
 
 interface MapLocation {
   id: number | string;
@@ -89,12 +93,21 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
   outer.minLong <= inner.minLong &&
   outer.maxLong >= inner.maxLong;
 
-const ClusterPin = ({ count }: { count: number }) => {
+const ClusterPin = ({
+  count,
+  onPress,
+}: {
+  count: number;
+  onPress: () => void;
+}) => {
   const styles = useStyles();
-  const size = count >= 25 ? 58 : count >= 10 ? 48 : 38;
+  const size = count >= 25 ? 66 : count >= 10 ? 58 : 48;
 
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.75}
+      hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+      onPress={onPress}
       style={[
         styles.clusterPin,
         {
@@ -105,7 +118,7 @@ const ClusterPin = ({ count }: { count: number }) => {
       ]}
     >
       <Text style={styles.clusterCount}>{count}</Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -141,6 +154,7 @@ function Map() {
   const [selectedLocationId, setSelectedLocationId] = useState<
     MapLocation["id"] | null
   >(null);
+  const [regularsSheetOpen, setRegularsSheetOpen] = useState(false);
   const sheetRef = useRef<BottomSheet>(null);
 
   const selectedLocation = useMemo(
@@ -163,6 +177,7 @@ function Map() {
 
     regionRef.current = centeredRegion;
     mapRef.current?.animateToRegion(centeredRegion, 350);
+    setRegularsSheetOpen(false);
     setSelectedLocationId(location.id);
     sheetRef.current?.snapToIndex(0);
   }, []);
@@ -177,6 +192,73 @@ function Map() {
     Keyboard.dismiss();
     regionRef.current = newRegion;
     mapRef.current?.animateToRegion(newRegion, 350);
+  }, []);
+
+  const handleClusterPress = useCallback((_cluster: any, children?: any[]) => {
+    const coordinates =
+      children
+        ?.map((child) => child.geometry?.coordinates)
+        .filter(
+          (coordinate): coordinate is [number, number] =>
+            Array.isArray(coordinate) &&
+            Number.isFinite(coordinate[0]) &&
+            Number.isFinite(coordinate[1])
+        ) ?? [];
+
+    const clusterCoordinate = _cluster?.geometry?.coordinates;
+    const hasClusterCoordinate =
+      Array.isArray(clusterCoordinate) &&
+      Number.isFinite(clusterCoordinate[0]) &&
+      Number.isFinite(clusterCoordinate[1]);
+
+    if (coordinates.length === 0 && !hasClusterCoordinate) return;
+
+    Keyboard.dismiss();
+    setSelectedLocationId(null);
+    setRegularsSheetOpen(false);
+    sheetRef.current?.close();
+
+    if (coordinates.length === 0 && hasClusterCoordinate) {
+      const nextRegion: Region = {
+        latitude: clusterCoordinate[1],
+        longitude: clusterCoordinate[0],
+        latitudeDelta: Math.max(
+          regionRef.current.latitudeDelta * CLUSTER_FALLBACK_ZOOM,
+          CLUSTER_MIN_DELTA
+        ),
+        longitudeDelta: Math.max(
+          regionRef.current.longitudeDelta * CLUSTER_FALLBACK_ZOOM,
+          CLUSTER_MIN_DELTA
+        ),
+      };
+
+      regionRef.current = nextRegion;
+      mapRef.current?.animateToRegion(nextRegion, 350);
+      return;
+    }
+
+    const latitudes = coordinates.map(([, latitude]) => latitude);
+    const longitudes = coordinates.map(([longitude]) => longitude);
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLong = Math.min(...longitudes);
+    const maxLong = Math.max(...longitudes);
+
+    const nextRegion: Region = {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLong + maxLong) / 2,
+      latitudeDelta: Math.max(
+        (maxLat - minLat) * CLUSTER_FIT_PADDING,
+        CLUSTER_MIN_DELTA
+      ),
+      longitudeDelta: Math.max(
+        (maxLong - minLong) * CLUSTER_FIT_PADDING,
+        CLUSTER_MIN_DELTA
+      ),
+    };
+
+    regionRef.current = nextRegion;
+    mapRef.current?.animateToRegion(nextRegion, 350);
   }, []);
 
   const markerElements = useMemo(
@@ -207,6 +289,10 @@ function Map() {
   const renderCluster = useCallback((cluster: any) => {
     const [longitude, latitude] = cluster.geometry.coordinates;
     const count = cluster.properties.point_count;
+    const handlePress = () => {
+      handleClusterPress(cluster);
+      cluster.onPress?.();
+    };
 
     return (
       <Marker
@@ -214,14 +300,15 @@ function Map() {
         coordinate={{ latitude, longitude }}
         anchor={{ x: 0.5, y: 0.5 }}
         tracksViewChanges={false}
-        onPress={cluster.onPress}
+        onPress={handlePress}
+        tappable
         stopPropagation
         zIndex={5}
       >
-        <ClusterPin count={count} />
+        <ClusterPin count={count} onPress={handlePress} />
       </Marker>
     );
-  }, []);
+  }, [handleClusterPress]);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -260,7 +347,7 @@ function Map() {
         setRegion(initial);
         mapRef.current?.animateToRegion(initial, 1000);
       } catch (error) {
-        reportError("Error getting location:", error);
+        warn("Current location unavailable; showing the default map.", error);
         setLocationNotice("We couldn't determine your location.");
       } finally {
         setLocationResolved(true);
@@ -408,6 +495,8 @@ function Map() {
             }
             mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
             clusteringEnabled={true}
+            preserveClusterPressBehavior
+            onClusterPress={handleClusterPress}
             renderCluster={renderCluster}
             style={StyleSheet.absoluteFill}
             showsUserLocation={false}
@@ -421,6 +510,7 @@ function Map() {
             onPress={() => {
               Keyboard.dismiss();
               if (selectedLocationId !== null) {
+                setRegularsSheetOpen(false);
                 sheetRef.current?.close();
               }
             }}
@@ -447,15 +537,30 @@ function Map() {
           snapPoints={[SHEET_HEIGHT]}
           enableDynamicSizing={false}
           enablePanDownToClose
-          onClose={() => setSelectedLocationId(null)}
+          onClose={() => {
+            setRegularsSheetOpen(false);
+            setSelectedLocationId(null);
+          }}
           style={styles.sheetShadow}
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
         >
           <BottomSheetView style={styles.sheetContent}>
-            {selectedLocation && <LocationDetails loc={selectedLocation} />}
+            {selectedLocation && (
+              <LocationDetails
+                loc={selectedLocation}
+                onRegularsPress={() => setRegularsSheetOpen(true)}
+              />
+            )}
           </BottomSheetView>
         </BottomSheet>
+        {regularsSheetOpen && selectedLocation?.regulars?.length ? (
+          <RegularsSlider
+            regulars={selectedLocation.regulars.slice(0, 3)}
+            locationName={selectedLocation.name}
+            onClose={() => setRegularsSheetOpen(false)}
+          />
+        ) : null}
       </View>
     </View>
   );

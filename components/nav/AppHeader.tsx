@@ -102,7 +102,7 @@ const NavCircle = ({
   const { colors } = useTheme();
 
   const glyph = {
-    onInk: colors.highlight,
+    onInk: colors.onInk,
     outline: colors.accent,
     scrim: colors.textOnImage,
   }[tone];
@@ -490,12 +490,12 @@ const useStyles = makeStyles((t) => ({
   },
   eyebrow: {
     ...t.typography.eyebrow,
-    color: t.colors.highlight,
+    color: t.colors.onInk,
     marginBottom: 6,
   },
   largeMeta: {
     ...t.typography.caption,
-    color: t.colors.accentOnImage,
+    color: t.colors.onInk,
     marginTop: 6,
   },
   largeBelow: {

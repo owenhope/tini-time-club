@@ -25,7 +25,7 @@ import {
   type PlaceResult,
 } from "@/services/placesService";
 import { fonts, makeStyles, useTheme } from "@/theme";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 
 export interface LocationInputValue {
   name: string;
@@ -88,7 +88,10 @@ const LocationInput = ({
           fetchNearbyPlaces(currentLocation);
         }
       } catch (error) {
-        reportError("Error getting location:", error);
+        warn(
+          "Current location unavailable; location search still works.",
+          error
+        );
       }
     })();
     return () => {

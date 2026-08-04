@@ -73,12 +73,12 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
     >
       {overall != null ? (
         <View style={styles.top}>
-          <Text style={[styles.score, onImage && styles.scoreOnInk]}>
-            {format(overall)}
-          </Text>
           <View style={styles.meta}>
             <Text style={[styles.eyebrow, onImage && styles.eyebrowOnInk]}>
               Overall
+            </Text>
+            <Text style={[styles.score, onImage && styles.scoreOnInk]}>
+              {format(overall)}
             </Text>
             {countLabel ? (
               <Text style={[styles.count, onImage && styles.countOnInk]}>
@@ -154,16 +154,12 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   top: {
-    flexDirection: "row" as const,
-    alignItems: "flex-end" as const,
-    gap: t.spacing.lg - 2,
+    alignItems: "flex-start" as const,
   },
   // The aggregate is the loudest thing on the block, so it gets the display
-  // cut rather than the metric one. Leading below the point size would clip
-  // the numerals in RN, so the tightness comes from negative margin.
+  // cut rather than the metric one.
   score: {
     ...t.typography.displayLarge,
-    marginBottom: -6,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
@@ -171,10 +167,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.ratingFillOnInk,
   },
   meta: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-    paddingBottom: 3,
+    gap: 2,
   },
   eyebrow: {
     ...t.typography.eyebrow,

@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, StyleSheet, Image, Text } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -26,8 +26,14 @@ type TabBarProps = {
   onInk?: boolean;
 };
 
-/** One size for every tab icon, including the martini PNG. */
-const ICON_SIZE = 25;
+/** One box for every tab icon; glyphs get optical sizes inside it. */
+const ICON_SLOT_SIZE = 30;
+const TAB_ICON_SIZES: Record<string, number> = {
+  "(home)": 27,
+  "(places)": 27,
+  "(discover)": 26,
+  "(profile)": 27,
+};
 const POUR_SIZE = 52;
 
 export default function TabBar({
@@ -145,8 +151,8 @@ export default function TabBar({
             focused: boolean
           ): keyof typeof Ionicons.glyphMap => {
             switch (routeName) {
-              // "(home)" renders the martini PNG above and never reaches this
-              // switch — the feed is the club's own glass.
+              case "(home)":
+                return focused ? "wine" : "wine-outline";
               case "(places)":
                 return focused ? "location" : "location-outline";
               case "(discover)":
@@ -159,6 +165,7 @@ export default function TabBar({
           };
 
           const tint = isFocused ? active : rest;
+          const iconSize = TAB_ICON_SIZES[route.name] ?? 27;
 
           const tab = (
             <TouchableOpacity
@@ -182,19 +189,11 @@ export default function TabBar({
                 ]}
               >
                 <View style={styles.iconSlot}>
-                  {route.name === "(home)" ? (
-                    <Image
-                      source={require("@/assets/images/martini_transparent.png")}
-                      style={[styles.martini, { tintColor: tint }]}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Ionicons
-                      name={getIconName(route.name, isFocused)}
-                      size={ICON_SIZE}
-                      color={tint}
-                    />
-                  )}
+                  <Ionicons
+                    name={getIconName(route.name, isFocused)}
+                    size={iconSize}
+                    color={tint}
+                  />
                   {badge != null ? (
                     <View
                       style={[styles.badge, onInk && styles.badgeOnInk]}
@@ -215,15 +214,6 @@ export default function TabBar({
                 >
                   {label}
                 </Text>
-                {/* The dot is what marks the tab you're on once the label and
-                    the glyph have both said it quietly. */}
-                <View
-                  style={[
-                    styles.dot,
-                    onInk && styles.dotOnInk,
-                    !isFocused && styles.dotHidden,
-                  ]}
-                />
               </View>
             </TouchableOpacity>
           );
@@ -283,14 +273,10 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.62,
   },
   iconSlot: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
+    width: ICON_SLOT_SIZE,
+    height: ICON_SLOT_SIZE,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-  },
-  martini: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
   },
   label: {
     fontFamily: fonts.medium,
@@ -300,21 +286,6 @@ const useStyles = makeStyles((t) => ({
   },
   labelActive: {
     fontFamily: fonts.bold,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.highlight,
-    borderWidth: 1,
-    borderColor: t.colors.secondary,
-  },
-  dotOnInk: {
-    borderWidth: 0,
-  },
-  // Reserved rather than absent, so selection doesn't nudge the row.
-  dotHidden: {
-    opacity: 0,
   },
   badge: {
     ...({ position: "absolute" } as const),

@@ -9,6 +9,7 @@ import BottomSheet, {
   type BottomSheetBackdropProps,
   type BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfile } from "@/context/profile-context";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { formatRelativeDate } from "@/utils/helpers";
@@ -38,6 +39,7 @@ function CommentInputFooter({
 }: CommentInputFooterProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState("");
 
   const handleSubmit = useCallback(async () => {
@@ -51,7 +53,12 @@ function CommentInputFooter({
 
   return (
     <BottomSheetFooter {...footerProps}>
-      <View style={styles.inputContainer}>
+      <View
+        style={[
+          styles.inputContainer,
+          { paddingBottom: Math.max(insets.bottom, 12) + 10 },
+        ]}
+      >
         <BottomSheetTextInput
           placeholder="Add a comment..."
           placeholderTextColor={colors.textMuted}
@@ -61,7 +68,7 @@ function CommentInputFooter({
           returnKeyType="send"
           onSubmitEditing={handleSubmit}
         />
-        <TouchableOpacity onPress={handleSubmit}>
+        <TouchableOpacity onPress={handleSubmit} style={styles.sendButtonHit}>
           <Text style={styles.sendButton}>Post</Text>
         </TouchableOpacity>
       </View>
@@ -361,21 +368,27 @@ const useStyles = makeStyles((t) => ({
   inputContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    padding: t.spacing.sm,
-    paddingBottom: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.md,
     backgroundColor: t.colors.surface,
     borderTopWidth: 1,
     borderColor: t.colors.border,
   },
   input: {
     flex: 1,
-    height: 40,
+    height: 44,
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: t.radius.pill,
-    paddingHorizontal: 15,
-    marginRight: 10,
+    paddingHorizontal: t.spacing.lg,
+    marginRight: t.spacing.sm,
     color: t.colors.text,
+  },
+  sendButtonHit: {
+    minHeight: 44,
+    minWidth: 50,
+    alignItems: "flex-end" as const,
+    justifyContent: "center" as const,
   },
   sendButton: { color: t.colors.text, fontFamily: fonts.bold },
   deleteIcon: { paddingLeft: t.spacing.sm, paddingTop: 2 },

@@ -7,7 +7,7 @@ import type {
   Profile,
   Review,
 } from "@/types/types";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 
 interface CachedQuery {
   data: any;
@@ -212,13 +212,69 @@ class DatabaseService {
     // because signed URLs expire on their own schedule. Every review surface
     // needs this, so it lives here instead of copy-pasted at each call site.
     if (!reviews?.length) return reviews ?? [];
+    const reviewsWithLocationRatings =
+      await this.hydrateReviewLocationRatings(reviews);
     const imageUrls = await imageCache.getReviewImageUrls(
-      reviews.map((review) => review.image_url)
+      reviewsWithLocationRatings.map((review) => review.image_url)
     );
-    return reviews.map((review) => ({
+    return reviewsWithLocationRatings.map((review) => ({
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     }));
+  }
+
+  /**
+   * Feed rows should already include the venue aggregate from feed_reviews.
+   * Older cached rows and stale RPC definitions may not, so repair the shape
+   * here before the review card decides whether to show the place score.
+   */
+  private async hydrateReviewLocationRatings<T extends Review>(
+    reviews: T[]
+  ): Promise<T[]> {
+    const missingLocationIds = [
+      ...new Set(
+        reviews
+          .filter((review) => {
+            const location = review.location;
+            return (
+              location?.id != null &&
+              (location.rating == null || (location.total_ratings ?? 0) <= 0)
+            );
+          })
+          .map((review) => Number(review.location.id))
+          .filter((id) => Number.isFinite(id))
+      ),
+    ];
+
+    if (missingLocationIds.length === 0) return reviews;
+
+    try {
+      const { data, error } = await supabase
+        .from("location_ratings")
+        .select("id,rating,total_ratings")
+        .in("id", missingLocationIds);
+
+      if (error) throw error;
+
+      const ratingsByLocationId = new Map(
+        (data ?? []).map((rating) => [String(rating.id), rating])
+      );
+
+      reviews.forEach((review) => {
+        const rating = ratingsByLocationId.get(String(review.location?.id));
+        if (!rating) return;
+
+        review.location = {
+          ...review.location,
+          rating: rating.rating ?? null,
+          total_ratings: rating.total_ratings ?? 0,
+        };
+      });
+    } catch (error) {
+      warn("Unable to hydrate feed location ratings:", error);
+    }
+
+    return reviews;
   }
 
   /**
