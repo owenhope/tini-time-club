@@ -13,14 +13,12 @@ import { Profile } from "@/types/types";
 import ProfileBody from "@/components/profile/ProfileBody";
 import ProfileHeader from "@/components/ProfileHeader";
 import { Button } from "@/components/shared";
-import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
-import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -34,7 +32,7 @@ import { routes } from "@/utils/routes";
 
 const UserProfile = () => {
   const styles = useStyles();
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
@@ -45,7 +43,6 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const goBack = useGoBack();
-  const navigation = useNavigation();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
 
@@ -408,8 +405,6 @@ const UserProfile = () => {
 
   return (
     <View style={styles.container}>
-      {/* The identity block runs green up behind the status bar. */}
-      <StatusBar style="light" />
       <ProfileBody
         activeTab={activeTab}
         header={header}

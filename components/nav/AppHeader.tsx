@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { setStatusBarStyle } from "expo-status-bar";
+import { useFocusEffect } from "expo-router";
 import { fonts, makeStyles, useTheme } from "@/theme";
 
 /**
@@ -72,6 +74,12 @@ export interface AppHeaderProps {
   action?: { label: string; onPress: () => void; disabled?: boolean };
   /** Variant D only — a presented sheet owns its own top, a full-screen one doesn't. */
   topInset?: number;
+  /**
+   * Which status bar the header asks for. Defaults to the variant's own ground
+   * — light on green, the theme's on paper — and `"none"` hands the job to a
+   * sibling header on a screen that has two.
+   */
+  statusBar?: "light" | "dark" | "auto" | "none";
 }
 
 /** 40px visual, 44px tap — the difference is the slop. */
@@ -214,10 +222,38 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onCancel,
   action,
   topInset = 0,
+  statusBar,
 }) => {
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+
+  /**
+   * The header owns the top of the screen, so it owns the status bar with it.
+   * Set on focus rather than on mount: popping back to a green root has to put
+   * the light glyphs back, and an effect that only fires on mount leaves the
+   * revealed screen wearing the bar the popped one asked for.
+   *
+   * A presented sheet is inset from the top and never covers the status bar,
+   * so only a full-screen presentation — the one that passes a top inset —
+   * speaks for it.
+   */
+  const onInkGround = variant === "large" || variant === "media";
+  const requested =
+    statusBar ??
+    (variant === "modal" && topInset === 0
+      ? "none"
+      : onInkGround
+        ? "light"
+        : "auto");
+  useFocusEffect(
+    useCallback(() => {
+      if (requested === "none") return;
+      setStatusBarStyle(
+        requested === "auto" ? (isDark ? "light" : "dark") : requested
+      );
+    }, [requested, isDark])
+  );
 
   if (variant === "compact") {
     return (
@@ -294,24 +330,36 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           />
         ) : null}
         {/* Top and bottom scrims from one gradient, so the controls read on a
-            pale photo and the name reads on a busy one. */}
-        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Defs>
-            <LinearGradient id="mediaScrim" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.overlay} stopOpacity={1} />
-              <Stop offset="0.45" stopColor={colors.overlay} stopOpacity={0} />
-              <Stop offset="1" stopColor={colors.overlay} stopOpacity={0.9} />
-            </LinearGradient>
-          </Defs>
-          <Rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="url(#mediaScrim)"
-          />
-        </Svg>
+            pale photo and the name reads on a busy one. Only over a photo:
+            the deep green needs no help, and scrimming it just puts a seam
+            across the block. */}
+        {imageUri ? (
+          <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Defs>
+              <LinearGradient id="mediaScrim" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={colors.overlay} stopOpacity={1} />
+                <Stop
+                  offset="0.45"
+                  stopColor={colors.overlay}
+                  stopOpacity={0}
+                />
+                <Stop offset="1" stopColor={colors.overlay} stopOpacity={0.9} />
+              </LinearGradient>
+            </Defs>
+            <Rect
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              fill="url(#mediaScrim)"
+            />
+          </Svg>
+        ) : null}
 
+        {/* In flow, not absolute: with a photo the block is 210 tall and
+            space-between pushes the name to the bottom, and without one the
+            row still has to reserve its own height or the name lands under
+            the status bar. */}
         <Animated.View
           style={[styles.mediaControls, { paddingTop: insets.top + 8 }, fade]}
           pointerEvents={collapsed ? "none" : "auto"}
@@ -498,7 +546,7 @@ const useStyles = makeStyles((t) => ({
   // C · over media
   media: {
     backgroundColor: t.colors.surfaceInkDeep,
-    justifyContent: "flex-end" as const,
+    justifyContent: "space-between" as const,
   },
   // The drawn height is the photo's. Without one the block sizes to the name
   // it carries rather than holding open 210pt of empty green — a venue with no
@@ -507,11 +555,8 @@ const useStyles = makeStyles((t) => ({
     height: MEDIA_HEIGHT,
   },
   mediaControls: {
-    ...({ position: "absolute" } as const),
-    top: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: t.spacing.gutter,
+    paddingBottom: t.spacing.md,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,

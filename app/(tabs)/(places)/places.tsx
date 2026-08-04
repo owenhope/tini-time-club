@@ -30,7 +30,6 @@ import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { withRegulars, type Regular } from "@/services/regularsService";
-import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams } from "expo-router";
 import Search from "@/components/map/search";
 import AppHeader from "@/components/nav/AppHeader";
@@ -307,7 +306,6 @@ function Map() {
 
   return (
     <View style={styles.screen}>
-      <StatusBar style="light" />
       {/* Header A: the screen's name in the display cut, and the search field
           inside the green with it. Never a chip row as well — the green
           carries one control, not two. */}

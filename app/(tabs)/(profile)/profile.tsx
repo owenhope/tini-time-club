@@ -1,9 +1,7 @@
 import "react-native-get-random-values";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { StatusBar } from "expo-status-bar";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
@@ -51,7 +49,6 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
 const Profile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
@@ -410,9 +407,6 @@ const Profile = () => {
 
   return (
     <View style={styles.container}>
-      {/* The identity block runs the deep green up behind the status bar, so
-          its content has to be light in both schemes. */}
-      <StatusBar style="light" />
       <ProfileBody
         activeTab={activeTab}
         header={header}

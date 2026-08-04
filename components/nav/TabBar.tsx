@@ -16,38 +16,30 @@ type TabBarProps = {
   state: { routes: any[]; index: number };
   descriptors: Record<string, any>;
   navigation: any;
+  /**
+   * The drawn ink bar, for a screen whose content actually runs full-bleed
+   * behind the chrome. Nothing in the app does yet — place detail and a
+   * member's profile wear header C at the top but are paper by the time they
+   * reach the bottom of the screen, and a dark bar under paper reads as a
+   * mistake — so this stays off until a screen earns it.
+   */
+  onInk?: boolean;
 };
 
 /** One size for every tab icon, including the martini PNG. */
 const ICON_SIZE = 25;
 const POUR_SIZE = 52;
 
-/**
- * The routes where a photo owns the top — the same set that wears header C.
- * On those the bar takes its ink tone, so it reads as chrome over media
- * rather than a paper shelf pasted under it.
- */
-const MEDIA_ROUTES = new Set(["places/[place]", "users/[username]"]);
-
-/** The deepest route the focused tab is showing. */
-const focusedRouteName = (route: any): string => {
-  const nested = route?.state;
-  if (!nested?.routes?.length) return route?.name ?? "";
-  const child = nested.routes[nested.index ?? nested.routes.length - 1];
-  return focusedRouteName(child);
-};
-
 export default function TabBar({
   state,
   descriptors,
   navigation,
+  onInk = false,
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = useStyles();
   const { colors } = useTheme();
-
-  const onInk = MEDIA_ROUTES.has(focusedRouteName(state.routes[state.index]));
 
   const active = onInk ? colors.highlight : colors.tabBarActive;
   const rest = onInk ? colors.onInk : colors.tabBarInactive;

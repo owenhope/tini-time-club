@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { View } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import DiscoverTabs from "@/components/DiscoverTabs";
 import { makeStyles } from "@/theme";
 
@@ -17,9 +16,8 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      {/* The header owns the top inset, so the green runs up behind the
-          status bar rather than starting under it. */}
-      <StatusBar style="light" />
+      {/* The header owns the top inset and the status bar with it, so the
+          green runs up behind the notch rather than starting under it. */}
       <DiscoverTabs
         query={query}
         onTabChange={setActiveTab}

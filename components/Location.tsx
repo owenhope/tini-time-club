@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { View, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import CommentsSlider from "@/components/CommentsSlider";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
@@ -311,8 +310,6 @@ const Location = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-
       {/* Variant B, fading in on the same value that fades variant C out —
           one scroll, one animated value, both halves of the crossfade. */}
       <AppHeader
@@ -323,6 +320,10 @@ const Location = () => {
         progress={progress}
         collapsed={isCollapsed}
         overlay
+        // This screen has two headers, so one of them has to speak for the
+        // status bar: green while the block is up there, the theme's own once
+        // the paper bar has taken over.
+        statusBar={isCollapsed ? "auto" : "light"}
       />
 
       {/* Everything above the grid scrolls with it, the way the profile's
@@ -358,6 +359,7 @@ const Location = () => {
               actions={headerActions}
               progress={progress}
               collapsed={isCollapsed}
+              statusBar="none"
             />
 
             <View style={styles.body}>

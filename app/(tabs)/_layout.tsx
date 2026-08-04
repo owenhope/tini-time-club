@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Image, View, Text } from "react-native";
+import { Image } from "react-native";
 import { Tabs, useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useProfile } from "@/context/profile-context";
