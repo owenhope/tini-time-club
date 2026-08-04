@@ -12,8 +12,11 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { Image as ExpoImage } from "expo-image";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
+import CommentsSlider from "@/components/CommentsSlider";
+import LikeSlider from "@/components/LikeSlider";
 import AppHeader from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
 import { RatingPips, Skeleton } from "@/components/shared";
@@ -36,11 +39,10 @@ export interface ReviewGridProps {
   canDelete?: boolean;
   onDelete?: (review: Review) => void;
   onEdit?: (review: Review) => void;
-  onShowComments?: (
-    reviewId: string,
-    onCommentAdded: any,
-    onCommentDeleted: any
-  ) => void;
+  /**
+   * Called when the sheet's own comment slider changes something, so the list
+   * behind it can patch the row. The grid opens the slider itself — see below.
+   */
   onCommentAdded?: (reviewId: string, newComment: any) => void;
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
 }
@@ -66,7 +68,6 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   canDelete = false,
   onDelete,
   onEdit,
-  onShowComments,
   onCommentAdded,
   onCommentDeleted,
 }) => {
@@ -74,6 +75,21 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   const { colors } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const [active, setActive] = useState<Review | null>(null);
+  /**
+   * Comments and likes for the expanded card are opened and rendered inside
+   * the sheet, not by the screen behind it. A page-sheet Modal is its own
+   * native window: a bottom sheet mounted in the screen's tree slides up
+   * *under* it, which looked like the tap had done nothing.
+   */
+  const [commentsFor, setCommentsFor] = useState<Review | null>(null);
+  const [likesFor, setLikesFor] = useState<string | null>(null);
+
+  /** Closing the sheet has to take its own sheets with it. */
+  const closeSheet = useCallback(() => {
+    setCommentsFor(null);
+    setLikesFor(null);
+    setActive(null);
+  }, []);
 
   const tileSize = (windowWidth - GAP * (COLUMNS - 1)) / COLUMNS;
 
@@ -185,17 +201,19 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         visible={active !== null}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setActive(null)}
+        onRequestClose={closeSheet}
       >
-        <View style={styles.sheet}>
+        {/* Its own gesture root: the app's is in the screen's window, and a
+            bottom sheet in here would take no pan without one. */}
+        <GestureHandlerRootView style={styles.sheet}>
           {/* Variant D: the sheet is presented, so it gets the grabber and a
               text action rather than a back chevron. Done, not Close — the
               platform's own swipe-down already closes it. */}
           <AppHeader
             variant="modal"
             title={active?.location?.name ?? "Review"}
-            onCancel={() => setActive(null)}
-            action={{ label: "Done", onPress: () => setActive(null) }}
+            onCancel={closeSheet}
+            action={{ label: "Done", onPress: closeSheet }}
           />
 
           <ScrollView contentContainerStyle={styles.sheetBody}>
@@ -205,14 +223,27 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
                 canDelete={canDelete}
                 onDelete={onDelete ? () => onDelete(active) : undefined}
                 onEdit={onEdit ? () => onEdit(active) : undefined}
-                onShowLikes={() => {}}
-                onShowComments={onShowComments ?? (() => {})}
+                onShowLikes={() => setLikesFor(String(active.id))}
+                onShowComments={() => setCommentsFor(active)}
                 onCommentAdded={onCommentAdded ?? (() => {})}
                 onCommentDeleted={onCommentDeleted ?? (() => {})}
               />
             )}
           </ScrollView>
-        </View>
+
+          {commentsFor && (
+            <CommentsSlider
+              review={commentsFor}
+              onClose={() => setCommentsFor(null)}
+              onCommentAdded={onCommentAdded}
+              onCommentDeleted={onCommentDeleted}
+            />
+          )}
+
+          {likesFor && (
+            <LikeSlider reviewId={likesFor} onClose={() => setLikesFor(null)} />
+          )}
+        </GestureHandlerRootView>
       </Modal>
     </>
   );

@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { View, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import CommentsSlider from "@/components/CommentsSlider";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
@@ -56,8 +55,6 @@ const Location = () => {
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
     null
   );
-  const [selectedCommentReview, setSelectedCommentReview] =
-    useState<Review | null>(null);
   const loadedLocationIdRef = useRef<string | null>(null);
   // One value, both halves of the crossfade: variant C fades out on it as it
   // scrolls away and variant B fades in on the same number.
@@ -215,16 +212,6 @@ const Location = () => {
     }
   }, []);
 
-  const handleShowComments = useCallback(
-    (reviewId: string, onCommentAdded: any, onCommentDeleted: any) => {
-      const review = locationReviews.find((r) => r.id === reviewId);
-      if (review) {
-        setSelectedCommentReview(review);
-      }
-    },
-    [locationReviews]
-  );
-
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
       setLocationReviews((prev) =>
@@ -336,7 +323,6 @@ const Location = () => {
         onRefresh={onRefresh}
         onScroll={handleScroll}
         emptyComponent={renderEmpty()}
-        onShowComments={handleShowComments}
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
         onEdit={(review) =>
@@ -402,15 +388,6 @@ const Location = () => {
           </View>
         }
       />
-
-      {selectedCommentReview && (
-        <CommentsSlider
-          review={selectedCommentReview}
-          onClose={() => setSelectedCommentReview(null)}
-          onCommentAdded={handleCommentAdded}
-          onCommentDeleted={handleCommentDeleted}
-        />
-      )}
     </View>
   );
 };

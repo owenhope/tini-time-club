@@ -8,7 +8,6 @@ import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { Ionicons } from "@expo/vector-icons";
-import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -61,7 +60,6 @@ const Profile = () => {
     progress,
     onScroll: handleScroll,
   } = useCollapsibleHeader();
-  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
@@ -463,13 +461,6 @@ const Profile = () => {
         onDelete={(review) => confirmDeleteReview(review.id)}
         onEdit={(review) => router.push(routes.editCaption(review.id))}
       />
-
-      {selectedReviewId && (
-        <LikeSlider
-          reviewId={selectedReviewId}
-          onClose={() => setSelectedReviewId(null)}
-        />
-      )}
     </View>
   );
 };

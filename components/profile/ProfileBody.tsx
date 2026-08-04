@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -6,7 +6,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import CommentsSlider from "@/components/CommentsSlider";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Skeleton } from "@/components/shared";
@@ -71,16 +70,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const [commentReview, setCommentReview] = useState<Review | null>(null);
-
-  const handleShowComments = useCallback(
-    (reviewId: string) => {
-      const review = reviews.find((r) => String(r.id) === String(reviewId));
-      if (review) setCommentReview(review);
-    },
-    [reviews]
-  );
-
   // The patch is read by the row on its next render; see useComments in
   // ReviewItem, which applies it idempotently.
   const handleCommentAdded = useCallback(
@@ -123,7 +112,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           canDelete={canDelete}
           onDelete={onDelete}
           onEdit={onEdit}
-          onShowComments={handleShowComments}
           onCommentAdded={handleCommentAdded}
           onCommentDeleted={handleCommentDeleted}
         />
@@ -162,15 +150,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           scrollEventThrottle={16}
           contentContainerStyle={styles.regularsList}
           showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {commentReview && (
-        <CommentsSlider
-          review={commentReview}
-          onClose={() => setCommentReview(null)}
-          onCommentAdded={handleCommentAdded}
-          onCommentDeleted={handleCommentDeleted}
         />
       )}
     </>

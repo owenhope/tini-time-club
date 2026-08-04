@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
@@ -6,7 +7,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
-import { makeStyles } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 interface LikesSliderProps {
@@ -16,7 +17,11 @@ interface LikesSliderProps {
 
 export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
   const styles = useStyles();
+  const { colors } = useTheme();
   const [likesUsers, setLikesUsers] = useState<any[]>([]);
+  // An in-flight fetch and an unliked review both left the list empty, which
+  // read as "nobody" for as long as the query took.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,12 +36,14 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
         .limit(200);
       if (error) {
         reportError("Error fetching likes users:", error);
+        if (!cancelled) setLoading(false);
         return;
       }
       if (!cancelled) {
         setLikesUsers(
           (data ?? []).map((row: any) => row.profiles).filter(Boolean)
         );
+        setLoading(false);
       }
     };
 
@@ -73,7 +80,20 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
       handleIndicatorStyle={styles.sheetHandle}
     >
       <BottomSheetView style={styles.content}>
-        <ProfileList profiles={likesUsers} enableSearch={false} />
+        {loading ? (
+          <View style={styles.state}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        ) : likesUsers.length === 0 ? (
+          <View style={styles.state}>
+            <Text style={styles.emptyTitle}>No takers yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Be the first to raise a glass to this one.
+            </Text>
+          </View>
+        ) : (
+          <ProfileList profiles={likesUsers} enableSearch={false} />
+        )}
       </BottomSheetView>
     </BottomSheet>
   );
@@ -98,5 +118,21 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     paddingHorizontal: t.spacing.gutter,
     paddingBottom: t.spacing.lg,
+  },
+  state: {
+    alignItems: "center" as const,
+    paddingTop: t.spacing.xxl,
+    gap: t.spacing.sm,
+  },
+  emptyTitle: {
+    ...t.typography.title,
+    color: t.colors.text,
+  },
+  emptySubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: t.colors.textMuted,
+    textAlign: "center" as const,
+    paddingHorizontal: t.spacing.xxl,
   },
 }));
