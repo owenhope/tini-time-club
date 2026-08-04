@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import {
+  Animated,
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { Avatar, StatCard } from "@/components/shared";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
@@ -52,6 +58,12 @@ interface ProfileHeaderProps {
   /** Variant C: the leading control, and the controls on the right. */
   onBack?: () => void;
   actions?: HeaderAction[];
+  /**
+   * The screen's scroll value. The block's header fades out on it while the
+   * screen's own compact bar fades in, so the two are always the same gesture.
+   */
+  progress?: Animated.Value;
+  collapsed?: boolean;
 }
 
 /** One of the three stat tiles under the identity block. */
@@ -91,6 +103,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   variant = "large",
   onBack,
   actions,
+  progress,
+  collapsed,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -133,9 +147,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <AppHeader
           variant="media"
           title={profile.username}
-          meta={profile.name ?? undefined}
+          // No meta line: the name is the identity row's job, and setting it
+          // here printed it twice, eight points apart.
           onBack={onBack}
           actions={actions}
+          progress={progress}
+          collapsed={collapsed}
+          // The screen's compact bar speaks for the status bar; two headers
+          // both claiming it is a race.
+          statusBar="none"
         />
       ) : (
         <AppHeader
@@ -144,6 +164,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           preserveCase
           title={profile.username}
           trailing={titleAction}
+          progress={progress}
+          collapsed={collapsed}
+          statusBar="none"
         />
       )}
 

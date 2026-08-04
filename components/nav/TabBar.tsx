@@ -236,9 +236,10 @@ export default function TabBar({
 }
 
 const useStyles = makeStyles((t) => ({
-  // The bar never auto-hides, so it earns its translucency: the paper reads
-  // the content sliding under it. (The drawn 14px blur needs expo-blur, and
-  // that needs a new dev client.)
+  // The drawn bar is paper at 94% over a 14px blur. The blur needs expo-blur,
+  // which needs a new dev client, so the fill keeps a touch of the
+  // translucency and no more — enough to hint at the content sliding under it
+  // without the labels having to compete with it.
   tabBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: t.colors.divider,
@@ -253,11 +254,11 @@ const useStyles = makeStyles((t) => ({
     right: 0,
     bottom: 0,
     backgroundColor: t.colors.tabBar,
-    opacity: 0.94,
+    opacity: 0.97,
   },
   fillOnInk: {
     backgroundColor: t.colors.surfaceInk,
-    opacity: 0.88,
+    opacity: 0.94,
   },
   row: {
     flexDirection: "row" as const,

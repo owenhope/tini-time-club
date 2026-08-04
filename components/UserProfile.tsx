@@ -17,6 +17,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import { useGoBack } from "@/hooks/useAppNavigation";
+import AppHeader from "@/components/nav/AppHeader";
+import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import databaseService from "@/services/databaseService";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
@@ -43,6 +45,13 @@ const UserProfile = () => {
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
   const goBack = useGoBack();
+  // One value for both halves of the crossfade: header C fades out on it as
+  // the identity block scrolls away, header B fades in on the same number.
+  const {
+    isCollapsed,
+    progress,
+    onScroll: handleScroll,
+  } = useCollapsibleHeader();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
 
@@ -356,19 +365,23 @@ const UserProfile = () => {
   ) : null;
 
   // Header scrolls with the grid rather than sitting fixed above it.
+  const menuActions = [
+    {
+      icon: "ellipsis-horizontal" as const,
+      onPress: showProfileMenu,
+      accessibilityLabel: `More options for ${displayProfile?.username}`,
+    },
+  ];
+
   const header = (
     <>
       <ProfileHeader
         profile={displayProfile}
         variant="media"
         onBack={goBack}
-        actions={[
-          {
-            icon: "ellipsis-horizontal",
-            onPress: showProfileMenu,
-            accessibilityLabel: `More options for ${displayProfile?.username}`,
-          },
-        ]}
+        actions={menuActions}
+        progress={progress}
+        collapsed={isCollapsed}
         reviewsCount={userReviews.length}
         followersCount={followersCount}
         followingCount={followingCount}
@@ -405,9 +418,20 @@ const UserProfile = () => {
 
   return (
     <View style={styles.container}>
+      <AppHeader
+        variant="compact"
+        title={displayProfile?.username ?? ""}
+        onBack={goBack}
+        actions={menuActions}
+        progress={progress}
+        collapsed={isCollapsed}
+        overlay
+        statusBar={isCollapsed ? "auto" : "light"}
+      />
       <ProfileBody
         activeTab={activeTab}
         header={header}
+        onScroll={handleScroll}
         reviews={userReviews}
         setReviews={setUserReviews}
         loadingReviews={loadingReviews}

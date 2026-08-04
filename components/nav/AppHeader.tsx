@@ -518,7 +518,14 @@ const useStyles = makeStyles((t) => ({
     right: 0,
     zIndex: 10,
   },
-  // Translucent rather than solid: the drawn bar reads the content behind it.
+  /**
+   * The drawing's bar is paper at 94% over a 14px blur, and the two go
+   * together: the blur is what turns the content behind it into a wash. With
+   * no blur available (expo-blur is a native module and would need a new dev
+   * client) 94% alone let a whole identity block read through the title. Solid
+   * until the blur can come with it — the spec's own rule is that the bar has
+   * to be opaque enough to read.
+   */
   compactFill: {
     ...({ position: "absolute" } as const),
     top: 0,
@@ -526,7 +533,6 @@ const useStyles = makeStyles((t) => ({
     right: 0,
     bottom: 0,
     backgroundColor: t.colors.background,
-    opacity: 0.94,
   },
   compactEnd: {
     flexDirection: "row" as const,

@@ -12,6 +12,8 @@ import LikeSlider from "@/components/LikeSlider";
 import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
+import AppHeader from "@/components/nav/AppHeader";
+import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
@@ -52,6 +54,13 @@ const Profile = () => {
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
+  // One value for both halves of the crossfade: header A fades out on it as
+  // the identity block scrolls away, header B fades in on the same number.
+  const {
+    isCollapsed,
+    progress,
+    onScroll: handleScroll,
+  } = useCollapsibleHeader();
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
@@ -317,6 +326,12 @@ const Profile = () => {
     getRankTier(profile?.review_count ?? userReviews.length)?.color ??
     colors.borderStrong;
 
+  const settingsAction = {
+    icon: "settings-outline" as const,
+    onPress: () => navigation.navigate("settings" as never),
+    accessibilityLabel: "Profile settings",
+  };
+
   // The header is the list header rather than a sibling, so the whole profile
   // scrolls away and the grid gets the full screen.
   const header = (
@@ -330,11 +345,9 @@ const Profile = () => {
         onAvatarPress={pickImage}
         avatarLoading={avatarLoading}
         avatarError={avatarError}
-        titleAction={{
-          icon: "settings-outline",
-          onPress: () => navigation.navigate("settings" as never),
-          accessibilityLabel: "Profile settings",
-        }}
+        titleAction={settingsAction}
+        progress={progress}
+        collapsed={isCollapsed}
         onAvatarLongPress={
           __DEV__ ? () => setRankPreviewOpen((open) => !open) : undefined
         }
@@ -407,9 +420,19 @@ const Profile = () => {
 
   return (
     <View style={styles.container}>
+      <AppHeader
+        variant="compact"
+        title={profile?.username ?? ""}
+        trailing={settingsAction}
+        progress={progress}
+        collapsed={isCollapsed}
+        overlay
+        statusBar={isCollapsed ? "auto" : "light"}
+      />
       <ProfileBody
         activeTab={activeTab}
         header={header}
+        onScroll={handleScroll}
         reviews={userReviews}
         setReviews={setUserReviews}
         loadingReviews={loadingReviews}

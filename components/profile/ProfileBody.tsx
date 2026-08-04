@@ -1,5 +1,11 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import CommentsSlider from "@/components/CommentsSlider";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
 import ReviewGrid from "@/components/ReviewGrid";
@@ -26,6 +32,9 @@ export interface ProfileBodyProps {
   loadingRegulars: boolean;
   onRefreshRegulars: () => void;
   emptyRegulars: React.ReactElement | null;
+
+  /** Drives the header crossfade — whichever list is showing reports it. */
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 
   /** Own-profile only: the expanded card gets delete and edit. */
   canDelete?: boolean;
@@ -55,6 +64,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
   loadingRegulars,
   onRefreshRegulars,
   emptyRegulars,
+  onScroll,
   canDelete = false,
   onDelete,
   onEdit,
@@ -109,6 +119,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           loading={loadingReviews}
           refreshing={refreshingReviews}
           onRefresh={onRefreshReviews}
+          onScroll={onScroll}
           canDelete={canDelete}
           onDelete={onDelete}
           onEdit={onEdit}
@@ -147,6 +158,8 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
               tintColor={colors.accent}
             />
           }
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={styles.regularsList}
           showsVerticalScrollIndicator={false}
         />
