@@ -325,6 +325,7 @@ const Location = () => {
         emptyComponent={renderEmpty()}
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
+        contentTone="surface"
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
             ? router.push(routes.editCaption(review.id))
@@ -332,27 +333,21 @@ const Location = () => {
         }
         header={
           <View>
-            {/* Variant C. `locations` has no image column yet, and borrowing a
-                member's review photo would make the venue look like it
-                endorsed one person's Tuesday — so the ground is the brand's
-                deep green until a venue photo lands, at which point it drops
-                in behind the same scrim and nothing else moves. */}
-            <AppHeader
-              variant="media"
-              title={displayLocation?.name ?? ""}
-              meta={headerCityRegion ?? undefined}
-              onBack={goBack}
-              actions={headerActions}
-              progress={progress}
-              collapsed={isCollapsed}
-              statusBar="none"
-            />
+            <View style={styles.venueHeader}>
+              {/* Like profile, the venue identity and its stats live together
+                  on the green header ground. */}
+              <AppHeader
+                variant="media"
+                title={displayLocation?.name ?? ""}
+                meta={headerCityRegion ?? undefined}
+                onBack={goBack}
+                actions={headerActions}
+                progress={progress}
+                collapsed={isCollapsed}
+                statusBar="none"
+              />
 
-            <View style={styles.body}>
-              {/* The place's aggregates are the screen's one flat-colour
-                  block: full-width rows inside it rather than three columns
-                  competing for 402pt, and the regulars as a rail underneath. */}
-              <View style={styles.overviewCard}>
+              <View style={styles.venueHeaderContent}>
                 <RatingSummary
                   overall={displayLocation?.rating}
                   taste={displayLocation?.taste_avg}
@@ -371,14 +366,16 @@ const Location = () => {
                   </View>
                 ) : null}
               </View>
+            </View>
 
+            <View style={styles.reviewsIntro}>
               <SectionHeader
                 eyebrow={
                   displayLocation?.total_ratings
                     ? `${displayLocation.total_ratings} ${
                         displayLocation.total_ratings === 1
-                          ? "verdict"
-                          : "verdicts"
+                          ? "review"
+                          : "reviews"
                       }`
                     : "The record"
                 }
@@ -395,26 +392,26 @@ const Location = () => {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: t.colors.background,
+    backgroundColor: t.colors.surface,
   },
-  body: {
-    padding: t.spacing.lg,
+  venueHeader: {
+    backgroundColor: t.colors.surfaceInkDeep,
+  },
+  venueHeaderContent: {
     paddingHorizontal: t.spacing.gutter,
-    gap: t.spacing.lg - 2,
-  },
-  // Soft-square, inset on paper — the block is a card on the page, not a
-  // band across it.
-  overviewCard: {
-    backgroundColor: t.colors.surfaceInk,
-    borderRadius: t.radius.card,
-    paddingHorizontal: t.spacing.lg + 2,
-    paddingVertical: t.spacing.lg,
+    paddingBottom: t.spacing.xl,
     gap: t.spacing.lg,
   },
   regularsRail: {
     borderTopWidth: 1,
     borderTopColor: t.colors.ratingTrackOnInk,
     paddingTop: t.spacing.lg - 2,
+  },
+  reviewsIntro: {
+    backgroundColor: t.colors.surface,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.lg,
+    paddingBottom: t.spacing.lg - 2,
   },
   emptyContainer: {
     alignItems: "center" as const,

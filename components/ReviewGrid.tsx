@@ -45,6 +45,8 @@ export interface ReviewGridProps {
    */
   onCommentAdded?: (reviewId: string, newComment: any) => void;
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
+  /** Lets place pages use the same white review well as expanded reviews. */
+  contentTone?: "paper" | "surface";
 }
 
 /**
@@ -70,6 +72,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   onEdit,
   onCommentAdded,
   onCommentDeleted,
+  contentTone = "paper",
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -149,7 +152,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         </Pressable>
       );
     },
-    [colors.textOnImage, styles, tileSize]
+    [colors.accentOnImage, styles, tileSize]
   );
 
   return (
@@ -181,7 +184,10 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         onEndReached={onEndReached}
         onEndReachedThreshold={0.4}
         columnWrapperStyle={reviews.length > 0 ? styles.row : undefined}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          contentTone === "surface" && styles.contentSurface,
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
@@ -253,6 +259,9 @@ const useStyles = makeStyles((t) => ({
   content: {
     paddingBottom: t.spacing.xxl,
     backgroundColor: t.colors.background,
+  },
+  contentSurface: {
+    backgroundColor: t.colors.surface,
   },
   row: {
     marginBottom: GAP,

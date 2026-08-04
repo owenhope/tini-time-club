@@ -15,7 +15,7 @@ import {
   Linking,
   ActivityIndicator,
 } from "react-native";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import MapView from "@/components/map/ClusteredMap";
 import {
   Region,
@@ -47,7 +47,7 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 0.12,
 };
 
-const SHEET_HEIGHT = 390;
+const SHEET_HEIGHT = 240;
 const FETCH_DEBOUNCE_MS = 250;
 const FETCH_PADDING = 0.35;
 
@@ -89,6 +89,35 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
   outer.minLong <= inner.minLong &&
   outer.maxLong >= inner.maxLong;
 
+const ClusterPin = ({ count }: { count: number }) => {
+  const styles = useStyles();
+  const size = count >= 25 ? 58 : count >= 10 ? 48 : 38;
+
+  return (
+    <View
+      style={[
+        styles.clusterPin,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        },
+      ]}
+    >
+      <Text style={styles.clusterCount}>{count}</Text>
+    </View>
+  );
+};
+
+const UserDot = () => {
+  const styles = useStyles();
+  return (
+    <View style={styles.userHalo}>
+      <View style={styles.userDot} />
+    </View>
+  );
+};
+
 function Map() {
   const styles = useStyles();
   const params = useLocalSearchParams();
@@ -97,6 +126,10 @@ function Map() {
   const [locationResolved, setLocationResolved] = useState(false);
   const [locations, setLocations] = useState<MapLocation[]>([]);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [userCoordinate, setUserCoordinate] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [canOpenLocationSettings, setCanOpenLocationSettings] =
     useState<boolean>(false);
   const mapRef = useRef<any>(null);
@@ -148,20 +181,47 @@ function Map() {
 
   const markerElements = useMemo(
     () =>
-      locations.map((location) => (
-        <Marker
-          key={location.id}
-          coordinate={{ latitude: location.lat, longitude: location.long }}
-          anchor={{ x: 0.5, y: 1 }}
-          tracksViewChanges={false}
-          stopPropagation
-          onPress={() => handleMarkerPress(location)}
-        >
-          <LocationPin loc={location} />
-        </Marker>
-      )),
-    [handleMarkerPress, locations]
+      locations.map((location) => {
+        const isSelected = String(location.id) === String(selectedLocationId);
+
+        return (
+          <Marker
+            key={`${location.id}-${isSelected ? "selected" : "idle"}`}
+            coordinate={{ latitude: location.lat, longitude: location.long }}
+            anchor={{ x: 0.5, y: 1 }}
+            tracksViewChanges={false}
+            stopPropagation
+            zIndex={isSelected ? 10 : 1}
+            onPress={() => handleMarkerPress(location)}
+          >
+            <LocationPin
+              loc={location}
+              selected={isSelected}
+            />
+          </Marker>
+        );
+      }),
+    [handleMarkerPress, locations, selectedLocationId]
   );
+
+  const renderCluster = useCallback((cluster: any) => {
+    const [longitude, latitude] = cluster.geometry.coordinates;
+    const count = cluster.properties.point_count;
+
+    return (
+      <Marker
+        key={`cluster-${cluster.id}`}
+        coordinate={{ latitude, longitude }}
+        anchor={{ x: 0.5, y: 0.5 }}
+        tracksViewChanges={false}
+        onPress={cluster.onPress}
+        stopPropagation
+        zIndex={5}
+      >
+        <ClusterPin count={count} />
+      </Marker>
+    );
+  }, []);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -192,6 +252,10 @@ function Map() {
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         };
+        setUserCoordinate({
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+        });
         regionRef.current = initial;
         setRegion(initial);
         mapRef.current?.animateToRegion(initial, 1000);
@@ -306,9 +370,6 @@ function Map() {
 
   return (
     <View style={styles.screen}>
-      {/* Header A: the screen's name in the display cut, and the search field
-          inside the green with it. Never a chip row as well — the green
-          carries one control, not two. */}
       <AppHeader
         variant="large"
         title="places"
@@ -324,7 +385,7 @@ function Map() {
         }
       />
       <View
-        style={{ flex: 1 }}
+        style={styles.mapFrame}
         onLayout={(event) => {
           mapHeightRef.current = event.nativeEvent.layout.height;
         }}
@@ -345,11 +406,14 @@ function Map() {
             provider={
               Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
             }
-            mapType="standard"
+            mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
             clusteringEnabled={true}
-            style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
-            showsUserLocation
-            showsMyLocationButton
+            renderCluster={renderCluster}
+            style={StyleSheet.absoluteFill}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsPointsOfInterests={false}
+            showsBuildings={false}
             rotateEnabled={false}
             initialRegion={region}
             onRegionChangeComplete={onRegionChangeComplete}
@@ -361,6 +425,15 @@ function Map() {
               }
             }}
           >
+            {userCoordinate ? (
+              <Marker
+                coordinate={userCoordinate}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
+              >
+                <UserDot />
+              </Marker>
+            ) : null}
             {markerElements}
           </MapView>
         ) : (
@@ -368,8 +441,6 @@ function Map() {
             <ActivityIndicator size="small" />
           </View>
         )}
-        {/* No backdrop on purpose: the map has to stay interactive while the
-            sheet is up, and tapping the map already dismisses it. */}
         <BottomSheet
           ref={sheetRef}
           index={-1}
@@ -381,12 +452,9 @@ function Map() {
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
         >
-          <BottomSheetScrollView
-            contentContainerStyle={styles.sheetContent}
-            showsVerticalScrollIndicator={false}
-          >
+          <BottomSheetView style={styles.sheetContent}>
             {selectedLocation && <LocationDetails loc={selectedLocation} />}
-          </BottomSheetScrollView>
+          </BottomSheetView>
         </BottomSheet>
       </View>
     </View>
@@ -394,10 +462,13 @@ function Map() {
 }
 
 const useStyles = makeStyles((t) => ({
-  // No background of its own: the map renders at a negative z-index, so
-  // anything painted here would cover it.
   screen: {
     flex: 1,
+    backgroundColor: t.colors.background,
+  },
+  mapFrame: {
+    flex: 1,
+    overflow: "hidden" as const,
   },
   mapLoading: {
     position: "absolute" as const,
@@ -422,27 +493,49 @@ const useStyles = makeStyles((t) => ({
     gap: 6,
   },
   noticeText: {
+    ...t.typography.caption,
     color: t.colors.textOnImage,
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    lineHeight: 20,
   },
   noticeAction: {
+    ...t.typography.caption,
     color: t.colors.accent,
-    fontSize: 13,
     fontFamily: fonts.bold,
   },
   markerContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
   },
-  pin: {
+  clusterPin: {
+    backgroundColor: t.colors.surfaceInkDeep,
+    borderWidth: 4,
+    borderColor: t.colors.surface,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    ...t.elevation.raised,
+  },
+  clusterCount: {
+    ...t.typography.heading,
+    color: t.colors.highlight,
+    fontFamily: fonts.black,
+    lineHeight: 20,
+    textAlign: "center" as const,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  userHalo: {
     width: 40,
     height: 40,
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
-    justifyContent: "center" as const,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(232, 118, 61, 0.22)",
+  },
+  userDot: {
+    width: 20,
+    height: 20,
+    borderRadius: t.radius.pill,
+    borderWidth: 4,
+    borderColor: t.colors.surface,
+    backgroundColor: t.colors.ratingPipDot,
   },
   sheetShadow: {
     ...t.elevation.raised,
@@ -459,7 +552,9 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.borderStrong,
   },
   sheetContent: {
-    paddingBottom: t.spacing.xl,
+    flex: 1,
+    paddingHorizontal: t.spacing.gutter,
+    paddingBottom: t.spacing.lg,
   },
 }));
 

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import { View, Text, Animated, Easing } from "react-native";
-import { makeStyles } from "@/theme";
+import React, { useMemo } from "react";
+import { View, Text } from "react-native";
+import { makeStyles, useTheme } from "@/theme";
+import RatingPips from "./RatingPips";
 
 export const RATING_MAX = 5;
 
@@ -15,7 +16,7 @@ export interface RatingSummaryProps {
   tone?: RatingSummaryTone;
   /** Hide the review count (e.g. where it would be meaningless). */
   showReviewCount?: boolean;
-  /** Start the fill animation only when the surrounding content is visible. */
+  /** Kept for callers from the former bar design; olives do not animate. */
   animateBars?: boolean;
 }
 
@@ -24,12 +25,8 @@ const format = (value?: number | null) =>
 
 /**
  * A place's aggregate: the blended score, then taste and presentation as
- * meters, each on a full-width row of its own.
- *
- * The three-column arrangement this replaced gave the meters ~89pt on the bar
- * page and ~62pt in the map sheet, so "Presentation" truncated to "Pre…" — the
- * label lost before the number did. Nothing has to shrink here, and the same
- * block fits any sheet height.
+ * olive rows. This intentionally matches review cards and the map peek sheet:
+ * one rating language across every place surface.
  *
  * Value is never encoded by colour alone: the numeral is always present.
  */
@@ -40,7 +37,6 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
   reviewCount,
   tone = "surface",
   showReviewCount = true,
-  animateBars = true,
 }) => {
   const styles = useStyles();
   const onImage = tone === "onImage";
@@ -98,91 +94,57 @@ const RatingSummary: React.FC<RatingSummaryProps> = ({
       )}
 
       {hasBreakdown ? (
-        <View style={styles.bars}>
-          <RatingBar
-            label="Taste"
-            value={taste}
-            onImage={onImage}
-            active={animateBars}
-          />
-          <RatingBar
-            label="Presentation"
-            value={presentation}
-            onImage={onImage}
-            active={animateBars}
-          />
+        <View style={styles.axes}>
+          {taste != null ? (
+            <RatingAxis label="Taste" value={taste} onImage={onImage} />
+          ) : null}
+          {presentation != null ? (
+            <RatingAxis
+              label="Presentation"
+              value={presentation}
+              onImage={onImage}
+            />
+          ) : null}
         </View>
       ) : null}
     </View>
   );
 };
 
-const RatingBar = ({
+const RatingAxis = ({
   label,
   value,
   onImage,
-  active,
 }: {
   label: string;
-  value?: number | null;
+  value: number;
   onImage: boolean;
-  active: boolean;
 }) => {
   const styles = useStyles();
-  const pct = value == null ? 0 : Math.max(0, Math.min(1, value / RATING_MAX));
-
-  // The fill grows from empty to the score when the bar appears (and glides
-  // to the new value if the score changes in place).
-  const fill = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    fill.stopAnimation();
-
-    if (!active) {
-      fill.setValue(0);
-      return;
-    }
-
-    const animation = Animated.timing(fill, {
-      toValue: pct,
-      duration: 650,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // drives width
-    });
-    animation.start();
-
-    return () => animation.stop();
-  }, [active, pct, fill]);
+  const { colors } = useTheme();
 
   return (
     <View
-      style={styles.bar}
+      style={styles.axis}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <View style={styles.barHeader}>
-        {/* Full width, so the label sets at the system's eyebrow size and
-            never has to truncate. */}
+      <View style={styles.axisHeader}>
         <Text style={[styles.eyebrow, onImage && styles.eyebrowOnInk]}>
           {label}
         </Text>
-        <Text style={[styles.barValue, onImage && styles.barValueOnInk]}>
-          {format(value) ?? "—"}
+        <Text style={[styles.axisValue, onImage && styles.axisValueOnInk]}>
+          {format(value)}
         </Text>
       </View>
-      <View style={[styles.track, onImage && styles.trackOnInk]}>
-        <Animated.View
-          style={[
-            styles.fill,
-            onImage && styles.fillOnInk,
-            {
-              width: fill.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["0%", "100%"],
-              }),
-            },
-          ]}
-        />
-      </View>
+      <RatingPips
+        value={value}
+        size={16}
+        onDark={onImage}
+        bodyColor={onImage ? colors.ratingFillOnInk : undefined}
+        emptyColor={onImage ? colors.ratingTrackOnInk : undefined}
+        accessibilityLabel=""
+      />
     </View>
   );
 };
@@ -201,8 +163,6 @@ const useStyles = makeStyles((t) => ({
   // the numerals in RN, so the tightness comes from negative margin.
   score: {
     ...t.typography.displayLarge,
-    fontSize: 46,
-    lineHeight: 48,
     marginBottom: -6,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
@@ -237,46 +197,25 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.textMuted,
   },
-  bars: {
+  axes: {
     gap: t.spacing.md - 2,
   },
-  bar: {
-    gap: 5,
+  axis: {
+    gap: 6,
   },
-  barHeader: {
+  axisHeader: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.sm,
   },
-  barValue: {
+  axisValue: {
     ...t.typography.mono,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },
-  barValueOnInk: {
+  axisValueOnInk: {
     color: t.colors.onInk,
-  },
-  track: {
-    height: 7,
-    width: "100%" as const,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.ratingTrack,
-    overflow: "hidden" as const,
-  },
-  trackOnInk: {
-    backgroundColor: t.colors.ratingTrackOnInk,
-  },
-  fill: {
-    height: "100%" as const,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.ratingFill,
-  },
-  // One rule for the meter: the rating accent for whichever ground it is on.
-  // White here read as neutral chrome and left the accent showing on only one
-  // of the two screens that draw the same two numbers.
-  fillOnInk: {
-    backgroundColor: t.colors.ratingFillOnInk,
   },
 }));
 

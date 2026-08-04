@@ -41,7 +41,7 @@ const summaryLabel = (tree: renderer.ReactTestRenderer): string => {
 };
 
 describe("RatingSummary", () => {
-  it("labels the score and both meters", () => {
+  it("labels the score and both olive axes", () => {
     const tree = render(
       <RatingSummary overall={4.2} taste={4.1} presentation={4.4} />
     );

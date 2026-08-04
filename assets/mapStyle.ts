@@ -1,109 +1,93 @@
 export const mapStyle = [
-  // Hide most POI labels to reduce clutter
+  {
+    elementType: "geometry",
+    stylers: [{ color: "#F4F1EA" }],
+  },
+  {
+    elementType: "labels.icon",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#8A938F" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#F4F1EA" }],
+  },
+  {
+    featureType: "administrative",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "landscape.man_made",
+    elementType: "geometry",
+    stylers: [{ color: "#F4F1EA" }],
+  },
   {
     featureType: "poi",
     elementType: "labels",
-    stylers: [
-      {
-        visibility: "off",
-      },
-    ],
+    stylers: [{ visibility: "off" }],
   },
-  // Keep business labels visible
   {
     featureType: "poi.business",
-    elementType: "labels",
-    stylers: [
-      {
-        visibility: "on",
-      },
-    ],
-  },
-  // Hide transit labels
-  {
-    featureType: "transit",
-    elementType: "labels",
-    stylers: [
-      {
-        visibility: "off",
-      },
-    ],
-  },
-  // Keep city labels visible
-  {
-    featureType: "administrative.locality",
-    elementType: "labels",
-    stylers: [
-      {
-        visibility: "on",
-      },
-    ],
+    elementType: "all",
+    stylers: [{ visibility: "off" }],
   },
   {
-    featureType: "administrative.neighborhood",
-    elementType: "labels",
-    stylers: [
-      {
-        visibility: "on",
-      },
-    ],
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#E2EDE1" }],
   },
-  // Keep roads but make them subtle
+  {
+    featureType: "poi.park",
+    elementType: "labels.text",
+    stylers: [{ visibility: "on" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#8A938F" }],
+  },
   {
     featureType: "road",
     elementType: "geometry",
-    stylers: [
-      {
-        color: "#f5f5f5",
-      },
-    ],
+    stylers: [{ color: "#FFFFFF" }],
   },
   {
     featureType: "road",
-    elementType: "labels",
-    stylers: [
-      {
-        visibility: "simplified",
-      },
-    ],
+    elementType: "labels.text",
+    stylers: [{ visibility: "on" }],
   },
-  // Make highways more visible but still clean
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#8A938F" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#F4F1EA" }],
+  },
   {
     featureType: "road.highway",
     elementType: "geometry",
-    stylers: [
-      {
-        color: "#e0e0e0",
-      },
-    ],
+    stylers: [{ color: "#FFFFFF" }],
   },
-  // Keep water clean and simple
+  {
+    featureType: "transit",
+    elementType: "all",
+    stylers: [{ visibility: "off" }],
+  },
   {
     featureType: "water",
     elementType: "geometry",
-    stylers: [
-      {
-        color: "#a0c8f0",
-      },
-    ],
-  },
-  // Keep parks but make them subtle
-  {
-    featureType: "poi.park",
-    elementType: "geometry.fill",
-    stylers: [
-      {
-        color: "#d4f0d4",
-      },
-    ],
+    stylers: [{ color: "#D7E6E3" }],
   },
   {
-    featureType: "poi.park",
+    featureType: "water",
     elementType: "labels",
-    stylers: [
-      {
-        visibility: "off",
-      },
-    ],
+    stylers: [{ visibility: "off" }],
   },
 ];

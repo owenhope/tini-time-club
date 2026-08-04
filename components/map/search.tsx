@@ -33,7 +33,6 @@ interface SearchProps {
   currentLocation: { latitude: number; longitude: number } | null;
 }
 
-
 const Search = forwardRef<any, SearchProps>(
   ({ onPlaceSelected, currentLocation }, ref) => {
     const styles = useStyles();
@@ -223,10 +222,9 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.border,
   },
   textInput: {
+    ...t.typography.body,
     flex: 1,
     color: t.colors.text,
-    fontFamily: fonts.regular,
-    fontSize: 15,
     marginLeft: t.spacing.md,
   },
   clearButton: {
@@ -248,14 +246,13 @@ const useStyles = makeStyles((t) => ({
     borderBottomColor: t.colors.border,
   },
   resultName: {
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     fontFamily: fonts.medium,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   resultAddress: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
   },
 }));
