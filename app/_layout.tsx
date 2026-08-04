@@ -40,6 +40,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider } from "@/context/profile-context";
+import AppHeader from "@/components/nav/AppHeader";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
 import {
   createSessionFromAuthUrl,
@@ -401,9 +402,14 @@ function RootLayoutNav() {
           options={{
             headerShown: true,
             title: "Edit Caption",
-            headerBackButtonDisplayMode: "minimal",
-            headerTintColor: colors.text,
-            headerStyle: { backgroundColor: colors.surface },
+            // Variant B, like every other pushed screen in the app.
+            header: ({ options, navigation, back }) => (
+              <AppHeader
+                variant="compact"
+                title={options.title ?? ""}
+                onBack={back ? navigation.goBack : undefined}
+              />
+            ),
           }}
         />
       </Stack>

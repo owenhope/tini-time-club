@@ -169,12 +169,6 @@ const UserProfile = () => {
     }
   }, [displayProfile, loadFollowCounts]);
 
-  // The screen draws its own header (variant C, inside the scrolling list
-  // header), so the stack's bar has nothing left to do.
-  useEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
   /**
    * Block lives behind the overflow menu rather than beside Follow: it is rare
    * and semi-destructive, and giving it equal billing invited mis-taps.

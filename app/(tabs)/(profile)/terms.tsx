@@ -1,33 +1,12 @@
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { View, Text, ScrollView } from "react-native";
+import { fonts, makeStyles } from "@/theme";
 
 const Terms = () => {
   const styles = useStyles();
-  const { colors } = useTheme();
-  const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms of Service</Text>
-        <View style={styles.placeholder} />
-      </View>
-
+    <View style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
         <Text style={styles.title}>
           Terms of Service & Community Guidelines
@@ -115,7 +94,7 @@ const Terms = () => {
           understood, and agree to be bound by them.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -123,26 +102,6 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.colors.surface,
-  },
-  header: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
-  },
-  backButton: {
-    padding: t.spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semibold,
-    color: t.colors.text,
-  },
-  placeholder: {
-    width: 40,
   },
   content: {
     flex: 1,

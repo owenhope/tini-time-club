@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
-import { fonts, useTheme } from "@/theme";
+import AppHeader from "@/components/nav/AppHeader";
+import { useTheme } from "@/theme";
 
 /**
  * One layout serving every tab's stack via expo-router's array syntax, so the
@@ -17,14 +18,19 @@ export const unstable_settings = {
   profile: { initialRouteName: "profile" },
 };
 
-// These roots draw their own chrome (the profile root keeps the stack
-// header for its title + settings button).
+/**
+ * These routes draw their own chrome: the four tab roots wear header A, and
+ * the two detail screens wear header C inside their own scrolling content.
+ * Everything else is a pushed list or a settings page, which is header B —
+ * and B is what the `header` renderer below hands them.
+ */
 const HEADERLESS = new Set([
   "home",
   "discover",
   "places",
-  "terms",
-  "delete-account",
+  "profile",
+  "places/[place]",
+  "users/[username]",
 ]);
 
 const TITLES: Record<string, string> = {
@@ -34,6 +40,8 @@ const TITLES: Record<string, string> = {
   "edit-profile": "Edit Profile",
   "favorite-location": "Favorite Location",
   "place-info": "Information",
+  terms: "Terms of Service",
+  "delete-account": "Delete Account",
 };
 
 export default function SharedTabLayout() {
@@ -42,20 +50,19 @@ export default function SharedTabLayout() {
   return (
     <Stack
       screenOptions={({ route }) => ({
-        headerBackButtonDisplayMode: "minimal",
-        headerTintColor: colors.accent,
-        headerStyle: { backgroundColor: colors.surface },
-        // Without an explicit family every nav title falls back to system SF —
-        // the weight cannot be inferred from a static Figtree family.
-        headerTitleStyle: {
-          color: colors.text,
-          fontFamily: fonts.bold,
-          fontSize: 17,
-        },
-        headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },
         headerShown: !HEADERLESS.has(route.name),
         ...(TITLES[route.name] ? { title: TITLES[route.name] } : {}),
+        // Variant B for every pushed screen, in place of the platform bar —
+        // the outlined circles and the centred sentence-case title are the
+        // drawing's, and the native header cannot draw either.
+        header: ({ options, navigation, back }) => (
+          <AppHeader
+            variant="compact"
+            title={options.title ?? ""}
+            onBack={back ? navigation.goBack : undefined}
+          />
+        ),
       })}
     />
   );

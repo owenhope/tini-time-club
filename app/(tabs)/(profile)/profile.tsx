@@ -86,12 +86,6 @@ const Profile = () => {
     reviewOptions: { limit: 50, offset: 0 },
   });
 
-  // No nav bar: the identity block titles the screen, the way Places and
-  // Discover do.
-  useEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
   // Focus-refresh staleness gate; pull-to-refresh bypasses it via isRefresh.
   const PROFILE_REFRESH_AFTER = 30 * 1000;
   const lastProfileLoadRef = useRef(0);

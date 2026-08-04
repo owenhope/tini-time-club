@@ -3,13 +3,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   TextInput,
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
@@ -103,18 +101,7 @@ const DeleteAccount = () => {
   const isDeleteEnabled = username === profile?.username && !isDeleting;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Delete Account</Text>
-        <View style={styles.placeholder} />
-      </View>
-
+    <View style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
         <Text style={styles.description}>
           Deleting your account will permanently deactivate your profile and
@@ -158,7 +145,7 @@ const DeleteAccount = () => {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -166,26 +153,6 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.colors.surface,
-  },
-  header: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
-  },
-  backButton: {
-    padding: t.spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semibold,
-    color: t.colors.text,
-  },
-  placeholder: {
-    width: 40,
   },
   content: {
     flex: 1,
