@@ -10,7 +10,6 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
@@ -26,11 +25,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
 import { Button, Input, SectionHeader } from "@/components/shared";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
+import AppHeader from "@/components/nav/AppHeader";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -51,7 +51,6 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { profile, updateProfile, acceptEULA } = useProfile();
   const router = useRouter();
   const [selectedCommentReview, setSelectedCommentReview] =
@@ -678,44 +677,20 @@ function Home() {
 
   return (
     <View style={styles.container}>
-      {/* The same green header every tab root wears: the club's line for the
-          day where the other screens put their name, with compose and search
-          on the row above it. */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity
-            onPress={() => router.push(routes.review())}
-            hitSlop={HIT_SLOP}
-            accessibilityRole="button"
-            accessibilityLabel="Share a Martini review"
-          >
-            <Ionicons name="add" size={26} color={colors.onInk} />
-          </TouchableOpacity>
-          <Image
-            accessibilityRole="header"
-            accessibilityLabel="Tini Time Club"
-            source={require("@/assets/images/tini-time-logo-2x.png")}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <TouchableOpacity
-            onPress={navigateToDiscover}
-            hitSlop={HIT_SLOP}
-            accessibilityRole="button"
-            accessibilityLabel="Search people and places"
-          >
-            <Ionicons name="search-outline" size={24} color={colors.onInk} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.greeting}>
-          <Text style={styles.greetingEyebrow}>
-            {new Date().toLocaleDateString(undefined, { weekday: "long" })}
-          </Text>
-          <Text style={styles.greetingHeadline}>{greeting.headline}</Text>
-          <Text style={styles.greetingSubline}>{greeting.subline}</Text>
-        </View>
-      </View>
+      {/* Header A, with the club's line for the day where the other roots put
+          their name. One trailing control, as the variant allows — compose
+          used to sit up here too, and it is the pour button in the tab bar. */}
+      <AppHeader
+        variant="large"
+        eyebrow={new Date().toLocaleDateString(undefined, { weekday: "long" })}
+        title={greeting.headline}
+        meta={greeting.subline}
+        trailing={{
+          icon: "search-outline",
+          onPress: navigateToDiscover,
+          accessibilityLabel: "Search people and places",
+        }}
+      />
 
       <FlatList
         ref={flatListRef}
@@ -840,43 +815,6 @@ function Home() {
 
 const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
-  // A plain bar: compose left, the wordmark centred, search right. No
-  // shadow — the banner below it is what separates the header from the feed.
-  // Green, like every other tab root's header, and it carries the greeting
-  // where the others carry their name.
-  header: {
-    backgroundColor: t.colors.surfaceInk,
-    paddingHorizontal: t.spacing.gutter,
-    paddingBottom: t.spacing.lg,
-    gap: t.spacing.md,
-  },
-  headerTop: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-  },
-  headerLogo: {
-    width: 74,
-    height: 34,
-    tintColor: t.colors.onInk,
-  },
-  greeting: {
-    gap: 6,
-  },
-  greetingEyebrow: {
-    ...t.typography.eyebrow,
-    color: t.colors.highlight,
-  },
-  greetingHeadline: {
-    ...t.typography.display,
-    fontSize: 30,
-    lineHeight: 34,
-    color: t.colors.onInk,
-  },
-  greetingSubline: {
-    ...t.typography.caption,
-    color: t.colors.accentOnImage,
-  },
   feedHeader: {
     paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.md,

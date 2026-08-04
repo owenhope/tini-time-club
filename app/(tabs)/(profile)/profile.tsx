@@ -339,17 +339,11 @@ const Profile = () => {
         onAvatarPress={pickImage}
         avatarLoading={avatarLoading}
         avatarError={avatarError}
-        topInset={insets.top}
-        titleAction={
-          <TouchableOpacity
-            onPress={() => navigation.navigate("settings" as never)}
-            hitSlop={HIT_SLOP}
-            accessibilityRole="button"
-            accessibilityLabel="Profile settings"
-          >
-            <Ionicons name="settings-outline" size={24} color={colors.onInk} />
-          </TouchableOpacity>
-        }
+        titleAction={{
+          icon: "settings-outline",
+          onPress: () => navigation.navigate("settings" as never),
+          accessibilityLabel: "Profile settings",
+        }}
         onAvatarLongPress={
           __DEV__ ? () => setRankPreviewOpen((open) => !open) : undefined
         }

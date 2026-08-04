@@ -169,47 +169,11 @@ const UserProfile = () => {
     }
   }, [displayProfile, loadFollowCounts]);
 
-  // Update header with custom title
+  // The screen draws its own header (variant C, inside the scrolling list
+  // header), so the stack's bar has nothing left to do.
   useEffect(() => {
-    if (displayProfile) {
-      navigation.setOptions({
-        // The block titles the screen; the bar keeps only the controls.
-        headerTitle: () => null,
-        headerRight: () => (
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={showProfileMenu}
-              style={styles.headerIconButton}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel={`More options for ${displayProfile.username}`}
-            >
-              <Ionicons
-                name="ellipsis-horizontal"
-                size={22}
-                color={colors.onInk}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-        // Continues the identity block's deep green rather than sitting on
-        // it as a white seam, same as the own-profile screen.
-        headerStyle: {
-          backgroundColor: colors.surfaceInkDeep,
-        },
-        headerShadowVisible: false,
-        headerTintColor: colors.onInk,
-      });
-    }
-  }, [
-    displayProfile,
-    navigation,
-    colors,
-    styles,
-    doesFollow,
-    followPending,
-    isBlocked,
-  ]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   /**
    * Block lives behind the overflow menu rather than beside Follow: it is rare
@@ -405,6 +369,15 @@ const UserProfile = () => {
     <>
       <ProfileHeader
         profile={displayProfile}
+        variant="media"
+        onBack={goBack}
+        actions={[
+          {
+            icon: "ellipsis-horizontal",
+            onPress: showProfileMenu,
+            accessibilityLabel: `More options for ${displayProfile?.username}`,
+          },
+        ]}
         reviewsCount={userReviews.length}
         followersCount={followersCount}
         followingCount={followingCount}

@@ -30,10 +30,10 @@ import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { withRegulars, type Regular } from "@/services/regularsService";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams } from "expo-router";
 import Search from "@/components/map/search";
+import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -92,7 +92,6 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
 
 function Map() {
   const styles = useStyles();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const searchRef = useRef<any>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
@@ -309,20 +308,23 @@ function Map() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      {/* Every tab root wears the same green header: the screen's name in the
-          display cut, then the search field on the ink. The map used to start
-          under the status bar with nothing naming the screen at all. */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.headerTitle}>places</Text>
-        <Search
-          ref={searchRef}
-          onPlaceSelected={handleSearchPlaceSelected}
-          currentLocation={{
-            latitude: region.latitude,
-            longitude: region.longitude,
-          }}
-        />
-      </View>
+      {/* Header A: the screen's name in the display cut, and the search field
+          inside the green with it. Never a chip row as well — the green
+          carries one control, not two. */}
+      <AppHeader
+        variant="large"
+        title="places"
+        below={
+          <Search
+            ref={searchRef}
+            onPlaceSelected={handleSearchPlaceSelected}
+            currentLocation={{
+              latitude: region.latitude,
+              longitude: region.longitude,
+            }}
+          />
+        }
+      />
       <View
         style={{ flex: 1 }}
         onLayout={(event) => {
@@ -398,21 +400,6 @@ const useStyles = makeStyles((t) => ({
   // anything painted here would cover it.
   screen: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: t.colors.surfaceInk,
-    paddingHorizontal: t.spacing.md,
-    paddingBottom: t.spacing.md,
-    gap: t.spacing.xs,
-  },
-  // Lowercase, black weight, tight — the wordmark's own voice, and the same
-  // treatment every other tab root's title takes.
-  headerTitle: {
-    ...t.typography.display,
-    fontSize: 30,
-    lineHeight: 32,
-    color: t.colors.onInk,
-    paddingHorizontal: t.spacing.sm,
   },
   mapLoading: {
     position: "absolute" as const,

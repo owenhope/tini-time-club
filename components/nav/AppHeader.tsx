@@ -140,7 +140,8 @@ const CompactBar = ({
   // The title is centred between the two ends, so an end with nothing in it
   // still has to take up its width.
   const leadingWidth = onBack ? CIRCLE : CIRCLE;
-  const trailingWidth = Math.max(right.length, 1) * CIRCLE + (right.length > 1 ? 9 : 0);
+  const trailingWidth =
+    Math.max(right.length, 1) * CIRCLE + (right.length > 1 ? 9 : 0);
 
   return (
     <Animated.View
@@ -171,7 +172,11 @@ const CompactBar = ({
         {title}
       </Text>
       <View
-        style={[styles.compactEnd, styles.compactEndRight, { width: trailingWidth }]}
+        style={[
+          styles.compactEnd,
+          styles.compactEndRight,
+          { width: trailingWidth },
+        ]}
       >
         {right.map((action) => (
           <NavCircle
@@ -262,7 +267,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   }
 
   const fade = progress
-    ? { opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }
+    ? {
+        opacity: progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 0],
+        }),
+      }
     : null;
 
   if (variant === "media") {
@@ -286,7 +296,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <Stop offset="1" stopColor={colors.overlay} stopOpacity={0.9} />
             </LinearGradient>
           </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#mediaScrim)" />
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#mediaScrim)"
+          />
         </Svg>
 
         <Animated.View

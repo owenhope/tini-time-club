@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SafeAreaView } from "react-native";
+import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import DiscoverTabs from "@/components/DiscoverTabs";
 import { makeStyles } from "@/theme";
@@ -16,8 +16,9 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* The search block runs green up behind the status bar. */}
+    <View style={styles.container}>
+      {/* The header owns the top inset, so the green runs up behind the
+          status bar rather than starting under it. */}
       <StatusBar style="light" />
       <DiscoverTabs
         query={query}
@@ -25,7 +26,7 @@ export default function SearchScreen() {
         activeTab={activeTab}
         onQueryChange={handleQueryChange}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

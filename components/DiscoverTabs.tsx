@@ -13,6 +13,7 @@ import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
+import AppHeader from "@/components/nav/AppHeader";
 import { withRegulars } from "@/services/regularsService";
 import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
@@ -378,15 +379,69 @@ export default function DiscoverTabs({
 
   return (
     <View style={styles.container}>
-      {/* Search chrome sits on the brand green; results below stay on paper,
-          which is the system's "one background colour per surface" rule
-          applied to a screen that has two jobs. */}
-      <View style={styles.inkHeader}>
-        {/* The screen names itself, in the display cut, the way every tab
-            root does — the segmented control alone left the header mute. */}
-        <Text style={styles.screenTitle}>discover</Text>
+      {/* Header A: the screen's name, and the search field inside the green
+          with it. The segmented control used to sit in there too — the green
+          carries a search field or a chip row, never both — so it moved down
+          onto the paper it filters. */}
+      <AppHeader
+        variant="large"
+        title="discover"
+        below={
+          <View style={styles.searchBar}>
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color={colors.textMuted}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={
+                activeTab === "locations"
+                  ? "Search for places"
+                  : "Search for people"
+              }
+              value={query}
+              onChangeText={onQueryChange}
+              placeholderTextColor={colors.textMuted}
+            />
+            {activeTab === "locations" && (
+              <TouchableOpacity
+                style={[
+                  styles.nearbyButton,
+                  nearby && styles.nearbyButtonActive,
+                ]}
+                onPress={() => setNearby(!nearby)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="location"
+                  size={16}
+                  color={nearby ? colors.accent : colors.textMuted}
+                />
+                <Text
+                  style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
+                >
+                  Nearby
+                </Text>
+              </TouchableOpacity>
+            )}
+            {query !== "" && (
+              <TouchableOpacity
+                onPress={() => onQueryChange("")}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        }
+      />
 
-        {/* Tab Headers */}
+      <View style={styles.segmentRow}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "locations" && styles.tabActive]}
@@ -437,52 +492,6 @@ export default function DiscoverTabs({
               Profiles
             </Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={
-              activeTab === "locations"
-                ? "Search for places"
-                : "Search for people"
-            }
-            value={query}
-            onChangeText={onQueryChange}
-            placeholderTextColor={colors.textMuted}
-          />
-          {activeTab === "locations" && (
-            <TouchableOpacity
-              style={[styles.nearbyButton, nearby && styles.nearbyButtonActive]}
-              onPress={() => setNearby(!nearby)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="location"
-                size={16}
-                color={nearby ? colors.accent : colors.textMuted}
-              />
-              <Text
-                style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
-              >
-                Nearby
-              </Text>
-            </TouchableOpacity>
-          )}
-          {query !== "" && (
-            <TouchableOpacity
-              onPress={() => onQueryChange("")}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
 
@@ -536,24 +545,16 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
   },
-  inkHeader: {
-    backgroundColor: t.colors.surfaceInk,
-    paddingTop: t.spacing.sm,
-    paddingBottom: t.spacing.md,
-  },
-  screenTitle: {
-    ...t.typography.display,
-    fontSize: 30,
-    lineHeight: 32,
-    color: t.colors.onInk,
-    paddingHorizontal: t.spacing.gutter,
+  // The chip row sits on the paper it filters, under the green.
+  segmentRow: {
+    backgroundColor: t.colors.background,
+    paddingTop: t.spacing.md,
+    paddingBottom: t.spacing.sm,
   },
   tabContainer: {
     flexDirection: "row" as const,
     backgroundColor: t.colors.surface,
     marginHorizontal: t.spacing.gutter,
-    marginTop: t.spacing.md,
-    marginBottom: t.spacing.sm,
     borderRadius: t.radius.pill,
     ...t.elevation.card,
     borderWidth: 1,
@@ -592,13 +593,11 @@ const useStyles = makeStyles((t) => ({
     fontFamily: fonts.bold,
     color: t.colors.onHighlight,
   },
+  // Inside the green, so the header owns its inset.
   searchBar: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     backgroundColor: t.colors.surface,
-    marginHorizontal: t.spacing.gutter,
-    marginTop: t.spacing.sm,
-    marginBottom: 0,
     paddingHorizontal: t.spacing.lg,
     borderRadius: t.radius.pill,
     height: 48,

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { Avatar, StatCard } from "@/components/shared";
+import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
 
@@ -41,13 +42,16 @@ interface ProfileHeaderProps {
    * disabled chrome around a chartreuse button.
    */
   action?: React.ReactNode;
-  /** Sits on the title row — settings on your own profile. */
-  titleAction?: React.ReactNode;
+  /** Variant A's single trailing control — settings, on your own profile. */
+  titleAction?: HeaderAction;
   /**
-   * Safe-area top inset. The own-profile screen has no nav bar — the block
-   * titles it — so the block has to clear the status bar itself.
+   * Which header the block wears. Your own profile is a tab root, so it takes
+   * variant A; someone else's is a pushed detail screen, so it takes C.
    */
-  topInset?: number;
+  variant?: "large" | "media";
+  /** Variant C: the leading control, and the controls on the right. */
+  onBack?: () => void;
+  actions?: HeaderAction[];
 }
 
 /** One of the three stat tiles under the identity block. */
@@ -84,7 +88,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   children,
   action,
   titleAction,
-  topInset = 0,
+  variant = "large",
+  onBack,
+  actions,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -118,156 +124,153 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: topInset + 16 }]}>
-      {/* The screen names itself the way Places and Discover do — the handle
-          in the display cut — and the settings control shares its row. */}
-      <View style={styles.titleRow}>
-        {/* Scaled to the handle it has to carry: a short one gets the full
-            display size, a long one shrinks to fit rather than truncating.
-            Measured by glyph, not character count, so "WWWWWWWW" and
-            "iiiiiiii" both land right. */}
-        <Text
-          style={styles.screenTitle}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.55}
-        >
-          {profile.username}
-        </Text>
-        {titleAction}
-      </View>
-
-      {/* Then the face, the name and the tier the member holds. */}
-      <View style={styles.topRow}>
-        <Pressable
-          onPress={isOwnProfile ? onAvatarPress : undefined}
-          onLongPress={onAvatarLongPress}
-          disabled={!isOwnProfile && !onAvatarLongPress}
-          accessibilityRole={isOwnProfile ? "button" : undefined}
-          accessibilityLabel={isOwnProfile ? "Change profile photo" : undefined}
-          accessibilityState={{ busy: avatarLoading }}
-        >
-          <Avatar
-            avatarPath={profile.avatar_url}
-            username={profile.username}
-            size={AVATAR_SIZE}
-            reviewCount={displayedRankCount}
-            onInk
-          />
-          {avatarLoading && (
-            <View style={styles.avatarLoading}>
-              <ActivityIndicator size="small" color={colors.onAccent} />
-            </View>
-          )}
-        </Pressable>
-
-        <View style={styles.identity}>
-          <Text style={styles.name} numberOfLines={1}>
-            {profile.name || profile.username}
-          </Text>
-          <View style={styles.identityFoot}>
-            {rank.tier ? (
-              /* The tier's own hex, like a medal — it reads the same in both
-                 schemes. Near-black green ink on all four. */
-              <View
-                style={[styles.tierBadge, { backgroundColor: rank.tier.color }]}
-              >
-                <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
-              </View>
-            ) : null}
-            {action}
-          </View>
-        </View>
-      </View>
-
-      {isOwnProfile && rank.next ? (
-        <View style={styles.rankProgress}>
-          <View style={styles.rankLabels}>
-            <Text style={styles.rankCount}>
-              {rankCount} {rankCount === 1 ? "review" : "reviews"}
-            </Text>
-            <Text style={styles.rankRemaining}>
-              {rank.remaining} to {rank.next.name}
-            </Text>
-          </View>
-          <View
-            style={styles.rankTrack}
-            accessibilityRole="progressbar"
-            accessibilityLabel={`${rank.remaining} reviews to ${rank.next.name}`}
-            accessibilityValue={{
-              min: rank.tier?.min ?? 0,
-              max: rank.next.min,
-              now: displayedRankCount,
-            }}
-          >
-            <View
-              style={[
-                styles.rankFill,
-                {
-                  width: `${Math.round(rank.fraction * 100)}%`,
-                  backgroundColor: rank.next.color,
-                },
-              ]}
-            />
-          </View>
-        </View>
-      ) : null}
-
-      <View style={styles.metrics}>
-        {metrics.map((m) => (
-          <StatCard
-            key={m.key}
-            tone="ink"
-            value={m.value}
-            label={m.label}
-            onPress={m.onPress}
-          />
-        ))}
-      </View>
-
-      {(profile.bio || tags) && (
-        <View style={styles.identityRow}>
-          {profile.bio ? (
-            <Text style={styles.bio} numberOfLines={3}>
-              {profile.bio}
-            </Text>
-          ) : null}
-          {tags ? <View style={styles.identityTags}>{tags}</View> : null}
-        </View>
+    <View style={styles.ground}>
+      {/* The header names the screen with the handle — variant A on your own
+          profile, C on someone else's, both continuing the deep green the
+          block below sits on. A handle keeps its owner's capitalisation, and
+          scales to fit rather than truncating. */}
+      {variant === "media" ? (
+        <AppHeader
+          variant="media"
+          title={profile.username}
+          meta={profile.name ?? undefined}
+          onBack={onBack}
+          actions={actions}
+        />
+      ) : (
+        <AppHeader
+          variant="large"
+          ground="inkDeep"
+          preserveCase
+          title={profile.username}
+          trailing={titleAction}
+        />
       )}
 
-      {children}
+      <View style={styles.container}>
+        {/* Then the face, the name and the tier the member holds. */}
+        <View style={styles.topRow}>
+          <Pressable
+            onPress={isOwnProfile ? onAvatarPress : undefined}
+            onLongPress={onAvatarLongPress}
+            disabled={!isOwnProfile && !onAvatarLongPress}
+            accessibilityRole={isOwnProfile ? "button" : undefined}
+            accessibilityLabel={
+              isOwnProfile ? "Change profile photo" : undefined
+            }
+            accessibilityState={{ busy: avatarLoading }}
+          >
+            <Avatar
+              avatarPath={profile.avatar_url}
+              username={profile.username}
+              size={AVATAR_SIZE}
+              reviewCount={displayedRankCount}
+              onInk
+            />
+            {avatarLoading && (
+              <View style={styles.avatarLoading}>
+                <ActivityIndicator size="small" color={colors.onAccent} />
+              </View>
+            )}
+          </Pressable>
 
-      {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
+          <View style={styles.identity}>
+            <Text style={styles.name} numberOfLines={1}>
+              {profile.name || profile.username}
+            </Text>
+            <View style={styles.identityFoot}>
+              {rank.tier ? (
+                /* The tier's own hex, like a medal — it reads the same in both
+                 schemes. Near-black green ink on all four. */
+                <View
+                  style={[
+                    styles.tierBadge,
+                    { backgroundColor: rank.tier.color },
+                  ]}
+                >
+                  <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
+                </View>
+              ) : null}
+              {action}
+            </View>
+          </View>
+        </View>
+
+        {isOwnProfile && rank.next ? (
+          <View style={styles.rankProgress}>
+            <View style={styles.rankLabels}>
+              <Text style={styles.rankCount}>
+                {rankCount} {rankCount === 1 ? "review" : "reviews"}
+              </Text>
+              <Text style={styles.rankRemaining}>
+                {rank.remaining} to {rank.next.name}
+              </Text>
+            </View>
+            <View
+              style={styles.rankTrack}
+              accessibilityRole="progressbar"
+              accessibilityLabel={`${rank.remaining} reviews to ${rank.next.name}`}
+              accessibilityValue={{
+                min: rank.tier?.min ?? 0,
+                max: rank.next.min,
+                now: displayedRankCount,
+              }}
+            >
+              <View
+                style={[
+                  styles.rankFill,
+                  {
+                    width: `${Math.round(rank.fraction * 100)}%`,
+                    backgroundColor: rank.next.color,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.metrics}>
+          {metrics.map((m) => (
+            <StatCard
+              key={m.key}
+              tone="ink"
+              value={m.value}
+              label={m.label}
+              onPress={m.onPress}
+            />
+          ))}
+        </View>
+
+        {(profile.bio || tags) && (
+          <View style={styles.identityRow}>
+            {profile.bio ? (
+              <Text style={styles.bio} numberOfLines={3}>
+                {profile.bio}
+              </Text>
+            ) : null}
+            {tags ? <View style={styles.identityTags}>{tags}</View> : null}
+          </View>
+        )}
+
+        {children}
+
+        {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
+      </View>
     </View>
   );
 };
 
 const useStyles = makeStyles((t) => ({
   // The "club / insider" ground — the system's deep green, which is the
-  // strongest brand signal the app has and belongs on the identity block.
+  // strongest brand signal the app has and belongs on the identity block. The
+  // header above sits on the same green, so the two read as one block.
+  ground: {
+    backgroundColor: t.colors.surfaceInkDeep,
+  },
   container: {
-    paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.xl,
     paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.lg,
-    backgroundColor: t.colors.surfaceInkDeep,
-  },
-  titleRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    gap: t.spacing.md,
-  },
-  // The display cut is lowercase by rule, but a handle is a name: it keeps
-  // whatever case its owner chose.
-  screenTitle: {
-    ...t.typography.display,
-    fontSize: 30,
-    lineHeight: 34,
-    textTransform: "none" as const,
-    color: t.colors.onInk,
-    flexShrink: 1,
   },
   topRow: {
     flexDirection: "row" as const,
