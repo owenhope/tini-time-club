@@ -12,10 +12,10 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { Image as ExpoImage } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/types/types";
 import ReviewItem from "@/components/ReviewItem";
-import { makeStyles, useTheme, HIT_SLOP } from "@/theme";
+import AppHeader from "@/components/nav/AppHeader";
+import { makeStyles, useTheme } from "@/theme";
 import { RatingPips, Skeleton } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
@@ -188,22 +188,15 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         onRequestClose={() => setActive(null)}
       >
         <View style={styles.sheet}>
-          <View style={styles.sheetBar}>
-            <Pressable
-              onPress={() => setActive(null)}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={styles.backButton}
-            >
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text style={styles.sheetTitle} numberOfLines={1}>
-              {active?.location?.name ?? "Review"}
-            </Text>
-            {/* Balances the close button so the title stays centred. */}
-            <View style={styles.backButton} />
-          </View>
+          {/* Variant D: the sheet is presented, so it gets the grabber and a
+              text action rather than a back chevron. Done, not Close — the
+              platform's own swipe-down already closes it. */}
+          <AppHeader
+            variant="modal"
+            title={active?.location?.name ?? "Review"}
+            onCancel={() => setActive(null)}
+            action={{ label: "Done", onPress: () => setActive(null) }}
+          />
 
           <ScrollView contentContainerStyle={styles.sheetBody}>
             {active && (
@@ -272,28 +265,6 @@ const useStyles = makeStyles((t) => ({
   sheet: {
     flex: 1,
     backgroundColor: t.colors.background,
-  },
-  sheetBar: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    gap: t.spacing.sm,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.border,
-    backgroundColor: t.colors.surface,
-  },
-  sheetTitle: {
-    ...t.typography.heading,
-    color: t.colors.text,
-    flexShrink: 1,
-    textAlign: "center" as const,
-  },
-  backButton: {
-    width: 32,
-    minHeight: 44,
-    justifyContent: "center" as const,
   },
   sheetBody: {
     paddingBottom: t.spacing.xxl,

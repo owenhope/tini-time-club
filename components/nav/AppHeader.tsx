@@ -61,6 +61,11 @@ export interface AppHeaderProps {
   progress?: Animated.Value;
   /** True past the midpoint — what makes the faded-in bar tappable. */
   collapsed?: boolean;
+  /**
+   * Variant B only: pin the bar over the content rather than above it, for a
+   * screen whose variant C block scrolls away underneath it.
+   */
+  overlay?: boolean;
   /** Variant D only: the left-hand text action. */
   onCancel?: () => void;
   /** Variant D only: the right-hand primary. Greys out until the form is valid. */
@@ -205,6 +210,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   ground = "ink",
   progress,
   collapsed = false,
+  overlay = false,
   onCancel,
   action,
   topInset = 0,
@@ -222,6 +228,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         trailing={trailing}
         progress={progress}
         collapsed={collapsed}
+        overlay={overlay}
       />
     );
   }

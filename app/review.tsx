@@ -16,6 +16,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useGoBack } from "@/hooks/useAppNavigation";
+import AppHeader from "@/components/nav/AppHeader";
 import CameraComponent from "@/components/CameraComponent";
 import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
@@ -428,41 +429,22 @@ export default function App() {
           </AppText>
         </View>
       ) : (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.container}>
           {/* One page, top to bottom: the photo, where it was, what was in
-              it, the two verdicts, and what you have to say. Cancel and Post
-              live in the bar rather than a wizard's footer. */}
-          <View style={styles.navBar}>
-            <TouchableOpacity
-              onPress={confirmDiscardReview}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Discard review"
-            >
-              <AppText variant="bodyStrong" tone="secondary">
-                Cancel
-              </AppText>
-            </TouchableOpacity>
-            <AppText variant="heading" accessibilityRole="header">
-              New review
-            </AppText>
-            <TouchableOpacity
-              onPress={() => handleSubmit(handleUploadAndCreateReview)()}
-              disabled={missing !== null}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Post review"
-              accessibilityHint={missing ? `Still needs ${missing}` : undefined}
-              accessibilityState={{ disabled: missing !== null }}
-            >
-              <AppText
-                variant="bodyStrong"
-                style={missing ? styles.postDisabled : styles.post}
-              >
-                Post
-              </AppText>
-            </TouchableOpacity>
-          </View>
+              it, the two verdicts, and what you have to say. Variant D — the
+              composer is presented, so Cancel and Post are text actions in a
+              grabber bar rather than a wizard's footer. */}
+          <AppHeader
+            variant="modal"
+            title="New review"
+            topInset={insets.top}
+            onCancel={confirmDiscardReview}
+            action={{
+              label: "Post",
+              onPress: () => handleSubmit(handleUploadAndCreateReview)(),
+              disabled: missing !== null,
+            }}
+          />
 
           <KeyboardAvoidingView
             style={styles.flex}
@@ -687,21 +669,6 @@ const useStyles = makeStyles((t) => ({
   },
   submitText: {
     textAlign: "center" as const,
-  },
-  navBar: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    gap: t.spacing.md,
-    paddingHorizontal: t.spacing.gutter,
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.md,
-  },
-  post: {
-    color: t.colors.accent,
-  },
-  postDisabled: {
-    color: t.colors.disabledText,
   },
   page: {
     paddingHorizontal: t.spacing.gutter,
