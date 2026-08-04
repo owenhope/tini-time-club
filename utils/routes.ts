@@ -17,13 +17,13 @@ export type ReviewLocationParams = {
   locationAddress: string;
   locationLat?: string;
   locationLon?: string;
-}
+};
 
 /** Params for the favorite-location picker screen. */
 export type FavoriteLocationParams = {
   hasFavoriteLocation: "0" | "1";
   saveImmediately?: "1";
-}
+};
 
 /** Params shown on the place-info screen. */
 export type PlaceInfoParams = {
@@ -32,20 +32,20 @@ export type PlaceInfoParams = {
   address: string;
   lat: string;
   lon: string;
-}
+};
 
 /** Params that focus the places map on a location. */
 export type PlacesMapParams = {
   lat: string;
   lon: string;
   locationId: string | number;
-}
+};
 
 /** Params that tell the feed to force-refresh after a new post. */
 export type HomeParams = {
   postedReviewId?: string;
   feedRefresh?: string;
-}
+};
 
 export const routes = {
   /** Welcome / sign-in landing screen. */
@@ -59,6 +59,9 @@ export const routes = {
 
   /** Auth (email sign-in/sign-up) screen. */
   auth: () => "/auth" as const satisfies Href,
+
+  /** One-time new-member setup and EULA flow. */
+  onboarding: () => "/onboarding" as const satisfies Href,
 
   /** Password reset screen (recovery deep links land here). */
   resetPassword: () => "/reset-password" as const satisfies Href,
@@ -109,7 +112,10 @@ export const routes = {
    * A place's profile. Extra `name`/`address` params let the screen render
    * a header before the location record loads.
    */
-  place: (placeId: string | number, params?: { name: string; address: string }) =>
+  place: (
+    placeId: string | number,
+    params?: { name: string; address: string }
+  ) =>
     (params
       ? ({
           pathname: "/places/[place]",

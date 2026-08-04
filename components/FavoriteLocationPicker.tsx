@@ -33,11 +33,6 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
       }
       accessibilityHint="Opens the location chooser"
     >
-      <Ionicons
-        name={value ? "location" : "add-circle-outline"}
-        size={22}
-        color={colors.accent}
-      />
       <View style={styles.text}>
         <Text style={styles.name} numberOfLines={1}>
           {value?.name ?? "Add favorite location"}

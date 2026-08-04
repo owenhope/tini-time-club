@@ -371,7 +371,6 @@ const CommentCount = memo(({ count }: { count: number }) => {
  */
 const PhotoChips = memo(({ review }: { review: Review }) => {
   const styles = useStyles();
-  const { colors } = useTheme();
   // Where in the world it was poured — a venue name alone means nothing to
   // anyone who doesn't already drink there.
   const cityCountry = review.location?.address
@@ -432,8 +431,7 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
                   <RatingPips
                     value={1}
                     max={1}
-                    size={9}
-                    bodyColor={colors.accentOnImage}
+                    size={13}
                     accessibilityLabel=""
                   />
                   <Text style={styles.venueChipRatingText} numberOfLines={1}>
@@ -1026,9 +1024,8 @@ const useStyles = makeStyles((t) => ({
     gap: 2,
   },
   venueChipText: {
-    fontSize: 13,
-    lineHeight: 16,
-    fontFamily: fonts.bold,
+    ...t.typography.bodyStrong,
+    letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
@@ -1040,15 +1037,11 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipRatingText: {
     ...t.typography.mono,
-    fontSize: 10.5,
-    lineHeight: 14,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   venueChipMeta: {
     ...t.typography.mono,
-    fontSize: 10.5,
-    lineHeight: 14,
     color: t.colors.accentOnImage,
     flexShrink: 1,
   },

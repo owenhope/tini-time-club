@@ -20,6 +20,10 @@ export interface InputProps {
   onChangeText: (text: string) => void;
   label?: string;
   error?: string;
+  supportingText?: string;
+  supportingTone?: "secondary" | "success";
+  supportingIcon?: keyof typeof Ionicons.glyphMap;
+  reserveErrorSpace?: boolean;
   disabled?: boolean;
   size?: InputSize;
   variant?: InputVariant;
@@ -47,6 +51,10 @@ const Input: React.FC<InputProps> = ({
   onChangeText,
   label,
   error,
+  supportingText,
+  supportingTone = "secondary",
+  supportingIcon,
+  reserveErrorSpace = false,
   disabled = false,
   size = "medium",
   variant = "default",
@@ -176,6 +184,9 @@ const Input: React.FC<InputProps> = ({
     return colors.textMuted;
   };
 
+  const supportingColor =
+    supportingTone === "success" ? colors.success : colors.textSecondary;
+
   const renderLeftIcon = () => {
     if (!leftIcon) return null;
     return (
@@ -263,11 +274,25 @@ const Input: React.FC<InputProps> = ({
         {renderRightIcon()}
       </View>
 
-      {error && (
-        <AppText variant="label" tone="danger" style={styles.errorText}>
-          {error}
-        </AppText>
-      )}
+      {error || supportingText ? (
+        <View style={styles.supportingRow}>
+          {!error && supportingIcon ? (
+            <Ionicons name={supportingIcon} size={16} color={supportingColor} />
+          ) : null}
+          <AppText
+            variant="label"
+            tone={error ? "danger" : "secondary"}
+            style={[
+              styles.supportingText,
+              !error && { color: supportingColor },
+            ]}
+          >
+            {error ?? supportingText}
+          </AppText>
+        </View>
+      ) : reserveErrorSpace ? (
+        <View style={styles.errorSpace} />
+      ) : null}
     </View>
   );
 };
@@ -303,12 +328,20 @@ const useStyles = makeStyles((t) => ({
     marginLeft: t.spacing.sm,
     padding: t.spacing.xs,
   },
-  errorText: {
+  supportingRow: {
+    minHeight: 20,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    paddingTop: t.spacing.xs,
+    marginLeft: t.spacing.xs,
+  },
+  supportingText: {
     fontFamily: fonts.regular,
     letterSpacing: 0,
-    color: t.colors.danger,
-    marginTop: t.spacing.xs,
-    marginLeft: t.spacing.xs,
+  },
+  errorSpace: {
+    height: t.typography.label.lineHeight + t.spacing.xs,
   },
 }));
 

@@ -54,6 +54,7 @@ const FETCH_PADDING = 0.35;
 const CLUSTER_FIT_PADDING = 1.8;
 const CLUSTER_MIN_DELTA = 0.008;
 const CLUSTER_FALLBACK_ZOOM = 0.4;
+const MARKER_PRESS_GUARD_MS = 250;
 
 interface MapLocation {
   id: number | string;
@@ -151,6 +152,9 @@ function Map() {
   const fetchedBoundsRef = useRef<MapBounds | null>(null);
   const fetchRequestRef = useRef(0);
   const openedRouteLocationRef = useRef<string | null>(null);
+  const markerPressGuardRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const [selectedLocationId, setSelectedLocationId] = useState<
     MapLocation["id"] | null
   >(null);
@@ -164,6 +168,13 @@ function Map() {
   );
 
   const handleMarkerPress = useCallback((location: MapLocation) => {
+    if (markerPressGuardRef.current) {
+      clearTimeout(markerPressGuardRef.current);
+    }
+    markerPressGuardRef.current = setTimeout(() => {
+      markerPressGuardRef.current = null;
+    }, MARKER_PRESS_GUARD_MS);
+
     const mapHeight = mapHeightRef.current;
     const sheetLatitudeOffset =
       mapHeight > 0
@@ -179,8 +190,22 @@ function Map() {
     mapRef.current?.animateToRegion(centeredRegion, 350);
     setRegularsSheetOpen(false);
     setSelectedLocationId(location.id);
-    sheetRef.current?.snapToIndex(0);
   }, []);
+
+  useEffect(() => {
+    if (selectedLocation) {
+      sheetRef.current?.snapToIndex(0);
+    }
+  }, [selectedLocation]);
+
+  useEffect(
+    () => () => {
+      if (markerPressGuardRef.current) {
+        clearTimeout(markerPressGuardRef.current);
+      }
+    },
+    []
+  );
 
   const onRegionChangeComplete = useCallback((newRegion: Region) => {
     regionRef.current = newRegion;
@@ -276,39 +301,39 @@ function Map() {
             zIndex={isSelected ? 10 : 1}
             onPress={() => handleMarkerPress(location)}
           >
-            <LocationPin
-              loc={location}
-              selected={isSelected}
-            />
+            <LocationPin loc={location} selected={isSelected} />
           </Marker>
         );
       }),
     [handleMarkerPress, locations, selectedLocationId]
   );
 
-  const renderCluster = useCallback((cluster: any) => {
-    const [longitude, latitude] = cluster.geometry.coordinates;
-    const count = cluster.properties.point_count;
-    const handlePress = () => {
-      handleClusterPress(cluster);
-      cluster.onPress?.();
-    };
+  const renderCluster = useCallback(
+    (cluster: any) => {
+      const [longitude, latitude] = cluster.geometry.coordinates;
+      const count = cluster.properties.point_count;
+      const handlePress = () => {
+        handleClusterPress(cluster);
+        cluster.onPress?.();
+      };
 
-    return (
-      <Marker
-        key={`cluster-${cluster.id}`}
-        coordinate={{ latitude, longitude }}
-        anchor={{ x: 0.5, y: 0.5 }}
-        tracksViewChanges={false}
-        onPress={handlePress}
-        tappable
-        stopPropagation
-        zIndex={5}
-      >
-        <ClusterPin count={count} onPress={handlePress} />
-      </Marker>
-    );
-  }, [handleClusterPress]);
+      return (
+        <Marker
+          key={`cluster-${cluster.id}`}
+          coordinate={{ latitude, longitude }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          tracksViewChanges={false}
+          onPress={handlePress}
+          tappable
+          stopPropagation
+          zIndex={5}
+        >
+          <ClusterPin count={count} onPress={handlePress} />
+        </Marker>
+      );
+    },
+    [handleClusterPress]
+  );
 
   useEffect(() => {
     const getLocation = async () => {
@@ -459,7 +484,7 @@ function Map() {
     <View style={styles.screen}>
       <AppHeader
         variant="large"
-        title="places"
+        title="Places"
         below={
           <Search
             ref={searchRef}
@@ -508,6 +533,12 @@ function Map() {
             onRegionChangeComplete={onRegionChangeComplete}
             customMapStyle={mapStyle}
             onPress={() => {
+              if (markerPressGuardRef.current) {
+                clearTimeout(markerPressGuardRef.current);
+                markerPressGuardRef.current = null;
+                return;
+              }
+
               Keyboard.dismiss();
               if (selectedLocationId !== null) {
                 setRegularsSheetOpen(false);

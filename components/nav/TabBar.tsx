@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { routes } from "@/utils/routes";
 import { BRAND, fonts, makeStyles, useTheme } from "@/theme";
+import { MartiniIcon } from "@/components/shared";
 
 /**
  * Props as expo-router's <Tabs tabBar={...}> supplies them. Typed locally
@@ -151,8 +152,6 @@ export default function TabBar({
             focused: boolean
           ): keyof typeof Ionicons.glyphMap => {
             switch (routeName) {
-              case "(home)":
-                return focused ? "wine" : "wine-outline";
               case "(places)":
                 return focused ? "location" : "location-outline";
               case "(discover)":
@@ -189,11 +188,19 @@ export default function TabBar({
                 ]}
               >
                 <View style={styles.iconSlot}>
-                  <Ionicons
-                    name={getIconName(route.name, isFocused)}
-                    size={iconSize}
-                    color={tint}
-                  />
+                  {route.name === "(home)" ? (
+                    <MartiniIcon
+                      size={iconSize}
+                      color={tint}
+                      filled={isFocused}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={getIconName(route.name, isFocused)}
+                      size={iconSize}
+                      color={tint}
+                    />
+                  )}
                   {badge != null ? (
                     <View
                       style={[styles.badge, onInk && styles.badgeOnInk]}

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
-import { Image } from "react-native";
-import { Tabs, useRouter, type Href } from "expo-router";
+import { Tabs, usePathname, useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { MartiniIcon } from "@/components/shared";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
 import TabBar from "@/components/nav/TabBar";
@@ -14,6 +14,7 @@ import {
 } from "@/services/pushNotificationService";
 import { ensureFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
+import { routes } from "@/utils/routes";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -26,9 +27,11 @@ Notifications.setNotificationHandler({
 });
 
 const LayoutContent = () => {
-  const { profile } = useProfile();
+  const { profile, loading } = useProfile();
   const { colors } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
+  const isOnboardingLocationPicker = pathname === "/favorite-location";
 
   useEffect(() => {
     if (!profile?.eula_accepted || !profile.username) return;
@@ -70,7 +73,25 @@ const LayoutContent = () => {
     };
   }, [profile?.eula_accepted, profile?.id, profile?.username, router]);
 
-  if (!profile) return null;
+  useEffect(() => {
+    if (
+      !loading &&
+      profile &&
+      (!profile.username || !profile.eula_accepted) &&
+      !isOnboardingLocationPicker
+    ) {
+      router.replace(routes.onboarding());
+    }
+  }, [isOnboardingLocationPicker, loading, profile, router]);
+
+  if (
+    loading ||
+    !profile ||
+    ((!profile.username || !profile.eula_accepted) &&
+      !isOnboardingLocationPicker)
+  ) {
+    return null;
+  }
 
   return (
     <Tabs
@@ -95,11 +116,7 @@ const LayoutContent = () => {
           title: "Feed",
           headerShown: false,
           tabBarIcon: ({ size, color }) => (
-            <Image
-              source={require("@/assets/images/martini_transparent.png")}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <MartiniIcon size={size} color={color} />
           ),
         }}
       />

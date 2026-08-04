@@ -404,21 +404,19 @@ export const fonts = {
 } as const;
 
 export const typography = {
-  // Display — the wordmark's stacked, tight-set energy. Lowercase, heavy,
+  // Display — the wordmark's stacked, tight-set energy. Sentence case, heavy,
   // leading below 1, negative tracking.
   display: {
     fontFamily: fonts.black,
     fontSize: 34,
     lineHeight: 34,
     letterSpacing: -1,
-    textTransform: "lowercase",
   },
   displayLarge: {
     fontFamily: fonts.black,
     fontSize: 44,
     lineHeight: 42,
     letterSpacing: -1.4,
-    textTransform: "lowercase",
   },
   title: {
     fontFamily: fonts.extrabold,

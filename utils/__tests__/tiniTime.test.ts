@@ -18,9 +18,9 @@ describe("getTiniTimeGreeting", () => {
     }
   });
 
-  it("keeps the display headlines lowercase and short", () => {
+  it("keeps the display headlines sentence-cased and short", () => {
     for (const { headline } of GREETINGS) {
-      expect(headline).toBe(headline.toLowerCase());
+      expect(headline[0]).toBe(headline[0].toUpperCase());
       expect(headline.length).toBeLessThanOrEqual(30);
     }
   });

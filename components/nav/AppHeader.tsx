@@ -11,7 +11,7 @@ import { fonts, makeStyles, useTheme } from "@/theme";
 /**
  * The app's top bar — four variants, no fifth.
  *
- * A · `large`   the five tab roots. Green block, lowercase display title, one
+ * A · `large`   the five tab roots. Green block, sentence-case display title,
  *               trailing circle, and either a search field or a chip row
  *               beneath it — never both.
  * B · `compact` pushed lists and settings, and what A and C collapse into.
@@ -55,7 +55,7 @@ export interface AppHeaderProps {
   onBack?: () => void;
   /** Variant A: the search field or the chip row that sits inside the green. */
   below?: React.ReactNode;
-  /** Handles keep their owner's capitalisation; every other A title is lowercase. */
+  /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
   /** The green under variant A. `inkDeep` continues a deep-green block below it. */
   ground?: "ink" | "inkDeep";
@@ -137,6 +137,7 @@ const CompactBar = ({
   progress,
   collapsed,
   overlay,
+  preserveCase,
 }: {
   title: string;
   onBack?: () => void;
@@ -145,6 +146,7 @@ const CompactBar = ({
   progress?: Animated.Value;
   collapsed?: boolean;
   overlay?: boolean;
+  preserveCase?: boolean;
 }) => {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
@@ -181,7 +183,10 @@ const CompactBar = ({
           />
         ) : null}
       </View>
-      <Text style={styles.compactTitle} numberOfLines={1}>
+      <Text
+        style={[styles.compactTitle, preserveCase && styles.titlePlain]}
+        numberOfLines={1}
+      >
         {title}
       </Text>
       <View
@@ -265,6 +270,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         progress={progress}
         collapsed={collapsed}
         overlay={overlay}
+        preserveCase={preserveCase}
       />
     );
   }
@@ -390,7 +396,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         <Animated.View style={[styles.mediaIdentity, fade]}>
           <Text
-            style={styles.mediaTitle}
+            style={[styles.mediaTitle, preserveCase && styles.titlePlain]}
             numberOfLines={2}
             adjustsFontSizeToFit
             minimumFontScale={0.7}
@@ -420,7 +426,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <View style={styles.largeRow}>
           <Text
-            style={[styles.largeTitle, preserveCase && styles.largeTitlePlain]}
+            style={[styles.largeTitle, preserveCase && styles.titlePlain]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.55}
@@ -474,7 +480,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
   },
-  // Lowercase, black, tight — the wordmark's own voice.
+  // Sentence case, black, tight — the wordmark's own voice.
   largeTitle: {
     ...t.typography.display,
     fontSize: 30,
@@ -485,7 +491,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   // A handle is a name — it keeps whatever case its owner chose.
-  largeTitlePlain: {
+  titlePlain: {
     textTransform: "none" as const,
   },
   eyebrow: {

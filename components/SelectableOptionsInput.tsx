@@ -6,7 +6,7 @@ import {
   RegisterOptions,
 } from "react-hook-form";
 import { Text, TouchableOpacity, View } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 
 type Option = {
   id: number | string;
@@ -83,7 +83,8 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.xl - 4,
     marginBottom: t.spacing.md,
     borderRadius: t.radius.pill,
-    borderWidth: 1,
+    // Reserve the selected outline so toggling never changes the pill's box.
+    borderWidth: 2,
     borderColor: t.colors.border,
     backgroundColor: t.colors.surface,
     flexDirection: "row" as const,
@@ -94,7 +95,6 @@ const useStyles = makeStyles((t) => ({
   // A solid green fill reads as a primary button, not a selected option.
   selectedButton: {
     backgroundColor: t.colors.highlight,
-    borderWidth: 2,
     borderColor: t.colors.accent,
   },
   buttonText: {
@@ -105,7 +105,6 @@ const useStyles = makeStyles((t) => ({
   },
   selectedButtonText: {
     color: t.colors.onHighlight,
-    fontFamily: fonts.semibold,
   },
 }));
 

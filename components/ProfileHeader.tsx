@@ -147,6 +147,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <AppHeader
           variant="media"
           title={profile.username}
+          preserveCase
           // No meta line: the name is the identity row's job, and setting it
           // here printed it twice, eight points apart.
           onBack={onBack}

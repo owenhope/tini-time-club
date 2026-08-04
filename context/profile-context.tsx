@@ -127,6 +127,28 @@ export const ProfileProvider = ({
     fetchProfile();
   }, [fetchProfile]);
 
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      if (event === "SIGNED_IN" && session) {
+        setLoading(true);
+        void (async () => {
+          await authCache.clearProfileCache();
+          await fetchProfile();
+        })();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
+
   const updateProfile = useCallback(
     async (updates: Partial<Profile>): Promise<ProfileResult> => {
       if (!profile) return {};
@@ -163,15 +185,10 @@ export const ProfileProvider = ({
         return { error: "No profile found" };
       }
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({
-          eula_accepted: true,
-          eula_accepted_at: new Date().toISOString(),
-        })
-        .eq("id", profile.id)
-        .select()
-        .single();
+      const { data, error } = await authCache.updateProfile({
+        eula_accepted: true,
+        eula_accepted_at: new Date().toISOString(),
+      });
 
       if (error) {
         reportError("Error accepting the EULA:", error);

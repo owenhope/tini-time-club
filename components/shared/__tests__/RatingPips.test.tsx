@@ -47,20 +47,30 @@ const rateButtons = (tree: renderer.ReactTestRenderer) => {
 };
 
 describe("RatingPips", () => {
-  it("fills pips up to the rounded value", () => {
+  it("fills whole olives at full opacity", () => {
     const tree = render(<RatingPips value={3} />);
     const filled = olives(tree).filter(
       (n) => n.props.style.backgroundColor === lightColors.secondary
     );
     expect(filled).toHaveLength(3);
+    expect(filled.every((n) => n.props.style.opacity === 1)).toBe(true);
   });
 
-  it("rounds halves to the nearest whole olive", () => {
+  it("uses opacity for the fractional olive", () => {
     const tree = render(<RatingPips value={3.5} />);
     const filled = olives(tree).filter(
       (n) => n.props.style.backgroundColor === lightColors.secondary
     );
     expect(filled).toHaveLength(4);
+    expect(filled.map((n) => n.props.style.opacity)).toEqual([1, 1, 1, 0.5]);
+  });
+
+  it("renders 4.8 as four solid olives and one at 80 percent", () => {
+    const tree = render(<RatingPips value={4.8} />);
+    const filled = olives(tree).filter(
+      (n) => n.props.style.backgroundColor === lightColors.secondary
+    );
+    expect(filled.map((n) => n.props.style.opacity)).toEqual([1, 1, 1, 1, 0.8]);
   });
 
   it("renders hollow pips for the remainder", () => {

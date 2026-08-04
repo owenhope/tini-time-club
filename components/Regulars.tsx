@@ -90,7 +90,7 @@ const Regulars: React.FC<RegularsProps> = ({
           !showLabel && styles.compactSectionUnlabeled,
         ]}
       >
-        {showLabel ? <Text style={styles.label}>Regulars</Text> : null}
+        {showLabel ? <Text style={styles.eyebrow}>Regulars</Text> : null}
         <View style={styles.compactRow}>
           <View style={styles.avatarStack}>
             {displayRegulars.map((regular, index) => (

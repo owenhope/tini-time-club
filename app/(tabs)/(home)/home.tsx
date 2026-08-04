@@ -7,7 +7,6 @@ import {
   Modal,
   TouchableOpacity,
   RefreshControl,
-  Image,
   Alert,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
@@ -18,16 +17,13 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
-import EULAModal from "@/components/EULAModal";
-import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
-import { Button, Input, SectionHeader } from "@/components/shared";
+import { Button, Input, MartiniIcon, SectionHeader } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
-import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import AppHeader from "@/components/nav/AppHeader";
@@ -51,7 +47,7 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { profile, updateProfile, acceptEULA } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const router = useRouter();
   const params = useLocalSearchParams<{
     postedReviewId?: string;
@@ -63,8 +59,6 @@ function Home() {
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
-  const [showEULAModal, setShowEULAModal] = useState(false);
-  const [eulaLoading, setEulaLoading] = useState(false);
   const [usernameValidation, setUsernameValidation] = useState<{
     isValid: boolean;
     message: string;
@@ -110,17 +104,15 @@ function Home() {
         profile.eula_accepted === false ||
         profile.eula_accepted === null
       ) {
-        setShowEULAModal(true);
         setShowUsernameModal(false);
+        router.replace(routes.onboarding());
       } else if (!profile.username) {
         setShowUsernameModal(true);
-        setShowEULAModal(false);
       } else {
         setShowUsernameModal(false);
-        setShowEULAModal(false);
       }
     }
-  }, [profile]);
+  }, [profile, router]);
 
   const loadReviews = useCallback(
     // `silent` refreshes the data without the spinners — used by the
@@ -425,41 +417,6 @@ function Home() {
     }
   }, [newUsername, updateProfile, usernameValidation.isValid]);
 
-  const handleAcceptEULA = useCallback(async () => {
-    if (eulaLoading) return; // Prevent multiple submissions
-
-    try {
-      setEulaLoading(true);
-      const result = await acceptEULA();
-
-      if (result.error) {
-        reportError("Error accepting EULA:", result.error);
-        // Don't close modal on error, let user try again
-        return;
-      }
-
-      setShowEULAModal(false);
-    } catch (error) {
-      reportError("Unexpected error accepting EULA:", error);
-      // Don't close modal on unexpected error
-    } finally {
-      setEulaLoading(false);
-    }
-  }, [acceptEULA, eulaLoading]);
-
-  const handleDeclineEULA = useCallback(async () => {
-    // User declined EULA - they should be logged out
-    try {
-      await unregisterPushNotificationsAsync();
-      // Every cache that holds this member's data, not just the auth one.
-      await clearUserCaches();
-      // Sign out - navigation will be handled by auth state change in root layout
-      await supabase.auth.signOut();
-    } catch (error) {
-      reportError("Error signing out after EULA decline:", error);
-    }
-  }, []);
-
   const navigateToLocations = useCallback(() => {
     router.navigate(routes.places());
   }, [router]);
@@ -522,11 +479,7 @@ function Home() {
             activeOpacity={0.7}
           >
             <View style={styles.stepIconContainer}>
-              <Image
-                source={require("@/assets/images/martini_transparent.png")}
-                style={[styles.martiniIcon, { tintColor: colors.onAccent }]}
-                resizeMode="contain"
-              />
+              <MartiniIcon size={24} color={colors.onAccent} />
             </View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Try A Martini</Text>
@@ -734,13 +687,6 @@ function Home() {
         // dozen screens of content and photo decodes before first paint.
         initialNumToRender={3}
         windowSize={5}
-      />
-
-      <EULAModal
-        visible={showEULAModal}
-        onAccept={handleAcceptEULA}
-        onDecline={handleDeclineEULA}
-        loading={eulaLoading}
       />
 
       <Modal visible={showUsernameModal} transparent animationType="slide">
@@ -965,10 +911,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     color: t.colors.textMuted,
     lineHeight: 19,
-  },
-  martiniIcon: {
-    width: 24,
-    height: 24,
   },
 }));
 

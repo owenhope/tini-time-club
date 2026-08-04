@@ -64,7 +64,10 @@ const ReviewPreview = ({
   types,
   photo,
   profile,
-  setValue,
+  isCaptionFocused,
+  setIsCaptionFocused,
+  tempCaption,
+  setTempCaption,
   isSubmitting,
   submissionMessage,
 }: {
@@ -73,14 +76,15 @@ const ReviewPreview = ({
   types: { id: number; name: string }[];
   photo: string | null;
   profile: any;
-  setValue: ReturnType<typeof useForm<ReviewFormValues>>["setValue"];
+  isCaptionFocused: boolean;
+  setIsCaptionFocused: React.Dispatch<React.SetStateAction<boolean>>;
+  tempCaption: string;
+  setTempCaption: React.Dispatch<React.SetStateAction<string>>;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const [isCaptionFocused, setIsCaptionFocused] = useState(false);
-  const [tempCaption, setTempCaption] = useState("");
   const scrollViewRef = React.useRef<ScrollView>(null);
 
   const mockReview = useMemo(
@@ -182,10 +186,17 @@ const ReviewPreview = ({
           </TouchableOpacity>
         ) : (
           <>
+            <AppText
+              variant="eyebrow"
+              tone="secondary"
+              style={styles.captionLabel}
+            >
+              Caption
+            </AppText>
             <TextInput
               style={styles.captionInput}
               multiline={true}
-              placeholder="Write a caption... (required)"
+              placeholder="Shaken, stirred, or mildly disappointed?"
               placeholderTextColor={colors.textMuted}
               onChangeText={setTempCaption}
               value={tempCaption}
@@ -199,20 +210,6 @@ const ReviewPreview = ({
             >
               {tempCaption?.length || 0}/500
             </AppText>
-            <Button
-              title="Save caption"
-              style={styles.saveCaptionButton}
-              onPress={() => {
-                if (tempCaption && tempCaption.trim().length > 0) {
-                  setValue("comment", tempCaption.trim(), {
-                    shouldValidate: true,
-                  });
-                  setIsCaptionFocused(false);
-                }
-              }}
-              disabled={!tempCaption || tempCaption.trim().length === 0}
-              disabledReason="Write a caption first. It goes out with the review."
-            />
           </>
         )}
       </View>
@@ -234,6 +231,8 @@ export default function App() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCaptionFocused, setIsCaptionFocused] = useState(false);
+  const [tempCaption, setTempCaption] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [opacity] = useState(() => new Animated.Value(1));
   const router = useRouter();
@@ -360,7 +359,10 @@ export default function App() {
           types={types}
           photo={photo}
           profile={profile}
-          setValue={setValue}
+          isCaptionFocused={isCaptionFocused}
+          setIsCaptionFocused={setIsCaptionFocused}
+          tempCaption={tempCaption}
+          setTempCaption={setTempCaption}
           isSubmitting={isSubmitting}
           submissionMessage={submissionMessage}
           {...props}
@@ -377,7 +379,18 @@ export default function App() {
     setIsReviewing(false);
     setIsSubmitting(false);
     setSubmissionMessage("");
+    setIsCaptionFocused(false);
+    setTempCaption("");
     reset();
+  };
+
+  const saveCaption = () => {
+    const caption = tempCaption.trim();
+    if (!caption) return;
+
+    setValue("comment", caption, { shouldValidate: true });
+    setIsCaptionFocused(false);
+    Keyboard.dismiss();
   };
 
   const confirmDiscardReview = () => {
@@ -692,7 +705,7 @@ export default function App() {
               >
                 <Animated.View style={styles.navigation}>
                   <View style={styles.navLeft}>
-                    {step > 0 && (
+                    {step > 0 && !isCaptionFocused && (
                       <Button
                         title="Back"
                         onPress={prevStep}
@@ -721,7 +734,15 @@ export default function App() {
                   </TouchableOpacity>
 
                   <View style={styles.navRight}>
-                    {step < questions.length - 1 ? (
+                    {isCaptionFocused ? (
+                      <Button
+                        title="Save"
+                        onPress={saveCaption}
+                        variant="primary"
+                        size="medium"
+                        disabled={!tempCaption.trim()}
+                      />
+                    ) : step < questions.length - 1 ? (
                       <Button
                         title="Next"
                         onPress={nextStep}
@@ -732,7 +753,7 @@ export default function App() {
                       />
                     ) : (
                       <Button
-                        title="Submit"
+                        title="Post"
                         onPress={() => {
                           const commentValue = watchedValues.comment?.trim();
                           if (!commentValue || commentValue.length === 0) {
@@ -746,7 +767,6 @@ export default function App() {
                           !watchedValues.comment ||
                           watchedValues.comment.trim().length === 0
                         }
-                        disabledReason="Add a caption before posting."
                       />
                     )}
                   </View>
@@ -868,6 +888,7 @@ const useStyles = makeStyles((t) => ({
   captionButton: {
     alignItems: "center" as const,
     justifyContent: "center" as const,
+    marginTop: t.spacing.md,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: t.spacing.md,
     borderRadius: t.radius.pill,
@@ -876,7 +897,7 @@ const useStyles = makeStyles((t) => ({
   },
   captionInput: {
     ...t.typography.body,
-    minHeight: 60,
+    minHeight: 100,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
     borderRadius: t.radius.input,
@@ -886,12 +907,12 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     textAlignVertical: "top" as const,
   },
+  captionLabel: {
+    marginBottom: t.spacing.sm,
+  },
   characterCount: {
     textAlign: "right" as const,
     marginTop: t.spacing.xs,
-  },
-  saveCaptionButton: {
-    marginTop: t.spacing.md,
   },
   submitLoadingContainer: {
     flex: 1,

@@ -422,6 +422,7 @@ const UserProfile = () => {
       <AppHeader
         variant="compact"
         title={displayProfile?.username ?? ""}
+        preserveCase
         onBack={goBack}
         actions={menuActions}
         progress={progress}

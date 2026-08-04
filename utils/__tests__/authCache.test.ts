@@ -21,7 +21,7 @@ jest.mock("@/utils/log", () => ({
 
 // Must match PROFILE_CACHE_KEY in utils/authCache.ts with the mocked ref.
 const PROFILE_CACHE_KEY = "profile_cache_testref";
-const PROFILE_CACHE_VERSION = 2;
+const PROFILE_CACHE_VERSION = 3;
 const DAY = 24 * 60 * 60 * 1000;
 
 const getSession = supabase.auth.getSession as jest.Mock;
@@ -172,9 +172,7 @@ describe("authCache.loadFromStorage", () => {
     await authCache.loadFromStorage();
 
     signInAs("u1");
-    expect(await authCache.getProfile()).toEqual(
-      storedEntry().profile
-    );
+    expect(await authCache.getProfile()).toEqual(storedEntry().profile);
     expect(from).not.toHaveBeenCalled();
   });
 

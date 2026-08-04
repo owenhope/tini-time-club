@@ -11,6 +11,15 @@ export type { InputProps, InputSize, InputVariant, InputType } from "./Input";
 
 export { default as Avatar } from "./Avatar";
 
+export { default as MartiniIcon } from "./MartiniIcon";
+export type { MartiniIconProps } from "./MartiniIcon";
+
+export { default as SegmentedControl } from "./SegmentedControl";
+export type {
+  SegmentedControlOption,
+  SegmentedControlProps,
+} from "./SegmentedControl";
+
 export { default as AppText } from "./AppText";
 export type { AppTextProps, TypographyVariant, TextTone } from "./AppText";
 

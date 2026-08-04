@@ -6,7 +6,7 @@ import AppText from "./AppText";
 export const PIPS_MAX = 5;
 
 export interface RatingPipsProps {
-  /** 0–max. Halves round to the nearest whole pip. */
+  /** 0–max. Read-only ratings use opacity for the fractional olive. */
   value?: number;
   max?: number;
   /** Height of one olive in px. Width is derived. */
@@ -34,12 +34,13 @@ export interface RatingPipsProps {
  */
 const Olive: React.FC<{
   size: number;
-  filled: boolean;
+  fillAmount: number;
   onDark?: boolean;
   bodyColor?: string;
   emptyColor?: string;
-}> = ({ size, filled, onDark, bodyColor, emptyColor }) => {
+}> = ({ size, fillAmount, onDark, bodyColor, emptyColor }) => {
   const { colors } = useTheme();
+  const filled = fillAmount > 0;
   // The olive is green — `secondary`, not `accent`. The brand's primary is
   // the purple, and a purple olive is not an olive.
   const body = bodyColor ?? (onDark ? colors.textOnImage : colors.secondary);
@@ -55,6 +56,7 @@ const Olive: React.FC<{
         backgroundColor: filled ? body : "transparent",
         borderWidth: filled ? 0 : 2,
         borderColor: emptyColor ?? colors.ratingPipEmpty,
+        opacity: filled ? fillAmount : 1,
       }}
     >
       {filled ? (
@@ -86,8 +88,11 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   style,
   accessibilityLabel,
 }) => {
-  const filledThrough = Math.round(value);
+  const clampedValue = Math.max(0, Math.min(value, max));
   const pips = Array.from({ length: max }, (_, i) => i + 1);
+
+  const fillAmountFor = (pip: number) =>
+    Number(Math.max(0, Math.min(1, clampedValue - (pip - 1))).toFixed(2));
 
   return (
     <View
@@ -111,11 +116,11 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             hitSlop={HIT_SLOP}
             accessibilityRole="button"
             accessibilityLabel={`Rate ${n} of ${max}`}
-            accessibilityState={{ selected: n <= filledThrough }}
+            accessibilityState={{ selected: n <= clampedValue }}
           >
             <Olive
               size={size}
-              filled={n <= filledThrough}
+              fillAmount={fillAmountFor(n)}
               onDark={onDark}
               bodyColor={bodyColor}
               emptyColor={emptyColor}
@@ -125,7 +130,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
           <Olive
             key={n}
             size={size}
-            filled={n <= filledThrough}
+            fillAmount={fillAmountFor(n)}
             onDark={onDark}
             bodyColor={bodyColor}
             emptyColor={emptyColor}

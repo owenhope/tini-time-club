@@ -8,6 +8,7 @@ import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { Ionicons } from "@expo/vector-icons";
+import { MartiniIcon } from "@/components/shared";
 import { useRouter, useNavigation, useFocusEffect } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -226,7 +227,7 @@ const Profile = () => {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyCtaIcon}>
-        <Ionicons name="wine-outline" size={28} color={colors.accent} />
+        <MartiniIcon size={28} color={colors.accent} />
       </View>
       <Text style={styles.emptyCtaTitle}>Share your first Martini</Text>
       <TouchableOpacity
@@ -421,6 +422,7 @@ const Profile = () => {
       <AppHeader
         variant="compact"
         title={profile?.username ?? ""}
+        preserveCase
         trailing={settingsAction}
         progress={progress}
         collapsed={isCollapsed}

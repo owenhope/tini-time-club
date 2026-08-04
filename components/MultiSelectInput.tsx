@@ -1,5 +1,5 @@
 import { Text, TouchableOpacity, View, ScrollView } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 
 type Option = {
   id: number | string;
@@ -94,18 +94,15 @@ const useStyles = makeStyles((t) => ({
   },
   selectedButton: {
     backgroundColor: t.colors.highlight,
-    borderWidth: 2,
     borderColor: t.colors.accent,
   },
   buttonText: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.text,
     textTransform: "capitalize" as const,
   },
   selectedButtonText: {
     color: t.colors.onHighlight,
-    fontFamily: fonts.semibold,
   },
 }));
 

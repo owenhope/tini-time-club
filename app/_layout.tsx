@@ -39,7 +39,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
-import { ProfileProvider } from "@/context/profile-context";
+import { ProfileProvider, useProfile } from "@/context/profile-context";
 import AppHeader from "@/components/nav/AppHeader";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
 import {
@@ -52,6 +52,16 @@ import { retryPendingPushUnregistrationAsync } from "@/services/pushNotification
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
 SplashScreen.preventAutoHideAsync();
+
+const isOnboardingExemptPath = (path: string) =>
+  path === "/" ||
+  path === "/onboarding" ||
+  path === "/favorite-location" ||
+  path === "/forgot-password" ||
+  path === "/reset-password" ||
+  path === "/sign-in" ||
+  path === "/sign-up" ||
+  path.startsWith("/auth");
 
 /**
  * Last-resort catch for render-time throws anywhere in the app — without it
@@ -138,6 +148,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();
+  const { profile, loading: profileLoading } = useProfile();
   const [fontsLoaded] = useFonts({
     Figtree_300Light,
     Figtree_400Regular,
@@ -177,6 +188,28 @@ function RootLayoutNav() {
   useEffect(() => {
     isReadyRef.current = isReady;
   }, [isReady]);
+
+  useEffect(() => {
+    if (
+      !isReady ||
+      !rootNavigationState?.key ||
+      profileLoading ||
+      !profile ||
+      isOnboardingExemptPath(pathname) ||
+      (profile.username && profile.eula_accepted)
+    ) {
+      return;
+    }
+
+    router.replace(routes.onboarding());
+  }, [
+    isReady,
+    pathname,
+    profile,
+    profileLoading,
+    rootNavigationState?.key,
+    router,
+  ]);
 
   // Perform the initial-launch navigation as soon as the router is ready —
   // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.

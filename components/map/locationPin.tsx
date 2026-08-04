@@ -1,6 +1,7 @@
 import { memo } from "react";
-import { Image, Text, View } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { Text, View } from "react-native";
+import { MartiniIcon } from "@/components/shared";
+import { fonts, makeStyles, useTheme } from "@/theme";
 
 interface LocationPinProps {
   loc: {
@@ -19,18 +20,14 @@ interface LocationPinProps {
 
 function LocationPin({ loc, selected = false }: LocationPinProps) {
   const styles = useStyles();
+  const { colors } = useTheme();
   if (loc.lat == null || loc.long == null) return null;
 
   const reviewed = (loc.total_ratings ?? 0) > 0 && loc.rating != null;
   const showRating = reviewed && !selected;
 
   return (
-    <View
-      style={[
-        styles.container,
-        selected && styles.containerSelected,
-      ]}
-    >
+    <View style={[styles.container, selected && styles.containerSelected]}>
       <View
         style={[
           styles.pin,
@@ -42,15 +39,15 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
         {showRating ? (
           <Text style={styles.pinRating}>{loc.rating?.toFixed(1)}</Text>
         ) : (
-          <Image
-            source={require("@/assets/images/martini_transparent.png")}
-            style={[
-              styles.martini,
-              reviewed && styles.martiniReviewed,
-              !reviewed && styles.martiniUnrated,
-              selected && styles.martiniSelected,
-            ]}
-            resizeMode="contain"
+          <MartiniIcon
+            size={selected ? 23 : 17}
+            color={
+              selected
+                ? colors.highlight
+                : reviewed
+                  ? colors.secondary
+                  : colors.textMuted
+            }
           />
         )}
       </View>
@@ -103,22 +100,6 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceInkDeep,
     borderWidth: 5,
     borderColor: t.colors.highlight,
-  },
-  martini: {
-    width: 17,
-    height: 17,
-    tintColor: t.colors.highlight,
-  },
-  martiniReviewed: {
-    tintColor: t.colors.secondary,
-  },
-  martiniUnrated: {
-    tintColor: t.colors.textMuted,
-  },
-  martiniSelected: {
-    width: 23,
-    height: 23,
-    tintColor: t.colors.highlight,
   },
   pinRating: {
     ...t.typography.label,

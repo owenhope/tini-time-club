@@ -7,9 +7,11 @@ import AvatarRing from "./AvatarRing";
 interface AvatarProps {
   avatarPath?: string | null;
   username?: string;
+  fallbackText?: string;
   size?: number;
   style?: any;
   showInitials?: boolean;
+  showRing?: boolean;
   /**
    * Active review count for the ranking ring. Every avatar is ringed — the
    * first tier starts at zero — so a missing count just means the base tier.
@@ -26,9 +28,11 @@ interface AvatarProps {
 const Avatar: React.FC<AvatarProps> = ({
   avatarPath,
   username,
+  fallbackText,
   size = 40,
   style,
   showInitials = true,
+  showRing = true,
   reviewCount,
   onInk = false,
 }) => {
@@ -70,7 +74,7 @@ const Avatar: React.FC<AvatarProps> = ({
         onError={() => setFailed(true)}
       />
     );
-  } else if (showInitials && username) {
+  } else if (showInitials && (username || fallbackText)) {
     face = (
       <View style={placeholderStyle}>
         <Text
@@ -80,7 +84,7 @@ const Avatar: React.FC<AvatarProps> = ({
             { fontSize: size * 0.4 },
           ]}
         >
-          {username.charAt(0).toUpperCase()}
+          {username?.charAt(0).toUpperCase() || fallbackText}
         </Text>
       </View>
     );
@@ -93,10 +97,12 @@ const Avatar: React.FC<AvatarProps> = ({
     );
   }
 
-  return (
+  return showRing ? (
     <AvatarRing reviewCount={reviewCount} size={size}>
       {face}
     </AvatarRing>
+  ) : (
+    face
   );
 };
 

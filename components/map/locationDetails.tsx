@@ -1,9 +1,10 @@
 import { Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { Avatar } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { Avatar, RatingPips } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
 
@@ -17,6 +18,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   onRegularsPress,
 }) => {
   const styles = useStyles();
+  const { colors } = useTheme();
 
   const cityCountry = loc.address
     ? formatCityRegion(stripNameFromAddress(loc.name, loc.address))
@@ -31,10 +33,27 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   return (
     <View style={styles.content}>
       <Link href={routes.place(loc.id)} asChild>
-        <Pressable style={styles.titlePressable} accessibilityRole="link">
-          <Text style={styles.name} numberOfLines={2}>
-            {loc.name || "No name available"}
-          </Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.titlePressable,
+            pressed && styles.pressed,
+          ]}
+          accessibilityRole="link"
+          accessibilityLabel={`View ${loc.name}`}
+          accessibilityHint="Opens the location page"
+          hitSlop={6}
+        >
+          <View style={styles.titleRow}>
+            <Text style={styles.name} numberOfLines={2}>
+              {loc.name || "No name available"}
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.accent}
+              pointerEvents="none"
+            />
+          </View>
         </Pressable>
       </Link>
 
@@ -59,6 +78,9 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           <Text style={styles.score}>
             {hasRating ? formatRating(loc.rating) : "--"}
           </Text>
+          {hasRating ? (
+            <RatingPips value={loc.rating} size={18} accessibilityLabel="" />
+          ) : null}
           <Text style={styles.reviewCount} numberOfLines={1}>
             {reviewLabel}
           </Text>
@@ -109,11 +131,21 @@ const useStyles = makeStyles((t) => ({
     paddingTop: t.spacing.sm,
   },
   titlePressable: {
+    alignSelf: "stretch" as const,
+    minHeight: 32,
+  },
+  titleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    alignSelf: "flex-start" as const,
+    gap: t.spacing.xs,
     minWidth: 0,
+    maxWidth: "100%" as const,
   },
   name: {
     ...t.typography.title,
     color: t.colors.text,
+    flexShrink: 1,
   },
   meta: {
     ...t.typography.mono,

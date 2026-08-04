@@ -11,7 +11,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
+import {
+  Avatar,
+  RatingPips,
+  SegmentedControl,
+  VerifiedName,
+} from "@/components/shared";
 import Regulars from "@/components/Regulars";
 import AppHeader from "@/components/nav/AppHeader";
 import { withRegulars } from "@/services/regularsService";
@@ -53,6 +58,11 @@ interface DiscoverTabsProps {
   onTabChange: (tab: "profiles" | "locations") => void;
   onQueryChange: (query: string) => void;
 }
+
+const DISCOVER_TABS = [
+  { value: "locations", label: "Places" },
+  { value: "profiles", label: "Profiles" },
+] as const;
 
 export default function DiscoverTabs({
   query,
@@ -344,12 +354,23 @@ export default function DiscoverTabs({
         )
       }
       activeOpacity={0.7}
+      accessibilityRole="link"
+      accessibilityLabel={`View ${item.name}`}
+      accessibilityHint="Opens the location page"
     >
       <View style={styles.cardContent}>
         <View style={styles.textContainer}>
-          <Text style={styles.resultTitle} numberOfLines={1}>
-            {item.name}
-          </Text>
+          <View style={styles.resultTitleRow}>
+            <Text style={styles.resultTitle} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.accent}
+              pointerEvents="none"
+            />
+          </View>
           {item.address && (
             <Text style={styles.resultSubtitle} numberOfLines={1}>
               {formatCityRegion(stripNameFromAddress(item.name, item.address))}
@@ -361,16 +382,22 @@ export default function DiscoverTabs({
           <View style={styles.resultRating}>
             <RatingPips
               value={item.rating ?? 0}
-              size={12}
+              size={18}
               accessibilityLabel=""
             />
-            <Text style={styles.resultScore}>
-              {item.rating != null
-                ? `${formatRating(item.rating)} · ${item.total_ratings ?? 0} ${
-                    item.total_ratings === 1 ? "review" : "reviews"
-                  }`
-                : "Not yet rated"}
-            </Text>
+            {item.rating != null ? (
+              <View style={styles.resultRatingMeta}>
+                <Text style={styles.resultScore}>
+                  {formatRating(item.rating)}
+                </Text>
+                <Text style={styles.resultReviewCount}>
+                  {item.total_ratings ?? 0}{" "}
+                  {item.total_ratings === 1 ? "review" : "reviews"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.resultUnrated}>Not yet rated</Text>
+            )}
           </View>
           <Regulars regulars={item.regulars} variant="compact" />
         </View>
@@ -386,7 +413,7 @@ export default function DiscoverTabs({
           onto the paper it filters. */}
       <AppHeader
         variant="large"
-        title="discover"
+        title="Discover"
         below={
           <View style={styles.searchBar}>
             <Ionicons
@@ -443,57 +470,12 @@ export default function DiscoverTabs({
       />
 
       <View style={styles.segmentRow}>
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "locations" && styles.tabActive]}
-            onPress={() => onTabChange("locations")}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === "locations" }}
-          >
-            <Ionicons
-              name="location-outline"
-              size={20}
-              color={
-                activeTab === "locations"
-                  ? colors.onHighlight
-                  : colors.textSecondary
-              }
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "locations" && styles.tabTextActive,
-              ]}
-            >
-              Places
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "profiles" && styles.tabActive]}
-            onPress={() => onTabChange("profiles")}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === "profiles" }}
-          >
-            <Ionicons
-              name="people-outline"
-              size={20}
-              color={
-                activeTab === "profiles"
-                  ? colors.onHighlight
-                  : colors.textSecondary
-              }
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "profiles" && styles.tabTextActive,
-              ]}
-            >
-              Profiles
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <SegmentedControl
+          value={activeTab}
+          options={DISCOVER_TABS}
+          onChange={onTabChange}
+          style={styles.tabContainer}
+        />
       </View>
 
       {/* Tab Content */}
@@ -553,46 +535,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.sm,
   },
   tabContainer: {
-    flexDirection: "row" as const,
-    backgroundColor: t.colors.surface,
     marginHorizontal: t.spacing.gutter,
-    borderRadius: t.radius.pill,
-    ...t.elevation.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    padding: t.spacing.xs,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingVertical: t.spacing.md - 2,
-    paddingHorizontal: t.spacing.lg,
-    borderRadius: t.radius.pill,
-    // The selected half carries a 2px border; the unselected half reserves the
-    // same space so selection doesn't nudge the labels.
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  // Selection is the system's selected Chip: chartreuse fill, 2px green
-  // border, green ink. Both halves take it — a chartreuse fill always carries
-  // onHighlight, never the chartreuse itself.
-  tabActive: {
-    backgroundColor: t.colors.highlight,
-    // Green, not the primary purple: chartreuse and green is the system's
-    // own selected pairing and the ink on the fill is green too.
-    borderColor: t.colors.secondary,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
-    color: t.colors.textSecondary,
-    marginLeft: t.spacing.sm,
-  },
-  tabTextActive: {
-    fontFamily: fonts.bold,
-    color: t.colors.onHighlight,
   },
   // Inside the green, so the header owns its inset.
   searchBar: {
@@ -671,21 +614,41 @@ const useStyles = makeStyles((t) => ({
   resultRating: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
+    gap: t.spacing.md,
+    marginTop: t.spacing.xs,
+  },
+  resultRatingMeta: {
+    flexDirection: "row" as const,
+    alignItems: "baseline" as const,
     gap: t.spacing.sm,
-    marginTop: 2,
   },
   resultScore: {
+    ...t.typography.metric,
+    letterSpacing: 0,
+    color: t.colors.secondary,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  resultReviewCount: {
     ...t.typography.mono,
-    fontSize: 11.5,
+    color: t.colors.textMuted,
+  },
+  resultUnrated: {
+    ...t.typography.mono,
     color: t.colors.textMuted,
   },
   textContainer: {
     flex: 1,
   },
+  resultTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    marginBottom: 2,
+  },
   resultTitle: {
     ...t.typography.heading,
     color: t.colors.text,
-    marginBottom: 2,
+    flexShrink: 1,
   },
   resultSubtitle: {
     ...t.typography.caption,
