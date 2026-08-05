@@ -11,13 +11,18 @@ import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import { Avatar, SectionHeader, Skeleton } from "@/components/shared";
+import {
+  Avatar,
+  RatingPips,
+  SectionHeader,
+  Skeleton,
+} from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import {
   getRegularsByLocation,
   type Regular,
@@ -46,6 +51,7 @@ interface LocationType {
 
 const Location = () => {
   const styles = useStyles();
+  const { colors } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const goBack = useGoBack();
@@ -334,6 +340,7 @@ const Location = () => {
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
         contentTone="surface"
+        tileLabel="reviewer"
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
             ? router.push(routes.editCaption(review.id))
@@ -370,9 +377,23 @@ const Location = () => {
                     }
                   >
                     <Text style={styles.venueEyebrow}>Overall</Text>
-                    <Text style={styles.venueScore}>
-                      {hasRating ? formatRating(displayLocation?.rating) : "--"}
-                    </Text>
+                    <View style={styles.venueRatingRow}>
+                      <Text style={styles.venueScore}>
+                        {hasRating
+                          ? formatRating(displayLocation?.rating)
+                          : "--"}
+                      </Text>
+                      {hasRating ? (
+                        <RatingPips
+                          value={displayLocation?.rating}
+                          size={18}
+                          onDark
+                          bodyColor={colors.ratingFillOnInk}
+                          emptyColor={colors.ratingTrackOnInk}
+                          accessibilityLabel=""
+                        />
+                      ) : null}
+                    </View>
                     <Text style={styles.venueReviewCount}>{reviewLabel}</Text>
                   </View>
 
@@ -483,6 +504,11 @@ const useStyles = makeStyles((t) => ({
   },
   metricBlock: {
     gap: t.spacing.xs,
+  },
+  venueRatingRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.md,
   },
   venueEyebrow: {
     ...t.typography.eyebrow,

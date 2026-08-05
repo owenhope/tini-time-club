@@ -75,12 +75,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           }
         >
           <Text style={styles.eyebrow}>Overall</Text>
-          <Text style={styles.score}>
-            {hasRating ? formatRating(loc.rating) : "--"}
-          </Text>
-          {hasRating ? (
-            <RatingPips value={loc.rating} size={18} accessibilityLabel="" />
-          ) : null}
+          <View style={styles.ratingRow}>
+            <Text style={styles.score}>
+              {hasRating ? formatRating(loc.rating) : "--"}
+            </Text>
+            {hasRating ? (
+              <RatingPips value={loc.rating} size={18} accessibilityLabel="" />
+            ) : null}
+          </View>
           <Text style={styles.reviewCount} numberOfLines={1}>
             {reviewLabel}
           </Text>
@@ -160,6 +162,11 @@ const useStyles = makeStyles((t) => ({
   },
   metricBlock: {
     gap: t.spacing.xs,
+  },
+  ratingRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.md,
   },
   eyebrow: {
     ...t.typography.eyebrow,

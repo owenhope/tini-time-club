@@ -1,25 +1,46 @@
-import GREETINGS, { getTiniTimeGreeting } from "@/utils/tiniTime";
+import GREETINGS_BY_DAY, {
+  getTiniTimeGreeting,
+} from "@/utils/tiniTime";
 
 describe("getTiniTimeGreeting", () => {
-  it("has one greeting per day of the week", () => {
-    expect(GREETINGS).toHaveLength(7);
-  });
-
-  it("gives each day a different headline", () => {
-    const headlines = new Set(GREETINGS.map((g) => g.headline));
-    expect(headlines.size).toBe(7);
-  });
-
-  it("picks the greeting by weekday", () => {
-    // 2026-08-02 is a Sunday, so the week's greetings run in order from it.
-    for (let day = 0; day < 7; day++) {
-      const date = new Date(2026, 7, 2 + day);
-      expect(getTiniTimeGreeting(date)).toBe(GREETINGS[date.getDay()]);
+  it("has a large, even bank for every weekday", () => {
+    expect(GREETINGS_BY_DAY).toHaveLength(7);
+    for (const greetings of GREETINGS_BY_DAY) {
+      expect(greetings).toHaveLength(12);
     }
   });
 
-  it("keeps the display headlines sentence-cased and short", () => {
-    for (const { headline } of GREETINGS) {
+  it("has no duplicate greeting pairs", () => {
+    const greetings = GREETINGS_BY_DAY.flat();
+    const pairs = new Set(
+      greetings.map(({ headline, subline }) => `${headline}\n${subline}`)
+    );
+    expect(pairs.size).toBe(84);
+  });
+
+  it("keeps a greeting stable throughout the same local day", () => {
+    const morning = new Date(2026, 7, 4, 8, 15);
+    const evening = new Date(2026, 7, 4, 23, 45);
+    expect(getTiniTimeGreeting(morning)).toBe(getTiniTimeGreeting(evening));
+  });
+
+  it("advances to another variation on the same weekday next week", () => {
+    const thisTuesday = new Date(2026, 7, 4);
+    const nextTuesday = new Date(2026, 7, 11);
+    expect(getTiniTimeGreeting(thisTuesday)).not.toBe(
+      getTiniTimeGreeting(nextTuesday)
+    );
+  });
+
+  it("does not repeat on the same weekday within the 12-week rotation", () => {
+    const greetings = Array.from({ length: 12 }, (_, week) =>
+      getTiniTimeGreeting(new Date(2026, 7, 4 + week * 7))
+    );
+    expect(new Set(greetings).size).toBe(12);
+  });
+
+  it("keeps display headlines sentence-cased and short", () => {
+    for (const { headline } of GREETINGS_BY_DAY.flat()) {
       expect(headline[0]).toBe(headline[0].toUpperCase());
       expect(headline.length).toBeLessThanOrEqual(30);
     }
@@ -27,12 +48,13 @@ describe("getTiniTimeGreeting", () => {
 
   it("uses at most one emoji, at the end", () => {
     const emoji = /\p{Extended_Pictographic}/gu;
-    for (const { headline, subline } of GREETINGS) {
+    for (const { headline, subline } of GREETINGS_BY_DAY.flat()) {
       expect(subline).not.toMatch(emoji);
       const found = headline.match(emoji) ?? [];
       expect(found.length).toBeLessThanOrEqual(1);
-      if (found.length)
+      if (found.length) {
         expect(headline.trimEnd()).toMatch(/\p{Extended_Pictographic}$/u);
+      }
     }
   });
 });

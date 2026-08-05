@@ -77,7 +77,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: "transparent",
   },
   segmentSelected: {
-    backgroundColor: t.colors.highlight,
+    backgroundColor: t.colors.accent,
   },
   segmentPressed: {
     opacity: 0.7,
@@ -89,7 +89,7 @@ const useStyles = makeStyles((t) => ({
   },
   labelSelected: {
     fontFamily: fonts.bold,
-    color: t.colors.onHighlight,
+    color: t.colors.onAccent,
   },
 }));
 

@@ -47,6 +47,8 @@ export interface ReviewGridProps {
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
   /** Lets place pages use the same white review well as expanded reviews. */
   contentTone?: "paper" | "surface";
+  /** Profile grids identify the venue; venue grids identify the reviewer. */
+  tileLabel?: "location" | "reviewer";
 }
 
 /**
@@ -73,6 +75,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   onCommentAdded,
   onCommentDeleted,
   contentTone = "paper",
+  tileLabel = "location",
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -106,6 +109,14 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
       const locationLabel = item.location?.name
         ? `Review at ${item.location.name}`
         : "Open review";
+      const tileLabelText =
+        tileLabel === "reviewer"
+          ? item.profile?.username
+          : item.location?.name;
+      const accessibilityLabel =
+        tileLabel === "reviewer" && item.profile?.username
+          ? `Review by ${item.profile.username} at ${item.location?.name ?? "this location"}`
+          : locationLabel;
 
       return (
         <Pressable
@@ -122,8 +133,8 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           accessibilityRole="button"
           accessibilityLabel={
             overallScore == null
-              ? locationLabel
-              : `${locationLabel}, overall score ${scoreLabel}`
+              ? accessibilityLabel
+              : `${accessibilityLabel}, overall score ${scoreLabel}`
           }
           accessibilityHint="Opens the full review"
         >
@@ -137,22 +148,30 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           />
           {overallScore != null ? (
             <View style={styles.tileScore} accessibilityElementsHidden>
-              {/* Sage, not paper: the olive is green wherever it appears,
-                  and on the dark plate the light green is the legible one. */}
               <RatingPips
                 value={1}
                 max={1}
                 size={11}
-                bodyColor={colors.accentOnImage}
                 accessibilityLabel=""
               />
               <Text style={styles.tileScoreText}>{scoreLabel}</Text>
             </View>
           ) : null}
+          {tileLabelText ? (
+            <View
+              style={styles.tileLocation}
+              pointerEvents="none"
+              accessibilityElementsHidden
+            >
+              <Text style={styles.tileLocationText} numberOfLines={1}>
+                {tileLabelText}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
       );
     },
-    [colors.accentOnImage, styles, tileSize]
+    [styles, tileLabel, tileSize]
   );
 
   return (
@@ -213,13 +232,11 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
             bottom sheet in here would take no pan without one. */}
         <GestureHandlerRootView style={styles.sheet}>
           {/* Variant D: the sheet is presented, so it gets the grabber and a
-              text action rather than a back chevron. Done, not Close — the
-              platform's own swipe-down already closes it. */}
+              text dismissal action rather than a back chevron. */}
           <AppHeader
             variant="modal"
             title={active?.location?.name ?? "Review"}
-            onCancel={closeSheet}
-            action={{ label: "Done", onPress: closeSheet }}
+            action={{ label: "Close", onPress: closeSheet }}
           />
 
           <ScrollView contentContainerStyle={styles.sheetBody}>
@@ -301,6 +318,20 @@ const useStyles = makeStyles((t) => ({
     textShadowColor: t.colors.overlay,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  tileLocation: {
+    position: "absolute" as const,
+    left: 6,
+    bottom: 6,
+    maxWidth: "88%" as const,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: t.radius.xs,
+    backgroundColor: t.colors.scrimStrong,
+  },
+  tileLocationText: {
+    ...t.typography.micro,
+    color: t.colors.textOnImage,
   },
   sheet: {
     flex: 1,

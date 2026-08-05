@@ -54,8 +54,8 @@ export default function TabBar({
   const middle = Math.ceil(state.routes.length / 2);
 
   /**
-   * Pouring is the app's one loud action, so it takes the brand's loudest
-   * colour and sits proud of the bar. It is a button, not a tab: the composer
+   * Pouring is the app's primary action, so it takes the primary purple and
+   * sits proud of the bar. It is a button, not a tab: the composer
    * is presented over whatever you were looking at, so cancelling returns you
    * there rather than leaving a draft parked in a tab you thought you left.
    */
@@ -71,7 +71,7 @@ export default function TabBar({
       style={styles.pourSlot}
     >
       <View style={[styles.pour, onInk && styles.pourOnInk]}>
-        <Ionicons name="add" size={26} color={colors.onHighlight} />
+        <Ionicons name="add" size={26} color={colors.onAccent} />
       </View>
     </TouchableOpacity>
   );
@@ -327,17 +327,16 @@ const useStyles = makeStyles((t) => ({
     width: POUR_SIZE,
     height: POUR_SIZE,
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.highlight,
+    backgroundColor: t.colors.accent,
     borderWidth: 2,
-    borderColor: t.colors.secondary,
+    borderColor: t.colors.accentPressed,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     // Proud of the bar, as drawn.
     marginTop: -10,
     ...t.elevation.raised,
   },
-  // On ink the chartreuse is already the loudest thing in the bar; the green
-  // ring would only muddy it.
+  // On ink the purple fill has enough separation without an extra ring.
   pourOnInk: {
     borderWidth: 0,
   },

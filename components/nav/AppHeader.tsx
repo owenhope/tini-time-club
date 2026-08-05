@@ -283,15 +283,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           <View style={styles.grabber} />
         </View>
         <View style={styles.modalRow}>
-          <Pressable
-            onPress={onCancel}
-            hitSlop={TAP_SLOP}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel"
-            style={styles.modalAction}
-          >
-            <Text style={styles.modalCancel}>Cancel</Text>
-          </Pressable>
+          {onCancel ? (
+            <Pressable
+              onPress={onCancel}
+              hitSlop={TAP_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
+              style={styles.modalAction}
+            >
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.modalAction} />
+          )}
           <Text style={styles.modalTitle} numberOfLines={1}>
             {title}
           </Text>
