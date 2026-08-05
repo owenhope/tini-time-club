@@ -48,7 +48,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "The Sunday nightcap",
-      subline: "Close the weekend with something properly cold.",
+      subline: "Close the weekend with one properly cold martini.",
     },
     {
       headline: "Sunday has good taste",
@@ -56,11 +56,11 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Stay out a little longer",
-      subline: "Monday has never minded waiting its turn.",
+      subline: "One more martini before Monday takes its turn.",
     },
     {
       headline: "Sunday, no rush",
-      subline: "There is still time for one worth remembering.",
+      subline: "There is still time for one more cold pour.",
     },
   ],
   [
@@ -119,12 +119,12 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
       subline: "The bar's emptier. The pour's more generous.",
     },
     {
-      headline: "Tuesday knows a shortcut",
-      subline: "Skip the crowd and head straight for the good seats.",
+      headline: "Tuesday goes straight up",
+      subline: "Skip the crowd and head straight for the coldest coupe.",
     },
     {
       headline: "A very good Tuesday",
-      subline: "All it needs now is a very cold glass.",
+      subline: "All it needs now is a very dry martini.",
     },
     {
       headline: "Tuesday, off the record",
@@ -132,7 +132,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Take Tuesday personally",
-      subline: "Order exactly what you want, exactly how you want it.",
+      subline: "Order the martini exactly how you want it.",
     },
     {
       headline: "Tuesday has potential",
@@ -144,11 +144,11 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Tuesday, well played",
-      subline: "You found the night everyone else overlooked.",
+      subline: "You found the martini hour everyone else overlooked.",
     },
     {
       headline: "Claim your Tuesday seat",
-      subline: "Regular status starts on nights like this.",
+      subline: "Regular status starts one martini at a time.",
     },
     {
       headline: "Tuesday is for tasting",
@@ -156,7 +156,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "A little Tuesday polish",
-      subline: "Add one chilled glass to improve the whole arrangement.",
+      subline: "Add one chilled martini to improve the whole arrangement.",
     },
     {
       headline: "Tuesday, no occasion",
@@ -166,7 +166,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
   [
     {
       headline: "Midweek, straight up",
-      subline: "Wednesday is a fine night to be a regular.",
+      subline: "Wednesday is a fine night for a martini.",
     },
     {
       headline: "Meet Wednesday halfway",
@@ -182,7 +182,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Midweek has its perks",
-      subline: "Better seats, better chat, less shouting.",
+      subline: "Better bar seats, better chat, less shouting.",
     },
     {
       headline: "Break glass for Wednesday",
@@ -220,7 +220,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Thursday starts the weekend",
-      subline: "Friday can file the paperwork tomorrow.",
+      subline: "The first martini can file the paperwork.",
     },
     {
       headline: "Almost Friday, fully chilled",
@@ -232,7 +232,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "The soft launch of Friday",
-      subline: "Same energy, better chance of getting a seat.",
+      subline: "Same pour, better chance of getting a seat.",
     },
     {
       headline: "Thursday, make a move",
@@ -240,7 +240,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "One night ahead of schedule",
-      subline: "The weekend rewards initiative.",
+      subline: "The weekend rewards an early first round.",
     },
     {
       headline: "Thursday has momentum",
@@ -248,7 +248,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Pre-weekend, properly",
-      subline: "A rehearsal is only useful when you commit to it.",
+      subline: "Rehearse with a martini worth repeating tomorrow.",
     },
     {
       headline: "Thursday wants a round",
@@ -298,7 +298,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Friday, make it dirty",
-      subline: "The week was clean enough already.",
+      subline: "Order the olive brine; the week was clean enough.",
     },
     {
       headline: "Meet me at the good bar",
@@ -320,7 +320,7 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Saturday has plans",
-      subline: "They begin with a reservation and end somewhere louder.",
+      subline: "They begin with a martini and end somewhere louder.",
     },
     {
       headline: "Your best glass is waiting",
@@ -356,11 +356,11 @@ export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
     },
     {
       headline: "Go where the Regulars go",
-      subline: "They have already done the useful research.",
+      subline: "They already found the martinis worth ordering.",
     },
     {
       headline: "Saturday, served cold",
-      subline: "The warmer plans can wait until tomorrow.",
+      subline: "A cold martini beats the warmer plans every time.",
     },
   ],
 ] as const;

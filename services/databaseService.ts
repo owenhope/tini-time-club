@@ -8,6 +8,7 @@ import type {
   Review,
 } from "@/types/types";
 import { reportError, warn } from "@/utils/log";
+import { withTimeout } from "@/utils/async";
 
 interface CachedQuery {
   data: any;
@@ -22,22 +23,6 @@ interface QueryOptions {
 }
 
 const QUERY_TIMEOUT_MS = 20_000;
-
-const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeout = setTimeout(
-      () => reject(new Error("The request timed out. Please try again.")),
-      QUERY_TIMEOUT_MS
-    );
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
-};
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -86,7 +71,7 @@ class DatabaseService {
     }
 
     // Execute query
-    const queryPromise = withTimeout(queryFn());
+    const queryPromise = withTimeout(queryFn(), QUERY_TIMEOUT_MS);
     this.pendingQueries.set(queryKey, queryPromise);
 
     try {

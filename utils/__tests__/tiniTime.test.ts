@@ -1,6 +1,4 @@
-import GREETINGS_BY_DAY, {
-  getTiniTimeGreeting,
-} from "@/utils/tiniTime";
+import GREETINGS_BY_DAY, { getTiniTimeGreeting } from "@/utils/tiniTime";
 
 describe("getTiniTimeGreeting", () => {
   it("has a large, even bank for every weekday", () => {
@@ -16,6 +14,19 @@ describe("getTiniTimeGreeting", () => {
       greetings.map(({ headline, subline }) => `${headline}\n${subline}`)
     );
     expect(pairs.size).toBe(84);
+  });
+
+  it("keeps every greeting rooted in drinks or bar culture", () => {
+    const clubLanguage =
+      /🍸|\b(?:martinis?|drinks?|bars?|coupes?|glass(?:es)?|olives?|gin|vodka|spirits?|rounds?|sips?|garnishes?|twists?|dry|cocktails?|stems?|bartenders?|tasting|orders?|nightcap|regulars?)\b|\b(?:pour|shak|stir|chill)\w*/i;
+
+    const genericGreetings = GREETINGS_BY_DAY.flat()
+      .filter(
+        ({ headline, subline }) => !clubLanguage.test(`${headline} ${subline}`)
+      )
+      .map(({ headline }) => headline);
+
+    expect(genericGreetings).toEqual([]);
   });
 
   it("keeps a greeting stable throughout the same local day", () => {

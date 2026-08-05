@@ -21,6 +21,7 @@ import { normalizeVenueName } from "@/utils/venueName";
  */
 
 const PLACES_BASE = "https://places.googleapis.com/v1";
+const venueDetailsCache = new Map<string, PlaceResult>();
 
 /** Legacy-shaped place used across the app's location UIs. */
 export interface PlaceResult {
@@ -207,6 +208,9 @@ export const fetchVenue = async (
   placeId: string,
   sessionToken?: string
 ): Promise<PlaceResult | null> => {
+  const cached = venueDetailsCache.get(placeId);
+  if (cached) return cached;
+
   try {
     const params = new URLSearchParams({
       fields: "id,displayName,formattedAddress,location,viewport,types",
@@ -218,7 +222,9 @@ export const fetchVenue = async (
     );
     const data = await response.json();
     if (data.error) throw new Error(data.error.message ?? "Places API error");
-    return mapNewPlace(data);
+    const venue = mapNewPlace(data);
+    venueDetailsCache.set(placeId, venue);
+    return venue;
   } catch (error) {
     reportError("Error fetching venue details:", error);
     return null;

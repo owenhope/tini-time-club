@@ -1,10 +1,4 @@
-import React, {
-  createElement,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
   TouchableOpacity,
@@ -64,6 +58,21 @@ interface ReviewFormValues {
   presentation: number;
   comment: string;
 }
+
+type ReviewQuestionKey =
+  "location" | "spirit" | "type" | "taste" | "presentation";
+
+const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
+  { title: "Where was this served?", key: "location" },
+  { title: "Which Spirit?", key: "spirit" },
+  { title: "Which Type?", key: "type" },
+  { title: "Presentation Rating", key: "presentation" },
+  { title: "Taste Rating", key: "taste" },
+  { title: "Preview" },
+];
+
+const STEP_FADE_OUT_MS = 120;
+const STEP_FADE_IN_MS = 160;
 
 const ReviewPreview = ({
   values,
@@ -265,9 +274,10 @@ export default function App() {
   const locationLonParam = params.locationLon;
   const locationPlaceIdParam = params.locationPlaceId;
 
-  const { control, handleSubmit, reset, trigger, formState, setValue } =
+  const { control, handleSubmit, reset, trigger, setValue } =
     useForm<ReviewFormValues>({
       mode: "onChange",
+      shouldUnregister: false,
       defaultValues: {
         location: null,
         spirit: "",
@@ -343,46 +353,7 @@ export default function App() {
     setValue,
   ]);
 
-  interface Question {
-    title: string;
-    key?: "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
-    Component?: React.ComponentType<any>;
-  }
-
-  const questions: Question[] = [
-    {
-      title: "Where was this served?",
-      key: "location",
-      Component: LocationInput,
-    },
-    {
-      title: "Which Spirit?",
-      key: "spirit",
-      Component: () => (
-        <SelectableOptionsInput
-          control={control}
-          name="spirit"
-          options={spirits}
-        />
-      ),
-    },
-    {
-      title: "Which Type?",
-      key: "type",
-      Component: () => (
-        <SelectableOptionsInput control={control} name="type" options={types} />
-      ),
-    },
-    {
-      title: "Presentation Rating",
-      key: "presentation",
-      Component: PresentationInput,
-    },
-    { title: "Taste Rating", key: "taste", Component: TasteInput },
-    {
-      title: "Preview",
-    },
-  ];
+  const questions = REVIEW_QUESTIONS;
 
   const animatedStyle = { opacity };
 
@@ -421,7 +392,32 @@ export default function App() {
     );
   };
 
+  const transitionToStep = (next: number) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: STEP_FADE_OUT_MS,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) {
+        setIsTransitioning(false);
+        return;
+      }
+
+      setStep(next);
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: STEP_FADE_IN_MS,
+        useNativeDriver: true,
+      }).start(() => setIsTransitioning(false));
+    });
+  };
+
   const nextStep = async () => {
+    if (isTransitioning) return;
+
     if (step === questions.length - 1) {
       const commentValue = watchedValues.comment?.trim();
       if (!commentValue || commentValue.length === 0) return;
@@ -433,44 +429,42 @@ export default function App() {
     }
 
     if (step < questions.length - 1) {
-      setIsTransitioning(true);
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        setStep(step + 1);
-      });
+      transitionToStep(step + 1);
     }
   };
 
   const prevStep = () => {
-    if (step > 0) {
-      setIsTransitioning(true);
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        setStep(step - 1);
-      });
-    }
+    if (step > 0 && !isTransitioning) transitionToStep(step - 1);
   };
 
-  useEffect(() => {
-    if (isTransitioning) {
-      const timer = setTimeout(() => {
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsTransitioning(false);
-        });
-      }, 150);
-      return () => clearTimeout(timer);
+  const renderCurrentQuestion = () => {
+    switch (questions[step].key) {
+      case "location":
+        return <LocationInput control={control} />;
+      case "spirit":
+        return (
+          <SelectableOptionsInput
+            control={control}
+            name="spirit"
+            options={spirits}
+          />
+        );
+      case "type":
+        return (
+          <SelectableOptionsInput
+            control={control}
+            name="type"
+            options={types}
+          />
+        );
+      case "presentation":
+        return <PresentationInput control={control} />;
+      case "taste":
+        return <TasteInput control={control} />;
+      default:
+        return null;
     }
-  }, [step, isTransitioning, opacity]);
+  };
 
   const uploadImage = async (userId: string) => {
     try {
@@ -625,17 +619,13 @@ export default function App() {
 
       await refreshProfile();
 
-      setIsSubmitting(false);
-      setStep(0);
-      setPhoto(null);
-      reset();
       setPostedReviewId(String(reviewId));
 
       if (earnedAchievements.length > 0) {
         setCelebrationReviewCount(rankCheck.newCount);
         setAchievements(earnedAchievements);
       } else {
-        router.replace(
+        router.dismissTo(
           routes.home({
             postedReviewId: String(reviewId),
             feedRefresh: String(Date.now()),
@@ -651,11 +641,8 @@ export default function App() {
 
   const finishCelebration = () => {
     const reviewId = postedReviewId;
-    setAchievements([]);
-    setCelebrationReviewCount(null);
-    setPostedReviewId(null);
 
-    router.replace(
+    router.dismissTo(
       routes.home({
         ...(reviewId ? { postedReviewId: reviewId } : {}),
         feedRefresh: String(Date.now()),
@@ -759,12 +746,9 @@ export default function App() {
                   isSubmitting={isSubmitting}
                   submissionMessage={submissionMessage}
                 />
-              ) : questions[step].Component ? (
-                createElement(questions[step].Component, {
-                  control,
-                  ...formState,
-                })
-              ) : null}
+              ) : (
+                renderCurrentQuestion()
+              )}
             </Animated.View>
 
             {!isSubmitting && (
@@ -787,6 +771,7 @@ export default function App() {
                         size="medium"
                         icon="chevron-back"
                         iconPosition="left"
+                        disabled={isTransitioning}
                       />
                     )}
                   </View>
@@ -824,6 +809,7 @@ export default function App() {
                         size="medium"
                         icon="chevron-forward"
                         iconPosition="right"
+                        disabled={isTransitioning}
                       />
                     ) : (
                       <Button

@@ -26,6 +26,7 @@ import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
+import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
 
 // Built once: constructing the profanity list is expensive and the filter is
@@ -146,13 +147,16 @@ function Home() {
         const start = nextPage * PAGE_SIZE;
 
         // Get reviews using optimized database service
-        const reviewsDataFromDB = await databaseService.getReviews({
-          currentUserId: profile.id,
-          limit: PAGE_SIZE,
-          offset: start,
-          excludeBlocked: true,
-          forceRefresh: refresh,
-        });
+        const reviewsDataFromDB = await withTimeout(
+          databaseService.getReviews({
+            currentUserId: profile.id,
+            limit: PAGE_SIZE,
+            offset: start,
+            excludeBlocked: true,
+            forceRefresh: refresh,
+          }),
+          25_000
+        );
 
         if (!reviewsDataFromDB) {
           throw new Error("Failed to fetch reviews");

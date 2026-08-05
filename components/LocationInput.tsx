@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
+  ActivityIndicator,
   View,
   Text,
   TouchableOpacity,
@@ -43,6 +44,29 @@ interface LocationInputProps {
   onLocationSelected?: (location: LocationInputValue) => void;
 }
 
+let cachedUserLocation: Location.LocationObject | null = null;
+let cachedNearbyPlaces: PlaceResult[] = [];
+let hasLoadedNearbyPlaces = false;
+let nearbyPlacesRequest: Promise<PlaceResult[]> | null = null;
+
+const loadNearbyPlaces = (userLocation: Location.LocationObject) => {
+  if (hasLoadedNearbyPlaces) return Promise.resolve(cachedNearbyPlaces);
+  if (nearbyPlacesRequest) return nearbyPlacesRequest;
+
+  const { latitude, longitude } = userLocation.coords;
+  nearbyPlacesRequest = searchNearbyVenues({ latitude, longitude })
+    .then((places) => {
+      cachedNearbyPlaces = deduplicatePlaces(filterRelevantPlaces(places));
+      hasLoadedNearbyPlaces = true;
+      return cachedNearbyPlaces;
+    })
+    .finally(() => {
+      nearbyPlacesRequest = null;
+    });
+
+  return nearbyPlacesRequest;
+};
+
 const LocationInput = ({
   control,
   disabled = false,
@@ -59,6 +83,8 @@ const LocationInput = ({
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchQueryRef = useRef("");
+  const searchRequestRef = useRef(0);
+  const selectionRequestRef = useRef(0);
   const hasAppliedLocationRef = useRef(false);
   // One autocomplete billing session per typing interaction.
   const sessionTokenRef = useRef<string | null>(null);
@@ -69,6 +95,14 @@ const LocationInput = ({
     let mounted = true;
     (async () => {
       try {
+        if (cachedUserLocation) {
+          setLocation(cachedUserLocation);
+          setNearbyPlaces(cachedNearbyPlaces);
+          const places = await loadNearbyPlaces(cachedUserLocation);
+          if (mounted) setNearbyPlaces(places);
+          return;
+        }
+
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted" || !mounted) return;
 
@@ -76,16 +110,22 @@ const LocationInput = ({
           maxAge: 5 * 60 * 1000,
         });
         if (lastKnownLocation && mounted) {
+          cachedUserLocation = lastKnownLocation;
           setLocation(lastKnownLocation);
-          fetchNearbyPlaces(lastKnownLocation);
+          const places = await loadNearbyPlaces(lastKnownLocation);
+          if (mounted) setNearbyPlaces(places);
         }
 
         const currentLocation = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
         if (mounted) {
+          cachedUserLocation = currentLocation;
           setLocation(currentLocation);
-          fetchNearbyPlaces(currentLocation);
+          if (!lastKnownLocation) {
+            const places = await loadNearbyPlaces(currentLocation);
+            if (mounted) setNearbyPlaces(places);
+          }
         }
       } catch (error) {
         warn(
@@ -99,23 +139,11 @@ const LocationInput = ({
     };
   }, []);
 
-  // Fetch nearby places: one distance-ranked searchNearby request. The venue
-  // filter still applies so the browse list never offers geography.
-  const fetchNearbyPlaces = async (userLocation: Location.LocationObject) => {
-    try {
-      const { latitude, longitude } = userLocation.coords;
-      const places = await searchNearbyVenues({ latitude, longitude });
-      setNearbyPlaces(deduplicatePlaces(filterRelevantPlaces(places)));
-    } catch (error) {
-      reportError("Error fetching nearby places:", error);
-    }
-  };
-
   // Search-as-you-type via Autocomplete (New). One session token spans the
   // whole typing interaction and is closed by the details fetch on selection,
   // which is what gets the per-session billing rate.
   const performSearch = useCallback(
-    async (query: string) => {
+    async (query: string, requestId: number) => {
       if (query.length < 2) {
         setSearchResults([]);
         setIsSearching(false);
@@ -151,12 +179,17 @@ const LocationInput = ({
           );
         });
 
-        setSearchResults(filtered);
+        if (
+          requestId === searchRequestRef.current &&
+          query === searchQueryRef.current
+        ) {
+          setSearchResults(filtered);
+        }
       } catch (error) {
         reportError("Error searching places:", error);
-        setSearchResults([]);
+        if (requestId === searchRequestRef.current) setSearchResults([]);
       } finally {
-        setIsSearching(false);
+        if (requestId === searchRequestRef.current) setIsSearching(false);
       }
     },
     [location]
@@ -169,7 +202,7 @@ const LocationInput = ({
     const activeQuery = searchQueryRef.current;
     if (activeQuery.length < 2) return;
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    performSearch(activeQuery);
+    performSearch(activeQuery, ++searchRequestRef.current);
   }, [location, performSearch]);
 
   // Debounced search handler
@@ -178,12 +211,16 @@ const LocationInput = ({
       setSearchQuery(query);
       searchQueryRef.current = query;
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      const requestId = ++searchRequestRef.current;
       if (query.length < 2) {
         setSearchResults([]);
         setIsSearching(false);
         return;
       }
-      searchTimeoutRef.current = setTimeout(() => performSearch(query), 300);
+      searchTimeoutRef.current = setTimeout(
+        () => performSearch(query, requestId),
+        300
+      );
     },
     [performSearch]
   );
@@ -197,6 +234,7 @@ const LocationInput = ({
   );
 
   const handleClearSearch = () => {
+    searchRequestRef.current += 1;
     setSearchQuery("");
     searchQueryRef.current = "";
     setSearchResults([]);
@@ -211,14 +249,14 @@ const LocationInput = ({
     place: PlaceResult,
     onSelect: (data: LocationInputValue | null) => void
   ) => {
+    const requestId = ++selectionRequestRef.current;
     let resolved = place;
     if (!place.geometry?.location) {
       setIsResolvingId(place.place_id);
-      const details = await fetchVenue(
-        place.place_id,
-        sessionTokenRef.current ?? undefined
-      );
+      const sessionToken = sessionTokenRef.current ?? undefined;
       sessionTokenRef.current = null;
+      const details = await fetchVenue(place.place_id, sessionToken);
+      if (requestId !== selectionRequestRef.current) return;
       setIsResolvingId(null);
       if (!details?.geometry?.location) return;
       resolved = { ...place, ...details };
@@ -251,7 +289,7 @@ const LocationInput = ({
     >
       {places.map((place) => {
         const placeName = place.name || "";
-        const selected = selectedValue?.name === placeName;
+        const selected = selectedValue?.place_id === place.place_id;
         const placeLocation = place.geometry?.location;
         // Autocomplete predictions ship an origin distance; nearby results
         // have coordinates to compute one from.
@@ -278,7 +316,7 @@ const LocationInput = ({
                 void selectPlace(place, onSelect);
               }
             }}
-            disabled={disabled || isResolvingId !== null}
+            disabled={disabled || isResolvingId === place.place_id}
           >
             <View style={styles.placeContent}>
               <View style={styles.placeTextContainer}>
@@ -300,6 +338,9 @@ const LocationInput = ({
                 </Text>
               </View>
               <View style={styles.rightContainer}>
+                {isResolvingId === place.place_id && (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                )}
                 {distance !== null && (
                   <Text
                     style={[

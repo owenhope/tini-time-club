@@ -12,7 +12,6 @@ import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
 import {
-  ActivityIndicator,
   Alert,
   AppState,
   AppStateStatus,
@@ -48,6 +47,7 @@ import {
 } from "@/utils/authDeepLink";
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
+import { withTimeout } from "@/utils/async";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -62,6 +62,8 @@ const isOnboardingExemptPath = (path: string) =>
   path === "/sign-in" ||
   path === "/sign-up" ||
   path.startsWith("/auth");
+
+const RESUME_SESSION_TIMEOUT_MS = 5000;
 
 /**
  * Last-resort catch for render-time throws anywhere in the app — without it
@@ -168,7 +170,6 @@ function RootLayoutNav() {
   const [pendingRoute, setPendingRoute] = useState<
     ReturnType<typeof routes.home> | ReturnType<typeof routes.welcome> | null
   >(null);
-  const [isResuming, setIsResuming] = useState(false);
   const rootNavigationState = useRootNavigationState();
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
@@ -347,21 +348,30 @@ function RootLayoutNav() {
 
     // Handle app state changes (resume from background)
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      const previousAppState = appState.current;
+      appState.current = nextAppState;
       authCache.onAppStateChange(nextAppState);
 
       if (
-        appState.current.match(/inactive|background/) &&
+        previousAppState.match(/inactive|background/) &&
         nextAppState === "active" &&
         !isCheckingSession.current &&
         isReadyRef.current &&
         pathnameRef.current !== "/"
       ) {
         isCheckingSession.current = true;
-        setIsResuming(true);
 
         try {
-          const session = await authCache.getSession();
-          if (!session && pathnameRef.current !== "/") {
+          const session = await withTimeout(
+            authCache.getSession(),
+            RESUME_SESSION_TIMEOUT_MS,
+            "Resume session check timed out"
+          );
+          if (
+            !session &&
+            appState.current === "active" &&
+            pathnameRef.current !== "/"
+          ) {
             router.replace(routes.welcome());
           }
         } catch (error) {
@@ -371,15 +381,12 @@ function RootLayoutNav() {
           );
         } finally {
           isCheckingSession.current = false;
-          setIsResuming(false);
         }
       }
 
       if (nextAppState === "active") {
         void retryPendingPushUnregistrationAsync();
       }
-
-      appState.current = nextAppState;
     };
 
     const appStateSubscription = AppState.addEventListener(
@@ -446,24 +453,6 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
-      {/* Loading overlay during resume session check */}
-      {isResuming && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.background,
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-          }}
-        >
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      )}
     </>
   );
 }
