@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Platform, Share, View } from "react-native";
+import { Modal, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Animated, {
   Easing,
@@ -15,8 +15,6 @@ import {
   logCelebrationEvent,
   type Achievement,
 } from "@/utils/celebrations";
-import { warn } from "@/utils/log";
-import { TTC_WEB_ORIGIN } from "@/utils/reviewShare";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
@@ -38,12 +36,10 @@ const copyFor = (achievement: Achievement) =>
     ? {
         headline: `You made ${achievement.tier.name}`,
         subtitle: "Your ring just leveled up. Wear it well.",
-        share: `I just made ${achievement.tier.name} on Tini Time Club 🍸`,
       }
     : {
         headline: "You're a Regular",
         subtitle: `You've earned your seat at ${achievement.locationName}.`,
-        share: `I'm officially a Regular at ${achievement.locationName} on Tini Time Club 🍸`,
       };
 
 /**
@@ -84,7 +80,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   if (!achievement) return null;
 
-  const { headline, subtitle, share } = copyFor(achievement);
+  const { headline, subtitle } = copyFor(achievement);
   const isLast = index === achievements.length - 1;
 
   const next = () => {
@@ -92,32 +88,6 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       onClose();
     } else {
       setIndex(index + 1);
-    }
-  };
-
-  const onShare = async () => {
-    try {
-      // Profiles have no public page, so a milestone links to the club itself.
-      const url = TTC_WEB_ORIGIN.replace(/\/$/, "");
-      const content =
-        Platform.OS === "ios"
-          ? {
-              title: "Tini Time Club",
-              message: share,
-              url,
-            }
-          : {
-              title: "Tini Time Club",
-              message: `${share}\n\n${url}`,
-            };
-      const result = await Share.share(content);
-      await logCelebrationEvent(
-        achievement,
-        "sheet",
-        result.action === Share.sharedAction ? "shared" : "dismissed"
-      );
-    } catch (error) {
-      warn("Celebration share failed:", error);
     }
   };
 
@@ -142,18 +112,10 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
         </Animated.View>
         <Animated.View style={[styles.actions, textStyle]}>
           <Button
-            title="Share the news"
-            onPress={onShare}
-            variant="primary"
-            size="large"
-            icon="share-outline"
-            iconPosition="left"
-          />
-          <Button
             title={isLast ? "Continue" : "Next"}
             onPress={next}
-            variant="ghost"
-            size="medium"
+            variant="primary"
+            size="large"
           />
         </Animated.View>
       </View>

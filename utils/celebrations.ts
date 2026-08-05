@@ -13,6 +13,36 @@ export type Achievement =
   | { kind: "rank"; tier: RankTier }
   | { kind: "regular"; locationId: number; locationName: string };
 
+interface AchievementTransition {
+  rankUp: RankTier | null;
+  wasRegular: boolean | null;
+  isRegular: boolean;
+  locationId: number | null;
+  locationName: string | null;
+}
+
+/** Convert the fresh post-write checks into the moments shown to the member. */
+export const collectAchievements = ({
+  rankUp,
+  wasRegular,
+  isRegular,
+  locationId,
+  locationName,
+}: AchievementTransition): Achievement[] => {
+  const achievements: Achievement[] = [];
+
+  if (rankUp) achievements.push({ kind: "rank", tier: rankUp });
+  if (wasRegular === false && isRegular && locationId != null) {
+    achievements.push({
+      kind: "regular",
+      locationId,
+      locationName: locationName?.trim() || "this location",
+    });
+  }
+
+  return achievements;
+};
+
 export const achievementKey = (achievement: Achievement) =>
   achievement.kind === "rank"
     ? achievement.tier.key
@@ -46,7 +76,7 @@ export const logCelebrationEvent = async (
 export const isRegularAt = async (
   locationId: number | string | null | undefined,
   profileId: string
-): Promise<boolean> => {
+): Promise<boolean | null> => {
   if (locationId == null) return false;
   try {
     const grouped = await getRegularsByLocation([locationId], { maxAgeMs: 0 });
@@ -54,7 +84,7 @@ export const isRegularAt = async (
     return regulars.some((regular) => regular.profile_id === profileId);
   } catch (error) {
     warn("Regular check failed:", error);
-    return false;
+    return null;
   }
 };
 

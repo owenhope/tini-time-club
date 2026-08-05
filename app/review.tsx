@@ -29,6 +29,7 @@ import TasteInput from "@/components/TasteInput";
 import PresentationInput from "@/components/PresentationInput";
 import SelectableOptionsInput from "@/components/SelectableOptionsInput";
 import ReviewItem from "@/components/ReviewItem";
+import CelebrationModal from "@/components/CelebrationModal";
 import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -40,6 +41,12 @@ import AnalyticService from "@/services/analyticsService";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import {
+  checkRankUp,
+  collectAchievements,
+  isRegularAt,
+  type Achievement,
+} from "@/utils/celebrations";
 
 interface ReviewFormLocation {
   name: string;
@@ -234,11 +241,16 @@ export default function App() {
   const [isCaptionFocused, setIsCaptionFocused] = useState(false);
   const [tempCaption, setTempCaption] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [celebrationReviewCount, setCelebrationReviewCount] = useState<
+    number | null
+  >(null);
+  const [postedReviewId, setPostedReviewId] = useState<string | null>(null);
   const [opacity] = useState(() => new Animated.Value(1));
   const router = useRouter();
   const goBack = useGoBack();
   const params = useLocalSearchParams();
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const locationNameParam = params.locationName;
   const locationAddressParam = params.locationAddress;
   const locationLatParam = params.locationLat;
@@ -568,6 +580,13 @@ export default function App() {
       }
 
       const locationName = (watchedValues.location as any)?.name ?? null;
+      const numericLocationId =
+        locationId != null && Number.isFinite(Number(locationId))
+          ? Number(locationId)
+          : null;
+      const wasRegular = numericLocationId
+        ? await isRegularAt(numericLocationId, profile.id)
+        : false;
 
       const reviewId = await createReview(profile.id, imageUrl, locationId);
       if (!reviewId) {
@@ -584,23 +603,59 @@ export default function App() {
         locationName,
       });
 
+      setSubmissionMessage("Checking your club status...");
+      const [rankCheck, isRegular] = await Promise.all([
+        checkRankUp(profile.id),
+        numericLocationId
+          ? isRegularAt(numericLocationId, profile.id)
+          : Promise.resolve(false),
+      ]);
+      const earnedAchievements = collectAchievements({
+        rankUp: rankCheck.rankUp,
+        wasRegular,
+        isRegular: isRegular === true,
+        locationId: numericLocationId,
+        locationName,
+      });
+
+      await refreshProfile();
+
       setIsSubmitting(false);
       setStep(0);
       setPhoto(null);
-      setIsReviewing(false);
       reset();
+      setPostedReviewId(String(reviewId));
 
-      router.replace(
-        routes.home({
-          postedReviewId: String(reviewId),
-          feedRefresh: String(Date.now()),
-        })
-      );
+      if (earnedAchievements.length > 0) {
+        setCelebrationReviewCount(rankCheck.newCount);
+        setAchievements(earnedAchievements);
+      } else {
+        router.replace(
+          routes.home({
+            postedReviewId: String(reviewId),
+            feedRefresh: String(Date.now()),
+          })
+        );
+      }
     } catch (error) {
       reportError("Error submitting review:", error);
       setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
+  };
+
+  const finishCelebration = () => {
+    const reviewId = postedReviewId;
+    setAchievements([]);
+    setCelebrationReviewCount(null);
+    setPostedReviewId(null);
+
+    router.replace(
+      routes.home({
+        ...(reviewId ? { postedReviewId: reviewId } : {}),
+        feedRefresh: String(Date.now()),
+      })
+    );
   };
 
   return (
@@ -776,6 +831,14 @@ export default function App() {
           </View>
         )}
       </TouchableWithoutFeedback>
+      {achievements.length > 0 && (
+        <CelebrationModal
+          achievements={achievements}
+          profile={profile}
+          reviewCount={celebrationReviewCount}
+          onClose={finishCelebration}
+        />
+      )}
     </>
   );
 }
