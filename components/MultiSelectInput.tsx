@@ -93,7 +93,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   selectedButton: {
-    backgroundColor: t.colors.highlight,
+    backgroundColor: t.colors.accent,
     borderColor: t.colors.accent,
   },
   buttonText: {
@@ -102,7 +102,7 @@ const useStyles = makeStyles((t) => ({
     textTransform: "capitalize" as const,
   },
   selectedButtonText: {
-    color: t.colors.onHighlight,
+    color: t.colors.onAccent,
   },
 }));
 

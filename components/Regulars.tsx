@@ -9,6 +9,7 @@ interface RegularsProps {
   regulars?: Regular[] | null;
   variant?: "default" | "compact" | "rail";
   showLabel?: boolean;
+  interactive?: boolean;
   /** Rendered on a green ground, where the default greys disappear. */
   onInk?: boolean;
 }
@@ -44,6 +45,7 @@ const Regulars: React.FC<RegularsProps> = ({
   variant = "default",
   onInk = false,
   showLabel = true,
+  interactive = true,
 }) => {
   const styles = useStyles();
   const openProfile = useOpenProfile();
@@ -97,13 +99,17 @@ const Regulars: React.FC<RegularsProps> = ({
               <Pressable
                 key={regular.profile_id}
                 onPress={
-                  regular.isPreview ? undefined : () => openRegular(regular)
+                  !interactive || regular.isPreview
+                    ? undefined
+                    : () => openRegular(regular)
                 }
                 style={[
                   styles.stackedAvatar,
                   index > 0 && styles.avatarOverlap,
                 ]}
-                accessibilityRole={regular.isPreview ? "text" : "link"}
+                accessibilityRole={
+                  !interactive || regular.isPreview ? "text" : "link"
+                }
                 accessibilityLabel={
                   regular.isPreview
                     ? `${regular.username}, preview regular`
@@ -145,13 +151,17 @@ const Regulars: React.FC<RegularsProps> = ({
             <Pressable
               key={regular.profile_id}
               onPress={
-                regular.isPreview ? undefined : () => openRegular(regular)
+                !interactive || regular.isPreview
+                  ? undefined
+                  : () => openRegular(regular)
               }
               style={({ pressed }) => [
                 styles.railPerson,
                 pressed && styles.pressed,
               ]}
-              accessibilityRole={regular.isPreview ? "text" : "link"}
+              accessibilityRole={
+                !interactive || regular.isPreview ? "text" : "link"
+              }
               accessibilityLabel={`${regular.username}, regular with ${regular.review_count} reviews`}
             >
               <Avatar
@@ -180,9 +190,15 @@ const Regulars: React.FC<RegularsProps> = ({
       {displayRegulars.map((regular) => (
         <Pressable
           key={regular.profile_id}
-          onPress={regular.isPreview ? undefined : () => openRegular(regular)}
+          onPress={
+            !interactive || regular.isPreview
+              ? undefined
+              : () => openRegular(regular)
+          }
           style={({ pressed }) => [styles.person, pressed && styles.pressed]}
-          accessibilityRole={regular.isPreview ? "text" : "link"}
+          accessibilityRole={
+            !interactive || regular.isPreview ? "text" : "link"
+          }
           accessibilityLabel={`${regular.username}, number ${regular.rank} regular with ${regular.review_count} reviews`}
         >
           <Text style={styles.rank}>#{regular.rank}</Text>

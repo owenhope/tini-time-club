@@ -77,7 +77,6 @@ const useStyles = makeStyles((t) => ({
     borderColor: "transparent",
   },
   segmentSelected: {
-    borderColor: t.colors.secondary,
     backgroundColor: t.colors.highlight,
   },
   segmentPressed: {

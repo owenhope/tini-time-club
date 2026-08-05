@@ -17,15 +17,22 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { File } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { decode } from "base64-arraybuffer";
 import { Filter } from "bad-words";
 import { v4 as uuidv4 } from "uuid";
-import { AppText, Avatar, Button, Input } from "@/components/shared";
+import {
+  AppText,
+  Avatar,
+  Button,
+  Input,
+  RatingPips,
+} from "@/components/shared";
 import AppHeader from "@/components/nav/AppHeader";
 import MultiSelectInput from "@/components/MultiSelectInput";
 import FavoriteLocationPicker from "@/components/FavoriteLocationPicker";
+import Regulars from "@/components/Regulars";
 import { parseFavoriteIds } from "@/components/profile/FavoriteTags";
 import { useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
@@ -73,9 +80,13 @@ export default function Onboarding() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ previewStep?: string }>();
+  const isDevelopmentPreview = __DEV__ && params.previewStep === "2";
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
-  const [step, setStep] = useState<OnboardingStep>(1);
+  const [step, setStep] = useState<OnboardingStep>(() =>
+    isDevelopmentPreview ? 2 : 1
+  );
   const [username, setUsername] = useState("");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
@@ -166,10 +177,10 @@ export default function Onboarding() {
   }, []);
 
   useEffect(() => {
-    if (profile?.username && profile.eula_accepted) {
+    if (!isDevelopmentPreview && profile?.username && profile.eula_accepted) {
       router.replace(routes.home());
     }
-  }, [profile?.eula_accepted, profile?.username, router]);
+  }, [isDevelopmentPreview, profile?.eula_accepted, profile?.username, router]);
 
   const checkUsernameAvailability = useCallback(
     async (candidate: string) => {
@@ -638,7 +649,7 @@ export default function Onboarding() {
 
         {step === 2 ? (
           <View style={styles.profileFlow}>
-            <AppHeader variant="large" title="Rings & Regulars" />
+            <AppHeader variant="large" title="Rings & regulars" />
 
             <ScrollView
               contentContainerStyle={styles.educationContent}
@@ -686,19 +697,74 @@ export default function Onboarding() {
                 <AppText variant="eyebrow" tone="secondary">
                   Regulars
                 </AppText>
-                <View style={styles.regularsExplanation}>
-                  <View style={styles.regularsIcon}>
-                    <Ionicons name="people" size={28} color={colors.onAccent} />
+                <AppText variant="body" tone="secondary">
+                  The three members with the most active reviews at each
+                  location earn its Regular spots.
+                </AppText>
+
+                <View style={styles.regularsLocationCard}>
+                  <View style={styles.regularsLocationTitleRow}>
+                    <AppText
+                      variant="heading"
+                      numberOfLines={1}
+                      style={styles.regularsLocationTitle}
+                    >
+                      The Keefer Bar
+                    </AppText>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.accent}
+                    />
                   </View>
-                  <AppText
-                    variant="body"
-                    tone="secondary"
-                    style={styles.regularsCopy}
-                  >
-                    The three members with the most active reviews at a location
-                    are its Regulars. Keep reviewing there to earn and hold your
-                    seat.
+                  <AppText variant="caption" tone="secondary">
+                    Vancouver, BC
                   </AppText>
+                  <View style={styles.regularsRating}>
+                    <RatingPips value={4.8} size={18} accessibilityLabel="" />
+                    <View style={styles.regularsRatingMeta}>
+                      <AppText variant="metric" style={styles.regularsScore}>
+                        4.8
+                      </AppText>
+                      <AppText variant="mono" tone="secondary">
+                        86 reviews
+                      </AppText>
+                    </View>
+                  </View>
+                  <Regulars
+                    variant="compact"
+                    interactive={false}
+                    regulars={[
+                      {
+                        location_id: 1,
+                        rank: 1,
+                        profile_id: profile.id,
+                        username:
+                          profile.username ?? (username.trim() || "You"),
+                        avatar_url: profile.avatar_url,
+                        profile_review_count: 156,
+                        review_count: 12,
+                      },
+                      {
+                        location_id: 1,
+                        rank: 2,
+                        profile_id: "onboarding-regular-2",
+                        username: "OliveHour",
+                        avatar_url: null,
+                        profile_review_count: 64,
+                        review_count: 9,
+                      },
+                      {
+                        location_id: 1,
+                        rank: 3,
+                        profile_id: "onboarding-regular-3",
+                        username: "LastCall",
+                        avatar_url: null,
+                        profile_review_count: 18,
+                        review_count: 7,
+                      },
+                    ]}
+                  />
                 </View>
               </View>
             </ScrollView>
@@ -1015,21 +1081,37 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     textAlign: "center" as const,
   },
-  regularsExplanation: {
+  regularsLocationCard: {
+    padding: t.spacing.lg,
+    backgroundColor: t.colors.surface,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    borderRadius: t.radius.card,
+    ...t.elevation.card,
+  },
+  regularsLocationTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    marginBottom: 2,
+  },
+  regularsLocationTitle: {
+    flexShrink: 1,
+  },
+  regularsRating: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
+    marginTop: t.spacing.xs,
   },
-  regularsIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: t.radius.pill,
+  regularsRatingMeta: {
+    flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.accent,
+    gap: t.spacing.sm,
   },
-  regularsCopy: {
-    flex: 1,
+  regularsScore: {
+    color: t.colors.secondary,
+    fontVariant: ["tabular-nums"] as const,
   },
   termsScroll: {
     flex: 1,

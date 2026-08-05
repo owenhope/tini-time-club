@@ -36,6 +36,7 @@ import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
+import { getReviewTagColors } from "@/utils/reviewTagColors";
 
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -92,7 +93,7 @@ const InlineIdentityText = ({
         {username}
       </Text>
       {isVerified ? (
-        <MaterialIcons name="verified" size={13} color={colors.secondary} />
+        <MaterialIcons name="verified" size={13} color={colors.accent} />
       ) : null}
       <Text> {body}</Text>
     </Text>
@@ -371,6 +372,8 @@ const CommentCount = memo(({ count }: { count: number }) => {
  */
 const PhotoChips = memo(({ review }: { review: Review }) => {
   const styles = useStyles();
+  const spiritColors = getReviewTagColors(review.spirit?.name);
+  const typeColors = getReviewTagColors(review.type?.name);
   // Where in the world it was poured — a venue name alone means nothing to
   // anyone who doesn't already drink there.
   const cityCountry = review.location?.address
@@ -391,15 +394,40 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
     <>
       <View style={styles.photoPills}>
         {review.spirit?.name ? (
-          <View style={[styles.photoPill, styles.photoPillLoud]}>
-            <Text style={[styles.photoPillText, styles.photoPillLoudText]}>
+          <View
+            style={[
+              styles.photoPill,
+              styles.photoPillSpiritDefault,
+              spiritColors && { backgroundColor: spiritColors.backgroundColor },
+            ]}
+          >
+            <Text
+              style={[
+                styles.photoPillText,
+                spiritColors && { color: spiritColors.textColor },
+              ]}
+            >
               {review.spirit.name}
             </Text>
           </View>
         ) : null}
         {review.type?.name ? (
-          <View style={styles.photoPill}>
-            <Text style={styles.photoPillText}>{review.type.name}</Text>
+          <View
+            style={[
+              styles.photoPill,
+              styles.photoPillTypeDefault,
+              typeColors && { backgroundColor: typeColors.backgroundColor },
+            ]}
+          >
+            <Text
+              style={[
+                styles.photoPillText,
+                styles.photoPillTypeTextDefault,
+                typeColors && { color: typeColors.textColor },
+              ]}
+            >
+              {review.type.name}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -742,13 +770,15 @@ const ReviewItemComponent = ({
     review.location?.name,
   ]);
 
-  const handlePress = useCallback(() => {
+  const handleImagePress = useCallback(() => {
     const now = Date.now();
     if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      handleToggleLike();
+      lastTapRef.current = 0;
+      if (!hasLiked) void handleToggleLike();
+      return;
     }
     lastTapRef.current = now;
-  }, [handleToggleLike]);
+  }, [handleToggleLike, hasLiked]);
 
   const handleReportSubmit = useCallback(
     async (reason: string, customReason?: string) => {
@@ -827,7 +857,7 @@ const ReviewItemComponent = ({
 
   return (
     <>
-      <Pressable style={styles.card} onPress={handlePress}>
+      <View style={styles.card}>
         {
           <View style={styles.header}>
             <AvatarWrapper
@@ -856,7 +886,11 @@ const ReviewItemComponent = ({
           </View>
         }
 
-        <View style={styles.imageContainer}>
+        <Pressable
+          style={styles.imageContainer}
+          onPress={handleImagePress}
+          accessible={false}
+        >
           <ExpoImage
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
@@ -867,7 +901,7 @@ const ReviewItemComponent = ({
             recyclingKey={review.id}
           />
           <PhotoChips review={review} />
-        </View>
+        </Pressable>
 
         <ReviewScores review={review} />
 
@@ -891,7 +925,7 @@ const ReviewItemComponent = ({
             loadCommentsIfNeeded={loadCommentsIfNeeded}
           />
         }
-      </Pressable>
+      </View>
 
       <ActionSheet
         visible={actionSheetVisible}
@@ -1057,19 +1091,21 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.md - 1,
     paddingVertical: 7,
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.scrimStrong,
   },
-  photoPillLoud: {
+  photoPillSpiritDefault: {
     backgroundColor: t.colors.highlight,
+  },
+  photoPillTypeDefault: {
+    backgroundColor: t.colors.scrimStrong,
   },
   photoPillText: {
     ...t.typography.eyebrow,
     fontSize: 10.5,
     letterSpacing: 1,
-    color: t.colors.textOnImage,
+    color: t.colors.surfaceInkDeep,
   },
-  photoPillLoudText: {
-    color: t.colors.onHighlight,
+  photoPillTypeTextDefault: {
+    color: t.colors.textOnImage,
   },
   // A review is two scores. They read as olives — the brand's own scale —
   // with the blended TTC number beside them, never instead of them.

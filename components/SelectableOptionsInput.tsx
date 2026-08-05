@@ -91,10 +91,11 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
-  // The system's selected state: chartreuse fill behind a 2px green border.
-  // A solid green fill reads as a primary button, not a selected option.
+  // Spirit and type selections use the primary purple as a decisive selected
+  // state. The two-pixel border is already reserved above, so the solid fill
+  // does not change the pill's dimensions when toggled.
   selectedButton: {
-    backgroundColor: t.colors.highlight,
+    backgroundColor: t.colors.accent,
     borderColor: t.colors.accent,
   },
   buttonText: {
@@ -104,7 +105,7 @@ const useStyles = makeStyles((t) => ({
     textTransform: "capitalize" as const,
   },
   selectedButtonText: {
-    color: t.colors.onHighlight,
+    color: t.colors.onAccent,
   },
 }));
 

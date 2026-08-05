@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { fonts, makeStyles } from "@/theme";
 import type { NamedOption } from "@/types/types";
+import { getReviewTagColors } from "@/utils/reviewTagColors";
 
 /**
  * favorite_spirits / favorite_types are id arrays, but legacy rows may hold a
@@ -59,11 +60,28 @@ const FavoriteTags = ({ profile, spirits, types }: FavoriteTagsProps) => {
         <View style={styles.favoritesTagsGroup}>
           <Text style={styles.favoritesLabel}>Spirit</Text>
           <View style={styles.favoritesTagsContainer}>
-            {favoriteSpirits.map((spiritId) => (
-              <View key={`spirit-${spiritId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getSpiritName(spiritId)}</Text>
-              </View>
-            ))}
+            {favoriteSpirits.map((spiritId) => {
+              const name = getSpiritName(spiritId);
+              const colors = getReviewTagColors(name);
+              return (
+                <View
+                  key={`spirit-${spiritId}`}
+                  style={[
+                    styles.tag,
+                    colors && { backgroundColor: colors.backgroundColor },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      colors && { color: colors.textColor },
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </View>
       )}
@@ -71,11 +89,28 @@ const FavoriteTags = ({ profile, spirits, types }: FavoriteTagsProps) => {
         <View style={styles.favoritesTagsGroup}>
           <Text style={styles.favoritesLabel}>Type</Text>
           <View style={styles.favoritesTagsContainer}>
-            {favoriteTypes.map((typeId) => (
-              <View key={`type-${typeId}`} style={styles.tag}>
-                <Text style={styles.tagText}>{getTypeName(typeId)}</Text>
-              </View>
-            ))}
+            {favoriteTypes.map((typeId) => {
+              const name = getTypeName(typeId);
+              const colors = getReviewTagColors(name);
+              return (
+                <View
+                  key={`type-${typeId}`}
+                  style={[
+                    styles.tag,
+                    colors && { backgroundColor: colors.backgroundColor },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      colors && { color: colors.textColor },
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </View>
       )}
@@ -109,8 +144,6 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
     justifyContent: "flex-end" as const,
   },
-  // Chartreuse on green is the system's approved pairing for a pill that has
-  // to pop off an ink ground; brand green on green disappears.
   tag: {
     paddingVertical: 6,
     paddingHorizontal: t.spacing.md,
@@ -120,7 +153,7 @@ const useStyles = makeStyles((t) => ({
   tagText: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: t.colors.onHighlight,
+    color: t.colors.surfaceInkDeep,
     textTransform: "capitalize" as const,
   },
 }));

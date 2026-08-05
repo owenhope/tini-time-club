@@ -59,6 +59,24 @@ const PIMENTO = "#E8763D";
 const PIP_EMPTY = "#8FB8A8";
 const SCRIM_STRONG = "rgba(20,26,23,0.65)";
 const HIGHLIGHT = "#F2FF71";
+const tagColors = (name: string | null | undefined) => {
+  switch (name?.trim().toLowerCase()) {
+    case "vesper":
+      return { background: "#426B8A", color: "#FAF9F6" };
+    case "twist":
+      return { background: HIGHLIGHT, color: TEXT };
+    case "vodka":
+      return { background: "#EA6360", color: "#FFFFFF" };
+    case "gin":
+      return { background: "#E8763D", color: "#FAF9F6" };
+    case "dirty":
+      return { background: "#667A3E", color: "#FAF9F6" };
+    case "espresso":
+      return { background: "#6F4518", color: "#FAF9F6" };
+    default:
+      return null;
+  }
+};
 
 const RANK_TIERS: { min: number; sheen: string; shade: string }[] = [
   { min: 0, sheen: "#E3B27C", shade: "#6F4518" },
@@ -215,7 +233,12 @@ const AvatarWithRing = ({
   ) : (
     <span
       className="flex items-center justify-center rounded-full font-semibold text-white"
-      style={{ width: size, height: size, background: ACCENT, fontSize: size * 0.4 }}
+      style={{
+        width: size,
+        height: size,
+        background: ACCENT,
+        fontSize: size * 0.4,
+      }}
     >
       {(username ?? "T").charAt(0).toUpperCase()}
     </span>
@@ -345,9 +368,14 @@ export default function ReviewShareCard({
       : null;
   const cityRegion = review.location?.address
     ? formatCityRegion(
-        stripNameFromAddress(review.location.name ?? "", review.location.address)
+        stripNameFromAddress(
+          review.location.name ?? "",
+          review.location.address
+        )
       )
     : "";
+  const spiritTagColors = tagColors(review.spirit?.name);
+  const typeTagColors = tagColors(review.type?.name);
 
   const handleShare = async () => {
     try {
@@ -374,7 +402,10 @@ export default function ReviewShareCard({
             size={46}
           />
           <span className="min-w-0">
-            <p className="truncate text-[15px] font-extrabold leading-[18px]" style={{ color: TEXT }}>
+            <p
+              className="truncate text-[15px] font-extrabold leading-[18px]"
+              style={{ color: TEXT }}
+            >
               {username}
               {review.profile?.is_verified ? (
                 <>
@@ -383,7 +414,10 @@ export default function ReviewShareCard({
                 </>
               ) : null}
             </p>
-            <p className="mt-[3px] font-mono text-xs leading-4" style={{ color: TEXT_MUTED }}>
+            <p
+              className="mt-[3px] font-mono text-xs leading-4"
+              style={{ color: TEXT_MUTED }}
+            >
               {formatRelativeDate(review.inserted_at)}
             </p>
           </span>
@@ -405,24 +439,33 @@ export default function ReviewShareCard({
           {review.spirit?.name ? (
             <span
               className="rounded-full px-[11px] py-[7px] text-[10.5px] font-bold uppercase leading-[13px] tracking-[1px]"
-              style={{ background: HIGHLIGHT, color: SECONDARY }}
+              style={
+                spiritTagColors ?? { background: HIGHLIGHT, color: SECONDARY }
+              }
             >
               {review.spirit.name}
             </span>
           ) : null}
           {review.type?.name ? (
             <span
-              className="rounded-full px-[11px] py-[7px] text-[10.5px] font-bold uppercase leading-[13px] tracking-[1px] text-white"
-              style={{ background: SCRIM_STRONG }}
+              className="rounded-full px-[11px] py-[7px] text-[10.5px] font-bold uppercase leading-[13px] tracking-[1px]"
+              style={
+                typeTagColors ?? { background: SCRIM_STRONG, color: "#FFFFFF" }
+              }
             >
               {review.type.name}
             </span>
           ) : null}
         </div>
 
-        <div className="absolute bottom-3 left-3 max-w-[calc(100%-24px)] rounded-[8px] px-3 py-2 text-white" style={{ background: SCRIM_STRONG }}>
+        <div
+          className="absolute bottom-3 left-3 max-w-[calc(100%-24px)] rounded-[8px] px-3 py-2 text-white"
+          style={{ background: SCRIM_STRONG }}
+        >
           <p className="flex min-w-0 items-center text-[15px] font-bold leading-5">
-            <span className="truncate">{review.location?.name ?? "Martini review"}</span>
+            <span className="truncate">
+              {review.location?.name ?? "Martini review"}
+            </span>
             <ChevronForward size={14} color="#8FB8A8" />
           </p>
           {cityRegion ? (
@@ -434,7 +477,10 @@ export default function ReviewShareCard({
             <span className="mt-0.5 flex items-center gap-[5px]">
               <RatingPips value={1} max={1} size={13} />
               <span className="truncate font-mono text-[13px] leading-[18px] text-white">
-                {formatRating(venueRating)} · {locationReviewCount === 1 ? "1 review" : `${locationReviewCount} reviews`}
+                {formatRating(venueRating)} ·{" "}
+                {locationReviewCount === 1
+                  ? "1 review"
+                  : `${locationReviewCount} reviews`}
               </span>
             </span>
           ) : null}
@@ -443,17 +489,37 @@ export default function ReviewShareCard({
 
       <div className="flex items-start gap-5 bg-white px-4 pt-[14px]">
         <div className="space-y-[7px]">
-          <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Taste</p>
+          <p
+            className="text-[10px] font-bold uppercase tracking-[1px]"
+            style={{ color: TEXT_MUTED }}
+          >
+            Taste
+          </p>
           <RatingPips value={review.taste} />
         </div>
         <div className="space-y-[7px]">
-          <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Presentation</p>
+          <p
+            className="text-[10px] font-bold uppercase tracking-[1px]"
+            style={{ color: TEXT_MUTED }}
+          >
+            Presentation
+          </p>
           <RatingPips value={review.presentation} />
         </div>
         {overall != null ? (
           <div className="ml-auto flex flex-col items-end gap-[3px]">
-            <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Overall</p>
-            <p className="text-[26px] font-black leading-7 tabular-nums" style={{ color: SECONDARY }}>{formatRating(overall)}</p>
+            <p
+              className="text-[10px] font-bold uppercase tracking-[1px]"
+              style={{ color: TEXT_MUTED }}
+            >
+              Overall
+            </p>
+            <p
+              className="text-[26px] font-black leading-7 tabular-nums"
+              style={{ color: SECONDARY }}
+            >
+              {formatRating(overall)}
+            </p>
           </div>
         ) : null}
       </div>
@@ -491,13 +557,28 @@ export default function ReviewShareCard({
         <div className="mt-[11px] flex items-center gap-[18px] border-t border-[rgba(51,102,84,0.16)] pb-[13px] pt-[11px]">
           <span className="flex min-h-7 items-center gap-1.5">
             <HeartOutline size={24} />
-            <span className="text-[13.5px] font-semibold tabular-nums" style={{ color: TEXT_SECONDARY }}>{review.likes_count}</span>
+            <span
+              className="text-[13.5px] font-semibold tabular-nums"
+              style={{ color: TEXT_SECONDARY }}
+            >
+              {review.likes_count}
+            </span>
           </span>
           <span className="flex min-h-7 items-center gap-1.5">
             <ChatOutline size={24} />
-            <span className="text-[13.5px] font-semibold tabular-nums" style={{ color: TEXT_SECONDARY }}>{review.comments_count}</span>
+            <span
+              className="text-[13.5px] font-semibold tabular-nums"
+              style={{ color: TEXT_SECONDARY }}
+            >
+              {review.comments_count}
+            </span>
           </span>
-          <button type="button" onClick={handleShare} aria-label="Share this review" className="ml-auto cursor-pointer">
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Share this review"
+            className="ml-auto cursor-pointer"
+          >
             <PaperPlaneOutline size={24} />
           </button>
         </div>

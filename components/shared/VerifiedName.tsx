@@ -14,8 +14,6 @@ export interface VerifiedNameProps {
   isVerified?: boolean | null;
   badgeSize?: number;
   numberOfLines?: number;
-  /** Sits on a green or photo ground, where the green badge disappears. */
-  onDark?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }
@@ -26,7 +24,6 @@ const VerifiedName: React.FC<VerifiedNameProps> = ({
   isVerified = false,
   badgeSize = 14,
   numberOfLines = 1,
-  onDark = false,
   style,
   textStyle,
 }) => {
@@ -52,7 +49,7 @@ const VerifiedName: React.FC<VerifiedNameProps> = ({
         <MaterialIcons
           name="verified"
           size={badgeSize}
-          color={onDark ? colors.highlight : colors.secondary}
+          color={colors.accent}
           style={styles.badge}
           accessibilityElementsHidden
         />
