@@ -108,7 +108,9 @@ export default async function PublicReviewPage({
           Sip, snap, review, repeat. Welcome to the club.
         </p>
 
-        <ReviewShareCard review={review} shareUrl={canonicalUrl} />
+        <div className="px-5 sm:px-0">
+          <ReviewShareCard review={review} shareUrl={canonicalUrl} />
+        </div>
       </div>
     </main>
   );

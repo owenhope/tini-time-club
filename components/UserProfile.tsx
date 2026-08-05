@@ -158,11 +158,18 @@ const UserProfile = () => {
         "Error",
         `Unable to ${wasFollowing ? "unfollow" : "follow"} user. Please try again.`
       );
-    } else if (!wasFollowing) {
-      AnalyticService.capture("follow_user", {
-        targetUserId: displayProfile.id,
-        targetUsername: displayProfile.username,
-      });
+    } else {
+      // Reconcile both aggregates with the database after the optimistic
+      // update. This also corrects the count if another relationship changed
+      // while this profile was open.
+      await loadFollowCounts();
+
+      if (!wasFollowing) {
+        AnalyticService.capture("follow_user", {
+          targetUserId: displayProfile.id,
+          targetUsername: displayProfile.username,
+        });
+      }
     }
 
     setFollowPending(false);
@@ -267,12 +274,18 @@ const UserProfile = () => {
 
               // Also unfollow if currently following
               if (doesFollow) {
-                await supabase
+                const { error: unfollowError } = await supabase
                   .from("followers")
                   .delete()
                   .eq("follower_id", profile.id)
                   .eq("following_id", displayProfile.id);
-                setDoesFollow(false);
+                if (unfollowError) {
+                  reportError("Error unfollowing blocked user:", unfollowError);
+                } else {
+                  setDoesFollow(false);
+                  setFollowersCount((prev) => Math.max(0, prev - 1));
+                  await loadFollowCounts();
+                }
               }
 
               setIsBlocked(true);

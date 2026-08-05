@@ -24,36 +24,62 @@ export interface ProfileType {
 interface ProfileListProps {
   profiles: ProfileType[];
   enableSearch?: boolean;
+  /** The parent surface already supplies its own gutter and background. */
+  embedded?: boolean;
 }
 
 export default function ProfileList({
   profiles,
   enableSearch = false,
+  embedded = false,
 }: ProfileListProps) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
+  const profileId = profile?.id;
   const [followedIds, setFollowedIds] = useState<string[]>([]);
+  const [followStateReady, setFollowStateReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   // Track profile ids that are currently being updated
   const [updatingFollowIds, setUpdatingFollowIds] = useState<string[]>([]);
 
   // Fetch followed IDs for the current user.
   useEffect(() => {
+    let cancelled = false;
+
     const fetchFollowedIds = async () => {
-      if (!profile) return;
+      if (profileLoading) return;
+
+      if (!profileId) {
+        if (!cancelled) {
+          setFollowedIds([]);
+          setFollowStateReady(true);
+        }
+        return;
+      }
+
+      setFollowStateReady(false);
       const { data, error } = await supabase
         .from("followers")
         .select("following_id")
-        .eq("follower_id", profile.id);
+        .eq("follower_id", profileId);
       if (error) {
         reportError("Error fetching followed ids:", error);
-      } else if (data) {
-        setFollowedIds(data.map((row: any) => row.following_id));
+      }
+
+      if (!cancelled) {
+        setFollowedIds(
+          error || !data ? [] : data.map((row: any) => row.following_id)
+        );
+        setFollowStateReady(true);
       }
     };
-    fetchFollowedIds();
-  }, [profile]);
+
+    void fetchFollowedIds();
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, profileLoading]);
 
   // Toggle follow/unfollow action.
   const toggleFollow = async (targetProfileId: string) => {
@@ -119,37 +145,49 @@ export default function ProfileList({
               name={item.username || "Unknown User"}
               isVerified={item.is_verified}
               badgeSize={14}
+              style={styles.usernameRow}
               textStyle={styles.username}
             />
           </TouchableOpacity>
         </Link>
         {!isSelf && (
-          <TouchableOpacity
-            onPress={() => toggleFollow(item.id)}
-            style={[
-              styles.followButton,
-              isFollowing && styles.followingButton,
-              isUpdating && styles.disabledButton,
-            ]}
-            disabled={isUpdating}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                isFollowing && styles.followingButtonText,
-              ]}
-            >
-              {isFollowing ? "Following" : "Follow"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.followButtonSlot}>
+            {followStateReady ? (
+              <TouchableOpacity
+                onPress={() => toggleFollow(item.id)}
+                style={[
+                  styles.followButton,
+                  isFollowing && styles.followingButton,
+                  isUpdating && styles.disabledButton,
+                ]}
+                disabled={isUpdating}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isFollowing
+                    ? `Unfollow ${item.username}`
+                    : `Follow ${item.username}`
+                }
+                accessibilityState={{ disabled: isUpdating }}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isFollowing && styles.followingButtonText,
+                  ]}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         )}
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, embedded && styles.embeddedContainer]}>
       {enableSearch && (
         <View style={styles.searchContainer}>
           <TextInput
@@ -177,6 +215,10 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  embeddedContainer: {
+    backgroundColor: t.colors.surface,
+    paddingHorizontal: 0,
   },
   searchContainer: {
     marginBottom: 20,
@@ -211,19 +253,32 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     flex: 1,
+    minWidth: 0,
     gap: 10,
   },
   username: {
     ...t.typography.bodyStrong,
     color: t.colors.text,
   },
+  usernameRow: {
+    alignSelf: "center" as const,
+    flexShrink: 1,
+  },
   followButton: {
     backgroundColor: t.colors.accent,
-    paddingVertical: 6,
     paddingHorizontal: t.spacing.md,
     borderRadius: t.radius.pill,
-    minWidth: 70,
+    width: "100%" as const,
+    height: 36,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  followButtonSlot: {
+    width: 88,
+    height: 36,
+    marginLeft: t.spacing.sm,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   followingButton: {
     backgroundColor: t.colors.surfaceSunken,

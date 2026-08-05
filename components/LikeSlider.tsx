@@ -92,7 +92,11 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
             </Text>
           </View>
         ) : (
-          <ProfileList profiles={likesUsers} enableSearch={false} />
+          <ProfileList
+            profiles={likesUsers}
+            enableSearch={false}
+            embedded
+          />
         )}
       </BottomSheetView>
     </BottomSheet>

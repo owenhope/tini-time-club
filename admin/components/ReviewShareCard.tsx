@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 import {
   formatCityRegion,
   formatRating,
@@ -10,10 +10,9 @@ import {
 
 /**
  * Web replica of the mobile app's ReviewItem (components/ReviewItem.tsx).
- * Layout, colors, and motion mirror the native card: the 0.55 black scrim,
- * the venue block + rating pill, spirit/type attributes, stacked taste and
- * presentation bars that fill over 650ms, the large overall numeral, and the
- * eye toggle that fades the overlay over 300ms. Values come from the app's
+ * Layout and colors mirror the native card: ranked identity, a 16:11 photo,
+ * photo pills and venue plate, olive ratings, the large overall numeral,
+ * caption, comments, and actions. Values come from the app's
  * theme tokens (spacing, typography, palette) — keep them in sync by eye.
  */
 
@@ -51,12 +50,15 @@ export interface ShareCardReview {
 }
 
 // Palette + rank tiers vendored from the app (theme/tokens.ts, utils/ranking.ts).
-const BRAND_LAVENDER = "#B6A3E2";
 const ACCENT = "#7B60BC"; // lavender600 — verified badge on white
-const TEXT = "#17151D"; // neutral900
-const TEXT_MUTED = "#6E6A7A"; // neutral500
-const OVERLAY = "rgba(0,0,0,0.55)";
-const SCRIM = "rgba(0,0,0,0.35)";
+const TEXT = "#1C3A2E";
+const TEXT_SECONDARY = "#3F4B46";
+const TEXT_MUTED = "#6E7472";
+const SECONDARY = "#336654";
+const PIMENTO = "#E8763D";
+const PIP_EMPTY = "#8FB8A8";
+const SCRIM_STRONG = "rgba(20,26,23,0.65)";
+const HIGHLIGHT = "#F2FF71";
 
 const RANK_TIERS: { min: number; sheen: string; shade: string }[] = [
   { min: 0, sheen: "#E3B27C", shade: "#6F4518" },
@@ -142,49 +144,6 @@ const PaperPlaneOutline = ({ size }: { size: number }) => (
     />
   </Icon>
 );
-
-const EyeIcon = ({ size, off }: { size: number; off: boolean }) =>
-  off ? (
-    <Icon size={size} color="#FFFFFF" label="Show review details">
-      <path
-        d="M432 448a15.92 15.92 0 0 1-11.31-4.69l-352-352a16 16 0 0 1 22.62-22.62l352 352A16 16 0 0 1 432 448Z"
-        fill="currentColor"
-      />
-      <path
-        d="M255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 0 0 .14-2.94L93.5 161.38a2 2 0 0 0-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 0 0-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0 0 75.8-12.58 2 2 0 0 0 .77-3.31l-21.58-21.58a4 4 0 0 0-3.83-1 204.8 204.8 0 0 1-51.16 6.47Z"
-        fill="currentColor"
-      />
-      <path
-        d="M490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 0 0-74.89 12.83 2 2 0 0 0-.75 3.31l21.55 21.55a4 4 0 0 0 3.88 1 192.82 192.82 0 0 1 50.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 0 1 0 .16 310.72 310.72 0 0 1-64.12 72.73 2 2 0 0 0-.15 2.95l19.9 19.89a2 2 0 0 0 2.7.13 343.49 343.49 0 0 0 68.64-78.48 32.2 32.2 0 0 0-.1-34.78Z"
-        fill="currentColor"
-      />
-      <path
-        d="M256 160a95.88 95.88 0 0 0-21.37 2.4 2 2 0 0 0-1 3.38l112.59 112.56a2 2 0 0 0 3.38-1A96 96 0 0 0 256 160Z"
-        fill="currentColor"
-      />
-      <path
-        d="M165.78 233.66a2 2 0 0 0-3.38 1 96 96 0 0 0 115 115 2 2 0 0 0 1-3.38Z"
-        fill="currentColor"
-      />
-    </Icon>
-  ) : (
-    <Icon size={size} color="#FFFFFF" label="Hide review details">
-      <path
-        d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 0 0-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 0 0 0-17.47C428.89 172.28 347.8 112 255.66 112Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="32"
-      />
-      <circle
-        cx="256"
-        cy="256"
-        r="80"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="32"
-      />
-    </Icon>
-  );
 
 const ChevronForward = ({ size, color }: { size: number; color: string }) => (
   <Icon size={size} color={color}>
@@ -294,37 +253,56 @@ const AvatarWithRing = ({
   );
 };
 
-/** Taste/Presentation bar: fills 0 → score over 650ms ease-out on mount. */
-const RatingBar = ({
-  label,
+const RatingPips = ({
   value,
-  animate,
+  max = 5,
+  size = 15,
 }: {
-  label: string;
   value: number | null;
-  animate: boolean;
+  max?: number;
+  size?: number;
 }) => {
-  const pct = value == null ? 0 : Math.max(0, Math.min(1, value / 5));
+  const clamped = Math.max(0, Math.min(value ?? 0, max));
+
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] leading-[18px] text-white/85">
-          {label}
-        </span>
-        <span className="text-[13px] leading-[18px] font-bold text-white tabular-nums">
-          {formatRating(value)}
-        </span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/25">
-        <div
-          className="h-full rounded-full bg-white"
-          style={{
-            width: `${(animate ? pct : 0) * 100}%`,
-            transition: "width 650ms cubic-bezier(0.215, 0.61, 0.355, 1)",
-          }}
-        />
-      </div>
-    </div>
+    <span
+      className="flex items-center"
+      style={{ gap: size * 0.28 }}
+      role="img"
+      aria-label={`${formatRating(value)} out of ${max} olives`}
+    >
+      {Array.from({ length: max }, (_, index) => {
+        const fill = Number(
+          Math.max(0, Math.min(1, clamped - index)).toFixed(2)
+        );
+        return (
+          <span
+            key={index}
+            className="relative block shrink-0 rounded-[50%]"
+            style={{
+              width: size * 0.84,
+              height: size,
+              background: fill > 0 ? SECONDARY : "transparent",
+              border: fill > 0 ? "none" : `2px solid ${PIP_EMPTY}`,
+              opacity: fill > 0 ? fill : 1,
+            }}
+          >
+            {fill > 0 ? (
+              <span
+                className="absolute rounded-full"
+                style={{
+                  top: size * 0.16,
+                  right: size * 0.1,
+                  width: size * 0.3,
+                  height: size * 0.3,
+                  background: PIMENTO,
+                }}
+              />
+            ) : null}
+          </span>
+        );
+      })}
+    </span>
   );
 };
 
@@ -354,15 +332,6 @@ export default function ReviewShareCard({
   review: ShareCardReview;
   shareUrl: string;
 }) {
-  const [overlayVisible, setOverlayVisible] = useState(true);
-  // Bars start empty and animate in on the first painted frame, matching the
-  // mobile Animated.timing fill.
-  const [barsActive, setBarsActive] = useState(false);
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setBarsActive(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
   const overall =
     review.taste == null || review.presentation == null
       ? null
@@ -393,35 +362,38 @@ export default function ReviewShareCard({
   };
 
   return (
-    <article className="overflow-hidden bg-white sm:rounded-[8px] sm:border sm:border-black/10 sm:shadow-2xl sm:shadow-black/10">
+    <article className="overflow-hidden rounded-[8px] border border-[rgba(51,102,84,0.18)] bg-white shadow-[0_4px_14px_rgba(28,58,46,0.08)]">
       <style>{`@keyframes ttc-ring-spin { to { transform: rotate(360deg); } }`}</style>
 
-      {/* Header — mobile: px 10 / py 12, avatar 28 with rank ring */}
-      <div className="flex items-center justify-between bg-white px-[10px] py-3">
-        <span className="flex min-w-0 items-center gap-2">
+      <div className="flex items-center justify-between bg-white py-3 pl-[15px] pr-3">
+        <span className="flex min-w-0 items-center gap-[11px]">
           <AvatarWithRing
             avatarUrl={review.profile?.avatar_public_url ?? null}
             username={review.profile?.username ?? null}
             reviewCount={review.profile?.review_count ?? null}
-            size={28}
+            size={46}
           />
-          <p className="truncate text-[15px] font-bold" style={{ color: TEXT }}>
-            {username}
-            {review.profile?.is_verified ? (
-              <>
-                {" "}
-                <VerifiedBadge size={13} />
-              </>
-            ) : null}
-          </p>
+          <span className="min-w-0">
+            <p className="truncate text-[15px] font-extrabold leading-[18px]" style={{ color: TEXT }}>
+              {username}
+              {review.profile?.is_verified ? (
+                <>
+                  {" "}
+                  <VerifiedBadge size={13} />
+                </>
+              ) : null}
+            </p>
+            <p className="mt-[3px] font-mono text-xs leading-4" style={{ color: TEXT_MUTED }}>
+              {formatRelativeDate(review.inserted_at)}
+            </p>
+          </span>
         </span>
         <span className="p-1">
           <EllipsisIcon size={20} />
         </span>
       </div>
 
-      {/* Photo + overlay */}
-      <div className="relative aspect-square bg-[#EEEDF1]">
+      <div className="relative aspect-[16/11] bg-[#E5E6E8]">
         {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
         <img
           src={review.image_public_url ?? "/nightlife-martini-table.png"}
@@ -429,137 +401,72 @@ export default function ReviewShareCard({
           className="h-full w-full object-cover"
         />
 
-        <div
-          className="absolute inset-0 flex flex-col justify-end gap-4 p-5 text-white"
-          style={{
-            background: OVERLAY,
-            opacity: overlayVisible ? 1 : 0,
-            transition: "opacity 300ms ease",
-            pointerEvents: overlayVisible ? "auto" : "none",
-          }}
-        >
-          {/* Venue block — gap 4 */}
-          <div className="flex flex-col gap-1">
-            {venueRating != null ? (
-              <p className="flex items-baseline gap-1.5">
-                <span className="text-[13px] leading-[18px] font-bold text-white">
-                  {formatRating(venueRating)}
-                </span>
-                <span className="text-[13px] leading-[18px] text-white/[.78]">
-                  {locationReviewCount === 1
-                    ? "1 review"
-                    : `${locationReviewCount} reviews`}
-                </span>
-              </p>
-            ) : null}
-            <h1 className="flex items-center text-[20px] font-bold leading-tight text-white">
-              {review.location?.name ?? "Martini review"}
-              {" "}
-              <ChevronForward size={16} color={BRAND_LAVENDER} />
-            </h1>
-            {cityRegion ? (
-              <p className="text-[13px] text-white">{cityRegion}</p>
-            ) : null}
-          </div>
-
-          {/* Rating block — full width so Overall sits in the corner */}
-          <div className="flex w-full flex-col gap-3">
-            <div className="flex gap-6 self-start">
-              <div>
-                <p className="text-[13px] leading-[18px] text-white/85">
-                  Spirit
-                </p>
-                <p className="text-[17px] font-bold capitalize leading-[22px] text-white">
-                  {review.spirit?.name ?? "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[13px] leading-[18px] text-white/85">
-                  Type
-                </p>
-                <p className="text-[17px] font-bold capitalize leading-[22px] text-white">
-                  {review.type?.name ?? "N/A"}
-                </p>
-              </div>
-            </div>
-
-            {/* RatingSummary: stacked bars, overall on the right. items-end
-                puts the numeral on the same baseline as the last bar, so its
-                bottom inset matches the overlay's left and right padding. */}
-            <div className="flex items-end gap-[72px]">
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <RatingBar
-                  label="Taste"
-                  value={review.taste}
-                  animate={barsActive}
-                />
-                <RatingBar
-                  label="Presentation"
-                  value={review.presentation}
-                  animate={barsActive}
-                />
-              </div>
-              {overall != null ? (
-                <div className="flex shrink-0 flex-col items-start gap-1.5">
-                  <p className="text-[13px] leading-[18px] text-white/85">
-                    Overall
-                  </p>
-                  <p className="text-[34px] font-bold leading-[38px] text-white tabular-nums">
-                    {formatRating(overall)}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
+        <div className="absolute right-3 top-3 flex gap-1.5">
+          {review.spirit?.name ? (
+            <span
+              className="rounded-full px-[11px] py-[7px] text-[10.5px] font-bold uppercase leading-[13px] tracking-[1px]"
+              style={{ background: HIGHLIGHT, color: SECONDARY }}
+            >
+              {review.spirit.name}
+            </span>
+          ) : null}
+          {review.type?.name ? (
+            <span
+              className="rounded-full px-[11px] py-[7px] text-[10.5px] font-bold uppercase leading-[13px] tracking-[1px] text-white"
+              style={{ background: SCRIM_STRONG }}
+            >
+              {review.type.name}
+            </span>
+          ) : null}
         </div>
 
-        {/* Eye toggle — 40x40, radius 20, scrim */}
-        <button
-          type="button"
-          onClick={() => setOverlayVisible((visible) => !visible)}
-          aria-label={
-            overlayVisible ? "Hide review details" : "Show review details"
-          }
-          className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-[20px] shadow-md"
-          style={{ background: SCRIM }}
-        >
-          <EyeIcon size={20} off={!overlayVisible} />
-        </button>
+        <div className="absolute bottom-3 left-3 max-w-[calc(100%-24px)] rounded-[8px] px-3 py-2 text-white" style={{ background: SCRIM_STRONG }}>
+          <p className="flex min-w-0 items-center text-[15px] font-bold leading-5">
+            <span className="truncate">{review.location?.name ?? "Martini review"}</span>
+            <ChevronForward size={14} color="#8FB8A8" />
+          </p>
+          {cityRegion ? (
+            <p className="truncate font-mono text-[13px] leading-[18px] text-[#8FB8A8]">
+              {cityRegion}
+            </p>
+          ) : null}
+          {venueRating != null ? (
+            <span className="mt-0.5 flex items-center gap-[5px]">
+              <RatingPips value={1} max={1} size={13} />
+              <span className="truncate font-mono text-[13px] leading-[18px] text-white">
+                {formatRating(venueRating)} · {locationReviewCount === 1 ? "1 review" : `${locationReviewCount} reviews`}
+              </span>
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Footer — mobile: padding 10 */}
-      <div className="bg-white p-[10px]">
-        <div className="mb-1 flex items-center gap-2">
-          <HeartOutline size={24} />
-          <span className="text-[15px] font-bold" style={{ color: TEXT }}>
-            {review.likes_count}
-          </span>
-          <span className="flex items-center gap-1">
-            <ChatOutline size={24} />
-            {review.comments_count > 0 ? (
-              <span className="text-[15px] font-bold" style={{ color: TEXT }}>
-                {review.comments_count}
-              </span>
-            ) : null}
-          </span>
-          <button
-            type="button"
-            onClick={handleShare}
-            aria-label="Share this review"
-            className="cursor-pointer"
-          >
-            <PaperPlaneOutline size={24} />
-          </button>
+      <div className="flex items-start gap-5 bg-white px-4 pt-[14px]">
+        <div className="space-y-[7px]">
+          <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Taste</p>
+          <RatingPips value={review.taste} />
         </div>
+        <div className="space-y-[7px]">
+          <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Presentation</p>
+          <RatingPips value={review.presentation} />
+        </div>
+        {overall != null ? (
+          <div className="ml-auto flex flex-col items-end gap-[3px]">
+            <p className="text-[10px] font-bold uppercase tracking-[1px]" style={{ color: TEXT_MUTED }}>Overall</p>
+            <p className="text-[26px] font-black leading-7 tabular-nums" style={{ color: SECONDARY }}>{formatRating(overall)}</p>
+          </div>
+        ) : null}
+      </div>
 
+      <div className="bg-white px-4 pt-[11px]">
         {review.comment ? (
           <div className="mb-1">
             <InlineIdentityText
               username={username}
               isVerified={review.profile?.is_verified}
               body={review.comment}
-              usernameClass="text-[15px] font-semibold"
-              bodyClass="text-[15px] leading-5"
+              usernameClass="text-sm font-bold"
+              bodyClass="text-sm leading-[21px]"
             />
           </div>
         ) : null}
@@ -570,8 +477,8 @@ export default function ReviewShareCard({
               username={comment.username ?? "Unknown"}
               isVerified={comment.is_verified}
               body={comment.body}
-              usernameClass="text-[13px] font-semibold"
-              bodyClass="text-[13px] leading-[18px]"
+              usernameClass="text-sm font-bold"
+              bodyClass="text-sm leading-[21px]"
             />
           </div>
         ))}
@@ -581,9 +488,19 @@ export default function ReviewShareCard({
           </p>
         ) : null}
 
-        <p className="text-[12px]" style={{ color: TEXT_MUTED }}>
-          {formatRelativeDate(review.inserted_at)}
-        </p>
+        <div className="mt-[11px] flex items-center gap-[18px] border-t border-[rgba(51,102,84,0.16)] pb-[13px] pt-[11px]">
+          <span className="flex min-h-7 items-center gap-1.5">
+            <HeartOutline size={24} />
+            <span className="text-[13.5px] font-semibold tabular-nums" style={{ color: TEXT_SECONDARY }}>{review.likes_count}</span>
+          </span>
+          <span className="flex min-h-7 items-center gap-1.5">
+            <ChatOutline size={24} />
+            <span className="text-[13.5px] font-semibold tabular-nums" style={{ color: TEXT_SECONDARY }}>{review.comments_count}</span>
+          </span>
+          <button type="button" onClick={handleShare} aria-label="Share this review" className="ml-auto cursor-pointer">
+            <PaperPlaneOutline size={24} />
+          </button>
+        </div>
       </div>
     </article>
   );

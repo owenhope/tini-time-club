@@ -73,8 +73,7 @@ const ReviewPreview = ({
   profile,
   isCaptionFocused,
   setIsCaptionFocused,
-  tempCaption,
-  setTempCaption,
+  onCaptionDraftChange,
   isSubmitting,
   submissionMessage,
 }: {
@@ -85,14 +84,14 @@ const ReviewPreview = ({
   profile: any;
   isCaptionFocused: boolean;
   setIsCaptionFocused: React.Dispatch<React.SetStateAction<boolean>>;
-  tempCaption: string;
-  setTempCaption: React.Dispatch<React.SetStateAction<string>>;
+  onCaptionDraftChange: (caption: string) => void;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
   const scrollViewRef = React.useRef<ScrollView>(null);
+  const [captionDraft, setCaptionDraft] = useState(values.comment || "");
 
   const mockReview = useMemo(
     () =>
@@ -100,7 +99,7 @@ const ReviewPreview = ({
         id: "preview",
         user_id: profile?.id || "",
         image_url: photo || "",
-        comment: isCaptionFocused ? tempCaption : values.comment || "",
+        comment: values.comment || "",
         taste: values.taste || 0,
         presentation: values.presentation || 0,
         inserted_at: new Date().toISOString(),
@@ -127,7 +126,7 @@ const ReviewPreview = ({
               address: "",
             },
       }) as any,
-    [values, spirits, types, photo, profile, isCaptionFocused, tempCaption]
+    [values, spirits, types, photo, profile]
   );
 
   const mockHandlers = {
@@ -140,11 +139,18 @@ const ReviewPreview = ({
   };
 
   const openCaptionInput = () => {
-    setTempCaption(values.comment || "");
+    const initialCaption = values.comment || "";
+    setCaptionDraft(initialCaption);
+    onCaptionDraftChange(initialCaption);
     setIsCaptionFocused(true);
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
+
+  const updateCaptionDraft = (caption: string) => {
+    setCaptionDraft(caption);
+    onCaptionDraftChange(caption);
   };
 
   if (isSubmitting) {
@@ -205,8 +211,8 @@ const ReviewPreview = ({
               multiline={true}
               placeholder="Shaken, stirred, or mildly disappointed?"
               placeholderTextColor={colors.textMuted}
-              onChangeText={setTempCaption}
-              value={tempCaption}
+              onChangeText={updateCaptionDraft}
+              value={captionDraft}
               maxLength={500}
               autoFocus={true}
             />
@@ -215,7 +221,7 @@ const ReviewPreview = ({
               tone="secondary"
               style={styles.characterCount}
             >
-              {tempCaption?.length || 0}/500
+              {captionDraft.length}/500
             </AppText>
           </>
         )}
@@ -239,7 +245,9 @@ export default function App() {
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCaptionFocused, setIsCaptionFocused] = useState(false);
-  const [tempCaption, setTempCaption] = useState("");
+  const captionDraftRef = React.useRef("");
+  const captionCanSaveRef = React.useRef(false);
+  const [captionCanSave, setCaptionCanSave] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [celebrationReviewCount, setCelebrationReviewCount] = useState<
@@ -272,6 +280,15 @@ export default function App() {
     });
   const insets = useSafeAreaInsets();
   const watchedValues = useWatch({ control }) as ReviewFormValues;
+
+  const handleCaptionDraftChange = useCallback((caption: string) => {
+    captionDraftRef.current = caption;
+    const canSave = caption.trim().length > 0;
+    if (captionCanSaveRef.current !== canSave) {
+      captionCanSaveRef.current = canSave;
+      setCaptionCanSave(canSave);
+    }
+  }, []);
 
   const getTypes = useCallback(async () => {
     try {
@@ -329,7 +346,7 @@ export default function App() {
   interface Question {
     title: string;
     key?: "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
-    Component: React.ComponentType<any>;
+    Component?: React.ComponentType<any>;
   }
 
   const questions: Question[] = [
@@ -364,22 +381,6 @@ export default function App() {
     { title: "Taste Rating", key: "taste", Component: TasteInput },
     {
       title: "Preview",
-      Component: (props) => (
-        <ReviewPreview
-          values={watchedValues}
-          spirits={spirits}
-          types={types}
-          photo={photo}
-          profile={profile}
-          isCaptionFocused={isCaptionFocused}
-          setIsCaptionFocused={setIsCaptionFocused}
-          tempCaption={tempCaption}
-          setTempCaption={setTempCaption}
-          isSubmitting={isSubmitting}
-          submissionMessage={submissionMessage}
-          {...props}
-        />
-      ),
     },
   ];
 
@@ -392,16 +393,20 @@ export default function App() {
     setIsSubmitting(false);
     setSubmissionMessage("");
     setIsCaptionFocused(false);
-    setTempCaption("");
+    captionDraftRef.current = "";
+    captionCanSaveRef.current = false;
+    setCaptionCanSave(false);
     reset();
   };
 
   const saveCaption = () => {
-    const caption = tempCaption.trim();
+    const caption = captionDraftRef.current.trim();
     if (!caption) return;
 
     setValue("comment", caption, { shouldValidate: true });
     setIsCaptionFocused(false);
+    captionCanSaveRef.current = false;
+    setCaptionCanSave(false);
     Keyboard.dismiss();
   };
 
@@ -741,11 +746,25 @@ export default function App() {
                 </View>
               )}
 
-              {questions[step].Component &&
+              {questions[step].title === "Preview" ? (
+                <ReviewPreview
+                  values={watchedValues}
+                  spirits={spirits}
+                  types={types}
+                  photo={photo}
+                  profile={profile}
+                  isCaptionFocused={isCaptionFocused}
+                  setIsCaptionFocused={setIsCaptionFocused}
+                  onCaptionDraftChange={handleCaptionDraftChange}
+                  isSubmitting={isSubmitting}
+                  submissionMessage={submissionMessage}
+                />
+              ) : questions[step].Component ? (
                 createElement(questions[step].Component, {
                   control,
                   ...formState,
-                })}
+                })
+              ) : null}
             </Animated.View>
 
             {!isSubmitting && (
@@ -795,7 +814,7 @@ export default function App() {
                         onPress={saveCaption}
                         variant="primary"
                         size="medium"
-                        disabled={!tempCaption.trim()}
+                        disabled={!captionCanSave}
                       />
                     ) : step < questions.length - 1 ? (
                       <Button

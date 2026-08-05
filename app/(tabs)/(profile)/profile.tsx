@@ -243,21 +243,22 @@ const Profile = () => {
     </View>
   );
 
-  // Load counts, reviews and regulars on focus (including first mount) —
-  // but only when stale, so tab-hopping doesn't refire five queries every
-  // time the user glances at their profile.
+  // Follow relationships can change anywhere in the app, so their two cheap
+  // count queries refresh on every focus. Reviews and regulars keep the
+  // staleness gate because those payloads are substantially heavier.
   useFocusEffect(
     React.useCallback(() => {
       if (!profile) return;
+
+      void loadFollowCounts();
 
       const isStale =
         Date.now() - lastProfileLoadRef.current > PROFILE_REFRESH_AFTER;
       if (!isStale) return;
       lastProfileLoadRef.current = Date.now();
 
-      loadFollowCounts();
-      loadUserReviews();
-      loadRegularPlaces();
+      void loadUserReviews();
+      void loadRegularPlaces();
       // The loaders intentionally excluded from deps: they are stable in
       // behavior and including them would re-run this on every render,
       // defeating the staleness gate.
