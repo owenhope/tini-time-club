@@ -11,9 +11,13 @@ import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
+import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 export default function SharedReviewScreen() {
-  const { review: reviewParam } = useLocalSearchParams<{ review?: string }>();
+  const { review: reviewParam, screenshotSeed } = useLocalSearchParams<{
+    review?: string;
+    screenshotSeed?: string;
+  }>();
   const reviewId = Array.isArray(reviewParam) ? reviewParam[0] : reviewParam;
   const router = useRouter();
   const styles = useStyles();
@@ -47,6 +51,12 @@ export default function SharedReviewScreen() {
     void loadReview();
   }, [loadReview]);
 
+  useEffect(() => {
+    if (review && isScreenshotSeed(screenshotSeed, "comments")) {
+      setCommentsOpen(true);
+    }
+  }, [review, screenshotSeed]);
+
   const goBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -60,7 +70,11 @@ export default function SharedReviewScreen() {
       <AppHeader
         variant="media"
         title="Review"
-        meta={review ? `From ${review.profile?.username ?? "the club"}` : "Shared review"}
+        meta={
+          review
+            ? `From ${review.profile?.username ?? "the club"}`
+            : "Shared review"
+        }
         ground="brand"
         onBack={goBack}
         actions={

@@ -3,10 +3,7 @@ import Sparkline from "@/components/Sparkline";
 import type { KpiMetric } from "@/lib/data";
 import { growth, growthArrow, growthClass } from "@/lib/kpi";
 
-/**
- * One headline KPI: the all-time total, how many were added in the selected
- * window, and how that compares with the window before it.
- */
+/** A selected-window KPI with previous-window comparison and daily history. */
 export default function KpiCard({
   label,
   metric,
@@ -14,6 +11,7 @@ export default function KpiCard({
   href,
   color,
   rangeLabel,
+  className = "",
 }: {
   label: string;
   metric: KpiMetric;
@@ -22,26 +20,24 @@ export default function KpiCard({
   href: string;
   color: string;
   rangeLabel: string;
+  className?: string;
 }) {
   const change = growth(metric.current, metric.previous);
 
   return (
     <Link
       href={href}
-      className="group flex flex-col rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-md"
+      className={`group flex flex-col rounded-lg border border-stone-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-md ${className}`}
     >
-      <p className="text-sm text-stone-500 group-hover:text-violet-700">
+      <p className="text-sm font-bold text-stone-500 group-hover:text-violet-700">
         {label} →
       </p>
-      <p className="mt-1 text-4xl font-bold tracking-tight">
-        {metric.total.toLocaleString()}
+      <p className="mt-1 font-mono text-4xl font-semibold tabular-nums">
+        {metric.current.toLocaleString()}
       </p>
 
-      <div className="mt-3 flex items-center gap-2">
-        <span className="text-lg font-semibold tabular-nums">
-          +{metric.current.toLocaleString()}
-        </span>
-        <span className="text-sm text-stone-500">{newLabel}</span>
+      <div className="mt-3 flex items-center gap-2 text-sm text-stone-500">
+        <span>{rangeLabel}</span>
         <span
           className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${growthClass(
             change.direction
@@ -52,7 +48,7 @@ export default function KpiCard({
       </div>
 
       <p className="mt-0.5 text-xs text-stone-400">
-        {rangeLabel} vs previous · was {metric.previous.toLocaleString()}
+        Previous period: {metric.previous.toLocaleString()} {newLabel}
       </p>
 
       <div className="mt-4">

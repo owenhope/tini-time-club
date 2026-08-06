@@ -46,7 +46,7 @@ export default function AnalyticsNav({
       aria-label="Analytics sections"
       className="hidden lg:block lg:sticky lg:top-6 lg:self-start"
     >
-      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+      <p className="px-3 pb-2 text-xs font-bold uppercase tracking-[0.14em] text-stone-400">
         Sections
       </p>
       <ul className="flex flex-col gap-0.5">

@@ -11,11 +11,13 @@ export default function MetricTile({
   value,
   previous,
   hint,
+  className = "",
 }: {
   label: string;
   value: number | string;
   previous?: number;
   hint?: string;
+  className?: string;
 }) {
   const change =
     previous != null && typeof value === "number"
@@ -23,8 +25,12 @@ export default function MetricTile({
       : null;
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
-      <p className="text-xs uppercase tracking-wide text-stone-500">{label}</p>
+    <div
+      className={`rounded-lg border border-stone-200 bg-stone-50/60 p-4 ${className}`}
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-stone-500">
+        {label}
+      </p>
       <div className="mt-1 flex items-baseline gap-2">
         <p className="text-2xl font-bold tracking-tight tabular-nums">
           {typeof value === "number" ? value.toLocaleString() : value}

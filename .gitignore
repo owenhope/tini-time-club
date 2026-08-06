@@ -25,6 +25,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# generated screenshot exports
+scripts/screenshots/output/
+
 # macOS
 .DS_Store
 *.pem

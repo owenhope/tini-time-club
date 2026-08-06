@@ -43,7 +43,7 @@ export default function Pagination({
       </span>
       <div className="flex items-center gap-4">
         <span className="flex items-center gap-1.5">
-          <span className="text-xs uppercase tracking-wide text-stone-400">
+          <span className="text-xs uppercase tracking-[0.14em] text-stone-400">
             Per page
           </span>
           {PER_PAGE_OPTIONS.map((option) => (

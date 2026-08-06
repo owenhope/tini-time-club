@@ -31,6 +31,7 @@ import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
+import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 // Helper function to format price level
 
@@ -76,6 +77,10 @@ const Location = () => {
   const locationIdParam = params.place as string | undefined;
   const locationNameParam = params.name as string | undefined;
   const locationAddressParam = params.address as string | undefined;
+  const shouldOpenRegularsForScreenshot = isScreenshotSeed(
+    params.screenshotSeed as string | string[] | undefined,
+    "place"
+  );
 
   // Create a minimal location object if fetch fails but we have name from params
   const displayLocation = useMemo(() => {
@@ -308,6 +313,12 @@ const Location = () => {
       loadLocationReviews();
     }
   }, [displayLocation?.id, loadLocationReviews]);
+
+  useEffect(() => {
+    if (shouldOpenRegularsForScreenshot && regularPreview.length > 0) {
+      setRegularsOpen(true);
+    }
+  }, [regularPreview.length, shouldOpenRegularsForScreenshot]);
 
   return (
     <View style={styles.container}>

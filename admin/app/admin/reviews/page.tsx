@@ -1,7 +1,17 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
+import UserBadge from "@/components/UserBadge";
+import {
+  ActionLink,
+  DataTable,
+  EmptyState,
+  FilterBar,
+  FilterSelect,
+  PageHeader,
+  StatusPill,
+} from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
-import { fetchAllReviews } from "@/lib/data";
+import { fetchAllReviews, fetchReviewCounts } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -10,109 +20,148 @@ const overall = (taste: number | null, presentation: number | null) =>
     ? "—"
     : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
+const shortDate = (value: string) => new Date(value).toLocaleDateString();
+
 export default async function ReviewsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; per?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    per?: string;
+    state?: "active" | "inactive";
+  }>;
 }) {
-  const { q, page: pageParam, per: perParam } = await searchParams;
+  const { q, page: pageParam, per: perParam, state } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
   const perPage = parsePerPage(perParam);
-  const { reviews, total } = await fetchAllReviews(q, page, perPage);
+  const [{ reviews, total }, counts] = await Promise.all([
+    fetchAllReviews(q, page, perPage, state),
+    fetchReviewCounts(),
+  ]);
+
+  const query = new URLSearchParams();
+  if (q) query.set("q", q);
+  if (state) query.set("state", state);
 
   return (
     <AdminShell active="reviews">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-bold tracking-tight">Reviews</h1>
-        <form className="flex gap-2">
-          <input
-            type="search"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="Search comments…"
-            className="w-64 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-emerald-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+      <PageHeader
+        eyebrow="Core workspace"
+        title="Reviews"
+        description="Scan review content by author, place, rating, state, and caption."
+        stats={[
+          {
+            label: "Total Reviews",
+            value: counts.total.toLocaleString(),
+            tone: "purple",
+          },
+          {
+            label: "Active Reviews",
+            value: counts.active.toLocaleString(),
+            tone: "green",
+          },
+          {
+            label: "Inactive Reviews",
+            value: counts.inactive.toLocaleString(),
+            tone: "muted",
+          },
+        ]}
+        statColumns={3}
+        surface="transparent"
+        density="compact"
+        filters={
+          <FilterBar
+            action="/admin/reviews"
+            searchDefault={q}
+            searchPlaceholder="Search captions..."
           >
-            Search
-          </button>
-        </form>
-      </div>
+            <FilterSelect
+              name="state"
+              label="State"
+              defaultValue={state}
+              options={[
+                { label: "All", value: "" },
+                { label: "Active", value: "active" },
+                { label: "Inactive", value: "inactive" },
+              ]}
+            />
+          </FilterBar>
+        }
+      />
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-            <tr>
-              <th className="px-5 py-3">Posted</th>
-              <th className="px-5 py-3">Member</th>
-              <th className="px-5 py-3">Location</th>
-              <th className="px-5 py-3">Rating</th>
-              <th className="px-5 py-3">Comment</th>
-              <th className="px-5 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            {reviews.map((review) => (
-              <tr key={review.id} className="hover:bg-stone-50">
-                <td className="whitespace-nowrap px-5 py-3 text-stone-500">
-                  {new Date(review.inserted_at).toLocaleDateString()}
-                </td>
-                <td className="px-5 py-3">
-                  {review.profile ? (
-                    <Link
-                      href={`/admin/users/${review.profile.id}`}
-                      className="font-medium text-violet-600 hover:text-violet-800"
-                    >
-                      @{review.profile.username ?? "unknown"}
-                    </Link>
-                  ) : (
-                    <span className="text-stone-400">—</span>
-                  )}
-                </td>
-                <td className="max-w-48 truncate px-5 py-3">
-                  {review.location?.name ?? "—"}
-                  {review.state !== 1 ? (
-                    <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-500">
-                      Inactive
-                    </span>
-                  ) : null}
-                </td>
-                <td className="whitespace-nowrap px-5 py-3">
-                  <span className="font-semibold tabular-nums">
-                    {overall(review.taste, review.presentation)}
-                  </span>{" "}
-                  <span className="text-xs text-stone-400">
-                    T {review.taste ?? "—"} · P {review.presentation ?? "—"}
-                  </span>
-                </td>
-                <td className="max-w-64 truncate px-5 py-3 text-stone-500">
-                  {review.comment ?? ""}
-                </td>
-                <td className="px-5 py-3 text-right">
+      <div className="px-8 py-6">
+        <DataTable
+          columns={[
+            "Posted",
+            "Member",
+            "Place",
+            "Rating",
+            "Caption",
+            "State",
+            "Actions",
+          ]}
+          empty={
+            reviews.length === 0 ? (
+              <EmptyState>
+                {q ? `No reviews match "${q}".` : "No reviews match this view."}
+              </EmptyState>
+            ) : null
+          }
+        >
+          {reviews.map((review) => (
+            <tr key={review.id} className="hover:bg-stone-50">
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
+                {shortDate(review.inserted_at)}
+              </td>
+              <td className="px-4 py-3">
+                {review.profile ? (
                   <Link
-                    href={`/r/${encodeURIComponent(review.id)}`}
-                    target="_blank"
-                    className="font-medium text-violet-600 hover:text-violet-800"
+                    href={`/admin/users/${review.profile.id}`}
+                    className="block min-w-0 hover:opacity-80"
                   >
-                    View →
+                    <UserBadge profile={review.profile} />
                   </Link>
-                </td>
-              </tr>
-            ))}
-            {reviews.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-stone-400">
-                  {q ? <>No reviews match “{q}”.</> : "No reviews yet."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                ) : (
+                  <span className="text-stone-400">—</span>
+                )}
+              </td>
+              <td className="max-w-52 truncate px-4 py-3 font-bold text-stone-900">
+                {review.location?.name ?? "—"}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3">
+                <span className="font-mono text-base font-semibold tabular-nums text-stone-900">
+                  {overall(review.taste, review.presentation)}
+                </span>
+                <span className="ml-2 text-xs text-stone-400">
+                  T {review.taste ?? "—"} / P {review.presentation ?? "—"}
+                </span>
+              </td>
+              <td className="max-w-96 truncate px-4 py-3 text-stone-500">
+                {review.comment ?? ""}
+              </td>
+              <td className="px-4 py-3">
+                {review.state === 1 ? (
+                  <StatusPill tone="green">Active</StatusPill>
+                ) : (
+                  <StatusPill>Inactive</StatusPill>
+                )}
+              </td>
+              <td className="px-4 py-3">
+                <ActionLink
+                  href={`/r/${encodeURIComponent(review.id)}`}
+                  external
+                >
+                  View
+                </ActionLink>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+
         <Pagination
           path="/admin/reviews"
-          baseQuery={q ? `q=${encodeURIComponent(q)}` : ""}
+          baseQuery={query.toString()}
           pageParam="page"
           perParam="per"
           page={page}

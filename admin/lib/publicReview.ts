@@ -1,5 +1,6 @@
 import "server-only";
 import { notFound } from "next/navigation";
+import { avatarPublicUrl } from "@/lib/avatar";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export interface PublicReviewComment {
@@ -49,13 +50,6 @@ export const reviewOverall = (review: {
 
 export const nativeReviewUrl = (reviewId: string | number) =>
   `tini-time-club:///r/${encodeURIComponent(String(reviewId))}`;
-
-/** Avatars live in a public bucket; the URL can be built without a query. */
-const avatarPublicUrl = (avatarPath: string | null | undefined): string | null =>
-  avatarPath
-    ? supabaseAdmin().storage.from("avatars").getPublicUrl(avatarPath).data
-        .publicUrl
-    : null;
 
 export const fetchPublicReview = async (
   reviewId: string

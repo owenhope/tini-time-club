@@ -27,7 +27,7 @@ export default function FeatureSection({
         {link ? (
           <Link
             href={link.href}
-            className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
+            className="shrink-0 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-bold text-stone-600 transition hover:bg-stone-100"
           >
             {link.label} →
           </Link>
@@ -49,7 +49,7 @@ export function BreakdownList({
   empty: string;
 }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5">
+    <div className="rounded-lg border border-stone-200 bg-white p-5">
       <h3 className="font-semibold">{title}</h3>
       <ul className="mt-3 divide-y divide-stone-100">
         {rows.map((row) => (

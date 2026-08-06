@@ -28,6 +28,7 @@ import { routes } from "@/utils/routes";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
+import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -53,7 +54,9 @@ function Home() {
   const params = useLocalSearchParams<{
     postedReviewId?: string;
     feedRefresh?: string;
+    screenshotSeed?: string;
   }>();
+  const isScreenshotFeed = isScreenshotSeed(params.screenshotSeed, "feed");
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
@@ -67,6 +70,7 @@ function Home() {
   }>({ isValid: false, message: "", isChecking: false });
   const flatListRef = useRef<FlatList>(null);
   const handledFeedRefreshRef = useRef<string | null>(null);
+  const handledScreenshotFeedRef = useRef(false);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -146,9 +150,23 @@ function Home() {
       try {
         const start = nextPage * PAGE_SIZE;
 
+        let screenshotUserId: string | undefined;
+        if (isScreenshotFeed) {
+          const { data: screenshotProfile, error: screenshotProfileError } =
+            await supabase
+              .from("profiles")
+              .select("id")
+              .eq("username", "stellavale")
+              .single();
+
+          if (screenshotProfileError) throw screenshotProfileError;
+          screenshotUserId = screenshotProfile.id;
+        }
+
         // Get reviews using optimized database service
         const reviewsDataFromDB = await withTimeout(
           databaseService.getReviews({
+            userId: screenshotUserId,
             currentUserId: profile.id,
             limit: PAGE_SIZE,
             offset: start,
@@ -209,7 +227,7 @@ function Home() {
         }
       }
     },
-    [profile?.id, page, hasMore, lastRefreshTime]
+    [profile?.id, page, hasMore, lastRefreshTime, isScreenshotFeed]
   );
 
   const scrollToTop = useCallback(() => {
@@ -217,6 +235,24 @@ function Home() {
       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
     }
   }, []);
+
+  useEffect(() => {
+    if (!isScreenshotFeed) {
+      handledScreenshotFeedRef.current = false;
+      return;
+    }
+
+    if (!profile?.id || handledScreenshotFeedRef.current) return;
+    handledScreenshotFeedRef.current = true;
+
+    const refreshScreenshotFeed = async () => {
+      setHasMore(true);
+      await loadReviews(true, true);
+      requestAnimationFrame(scrollToTop);
+    };
+
+    void refreshScreenshotFeed();
+  }, [isScreenshotFeed, loadReviews, profile?.id, scrollToTop]);
 
   const feedRefreshToken = Array.isArray(params.feedRefresh)
     ? params.feedRefresh[0]

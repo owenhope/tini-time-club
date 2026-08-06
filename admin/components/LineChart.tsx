@@ -32,12 +32,14 @@ export default function LineChart({
   const innerH = H - PAD.top - PAD.bottom - 14;
 
   const x = (i: number) =>
-    PAD.left + (data.length > 1 ? (i / (data.length - 1)) * innerW : innerW / 2);
+    PAD.left +
+    (data.length > 1 ? (i / (data.length - 1)) * innerW : innerW / 2);
   const y = (count: number) => PAD.top + innerH - (count / max) * innerH;
 
   const linePath = data
     .map(
-      (d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.count).toFixed(1)}`
+      (d, i) =>
+        `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.count).toFixed(1)}`
     )
     .join(" ");
   const areaPath = `${linePath} L${x(data.length - 1).toFixed(1)},${
@@ -67,7 +69,7 @@ export default function LineChart({
     });
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5">
+    <div className="rounded-lg border border-stone-200 bg-white p-5">
       <div className="flex items-baseline justify-between">
         <h2 className="font-semibold">{title}</h2>
         <span className="text-sm text-stone-500">
