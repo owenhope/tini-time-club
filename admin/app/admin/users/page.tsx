@@ -26,7 +26,7 @@ const SORTS = [
   "rank",
   "review_count",
   "created_at",
-  "last_sign_in_at",
+  "last_review_at",
 ] as const;
 const DIRECTIONS = ["asc", "desc"] as const;
 type VisibleProfileSort = (typeof SORTS)[number];
@@ -123,7 +123,7 @@ export default async function UsersPage({
       <PageHeader
         eyebrow="Core workspace"
         title="Members"
-        description="Scan members by status, rank, signup recency, and account activity."
+        description="Scan members by status, rank, signup recency, and review activity."
         stats={[
           {
             label: "Total Members",
@@ -210,9 +210,9 @@ export default async function UsersPage({
               defaultDirection="desc"
             />,
             <SortHeader
-              key="last-sign-in"
-              label="Last sign-in"
-              field="last_sign_in_at"
+              key="last-review"
+              label="Last review"
+              field="last_review_at"
               sort={sort}
               direction={direction}
               baseQuery={headerQuery}
@@ -245,7 +245,7 @@ export default async function UsersPage({
                   {date(profile.created_at)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-stone-500">
-                  {date(profile.last_sign_in_at)}
+                  {date(profile.last_review_at)}
                 </td>
                 <td className="px-4 py-3">
                   <ActionLink href={`/admin/users/${profile.id}`}>
