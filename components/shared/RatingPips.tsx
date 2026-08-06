@@ -1,7 +1,9 @@
 import React from "react";
 import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
+import * as Haptics from "expo-haptics";
 import { HIT_SLOP, useTheme } from "@/theme";
 import AppText from "./AppText";
+import OliveIcon from "./OliveIcon";
 
 export const PIPS_MAX = 5;
 
@@ -35,43 +37,31 @@ export interface RatingPipsProps {
 const Olive: React.FC<{
   size: number;
   fillAmount: number;
-  onDark?: boolean;
   bodyColor?: string;
   emptyColor?: string;
-}> = ({ size, fillAmount, onDark, bodyColor, emptyColor }) => {
+  faintWhenEmpty?: boolean;
+}> = ({ size, fillAmount, bodyColor, emptyColor, faintWhenEmpty }) => {
   const { colors } = useTheme();
   const filled = fillAmount > 0;
-  // The olive is green — `secondary`, not `accent`. The brand's primary is
-  // the purple, and a purple olive is not an olive.
-  const body = bodyColor ?? (onDark ? colors.textOnImage : colors.secondary);
+  const faintEmpty = !filled && faintWhenEmpty;
 
   return (
     <View
       style={{
         width: size * 0.84,
         height: size,
-        // A true ellipse — the olive is taller than it is wide. RN accepts a
-        // percentage radius, which an equal-sided value would not give us.
-        borderRadius: "50%",
-        backgroundColor: filled ? body : "transparent",
-        borderWidth: filled ? 0 : 2,
-        borderColor: emptyColor ?? colors.ratingPipEmpty,
-        opacity: filled ? fillAmount : 1,
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      {filled ? (
-        <View
-          style={{
-            position: "absolute",
-            top: size * 0.16,
-            right: size * 0.1,
-            width: size * 0.3,
-            height: size * 0.3,
-            borderRadius: "50%",
-            backgroundColor: colors.ratingPipDot,
-          }}
-        />
-      ) : null}
+      <OliveIcon
+        size={size}
+        color={bodyColor}
+        opacity={filled ? fillAmount : faintEmpty ? 0.3 : 1}
+        outlineColor={
+          filled || faintEmpty ? undefined : (emptyColor ?? colors.ratingPipEmpty)
+        }
+      />
     </View>
   );
 };
@@ -89,7 +79,8 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   accessibilityLabel,
 }) => {
   const clampedValue = Math.max(0, Math.min(value, max));
-  const pips = Array.from({ length: max }, (_, i) => i + 1);
+  const visiblePipCount = onRate ? max : Math.ceil(clampedValue);
+  const pips = Array.from({ length: visiblePipCount }, (_, i) => i + 1);
 
   const fillAmountFor = (pip: number) =>
     Number(Math.max(0, Math.min(1, clampedValue - (pip - 1))).toFixed(2));
@@ -112,7 +103,10 @@ const RatingPips: React.FC<RatingPipsProps> = ({
         onRate ? (
           <Pressable
             key={n}
-            onPress={() => onRate(n)}
+            onPress={() => {
+              void Haptics.selectionAsync();
+              onRate(n);
+            }}
             hitSlop={HIT_SLOP}
             accessibilityRole="button"
             accessibilityLabel={`Rate ${n} of ${max}`}
@@ -121,9 +115,9 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             <Olive
               size={size}
               fillAmount={fillAmountFor(n)}
-              onDark={onDark}
               bodyColor={bodyColor}
               emptyColor={emptyColor}
+              faintWhenEmpty
             />
           </Pressable>
         ) : (
@@ -131,7 +125,6 @@ const RatingPips: React.FC<RatingPipsProps> = ({
             key={n}
             size={size}
             fillAmount={fillAmountFor(n)}
-            onDark={onDark}
             bodyColor={bodyColor}
             emptyColor={emptyColor}
           />

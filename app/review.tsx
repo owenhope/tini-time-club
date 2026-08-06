@@ -208,13 +208,6 @@ const ReviewPreview = ({
           </TouchableOpacity>
         ) : (
           <>
-            <AppText
-              variant="eyebrow"
-              tone="secondary"
-              style={styles.captionLabel}
-            >
-              Caption
-            </AppText>
             <TextInput
               style={styles.captionInput}
               multiline={true}
@@ -510,6 +503,12 @@ export default function App() {
     await Promise.all([getTypes(), getSpirits()]);
   };
 
+  const feedRouteAfterPost = (reviewId: string | null) =>
+    routes.home({
+      ...(reviewId ? { postedReviewId: reviewId } : {}),
+      feedRefresh: String(Date.now()),
+    });
+
   const resolveLocationId = async (userId: string) => {
     return databaseService.createOrGetLocation(
       watchedValues.location &&
@@ -625,12 +624,7 @@ export default function App() {
         setCelebrationReviewCount(rankCheck.newCount);
         setAchievements(earnedAchievements);
       } else {
-        router.dismissTo(
-          routes.home({
-            postedReviewId: String(reviewId),
-            feedRefresh: String(Date.now()),
-          })
-        );
+        router.dismissTo(feedRouteAfterPost(String(reviewId)));
       }
     } catch (error) {
       reportError("Error submitting review:", error);
@@ -642,13 +636,19 @@ export default function App() {
   const finishCelebration = () => {
     const reviewId = postedReviewId;
 
-    router.dismissTo(
-      routes.home({
-        ...(reviewId ? { postedReviewId: reviewId } : {}),
-        feedRefresh: String(Date.now()),
-      })
-    );
+    setAchievements([]);
+    setCelebrationReviewCount(null);
+    requestAnimationFrame(() => {
+      router.dismissTo(feedRouteAfterPost(reviewId));
+    });
   };
+
+  const reviewStepTotal = questions.length;
+  const currentQuestionTitle = questions[step].title;
+  const headerTitle =
+    currentQuestionTitle === "Preview" && isCaptionFocused
+      ? "Caption"
+      : currentQuestionTitle;
 
   return (
     <>
@@ -656,6 +656,21 @@ export default function App() {
         {!isReviewing ? (
           <CameraComponent
             onClose={goBack}
+            headerBelow={
+              <View style={styles.stepHeaderMeta}>
+                <AppText variant="eyebrow" tone="onImage" style={styles.subtitle}>
+                  Step 1 of {reviewStepTotal}
+                </AppText>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${(1 / reviewStepTotal) * 100}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+            }
             onCapture={(captured) => {
               setPhoto(captured);
               setIsReviewing(true);
@@ -668,16 +683,16 @@ export default function App() {
             {!isSubmitting && (
               <AppHeader
                 variant="large"
-                title={questions[step].title}
+                title={headerTitle}
                 below={
-                  questions[step].title !== "Preview" ? (
+                  currentQuestionTitle !== "Preview" ? (
                     <View style={styles.stepHeaderMeta}>
                       <AppText
                         variant="eyebrow"
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {step + 1} of {questions.length - 1}
+                        Step {step + 2} of {reviewStepTotal}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
@@ -685,7 +700,7 @@ export default function App() {
                             styles.progressFill,
                             {
                               width: `${
-                                ((step + 1) / (questions.length - 1)) * 100
+                                ((step + 2) / reviewStepTotal) * 100
                               }%`,
                             },
                           ]}
@@ -700,8 +715,8 @@ export default function App() {
             <Animated.View
               style={[
                 styles.content,
-                questions[step].title === "Preview" && styles.previewContent,
-                questions[step].title === "Where was this served?" &&
+                currentQuestionTitle === "Preview" && styles.previewContent,
+                currentQuestionTitle === "Where was this served?" &&
                   styles.locationContent,
                 animatedStyle,
               ]}
@@ -733,7 +748,7 @@ export default function App() {
                 </View>
               )}
 
-              {questions[step].title === "Preview" ? (
+              {currentQuestionTitle === "Preview" ? (
                 <ReviewPreview
                   values={watchedValues}
                   spirits={spirits}
@@ -974,9 +989,6 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.border,
     color: t.colors.text,
     textAlignVertical: "top" as const,
-  },
-  captionLabel: {
-    marginBottom: t.spacing.sm,
   },
   characterCount: {
     textAlign: "right" as const,

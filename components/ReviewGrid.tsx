@@ -313,6 +313,8 @@ const useStyles = makeStyles((t) => ({
   },
   tileScoreText: {
     ...t.typography.label,
+    fontSize: 15,
+    lineHeight: 19,
     color: t.colors.textOnImage,
     fontVariant: ["tabular-nums"] as const,
     textShadowColor: t.colors.overlay,
@@ -331,6 +333,8 @@ const useStyles = makeStyles((t) => ({
   },
   tileLocationText: {
     ...t.typography.micro,
+    fontSize: 13,
+    lineHeight: 17,
     color: t.colors.textOnImage,
   },
   sheet: {

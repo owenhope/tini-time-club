@@ -642,16 +642,16 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   clusterPin: {
-    backgroundColor: t.colors.surfaceInkDeep,
-    borderWidth: 4,
-    borderColor: t.colors.surface,
+    backgroundColor: t.colors.surfaceBrand,
+    borderWidth: 0,
     justifyContent: "center" as const,
     alignItems: "center" as const,
     ...t.elevation.raised,
   },
   clusterCount: {
     ...t.typography.heading,
-    color: t.colors.highlight,
+    position: "absolute" as const,
+    color: t.colors.onAccentTonal,
     fontFamily: fonts.black,
     lineHeight: 20,
     textAlign: "center" as const,
@@ -689,7 +689,7 @@ const useStyles = makeStyles((t) => ({
   },
   sheetContent: {
     flex: 1,
-    paddingHorizontal: t.spacing.gutter,
+    paddingHorizontal: t.spacing.sheetGutter,
     paddingBottom: t.spacing.lg,
   },
 }));

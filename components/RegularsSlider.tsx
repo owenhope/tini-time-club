@@ -114,7 +114,7 @@ const useStyles = makeStyles((t) => ({
   },
   content: {
     flex: 1,
-    paddingHorizontal: t.spacing.gutter,
+    paddingHorizontal: t.spacing.sheetGutter,
     paddingBottom: t.spacing.lg,
     gap: t.spacing.lg,
   },

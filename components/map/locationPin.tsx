@@ -24,7 +24,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
   if (loc.lat == null || loc.long == null) return null;
 
   const reviewed = (loc.total_ratings ?? 0) > 0 && loc.rating != null;
-  const showRating = reviewed && !selected;
+  const showRating = reviewed;
 
   return (
     <View style={[styles.container, selected && styles.containerSelected]}>
@@ -37,28 +37,32 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
         ]}
       >
         {showRating ? (
-          <Text style={styles.pinRating}>{loc.rating?.toFixed(1)}</Text>
+          <Text style={[styles.pinRating, selected && styles.pinRatingSelected]}>
+            {loc.rating?.toFixed(1)}
+          </Text>
         ) : (
           <MartiniIcon
             size={selected ? 23 : 17}
             color={
               selected
-                ? colors.highlight
+                ? colors.textOnImage
                 : reviewed
-                  ? colors.secondary
+                  ? colors.textOnImage
                   : colors.textMuted
             }
           />
         )}
       </View>
-      <View
-        style={[
-          styles.pointer,
-          reviewed && styles.pointerReviewed,
-          !reviewed && styles.pointerUnrated,
-          selected && styles.pointerSelected,
-        ]}
-      />
+      <View style={[styles.pointerFrame, selected && styles.pointerFrameSelected]}>
+        <View
+          style={[
+            styles.pointer,
+            reviewed && styles.pointerReviewed,
+            !reviewed && styles.pointerUnrated,
+            selected && styles.pointerSelected,
+          ]}
+        />
+      </View>
     </View>
   );
 }
@@ -80,57 +84,65 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: t.colors.secondary,
-    borderWidth: 4,
-    borderColor: t.colors.surface,
+    backgroundColor: t.colors.tabBarActive,
+    borderWidth: 0,
     ...t.elevation.raised,
   },
   pinReviewed: {
-    backgroundColor: t.colors.highlight,
-    borderColor: t.colors.secondary,
+    backgroundColor: t.colors.tabBarActive,
   },
   pinUnrated: {
-    backgroundColor: t.colors.surface,
-    borderWidth: 3,
-    borderColor: t.colors.borderStrong,
+    backgroundColor: t.colors.tabBarActive,
   },
   pinSelected: {
     width: 52,
     height: 52,
-    backgroundColor: t.colors.surfaceInkDeep,
-    borderWidth: 5,
-    borderColor: t.colors.highlight,
+    backgroundColor: t.colors.tabBarActive,
   },
   pinRating: {
     ...t.typography.label,
-    color: t.colors.secondary,
+    position: "absolute" as const,
+    color: t.colors.textOnImage,
     fontFamily: fonts.black,
     lineHeight: 16,
     fontVariant: ["tabular-nums"] as const,
   },
+  pinRatingSelected: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  pointerFrame: {
+    width: 18,
+    height: 13,
+    alignItems: "center" as const,
+    marginTop: -1,
+  },
+  pointerFrameSelected: {
+    width: 22,
+    height: 16,
+  },
   pointer: {
     width: 0,
     height: 0,
-    marginTop: -1,
     borderLeftWidth: 7,
     borderRightWidth: 7,
     borderTopWidth: 12,
     borderStyle: "solid" as const,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: t.colors.surface,
+    borderTopColor: t.colors.tabBarActive,
   },
   pointerReviewed: {
-    borderTopColor: t.colors.secondary,
+    borderTopColor: t.colors.tabBarActive,
   },
   pointerUnrated: {
-    borderTopColor: t.colors.borderStrong,
+    borderTopColor: t.colors.tabBarActive,
   },
   pointerSelected: {
     borderLeftWidth: 8,
     borderRightWidth: 8,
     borderTopWidth: 15,
-    borderTopColor: t.colors.highlight,
+    borderTopColor: t.colors.tabBarActive,
   },
 }));
 

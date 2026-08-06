@@ -32,7 +32,7 @@ import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, spacing, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
@@ -41,11 +41,10 @@ import { getReviewTagColors } from "@/utils/reviewTagColors";
 // Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
 /**
- * The card is inset by the 20px screen gutter on both sides, so its photo is
- * narrower than the screen — it is no longer the full-bleed image the feed
- * used to run edge to edge.
+ * The card follows the shared screen gutter on both sides, so the image stays
+ * on the same grid as the feed header.
  */
-const CARD_WIDTH = SCREEN_WIDTH - 20 * 2;
+const CARD_WIDTH = SCREEN_WIDTH - spacing.gutter * 2;
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
  * comment / share row under the tab bar on a 6.1" — with the scores now
@@ -987,16 +986,16 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   headerUsername: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: 18,
+    lineHeight: 22,
     fontFamily: fonts.extrabold,
     letterSpacing: -0.15,
     color: t.colors.text,
   },
   headerTimestamp: {
     ...t.typography.mono,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
     color: t.colors.textMuted,
   },
   headerIdentity: {
@@ -1059,6 +1058,8 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipText: {
     ...t.typography.bodyStrong,
+    fontSize: 17,
+    lineHeight: 22,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
@@ -1071,12 +1072,16 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipRatingText: {
     ...t.typography.mono,
+    fontSize: 14,
+    lineHeight: 18,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   venueChipMeta: {
     ...t.typography.mono,
-    color: t.colors.accentOnImage,
+    fontSize: 14,
+    lineHeight: 18,
+    color: t.colors.textOnImage,
     flexShrink: 1,
   },
   photoPills: {
@@ -1100,7 +1105,7 @@ const useStyles = makeStyles((t) => ({
   },
   photoPillText: {
     ...t.typography.eyebrow,
-    fontSize: 10.5,
+    fontSize: 12.5,
     letterSpacing: 1,
     color: t.colors.surfaceInkDeep,
   },
@@ -1122,7 +1127,7 @@ const useStyles = makeStyles((t) => ({
   },
   scoreLabel: {
     ...t.typography.eyebrow,
-    fontSize: 10,
+    fontSize: 12,
     color: t.colors.textMuted,
   },
   scoreOverall: {
@@ -1131,8 +1136,8 @@ const useStyles = makeStyles((t) => ({
     gap: 3,
   },
   scoreOverallValue: {
-    fontSize: 26,
-    lineHeight: 28,
+    fontSize: 31,
+    lineHeight: 33,
     fontFamily: fonts.black,
     letterSpacing: -1,
     // The score belongs to the olives beside it, so it takes their green
@@ -1143,7 +1148,7 @@ const useStyles = makeStyles((t) => ({
   footer: {
     backgroundColor: t.colors.surface,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.md - 1,
+    paddingTop: t.spacing.xs + 2,
   },
   // A hairline separates the actions from the reading matter above them,
   // rather than boxing the whole footer.
@@ -1167,8 +1172,8 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   actionCount: {
-    fontSize: 13.5,
-    lineHeight: 18,
+    fontSize: 16,
+    lineHeight: 21,
     fontFamily: fonts.semibold,
     color: t.colors.textSecondary,
     fontVariant: ["tabular-nums"] as const,
@@ -1178,6 +1183,8 @@ const useStyles = makeStyles((t) => ({
   },
   likesCount: {
     ...t.typography.bodyStrong,
+    fontSize: 17,
+    lineHeight: 22,
     color: t.colors.text,
   },
   captionSection: {
@@ -1185,25 +1192,33 @@ const useStyles = makeStyles((t) => ({
   },
   captionText: {
     ...t.typography.body,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 17,
+    lineHeight: 25,
     color: t.colors.text,
   },
   inlineBody: {
     ...t.typography.caption,
+    fontSize: 15,
+    lineHeight: 21,
     color: t.colors.text,
     flexShrink: 1,
   },
   captionUsername: {
     ...t.typography.bodyStrong,
+    fontSize: 17,
+    lineHeight: 22,
     color: t.colors.text,
   },
   captionBody: {
     ...t.typography.body,
+    fontSize: 17,
+    lineHeight: 25,
     color: t.colors.text,
   },
   addCaptionText: {
     ...t.typography.body,
+    fontSize: 17,
+    lineHeight: 25,
     fontFamily: fonts.medium,
     color: t.colors.textSecondary,
   },
@@ -1212,10 +1227,14 @@ const useStyles = makeStyles((t) => ({
   },
   timestamp: {
     ...t.typography.micro,
+    fontSize: 13,
+    lineHeight: 17,
     color: t.colors.textMuted,
   },
   viewAllCommentsText: {
     ...t.typography.caption,
+    fontSize: 15,
+    lineHeight: 21,
     color: t.colors.textMuted,
     marginBottom: t.spacing.xs,
   },

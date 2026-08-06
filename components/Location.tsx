@@ -353,6 +353,7 @@ const Location = () => {
                   on the green header ground. */}
               <AppHeader
                 variant="media"
+                ground="brand"
                 title={displayLocation?.name ?? ""}
                 meta={headerCityRegion ?? undefined}
                 onBack={goBack}
@@ -490,7 +491,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   venueHeader: {
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.colors.accent,
   },
   venueHeaderContent: {
     paddingHorizontal: t.spacing.gutter,
@@ -539,7 +540,7 @@ const useStyles = makeStyles((t) => ({
   },
   regularAvatar: {
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.colors.accent,
   },
   regularAvatarOverlap: {
     marginLeft: -8,

@@ -14,6 +14,9 @@ export { default as Avatar } from "./Avatar";
 export { default as MartiniIcon } from "./MartiniIcon";
 export type { MartiniIconProps } from "./MartiniIcon";
 
+export { default as OliveIcon, OLIVE_ICON_COLOR } from "./OliveIcon";
+export type { OliveIconProps } from "./OliveIcon";
+
 export { default as SegmentedControl } from "./SegmentedControl";
 export type {
   SegmentedControlOption,

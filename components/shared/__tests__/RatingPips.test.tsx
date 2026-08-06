@@ -1,8 +1,9 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { View } from "react-native";
+import { Path } from "react-native-svg";
 import RatingPips from "../RatingPips";
-import { ThemeProvider, lightColors } from "@/theme";
+import { ThemeProvider } from "@/theme";
+import { OLIVE_ICON_COLOR } from "../OliveIcon";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -17,11 +18,11 @@ const render = (ui: React.ReactElement) => {
   return tree!;
 };
 
-/** An olive body is the only View carrying the accent (or transparent) fill. */
+/** The olive body is the shared SVG path used by the app. */
 const olives = (tree: renderer.ReactTestRenderer) =>
-  tree.root.findAllByType(View).filter((n) => {
-    const s = n.props.style;
-    return s && !Array.isArray(s) && typeof s.borderRadius === "string";
+  tree.root.findAllByType(Path).filter((n) => {
+    const d = n.props.d;
+    return typeof d === "string" && d.startsWith("M400.249 341.459");
   });
 
 /** The per-olive rate buttons, found by role rather than component type —
@@ -49,36 +50,42 @@ const rateButtons = (tree: renderer.ReactTestRenderer) => {
 describe("RatingPips", () => {
   it("fills whole olives at full opacity", () => {
     const tree = render(<RatingPips value={3} />);
-    const filled = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === lightColors.secondary
-    );
+    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
     expect(filled).toHaveLength(3);
-    expect(filled.every((n) => n.props.style.opacity === 1)).toBe(true);
+    expect(filled.every((n) => n.props.opacity === 1)).toBe(true);
   });
 
   it("uses opacity for the fractional olive", () => {
     const tree = render(<RatingPips value={3.5} />);
-    const filled = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === lightColors.secondary
-    );
+    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
     expect(filled).toHaveLength(4);
-    expect(filled.map((n) => n.props.style.opacity)).toEqual([1, 1, 1, 0.5]);
+    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 0.5]);
   });
 
   it("renders 4.8 as four solid olives and one at 80 percent", () => {
     const tree = render(<RatingPips value={4.8} />);
-    const filled = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === lightColors.secondary
-    );
-    expect(filled.map((n) => n.props.style.opacity)).toEqual([1, 1, 1, 1, 0.8]);
+    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 1, 0.8]);
   });
 
-  it("renders hollow pips for the remainder", () => {
+  it("omits hollow pips for read-only display ratings", () => {
     const tree = render(<RatingPips value={2} />);
-    const hollow = olives(tree).filter(
-      (n) => n.props.style.backgroundColor === "transparent"
+    const hollow = olives(tree).filter((n) => n.props.fill === "transparent");
+    expect(hollow).toHaveLength(0);
+    expect(olives(tree)).toHaveLength(2);
+  });
+
+  it("shows faint unselected olives for interactive rating controls", () => {
+    const tree = render(<RatingPips value={2} onRate={jest.fn()} />);
+    const renderedOlives = olives(tree);
+    expect(renderedOlives).toHaveLength(5);
+    expect(renderedOlives.every((n) => n.props.fill === OLIVE_ICON_COLOR)).toBe(
+      true
     );
-    expect(hollow).toHaveLength(3);
+    expect(renderedOlives.map((n) => n.props.opacity)).toEqual([
+      1, 1, 0.3, 0.3, 0.3,
+    ]);
+    expect(renderedOlives.every((n) => n.props.stroke == null)).toBe(true);
   });
 
   it("is only tappable when onRate is supplied", () => {
