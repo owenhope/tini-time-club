@@ -950,6 +950,14 @@ export interface AdminReviewRow {
   profile: AdminProfile | null;
 }
 
+export interface AdminReviewDetail extends AdminReviewRow {
+  image_url: string | null;
+  image_public_url: string | null;
+  location: { id: number; name: string | null; address: string | null } | null;
+  spirit: { name: string | null } | null;
+  type: { name: string | null } | null;
+}
+
 const one = <T>(value: T | T[] | null | undefined): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 
@@ -1018,12 +1026,61 @@ export const fetchAllReviews = async (
   };
 };
 
+export const fetchAdminReview = async (
+  id: string
+): Promise<AdminReviewDetail | null> => {
+  if (!/^\d+$/.test(id)) return null;
+
+  const { data, error } = await db()
+    .from("reviews")
+    .select(
+      `id,image_url,comment,taste,presentation,inserted_at,state,
+       location:locations!reviews_location_fkey(id,name,address),
+       spirit:spirits(name),
+       type:types(name),
+       profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const imageResult = data.image_url
+    ? await db()
+        .storage.from("review_images")
+        .createSignedUrl(data.image_url, 60 * 60)
+    : null;
+
+  return {
+    id: String(data.id),
+    image_url: data.image_url,
+    image_public_url: imageResult?.data?.signedUrl ?? null,
+    comment: data.comment,
+    taste: data.taste,
+    presentation: data.presentation,
+    inserted_at: data.inserted_at,
+    state: data.state,
+    location: one(data.location),
+    spirit: one(data.spirit),
+    type: one(data.type),
+    profile: one(data.profile),
+  };
+};
+
 export interface AdminLocation {
   id: number;
   name: string | null;
   address: string | null;
   rating: number | null;
   total_ratings: number;
+}
+
+export interface AdminLocationDetail extends AdminLocation {
+  place_id: string | null;
+  inserted_at: string;
+  created_by: string;
+  all_reviews: number;
+  reviews: AdminReviewRow[];
 }
 
 export interface LatestLocation {
@@ -1287,5 +1344,61 @@ export const fetchLocations = async (
     locations:
       minReviews > 0 ? filtered.slice(offset, offset + perPage) : filtered,
     total: minReviews > 0 ? filtered.length : (count ?? 0),
+  };
+};
+
+export const fetchAdminLocation = async (
+  id: string
+): Promise<AdminLocationDetail | null> => {
+  if (!/^\d+$/.test(id)) return null;
+
+  const [locationResult, ratingResult, reviewsResult] = await Promise.all([
+    db()
+      .from("locations")
+      .select("id,name,address,place_id,inserted_at,created_by")
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("location_ratings")
+      .select("rating,total_ratings")
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("reviews")
+      .select(
+        `id,comment,taste,presentation,inserted_at,state,
+         profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`,
+        { count: "exact" }
+      )
+      .eq("location", id)
+      .order("inserted_at", { ascending: false })
+      .limit(50),
+  ]);
+  if (locationResult.error) throw new Error(locationResult.error.message);
+  if (ratingResult.error) throw new Error(ratingResult.error.message);
+  if (reviewsResult.error) throw new Error(reviewsResult.error.message);
+  if (!locationResult.data) return null;
+
+  const location = locationResult.data;
+  return {
+    id: location.id,
+    name: location.name,
+    address: location.address,
+    place_id: location.place_id,
+    inserted_at: location.inserted_at,
+    created_by: location.created_by,
+    rating: ratingResult.data?.rating ?? null,
+    total_ratings: ratingResult.data?.total_ratings ?? 0,
+    all_reviews: reviewsResult.count ?? 0,
+    reviews: (reviewsResult.data ?? []).map((review) => ({
+      id: String(review.id),
+      comment: review.comment,
+      taste: review.taste,
+      presentation: review.presentation,
+      inserted_at: review.inserted_at,
+      state: review.state,
+      location: { id: location.id, name: location.name },
+      profile: one(review.profile),
+    })),
   };
 };

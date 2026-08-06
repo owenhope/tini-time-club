@@ -1,5 +1,6 @@
 import AdminShell from "@/components/AdminShell";
 import {
+  ActionLink,
   DataTable,
   EmptyState,
   FilterBar,
@@ -90,7 +91,15 @@ export default async function LocationsPage({
 
       <div className="px-8 py-6">
         <DataTable
-          columns={["Place", "Area", "Address", "Rating", "Reviews", "Status"]}
+          columns={[
+            "Place",
+            "Area",
+            "Address",
+            "Rating",
+            "Reviews",
+            "Status",
+            "Actions",
+          ]}
           empty={
             locations.length === 0 ? (
               <EmptyState>
@@ -130,6 +139,11 @@ export default async function LocationsPage({
                 ) : (
                   <StatusPill>Unrated</StatusPill>
                 )}
+              </td>
+              <td className="px-4 py-3">
+                <ActionLink href={`/admin/locations/${location.id}`}>
+                  Manage
+                </ActionLink>
               </td>
             </tr>
           ))}

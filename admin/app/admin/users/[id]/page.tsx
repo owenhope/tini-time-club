@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
 import {
+  ActionLink,
   DataTable,
   EmptyState,
   PageHeader,
@@ -42,6 +43,7 @@ export default async function UserDetailPage({
   return (
     <AdminShell active="users">
       <PageHeader
+        backLink={{ href: "/admin/users", label: "Back to members" }}
         eyebrow="User dossier"
         title={profile.username ?? "Unknown member"}
         description={profile.bio ?? "No profile bio."}
@@ -138,7 +140,14 @@ export default async function UserDetailPage({
 
         <div className="col-span-12 xl:col-span-9">
           <DataTable
-            columns={["Posted", "Place", "Rating", "Caption", "State"]}
+            columns={[
+              "Posted",
+              "Place",
+              "Rating",
+              "Caption",
+              "State",
+              "Actions",
+            ]}
             empty={
               reviews.length === 0 ? (
                 <EmptyState>No reviews yet.</EmptyState>
@@ -170,6 +179,11 @@ export default async function UserDetailPage({
                   ) : (
                     <StatusPill>Inactive</StatusPill>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <ActionLink href={`/admin/reviews/${review.id}`}>
+                    Manage
+                  </ActionLink>
                 </td>
               </tr>
             ))}
