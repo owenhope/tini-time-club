@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import PublicFooter from "@/components/PublicFooter";
 
 export default function PublicHomePage() {
   return (
@@ -22,6 +24,12 @@ export default function PublicHomePage() {
             >
               Get the app
             </a>
+            <Link
+              href="/support"
+              className="rounded-lg border border-emerald-950/20 px-5 py-3 text-sm font-bold text-emerald-950 transition hover:border-emerald-950/40 hover:bg-white/60"
+            >
+              Support
+            </Link>
           </div>
         </section>
 
@@ -31,10 +39,12 @@ export default function PublicHomePage() {
             alt="Martinis on a low-lit table"
             fill
             priority
+            sizes="(min-width: 768px) 55vw, 100vw"
             className="object-cover"
           />
         </div>
       </div>
+      <PublicFooter />
     </main>
   );
 }

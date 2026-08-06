@@ -58,7 +58,7 @@ const Settings = () => {
   };
 
   const handleSupportFeedback = () => {
-    const email = "owen@hopemediahouse.com";
+    const email = "support@hopemediahouse.com";
     Linking.openURL(`mailto:${email}`);
   };
 
