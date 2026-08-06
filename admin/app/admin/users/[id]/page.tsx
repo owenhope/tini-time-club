@@ -1,10 +1,25 @@
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
-import UserBadge from "@/components/UserBadge";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  Panel,
+  StatusPill,
+} from "@/components/AdminPrimitives";
+import UserBadge, { tierFor } from "@/components/UserBadge";
 import { fetchProfile } from "@/lib/data";
 import { setDeleted, setVerified } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
+
+const overall = (taste: number | null, presentation: number | null) =>
+  taste == null || presentation == null
+    ? "—"
+    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
+
+const date = (value?: string | null) =>
+  value ? new Date(value).toLocaleDateString() : "—";
 
 export default async function UserDetailPage({
   params,
@@ -15,6 +30,7 @@ export default async function UserDetailPage({
   const result = await fetchProfile(id);
   if (!result) notFound();
   const { profile, reviews } = result;
+  const tier = tierFor(profile.review_count);
 
   const toggleVerified = setVerified.bind(
     null,
@@ -25,84 +41,140 @@ export default async function UserDetailPage({
 
   return (
     <AdminShell active="users">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <UserBadge profile={profile} />
-          {profile.name ? (
-            <p className="mt-2 text-sm text-stone-600">{profile.name}</p>
-          ) : null}
-          {profile.bio ? (
-            <p className="mt-1 max-w-lg text-sm text-stone-500">
-              {profile.bio}
-            </p>
-          ) : null}
-          <p className="mt-2 text-xs text-stone-400">
-            id {profile.id}
-            {profile.created_at
-              ? ` · joined ${new Date(profile.created_at).toLocaleDateString()}`
-              : ""}
-            {profile.deleted_at
-              ? ` · deleted ${new Date(profile.deleted_at).toLocaleDateString()}`
-              : ""}
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="User dossier"
+        title={profile.username ?? "Unknown member"}
+        description={profile.bio ?? "No profile bio."}
+        stats={[
+          { label: "Rank", value: tier.name, tone: "purple" },
+          {
+            label: "Reviews",
+            value: profile.review_count ?? 0,
+            tone: "green",
+          },
+          { label: "Joined", value: date(profile.created_at), tone: "muted" },
+          {
+            label: "Last sign-in",
+            value: date(profile.last_sign_in_at),
+            tone: "muted",
+          },
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <form action={toggleVerified}>
+              <button
+                type="submit"
+                className="h-9 rounded-md border border-stone-200 bg-white px-3 text-xs font-bold text-stone-700 transition hover:border-violet-300 hover:text-violet-700"
+              >
+                {profile.is_verified ? "Remove verification" : "Verify"}
+              </button>
+            </form>
+            <form action={toggleDeleted}>
+              <button
+                type="submit"
+                className={`h-9 rounded-md px-3 text-xs font-bold text-white transition ${
+                  profile.deleted
+                    ? "bg-emerald-900 hover:bg-emerald-800"
+                    : "bg-red-700 hover:bg-red-600"
+                }`}
+              >
+                {profile.deleted ? "Restore account" : "Soft-delete account"}
+              </button>
+            </form>
+          </div>
+        }
+      />
 
-        <div className="flex gap-2">
-          <form action={toggleVerified}>
-            <button
-              type="submit"
-              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-stone-100"
-            >
-              {profile.is_verified ? "Remove verification" : "Verify"}
-            </button>
-          </form>
-          <form action={toggleDeleted}>
-            <button
-              type="submit"
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white ${
-                profile.deleted
-                  ? "bg-emerald-700 hover:bg-emerald-600"
-                  : "bg-red-700 hover:bg-red-600"
-              }`}
-            >
-              {profile.deleted ? "Restore account" : "Soft-delete account"}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-stone-200 bg-white">
-        <h2 className="border-b border-stone-200 px-5 py-3 font-semibold">
-          Reviews ({reviews.length})
-        </h2>
-        <ul className="divide-y divide-stone-100">
-          {reviews.map((review) => (
-            <li key={review.id} className="px-5 py-3">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">
-                  {review.location?.name ?? "Unknown location"}
-                </span>
-                <span className="text-sm text-stone-500">
-                  {new Date(review.inserted_at).toLocaleDateString()}
-                </span>
-              </div>
-              <p className="mt-0.5 text-sm text-stone-600">
-                taste {review.taste}/5 · presentation {review.presentation}/5
-                {review.state !== 1 ? " · (removed)" : ""}
-              </p>
-              {review.comment ? (
-                <p className="mt-1 text-sm text-stone-500">
-                  “{review.comment}”
-                </p>
+      <div className="grid grid-cols-12 gap-5 px-8 py-6">
+        <Panel title="Member summary" className="col-span-12 xl:col-span-3">
+          <div className="space-y-5 p-4">
+            <UserBadge profile={profile} />
+            <div className="flex flex-wrap gap-1.5">
+              {profile.deleted ? (
+                <StatusPill tone="red">Deleted</StatusPill>
+              ) : (
+                <StatusPill tone="green">Active</StatusPill>
+              )}
+              {profile.is_verified ? (
+                <StatusPill tone="purple">Verified</StatusPill>
               ) : null}
-            </li>
-          ))}
-          {reviews.length === 0 && (
-            <li className="px-5 py-8 text-center text-sm text-stone-400">
-              No reviews yet.
-            </li>
-          )}
-        </ul>
+            </div>
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
+                  Name
+                </dt>
+                <dd className="mt-1 text-stone-900">{profile.name ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
+                  Email
+                </dt>
+                <dd className="mt-1 break-all text-stone-900">
+                  {profile.email ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
+                  Id
+                </dt>
+                <dd className="mt-1 break-all font-mono text-xs text-stone-500">
+                  {profile.id}
+                </dd>
+              </div>
+              {profile.deleted_at ? (
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
+                    Deleted
+                  </dt>
+                  <dd className="mt-1 text-stone-900">
+                    {date(profile.deleted_at)}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        </Panel>
+
+        <div className="col-span-12 xl:col-span-9">
+          <DataTable
+            columns={["Posted", "Place", "Rating", "Caption", "State"]}
+            empty={
+              reviews.length === 0 ? (
+                <EmptyState>No reviews yet.</EmptyState>
+              ) : null
+            }
+          >
+            {reviews.map((review) => (
+              <tr key={review.id} className="hover:bg-stone-50">
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
+                  {date(review.inserted_at)}
+                </td>
+                <td className="max-w-52 truncate px-4 py-3 font-bold text-stone-900">
+                  {review.location?.name ?? "Unknown location"}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  <span className="font-mono text-base font-semibold tabular-nums">
+                    {overall(review.taste, review.presentation)}
+                  </span>
+                  <span className="ml-2 text-xs text-stone-400">
+                    T {review.taste ?? "—"} / P {review.presentation ?? "—"}
+                  </span>
+                </td>
+                <td className="max-w-lg truncate px-4 py-3 text-stone-500">
+                  {review.comment ?? ""}
+                </td>
+                <td className="px-4 py-3">
+                  {review.state === 1 ? (
+                    <StatusPill tone="green">Active</StatusPill>
+                  ) : (
+                    <StatusPill>Inactive</StatusPill>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
       </div>
     </AdminShell>
   );

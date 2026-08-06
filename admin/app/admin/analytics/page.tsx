@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
+import { PageHeader } from "@/components/AdminPrimitives";
 import AnalyticsNav from "@/components/AnalyticsNav";
 import FeatureSection, { BreakdownList } from "@/components/FeatureSection";
 import LineChart from "@/components/LineChart";
@@ -48,46 +49,58 @@ export default async function AnalyticsPage({
 
   return (
     <AdminShell active="analytics">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Analytics</h1>
-          <p className="mt-0.5 text-sm text-stone-500">
-            Every feature, how it moved in {range.label.toLowerCase()}, and its
-            history. Growth compares with the previous {range.days} days.
-          </p>
-        </div>
-        <RangePicker path="/admin/analytics" range={range} />
-      </div>
+      <PageHeader
+        eyebrow="Secondary tool"
+        title="Analytics"
+        description={`Every feature, how it moved in ${range.label.toLowerCase()}, and its history. Growth compares with the previous ${range.days} days.`}
+        stats={[
+          { label: "Total members", value: a.totalMembers, tone: "green" },
+          { label: "Reviews in range", value: totalReviews, tone: "purple" },
+          {
+            label: "Shares in range",
+            value: a.totalShares,
+            tone: "chartreuse",
+          },
+          { label: "Window", value: range.label, tone: "muted" },
+        ]}
+        surface="transparent"
+        density="compact"
+        filters={<RangePicker path="/admin/analytics" range={range} />}
+      />
 
-      <div className="mt-6 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-8">
+      <div className="px-8 py-6 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-8">
         <AnalyticsNav sections={SECTIONS} />
         <div>
           <FeatureSection
             id="membership"
-            link={{ href: "/admin/users", label: "All users" }}
+            link={{ href: "/admin/users", label: "All members" }}
             title="Membership"
             description="Signups and how many members are actually coming back."
           >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-12 gap-4">
               <MetricTile
                 label="New signups"
                 value={a.signupsInRange}
                 previous={a.previous.signups}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Active (7d)"
                 value={a.activeLast7Days}
                 hint={`${pct(a.activeLast7Days, a.totalMembers)} of ${a.totalMembers} members`}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Active (30d)"
                 value={a.activeLast30Days}
                 hint={`${pct(a.activeLast30Days, a.totalMembers)} of members`}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Posted a review"
                 value={a.reviewedInRange}
                 hint={`${pct(a.reviewedInRange, a.totalMembers)} of members, in range`}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
             </div>
             <LineChart
@@ -102,31 +115,34 @@ export default async function AnalyticsPage({
             id="reviews"
             link={{ href: "/admin/reviews", label: "All reviews" }}
             title="Reviews"
-            description="The core loop — Martinis rated, and who is rating them."
+            description="The core loop — Martinis rated, and which members are rating them."
           >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-12 gap-4">
               <MetricTile
                 label="Reviews posted"
                 value={totalReviews}
                 previous={a.previous.reviews}
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
               <MetricTile
-                label="Distinct reviewers"
+                label="Distinct members"
                 value={a.reviewedInRange}
                 hint="members who posted at least once"
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
               <MetricTile
-                label="Reviews per reviewer"
+                label="Reviews per member"
                 value={
                   a.reviewedInRange > 0
                     ? (totalReviews / a.reviewedInRange).toFixed(1)
                     : "—"
                 }
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
             </div>
             <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
-            <div className="rounded-2xl border border-stone-200 bg-white p-5">
-              <h3 className="font-semibold">Top reviewers</h3>
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
+              <h3 className="font-semibold">Top members</h3>
               <ul className="mt-3 divide-y divide-stone-100">
                 {a.topReviewers.map((profile) => (
                   <li key={profile.id}>
@@ -143,7 +159,7 @@ export default async function AnalyticsPage({
                 ))}
                 {a.topReviewers.length === 0 && (
                   <li className="py-2.5 text-sm text-stone-400">
-                    No reviewers yet.
+                    No members yet.
                   </li>
                 )}
               </ul>
@@ -156,16 +172,18 @@ export default async function AnalyticsPage({
             title="Engagement"
             description="Likes and comments on reviews — whether the feed is social or silent."
           >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-12 gap-4">
               <MetricTile
                 label="Likes"
                 value={totalLikes}
                 previous={a.previous.likes}
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
               <MetricTile
                 label="Comments"
                 value={totalComments}
                 previous={a.previous.comments}
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
               <MetricTile
                 label="Interactions per review"
@@ -175,6 +193,7 @@ export default async function AnalyticsPage({
                     : "—"
                 }
                 hint="likes + comments ÷ reviews in range"
+                className="col-span-12 md:col-span-6 xl:col-span-4"
               />
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -199,16 +218,18 @@ export default async function AnalyticsPage({
             title="Sharing & referral"
             description="The growth loops: review shares and invites."
           >
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-12 gap-4">
               <MetricTile
                 label="Review shares"
                 value={a.totalShares}
                 previous={a.previous.shares}
+                className="col-span-12 md:col-span-6"
               />
               <MetricTile
                 label="Invites"
                 value={a.totalInvites}
                 previous={a.previous.invites}
+                className="col-span-12 md:col-span-6"
               />
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -245,7 +266,7 @@ export default async function AnalyticsPage({
                 empty="No invites in this range."
               />
             </div>
-            <div className="rounded-2xl border border-stone-200 bg-white p-5">
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
               <h3 className="font-semibold">Top sharers</h3>
               <ul className="mt-3 divide-y divide-stone-100">
                 {a.topSharers.map((profile) => (
@@ -279,11 +300,11 @@ export default async function AnalyticsPage({
 
           <FeatureSection
             id="ranking"
-            link={{ href: "/admin/users", label: "All users" }}
+            link={{ href: "/admin/users", label: "All members" }}
             title="Ranking"
             description="How members are distributed across the four avatar-ring tiers, and the review count each tier takes."
           >
-            <div className="rounded-2xl border border-stone-200 bg-white p-5">
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
               <div className="flex h-4 overflow-hidden rounded-full bg-stone-100">
                 {a.tierDistribution.map((tier) =>
                   tier.count > 0 ? (
@@ -338,9 +359,17 @@ export default async function AnalyticsPage({
             link={{ href: "/admin/notifications", label: "Notifications" }}
             description="Push delivery, open rates, and open-to-review conversion (last 30 days)."
           >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricTile label="Sent" value={n.totalSent} />
-              <MetricTile label="Opened" value={n.totalOpened} />
+            <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="Sent"
+                value={n.totalSent}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Opened"
+                value={n.totalOpened}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
               <MetricTile
                 label="Open rate"
                 value={
@@ -349,6 +378,7 @@ export default async function AnalyticsPage({
                     : "—"
                 }
                 hint="opened ÷ sent"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Open → review"
@@ -358,6 +388,7 @@ export default async function AnalyticsPage({
                     : `${Math.round(n.openToReviewRate * 100)}%`
                 }
                 hint="reviewed within 24h of an open"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
             </div>
           </FeatureSection>

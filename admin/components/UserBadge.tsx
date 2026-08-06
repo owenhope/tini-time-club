@@ -1,4 +1,5 @@
 import type { AdminProfile } from "@/lib/data";
+import { avatarPublicUrl } from "@/lib/avatar";
 import VerifiedBadge from "@/components/VerifiedBadge";
 
 /** The four in-app rank tiers, mirrored from utils/ranking.ts. */
@@ -19,32 +20,37 @@ export const tierFor = (reviewCount: number | null | undefined) => {
 
 export default function UserBadge({ profile }: { profile: AdminProfile }) {
   const tier = tierFor(profile.review_count);
-  const initial = (profile.username ?? "?").charAt(0).toUpperCase();
+  const username = profile.username ?? "Unknown member";
+  const initial = username.charAt(0).toUpperCase();
+  const avatarUrl = avatarPublicUrl(profile.avatar_url);
 
   return (
     <span className="flex min-w-0 items-center gap-3">
       {/* shrink-0: in a narrow flex row the ring flattens into an oval. */}
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] bg-stone-100 text-sm font-semibold text-stone-600"
+        className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] bg-stone-100 text-sm font-semibold text-stone-600"
         style={{ borderColor: tier.color }}
         title={`${tier.name} — ${profile.review_count ?? 0} reviews`}
       >
-        {initial}
+        {avatarUrl ? (
+          <span
+            className="h-full w-full bg-cover bg-center"
+            style={{ backgroundImage: `url("${avatarUrl}")` }}
+          />
+        ) : (
+          initial
+        )}
       </span>
       <span className="min-w-0">
-        <span className="flex items-center gap-1.5 truncate font-medium">
-          {profile.username ?? "(no username)"}
+        <span className="flex items-center gap-1.5 truncate font-bold text-stone-900">
+          {username}
           {profile.is_verified ? <VerifiedBadge /> : null}
-          {profile.deleted ? (
-            <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
-              deleted
-            </span>
-          ) : null}
         </span>
-        <span className="block truncate text-xs text-stone-500">
-          {tier.name} · {profile.review_count ?? 0} reviews
-          {profile.email ? ` · ${profile.email}` : ""}
-        </span>
+        {profile.name ? (
+          <span className="block truncate text-xs text-stone-500">
+            {profile.name}
+          </span>
+        ) : null}
       </span>
     </span>
   );
