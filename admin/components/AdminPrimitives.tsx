@@ -3,17 +3,19 @@ import Link from "next/link";
 export type HeaderStat = {
   label: string;
   value: string | number;
-  tone?: "green" | "purple" | "chartreuse" | "muted";
+  tone?: "green" | "purple" | "blue" | "chartreuse" | "muted";
 };
 
 const statTone = {
   green: "border-emerald-200 bg-emerald-50 text-emerald-950",
   purple: "border-violet-300 bg-violet-100 text-violet-800",
+  blue: "border-sky-200 bg-sky-50 text-sky-950",
   chartreuse: "border-chartreuse-dark bg-chartreuse text-emerald-950",
   muted: "border-stone-200 bg-white text-stone-700",
 };
 
 export function PageHeader({
+  backLink,
   eyebrow,
   title,
   description,
@@ -24,6 +26,7 @@ export function PageHeader({
   actions,
   filters,
 }: {
+  backLink?: { href: string; label: string };
   eyebrow?: string;
   title: string;
   description?: string;
@@ -46,6 +49,15 @@ export function PageHeader({
       <div className={`grid grid-cols-12 gap-4 ${paddingClass}`}>
         <div className="col-span-12 flex items-start justify-between gap-6">
           <div className="min-w-0">
+            {backLink ? (
+              <Link
+                href={backLink.href}
+                className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-stone-500 transition hover:text-violet-700"
+              >
+                <span aria-hidden="true">←</span>
+                {backLink.label}
+              </Link>
+            ) : null}
             {eyebrow ? (
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">
                 {eyebrow}

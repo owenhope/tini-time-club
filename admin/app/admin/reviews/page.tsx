@@ -148,11 +148,8 @@ export default async function ReviewsPage({
                 )}
               </td>
               <td className="px-4 py-3">
-                <ActionLink
-                  href={`/r/${encodeURIComponent(review.id)}`}
-                  external
-                >
-                  View
+                <ActionLink href={`/admin/reviews/${review.id}`}>
+                  Manage
                 </ActionLink>
               </td>
             </tr>

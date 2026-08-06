@@ -105,3 +105,54 @@ export async function setDeleted(profileId: string, deleted: boolean) {
   revalidatePath(`/admin/users/${profileId}`);
   revalidatePath("/admin/users");
 }
+
+export async function setReviewActive(reviewId: string, active: boolean) {
+  if (!/^\d+$/.test(reviewId)) throw new Error("Invalid review id");
+
+  const { data, error } = await supabaseAdmin()
+    .from("reviews")
+    .update({ state: active ? 1 : 3 })
+    .eq("id", reviewId)
+    .select("user_id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Review not found");
+
+  revalidatePath(`/admin/reviews/${reviewId}`);
+  revalidatePath("/admin/reviews");
+  revalidatePath(`/admin/users/${data.user_id}`);
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin/locations");
+}
+
+export async function updateLocation(locationId: string, formData: FormData) {
+  if (!/^\d+$/.test(locationId)) throw new Error("Invalid location id");
+
+  const name = String(formData.get("name") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim();
+  const placeId = String(formData.get("place_id") ?? "").trim();
+  const path = `/admin/locations/${locationId}`;
+
+  if (!name || name.length > 160) redirect(`${path}?error=name`);
+  if (address.length > 300) redirect(`${path}?error=address`);
+  if (placeId.length > 255) redirect(`${path}?error=placeId`);
+
+  const { error } = await supabaseAdmin()
+    .from("locations")
+    .update({
+      name,
+      address: address || null,
+      place_id: placeId || null,
+    })
+    .eq("id", locationId);
+  if (error?.code === "23505") redirect(`${path}?error=placeId`);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(path);
+  revalidatePath("/admin/locations");
+  revalidatePath("/admin");
+  revalidatePath("/admin/analytics");
+  redirect(`${path}?updated=1`);
+}
