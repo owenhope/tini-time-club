@@ -6,7 +6,6 @@ import {
   FilterBar,
   FilterSelect,
   PageHeader,
-  StatusPill,
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
 import { fetchLocationCounts, fetchLocations } from "@/lib/data";
@@ -97,7 +96,6 @@ export default async function LocationsPage({
             "Address",
             "Rating",
             "Reviews",
-            "Status",
             "Actions",
           ]}
           empty={
@@ -130,15 +128,6 @@ export default async function LocationsPage({
               </td>
               <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
                 {location.total_ratings}
-              </td>
-              <td className="px-4 py-3">
-                {location.total_ratings >= 5 ? (
-                  <StatusPill tone="green">Active</StatusPill>
-                ) : location.total_ratings > 0 ? (
-                  <StatusPill tone="purple">Warming</StatusPill>
-                ) : (
-                  <StatusPill>Unrated</StatusPill>
-                )}
               </td>
               <td className="px-4 py-3">
                 <ActionLink href={`/admin/locations/${location.id}`}>

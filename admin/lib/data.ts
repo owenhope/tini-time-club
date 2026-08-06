@@ -16,6 +16,7 @@ export interface AdminProfile {
   email?: string;
   created_at?: string;
   last_sign_in_at?: string;
+  last_review_at?: string;
 }
 
 export interface AdminReview {
@@ -761,7 +762,7 @@ export type ProfileSort =
   | "review_count"
   | "deleted"
   | "created_at"
-  | "last_sign_in_at";
+  | "last_review_at";
 export type SortDirection = "asc" | "desc";
 
 export interface ProfileCounts {
@@ -792,6 +793,36 @@ export const fetchProfileCounts = async (): Promise<ProfileCounts> => {
   };
 };
 
+const fetchLatestReviewDates = async (
+  userIds: string[]
+): Promise<Map<string, string>> => {
+  const latest = new Map<string, string>();
+  const idBatchSize = 200;
+  const rowBatchSize = 1000;
+
+  for (let index = 0; index < userIds.length; index += idBatchSize) {
+    const ids = userIds.slice(index, index + idBatchSize);
+    for (let start = 0; ; start += rowBatchSize) {
+      const { data, error } = await db()
+        .from("reviews")
+        .select("user_id,inserted_at")
+        .in("user_id", ids)
+        .order("inserted_at", { ascending: false })
+        .range(start, start + rowBatchSize - 1);
+      if (error) throw new Error(error.message);
+
+      for (const review of data ?? []) {
+        if (!latest.has(review.user_id)) {
+          latest.set(review.user_id, review.inserted_at);
+        }
+      }
+      if ((data ?? []).length < rowBatchSize) break;
+    }
+  }
+
+  return latest;
+};
+
 export const fetchProfiles = async (
   search?: string,
   page = 1,
@@ -807,12 +838,12 @@ export const fetchProfiles = async (
     "review_count",
     "deleted",
     "created_at",
-    "last_sign_in_at",
+    "last_review_at",
   ].includes(sort)
     ? sort
     : "review_count";
 
-  if (sortColumn === "created_at" || sortColumn === "last_sign_in_at") {
+  if (sortColumn === "created_at" || sortColumn === "last_review_at") {
     const authUsers = await fetchAuthUsers();
     const profiles: AdminProfile[] = [];
     const batchSize = 1000;
@@ -843,6 +874,13 @@ export const fetchProfiles = async (
       }));
       profiles.push(...batch);
       if (batch.length < batchSize) break;
+    }
+
+    const latestReviewDates = await fetchLatestReviewDates(
+      profiles.map((profile) => profile.id)
+    );
+    for (const profile of profiles) {
+      profile.last_review_at = latestReviewDates.get(profile.id);
     }
 
     profiles.sort((left, right) => {
@@ -890,10 +928,15 @@ export const fetchProfiles = async (
     fetchAuthUsers(),
   ]);
   if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const latestReviewDates = await fetchLatestReviewDates(
+    rows.map((profile) => profile.id)
+  );
   return {
-    profiles: (data ?? []).map((profile) => ({
+    profiles: rows.map((profile) => ({
       ...profile,
       ...authUsers.get(profile.id),
+      last_review_at: latestReviewDates.get(profile.id),
     })),
     total: count ?? 0,
   };
