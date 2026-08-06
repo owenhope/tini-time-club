@@ -12,6 +12,7 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watchAll",
+    "screenshots:seed": "node scripts/screenshots/seed-app-store-screenshots.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "format": "prettier --write .",

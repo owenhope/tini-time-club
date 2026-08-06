@@ -9,7 +9,12 @@ import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { Ionicons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
-import { useRouter, useNavigation, useFocusEffect } from "expo-router";
+import {
+  useRouter,
+  useNavigation,
+  useFocusEffect,
+  useLocalSearchParams,
+} from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
 import AppHeader from "@/components/nav/AppHeader";
@@ -30,6 +35,7 @@ import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { RANK_TIERS, getRankTier } from "@/utils/ranking";
+import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 interface RankPreviewOption {
   label: string;
@@ -54,6 +60,10 @@ const Profile = () => {
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
   const navigation = useNavigation();
+  const params = useLocalSearchParams<{
+    screenshotSeed?: string;
+    tab?: ProfileContentTab;
+  }>();
   // One value for both halves of the crossfade: header A fades out on it as
   // the identity block scrolls away, header B fades in on the same number.
   const {
@@ -65,6 +75,7 @@ const Profile = () => {
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
   const [rankPreviewIndex, setRankPreviewIndex] = useState(0);
+  const handledScreenshotProfileRefreshRef = useRef(false);
   // The swatches are a ring-colour checker, not a feature. They stay out of
   // the shipped layout entirely; in a dev build a long-press on the avatar
   // brings them back.
@@ -94,6 +105,29 @@ const Profile = () => {
   // Focus-refresh staleness gate; pull-to-refresh bypasses it via isRefresh.
   const PROFILE_REFRESH_AFTER = 30 * 1000;
   const lastProfileLoadRef = useRef(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const isScreenshotProfile = isScreenshotSeed(
+        params.screenshotSeed,
+        "profile"
+      );
+
+      if (!isScreenshotProfile) {
+        handledScreenshotProfileRefreshRef.current = false;
+        return;
+      }
+
+      if (params.tab === "reviews" || params.tab === "regulars") {
+        setActiveTab(params.tab);
+      }
+
+      if (!handledScreenshotProfileRefreshRef.current) {
+        handledScreenshotProfileRefreshRef.current = true;
+        void refreshProfile();
+      }
+    }, [params.screenshotSeed, params.tab, refreshProfile])
+  );
 
   const pickImage = async () => {
     try {

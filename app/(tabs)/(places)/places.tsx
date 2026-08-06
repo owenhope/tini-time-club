@@ -36,6 +36,7 @@ import Search from "@/components/map/search";
 import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles } from "@/theme";
 import { reportError, warn } from "@/utils/log";
+import { getScreenshotSeed } from "@/utils/screenshotMode";
 
 const LOWER_LONSDALE_COORDINATES = {
   latitude: 49.3104,
@@ -135,6 +136,11 @@ const UserDot = () => {
 function Map() {
   const styles = useStyles();
   const params = useLocalSearchParams();
+  const screenshotSeed = getScreenshotSeed(
+    params.screenshotSeed as string | string[] | undefined
+  );
+  const isScreenshotMap =
+    screenshotSeed === "map" || screenshotSeed === "place";
   const searchRef = useRef<any>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
@@ -337,6 +343,27 @@ function Map() {
 
   useEffect(() => {
     const getLocation = async () => {
+      if (isScreenshotMap) {
+        const latitude =
+          Number(params.lat) || LOWER_LONSDALE_COORDINATES.latitude;
+        const longitude =
+          Number(params.lon) || LOWER_LONSDALE_COORDINATES.longitude;
+        const initial = {
+          latitude,
+          longitude,
+          latitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
+          longitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
+        };
+
+        setLocationNotice(null);
+        setCanOpenLocationSettings(false);
+        setUserCoordinate(null);
+        regionRef.current = initial;
+        setRegion(initial);
+        setLocationResolved(true);
+        return;
+      }
+
       try {
         const { status, canAskAgain } =
           await Location.requestForegroundPermissionsAsync();
@@ -380,7 +407,7 @@ function Map() {
     };
 
     getLocation();
-  }, []);
+  }, [isScreenshotMap, params.lat, params.lon, screenshotSeed]);
 
   // Handle navigation to specific location from Location component
   useEffect(() => {

@@ -53,6 +53,7 @@ const CARD_WIDTH = SCREEN_WIDTH - spacing.gutter * 2;
  */
 const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 11) / 16);
 const DOUBLE_TAP_DELAY = 300;
+const COMMENT_TEXT_COLOR = "#141A17";
 
 const ICON_SIZES = {
   small: 20,
@@ -1194,7 +1195,7 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     fontSize: 17,
     lineHeight: 25,
-    color: t.colors.text,
+    color: COMMENT_TEXT_COLOR,
   },
   inlineBody: {
     ...t.typography.caption,
@@ -1207,13 +1208,13 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     fontSize: 17,
     lineHeight: 22,
-    color: t.colors.text,
+    color: COMMENT_TEXT_COLOR,
   },
   captionBody: {
     ...t.typography.body,
     fontSize: 17,
     lineHeight: 25,
-    color: t.colors.text,
+    color: COMMENT_TEXT_COLOR,
   },
   addCaptionText: {
     ...t.typography.body,
