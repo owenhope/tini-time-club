@@ -6,34 +6,46 @@ import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
-import { Button } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { Button, MartiniIcon } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 const FEATURES = [
   {
     icon: "glass-cocktail" as const,
     title: "Rate your Martinis",
-    iconBackground: "#D9CCEF",
-    iconColor: "#614A96",
+    palette: "brand" as const,
   },
   {
     icon: "map-search-outline" as const,
     title: "Find the Best",
-    iconBackground: "#A7CCBC",
-    iconColor: "#1F3E33",
+    palette: "secondary" as const,
   },
   {
     icon: "account-group-outline" as const,
     title: "Follow the Regulars",
-    iconBackground: "#F2A08E",
-    iconColor: "#7B302A",
+    palette: "highlight" as const,
   },
 ];
 
 const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
+  const { colors } = useTheme();
+  const featureColors = {
+    brand: {
+      background: colors.tabBarActive,
+      icon: "#FFFFFF",
+    },
+    secondary: {
+      background: colors.secondary,
+      icon: "#FFFFFF",
+    },
+    highlight: {
+      background: colors.like,
+      icon: "#FFFFFF",
+    },
+  };
 
   return (
     <View style={styles.container}>
@@ -64,14 +76,25 @@ const Welcome = () => {
                 <View
                   style={[
                     styles.featureIcon,
-                    { backgroundColor: feature.iconBackground },
+                    {
+                      backgroundColor:
+                        featureColors[feature.palette].background,
+                    },
                   ]}
                 >
-                <MaterialCommunityIcons
-                    name={feature.icon}
-                    size={20}
-                    color={feature.iconColor}
-                  />
+                  {feature.palette === "brand" ? (
+                    <MartiniIcon
+                      size={20}
+                      color={featureColors[feature.palette].icon}
+                      filled
+                    />
+                  ) : (
+                    <MaterialCommunityIcons
+                      name={feature.icon}
+                      size={20}
+                      color={featureColors[feature.palette].icon}
+                    />
+                  )}
                 </View>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
               </View>
@@ -98,7 +121,7 @@ const Welcome = () => {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#141116",
+    backgroundColor: t.colors.surfaceInkDeep,
   },
   backgroundImage: {
     position: "absolute" as const,
@@ -115,7 +138,7 @@ const useStyles = makeStyles((t) => ({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: "rgba(13, 10, 14, 0.10)",
+    backgroundColor: t.colors.scrim,
   },
   safeArea: {
     flex: 1,
@@ -155,8 +178,8 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.heading,
     flex: 1,
     letterSpacing: 0,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.65)",
+    color: t.colors.textOnImage,
+    textShadowColor: t.colors.scrimStrong,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },

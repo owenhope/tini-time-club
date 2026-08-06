@@ -10,13 +10,14 @@ import {
   Linking,
   StyleSheet,
 } from "react-native";
-import { FontAwesome6, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -24,11 +25,14 @@ interface CameraComponentProps {
   onCapture: (photo: string) => void;
   /** Leave the composer. The camera is the first step of a presented flow. */
   onClose?: () => void;
+  /** Matches the step metadata rendered under the other review-flow headers. */
+  headerBelow?: React.ReactNode;
 }
 
 export default function CameraComponent({
   onCapture,
   onClose,
+  headerBelow,
 }: CameraComponentProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -38,7 +42,6 @@ export default function CameraComponent({
   const pickerOpenRef = useRef(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>("back");
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!permission) return;
@@ -113,7 +116,6 @@ export default function CameraComponent({
     if (pickerOpenRef.current) return;
 
     pickerOpenRef.current = true;
-    setIsPickerOpen(true);
 
     try {
       const mediaPermission =
@@ -142,9 +144,26 @@ export default function CameraComponent({
       Alert.alert("Error", "An error occurred while picking the image.");
     } finally {
       pickerOpenRef.current = false;
-      setIsPickerOpen(false);
     }
   };
+
+  const libraryAction: HeaderAction = {
+    icon: "images-outline",
+    onPress: pickImage,
+    accessibilityLabel: "Choose a photo from your library",
+  };
+  const headerActions: HeaderAction[] = [
+    ...(onClose
+      ? [
+          {
+            icon: "trash-outline" as const,
+            onPress: onClose,
+            accessibilityLabel: "Discard review",
+          },
+        ]
+      : []),
+    libraryAction,
+  ];
 
   // Render a preview of the captured or selected image.
   const renderPreview = () => {
@@ -177,52 +196,23 @@ export default function CameraComponent({
           style={[
             styles.cameraControls,
             {
-              paddingTop: Math.max(insets.top, 16),
+              paddingTop: 16,
               paddingBottom: Math.max(insets.bottom, 24),
             },
           ]}
         >
-          <View style={styles.topControls}>
-            {onClose ? (
-              <Pressable
-                style={styles.controlButton}
-                onPress={onClose}
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-              >
-                <FontAwesome6
-                  name="xmark"
-                  size={20}
-                  color={colors.textOnImage}
-                />
-              </Pressable>
-            ) : null}
+          <View style={styles.cameraTopOverlay}>
             <Pressable
-              style={[styles.controlButton, onClose && styles.controlButtonGap]}
+              style={styles.controlButton}
               onPress={toggleFacing}
               accessibilityRole="button"
               accessibilityLabel="Switch camera"
             >
-              <FontAwesome6
-                name="camera-rotate"
-                size={22}
-                color={colors.textOnImage}
+              <Ionicons
+                name="camera-reverse-outline"
+                size={20}
+                color={colors.onInk}
               />
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.controlButton,
-                styles.libraryButton,
-                isPickerOpen && styles.controlButtonDisabled,
-              ]}
-              onPress={pickImage}
-              disabled={isPickerOpen}
-              accessibilityRole="button"
-              accessibilityLabel="Choose a photo from your library"
-            >
-              <FontAwesome6 name="image" size={18} color={colors.textOnImage} />
-              <Text style={styles.libraryLabel}>Library</Text>
             </Pressable>
           </View>
 
@@ -247,7 +237,19 @@ export default function CameraComponent({
 
   return (
     <View style={styles.container}>
-      {capturedUri ? renderPreview() : renderCamera()}
+      {capturedUri ? (
+        renderPreview()
+      ) : (
+        <>
+          <AppHeader
+            variant="large"
+            title="Capture"
+            actions={headerActions}
+            below={headerBelow}
+          />
+          {renderCamera()}
+        </>
+      )}
     </View>
   );
 }
@@ -294,37 +296,21 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     paddingHorizontal: t.spacing.gutter,
   },
-  topControls: {
+  cameraTopOverlay: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-  },
-  controlButtonGap: {
-    marginRight: "auto" as const,
-    marginLeft: t.spacing.sm,
+    justifyContent: "flex-end" as const,
   },
   controlButton: {
-    minWidth: 48,
-    height: 48,
-    paddingHorizontal: t.spacing.md,
+    width: 40,
+    height: 40,
+    paddingHorizontal: 0,
     borderRadius: t.radius.pill,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255, 255, 255, 0.35)",
+    backgroundColor: t.colors.ratingTrackOnInk,
+    borderWidth: 0,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-  },
-  libraryButton: {
-    gap: t.spacing.sm,
-  },
-  controlButtonDisabled: {
-    opacity: 0.5,
-  },
-  libraryLabel: {
-    fontSize: 13,
-    fontFamily: fonts.bold,
-    color: t.colors.textOnImage,
   },
   captureButton: {
     alignSelf: "center" as const,

@@ -32,13 +32,13 @@ export const BRAND = {
 
 const palette = {
   // Green ramp — THE brand. #336654 is 6.31:1 on white.
-  green900: "#1C3A2E",
-  green800: "#27493B",
+  green900: "#336654",
+  green800: "#336654",
   green700: "#336654", // brand
-  green600: "#2A5445",
-  green500: "#4B8570",
-  green300: "#8FB8A8",
-  green100: "#DCE9E3",
+  green600: "#336654",
+  green500: "#336654",
+  green300: "#336654",
+  green100: "#336654",
 
   // Purple ramp — the primary interactive colour, and the brand's background
   // surface. The raw brand purple fails on white (#B6A3E2 is 2.06:1), so
@@ -62,7 +62,7 @@ const palette = {
   // step; pimento-500 stays for decorative fills where nothing is read off it.
   pimento600: "#CC6836", // 3.75:1 on white, 3.0:1 on the paper-200 rating track
   pimento500: "#E8763D",
-  pimentoPink500: "#EA6360",
+  pimentoPink500: "#EA6363",
 
   // Neutrals: warm paper greys from the brand sheets.
   white: "#FFFFFF",
@@ -75,9 +75,9 @@ const palette = {
   ink900: "#141A17", // near-black for photo scrims — never pure #000
 
   // Status
-  red400: "#EA6360",
-  red500: "#D64A46",
-  red600: "#C6443F",
+  red400: "#EA6363",
+  red500: "#EA6363",
+  red600: "#EA6363",
   amber500: "#B87D14",
 } as const;
 
@@ -199,7 +199,7 @@ export const lightColors: ThemeColors = {
   scrim: "rgba(20,26,23,0.35)",
   scrimStrong: "rgba(20,26,23,0.65)", // 5.2:1 for white text over a white photo
 
-  text: palette.green900, // #1C3A2E — 13.0:1 on surface
+  text: palette.green900,
   textSecondary: palette.ink700, // #3F4B46 — 8.6:1
   textMuted: palette.ink500, // #6E7472 — 4.6:1 on surface
   textOnAccent: palette.paper050,
@@ -226,7 +226,7 @@ export const lightColors: ThemeColors = {
   onHighlight: palette.green700,
 
   surfaceBrand: palette.purple500,
-  onBrand: palette.green900, // 5.51:1 on purple-500
+  onBrand: palette.ink900,
   surfaceInk: palette.green700,
   surfaceInkDeep: palette.green900,
   onInk: palette.paper050,
@@ -270,15 +270,15 @@ export const darkColors: ThemeColors = {
   scrimStrong: "rgba(6,10,8,0.66)",
 
   text: "#EEF3F0", // 14.8:1 on surface
-  textSecondary: palette.green300, // #8FB8A8 — 7.4:1
+  textSecondary: palette.paper050,
   textMuted: "#7F978C", // 4.9:1 on surface
   textOnAccent: "#0E1712",
   textOnImage: palette.paper050,
   accentOnImage: palette.green300, // 7.4:1 on the ink-900 scrim
 
-  border: "rgba(143,184,168,0.16)",
+  border: "rgba(51,102,84,0.32)",
   borderStrong: palette.green300,
-  divider: "rgba(143,184,168,0.13)",
+  divider: "rgba(51,102,84,0.28)",
 
   // Primary interactive is the purple, at the brand tint — dark enough
   // ground that #B6A3E2 clears 7:1 without the darkened step light needs.
@@ -288,9 +288,9 @@ export const darkColors: ThemeColors = {
   onAccent: "#140E24", // 8.6:1 under purple-500
 
   // Green is the secondary here too, lightened for the dark ground.
-  secondary: palette.green300, // #8FB8A8 — 7.4:1 on surface
+  secondary: palette.green300,
   secondarySubtle: "#1E3229",
-  onSecondary: "#0E1712", // 7.4:1 under green-300
+  onSecondary: palette.paper050,
 
   highlight: palette.chartreuse500,
   highlightSubtle: "#2C3A1A",
@@ -299,12 +299,12 @@ export const darkColors: ThemeColors = {
   surfaceBrand: palette.purple700,
   onBrand: palette.paper050, // 5.82:1 on purple-700
   surfaceInk: palette.green800,
-  surfaceInkDeep: "#0E1712",
+  surfaceInkDeep: palette.green700,
   onInk: palette.paper050,
 
   danger: palette.red400,
   dangerSubtle: "#2E1615",
-  success: "#5CB58F",
+  success: palette.green700,
   warning: "#EF8A54",
 
   accentTonal: "#2A2340",
@@ -315,7 +315,7 @@ export const darkColors: ThemeColors = {
   disabledText: "#6E857B",
 
   ratingTrack: "#2A3B33",
-  ratingPipEmpty: "#4E6F60",
+  ratingPipEmpty: palette.green700,
   ratingPipDot: "#A33F14", // 2.93:1 on the sage olive body dark mode uses
   ratingFill: "#EF8A54", // pimento, lifted for dark
   ratingFillOnInk: palette.chartreuse500,
@@ -331,14 +331,16 @@ export const darkColors: ThemeColors = {
 
 /**
  * 4px base. The design system's working scale is 4/8/12/16/20/24/32/40/48/64/
- * 80/96; `gutter` is the 20px side padding every mobile screen uses.
+ * 80/96; `gutter` is the 10px side padding every mobile screen uses.
+ * `sheetGutter` preserves the roomier 20px inset on slide-up sheets.
  */
 export const spacing = {
   xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
-  gutter: 20,
+  gutter: 10,
+  sheetGutter: 20,
   xl: 24,
   xxl: 32,
   xxxl: 48,
@@ -487,14 +489,14 @@ export const typography = {
 export const elevation = {
   light: {
     card: {
-      shadowColor: "#1C3A2E",
+      shadowColor: "#336654",
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.08,
       shadowRadius: 3,
       elevation: 2,
     },
     raised: {
-      shadowColor: "#1C3A2E",
+      shadowColor: "#336654",
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.12,
       shadowRadius: 16,

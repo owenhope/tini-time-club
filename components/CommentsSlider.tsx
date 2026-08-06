@@ -318,7 +318,7 @@ const useStyles = makeStyles((t) => ({
   // the resting snap.
   emptyStateContainer: {
     alignItems: "center" as const,
-    paddingHorizontal: t.spacing.gutter,
+    paddingHorizontal: t.spacing.sheetGutter,
     paddingTop: t.spacing.xxl * 2,
   },
   // Was all-caps; the system reserves uppercase for tiny utility type and
@@ -368,7 +368,7 @@ const useStyles = makeStyles((t) => ({
   inputContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    paddingHorizontal: t.spacing.gutter,
+    paddingHorizontal: t.spacing.sheetGutter,
     paddingTop: t.spacing.md,
     backgroundColor: t.colors.surface,
     borderTopWidth: 1,

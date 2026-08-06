@@ -16,6 +16,7 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  const selected = Boolean(value);
   const subtitle =
     value?.address && value.name
       ? formatCityRegion(stripNameFromAddress(value.name, value.address))
@@ -24,7 +25,11 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.container,
+        selected && styles.containerSelected,
+        pressed && styles.pressed,
+      ]}
       accessibilityRole="button"
       accessibilityLabel={
         value
@@ -34,17 +39,29 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
       accessibilityHint="Opens the location chooser"
     >
       <View style={styles.text}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text
+          style={[styles.name, selected && styles.textSelected]}
+          numberOfLines={1}
+        >
           {value?.name ?? "Add favorite location"}
         </Text>
         {subtitle ? (
-          <Text style={styles.address} numberOfLines={1}>
+          <Text
+            style={[styles.address, selected && styles.textSelected]}
+            numberOfLines={1}
+          >
             {subtitle}
           </Text>
         ) : null}
       </View>
-      <Text style={styles.action}>{value ? "Change" : "Add"}</Text>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Text style={[styles.action, selected && styles.textSelected]}>
+        {value ? "Change" : "Add"}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={selected ? "#FFFFFF" : colors.textMuted}
+      />
     </Pressable>
   );
 };
@@ -61,6 +78,10 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.border,
     borderRadius: t.radius.md,
     backgroundColor: t.colors.background,
+  },
+  containerSelected: {
+    borderColor: t.colors.tabBarActive,
+    backgroundColor: t.colors.tabBarActive,
   },
   pressed: {
     opacity: 0.65,
@@ -81,6 +102,9 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     fontFamily: fonts.semibold,
     color: t.colors.accent,
+  },
+  textSelected: {
+    color: "#FFFFFF",
   },
 }));
 

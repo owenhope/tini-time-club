@@ -78,7 +78,7 @@ export const MagicLinkAuthScreen = () => {
                 <Ionicons
                   name="mail-open-outline"
                   size={30}
-                  color={colors.accent}
+                  color={colors.textOnImage}
                 />
               </View>
               <Text style={styles.sentTitle}>Check your email</Text>
@@ -221,7 +221,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: t.colors.accentTonal,
+    backgroundColor: t.colors.tabBarActive,
   },
   sentText: {
     ...t.typography.body,

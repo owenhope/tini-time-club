@@ -1,8 +1,9 @@
 import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
-import { fonts, makeStyles } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import AvatarRing from "./AvatarRing";
+import OliveIcon from "./OliveIcon";
 
 interface AvatarProps {
   avatarPath?: string | null;
@@ -37,6 +38,7 @@ const Avatar: React.FC<AvatarProps> = ({
   onInk = false,
 }) => {
   const styles = useStyles();
+  const { colors } = useTheme();
   // Public-bucket URLs are built locally, so the URL exists on first render —
   // no loading frame. `failed` only flips if the image itself 404s.
   const avatarUrl = useMemo(
@@ -70,7 +72,6 @@ const Avatar: React.FC<AvatarProps> = ({
       <Image
         source={{ uri: avatarUrl }}
         style={avatarStyle}
-        defaultSource={require("@/assets/images/olive_transparent.png")}
         onError={() => setFailed(true)}
       />
     );
@@ -90,10 +91,19 @@ const Avatar: React.FC<AvatarProps> = ({
     );
   } else {
     face = (
-      <Image
-        source={require("@/assets/images/olive_transparent.png")}
-        style={avatarStyle}
-      />
+      <View
+        style={[
+          styles.oliveFallback,
+          style,
+          { width: size, height: size, borderRadius: size / 2 },
+        ]}
+      >
+        <OliveIcon
+          size={size * 0.78}
+          color={colors.onAccentTonal}
+          pimentoColor={colors.onAccentTonal}
+        />
+      </View>
     );
   }
 
@@ -110,21 +120,25 @@ const useStyles = makeStyles((t) => ({
   avatar: {
     resizeMode: "cover" as const,
   },
-  // The initials disc is the club's green, not the primary purple.
+  oliveFallback: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.accentTonal,
+  },
   placeholder: {
-    backgroundColor: t.colors.secondary,
+    backgroundColor: t.colors.accentTonal,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
   placeholderOnInk: {
-    backgroundColor: t.colors.accentOnImage,
+    backgroundColor: t.colors.accentTonal,
   },
   initials: {
     fontFamily: fonts.semibold,
-    color: t.colors.onAccent,
+    color: t.colors.onAccentTonal,
   },
   initialsOnInk: {
-    color: t.colors.surfaceInkDeep,
+    color: t.colors.onAccentTonal,
   },
 }));
 

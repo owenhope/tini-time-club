@@ -5,7 +5,7 @@ export interface ReviewTagColors {
 
 const REVIEW_TAG_COLORS: Record<string, ReviewTagColors> = {
   vesper: { backgroundColor: "#426B8A", textColor: "#FAF9F6" },
-  twist: { backgroundColor: "#F2FF71", textColor: "#1C3A2E" },
+  twist: { backgroundColor: "#F2FF71", textColor: "#336654" },
   vodka: { backgroundColor: "#EA6360", textColor: "#FFFFFF" },
   gin: { backgroundColor: "#E8763D", textColor: "#FAF9F6" },
   dirty: { backgroundColor: "#667A3E", textColor: "#FAF9F6" },

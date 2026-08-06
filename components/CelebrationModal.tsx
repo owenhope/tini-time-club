@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Modal, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
+import { StatusBar } from "expo-status-bar";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,8 +11,9 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { Avatar, AppText, Button } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Avatar } from "@/components/shared";
+import { fonts, makeStyles } from "@/theme";
 import {
   logCelebrationEvent,
   type Achievement,
@@ -27,19 +30,22 @@ interface CelebrationModalProps {
   /** Fresh review count so the celebrated ring matches the new tier. */
   reviewCount: number | null;
   onClose: () => void;
+  previewMode?: boolean;
 }
 
-const AVATAR_SIZE = 132;
+const AVATAR_SIZE = 154;
 
 const copyFor = (achievement: Achievement) =>
   achievement.kind === "rank"
     ? {
         headline: `You made ${achievement.tier.name}`,
         subtitle: "Your ring just leveled up. Wear it well.",
+        locationLine: null,
       }
     : {
-        headline: "You're a Regular",
-        subtitle: `You've earned your seat at ${achievement.locationName}.`,
+        headline: "You're a regular!",
+        subtitle: "You've earned your seat at",
+        locationLine: achievement.locationName,
       };
 
 /**
@@ -52,8 +58,10 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   profile,
   reviewCount,
   onClose,
+  previewMode = false,
 }) => {
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const scale = useSharedValue(0.4);
   const fade = useSharedValue(0);
@@ -69,9 +77,9 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       250,
       withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) })
     );
-    void logCelebrationEvent(achievement, "modal", "shown");
+    if (!previewMode) void logCelebrationEvent(achievement, "modal", "shown");
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [achievement, fade, scale]);
+  }, [achievement, fade, previewMode, scale]);
 
   const avatarStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -80,7 +88,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   if (!achievement) return null;
 
-  const { headline, subtitle } = copyFor(achievement);
+  const { headline, subtitle, locationLine } = copyFor(achievement);
   const isLast = index === achievements.length - 1;
 
   const next = () => {
@@ -92,31 +100,56 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={next}>
-      <View style={styles.backdrop}>
-        <Animated.View style={avatarStyle}>
-          <Avatar
-            avatarPath={profile?.avatar_url}
-            username={profile?.username ?? undefined}
-            size={AVATAR_SIZE}
-            reviewCount={reviewCount}
-          />
-        </Animated.View>
-        <Animated.View style={[styles.textBlock, textStyle]}>
-          <AppText variant="title" style={styles.headline}>
-            {headline}
-          </AppText>
-          <AppText variant="body" style={styles.subtitle}>
-            {subtitle}
-          </AppText>
-        </Animated.View>
+    <Modal visible animationType="fade" onRequestClose={next}>
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.backdrop,
+          { paddingTop: insets.top + 52, paddingBottom: insets.bottom + 44 },
+        ]}
+      >
+        <Image
+          source={require("@/assets/images/tini-time-logo-2x.png")}
+          style={styles.logo}
+          contentFit="contain"
+          accessibilityRole="image"
+          accessibilityLabel="Tini Time Club"
+        />
+
+        <View style={styles.centerContent}>
+          <Animated.View style={[styles.avatarWell, avatarStyle]}>
+            <Avatar
+              avatarPath={profile?.avatar_url}
+              username={profile?.username ?? undefined}
+              size={AVATAR_SIZE - 12}
+              reviewCount={reviewCount}
+            />
+          </Animated.View>
+          <Animated.View style={[styles.textBlock, textStyle]}>
+            <Text style={styles.headline}>{headline}</Text>
+            <View style={styles.subtitleBlock}>
+              <Text style={styles.subtitle}>{subtitle}</Text>
+              {locationLine ? (
+                <Text style={styles.locationLine}>{locationLine}</Text>
+              ) : null}
+            </View>
+          </Animated.View>
+        </View>
+
         <Animated.View style={[styles.actions, textStyle]}>
-          <Button
-            title={isLast ? "Continue" : "Next"}
+          <Pressable
             onPress={next}
-            variant="primary"
-            size="large"
-          />
+            accessibilityRole="button"
+            accessibilityLabel={isLast ? "Continue" : "Next"}
+            style={({ pressed }) => [
+              styles.continueButton,
+              pressed && styles.continuePressed,
+            ]}
+          >
+            <Text style={styles.continueText}>
+              {isLast ? "Continue" : "Next"}
+            </Text>
+          </Pressable>
         </Animated.View>
       </View>
     </Modal>
@@ -126,31 +159,85 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 const useStyles = makeStyles((t) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(10, 10, 14, 0.94)",
+    backgroundColor: t.colors.surfaceBrand,
+    alignItems: "center" as const,
+    justifyContent: "flex-start" as const,
+    paddingHorizontal: t.spacing.xxl,
+  },
+  logo: {
+    width: 118,
+    height: 84,
+  },
+  centerContent: {
+    alignItems: "center" as const,
+    gap: t.spacing.lg,
+    marginTop: 92,
+    width: "100%" as const,
+  },
+  avatarWell: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    paddingHorizontal: t.spacing.xl,
-    gap: t.spacing.xl,
+    overflow: "hidden" as const,
+    backgroundColor: t.colors.ratingTrack,
   },
   textBlock: {
     alignItems: "center" as const,
-    gap: t.spacing.sm,
+    gap: 42,
+    width: "100%" as const,
   },
-  // The backdrop is dark in both themes, so text is fixed light rather than
-  // theme-toned.
   headline: {
-    color: "#FFFFFF",
+    fontFamily: fonts.black,
+    fontSize: 22,
+    lineHeight: 27,
+    color: t.colors.secondary,
     textAlign: "center" as const,
   },
   subtitle: {
-    color: "rgba(255, 255, 255, 0.75)",
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    lineHeight: 21,
+    color: t.colors.accentPressed,
     textAlign: "center" as const,
+    maxWidth: 310,
+  },
+  subtitleBlock: {
+    alignItems: "center" as const,
+    gap: 4,
+  },
+  locationLine: {
+    fontFamily: fonts.black,
+    fontSize: 16,
+    lineHeight: 21,
+    color: t.colors.secondary,
+    textAlign: "center" as const,
+    maxWidth: 310,
   },
   actions: {
-    alignItems: "stretch" as const,
-    alignSelf: "stretch" as const,
-    gap: t.spacing.sm,
-    marginTop: t.spacing.lg,
+    alignSelf: "center" as const,
+    width: "80%" as const,
+    maxWidth: 328,
+    marginTop: 46,
+  },
+  continueButton: {
+    minHeight: 56,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.accent,
+  },
+  continuePressed: {
+    opacity: 0.82,
+    backgroundColor: t.colors.accentPressed,
+  },
+  continueText: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: t.colors.textOnImage,
+    textAlign: "center" as const,
   },
 }));
 

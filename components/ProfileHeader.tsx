@@ -146,6 +146,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       {variant === "media" ? (
         <AppHeader
           variant="media"
+          ground="brand"
           title={profile.username}
           preserveCase
           // No meta line: the name is the identity row's job, and setting it
@@ -161,7 +162,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       ) : (
         <AppHeader
           variant="large"
-          ground="inkDeep"
+          ground="brand"
           preserveCase
           title={profile.username}
           trailing={titleAction}
@@ -204,14 +205,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </Text>
             <View style={styles.identityFoot}>
               {rank.tier ? (
-                /* The tier's own hex, like a medal — it reads the same in both
-                 schemes. Near-black green ink on all four. */
-                <View
-                  style={[
-                    styles.tierBadge,
-                    { backgroundColor: rank.tier.color },
-                  ]}
-                >
+                <View style={styles.tierBadge}>
                   <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
                 </View>
               ) : null}
@@ -287,11 +281,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
-  // The "club / insider" ground — the system's deep green, which is the
-  // strongest brand signal the app has and belongs on the identity block. The
-  // header above sits on the same green, so the two read as one block.
+  // The profile identity block wears the app's purple header ground.
   ground: {
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.colors.accent,
   },
   container: {
     paddingBottom: t.spacing.xl,
@@ -328,11 +320,12 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.md - 1,
     paddingVertical: 6,
+    backgroundColor: "rgba(250,249,246,0.18)",
   },
   tierBadgeText: {
     ...t.typography.eyebrow,
     fontSize: 10,
-    color: t.colors.surfaceInkDeep,
+    color: t.colors.textOnImage,
   },
   // Full width, and labelled at both ends: a bare 4px sliver under the
   // avatar never said what it was counting towards.

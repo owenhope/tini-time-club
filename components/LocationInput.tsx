@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Controller } from "react-hook-form";
+import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import "react-native-get-random-values";
 import {
@@ -310,6 +311,7 @@ const LocationInput = ({
             key={place.place_id}
             style={[styles.placeButton, selected && styles.selectedPlaceButton]}
             onPress={() => {
+              void Haptics.selectionAsync();
               if (selected) {
                 onSelect(null);
               } else {

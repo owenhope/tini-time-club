@@ -57,8 +57,8 @@ export interface AppHeaderProps {
   below?: React.ReactNode;
   /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
-  /** The green under variant A. `inkDeep` continues a deep-green block below it. */
-  ground?: "ink" | "inkDeep";
+  /** The coloured ground under variant A/C. `brand` uses the app's purple. */
+  ground?: "ink" | "inkDeep" | "brand";
   /** 0→1 over 120pt of scroll. Drives the crossfade in both directions. */
   progress?: Animated.Value;
   /** True past the midpoint — what makes the faded-in bar tappable. */
@@ -330,7 +330,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
   if (variant === "media") {
     return (
-      <View style={[styles.media, imageUri ? styles.mediaWithPhoto : null]}>
+      <View
+        style={[
+          styles.media,
+          ground === "brand" && styles.mediaBrand,
+          imageUri ? styles.mediaWithPhoto : null,
+        ]}
+      >
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
@@ -423,6 +429,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       style={[
         styles.large,
         ground === "inkDeep" && styles.largeDeep,
+        ground === "brand" && styles.largeBrand,
         { paddingTop: insets.top + 8 },
       ]}
     >
@@ -437,7 +444,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           >
             {title}
           </Text>
-          {trailing ? <NavCircle tone="onInk" action={trailing} /> : null}
+          <View style={styles.largeActions}>
+            {(actions ?? (trailing ? [trailing] : [])).map((a) => (
+              <NavCircle
+                key={a.icon + a.accessibilityLabel}
+                tone="onInk"
+                action={a}
+                size={19}
+              />
+            ))}
+          </View>
         </View>
         {meta ? <Text style={styles.largeMeta}>{meta}</Text> : null}
       </Animated.View>
@@ -472,11 +488,14 @@ const useStyles = makeStyles((t) => ({
   large: {
     backgroundColor: t.colors.surfaceInk,
     paddingHorizontal: t.spacing.gutter,
-    paddingBottom: t.spacing.gutter,
-    gap: t.spacing.md,
+    paddingBottom: t.spacing.md,
+    gap: t.spacing.sm,
   },
   largeDeep: {
     backgroundColor: t.colors.surfaceInkDeep,
+  },
+  largeBrand: {
+    backgroundColor: t.colors.accent,
   },
   largeRow: {
     flexDirection: "row" as const,
@@ -484,13 +503,18 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
   },
+  largeActions: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 9,
+  },
   // Sentence case, black, tight — the wordmark's own voice.
   largeTitle: {
     ...t.typography.display,
-    fontSize: 30,
+    fontSize: 24,
     // Never below the point size: RN crops the line box rather than letting
     // the glyphs overhang it.
-    lineHeight: 34,
+    lineHeight: 29,
     color: t.colors.onInk,
     flexShrink: 1,
   },
@@ -506,7 +530,7 @@ const useStyles = makeStyles((t) => ({
   largeMeta: {
     ...t.typography.caption,
     color: t.colors.onInk,
-    marginTop: 6,
+    marginTop: 2,
   },
   largeBelow: {
     gap: t.spacing.sm,
@@ -564,6 +588,9 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceInkDeep,
     justifyContent: "space-between" as const,
   },
+  mediaBrand: {
+    backgroundColor: t.colors.accent,
+  },
   // The drawn height is the photo's. Without one the block sizes to the name
   // it carries rather than holding open 210pt of empty green — a venue with no
   // photo yet still has to look deliberate.
@@ -620,7 +647,7 @@ const useStyles = makeStyles((t) => ({
   modalRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    paddingHorizontal: t.spacing.gutter,
+    paddingHorizontal: t.spacing.sheetGutter,
     paddingBottom: t.spacing.md + 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: t.colors.divider,

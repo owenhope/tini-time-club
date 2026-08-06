@@ -6,6 +6,7 @@ import {
   RegisterOptions,
 } from "react-hook-form";
 import { Text, TouchableOpacity, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import { makeStyles } from "@/theme";
 
 type Option = {
@@ -46,7 +47,10 @@ const SelectableOptionsInput = <TFieldValues extends FieldValues>({
                     styles.optionButton,
                     isSelected && styles.selectedButton,
                   ]}
-                  onPress={() => onChange(id)}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    onChange(id);
+                  }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
