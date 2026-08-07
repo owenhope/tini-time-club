@@ -77,7 +77,7 @@ const palette = {
   // Status
   red400: "#EA6363",
   red500: "#EA6363",
-  red600: "#EA6363",
+  red600: "#C7372F", // 5.2:1 on white — danger text in light mode
   amber500: "#B87D14",
 } as const;
 
@@ -304,7 +304,7 @@ export const darkColors: ThemeColors = {
 
   danger: palette.red400,
   dangerSubtle: "#2E1615",
-  success: palette.green700,
+  success: "#4F9D7C", // 4.9:1 on dark surface — success text/UI
   warning: "#EF8A54",
 
   accentTonal: "#2A2340",
