@@ -62,6 +62,8 @@ export default async function UserDetailPage({
             tone: "muted",
           },
         ]}
+        surface="transparent"
+        density="compact"
         actions={
           <div className="flex gap-2">
             <form action={toggleVerified}>
@@ -175,17 +177,19 @@ export default async function UserDetailPage({
                     T {review.taste ?? "—"} / P {review.presentation ?? "—"}
                   </span>
                 </td>
-                <td className="max-w-lg truncate px-4 py-3 text-stone-500">
-                  {review.comment ?? ""}
+                <td className="max-w-0 px-4 py-3 text-stone-500">
+                  <div className="truncate" title={review.comment ?? ""}>
+                    {review.comment ?? ""}
+                  </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="whitespace-nowrap px-4 py-3">
                   {review.state === 1 ? (
                     <StatusPill tone="green">Active</StatusPill>
                   ) : (
                     <StatusPill>Inactive</StatusPill>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="whitespace-nowrap px-4 py-3">
                   <ActionLink href={`/admin/reviews/${review.id}`}>
                     Manage
                   </ActionLink>
