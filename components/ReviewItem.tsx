@@ -54,6 +54,7 @@ const CARD_WIDTH = SCREEN_WIDTH - spacing.gutter * 2;
 const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 11) / 16);
 const DOUBLE_TAP_DELAY = 300;
 const COMMENT_TEXT_COLOR = "#141A17";
+const REVIEW_AUTHOR_AVATAR_SIZE = 40;
 
 const ICON_SIZES = {
   small: 20,
@@ -256,7 +257,7 @@ const AvatarWrapper = memo(
         <Avatar
           avatarPath={avatarUrl}
           username={username}
-          size={46}
+          size={REVIEW_AUTHOR_AVATAR_SIZE}
           reviewCount={reviewCount}
         />
         <View style={styles.headerIdentity}>

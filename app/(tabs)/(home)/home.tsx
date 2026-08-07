@@ -21,7 +21,7 @@ import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Image as ExpoImage } from "expo-image";
-import { Button, Input, MartiniIcon, SectionHeader } from "@/components/shared";
+import { Button, Input, MartiniIcon } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
@@ -43,6 +43,7 @@ const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
+type FeedSource = "club" | "people";
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -85,6 +86,7 @@ function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
+  const [feedSource, setFeedSource] = useState<FeedSource>("club");
   // A different line every day of the week — the block is the first thing the
   // club says to you, and saying the same thing seven days running is how a
   // welcome stops being read.
@@ -123,8 +125,14 @@ function Home() {
     // `silent` refreshes the data without the spinners — used by the
     // focus-staleness refresh so returning to the feed doesn't flash a
     // loading state over content that's already on screen.
-    async (refresh = false, silent = false) => {
+    async (
+      refresh = false,
+      silent = false,
+      sourceOverride: FeedSource = feedSource,
+      bypassCache = refresh
+    ) => {
       if (!profile) return;
+      const source = isScreenshotFeed ? "club" : sourceOverride;
 
       // Prevent rapid successive calls
       const now = Date.now();
@@ -163,18 +171,30 @@ function Home() {
           screenshotUserId = screenshotProfile.id;
         }
 
+        const reviewsPromise =
+          source === "people"
+            ? databaseService
+                .getFollowedUserIds(profile.id, { forceRefresh: refresh })
+                .then((followedIds) =>
+                  databaseService.getReviewsForUsers(followedIds, {
+                    currentUserId: profile.id,
+                    limit: PAGE_SIZE,
+                    offset: start,
+                    excludeBlocked: true,
+                    forceRefresh: bypassCache,
+                  })
+                )
+            : databaseService.getReviews({
+                userId: screenshotUserId,
+                currentUserId: profile.id,
+                limit: PAGE_SIZE,
+                offset: start,
+                excludeBlocked: true,
+                forceRefresh: bypassCache,
+              });
+
         // Get reviews using optimized database service
-        const reviewsDataFromDB = await withTimeout(
-          databaseService.getReviews({
-            userId: screenshotUserId,
-            currentUserId: profile.id,
-            limit: PAGE_SIZE,
-            offset: start,
-            excludeBlocked: true,
-            forceRefresh: refresh,
-          }),
-          25_000
-        );
+        const reviewsDataFromDB = await withTimeout(reviewsPromise, 25_000);
 
         if (!reviewsDataFromDB) {
           throw new Error("Failed to fetch reviews");
@@ -227,7 +247,7 @@ function Home() {
         }
       }
     },
-    [profile?.id, page, hasMore, lastRefreshTime, isScreenshotFeed]
+    [profile?.id, page, hasMore, lastRefreshTime, isScreenshotFeed, feedSource]
   );
 
   const scrollToTop = useCallback(() => {
@@ -305,6 +325,17 @@ function Home() {
       loadReviews(false);
     }
   }, [loadingMore, hasMore, refreshing, loadReviews]);
+
+  const toggleFeedSource = useCallback(() => {
+    const nextSource: FeedSource = feedSource === "club" ? "people" : "club";
+    setFeedSource(nextSource);
+    setReviews([]);
+    setPage(0);
+    setHasMore(true);
+    setLoading(true);
+    void loadReviews(true, true, nextSource, false);
+    requestAnimationFrame(scrollToTop);
+  }, [feedSource, loadReviews, scrollToTop]);
 
   // Preload images for visible and upcoming items (optimized)
   useEffect(() => {
@@ -466,7 +497,7 @@ function Home() {
   }, [router]);
 
   const navigateToDiscover = useCallback(() => {
-    router.navigate(routes.discover());
+    router.navigate(routes.discover({ tab: "members" }));
   }, [router]);
 
   // Memoized empty component
@@ -481,6 +512,25 @@ function Home() {
             title="Retry"
             onPress={() => loadReviews(true)}
             variant="primary"
+            size="medium"
+          />
+        </View>
+      );
+    }
+
+    if (feedSource === "people") {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>
+            No reviews from your people yet.
+          </Text>
+          <Text style={styles.emptyText}>
+            Follow members to build a smaller feed around their pours.
+          </Text>
+          <Button
+            title="Find members"
+            onPress={navigateToDiscover}
+            variant="secondary"
             size="medium"
           />
         </View>
@@ -571,7 +621,15 @@ function Home() {
         </View>
       </View>
     );
-  }, [firstLoadDone, loading, refreshing, error, loadReviews]);
+  }, [
+    firstLoadDone,
+    loading,
+    refreshing,
+    error,
+    feedSource,
+    loadReviews,
+    navigateToDiscover,
+  ]);
 
   // Memoized footer component for loading more
   /**
@@ -582,10 +640,32 @@ function Home() {
   const renderFeedHeader = useCallback(
     () => (
       <View style={styles.feedHeader}>
-        <SectionHeader eyebrow="The club" title="From your people" />
+        <TouchableOpacity
+          style={styles.feedSourceButton}
+          onPress={toggleFeedSource}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel={`Showing ${
+            feedSource === "club" ? "From the club" : "Your people"
+          }. Tap to switch feed source.`}
+        >
+          <View style={styles.feedSourceText}>
+            <Text style={styles.feedSourceEyebrow}>Feed</Text>
+            <View style={styles.feedSourceTitleRow}>
+              <Text style={styles.feedSourceTitle}>
+                {feedSource === "club" ? "From the club" : "Your people"}
+              </Text>
+              <Ionicons
+                name="swap-horizontal"
+                size={13}
+                color={colors.accent}
+              />
+            </View>
+          </View>
+        </TouchableOpacity>
       </View>
     ),
-    [styles]
+    [colors.accent, feedSource, styles, toggleFeedSource]
   );
 
   const renderFooter = useCallback(() => {
@@ -716,7 +796,7 @@ function Home() {
         }
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
-        ListHeaderComponent={reviews.length > 0 ? renderFeedHeader : null}
+        ListHeaderComponent={firstLoadDone ? renderFeedHeader : null}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={true}
@@ -822,6 +902,30 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.md,
     paddingHorizontal: t.spacing.gutter,
   },
+  feedSourceButton: {
+    minHeight: 44,
+    paddingVertical: t.spacing.xs,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  feedSourceText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  feedSourceEyebrow: {
+    ...t.typography.eyebrow,
+    color: t.colors.accent,
+  },
+  feedSourceTitle: {
+    ...t.typography.title,
+    color: t.colors.text,
+  },
+  feedSourceTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+  },
   loadingContainer: {
     flex: 1,
     alignItems: "center" as const,
@@ -838,6 +942,17 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.gutter,
     paddingVertical: t.spacing.xxl,
     gap: t.spacing.md,
+  },
+  emptyTitle: {
+    ...t.typography.heading,
+    color: t.colors.text,
+    textAlign: "center" as const,
+  },
+  emptyText: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
+    maxWidth: 300,
   },
   errorText: {
     ...t.typography.body,

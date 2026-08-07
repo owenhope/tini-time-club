@@ -116,6 +116,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const rankCount = profile.review_count ?? reviewsCount;
   const displayedRankCount = rankPreviewCount ?? rankCount;
   const rank = getRankProgress(displayedRankCount);
+  const canPressAvatar = Boolean(onAvatarPress);
 
   const metrics: Metric[] = [
     {
@@ -140,7 +141,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <View style={styles.ground}>
       {/* The header names the screen with the handle — variant A on your own
-          profile, C on someone else's, both continuing the deep green the
+          profile, C on someone else's, both continuing the purple the
           block below sits on. A handle keeps its owner's capitalisation, and
           scales to fit rather than truncating. */}
       {variant === "media" ? (
@@ -176,12 +177,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         {/* Then the face, the name and the tier the member holds. */}
         <View style={styles.topRow}>
           <Pressable
-            onPress={isOwnProfile ? onAvatarPress : undefined}
+            onPress={onAvatarPress}
             onLongPress={onAvatarLongPress}
-            disabled={!isOwnProfile && !onAvatarLongPress}
-            accessibilityRole={isOwnProfile ? "button" : undefined}
+            disabled={!canPressAvatar && !onAvatarLongPress}
+            accessibilityRole={canPressAvatar ? "button" : undefined}
             accessibilityLabel={
-              isOwnProfile ? "Change profile photo" : undefined
+              canPressAvatar
+                ? isOwnProfile
+                  ? "Change profile photo"
+                  : `View ${profile.username}'s profile photo`
+                : undefined
             }
             accessibilityState={{ busy: avatarLoading }}
           >

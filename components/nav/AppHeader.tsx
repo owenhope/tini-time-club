@@ -33,9 +33,11 @@ import { fonts, makeStyles, useTheme } from "@/theme";
 export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  label?: string;
   onPress: () => void;
   accessibilityLabel: string;
+  disabled?: boolean;
 }
 
 export interface AppHeaderProps {
@@ -84,12 +86,25 @@ export interface AppHeaderProps {
 
 /** 40px visual, 44px tap — the difference is the slop. */
 const CIRCLE = 40;
+const ACTION_GAP = 9;
 const TAP_SLOP = { top: 2, bottom: 2, left: 2, right: 2 };
 const MEDIA_HEIGHT = 210;
 
 type CircleTone = "onInk" | "outline" | "scrim";
 
-const NavCircle = ({
+const getActionKey = (action: HeaderAction) =>
+  `${action.icon ?? action.label ?? "action"}-${action.accessibilityLabel}`;
+
+const getActionWidth = (action: HeaderAction) =>
+  action.label ? Math.max(72, action.label.length * 8 + 28) : CIRCLE;
+
+const getActionsWidth = (actions: HeaderAction[]) =>
+  actions.length === 0
+    ? CIRCLE
+    : actions.reduce((total, action) => total + getActionWidth(action), 0) +
+      Math.max(actions.length - 1, 0) * ACTION_GAP;
+
+const NavActionControl = ({
   action,
   tone,
   size = 20,
@@ -107,16 +122,48 @@ const NavCircle = ({
     scrim: colors.textOnImage,
   }[tone];
 
+  if (action.label) {
+    return (
+      <Pressable
+        onPress={action.onPress}
+        disabled={action.disabled}
+        hitSlop={TAP_SLOP}
+        accessibilityRole="button"
+        accessibilityLabel={action.accessibilityLabel}
+        accessibilityState={{ disabled: action.disabled }}
+        style={({ pressed }) => [
+          styles.actionPill,
+          styles[`actionPill_${tone}` as const],
+          { width: getActionWidth(action) },
+          action.disabled && styles.actionDisabled,
+          pressed && !action.disabled && styles.circlePressed,
+        ]}
+      >
+        {action.icon ? (
+          <Ionicons name={action.icon} size={15} color={glyph} />
+        ) : null}
+        <Text style={[styles.actionPillText, { color: glyph }]}>
+          {action.label}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  if (!action.icon) return null;
+
   return (
     <Pressable
       onPress={action.onPress}
+      disabled={action.disabled}
       hitSlop={TAP_SLOP}
       accessibilityRole="button"
       accessibilityLabel={action.accessibilityLabel}
+      accessibilityState={{ disabled: action.disabled }}
       style={({ pressed }) => [
         styles.circle,
         styles[`circle_${tone}` as const],
-        pressed && styles.circlePressed,
+        action.disabled && styles.actionDisabled,
+        pressed && !action.disabled && styles.circlePressed,
       ]}
     >
       <Ionicons name={action.icon} size={size} color={glyph} />
@@ -134,6 +181,7 @@ const CompactBar = ({
   onBack,
   actions,
   trailing,
+  ground,
   progress,
   collapsed,
   overlay,
@@ -143,6 +191,7 @@ const CompactBar = ({
   onBack?: () => void;
   actions?: HeaderAction[];
   trailing?: HeaderAction;
+  ground?: AppHeaderProps["ground"];
   progress?: Animated.Value;
   collapsed?: boolean;
   overlay?: boolean;
@@ -150,13 +199,13 @@ const CompactBar = ({
 }) => {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const onBrand = ground === "brand";
 
   const right = actions ?? (trailing ? [trailing] : []);
   // The title is centred between the two ends, so an end with nothing in it
   // still has to take up its width.
-  const leadingWidth = onBack ? CIRCLE : CIRCLE;
-  const trailingWidth =
-    Math.max(right.length, 1) * CIRCLE + (right.length > 1 ? 9 : 0);
+  const trailingWidth = getActionsWidth(right);
+  const leadingWidth = Math.max(CIRCLE, trailingWidth);
 
   return (
     <Animated.View
@@ -164,17 +213,21 @@ const CompactBar = ({
       // client; until then the bar leans on the paper at 94% alone.
       style={[
         styles.compact,
+        onBrand && styles.compactBrand,
         { paddingTop: insets.top + 8 },
         overlay && styles.compactOverlay,
         progress ? { opacity: progress } : null,
       ]}
       pointerEvents={overlay && !collapsed ? "none" : "auto"}
     >
-      <View style={styles.compactFill} pointerEvents="none" />
+      <View
+        style={[styles.compactFill, onBrand && styles.compactFillBrand]}
+        pointerEvents="none"
+      />
       <View style={[styles.compactEnd, { width: leadingWidth }]}>
         {onBack ? (
-          <NavCircle
-            tone="outline"
+          <NavActionControl
+            tone={onBrand ? "onInk" : "outline"}
             action={{
               icon: "chevron-back",
               onPress: onBack,
@@ -184,7 +237,11 @@ const CompactBar = ({
         ) : null}
       </View>
       <Text
-        style={[styles.compactTitle, preserveCase && styles.titlePlain]}
+        style={[
+          styles.compactTitle,
+          onBrand && styles.compactTitleOnBrand,
+          preserveCase && styles.titlePlain,
+        ]}
         numberOfLines={1}
       >
         {title}
@@ -197,9 +254,9 @@ const CompactBar = ({
         ]}
       >
         {right.map((action) => (
-          <NavCircle
-            key={action.icon + action.accessibilityLabel}
-            tone="outline"
+          <NavActionControl
+            key={getActionKey(action)}
+            tone={onBrand ? "onInk" : "outline"}
             action={action}
             size={19}
           />
@@ -267,6 +324,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         onBack={onBack}
         actions={actions}
         trailing={trailing}
+        ground={ground}
         progress={progress}
         collapsed={collapsed}
         overlay={overlay}
@@ -329,6 +387,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     : null;
 
   if (variant === "media") {
+    const controlTone: CircleTone = imageUri ? "scrim" : "onInk";
+
     return (
       <View
         style={[
@@ -381,8 +441,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           pointerEvents={collapsed ? "none" : "auto"}
         >
           {onBack ? (
-            <NavCircle
-              tone="scrim"
+            <NavActionControl
+              tone={controlTone}
               action={{
                 icon: "chevron-back",
                 onPress: onBack,
@@ -394,9 +454,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           )}
           <View style={styles.mediaActions}>
             {(actions ?? []).map((a) => (
-              <NavCircle
-                key={a.icon + a.accessibilityLabel}
-                tone="scrim"
+              <NavActionControl
+                key={getActionKey(a)}
+                tone={controlTone}
                 action={a}
                 size={19}
               />
@@ -446,8 +506,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </Text>
           <View style={styles.largeActions}>
             {(actions ?? (trailing ? [trailing] : [])).map((a) => (
-              <NavCircle
-                key={a.icon + a.accessibilityLabel}
+              <NavActionControl
+                key={getActionKey(a)}
                 tone="onInk"
                 action={a}
                 size={19}
@@ -480,6 +540,35 @@ const useStyles = makeStyles((t) => ({
   circle_scrim: {
     backgroundColor: t.colors.overlay,
   },
+  actionPill: {
+    minWidth: 72,
+    height: CIRCLE,
+    borderRadius: t.radius.pill,
+    paddingHorizontal: t.spacing.md,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 5,
+  },
+  actionPill_onInk: {
+    backgroundColor: t.colors.ratingTrackOnInk,
+  },
+  actionPill_outline: {
+    borderWidth: 1.5,
+    borderColor: t.colors.border,
+  },
+  actionPill_scrim: {
+    backgroundColor: t.colors.overlay,
+  },
+  actionPillText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    lineHeight: 16,
+    letterSpacing: 0,
+  },
+  actionDisabled: {
+    opacity: 0.55,
+  },
   circlePressed: {
     opacity: 0.6,
   },
@@ -506,7 +595,7 @@ const useStyles = makeStyles((t) => ({
   largeActions: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 9,
+    gap: ACTION_GAP,
   },
   // Sentence case, black, tight — the wordmark's own voice.
   largeTitle: {
@@ -545,6 +634,9 @@ const useStyles = makeStyles((t) => ({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: t.colors.divider,
   },
+  compactBrand: {
+    borderBottomColor: t.colors.ratingTrackOnInk,
+  },
   compactOverlay: {
     ...({ position: "absolute" } as const),
     top: 0,
@@ -568,10 +660,13 @@ const useStyles = makeStyles((t) => ({
     bottom: 0,
     backgroundColor: t.colors.background,
   },
+  compactFillBrand: {
+    backgroundColor: t.colors.accent,
+  },
   compactEnd: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 9,
+    gap: ACTION_GAP,
   },
   compactEndRight: {
     justifyContent: "flex-end" as const,
@@ -581,6 +676,9 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     textAlign: "center" as const,
     color: t.colors.text,
+  },
+  compactTitleOnBrand: {
+    color: t.colors.onInk,
   },
 
   // C · over media
@@ -607,7 +705,7 @@ const useStyles = makeStyles((t) => ({
   mediaActions: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 9,
+    gap: ACTION_GAP,
   },
   mediaIdentity: {
     paddingHorizontal: t.spacing.gutter,

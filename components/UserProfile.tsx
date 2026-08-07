@@ -10,14 +10,14 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
+import AvatarViewer from "@/components/profile/AvatarViewer";
 import ProfileBody from "@/components/profile/ProfileBody";
 import ProfileHeader from "@/components/ProfileHeader";
-import { Chip } from "@/components/shared";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import { useGoBack } from "@/hooks/useAppNavigation";
-import AppHeader from "@/components/nav/AppHeader";
+import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import databaseService from "@/services/databaseService";
 import { fonts, makeStyles, useTheme } from "@/theme";
@@ -41,6 +41,7 @@ const UserProfile = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
+  const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
 
   const { profile } = useProfile(); // logged-in user data
   const router = useRouter();
@@ -159,6 +160,7 @@ const UserProfile = () => {
         `Unable to ${wasFollowing ? "unfollow" : "follow"} user. Please try again.`
       );
     } else {
+      databaseService.clearFollowCaches(profile.id);
       // Reconcile both aggregates with the database after the optimistic
       // update. This also corrects the count if another relationship changed
       // while this profile was open.
@@ -282,6 +284,7 @@ const UserProfile = () => {
                 if (unfollowError) {
                   reportError("Error unfollowing blocked user:", unfollowError);
                 } else {
+                  databaseService.clearFollowCaches(profile.id);
                   setDoesFollow(false);
                   setFollowersCount((prev) => Math.max(0, prev - 1));
                   await loadFollowCounts();
@@ -378,13 +381,28 @@ const UserProfile = () => {
   ) : null;
 
   // Header scrolls with the grid rather than sitting fixed above it.
-  const menuActions = [
+  const menuActions: HeaderAction[] = [
     {
       icon: "ellipsis-horizontal" as const,
       onPress: showProfileMenu,
       accessibilityLabel: `More options for ${displayProfile?.username}`,
     },
   ];
+  const isViewingOwnProfile = profile
+    ? String(profile.id) === String(displayProfile?.id)
+    : false;
+  const followHeaderAction: HeaderAction = {
+    label: doesFollow ? "Following" : "Follow",
+    icon: doesFollow ? "checkmark" : undefined,
+    disabled: followPending,
+    onPress: toggleFollow,
+    accessibilityLabel: doesFollow
+      ? `Unfollow ${displayProfile?.username}`
+      : `Follow ${displayProfile?.username}`,
+  };
+  const headerActions = isViewingOwnProfile
+    ? menuActions
+    : [followHeaderAction, ...menuActions];
 
   const header = (
     <>
@@ -392,13 +410,16 @@ const UserProfile = () => {
         profile={displayProfile}
         variant="media"
         onBack={goBack}
-        actions={menuActions}
+        actions={headerActions}
         progress={progress}
         collapsed={isCollapsed}
         reviewsCount={userReviews.length}
         followersCount={followersCount}
         followingCount={followingCount}
-        isOwnProfile={profile ? profile.id === displayProfile?.id : false}
+        isOwnProfile={isViewingOwnProfile}
+        onAvatarPress={
+          isViewingOwnProfile ? undefined : () => setAvatarViewerOpen(true)
+        }
         onFollowersPress={() =>
           displayProfile?.username &&
           router.push(routes.followers(displayProfile.username))
@@ -408,21 +429,6 @@ const UserProfile = () => {
           router.push(routes.following(displayProfile.username))
         }
         tags={favoriteTags}
-        action={
-          <Chip
-            label={doesFollow ? "Following" : "Follow"}
-            selected={!doesFollow}
-            onInk={doesFollow}
-            icon={doesFollow ? "checkmark" : undefined}
-            disabled={followPending}
-            onPress={toggleFollow}
-            accessibilityLabel={
-              doesFollow
-                ? `Unfollow ${displayProfile?.username}`
-                : `Follow ${displayProfile?.username}`
-            }
-          />
-        }
       >
         {favoriteChips}
       </ProfileHeader>
@@ -437,11 +443,12 @@ const UserProfile = () => {
         title={displayProfile?.username ?? ""}
         preserveCase
         onBack={goBack}
-        actions={menuActions}
+        actions={headerActions}
+        ground="brand"
         progress={progress}
         collapsed={isCollapsed}
         overlay
-        statusBar={isCollapsed ? "auto" : "light"}
+        statusBar="light"
       />
       <ProfileBody
         activeTab={activeTab}
@@ -470,6 +477,13 @@ const UserProfile = () => {
             ? router.push(routes.editCaption(review.id))
             : undefined
         }
+      />
+      <AvatarViewer
+        visible={avatarViewerOpen}
+        avatarPath={displayProfile?.avatar_url}
+        username={displayProfile?.username}
+        reviewCount={displayProfile?.review_count}
+        onClose={() => setAvatarViewerOpen(false)}
       />
     </View>
   );

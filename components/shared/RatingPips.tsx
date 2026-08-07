@@ -3,9 +3,10 @@ import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
 import * as Haptics from "expo-haptics";
 import { HIT_SLOP, useTheme } from "@/theme";
 import AppText from "./AppText";
-import OliveIcon from "./OliveIcon";
+import OliveIcon, { getOliveIconCanvasSize } from "./OliveIcon";
 
 export const PIPS_MAX = 5;
+const MAX_FRACTIONAL_OLIVE_OPACITY = 0.55;
 
 export interface RatingPipsProps {
   /** 0–max. Read-only ratings use opacity for the fractional olive. */
@@ -44,12 +45,17 @@ const Olive: React.FC<{
   const { colors } = useTheme();
   const filled = fillAmount > 0;
   const faintEmpty = !filled && faintWhenEmpty;
+  const canvas = getOliveIconCanvasSize(size);
+  const opacity =
+    filled && fillAmount < 1
+      ? Math.min(fillAmount, MAX_FRACTIONAL_OLIVE_OPACITY)
+      : fillAmount;
 
   return (
     <View
       style={{
-        width: size * 0.84,
-        height: size,
+        width: canvas.width,
+        height: canvas.height,
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -57,7 +63,7 @@ const Olive: React.FC<{
       <OliveIcon
         size={size}
         color={bodyColor}
-        opacity={filled ? fillAmount : faintEmpty ? 0.3 : 1}
+        opacity={filled ? opacity : faintEmpty ? 0.3 : 1}
         outlineColor={
           filled || faintEmpty ? undefined : (emptyColor ?? colors.ratingPipEmpty)
         }

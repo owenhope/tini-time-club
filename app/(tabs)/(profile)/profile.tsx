@@ -459,10 +459,11 @@ const Profile = () => {
         title={profile?.username ?? ""}
         preserveCase
         trailing={settingsAction}
+        ground="brand"
         progress={progress}
         collapsed={isCollapsed}
         overlay
-        statusBar={isCollapsed ? "auto" : "light"}
+        statusBar="light"
       />
       <ProfileBody
         activeTab={activeTab}

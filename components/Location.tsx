@@ -11,18 +11,13 @@ import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import {
-  Avatar,
-  RatingPips,
-  SectionHeader,
-  Skeleton,
-} from "@/components/shared";
+import { Avatar, SectionHeader, Skeleton } from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { makeStyles, useTheme } from "@/theme";
+import { makeStyles } from "@/theme";
 import {
   getRegularsByLocation,
   type Regular,
@@ -52,7 +47,6 @@ interface LocationType {
 
 const Location = () => {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const goBack = useGoBack();
@@ -144,7 +138,7 @@ const Location = () => {
 
     if (displayLocation.lat && displayLocation.lon) {
       actions.push({
-        icon: "location",
+        icon: "map-outline",
         accessibilityLabel: "Show on map",
         // navigate, not push: this switches to the Places tab (or pops back to
         // the map when already in that stack) instead of stacking a tab root
@@ -329,13 +323,14 @@ const Location = () => {
         title={displayLocation?.name ?? ""}
         onBack={goBack}
         actions={headerActions}
+        ground="brand"
         progress={progress}
         collapsed={isCollapsed}
         overlay
         // This screen has two headers, so one of them has to speak for the
-        // status bar: green while the block is up there, the theme's own once
-        // the paper bar has taken over.
-        statusBar={isCollapsed ? "auto" : "light"}
+        // status bar: light glyphs over the purple block and its collapsed
+        // purple bar.
+        statusBar="light"
       />
 
       {/* Everything above the grid scrolls with it, the way the profile's
@@ -361,7 +356,7 @@ const Location = () => {
           <View>
             <View style={styles.venueHeader}>
               {/* Like profile, the venue identity and its stats live together
-                  on the green header ground. */}
+                  on the purple header ground. */}
               <AppHeader
                 variant="media"
                 ground="brand"
@@ -395,16 +390,6 @@ const Location = () => {
                           ? formatRating(displayLocation?.rating)
                           : "--"}
                       </Text>
-                      {hasRating ? (
-                        <RatingPips
-                          value={displayLocation?.rating}
-                          size={18}
-                          onDark
-                          bodyColor={colors.ratingFillOnInk}
-                          emptyColor={colors.ratingTrackOnInk}
-                          accessibilityLabel=""
-                        />
-                      ) : null}
                     </View>
                     <Text style={styles.venueReviewCount}>{reviewLabel}</Text>
                   </View>

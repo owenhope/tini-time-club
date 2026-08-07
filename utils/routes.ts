@@ -47,6 +47,10 @@ export type HomeParams = {
   feedRefresh?: string;
 };
 
+export type DiscoverParams = {
+  tab?: "places" | "members";
+};
+
 export const routes = {
   /** Welcome / sign-in landing screen. */
   welcome: () => "/" as const satisfies Href,
@@ -67,7 +71,10 @@ export const routes = {
   resetPassword: () => "/reset-password" as const satisfies Href,
 
   /** Discover tab. */
-  discover: () => "/discover" as const satisfies Href,
+  discover: (params?: DiscoverParams) =>
+    (params
+      ? ({ pathname: "/discover", params } as const)
+      : ("/discover" as const)) satisfies Href,
 
   /** Own profile tab. */
   profile: () => "/profile" as const satisfies Href,
