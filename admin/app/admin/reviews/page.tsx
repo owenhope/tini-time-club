@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
+import ClickableRow from "@/components/ClickableRow";
 import UserBadge from "@/components/UserBadge";
 import {
   ActionLink,
@@ -78,7 +79,7 @@ export default async function ReviewsPage({
             <FilterBar
               action="/admin/reviews"
               searchDefault={q}
-              searchPlaceholder="Search captions or usernames..."
+              searchPlaceholder="Search captions, members, or places..."
               variant="attached"
             >
               <FilterSelect
@@ -98,6 +99,7 @@ export default async function ReviewsPage({
             "Member",
             "Place",
             "Rating",
+            "Engagement",
             "Caption",
             "State",
             "Actions",
@@ -111,7 +113,11 @@ export default async function ReviewsPage({
           }
         >
           {reviews.map((review) => (
-            <tr key={review.id} className="hover:bg-stone-50">
+            <ClickableRow
+              key={review.id}
+              href={`/admin/reviews/${review.id}`}
+              className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
+            >
               <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
                 {shortDate(review.inserted_at)}
               </td>
@@ -138,6 +144,17 @@ export default async function ReviewsPage({
                   T {review.taste ?? "—"} / P {review.presentation ?? "—"}
                 </span>
               </td>
+              <td className="whitespace-nowrap px-4 py-3">
+                <span className="font-mono text-base font-semibold tabular-nums text-stone-900">
+                  {review.engagement.likes +
+                    review.engagement.comments +
+                    review.engagement.shares}
+                </span>
+                <span className="ml-2 text-xs text-stone-400">
+                  L {review.engagement.likes} / C {review.engagement.comments} /
+                  S {review.engagement.shares}
+                </span>
+              </td>
               <td className="max-w-96 truncate px-4 py-3 text-stone-500">
                 {review.comment ?? ""}
               </td>
@@ -153,7 +170,7 @@ export default async function ReviewsPage({
                   Manage
                 </ActionLink>
               </td>
-            </tr>
+            </ClickableRow>
           ))}
         </DataTable>
 

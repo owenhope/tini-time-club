@@ -15,9 +15,9 @@ const CORE_NAV = [
   { href: "/admin/users", key: "users", label: "Members" },
   { href: "/admin/reviews", key: "reviews", label: "Reviews" },
   {
-    href: "/admin/locations",
+    href: "/admin/places",
     key: "locations",
-    label: "Locations",
+    label: "Places",
   },
   { href: "/admin/analytics", key: "analytics", label: "Analytics" },
   {

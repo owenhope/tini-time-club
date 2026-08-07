@@ -44,7 +44,7 @@ export default async function Dashboard() {
           { label: "Total members", value: kpis.users.total, tone: "green" },
           { label: "Total reviews", value: kpis.reviews.total, tone: "purple" },
           {
-            label: "Total locations",
+            label: "Total places",
             value: kpis.locations.total,
             tone: "chartreuse",
           },
@@ -75,10 +75,10 @@ export default async function Dashboard() {
             className="col-span-12 xl:col-span-4"
           />
           <KpiCard
-            label="New locations"
+            label="New places"
             metric={kpis.locations}
-            newLabel="locations"
-            href="/admin/locations"
+            newLabel="places"
+            href="/admin/places"
             color="#D6E640"
             rangeLabel={range.label}
             className="col-span-12 xl:col-span-4"
@@ -131,7 +131,7 @@ export default async function Dashboard() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-stone-900">
-                        {review.location?.name ?? "Unknown location"}
+                        {review.location?.name ?? "Unknown place"}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-stone-500">
                         @{review.profile?.username ?? "unknown"} ·{" "}
@@ -153,9 +153,9 @@ export default async function Dashboard() {
           </Panel>
 
           <Panel
-            title="Newest locations"
-            href="/admin/locations"
-            linkLabel="Locations"
+            title="Newest places"
+            href="/admin/places"
+            linkLabel="Places"
             className="col-span-12 xl:col-span-4"
           >
             <ul className="divide-y divide-stone-100">
@@ -227,7 +227,7 @@ export default async function Dashboard() {
                       <Rank index={index} />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold">
-                          {review.location?.name ?? "Unknown location"}
+                          {review.location?.name ?? "Unknown place"}
                         </span>
                         <span className="block truncate text-xs text-stone-500">
                           @{review.profile?.username ?? "unknown"} ·{" "}
@@ -249,9 +249,9 @@ export default async function Dashboard() {
           </Panel>
 
           <Panel
-            title="Top locations"
-            href="/admin/locations"
-            linkLabel="Locations"
+            title="Top places"
+            href="/admin/places"
+            linkLabel="Places"
             className="col-span-12 xl:col-span-4"
           >
             <ul className="divide-y divide-stone-100">

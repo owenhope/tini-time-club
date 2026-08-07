@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
+import ClickableRow from "@/components/ClickableRow";
 import {
   ActionLink,
   DataTable,
@@ -155,12 +156,16 @@ export default async function UserDetailPage({
             }
           >
             {reviews.map((review) => (
-              <tr key={review.id} className="hover:bg-stone-50">
+              <ClickableRow
+                key={review.id}
+                href={`/admin/reviews/${review.id}`}
+                className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
+              >
                 <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
                   {date(review.inserted_at)}
                 </td>
                 <td className="max-w-52 truncate px-4 py-3 font-bold text-stone-900">
-                  {review.location?.name ?? "Unknown location"}
+                  {review.location?.name ?? "Unknown place"}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <span className="font-mono text-base font-semibold tabular-nums">
@@ -185,7 +190,7 @@ export default async function UserDetailPage({
                     Manage
                   </ActionLink>
                 </td>
-              </tr>
+              </ClickableRow>
             ))}
           </DataTable>
         </div>
