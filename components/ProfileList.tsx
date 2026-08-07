@@ -11,6 +11,7 @@ import { useProfile } from "@/context/profile-context";
 import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
+import databaseService from "@/services/databaseService";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 export interface ProfileType {
@@ -27,6 +28,8 @@ interface ProfileListProps {
   /** The parent surface already supplies its own gutter and background. */
   embedded?: boolean;
 }
+
+const PROFILE_ROW_AVATAR_SIZE = 28;
 
 export default function ProfileList({
   profiles,
@@ -98,6 +101,7 @@ export default function ProfileList({
       if (error) {
         reportError("Error unfollowing:", error);
       } else {
+        databaseService.clearFollowCaches(profile.id);
         setFollowedIds((prev) => prev.filter((id) => id !== targetProfileId));
       }
     } else {
@@ -107,6 +111,7 @@ export default function ProfileList({
       if (error) {
         reportError("Error following:", error);
       } else {
+        databaseService.clearFollowCaches(profile.id);
         setFollowedIds((prev) => [...prev, targetProfileId]);
         // Track follow event
         const targetProfile = profiles.find((p) => p.id === targetProfileId);
@@ -138,7 +143,7 @@ export default function ProfileList({
             <Avatar
               avatarPath={item.avatar_url}
               username={item.username}
-              size={32}
+              size={PROFILE_ROW_AVATAR_SIZE}
               reviewCount={item.review_count}
             />
             <VerifiedName

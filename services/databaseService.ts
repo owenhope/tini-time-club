@@ -65,8 +65,9 @@ class DatabaseService {
       }
     }
 
-    // Check if query is already pending
-    if (this.pendingQueries.has(queryKey)) {
+    // Check if query is already pending, unless the caller explicitly needs a
+    // fresh read after a write changed the underlying relationship.
+    if (!forceRefresh && this.pendingQueries.has(queryKey)) {
       return this.pendingQueries.get(queryKey)!;
     }
 
@@ -206,6 +207,50 @@ class DatabaseService {
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     }));
+  }
+
+  async getReviewsForUsers(
+    userIds: string[],
+    options: {
+      limit?: number;
+      offset?: number;
+      excludeBlocked?: boolean;
+      currentUserId?: string;
+      forceRefresh?: boolean;
+    } = {}
+  ): Promise<Review[]> {
+    const {
+      limit = 20,
+      offset = 0,
+      excludeBlocked = true,
+      currentUserId,
+      forceRefresh = false,
+    } = options;
+
+    const uniqueUserIds = [...new Set(userIds.map(String))];
+    if (uniqueUserIds.length === 0) return [];
+
+    const perUserLimit = offset + limit;
+    const pages = await Promise.all(
+      uniqueUserIds.map((userId) =>
+        this.getReviews({
+          userId,
+          currentUserId,
+          limit: perUserLimit,
+          offset: 0,
+          excludeBlocked,
+          forceRefresh,
+        })
+      )
+    );
+
+    return pages
+      .flat()
+      .sort(
+        (a, b) =>
+          new Date(b.inserted_at).getTime() - new Date(a.inserted_at).getTime()
+      )
+      .slice(offset, offset + limit);
   }
 
   /**
@@ -367,7 +412,10 @@ class DatabaseService {
   /**
    * Get followed user IDs
    */
-  async getFollowedUserIds(userId: string): Promise<string[]> {
+  async getFollowedUserIds(
+    userId: string,
+    options: { forceRefresh?: boolean } = {}
+  ): Promise<string[]> {
     return this.query(
       `followed_${userId}`,
       async () => {
@@ -379,7 +427,10 @@ class DatabaseService {
         if (error) throw error;
         return data.map((row: any) => row.following_id);
       },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
+      {
+        cacheDuration: this.USER_DATA_CACHE_DURATION,
+        forceRefresh: options.forceRefresh ?? false,
+      }
     );
   }
 
@@ -781,6 +832,21 @@ class DatabaseService {
       });
     } catch (error) {
       reportError("Error clearing review caches:", error);
+    }
+  }
+
+  clearFollowCaches(userId?: string): void {
+    const prefix = userId ? `followed_${userId}` : "followed_";
+    for (const key of this.queryCache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.queryCache.delete(key);
+      }
+    }
+
+    for (const key of this.pendingQueries.keys()) {
+      if (key.startsWith(prefix)) {
+        this.pendingQueries.delete(key);
+      }
     }
   }
 

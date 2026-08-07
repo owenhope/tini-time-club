@@ -61,8 +61,10 @@ interface DiscoverTabsProps {
 
 const DISCOVER_TABS = [
   { value: "locations", label: "Places" },
-  { value: "profiles", label: "Profiles" },
+  { value: "profiles", label: "Members" },
 ] as const;
+
+const DISCOVER_PROFILE_AVATAR_SIZE = 40;
 
 export default function DiscoverTabs({
   query,
@@ -321,7 +323,7 @@ export default function DiscoverTabs({
             <Avatar
               avatarPath={item.avatar_url}
               username={item.username}
-              size={48}
+              size={DISCOVER_PROFILE_AVATAR_SIZE}
               reviewCount={reviewCount}
             />
           </View>
@@ -426,7 +428,7 @@ export default function DiscoverTabs({
               placeholder={
                 activeTab === "locations"
                   ? "Search for places"
-                  : "Search for people"
+                  : "Search for members"
               }
               value={query}
               onChangeText={onQueryChange}
@@ -475,6 +477,7 @@ export default function DiscoverTabs({
           options={DISCOVER_TABS}
           onChange={onTabChange}
           style={styles.tabContainer}
+          tone="ink"
         />
       </View>
 
@@ -493,7 +496,7 @@ export default function DiscoverTabs({
                 message={
                   query
                     ? `Nobody here by that name. Try another.`
-                    : "The club's quiet. Go find someone."
+                    : "The club's quiet. Go find a member."
                 }
               />
             }
@@ -528,9 +531,9 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
   },
-  // The chip row sits on the paper it filters, under the green.
+  // The chip row belongs to the same green block as the search header.
   segmentRow: {
-    backgroundColor: t.colors.background,
+    backgroundColor: t.colors.surfaceInk,
     paddingTop: t.spacing.md,
     paddingBottom: t.spacing.sm,
   },

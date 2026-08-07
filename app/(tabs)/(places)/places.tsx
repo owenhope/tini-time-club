@@ -37,6 +37,10 @@ import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles } from "@/theme";
 import { reportError, warn } from "@/utils/log";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
+import {
+  getClusterPressRegion,
+  type ClusterCoordinate,
+} from "@/utils/mapClusterRegion";
 
 const LOWER_LONSDALE_COORDINATES = {
   latitude: 49.3104,
@@ -56,6 +60,7 @@ const CLUSTER_FIT_PADDING = 1.8;
 const CLUSTER_MIN_DELTA = 0.008;
 const CLUSTER_FALLBACK_ZOOM = 0.4;
 const MARKER_PRESS_GUARD_MS = 250;
+const ROUTE_LOCATION_FOCUS_DELTA = 0.001;
 
 interface MapLocation {
   id: number | string;
@@ -173,30 +178,41 @@ function Map() {
     [locations, selectedLocationId]
   );
 
-  const handleMarkerPress = useCallback((location: MapLocation) => {
-    if (markerPressGuardRef.current) {
-      clearTimeout(markerPressGuardRef.current);
-    }
-    markerPressGuardRef.current = setTimeout(() => {
-      markerPressGuardRef.current = null;
-    }, MARKER_PRESS_GUARD_MS);
+  const handleMarkerPress = useCallback(
+    (location: MapLocation, focusDelta?: number) => {
+      if (markerPressGuardRef.current) {
+        clearTimeout(markerPressGuardRef.current);
+      }
+      markerPressGuardRef.current = setTimeout(() => {
+        markerPressGuardRef.current = null;
+      }, MARKER_PRESS_GUARD_MS);
 
-    const mapHeight = mapHeightRef.current;
-    const sheetLatitudeOffset =
-      mapHeight > 0
-        ? regionRef.current.latitudeDelta * (SHEET_HEIGHT / (2 * mapHeight))
-        : 0;
-    const centeredRegion = {
-      ...regionRef.current,
-      latitude: location.lat - sheetLatitudeOffset,
-      longitude: location.long,
-    };
+      const mapHeight = mapHeightRef.current;
+      const baseRegion = focusDelta
+        ? {
+            latitude: location.lat,
+            longitude: location.long,
+            latitudeDelta: focusDelta,
+            longitudeDelta: focusDelta,
+          }
+        : regionRef.current;
+      const sheetLatitudeOffset =
+        mapHeight > 0
+          ? baseRegion.latitudeDelta * (SHEET_HEIGHT / (2 * mapHeight))
+          : 0;
+      const centeredRegion = {
+        ...baseRegion,
+        latitude: location.lat - sheetLatitudeOffset,
+        longitude: location.long,
+      };
 
-    regionRef.current = centeredRegion;
-    mapRef.current?.animateToRegion(centeredRegion, 350);
-    setRegularsSheetOpen(false);
-    setSelectedLocationId(location.id);
-  }, []);
+      regionRef.current = centeredRegion;
+      mapRef.current?.animateToRegion(centeredRegion, 350);
+      setRegularsSheetOpen(false);
+      setSelectedLocationId(location.id);
+    },
+    []
+  );
 
   useEffect(() => {
     if (selectedLocation) {
@@ -230,63 +246,27 @@ function Map() {
       children
         ?.map((child) => child.geometry?.coordinates)
         .filter(
-          (coordinate): coordinate is [number, number] =>
+          (coordinate): coordinate is ClusterCoordinate =>
             Array.isArray(coordinate) &&
             Number.isFinite(coordinate[0]) &&
             Number.isFinite(coordinate[1])
         ) ?? [];
 
-    const clusterCoordinate = _cluster?.geometry?.coordinates;
-    const hasClusterCoordinate =
-      Array.isArray(clusterCoordinate) &&
-      Number.isFinite(clusterCoordinate[0]) &&
-      Number.isFinite(clusterCoordinate[1]);
+    const nextRegion = getClusterPressRegion({
+      childCoordinates: coordinates,
+      clusterCoordinate: _cluster?.geometry?.coordinates,
+      currentRegion: regionRef.current,
+      fitPadding: CLUSTER_FIT_PADDING,
+      minDelta: CLUSTER_MIN_DELTA,
+      fallbackZoom: CLUSTER_FALLBACK_ZOOM,
+    });
 
-    if (coordinates.length === 0 && !hasClusterCoordinate) return;
+    if (!nextRegion) return;
 
     Keyboard.dismiss();
     setSelectedLocationId(null);
     setRegularsSheetOpen(false);
     sheetRef.current?.close();
-
-    if (coordinates.length === 0 && hasClusterCoordinate) {
-      const nextRegion: Region = {
-        latitude: clusterCoordinate[1],
-        longitude: clusterCoordinate[0],
-        latitudeDelta: Math.max(
-          regionRef.current.latitudeDelta * CLUSTER_FALLBACK_ZOOM,
-          CLUSTER_MIN_DELTA
-        ),
-        longitudeDelta: Math.max(
-          regionRef.current.longitudeDelta * CLUSTER_FALLBACK_ZOOM,
-          CLUSTER_MIN_DELTA
-        ),
-      };
-
-      regionRef.current = nextRegion;
-      mapRef.current?.animateToRegion(nextRegion, 350);
-      return;
-    }
-
-    const latitudes = coordinates.map(([, latitude]) => latitude);
-    const longitudes = coordinates.map(([longitude]) => longitude);
-    const minLat = Math.min(...latitudes);
-    const maxLat = Math.max(...latitudes);
-    const minLong = Math.min(...longitudes);
-    const maxLong = Math.max(...longitudes);
-
-    const nextRegion: Region = {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLong + maxLong) / 2,
-      latitudeDelta: Math.max(
-        (maxLat - minLat) * CLUSTER_FIT_PADDING,
-        CLUSTER_MIN_DELTA
-      ),
-      longitudeDelta: Math.max(
-        (maxLong - minLong) * CLUSTER_FIT_PADDING,
-        CLUSTER_MIN_DELTA
-      ),
-    };
 
     regionRef.current = nextRegion;
     mapRef.current?.animateToRegion(nextRegion, 350);
@@ -314,32 +294,28 @@ function Map() {
     [handleMarkerPress, locations, selectedLocationId]
   );
 
-  const renderCluster = useCallback(
-    (cluster: any) => {
-      const [longitude, latitude] = cluster.geometry.coordinates;
-      const count = cluster.properties.point_count;
-      const handlePress = () => {
-        handleClusterPress(cluster);
-        cluster.onPress?.();
-      };
+  const renderCluster = useCallback((cluster: any) => {
+    const [longitude, latitude] = cluster.geometry.coordinates;
+    const count = cluster.properties.point_count;
+    const handlePress = () => {
+      cluster.onPress?.();
+    };
 
-      return (
-        <Marker
-          key={`cluster-${cluster.id}`}
-          coordinate={{ latitude, longitude }}
-          anchor={{ x: 0.5, y: 0.5 }}
-          tracksViewChanges={false}
-          onPress={handlePress}
-          tappable
-          stopPropagation
-          zIndex={5}
-        >
-          <ClusterPin count={count} onPress={handlePress} />
-        </Marker>
-      );
-    },
-    [handleClusterPress]
-  );
+    return (
+      <Marker
+        key={`cluster-${cluster.id}`}
+        coordinate={{ latitude, longitude }}
+        anchor={{ x: 0.5, y: 0.5 }}
+        tracksViewChanges={false}
+        onPress={handlePress}
+        tappable
+        stopPropagation
+        zIndex={5}
+      >
+        <ClusterPin count={count} onPress={handlePress} />
+      </Marker>
+    );
+  }, []);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -419,8 +395,8 @@ function Map() {
         const targetRegion: Region = {
           latitude: lat,
           longitude: lon,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+          latitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
+          longitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
         };
         const animationTimer = setTimeout(() => {
           regionRef.current = targetRegion;
@@ -449,7 +425,7 @@ function Map() {
 
     const openTimer = setTimeout(() => {
       openedRouteLocationRef.current = routeLocationId;
-      handleMarkerPress(target);
+      handleMarkerPress(target, ROUTE_LOCATION_FOCUS_DELTA);
     }, 0);
 
     return () => clearTimeout(openTimer);

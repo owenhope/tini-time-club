@@ -18,6 +18,7 @@ export interface SegmentedControlProps<Value extends string> {
   options: readonly SegmentedControlOption<Value>[];
   onChange: (value: Value) => void;
   style?: StyleProp<ViewStyle>;
+  tone?: "default" | "ink";
 }
 
 /** The app-wide text-only segmented control used to switch peer views. */
@@ -26,11 +27,13 @@ const SegmentedControl = <Value extends string>({
   options,
   onChange,
   style,
+  tone = "default",
 }: SegmentedControlProps<Value>) => {
   const styles = useStyles();
+  const onInk = tone === "ink";
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, onInk && styles.containerInk, style]}>
       {options.map((option) => {
         const selected = value === option.value;
         return (
@@ -39,6 +42,7 @@ const SegmentedControl = <Value extends string>({
             style={({ pressed }) => [
               styles.segment,
               selected && styles.segmentSelected,
+              selected && onInk && styles.segmentSelectedInk,
               pressed && styles.segmentPressed,
             ]}
             onPress={() => onChange(option.value)}
@@ -46,7 +50,15 @@ const SegmentedControl = <Value extends string>({
             accessibilityState={{ selected }}
             accessibilityLabel={option.label}
           >
-            <Text style={[styles.label, selected && styles.labelSelected]}>
+            <Text
+              style={[
+                styles.label,
+                onInk && styles.labelInk,
+                onInk && !selected && styles.labelInkIdle,
+                selected && styles.labelSelected,
+                selected && onInk && styles.labelSelectedInk,
+              ]}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -66,6 +78,12 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
     ...t.elevation.card,
   },
+  containerInk: {
+    borderColor: t.colors.ratingTrackOnInk,
+    backgroundColor: t.colors.ratingTrackOnInk,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   segment: {
     flex: 1,
     minHeight: 44,
@@ -79,6 +97,9 @@ const useStyles = makeStyles((t) => ({
   segmentSelected: {
     backgroundColor: t.colors.accent,
   },
+  segmentSelectedInk: {
+    backgroundColor: t.colors.surfaceInkDeep,
+  },
   segmentPressed: {
     opacity: 0.7,
   },
@@ -90,6 +111,15 @@ const useStyles = makeStyles((t) => ({
   labelSelected: {
     fontFamily: fonts.bold,
     color: t.colors.onAccent,
+  },
+  labelInk: {
+    color: t.colors.onInk,
+  },
+  labelInkIdle: {
+    opacity: 0.78,
+  },
+  labelSelectedInk: {
+    color: t.colors.onInk,
   },
 }));
 

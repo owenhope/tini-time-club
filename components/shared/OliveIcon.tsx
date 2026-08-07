@@ -11,6 +11,7 @@ const OLIVE_VIEW_BOX = {
   height: 426.55,
 } as const;
 const OLIVE_ASPECT_RATIO = OLIVE_VIEW_BOX.width / OLIVE_VIEW_BOX.height;
+const OLIVE_CANVAS_PADDING_RATIO = 0.12;
 const OLIVE_BODY_PATH =
   "M400.249 341.459C450.677 230.238 422.399 108.719 337.088 70.038C251.777 31.357 141.738 90.1621 91.309 201.383C40.8804 312.604 69.1585 434.123 154.47 472.804C239.781 511.485 349.82 452.68 400.249 341.459Z";
 const OLIVE_PIMENTO_PATH =
@@ -24,33 +25,46 @@ export interface OliveIconProps {
   outlineColor?: ColorValue;
 }
 
+export const getOliveIconCanvasSize = (size: number) => {
+  const padding = size * OLIVE_CANVAS_PADDING_RATIO;
+
+  return {
+    width: size * OLIVE_ASPECT_RATIO + padding * 2,
+    height: size + padding * 2,
+    padding,
+  };
+};
+
 const OliveIcon = ({
   size,
   color = OLIVE_ICON_COLOR,
   pimentoColor = OLIVE_PIMENTO_COLOR,
   opacity = 1,
   outlineColor,
-}: OliveIconProps) => (
-  <Svg width={size * OLIVE_ASPECT_RATIO} height={size} fill="none">
-    <G
-      transform={`matrix(${size / OLIVE_VIEW_BOX.height} 0 0 ${
-        size / OLIVE_VIEW_BOX.height
-      } ${(-OLIVE_VIEW_BOX.x * size) / OLIVE_VIEW_BOX.height} ${
-        (-OLIVE_VIEW_BOX.y * size) / OLIVE_VIEW_BOX.height
-      })`}
-    >
-      <Path
-        d={OLIVE_BODY_PATH}
-        fill={outlineColor ? "transparent" : color}
-        stroke={outlineColor}
-        strokeWidth={outlineColor ? 28 : 0}
-        opacity={opacity}
-      />
-      {outlineColor ? null : (
-        <Path d={OLIVE_PIMENTO_PATH} fill={pimentoColor} opacity={opacity} />
-      )}
-    </G>
-  </Svg>
-);
+}: OliveIconProps) => {
+  const canvas = getOliveIconCanvasSize(size);
+  const scale = size / OLIVE_VIEW_BOX.height;
+
+  return (
+    <Svg width={canvas.width} height={canvas.height} fill="none">
+      <G
+        transform={`matrix(${scale} 0 0 ${scale} ${
+          canvas.padding - OLIVE_VIEW_BOX.x * scale
+        } ${canvas.padding - OLIVE_VIEW_BOX.y * scale})`}
+      >
+        <Path
+          d={OLIVE_BODY_PATH}
+          fill={outlineColor ? "transparent" : color}
+          stroke={outlineColor}
+          strokeWidth={outlineColor ? 28 : 0}
+          opacity={opacity}
+        />
+        {outlineColor ? null : (
+          <Path d={OLIVE_PIMENTO_PATH} fill={pimentoColor} opacity={opacity} />
+        )}
+      </G>
+    </Svg>
+  );
+};
 
 export default memo(OliveIcon);

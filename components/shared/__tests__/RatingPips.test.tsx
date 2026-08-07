@@ -1,9 +1,9 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { Path } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import RatingPips from "../RatingPips";
 import { ThemeProvider } from "@/theme";
-import { OLIVE_ICON_COLOR } from "../OliveIcon";
+import { getOliveIconCanvasSize, OLIVE_ICON_COLOR } from "../OliveIcon";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -62,10 +62,17 @@ describe("RatingPips", () => {
     expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 0.5]);
   });
 
-  it("renders 4.8 as four solid olives and one at 80 percent", () => {
+  it("caps high fractional olive opacity so decimals do not look whole", () => {
+    const tree = render(<RatingPips value={3.8} />);
+    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+
+    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 0.55]);
+  });
+
+  it("keeps high fractional values distinct from whole olives", () => {
     const tree = render(<RatingPips value={4.8} />);
     const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
-    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 1, 0.8]);
+    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 1, 0.55]);
   });
 
   it("omits hollow pips for read-only display ratings", () => {
@@ -73,6 +80,13 @@ describe("RatingPips", () => {
     const hollow = olives(tree).filter((n) => n.props.fill === "transparent");
     expect(hollow).toHaveLength(0);
     expect(olives(tree)).toHaveLength(2);
+  });
+
+  it("keeps filled olives in the brand olive colour on dark surfaces", () => {
+    const tree = render(<RatingPips value={2} onDark />);
+    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+
+    expect(filled).toHaveLength(2);
   });
 
   it("shows faint unselected olives for interactive rating controls", () => {
@@ -109,5 +123,17 @@ describe("RatingPips", () => {
       (n) => n.props.accessibilityLabel === "4 out of 5 olives"
     );
     expect(labelled.length).toBeGreaterThan(0);
+  });
+
+  it("pads the olive canvas so the angled body is not clipped", () => {
+    const size = 20;
+    const tree = render(<RatingPips value={1} size={size} />);
+    const svg = tree.root.findByType(Svg);
+    const canvas = getOliveIconCanvasSize(size);
+
+    expect(svg.props.width).toBe(canvas.width);
+    expect(svg.props.height).toBe(canvas.height);
+    expect(canvas.width).toBeGreaterThan(size * 0.84);
+    expect(canvas.height).toBeGreaterThan(size);
   });
 });
