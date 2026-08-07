@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { bucketByDay } from "@/lib/bucket";
+import { isSystemPushKind } from "@/lib/notificationKinds";
 import type { DateRange } from "@/lib/range";
 
 export interface AdminProfile {
@@ -17,6 +18,12 @@ export interface AdminProfile {
   created_at?: string;
   last_sign_in_at?: string;
   last_review_at?: string;
+}
+
+export interface NotificationAudienceMember {
+  id: string;
+  username: string | null;
+  name: string | null;
 }
 
 export interface AdminReview {
@@ -239,18 +246,6 @@ export interface AnalyticsData {
     last_shared_at: string;
   })[];
   totalMembers: number;
-  tierDistribution: {
-    tier: string;
-    color: string;
-    count: number;
-    /** Review count that earns the tier. */
-    min: number;
-    /** Last review count still inside the tier; null at the top. */
-    max: number | null;
-    /** The tier above, and the review count that reaches it. */
-    next: { tier: string; min: number } | null;
-  }[];
-  topReviewers: AdminProfile[];
   /** Signups inside the range, for the growth section. */
   signupsInRange: number;
   /**
@@ -275,6 +270,49 @@ const RANK_TIERS = [
   { name: "Top Shelf", min: 150, color: "#8E7CE8" },
 ];
 
+export interface TierDistributionRow {
+  tier: string;
+  color: string;
+  count: number;
+  /** Review count that earns the tier. */
+  min: number;
+  /** Last review count still inside the tier; null at the top. */
+  max: number | null;
+  /** The tier above, and the review count that reaches it. */
+  next: { tier: string; min: number } | null;
+}
+
+const tierDistributionFromProfiles = (
+  profiles: { review_count: number | null }[]
+): TierDistributionRow[] =>
+  RANK_TIERS.map((tier, index) => {
+    const next = RANK_TIERS[index + 1];
+    return {
+      tier: tier.name,
+      color: tier.color,
+      count: profiles.filter(
+        (p) =>
+          (p.review_count ?? 0) >= tier.min &&
+          (!next || (p.review_count ?? 0) < next.min)
+      ).length,
+      min: tier.min,
+      max: next ? next.min - 1 : null,
+      next: next ? { tier: next.name, min: next.min } : null,
+    };
+  });
+
+export const fetchTierDistribution = async (): Promise<
+  TierDistributionRow[]
+> => {
+  const { data, error } = await db()
+    .from("profiles")
+    .select("review_count")
+    .eq("deleted", false);
+  if (error) throw new Error(error.message);
+
+  return tierDistributionFromProfiles(data ?? []);
+};
+
 export const fetchAnalytics = async (
   range: DateRange
 ): Promise<AnalyticsData> => {
@@ -290,7 +328,6 @@ export const fetchAnalytics = async (
     celebrations,
     invites,
     profiles,
-    reviewers,
   ] = await Promise.all([
     fetchAuthUsers(),
     db()
@@ -328,7 +365,6 @@ export const fetchAnalytics = async (
       .from("profiles")
       .select("id,review_count,deleted")
       .eq("deleted", false),
-    fetchTopReviewers(10),
   ]);
 
   // Previous equal-length window, counts only — enough to say whether each
@@ -362,22 +398,6 @@ export const fetchAnalytics = async (
         u.last_sign_in_at &&
         now - new Date(u.last_sign_in_at).getTime() < windowDays * dayMs
     ).length;
-
-  const tierDistribution = RANK_TIERS.map((tier, index) => {
-    const next = RANK_TIERS[index + 1];
-    return {
-      tier: tier.name,
-      color: tier.color,
-      count: (profiles.data ?? []).filter(
-        (p) =>
-          (p.review_count ?? 0) >= tier.min &&
-          (!next || (p.review_count ?? 0) < next.min)
-      ).length,
-      min: tier.min,
-      max: next ? next.min - 1 : null,
-      next: next ? { tier: next.name, min: next.min } : null,
-    };
-  });
 
   const shareRows = shares.data ?? [];
   const celebrationRows = celebrations.data ?? [];
@@ -516,8 +536,6 @@ export const fetchAnalytics = async (
       })
       .filter(Boolean) as AnalyticsData["topSharers"],
     totalMembers: (profiles.data ?? []).length,
-    tierDistribution,
-    topReviewers: reviewers,
     signupsInRange: authRows.filter((user) => {
       if (!user.created_at) return false;
       const at = new Date(user.created_at).getTime();
@@ -654,13 +672,20 @@ export const fetchNotificationAnalytics = async (
       .gte("inserted_at", sinceIso),
   ]);
 
+  const sentRows = (sent.data ?? []).filter((row) =>
+    isSystemPushKind(row.kind ?? "unknown")
+  );
+  const openRows = (opens.data ?? []).filter((row) =>
+    isSystemPushKind(row.kind ?? "unknown")
+  );
+
   const sentByKind = new Map<string, number>();
-  for (const row of sent.data ?? []) {
+  for (const row of sentRows) {
     const kind = row.kind ?? "unknown";
     sentByKind.set(kind, (sentByKind.get(kind) ?? 0) + 1);
   }
   const openedByKind = new Map<string, number>();
-  for (const row of opens.data ?? []) {
+  for (const row of openRows) {
     const kind = row.kind ?? "unknown";
     openedByKind.set(kind, (openedByKind.get(kind) ?? 0) + 1);
   }
@@ -677,6 +702,9 @@ export const fetchNotificationAnalytics = async (
       opened: openedCount,
       openRate: sentCount > 0 ? openedCount / sentCount : null,
     };
+  }).sort((left, right) => {
+    if (right.sent !== left.sent) return right.sent - left.sent;
+    return right.opened - left.opened;
   });
 
   // Conversion: an open counts if that member posted a review within 24h.
@@ -687,7 +715,6 @@ export const fetchNotificationAnalytics = async (
     times.push(new Date(review.inserted_at).getTime());
     reviewsByUser.set(review.user_id, times);
   }
-  const openRows = opens.data ?? [];
   const converted = openRows.filter((open) => {
     const openedAt = new Date(open.opened_at).getTime();
     return (reviewsByUser.get(open.user_id) ?? []).some(
@@ -696,7 +723,7 @@ export const fetchNotificationAnalytics = async (
   }).length;
 
   return {
-    totalSent: (sent.data ?? []).length,
+    totalSent: sentRows.length,
     totalOpened: openRows.length,
     openToReviewRate: openRows.length > 0 ? converted / openRows.length : null,
     byKind,
@@ -708,6 +735,31 @@ export const fetchPushTokenCount = async (): Promise<number> => {
     .from("push_tokens")
     .select("expo_push_token", { count: "exact", head: true });
   return count ?? 0;
+};
+
+export const fetchWeeklyPushSubscriberCount = async (): Promise<number> => {
+  const { count, error } = await db()
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("deleted", false)
+    .eq("weekly_push_notifications_enabled", true);
+  if (error) throw new Error(error.message);
+
+  return count ?? 0;
+};
+
+export const fetchNotificationAudienceMembers = async (): Promise<
+  NotificationAudienceMember[]
+> => {
+  const { data, error } = await db()
+    .from("profiles")
+    .select("id,username,name")
+    .eq("deleted", false)
+    .order("username", { ascending: true, nullsFirst: false })
+    .order("id", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return data ?? [];
 };
 
 export const fetchSharePreviewReviews = async (
@@ -1037,6 +1089,19 @@ export const fetchAllReviews = async (
   state?: "active" | "inactive"
 ): Promise<{ reviews: AdminReviewRow[]; total: number }> => {
   const offset = (Math.max(1, page) - 1) * perPage;
+  const trimmedSearch = search?.trim();
+  const usernameSearch = trimmedSearch?.replace(/^@+/, "");
+  const matchingProfileIds = usernameSearch
+    ? await db()
+        .from("profiles")
+        .select("id")
+        .ilike("username", `%${usernameSearch}%`)
+        .then(({ data, error }) => {
+          if (error) throw new Error(error.message);
+          return (data ?? []).map((profile) => profile.id);
+        })
+    : [];
+
   let query = db()
     .from("reviews")
     .select(
@@ -1047,7 +1112,14 @@ export const fetchAllReviews = async (
     )
     .order("inserted_at", { ascending: false })
     .range(offset, offset + perPage - 1);
-  if (search) query = query.ilike("comment", `%${search}%`);
+  if (trimmedSearch) {
+    query =
+      matchingProfileIds.length > 0
+        ? query.or(
+            `comment.ilike.%${trimmedSearch}%,user_id.in.(${matchingProfileIds.join(",")})`
+          )
+        : query.ilike("comment", `%${trimmedSearch}%`);
+  }
   if (state === "active") query = query.eq("state", 1);
   if (state === "inactive") query = query.neq("state", 1);
 

@@ -8,9 +8,8 @@ export interface AnalyticsSection {
 }
 
 /**
- * Sticky sub-nav for the Analytics page. Plain anchors, so jumping works
- * without JS; an IntersectionObserver highlights whichever section is in
- * view so a long scroll never loses its place.
+ * Sticky sub-nav for the Analytics page. Plain anchors handle jumping; a
+ * scroll listener highlights the latest heading below the sticky toolbar.
  */
 export default function AnalyticsNav({
   sections,
@@ -25,20 +24,34 @@ export default function AnalyticsNav({
       .filter((element): element is HTMLElement => element != null);
     if (elements.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Topmost intersecting section wins, so scrolling up and down both
-        // settle on the heading the reader is actually looking at.
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-10% 0px -70% 0px" }
-    );
+    let frame = 0;
+    const updateActive = () => {
+      const headingLine = Math.min(240, window.innerHeight * 0.3);
+      let current = elements[0].id;
 
-    elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
+      for (const element of elements) {
+        if (element.getBoundingClientRect().top <= headingLine) {
+          current = element.id;
+        }
+      }
+
+      setActive(current);
+    };
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateActive);
+    };
+
+    updateActive();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("hashchange", scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("hashchange", scheduleUpdate);
+    };
   }, [sections]);
 
   return (
@@ -55,6 +68,7 @@ export default function AnalyticsNav({
             <a
               href={`#${section.id}`}
               aria-current={active === section.id ? "true" : undefined}
+              onClick={() => setActive(section.id)}
               className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 active === section.id
                   ? "bg-emerald-900 text-white"

@@ -17,8 +17,8 @@ export default function FeatureSection({
   children: React.ReactNode;
 }) {
   return (
-    // scroll-mt keeps the heading clear of the sticky page header on jump.
-    <section id={id} className="mt-8 scroll-mt-6 first:mt-0">
+    // scroll-mt keeps anchor jumps clear of the sticky Analytics toolbar.
+    <section id={id} className="mt-8 scroll-mt-24 first:mt-0">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold tracking-tight">{title}</h2>

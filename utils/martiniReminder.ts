@@ -1,5 +1,4 @@
 import * as Notifications from "expo-notifications";
-import * as SecureStore from "expo-secure-store";
 import { reminderForDate, upcomingFridays } from "@/utils/martiniReminders";
 import { warn } from "@/utils/log";
 
@@ -22,29 +21,16 @@ const REMINDER_ID_PREFIX = "tini-friday";
 // "friday-martini-<date>" at 5pm); cancelled on upgrade so nobody gets
 // double or stale-time nudges.
 const LEGACY_ID_PREFIX = "friday-martini";
-// Opt-out flag from the Notifications screen; ensure() respects it because
-// the tab layout re-schedules on every app open.
-const REMINDER_DISABLED_KEY = "friday-martini-reminder-disabled";
 const REMINDER_HOUR = 16;
 const WEEKS_AHEAD = 40;
-
-export async function isFridayMartiniReminderEnabled(): Promise<boolean> {
-  try {
-    return (await SecureStore.getItemAsync(REMINDER_DISABLED_KEY)) !== "true";
-  } catch {
-    return true;
-  }
-}
 
 export async function setFridayMartiniReminderEnabled(
   enabled: boolean
 ): Promise<void> {
   try {
     if (enabled) {
-      await SecureStore.deleteItemAsync(REMINDER_DISABLED_KEY);
       await ensureFridayMartiniReminder();
     } else {
-      await SecureStore.setItemAsync(REMINDER_DISABLED_KEY, "true");
       await cancelFridayMartiniReminder();
     }
   } catch (error) {
@@ -59,8 +45,6 @@ const idForDate = (date: Date) =>
 
 export async function ensureFridayMartiniReminder(): Promise<void> {
   try {
-    if (!(await isFridayMartiniReminderEnabled())) return;
-
     const permissions = await Notifications.getPermissionsAsync();
     if (!permissions.granted) return;
 
@@ -95,6 +79,14 @@ export async function ensureFridayMartiniReminder(): Promise<void> {
     }
   } catch (error) {
     warn("Failed to schedule Friday reminders:", error);
+  }
+}
+
+export async function syncFridayMartiniReminder(enabled: boolean): Promise<void> {
+  if (enabled) {
+    await ensureFridayMartiniReminder();
+  } else {
+    await cancelFridayMartiniReminder();
   }
 }
 

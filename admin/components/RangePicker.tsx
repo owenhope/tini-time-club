@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 import { RANGE_PRESETS, type DateRange } from "@/lib/range";
 
 const toInputDate = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Preset chips + a custom from/to form, GA style. Pure links/GET — no JS. */
+/** Preset chips + a custom from/to form, GA style. */
 export default function RangePicker({
   path,
   range,
@@ -11,14 +15,28 @@ export default function RangePicker({
   path: string;
   range: DateRange;
 }) {
+  const router = useRouter();
+
+  const submitCustomRange = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+    params.set("from", String(formData.get("from") ?? ""));
+    params.set("to", String(formData.get("to") ?? ""));
+
+    router.push(`${path}?${params}`, { scroll: false });
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
       {RANGE_PRESETS.map((days) => {
         const active = range.query === `days=${days}`;
         return (
           <Link
             key={days}
             href={`${path}?days=${days}`}
+            scroll={false}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               active
                 ? "bg-emerald-900 text-white"
@@ -29,7 +47,7 @@ export default function RangePicker({
           </Link>
         );
       })}
-      <form action={path} className="flex items-center gap-1.5">
+      <form onSubmit={submitCustomRange} className="flex items-center gap-1.5">
         <input
           type="date"
           name="from"

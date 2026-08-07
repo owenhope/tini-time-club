@@ -28,6 +28,10 @@ yarn-error.*
 # generated screenshot exports
 scripts/screenshots/output/
 
+# local agent skills
+.agents/
+skills-lock.json
+
 # macOS
 .DS_Store
 *.pem

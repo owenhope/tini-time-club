@@ -47,7 +47,7 @@ export function PageHeader({
   return (
     <section className={surfaceClass}>
       <div className={`grid grid-cols-12 gap-4 ${paddingClass}`}>
-        <div className="col-span-12 flex items-start justify-between gap-6">
+        <div className="col-span-12 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="min-w-0">
             {backLink ? (
               <Link
@@ -72,7 +72,9 @@ export function PageHeader({
               </p>
             ) : null}
           </div>
-          {actions ? <div className="shrink-0">{actions}</div> : null}
+          {actions ? (
+            <div className="w-full lg:w-auto lg:justify-self-end">{actions}</div>
+          ) : null}
         </div>
 
         {stats.length > 0 ? (
@@ -106,18 +108,25 @@ export function FilterBar({
   searchName = "q",
   searchDefault,
   searchPlaceholder,
+  variant = "standalone",
   children,
 }: {
   action: string;
   searchName?: string;
   searchDefault?: string;
   searchPlaceholder: string;
+  variant?: "standalone" | "attached";
   children?: React.ReactNode;
 }) {
+  const formClass =
+    variant === "attached"
+      ? "flex flex-wrap items-center justify-end gap-2 bg-stone-50"
+      : "flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2";
+
   return (
     <form
       action={action}
-      className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2"
+      className={formClass}
     >
       <input
         type="search"
@@ -170,13 +179,20 @@ export function DataTable({
   columns,
   children,
   empty,
+  toolbar,
 }: {
   columns: React.ReactNode[];
   children: React.ReactNode;
   empty?: React.ReactNode;
+  toolbar?: React.ReactNode;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+      {toolbar ? (
+        <div className="border-b border-stone-200 bg-stone-50 p-2">
+          {toolbar}
+        </div>
+      ) : null}
       <table className="w-full text-left text-sm">
         <thead className="border-b border-stone-200 bg-stone-100 text-[11px] uppercase tracking-[0.14em] text-stone-500">
           <tr>
