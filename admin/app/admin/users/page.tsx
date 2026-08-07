@@ -1,4 +1,5 @@
 import AdminShell from "@/components/AdminShell";
+import ClickableRow from "@/components/ClickableRow";
 import {
   ActionLink,
   DataTable,
@@ -273,7 +274,11 @@ export default async function UsersPage({
           {profiles.map((profile) => {
             const tier = tierFor(profile.review_count);
             return (
-              <tr key={profile.id} className="hover:bg-stone-50">
+              <ClickableRow
+                key={profile.id}
+                href={`/admin/users/${profile.id}`}
+                className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
+              >
                 <td className="px-4 py-3">
                   <UserBadge profile={profile} />
                 </td>
@@ -294,7 +299,7 @@ export default async function UsersPage({
                     Manage
                   </ActionLink>
                 </td>
-              </tr>
+              </ClickableRow>
             );
           })}
         </DataTable>

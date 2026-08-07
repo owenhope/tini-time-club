@@ -100,7 +100,7 @@ export default async function SharePreviewPage({
                   {reviews.map((review) => (
                     <option key={review.id} value={review.id}>
                       #{review.id} ·{" "}
-                      {review.location?.name ?? "Unknown location"} · @
+                      {review.location?.name ?? "Unknown place"} · @
                       {review.profile?.username ?? "unknown"} ·{" "}
                       {new Date(review.inserted_at).toLocaleDateString()}
                     </option>

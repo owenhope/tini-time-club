@@ -139,7 +139,7 @@ export default async function ReviewDetailPage({
               </div>
               <div>
                 <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
-                  Location
+                  Place
                 </dt>
                 <dd className="mt-1 text-stone-900">
                   {review.location?.address ?? "—"}

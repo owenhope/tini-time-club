@@ -124,7 +124,7 @@ export async function setReviewActive(reviewId: string, active: boolean) {
   revalidatePath("/admin/users");
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/places");
 }
 
 export async function updateLocation(locationId: string, formData: FormData) {
@@ -133,7 +133,7 @@ export async function updateLocation(locationId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const placeId = String(formData.get("place_id") ?? "").trim();
-  const path = `/admin/locations/${locationId}`;
+  const path = `/admin/places/${locationId}`;
 
   if (!name || name.length > 160) redirect(`${path}?error=name`);
   if (address.length > 300) redirect(`${path}?error=address`);
@@ -151,7 +151,7 @@ export async function updateLocation(locationId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath(path);
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/places");
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
   redirect(`${path}?updated=1`);

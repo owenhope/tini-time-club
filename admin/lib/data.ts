@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { bucketByDay } from "@/lib/bucket";
 import { isSystemPushKind } from "@/lib/notificationKinds";
+import { formatCityRegion } from "@/lib/format";
 import type { DateRange } from "@/lib/range";
 
 export interface AdminProfile {
@@ -1091,6 +1092,7 @@ export const fetchProfile = async (
       location: Array.isArray(review.location)
         ? (review.location[0] ?? null)
         : review.location,
+      engagement: emptyEngagement(),
     })),
   };
 };
@@ -1104,6 +1106,11 @@ export interface AdminReviewRow {
   state: number | null;
   location: { id: number; name: string | null } | null;
   profile: AdminProfile | null;
+  engagement: {
+    likes: number;
+    comments: number;
+    shares: number;
+  };
 }
 
 export interface AdminReviewDetail extends AdminReviewRow {
@@ -1121,6 +1128,54 @@ export interface AdminReviewDetail extends AdminReviewRow {
 
 const one = <T>(value: T | T[] | null | undefined): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+
+const emptyEngagement = () => ({ likes: 0, comments: 0, shares: 0 });
+
+const fetchReviewEngagement = async (
+  reviewIds: string[],
+  activeMemberIds: string[]
+): Promise<Map<string, ReturnType<typeof emptyEngagement>>> => {
+  const engagement = new Map(
+    reviewIds.map((id) => [id, emptyEngagement()] as const)
+  );
+  if (reviewIds.length === 0 || activeMemberIds.length === 0) {
+    return engagement;
+  }
+
+  const [likes, comments, shares] = await Promise.all([
+    db()
+      .from("likes")
+      .select("review_id")
+      .in("review_id", reviewIds)
+      .in("user_id", activeMemberIds),
+    db()
+      .from("comments")
+      .select("review_id")
+      .in("review_id", reviewIds)
+      .in("user_id", activeMemberIds),
+    db()
+      .from("review_share_events")
+      .select("review_id")
+      .in("review_id", reviewIds)
+      .in("user_id", activeMemberIds),
+  ]);
+  if (likes.error) throw new Error(likes.error.message);
+  if (comments.error) throw new Error(comments.error.message);
+  if (shares.error) throw new Error(shares.error.message);
+
+  const tally = (reviewId: unknown, key: keyof ReturnType<typeof emptyEngagement>) => {
+    if (reviewId == null) return;
+    const row = engagement.get(String(reviewId));
+    if (row) row[key] += 1;
+  };
+  for (const like of likes.data ?? []) tally(like.review_id, "likes");
+  for (const comment of comments.data ?? []) {
+    tally(comment.review_id, "comments");
+  }
+  for (const share of shares.data ?? []) tally(share.review_id, "shares");
+
+  return engagement;
+};
 
 export interface ReviewCounts {
   total: number;
@@ -1157,16 +1212,26 @@ export const fetchAllReviews = async (
   const offset = (Math.max(1, page) - 1) * perPage;
   const trimmedSearch = search?.trim();
   const usernameSearch = trimmedSearch?.replace(/^@+/, "");
-  const matchingProfileIds = usernameSearch
-    ? await db()
-        .from("profiles")
-        .select("id")
-        .ilike("username", `%${usernameSearch}%`)
-        .then(({ data, error }) => {
-          if (error) throw new Error(error.message);
-          return (data ?? []).map((profile) => profile.id);
-        })
-    : [];
+  const [matchingProfileIds, matchingPlaceIds] = trimmedSearch
+    ? await Promise.all([
+        db()
+          .from("profiles")
+          .select("id")
+          .ilike("username", `%${usernameSearch}%`)
+          .then(({ data, error }) => {
+            if (error) throw new Error(error.message);
+            return (data ?? []).map((profile) => profile.id);
+          }),
+        db()
+          .from("locations")
+          .select("id")
+          .or(`name.ilike.%${trimmedSearch}%,address.ilike.%${trimmedSearch}%`)
+          .then(({ data, error }) => {
+            if (error) throw new Error(error.message);
+            return (data ?? []).map((place) => place.id);
+          }),
+      ])
+    : [[], []];
 
   let query = db()
     .from("reviews")
@@ -1179,18 +1244,23 @@ export const fetchAllReviews = async (
     .order("inserted_at", { ascending: false })
     .range(offset, offset + perPage - 1);
   if (trimmedSearch) {
-    query =
-      matchingProfileIds.length > 0
-        ? query.or(
-            `comment.ilike.%${trimmedSearch}%,user_id.in.(${matchingProfileIds.join(",")})`
-          )
-        : query.ilike("comment", `%${trimmedSearch}%`);
+    const filters = [`comment.ilike.%${trimmedSearch}%`];
+    if (matchingProfileIds.length > 0) {
+      filters.push(`user_id.in.(${matchingProfileIds.join(",")})`);
+    }
+    if (matchingPlaceIds.length > 0) {
+      filters.push(`location.in.(${matchingPlaceIds.join(",")})`);
+    }
+    query = query.or(filters.join(","));
   }
   if (state === "active") query = query.eq("state", 1);
   if (state === "inactive") query = query.neq("state", 1);
 
   const { data, error, count } = await query;
   if (error) throw new Error(error.message);
+  const reviewIds = (data ?? []).map((row) => String(row.id));
+  const activeMemberIds = await fetchActiveMemberIds();
+  const engagement = await fetchReviewEngagement(reviewIds, activeMemberIds);
 
   return {
     reviews: (data ?? []).map((row) => ({
@@ -1202,6 +1272,7 @@ export const fetchAllReviews = async (
       state: row.state,
       location: one(row.location),
       profile: one(row.profile),
+      engagement: engagement.get(String(row.id)) ?? emptyEngagement(),
     })),
     total: count ?? 0,
   };
@@ -1213,7 +1284,7 @@ export const fetchAdminReview = async (
   if (!/^\d+$/.test(id)) return null;
 
   const activeMemberIds = await fetchActiveMemberIds();
-  const [reviewResult, likes, comments, shares] = await Promise.all([
+  const [reviewResult, engagement] = await Promise.all([
     db()
       .from("reviews")
       .select(
@@ -1225,33 +1296,10 @@ export const fetchAdminReview = async (
       )
       .eq("id", id)
       .maybeSingle(),
-    activeMemberIds.length > 0
-      ? db()
-          .from("likes")
-          .select("*", { count: "exact", head: true })
-          .eq("review_id", id)
-          .in("user_id", activeMemberIds)
-      : { count: 0, error: null },
-    activeMemberIds.length > 0
-      ? db()
-          .from("comments")
-          .select("*", { count: "exact", head: true })
-          .eq("review_id", id)
-          .in("user_id", activeMemberIds)
-      : { count: 0, error: null },
-    activeMemberIds.length > 0
-      ? db()
-          .from("review_share_events")
-          .select("*", { count: "exact", head: true })
-          .eq("review_id", id)
-          .in("user_id", activeMemberIds)
-      : { count: 0, error: null },
+    fetchReviewEngagement([id], activeMemberIds),
   ]);
   const { data, error } = reviewResult;
   if (error) throw new Error(error.message);
-  if (likes.error) throw new Error(likes.error.message);
-  if (comments.error) throw new Error(comments.error.message);
-  if (shares.error) throw new Error(shares.error.message);
   if (!data) return null;
 
   const imageResult = data.image_url
@@ -1273,11 +1321,7 @@ export const fetchAdminReview = async (
     spirit: one(data.spirit),
     type: one(data.type),
     profile: one(data.profile),
-    engagement: {
-      likes: likes.count ?? 0,
-      comments: comments.count ?? 0,
-      shares: shares.count ?? 0,
-    },
+    engagement: engagement.get(id) ?? emptyEngagement(),
   };
 };
 
@@ -1288,6 +1332,8 @@ export interface AdminLocation {
   rating: number | null;
   total_ratings: number;
 }
+
+export type LocationSort = "place" | "area" | "rating" | "reviews";
 
 export interface AdminLocationDetail extends AdminLocation {
   place_id: string | null;
@@ -1393,6 +1439,7 @@ export const fetchLatestActivity = async (
       state: row.state,
       location: one(row.location),
       profile: one(row.profile),
+      engagement: emptyEngagement(),
     })),
     locations: (locations.data ?? []) as LatestLocation[],
   };
@@ -1519,6 +1566,11 @@ export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
             state: row.state,
             location: one(row.location),
             profile: one(row.profile),
+            engagement: {
+              likes: counts.likes,
+              comments: counts.comments,
+              shares: 0,
+            },
             ...counts,
           };
         })
@@ -1616,17 +1668,19 @@ export const fetchLocations = async (
   search?: string,
   page = 1,
   perPage = USERS_PAGE_SIZE,
-  minReviews = 0
+  minReviews = 0,
+  sort: LocationSort = "place"
 ): Promise<{ locations: AdminLocation[]; total: number }> => {
   const offset = (Math.max(1, page) - 1) * perPage;
   let query = db()
     .from("locations")
-    .select("id,name,address", { count: "exact" })
+    .select("id,name,address")
     .order("name", { ascending: true });
-  if (minReviews <= 0) query = query.range(offset, offset + perPage - 1);
-  if (search) query = query.ilike("name", `%${search}%`);
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,address.ilike.%${search}%`);
+  }
 
-  const { data, error, count } = await query;
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const rows = data ?? [];
@@ -1657,11 +1711,41 @@ export const fetchLocations = async (
     minReviews > 0
       ? locations.filter((location) => location.total_ratings >= minReviews)
       : locations;
+  const sorted = [...filtered].sort((left, right) => {
+    const byPlace =
+      (left.name ?? "").localeCompare(right.name ?? "") ||
+      String(left.id).localeCompare(String(right.id));
+
+    if (sort === "area") {
+      return (
+        formatCityRegion(left.address).localeCompare(
+          formatCityRegion(right.address)
+        ) || byPlace
+      );
+    }
+
+    if (sort === "rating") {
+      return (
+        (right.rating ?? -1) - (left.rating ?? -1) ||
+        right.total_ratings - left.total_ratings ||
+        byPlace
+      );
+    }
+
+    if (sort === "reviews") {
+      return (
+        right.total_ratings - left.total_ratings ||
+        (right.rating ?? -1) - (left.rating ?? -1) ||
+        byPlace
+      );
+    }
+
+    return byPlace;
+  });
 
   return {
-    locations:
-      minReviews > 0 ? filtered.slice(offset, offset + perPage) : filtered,
-    total: minReviews > 0 ? filtered.length : (count ?? 0),
+    locations: sorted.slice(offset, offset + perPage),
+    total: sorted.length,
   };
 };
 
@@ -1717,6 +1801,7 @@ export const fetchAdminLocation = async (
       state: review.state,
       location: { id: location.id, name: location.name },
       profile: one(review.profile),
+      engagement: emptyEngagement(),
     })),
   };
 };
