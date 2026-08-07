@@ -70,28 +70,29 @@ export default async function ReviewsPage({
         statColumns={3}
         surface="transparent"
         density="compact"
-        filters={
-          <FilterBar
-            action="/admin/reviews"
-            searchDefault={q}
-            searchPlaceholder="Search captions..."
-          >
-            <FilterSelect
-              name="state"
-              label="State"
-              defaultValue={state}
-              options={[
-                { label: "All", value: "" },
-                { label: "Active", value: "active" },
-                { label: "Inactive", value: "inactive" },
-              ]}
-            />
-          </FilterBar>
-        }
       />
 
       <div className="px-8 py-6">
         <DataTable
+          toolbar={
+            <FilterBar
+              action="/admin/reviews"
+              searchDefault={q}
+              searchPlaceholder="Search captions or usernames..."
+              variant="attached"
+            >
+              <FilterSelect
+                name="state"
+                label="State"
+                defaultValue={state}
+                options={[
+                  { label: "All", value: "" },
+                  { label: "Active", value: "active" },
+                  { label: "Inactive", value: "inactive" },
+                ]}
+              />
+            </FilterBar>
+          }
           columns={[
             "Posted",
             "Member",

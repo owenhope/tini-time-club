@@ -12,6 +12,7 @@ import UserBadge, { tierFor } from "@/components/UserBadge";
 import {
   fetchProfileCounts,
   fetchProfiles,
+  fetchTierDistribution,
   type ProfileSort,
   type SortDirection,
 } from "@/lib/data";
@@ -104,10 +105,20 @@ export default async function UsersPage({
   const perPage = parsePerPage(perParam);
   const sort = parseSort(sortParam);
   const direction = parseDirection(dir);
-  const [{ profiles, total }, counts] = await Promise.all([
+  const [{ profiles, total }, counts, tierDistribution] = await Promise.all([
     fetchProfiles(q, page, perPage, status, sort, direction),
     fetchProfileCounts(),
+    fetchTierDistribution(),
   ]);
+  const tierTotal = Math.max(
+    1,
+    tierDistribution.reduce((sum, tier) => sum + tier.count, 0)
+  );
+  const pct = (n: number, of: number) =>
+    of > 0 ? `${Math.round((n / of) * 100)}%` : "—";
+  const visibleTierDistribution = tierDistribution.filter(
+    (tier) => tier.count > 0
+  );
 
   const query = new URLSearchParams();
   if (q) query.set("q", q);
@@ -144,35 +155,66 @@ export default async function UsersPage({
         statColumns={3}
         surface="transparent"
         density="compact"
-        filters={
-          <FilterBar
-            action="/admin/users"
-            searchDefault={q}
-            searchPlaceholder="Search members..."
-          >
-            {sort !== "review_count" ? (
-              <input type="hidden" name="sort" value={sort} />
-            ) : null}
-            {direction !== "desc" ? (
-              <input type="hidden" name="dir" value={direction} />
-            ) : null}
-            <FilterSelect
-              name="status"
-              label="Status"
-              defaultValue={status}
-              options={[
-                { label: "All", value: "" },
-                { label: "Active", value: "active" },
-                { label: "Verified", value: "verified" },
-                { label: "Deleted", value: "deleted" },
-              ]}
-            />
-          </FilterBar>
-        }
       />
 
-      <div className="px-8 py-6">
+      <div className="space-y-4 px-8 pb-6 pt-1">
+        <div className="rounded-lg border border-stone-200 bg-white p-5">
+          <div className="flex h-8 rounded-full bg-stone-100">
+            {visibleTierDistribution.map((tier, index) => {
+              const percentage = pct(tier.count, tierTotal);
+              const roundedClass = [
+                index === 0 ? "rounded-l-full" : "",
+                index === visibleTierDistribution.length - 1
+                  ? "rounded-r-full"
+                  : "",
+              ].join(" ");
+
+              return (
+                <div
+                  key={tier.tier}
+                  aria-label={`${tier.tier}: ${tier.count} - ${percentage}`}
+                  className={`group relative h-8 cursor-help ${roundedClass}`}
+                  style={{
+                    width: `${(tier.count / tierTotal) * 100}%`,
+                    backgroundColor: tier.color,
+                  }}
+                >
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-stone-900 px-2.5 py-1 text-xs font-bold text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                    {tier.tier}: {tier.count} - {percentage}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <DataTable
+          toolbar={
+            <FilterBar
+              action="/admin/users"
+              searchDefault={q}
+              searchPlaceholder="Search members..."
+              variant="attached"
+            >
+              {sort !== "review_count" ? (
+                <input type="hidden" name="sort" value={sort} />
+              ) : null}
+              {direction !== "desc" ? (
+                <input type="hidden" name="dir" value={direction} />
+              ) : null}
+              <FilterSelect
+                name="status"
+                label="Status"
+                defaultValue={status}
+                options={[
+                  { label: "All", value: "" },
+                  { label: "Active", value: "active" },
+                  { label: "Verified", value: "verified" },
+                  { label: "Deleted", value: "deleted" },
+                ]}
+              />
+            </FilterBar>
+          }
           columns={[
             <SortHeader
               key="member"

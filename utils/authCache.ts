@@ -11,7 +11,7 @@ interface CachedProfile {
 
 const LEGACY_PROFILE_CACHE_KEY = "profile_cache";
 const PROFILE_CACHE_KEY = `profile_cache_${supabaseProjectRef}`;
-const PROFILE_CACHE_VERSION = 3;
+const PROFILE_CACHE_VERSION = 4;
 // Legacy key that used to hold the full session (access + refresh tokens) in
 // plaintext AsyncStorage. Always removed on startup.
 const LEGACY_AUTH_CACHE_KEY = "auth_cache";

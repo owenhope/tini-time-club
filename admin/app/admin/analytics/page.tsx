@@ -1,13 +1,12 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
-import { PageHeader } from "@/components/AdminPrimitives";
 import AnalyticsNav from "@/components/AnalyticsNav";
 import FeatureSection, { BreakdownList } from "@/components/FeatureSection";
 import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
-import { fetchAnalytics, fetchNotificationAnalytics } from "@/lib/data";
+import { fetchAnalytics } from "@/lib/data";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +16,6 @@ const SECTIONS = [
   { id: "reviews", label: "Reviews" },
   { id: "engagement", label: "Engagement" },
   { id: "sharing", label: "Sharing & referral" },
-  { id: "ranking", label: "Ranking" },
-  { id: "notifications", label: "Notifications" },
 ];
 
 /**
@@ -32,45 +29,33 @@ export default async function AnalyticsPage({
   searchParams: Promise<{ days?: string; from?: string; to?: string }>;
 }) {
   const range = parseRange(await searchParams);
-  const [a, n] = await Promise.all([
-    fetchAnalytics(range),
-    fetchNotificationAnalytics(30),
-  ]);
+  const a = await fetchAnalytics(range);
 
   const pct = (n: number, of: number) =>
     of > 0 ? `${Math.round((n / of) * 100)}%` : "—";
-  const tierTotal = Math.max(
-    1,
-    a.tierDistribution.reduce((sum, tier) => sum + tier.count, 0)
-  );
   const totalLikes = a.likesByDay.reduce((sum, d) => sum + d.count, 0);
   const totalComments = a.commentsByDay.reduce((sum, d) => sum + d.count, 0);
   const totalReviews = a.reviewsByDay.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <AdminShell active="analytics">
-      <PageHeader
-        eyebrow="Secondary tool"
-        title="Analytics"
-        description={`Every feature, how it moved in ${range.label.toLowerCase()}, and its history. Growth compares with the previous ${range.days} days.`}
-        stats={[
-          { label: "Total members", value: a.totalMembers, tone: "green" },
-          { label: "Reviews in range", value: totalReviews, tone: "purple" },
-          {
-            label: "Shares in range",
-            value: a.totalShares,
-            tone: "chartreuse",
-          },
-          { label: "Window", value: range.label, tone: "muted" },
-        ]}
-        surface="transparent"
-        density="compact"
-        filters={<RangePicker path="/admin/analytics" range={range} />}
-      />
-
-      <div className="px-8 py-6 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-8">
+      <div className="px-8 pb-32 pt-6 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-8">
         <AnalyticsNav sections={SECTIONS} />
         <div>
+          <div className="sticky top-0 z-20 mb-6 border-b border-stone-200 bg-stone-50/95 py-3 backdrop-blur">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">
+                  Core workspace
+                </p>
+                <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900">
+                  Analytics
+                </h1>
+              </div>
+              <RangePicker path="/admin/analytics" range={range} />
+            </div>
+          </div>
+
           <FeatureSection
             id="membership"
             link={{ href: "/admin/users", label: "All members" }}
@@ -141,29 +126,6 @@ export default async function AnalyticsPage({
               />
             </div>
             <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
-            <div className="rounded-lg border border-stone-200 bg-white p-5">
-              <h3 className="font-semibold">Top members</h3>
-              <ul className="mt-3 divide-y divide-stone-100">
-                {a.topReviewers.map((profile) => (
-                  <li key={profile.id}>
-                    <Link
-                      href={`/admin/users/${profile.id}`}
-                      className="flex items-center justify-between py-2.5 transition hover:bg-stone-50"
-                    >
-                      <UserBadge profile={profile} />
-                      <span className="text-sm font-semibold text-stone-600">
-                        {profile.review_count ?? 0}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-                {a.topReviewers.length === 0 && (
-                  <li className="py-2.5 text-sm text-stone-400">
-                    No members yet.
-                  </li>
-                )}
-              </ul>
-            </div>
           </FeatureSection>
 
           <FeatureSection
@@ -298,100 +260,6 @@ export default async function AnalyticsPage({
             </div>
           </FeatureSection>
 
-          <FeatureSection
-            id="ranking"
-            link={{ href: "/admin/users", label: "All members" }}
-            title="Ranking"
-            description="How members are distributed across the four avatar-ring tiers, and the review count each tier takes."
-          >
-            <div className="rounded-lg border border-stone-200 bg-white p-5">
-              <div className="flex h-4 overflow-hidden rounded-full bg-stone-100">
-                {a.tierDistribution.map((tier) =>
-                  tier.count > 0 ? (
-                    <div
-                      key={tier.tier}
-                      title={`${tier.tier}: ${tier.count}`}
-                      style={{
-                        width: `${(tier.count / tierTotal) * 100}%`,
-                        backgroundColor: tier.color,
-                      }}
-                    />
-                  ) : null
-                )}
-              </div>
-              <ul className="mt-4 divide-y divide-stone-100">
-                {a.tierDistribution.map((tier) => (
-                  <li
-                    key={tier.tier}
-                    className="flex items-baseline justify-between gap-4 py-2.5 text-sm"
-                  >
-                    <span className="flex min-w-0 items-baseline gap-2">
-                      <span
-                        className="h-3 w-3 shrink-0 translate-y-0.5 rounded-full"
-                        style={{ backgroundColor: tier.color }}
-                      />
-                      <span className="font-medium">{tier.tier}</span>
-                      <span className="text-stone-400">
-                        {tier.max == null
-                          ? `${tier.min}+ reviews`
-                          : `${tier.min}–${tier.max} reviews`}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right">
-                      <span className="text-stone-500">
-                        {tier.count} · {pct(tier.count, tierTotal)}
-                      </span>
-                      <span className="block text-xs text-stone-400">
-                        {tier.next
-                          ? `${tier.next.tier} at ${tier.next.min}`
-                          : "Top tier"}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </FeatureSection>
-
-          <FeatureSection
-            id="notifications"
-            title="Notifications"
-            link={{ href: "/admin/notifications", label: "Notifications" }}
-            description="Push delivery, open rates, and open-to-review conversion (last 30 days)."
-          >
-            <div className="grid grid-cols-12 gap-4">
-              <MetricTile
-                label="Sent"
-                value={n.totalSent}
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Opened"
-                value={n.totalOpened}
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Open rate"
-                value={
-                  n.totalSent > 0
-                    ? `${Math.round((n.totalOpened / n.totalSent) * 100)}%`
-                    : "—"
-                }
-                hint="opened ÷ sent"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Open → review"
-                value={
-                  n.openToReviewRate == null
-                    ? "—"
-                    : `${Math.round(n.openToReviewRate * 100)}%`
-                }
-                hint="reviewed within 24h of an open"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-            </div>
-          </FeatureSection>
         </div>
       </div>
     </AdminShell>

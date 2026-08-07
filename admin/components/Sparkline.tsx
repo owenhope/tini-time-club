@@ -30,7 +30,7 @@ export default function Sparkline({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="w-full"
+      className="h-full w-full"
       preserveAspectRatio="none"
       aria-hidden
     >

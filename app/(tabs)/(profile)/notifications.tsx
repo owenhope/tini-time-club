@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, Switch, Text, View } from "react-native";
-import { Stack } from "expo-router";
 import { fonts, makeStyles, useTheme } from "@/theme";
-import {
-  isFridayMartiniReminderEnabled,
-  setFridayMartiniReminderEnabled,
-} from "@/utils/martiniReminder";
+import { setFridayMartiniReminderEnabled } from "@/utils/martiniReminder";
+import { useProfile } from "@/context/profile-context";
 
 /**
  * Notification preferences. Holds just the Tini Time Reminder today, but
@@ -15,20 +12,30 @@ import {
 const Notifications = () => {
   const styles = useStyles();
   const { colors } = useTheme();
+  const { profile, updateProfile } = useProfile();
   const [reminderEnabled, setReminderEnabled] = useState(true);
 
   useEffect(() => {
-    void isFridayMartiniReminderEnabled().then(setReminderEnabled);
-  }, []);
+    setReminderEnabled(profile?.weekly_push_notifications_enabled ?? true);
+  }, [profile?.weekly_push_notifications_enabled]);
 
-  const toggleReminder = (enabled: boolean) => {
+  const toggleReminder = async (enabled: boolean) => {
+    const previous = reminderEnabled;
     setReminderEnabled(enabled);
-    void setFridayMartiniReminderEnabled(enabled);
+    const result = await updateProfile({
+      weekly_push_notifications_enabled: enabled,
+    });
+
+    if (result.error) {
+      setReminderEnabled(previous);
+      return;
+    }
+
+    await setFridayMartiniReminderEnabled(enabled);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: "Notifications" }} />
       <View style={styles.content}>
         <View style={styles.row}>
           <View style={styles.rowText}>

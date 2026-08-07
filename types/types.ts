@@ -23,6 +23,7 @@ export interface Profile {
   favorite_location_id?: number | null;
   eula_accepted?: boolean | null;
   deleted?: boolean;
+  weekly_push_notifications_enabled?: boolean;
   /** Active review count (trigger-maintained); drives the ranking ring. */
   review_count?: number;
 }

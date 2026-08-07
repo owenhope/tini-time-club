@@ -27,31 +27,33 @@ export default function KpiCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col rounded-lg border border-stone-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-md ${className}`}
+      className={`group grid grid-cols-[minmax(0,0.85fr)_minmax(7rem,1fr)] items-center gap-4 rounded-lg border border-stone-200 bg-white p-4 transition hover:border-violet-300 hover:shadow-md ${className}`}
     >
-      <p className="text-sm font-bold text-stone-500 group-hover:text-violet-700">
-        {label} →
-      </p>
-      <p className="mt-1 font-mono text-4xl font-semibold tabular-nums">
-        {metric.current.toLocaleString()}
-      </p>
+      <div className="min-w-0">
+        <p className="text-xs font-bold text-stone-500 group-hover:text-violet-700">
+          {label} →
+        </p>
+        <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
+          {metric.current.toLocaleString()}
+        </p>
 
-      <div className="mt-3 flex items-center gap-2 text-sm text-stone-500">
-        <span>{rangeLabel}</span>
-        <span
-          className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${growthClass(
-            change.direction
-          )}`}
-        >
-          {growthArrow(change.direction)} {change.label}
-        </span>
+        <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
+          <span>{rangeLabel}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-bold ${growthClass(
+              change.direction
+            )}`}
+          >
+            {growthArrow(change.direction)} {change.label}
+          </span>
+        </div>
+
+        <p className="mt-0.5 text-xs text-stone-400">
+          Previous period: {metric.previous.toLocaleString()} {newLabel}
+        </p>
       </div>
 
-      <p className="mt-0.5 text-xs text-stone-400">
-        Previous period: {metric.previous.toLocaleString()} {newLabel}
-      </p>
-
-      <div className="mt-4">
+      <div className="h-14 min-w-0">
         <Sparkline data={metric.byDay} color={color} />
       </div>
     </Link>

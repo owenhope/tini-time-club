@@ -67,29 +67,30 @@ export default async function LocationsPage({
         statColumns={3}
         surface="transparent"
         density="compact"
-        filters={
-          <FilterBar
-            action="/admin/locations"
-            searchDefault={q}
-            searchPlaceholder="Search locations..."
-          >
-            <FilterSelect
-              name="minReviews"
-              label="Activity"
-              defaultValue={minReviewsParam}
-              options={[
-                { label: "All", value: "" },
-                { label: "1+ reviews", value: "1" },
-                { label: "5+ reviews", value: "5" },
-                { label: "10+ reviews", value: "10" },
-              ]}
-            />
-          </FilterBar>
-        }
       />
 
       <div className="px-8 py-6">
         <DataTable
+          toolbar={
+            <FilterBar
+              action="/admin/locations"
+              searchDefault={q}
+              searchPlaceholder="Search locations..."
+              variant="attached"
+            >
+              <FilterSelect
+                name="minReviews"
+                label="Activity"
+                defaultValue={minReviewsParam}
+                options={[
+                  { label: "All", value: "" },
+                  { label: "1+ reviews", value: "1" },
+                  { label: "5+ reviews", value: "5" },
+                  { label: "10+ reviews", value: "10" },
+                ]}
+              />
+            </FilterBar>
+          }
           columns={[
             "Place",
             "Area",

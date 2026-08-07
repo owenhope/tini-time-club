@@ -18,11 +18,21 @@ export const tierFor = (reviewCount: number | null | undefined) => {
   return held;
 };
 
-export default function UserBadge({ profile }: { profile: AdminProfile }) {
+export default function UserBadge({
+  profile,
+  size = "default",
+}: {
+  profile: AdminProfile;
+  size?: "default" | "compact";
+}) {
   const tier = tierFor(profile.review_count);
   const username = profile.username ?? "Unknown member";
   const initial = username.charAt(0).toUpperCase();
   const avatarUrl = avatarPublicUrl(profile.avatar_url);
+  const usernameClass =
+    size === "compact"
+      ? "flex items-center gap-1.5 truncate text-sm font-bold text-stone-900"
+      : "flex items-center gap-1.5 truncate font-bold text-stone-900";
 
   return (
     <span className="flex min-w-0 items-center gap-3">
@@ -42,7 +52,7 @@ export default function UserBadge({ profile }: { profile: AdminProfile }) {
         )}
       </span>
       <span className="min-w-0">
-        <span className="flex items-center gap-1.5 truncate font-bold text-stone-900">
+        <span className={usernameClass}>
           {username}
           {profile.is_verified ? <VerifiedBadge /> : null}
         </span>

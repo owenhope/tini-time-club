@@ -102,7 +102,7 @@ export default async function Dashboard() {
                     href={`/admin/users/${member.id}`}
                     className="min-w-0 hover:opacity-80"
                   >
-                    <UserBadge profile={member} />
+                    <UserBadge profile={member} size="compact" />
                   </Link>
                   <span className="shrink-0 text-xs text-stone-400">
                     {member.created_at
@@ -202,7 +202,7 @@ export default async function Dashboard() {
                       href={`/admin/users/${member.id}`}
                       className="min-w-0 hover:opacity-80"
                     >
-                      <UserBadge profile={member} />
+                      <UserBadge profile={member} size="compact" />
                     </Link>
                   </span>
                   <span className="font-mono text-sm font-semibold tabular-nums">

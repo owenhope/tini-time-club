@@ -11,24 +11,23 @@ type ActiveSection =
   | "share-preview";
 
 const CORE_NAV = [
-  { href: "/admin", key: "dashboard", label: "Dashboard", meta: "Command" },
-  { href: "/admin/users", key: "users", label: "Members", meta: "Club" },
-  { href: "/admin/reviews", key: "reviews", label: "Reviews", meta: "Content" },
+  { href: "/admin", key: "dashboard", label: "Dashboard" },
+  { href: "/admin/users", key: "users", label: "Members" },
+  { href: "/admin/reviews", key: "reviews", label: "Reviews" },
   {
     href: "/admin/locations",
     key: "locations",
     label: "Locations",
-    meta: "Places",
   },
-] as const;
-
-const SECONDARY_NAV = [
   { href: "/admin/analytics", key: "analytics", label: "Analytics" },
   {
     href: "/admin/notifications",
     key: "notifications",
     label: "Notifications",
   },
+] as const;
+
+const SECONDARY_NAV = [
   {
     href: "/admin/share-preview",
     key: "share-preview",
@@ -103,24 +102,21 @@ export default function AdminShell({
                 {SECONDARY_NAV.map((item) => navLink(item, active))}
               </div>
             </div>
-          </nav>
 
-          <div className="mt-auto rounded-lg border border-stone-200 bg-stone-50 p-3">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-stone-400">
-              Environment
-            </p>
-            <p className="mt-1 text-sm font-bold text-emerald-950">
-              Development data
-            </p>
-            <form action={logout} className="mt-3">
-              <button
-                type="submit"
-                className="text-xs font-bold text-stone-500 transition hover:text-stone-900"
-              >
-                Sign out
-              </button>
-            </form>
-          </div>
+            <div>
+              <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
+                Account
+              </p>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
+          </nav>
         </div>
       </aside>
 

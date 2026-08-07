@@ -74,16 +74,6 @@ export default async function SharePreviewPage({
         eyebrow="Secondary tool"
         title="Share preview"
         description="Preview the public review page at desktop and mobile sizes."
-        stats={[
-          {
-            label: "Previewable reviews",
-            value: reviews.length,
-            tone: "purple",
-          },
-          { label: "Mode", value: frame.label, tone: "green" },
-          { label: "Width", value: frame.width, tone: "muted" },
-          { label: "Height", value: frame.height, tone: "muted" },
-        ]}
         surface="transparent"
         density="compact"
         actions={

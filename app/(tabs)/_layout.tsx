@@ -12,7 +12,7 @@ import {
   subscribeToPushRegistrationRetry,
   subscribeToPushTokenChanges,
 } from "@/services/pushNotificationService";
-import { ensureFridayMartiniReminder } from "@/utils/martiniReminder";
+import { syncFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
 
@@ -39,7 +39,9 @@ const LayoutContent = () => {
     const syncToken = (requestPermission = false) => {
       void registerPushNotificationsAsync({ requestPermission }).then(() => {
         // Local weekly nudge; no-op until notification permission is granted.
-        void ensureFridayMartiniReminder();
+        void syncFridayMartiniReminder(
+          profile.weekly_push_notifications_enabled ?? true
+        );
       });
     };
 
@@ -71,7 +73,13 @@ const LayoutContent = () => {
       retrySubscription.remove();
       responseSubscription.remove();
     };
-  }, [profile?.eula_accepted, profile?.id, profile?.username, router]);
+  }, [
+    profile?.eula_accepted,
+    profile?.id,
+    profile?.username,
+    profile?.weekly_push_notifications_enabled,
+    router,
+  ]);
 
   useEffect(() => {
     if (
