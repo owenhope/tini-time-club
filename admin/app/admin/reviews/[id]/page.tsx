@@ -33,6 +33,10 @@ export default async function ReviewDetailPage({
 
   const active = review.state === 1;
   const toggleActive = setReviewActive.bind(null, review.id, !active);
+  const totalEngagement =
+    review.engagement.likes +
+    review.engagement.comments +
+    review.engagement.shares;
 
   return (
     <AdminShell active="reviews">
@@ -42,10 +46,30 @@ export default async function ReviewDetailPage({
         title={review.location?.name ?? `Review #${review.id}`}
         description={`Posted ${date(review.inserted_at)}`}
         stats={[
-          { label: "Overall Rating", value: overall(review.taste, review.presentation), tone: "purple" },
+          {
+            label: "Overall Rating",
+            value: overall(review.taste, review.presentation),
+            tone: "purple",
+          },
           { label: "Taste", value: score(review.taste), tone: "chartreuse" },
-          { label: "Presentation", value: score(review.presentation), tone: "blue" },
-          { label: "State", value: active ? "Active" : "Inactive", tone: active ? "green" : "muted" },
+          {
+            label: "Presentation",
+            value: score(review.presentation),
+            tone: "blue",
+          },
+          {
+            label: "State",
+            value: active ? "Active" : "Inactive",
+            tone: active ? "green" : "muted",
+          },
+          { label: "Engagement", value: totalEngagement, tone: "green" },
+          { label: "Likes", value: review.engagement.likes, tone: "muted" },
+          {
+            label: "Comments",
+            value: review.engagement.comments,
+            tone: "muted",
+          },
+          { label: "Shares", value: review.engagement.shares, tone: "muted" },
         ]}
         surface="transparent"
         density="compact"
