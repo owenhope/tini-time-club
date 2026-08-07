@@ -28,6 +28,7 @@ const Rank = ({ index }: { index: number }) => (
 
 const dashboardRowClass =
   "flex h-16 items-center justify-between gap-3 px-4";
+const dashboardRowLinkClass = `${dashboardRowClass} transition hover:bg-stone-50 focus:bg-stone-50 focus:outline-none`;
 
 export default async function Dashboard() {
   const range = parseRange({});
@@ -97,21 +98,20 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {latest.members.map((member) => (
-                <li
-                  key={member.id}
-                  className={dashboardRowClass}
-                >
+                <li key={member.id}>
                   <Link
                     href={`/admin/users/${member.id}`}
-                    className="min-w-0 hover:opacity-80"
+                    className={dashboardRowLinkClass}
                   >
-                    <UserBadge profile={member} size="compact" />
+                    <span className="min-w-0">
+                      <UserBadge profile={member} size="compact" />
+                    </span>
+                    <span className="shrink-0 text-xs text-stone-400">
+                      {member.created_at
+                        ? formatRelativeDate(member.created_at)
+                        : "—"}
+                    </span>
                   </Link>
-                  <span className="shrink-0 text-xs text-stone-400">
-                    {member.created_at
-                      ? formatRelativeDate(member.created_at)
-                      : "—"}
-                  </span>
                 </li>
               ))}
               {latest.members.length === 0 ? (
@@ -130,22 +130,29 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {latest.reviews.map((review) => (
-                <li key={review.id} className={dashboardRowClass}>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-stone-900">
-                      {review.location?.name ?? "Unknown place"}
-                    </p>
-                    <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-stone-500">
-                      <span className="min-w-0 truncate">
-                        @{review.profile?.username ?? "unknown"} ·{" "}
-                        {formatRelativeDate(review.inserted_at)}
-                      </span>
-                      {review.state !== 1 ? <StatusPill>Inactive</StatusPill> : null}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-emerald-950">
-                    {overall(review.taste, review.presentation)}
-                  </span>
+                <li key={review.id}>
+                  <Link
+                    href={`/admin/reviews/${review.id}`}
+                    className={dashboardRowLinkClass}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-stone-900">
+                        {review.location?.name ?? "Unknown place"}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-stone-500">
+                        <span className="min-w-0 truncate">
+                          @{review.profile?.username ?? "unknown"} ·{" "}
+                          {formatRelativeDate(review.inserted_at)}
+                        </span>
+                        {review.state !== 1 ? (
+                          <StatusPill>Inactive</StatusPill>
+                        ) : null}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-emerald-950">
+                      {overall(review.taste, review.presentation)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -159,23 +166,25 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {latest.locations.map((location) => (
-                <li
-                  key={location.id}
-                  className={dashboardRowClass}
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-bold">
-                      {location.name ?? "—"}
+                <li key={location.id}>
+                  <Link
+                    href={`/admin/places/${location.id}`}
+                    className={dashboardRowLinkClass}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">
+                        {location.name ?? "—"}
+                      </span>
+                      <span className="block truncate text-xs text-stone-500">
+                        {formatCityRegion(location.address) || "No address"}
+                      </span>
                     </span>
-                    <span className="block truncate text-xs text-stone-500">
-                      {formatCityRegion(location.address) || "No address"}
+                    <span className="shrink-0 text-xs text-stone-400">
+                      {location.inserted_at
+                        ? formatRelativeDate(location.inserted_at)
+                        : "—"}
                     </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-stone-400">
-                    {location.inserted_at
-                      ? formatRelativeDate(location.inserted_at)
-                      : "—"}
-                  </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -191,22 +200,19 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {top.members.map((member, index) => (
-                <li
-                  key={member.id}
-                  className={dashboardRowClass}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Rank index={index} />
-                    <Link
-                      href={`/admin/users/${member.id}`}
-                      className="min-w-0 hover:opacity-80"
-                    >
+                <li key={member.id}>
+                  <Link
+                    href={`/admin/users/${member.id}`}
+                    className={dashboardRowLinkClass}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Rank index={index} />
                       <UserBadge profile={member} size="compact" />
-                    </Link>
-                  </span>
-                  <span className="font-mono text-sm font-semibold tabular-nums">
-                    {member.review_count ?? 0}
-                  </span>
+                    </span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {member.review_count ?? 0}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -220,25 +226,26 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {top.reviews.map((review, index) => (
-                <li key={review.id} className={dashboardRowClass}>
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Rank index={index} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold">
-                        {review.location?.name ?? "Unknown place"}
-                      </span>
-                      <span className="block truncate text-xs text-stone-500">
-                        @{review.profile?.username ?? "unknown"} ·{" "}
-                        {overall(review.taste, review.presentation)}
+                <li key={review.id}>
+                  <Link
+                    href={`/admin/reviews/${review.id}`}
+                    className={dashboardRowLinkClass}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Rank index={index} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold">
+                          {review.location?.name ?? "Unknown place"}
+                        </span>
+                        <span className="block truncate text-xs text-stone-500">
+                          @{review.profile?.username ?? "unknown"} ·{" "}
+                          {overall(review.taste, review.presentation)}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                  <Link
-                    href={`/r/${encodeURIComponent(review.id)}`}
-                    target="_blank"
-                    className="shrink-0 text-xs font-bold text-violet-700 hover:text-violet-800"
-                  >
-                    {review.likes} / {review.comments}
+                    <span className="shrink-0 text-xs font-bold text-violet-700">
+                      {review.likes} / {review.comments}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -253,26 +260,28 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {top.locations.map((location, index) => (
-                <li
-                  key={location.id}
-                  className={dashboardRowClass}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Rank index={index} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold">
-                        {location.name ?? "—"}
-                      </span>
-                      <span className="block truncate text-xs text-stone-500">
-                        {location.total_ratings} reviews
+                <li key={location.id}>
+                  <Link
+                    href={`/admin/places/${location.id}`}
+                    className={dashboardRowLinkClass}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Rank index={index} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold">
+                          {location.name ?? "—"}
+                        </span>
+                        <span className="block truncate text-xs text-stone-500">
+                          {location.total_ratings} reviews
+                        </span>
                       </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-stone-900">
-                    {location.rating == null
-                      ? "—"
-                      : Number(location.rating).toFixed(1)}
-                  </span>
+                    <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-stone-900">
+                      {location.rating == null
+                        ? "—"
+                        : Number(location.rating).toFixed(1)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
