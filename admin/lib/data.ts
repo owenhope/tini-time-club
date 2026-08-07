@@ -1266,6 +1266,21 @@ const one = <T>(value: T | T[] | null | undefined): T | null =>
 
 const emptyEngagement = () => ({ likes: 0, comments: 0, shares: 0 });
 
+const isMissingRelationError = (
+  error: { code?: string | null; message?: string | null } | null | undefined,
+  relation: string
+) => {
+  if (!error) return false;
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    (message.includes(relation.toLowerCase()) &&
+      (message.includes("does not exist") ||
+        message.includes("could not find the table")))
+  );
+};
+
 const fetchReviewEngagement = async (
   reviewIds: string[],
   activeMemberIds: string[]
@@ -1296,7 +1311,12 @@ const fetchReviewEngagement = async (
   ]);
   if (likes.error) throw new Error(likes.error.message);
   if (comments.error) throw new Error(comments.error.message);
-  if (shares.error) throw new Error(shares.error.message);
+  if (
+    shares.error &&
+    !isMissingRelationError(shares.error, "review_share_events")
+  ) {
+    throw new Error(shares.error.message);
+  }
 
   const tally = (reviewId: unknown, key: keyof ReturnType<typeof emptyEngagement>) => {
     if (reviewId == null) return;
@@ -1307,7 +1327,10 @@ const fetchReviewEngagement = async (
   for (const comment of comments.data ?? []) {
     tally(comment.review_id, "comments");
   }
-  for (const share of shares.data ?? []) tally(share.review_id, "shares");
+  const shareRows = shares.error ? [] : (shares.data ?? []);
+  for (const share of shareRows) {
+    tally(share.review_id, "shares");
+  }
 
   return engagement;
 };
