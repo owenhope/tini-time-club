@@ -7,6 +7,7 @@ import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
 import { fetchAnalytics } from "@/lib/data";
+import { formatCityRegion } from "@/lib/format";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 const SECTIONS = [
   { id: "membership", label: "Membership" },
   { id: "reviews", label: "Reviews" },
+  { id: "places", label: "Places" },
   { id: "engagement", label: "Engagement" },
   { id: "sharing", label: "Sharing & referral" },
 ];
@@ -126,6 +128,87 @@ export default async function AnalyticsPage({
               />
             </div>
             <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
+          </FeatureSection>
+
+          <FeatureSection
+            id="places"
+            link={{ href: "/admin/places", label: "All places" }}
+            title="Places"
+            description="Where the club is reviewing: new places, active places, and which venues are carrying the review volume."
+          >
+            <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="New places"
+                value={a.placesInRange}
+                previous={a.previous.places}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Reviewed places"
+                value={a.reviewedPlacesInRange}
+                hint={`${pct(a.reviewedPlacesInRange, a.totalPlaces)} of ${a.totalPlaces} places`}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Reviews per place"
+                value={
+                  a.reviewedPlacesInRange > 0
+                    ? (totalReviews / a.reviewedPlacesInRange).toFixed(1)
+                    : "—"
+                }
+                hint="reviews ÷ reviewed places"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Total places"
+                value={a.totalPlaces}
+                hint="active places"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+            </div>
+            <LineChart
+              title="Places added"
+              data={a.placesByDay}
+              color="#336654"
+              unit="places"
+            />
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
+              <h3 className="font-semibold">Top places by reviews</h3>
+              <ul className="mt-3 divide-y divide-stone-100">
+                {a.topPlaces.map((place) => (
+                  <li key={place.id}>
+                    <Link
+                      href={`/admin/places/${place.id}`}
+                      className="flex items-center justify-between gap-3 py-2.5 transition hover:bg-stone-50"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-stone-900">
+                          {place.name ?? "Unknown place"}
+                        </span>
+                        <span className="block truncate text-xs text-stone-500">
+                          {formatCityRegion(place.address) || "No address"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right text-sm">
+                        <span className="block font-semibold text-stone-600">
+                          {place.reviews_in_range} reviews
+                        </span>
+                        <span className="text-xs text-stone-400">
+                          {place.rating == null
+                            ? "No rating"
+                            : `${Number(place.rating).toFixed(1)} rating`}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+                {a.topPlaces.length === 0 && (
+                  <li className="py-2.5 text-sm text-stone-400">
+                    No places were reviewed in this range.
+                  </li>
+                )}
+              </ul>
+            </div>
           </FeatureSection>
 
           <FeatureSection
