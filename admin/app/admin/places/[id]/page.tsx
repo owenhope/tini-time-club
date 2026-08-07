@@ -181,17 +181,19 @@ export default async function PlaceDetailPage({
                 <td className="px-4 py-3 font-mono font-semibold tabular-nums text-stone-900">
                   {overall(review.taste, review.presentation)}
                 </td>
-                <td className="max-w-80 truncate px-4 py-3 text-stone-500">
-                  {review.comment ?? ""}
+                <td className="max-w-0 px-4 py-3 text-stone-500">
+                  <div className="truncate" title={review.comment ?? ""}>
+                    {review.comment ?? ""}
+                  </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="whitespace-nowrap px-4 py-3">
                   {review.state === 1 ? (
                     <StatusPill tone="green">Active</StatusPill>
                   ) : (
                     <StatusPill>Inactive</StatusPill>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="whitespace-nowrap px-4 py-3">
                   <ActionLink href={`/admin/reviews/${review.id}`}>
                     Manage
                   </ActionLink>

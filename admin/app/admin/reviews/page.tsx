@@ -155,8 +155,10 @@ export default async function ReviewsPage({
                   S {review.engagement.shares}
                 </span>
               </td>
-              <td className="max-w-96 truncate px-4 py-3 text-stone-500">
-                {review.comment ?? ""}
+              <td className="max-w-0 px-4 py-3 text-stone-500">
+                <div className="truncate" title={review.comment ?? ""}>
+                  {review.comment ?? ""}
+                </div>
               </td>
               <td className="px-4 py-3">
                 {review.state === 1 ? (
