@@ -1669,7 +1669,8 @@ export const fetchLocations = async (
   page = 1,
   perPage = USERS_PAGE_SIZE,
   minReviews = 0,
-  sort: LocationSort = "place"
+  sort: LocationSort = "place",
+  direction: SortDirection = "asc"
 ): Promise<{ locations: AdminLocation[]; total: number }> => {
   const offset = (Math.max(1, page) - 1) * perPage;
   let query = db()
@@ -1715,32 +1716,33 @@ export const fetchLocations = async (
     const byPlace =
       (left.name ?? "").localeCompare(right.name ?? "") ||
       String(left.id).localeCompare(String(right.id));
+    const placeTie = direction === "asc" ? byPlace : -byPlace;
 
     if (sort === "area") {
-      return (
+      const byArea =
         formatCityRegion(left.address).localeCompare(
           formatCityRegion(right.address)
-        ) || byPlace
-      );
+        ) || byPlace;
+      return direction === "asc" ? byArea : -byArea;
     }
 
     if (sort === "rating") {
-      return (
-        (right.rating ?? -1) - (left.rating ?? -1) ||
-        right.total_ratings - left.total_ratings ||
-        byPlace
-      );
+      const byRating =
+        (left.rating ?? -1) - (right.rating ?? -1) ||
+        left.total_ratings - right.total_ratings ||
+        byPlace;
+      return direction === "asc" ? byRating : -byRating || placeTie;
     }
 
     if (sort === "reviews") {
-      return (
-        right.total_ratings - left.total_ratings ||
-        (right.rating ?? -1) - (left.rating ?? -1) ||
-        byPlace
-      );
+      const byReviews =
+        left.total_ratings - right.total_ratings ||
+        (left.rating ?? -1) - (right.rating ?? -1) ||
+        byPlace;
+      return direction === "asc" ? byReviews : -byReviews || placeTie;
     }
 
-    return byPlace;
+    return direction === "asc" ? byPlace : -byPlace;
   });
 
   return {

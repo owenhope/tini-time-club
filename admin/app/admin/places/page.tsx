@@ -10,7 +10,7 @@ import {
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
 import { fetchLocationCounts, fetchLocations } from "@/lib/data";
-import type { LocationSort } from "@/lib/data";
+import type { LocationSort, SortDirection } from "@/lib/data";
 import { formatCityRegion } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,27 +20,49 @@ const parseLocationSort = (value?: string): LocationSort =>
     ? value
     : "place";
 
+const defaultDirectionFor = (sort: LocationSort): SortDirection =>
+  sort === "rating" || sort === "reviews" ? "desc" : "asc";
+
+const parseDirection = (
+  value: string | undefined,
+  sort: LocationSort
+): SortDirection =>
+  value === "asc" || value === "desc" ? value : defaultDirectionFor(sort);
+
 const SortHeader = ({
   label,
   field,
   sort,
+  direction,
   baseQuery,
-  defaultMarker,
+  defaultDirection = "asc",
 }: {
   label: string;
   field: LocationSort;
   sort: LocationSort;
+  direction: SortDirection;
   baseQuery: URLSearchParams;
-  defaultMarker: "↑" | "↓";
+  defaultDirection?: SortDirection;
 }) => {
   const active = sort === field;
+  const nextDirection: SortDirection = active
+    ? direction === "asc"
+      ? "desc"
+      : "asc"
+    : defaultDirection;
   const query = new URLSearchParams(baseQuery);
   if (field === "place") {
     query.delete("sort");
   } else {
     query.set("sort", field);
   }
+  if (nextDirection === defaultDirectionFor(field)) {
+    query.delete("dir");
+  } else {
+    query.set("dir", nextDirection);
+  }
   const href = query.size > 0 ? `/admin/places?${query}` : "/admin/places";
+  const marker = active ? (direction === "asc" ? "↑" : "↓") : "↕";
 
   return (
     <a
@@ -50,9 +72,7 @@ const SortHeader = ({
       }`}
     >
       {label}
-      <span className="font-mono text-[10px] text-stone-400">
-        {active ? defaultMarker : "↕"}
-      </span>
+      <span className="font-mono text-[10px] text-stone-400">{marker}</span>
     </a>
   );
 };
@@ -66,6 +86,7 @@ export default async function PlacesPage({
     per?: string;
     minReviews?: string;
     sort?: string;
+    dir?: string;
   }>;
 }) {
   const {
@@ -74,13 +95,15 @@ export default async function PlacesPage({
     per: perParam,
     minReviews: minReviewsParam,
     sort: sortParam,
+    dir,
   } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
   const perPage = parsePerPage(perParam);
   const minReviews = Math.max(0, Number(minReviewsParam) || 0);
   const sort = parseLocationSort(sortParam);
+  const direction = parseDirection(dir, sort);
   const [{ locations, total }, counts] = await Promise.all([
-    fetchLocations(q, page, perPage, minReviews, sort),
+    fetchLocations(q, page, perPage, minReviews, sort, direction),
     fetchLocationCounts(),
   ]);
 
@@ -88,6 +111,7 @@ export default async function PlacesPage({
   if (q) query.set("q", q);
   if (minReviewsParam) query.set("minReviews", minReviewsParam);
   if (sort !== "place") query.set("sort", sort);
+  if (direction !== defaultDirectionFor(sort)) query.set("dir", direction);
 
   const headerQuery = new URLSearchParams(query);
   if (perParam) headerQuery.set("per", String(perPage));
@@ -133,6 +157,9 @@ export default async function PlacesPage({
               {sort !== "place" ? (
                 <input type="hidden" name="sort" value={sort} />
               ) : null}
+              {direction !== defaultDirectionFor(sort) ? (
+                <input type="hidden" name="dir" value={direction} />
+              ) : null}
               <FilterSelect
                 name="minReviews"
                 label="Activity"
@@ -152,16 +179,16 @@ export default async function PlacesPage({
               label="Place"
               field="place"
               sort={sort}
+              direction={direction}
               baseQuery={headerQuery}
-              defaultMarker="↑"
             />,
             <SortHeader
               key="area"
               label="Area"
               field="area"
               sort={sort}
+              direction={direction}
               baseQuery={headerQuery}
-              defaultMarker="↑"
             />,
             "Address",
             <SortHeader
@@ -169,16 +196,18 @@ export default async function PlacesPage({
               label="Rating"
               field="rating"
               sort={sort}
+              direction={direction}
               baseQuery={headerQuery}
-              defaultMarker="↓"
+              defaultDirection="desc"
             />,
             <SortHeader
               key="reviews"
               label="Reviews"
               field="reviews"
               sort={sort}
+              direction={direction}
               baseQuery={headerQuery}
-              defaultMarker="↓"
+              defaultDirection="desc"
             />,
             "Actions",
           ]}
