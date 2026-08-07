@@ -26,6 +26,9 @@ const Rank = ({ index }: { index: number }) => (
   </span>
 );
 
+const dashboardRowClass =
+  "flex h-16 items-center justify-between gap-3 px-4";
+
 export default async function Dashboard() {
   const range = parseRange({});
   const [kpis, latest, top] = await Promise.all([
@@ -96,7 +99,7 @@ export default async function Dashboard() {
               {latest.members.map((member) => (
                 <li
                   key={member.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className={dashboardRowClass}
                 >
                   <Link
                     href={`/admin/users/${member.id}`}
@@ -112,7 +115,7 @@ export default async function Dashboard() {
                 </li>
               ))}
               {latest.members.length === 0 ? (
-                <li className="px-4 py-8 text-sm text-stone-400">
+                <li className="flex h-16 items-center px-4 text-sm text-stone-400">
                   No members yet.
                 </li>
               ) : null}
@@ -127,26 +130,22 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {latest.reviews.map((review) => (
-                <li key={review.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-stone-900">
-                        {review.location?.name ?? "Unknown place"}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-stone-500">
+                <li key={review.id} className={dashboardRowClass}>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-stone-900">
+                      {review.location?.name ?? "Unknown place"}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-stone-500">
+                      <span className="min-w-0 truncate">
                         @{review.profile?.username ?? "unknown"} ·{" "}
                         {formatRelativeDate(review.inserted_at)}
-                      </p>
-                    </div>
-                    <span className="font-mono text-sm font-semibold tabular-nums text-emerald-950">
-                      {overall(review.taste, review.presentation)}
-                    </span>
+                      </span>
+                      {review.state !== 1 ? <StatusPill>Inactive</StatusPill> : null}
+                    </p>
                   </div>
-                  {review.state !== 1 ? (
-                    <div className="mt-2">
-                      <StatusPill>Inactive</StatusPill>
-                    </div>
-                  ) : null}
+                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-emerald-950">
+                    {overall(review.taste, review.presentation)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -162,7 +161,7 @@ export default async function Dashboard() {
               {latest.locations.map((location) => (
                 <li
                   key={location.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className={dashboardRowClass}
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold">
@@ -194,7 +193,7 @@ export default async function Dashboard() {
               {top.members.map((member, index) => (
                 <li
                   key={member.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className={dashboardRowClass}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Rank index={index} />
@@ -221,28 +220,26 @@ export default async function Dashboard() {
           >
             <ul className="divide-y divide-stone-100">
               {top.reviews.map((review, index) => (
-                <li key={review.id} className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-3">
-                      <Rank index={index} />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">
-                          {review.location?.name ?? "Unknown place"}
-                        </span>
-                        <span className="block truncate text-xs text-stone-500">
-                          @{review.profile?.username ?? "unknown"} ·{" "}
-                          {overall(review.taste, review.presentation)}
-                        </span>
+                <li key={review.id} className={dashboardRowClass}>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Rank index={index} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">
+                        {review.location?.name ?? "Unknown place"}
+                      </span>
+                      <span className="block truncate text-xs text-stone-500">
+                        @{review.profile?.username ?? "unknown"} ·{" "}
+                        {overall(review.taste, review.presentation)}
                       </span>
                     </span>
-                    <Link
-                      href={`/r/${encodeURIComponent(review.id)}`}
-                      target="_blank"
-                      className="shrink-0 text-xs font-bold text-violet-700 hover:text-violet-800"
-                    >
-                      {review.likes} / {review.comments}
-                    </Link>
-                  </div>
+                  </span>
+                  <Link
+                    href={`/r/${encodeURIComponent(review.id)}`}
+                    target="_blank"
+                    className="shrink-0 text-xs font-bold text-violet-700 hover:text-violet-800"
+                  >
+                    {review.likes} / {review.comments}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -258,21 +255,23 @@ export default async function Dashboard() {
               {top.locations.map((location, index) => (
                 <li
                   key={location.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className={dashboardRowClass}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Rank index={index} />
-                    <span className="truncate text-sm font-bold">
-                      {location.name ?? "—"}
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">
+                        {location.name ?? "—"}
+                      </span>
+                      <span className="block truncate text-xs text-stone-500">
+                        {location.total_ratings} reviews
+                      </span>
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs text-stone-500">
-                    <span className="font-mono font-semibold tabular-nums text-stone-900">
-                      {location.rating == null
-                        ? "—"
-                        : Number(location.rating).toFixed(1)}
-                    </span>{" "}
-                    · {location.total_ratings} reviews
+                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-stone-900">
+                    {location.rating == null
+                      ? "—"
+                      : Number(location.rating).toFixed(1)}
                   </span>
                 </li>
               ))}
