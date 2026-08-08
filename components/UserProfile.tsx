@@ -31,6 +31,7 @@ import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -347,6 +348,15 @@ const UserProfile = () => {
     }
   }, [displayProfile, loadUserReviews, loadRegularPlaces]);
 
+  useEffect(
+    () =>
+      subscribeToReviewUpdates(() => {
+        void loadUserReviews(true);
+        void loadRegularPlaces();
+      }),
+    [loadRegularPlaces, loadUserReviews]
+  );
+
   if (profileError) {
     return (
       <View style={[styles.container, styles.errorState]}>
@@ -474,7 +484,7 @@ const UserProfile = () => {
         }
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
-            ? router.push(routes.editCaption(review.id))
+            ? router.push(routes.editReview(review.id))
             : undefined
         }
       />

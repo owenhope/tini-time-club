@@ -25,6 +25,7 @@ import { Button, Input, MartiniIcon } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
@@ -318,6 +319,11 @@ function Home() {
   const onRefresh = useCallback(() => {
     loadReviews(true);
   }, [loadReviews]);
+
+  useEffect(
+    () => subscribeToReviewUpdates(() => void loadReviews(true, true)),
+    [loadReviews]
+  );
 
   // Optimized end reached handler
   const onEndReached = useCallback(() => {
@@ -730,7 +736,7 @@ function Home() {
           canDelete={false}
           onEdit={
             isOwnReview
-              ? () => router.push(routes.editCaption(item.id))
+              ? () => router.push(routes.editReview(item.id))
               : undefined
           }
           onShowLikes={handleShowLikes}

@@ -16,7 +16,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useGoBack } from "@/hooks/useAppNavigation";
-import AppHeader from "@/components/nav/AppHeader";
+import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import CameraComponent from "@/components/CameraComponent";
 import LocationInput from "@/components/LocationInput";
 import TasteInput from "@/components/TasteInput";
@@ -43,6 +43,7 @@ import {
 } from "@/utils/celebrations";
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
+import { publishReviewUpdated } from "@/utils/reviewEvents";
 
 interface ReviewFormLocation {
   name: string;
@@ -54,8 +55,8 @@ interface ReviewFormLocation {
 
 interface ReviewFormValues {
   location: ReviewFormLocation | null;
-  spirit: string;
-  type: string;
+  spirit: string | number;
+  type: string | number;
   taste: number;
   presentation: number;
   comment: string;
@@ -82,9 +83,7 @@ const ReviewPreview = ({
   types,
   photo,
   profile,
-  isCaptionFocused,
-  setIsCaptionFocused,
-  onCaptionDraftChange,
+  onCaptionChange,
   isSubmitting,
   submissionMessage,
 }: {
@@ -93,16 +92,12 @@ const ReviewPreview = ({
   types: { id: number; name: string }[];
   photo: string | null;
   profile: any;
-  isCaptionFocused: boolean;
-  setIsCaptionFocused: React.Dispatch<React.SetStateAction<boolean>>;
-  onCaptionDraftChange: (caption: string) => void;
+  onCaptionChange: (caption: string) => void;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const scrollViewRef = React.useRef<ScrollView>(null);
-  const [captionDraft, setCaptionDraft] = useState(values.comment || "");
 
   const mockReview = useMemo(
     () =>
@@ -149,21 +144,6 @@ const ReviewPreview = ({
     onCommentDeleted: () => {},
   };
 
-  const openCaptionInput = () => {
-    const initialCaption = values.comment || "";
-    setCaptionDraft(initialCaption);
-    onCaptionDraftChange(initialCaption);
-    setIsCaptionFocused(true);
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  const updateCaptionDraft = (caption: string) => {
-    setCaptionDraft(caption);
-    onCaptionDraftChange(caption);
-  };
-
   if (isSubmitting) {
     return (
       <View style={styles.submitLoadingContainer}>
@@ -181,54 +161,34 @@ const ReviewPreview = ({
 
   return (
     <ScrollView
-      ref={scrollViewRef}
       style={styles.previewContainer}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {!isCaptionFocused && (
-        <View style={styles.previewWrapper}>
-          <View style={styles.scaledReviewContainer}>
-            <ReviewItem
-              review={mockReview}
-              canDelete={false}
-              previewMode={true}
-              {...mockHandlers}
-            />
-          </View>
+      <View style={styles.previewWrapper}>
+        <View style={styles.scaledReviewContainer}>
+          <ReviewItem
+            review={mockReview}
+            canDelete={false}
+            previewMode={true}
+            {...mockHandlers}
+          />
         </View>
-      )}
+      </View>
       <View style={styles.captionInputContainer}>
-        {!isCaptionFocused ? (
-          <TouchableOpacity
-            style={styles.captionButton}
-            onPress={openCaptionInput}
-          >
-            <AppText variant="bodyStrong" tone="onAccent">
-              {values.comment ? "Edit Caption" : "Add Caption"}
-            </AppText>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <TextInput
-              style={styles.captionInput}
-              multiline={true}
-              placeholder="Shaken, stirred, or mildly disappointed?"
-              placeholderTextColor={colors.textMuted}
-              onChangeText={updateCaptionDraft}
-              value={captionDraft}
-              maxLength={500}
-              autoFocus={true}
-            />
-            <AppText
-              variant="label"
-              tone="secondary"
-              style={styles.characterCount}
-            >
-              {captionDraft.length}/500
-            </AppText>
-          </>
-        )}
+        <TextInput
+          style={styles.captionInput}
+          multiline
+          placeholder="Add a caption..."
+          placeholderTextColor={colors.textMuted}
+          onChangeText={onCaptionChange}
+          value={values.comment || ""}
+          maxLength={500}
+          accessibilityLabel="Review caption"
+        />
+        <AppText variant="label" tone="secondary" style={styles.characterCount}>
+          {(values.comment || "").length}/500
+        </AppText>
       </View>
     </ScrollView>
   );
@@ -248,10 +208,11 @@ export default function App() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isCaptionFocused, setIsCaptionFocused] = useState(false);
-  const captionDraftRef = React.useRef("");
-  const captionCanSaveRef = React.useRef(false);
-  const [captionCanSave, setCaptionCanSave] = useState(false);
+  const [isChangingPhoto, setIsChangingPhoto] = useState(false);
+  const [photoChanged, setPhotoChanged] = useState(false);
+  const [originalImagePath, setOriginalImagePath] = useState<string | null>(
+    null
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [celebrationReviewCount, setCelebrationReviewCount] = useState<
@@ -263,6 +224,11 @@ export default function App() {
   const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile, refreshProfile } = useProfile();
+  const rawEditReviewId = params.editReviewId;
+  const editReviewId = Array.isArray(rawEditReviewId)
+    ? rawEditReviewId[0]
+    : rawEditReviewId;
+  const isEditMode = Boolean(editReviewId);
   const locationNameParam = params.locationName;
   const locationAddressParam = params.locationAddress;
   const locationLatParam = params.locationLat;
@@ -285,15 +251,6 @@ export default function App() {
     });
   const insets = useSafeAreaInsets();
   const watchedValues = useWatch({ control }) as ReviewFormValues;
-
-  const handleCaptionDraftChange = useCallback((caption: string) => {
-    captionDraftRef.current = caption;
-    const canSave = caption.trim().length > 0;
-    if (captionCanSaveRef.current !== canSave) {
-      captionCanSaveRef.current = canSave;
-      setCaptionCanSave(canSave);
-    }
-  }, []);
 
   const getTypes = useCallback(async () => {
     try {
@@ -325,7 +282,51 @@ export default function App() {
   }, [getTypes, getSpirits]);
 
   useEffect(() => {
-    if (locationNameParam && locationAddressParam) {
+    if (!editReviewId || !profile?.id) return;
+
+    let active = true;
+
+    databaseService
+      .getEditableReview(editReviewId, profile.id)
+      .then((review) => {
+        if (!active) return;
+
+        reset({
+          location: review.location_details
+            ? {
+                id: String(review.location_details.id),
+                name: review.location_details.name,
+                address: review.location_details.address || "",
+                place_id: review.location_details.place_id || undefined,
+              }
+            : null,
+          spirit: review.spirit,
+          type: review.type,
+          taste: Number(review.taste),
+          presentation: Number(review.presentation),
+          comment: review.comment || "",
+        });
+        setPhoto(review.display_image_url);
+        setOriginalImagePath(review.image_url);
+        setPhotoChanged(false);
+        setIsReviewing(true);
+        setStep(0);
+      })
+      .catch((error) => {
+        reportError("Error loading review for editing:", error);
+        Alert.alert(
+          "Review unavailable",
+          "This review could not be loaded for editing.",
+          [{ text: "OK", onPress: goBack }]
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [editReviewId, goBack, profile?.id, reset]);
+
+  useEffect(() => {
+    if (!isEditMode && locationNameParam && locationAddressParam) {
       setValue("location", {
         name: locationNameParam as string,
         address: locationAddressParam as string,
@@ -345,6 +346,7 @@ export default function App() {
     locationLatParam,
     locationLonParam,
     locationPlaceIdParam,
+    isEditMode,
     setValue,
   ]);
 
@@ -358,32 +360,30 @@ export default function App() {
     setIsReviewing(false);
     setIsSubmitting(false);
     setSubmissionMessage("");
-    setIsCaptionFocused(false);
-    captionDraftRef.current = "";
-    captionCanSaveRef.current = false;
-    setCaptionCanSave(false);
+    setIsChangingPhoto(false);
+    setPhotoChanged(false);
+    setOriginalImagePath(null);
     reset();
-    router.dismissTo(routes.home());
-  };
-
-  const saveCaption = () => {
-    const caption = captionDraftRef.current.trim();
-    if (!caption) return;
-
-    setValue("comment", caption, { shouldValidate: true });
-    setIsCaptionFocused(false);
-    captionCanSaveRef.current = false;
-    setCaptionCanSave(false);
-    Keyboard.dismiss();
+    if (isEditMode) {
+      goBack();
+    } else {
+      router.dismissTo(routes.home());
+    }
   };
 
   const confirmDiscardReview = () => {
     Alert.alert(
-      "Discard review?",
-      "Your photo and review details will be lost.",
+      isEditMode ? "Cancel editing?" : "Discard review?",
+      isEditMode
+        ? "Your changes will not be saved."
+        : "Your photo and review details will be lost.",
       [
         { text: "Keep editing", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: discardReview },
+        {
+          text: isEditMode ? "Discard changes" : "Discard",
+          style: "destructive",
+          onPress: discardReview,
+        },
       ]
     );
   };
@@ -513,6 +513,10 @@ export default function App() {
     });
 
   const resolveLocationId = async (userId: string) => {
+    if (watchedValues.location?.id && !watchedValues.location.coordinates) {
+      return watchedValues.location.id;
+    }
+
     return databaseService.createOrGetLocation(
       watchedValues.location &&
         typeof watchedValues.location === "object" &&
@@ -555,6 +559,66 @@ export default function App() {
     } catch (error) {
       reportError("Error creating review:", error);
       return null;
+    }
+  };
+
+  const removeReviewImage = async (imagePath: string | null) => {
+    if (!imagePath) return;
+    const { error } = await supabase.storage
+      .from("review_images")
+      .remove([imagePath]);
+    if (error) reportError("Error removing replaced review image:", error);
+  };
+
+  const handleUpdateReview = async () => {
+    if (!profile || !editReviewId || !originalImagePath) return;
+
+    let uploadedImagePath: string | null = null;
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      if (photoChanged) {
+        setSubmissionMessage("Uploading new image...");
+        uploadedImagePath = await uploadImage(profile.id);
+        if (!uploadedImagePath) {
+          throw new Error("Replacement image upload failed.");
+        }
+      }
+
+      setSubmissionMessage("Saving changes...");
+      const locationId = await resolveLocationId(profile.id);
+      await databaseService.updateReview(
+        editReviewId,
+        {
+          image_url: uploadedImagePath || originalImagePath,
+          location: locationId,
+          spirit: watchedValues.spirit,
+          type: watchedValues.type,
+          taste: watchedValues.taste,
+          presentation: watchedValues.presentation,
+          comment: watchedValues.comment?.trim() || "",
+        },
+        profile.id
+      );
+
+      if (uploadedImagePath && uploadedImagePath !== originalImagePath) {
+        await removeReviewImage(originalImagePath);
+      }
+
+      AnalyticService.capture("edit_review", {
+        reviewId: editReviewId,
+        locationId,
+        locationName: watchedValues.location?.name ?? null,
+        photoChanged,
+      });
+      publishReviewUpdated(String(editReviewId));
+      goBack();
+    } catch (error) {
+      reportError("Error updating review:", error);
+      if (uploadedImagePath) await removeReviewImage(uploadedImagePath);
+      setSubmitError("We couldn't save your changes. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -653,42 +717,78 @@ export default function App() {
     currentQuestionKey,
     watchedValues,
     {
-      taste: Boolean(formState.touchedFields.taste),
-      presentation: Boolean(formState.touchedFields.presentation),
+      taste: isEditMode || Boolean(formState.touchedFields.taste),
+      presentation: isEditMode || Boolean(formState.touchedFields.presentation),
     }
   );
-  const headerTitle =
-    currentQuestionTitle === "Preview" && isCaptionFocused
-      ? "Caption"
-      : currentQuestionTitle;
+  const editHeaderActions: HeaderAction[] = isEditMode
+    ? [
+        {
+          icon: "camera-outline",
+          onPress: () => {
+            setIsChangingPhoto(true);
+            setIsReviewing(false);
+          },
+          accessibilityLabel: "Change review photo",
+        },
+        {
+          icon: "close-outline",
+          onPress: confirmDiscardReview,
+          accessibilityLabel: "Cancel editing review",
+        },
+      ]
+    : [];
 
   return (
     <>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        {!isReviewing ? (
+        {isEditMode && !isReviewing && !isChangingPhoto ? (
+          <View style={styles.editLoadingContainer}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <AppText variant="bodyStrong" tone="secondary">
+              Loading review...
+            </AppText>
+          </View>
+        ) : !isReviewing ? (
           <CameraComponent
-            onClose={goBack}
+            title={isChangingPhoto ? "Change Photo" : "Capture"}
+            closeAccessibilityLabel={
+              isChangingPhoto ? "Keep current review photo" : "Discard review"
+            }
+            closeIcon={isChangingPhoto ? "close-outline" : "trash-outline"}
+            onClose={
+              isChangingPhoto
+                ? () => {
+                    setIsChangingPhoto(false);
+                    setIsReviewing(true);
+                  }
+                : goBack
+            }
             headerBelow={
-              <View style={styles.stepHeaderMeta}>
-                <AppText
-                  variant="eyebrow"
-                  tone="onImage"
-                  style={styles.subtitle}
-                >
-                  Step 1 of {reviewStepTotal}
-                </AppText>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${(1 / reviewStepTotal) * 100}%` },
-                    ]}
-                  />
+              !isChangingPhoto ? (
+                <View style={styles.stepHeaderMeta}>
+                  <AppText
+                    variant="eyebrow"
+                    tone="onImage"
+                    style={styles.subtitle}
+                  >
+                    Step 1 of {reviewStepTotal}
+                  </AppText>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${(1 / reviewStepTotal) * 100}%` },
+                      ]}
+                    />
+                  </View>
                 </View>
-              </View>
+              ) : undefined
             }
             onCapture={(captured) => {
               setPhoto(captured);
+              setPhotoChanged(isEditMode);
+              setIsChangingPhoto(false);
               setIsReviewing(true);
               setIsSubmitting(false);
               setSubmissionMessage("");
@@ -699,7 +799,8 @@ export default function App() {
             {!isSubmitting && (
               <AppHeader
                 variant="large"
-                title={headerTitle}
+                title={currentQuestionTitle}
+                actions={editHeaderActions}
                 below={
                   currentQuestionTitle !== "Preview" ? (
                     <View style={styles.stepHeaderMeta}>
@@ -769,9 +870,12 @@ export default function App() {
                   types={types}
                   photo={photo}
                   profile={profile}
-                  isCaptionFocused={isCaptionFocused}
-                  setIsCaptionFocused={setIsCaptionFocused}
-                  onCaptionDraftChange={handleCaptionDraftChange}
+                  onCaptionChange={(caption) =>
+                    setValue("comment", caption, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                   isSubmitting={isSubmitting}
                   submissionMessage={submissionMessage}
                 />
@@ -792,7 +896,7 @@ export default function App() {
               >
                 <Animated.View style={styles.navigation}>
                   <View style={styles.navLeft}>
-                    {step > 0 && !isCaptionFocused && (
+                    {step > 0 && (
                       <Button
                         title="Back"
                         onPress={prevStep}
@@ -822,15 +926,7 @@ export default function App() {
                   </TouchableOpacity>
 
                   <View style={styles.navRight}>
-                    {isCaptionFocused ? (
-                      <Button
-                        title="Save"
-                        onPress={saveCaption}
-                        variant="primary"
-                        size="medium"
-                        disabled={!captionCanSave}
-                      />
-                    ) : step < questions.length - 1 ? (
+                    {step < questions.length - 1 ? (
                       <Button
                         title="Next"
                         onPress={nextStep}
@@ -842,19 +938,27 @@ export default function App() {
                       />
                     ) : (
                       <Button
-                        title="Post"
+                        title={isEditMode ? "Save" : "Post"}
                         onPress={() => {
                           const commentValue = watchedValues.comment?.trim();
-                          if (!commentValue || commentValue.length === 0) {
+                          if (
+                            !isEditMode &&
+                            (!commentValue || commentValue.length === 0)
+                          ) {
                             return;
                           }
-                          handleSubmit(handleUploadAndCreateReview)();
+                          handleSubmit(
+                            isEditMode
+                              ? handleUpdateReview
+                              : handleUploadAndCreateReview
+                          )();
                         }}
                         variant="primary"
                         size="medium"
                         disabled={
-                          !watchedValues.comment ||
-                          watchedValues.comment.trim().length === 0
+                          !isEditMode &&
+                          (!watchedValues.comment ||
+                            watchedValues.comment.trim().length === 0)
                         }
                       />
                     )}
@@ -880,6 +984,13 @@ export default function App() {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
+    backgroundColor: t.colors.background,
+  },
+  editLoadingContainer: {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: t.spacing.md,
     backgroundColor: t.colors.background,
   },
   stepHeaderMeta: {
@@ -981,16 +1092,7 @@ const useStyles = makeStyles((t) => ({
   captionInputContainer: {
     backgroundColor: t.colors.background,
     borderRadius: t.radius.input,
-  },
-  captionButton: {
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
     marginTop: t.spacing.md,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingVertical: t.spacing.md,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
-    minHeight: 50,
   },
   captionInput: {
     ...t.typography.body,

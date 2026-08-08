@@ -39,7 +39,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
-import AppHeader from "@/components/nav/AppHeader";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
 import {
   createSessionFromAuthUrl,
@@ -433,23 +432,6 @@ function RootLayoutNav() {
           options={{
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",
-          }}
-        />
-        {/* Lives in the root stack rather than a tab stack so it can be
-            pushed from any tab and back returns to wherever it was opened. */}
-        <Stack.Screen
-          name="edit-caption"
-          options={{
-            headerShown: true,
-            title: "Edit Caption",
-            // Variant B, like every other pushed screen in the app.
-            header: ({ options, navigation, back }) => (
-              <AppHeader
-                variant="compact"
-                title={options.title ?? ""}
-                onBack={back ? navigation.goBack : undefined}
-              />
-            ),
           }}
         />
       </Stack>

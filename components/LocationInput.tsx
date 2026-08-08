@@ -288,85 +288,90 @@ const LocationInput = ({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      {places.map((place) => {
-        const placeName = place.name || "";
-        const selected = selectedValue?.place_id === place.place_id;
-        const placeLocation = place.geometry?.location;
-        // Autocomplete predictions ship an origin distance; nearby results
-        // have coordinates to compute one from.
-        const distance =
-          place.distance_meters != null
-            ? place.distance_meters / 1000
-            : location?.coords && placeLocation
-              ? calculateDistance(
-                  location.coords.latitude,
-                  location.coords.longitude,
-                  placeLocation.lat,
-                  placeLocation.lng
-                )
-              : null;
+      {places
+        .filter((place) => place.place_id !== selectedValue?.place_id)
+        .map((place) => {
+          const placeName = place.name || "";
+          const selected = selectedValue?.place_id === place.place_id;
+          const placeLocation = place.geometry?.location;
+          // Autocomplete predictions ship an origin distance; nearby results
+          // have coordinates to compute one from.
+          const distance =
+            place.distance_meters != null
+              ? place.distance_meters / 1000
+              : location?.coords && placeLocation
+                ? calculateDistance(
+                    location.coords.latitude,
+                    location.coords.longitude,
+                    placeLocation.lat,
+                    placeLocation.lng
+                  )
+                : null;
 
-        return (
-          <TouchableOpacity
-            key={place.place_id}
-            style={[styles.placeButton, selected && styles.selectedPlaceButton]}
-            onPress={() => {
-              void Haptics.selectionAsync();
-              if (selected) {
-                onSelect(null);
-              } else {
-                void selectPlace(place, onSelect);
-              }
-            }}
-            disabled={disabled || isResolvingId === place.place_id}
-          >
-            <View style={styles.placeContent}>
-              <View style={styles.placeTextContainer}>
-                <Text
-                  style={[
-                    styles.placeName,
-                    selected && styles.selectedPlaceText,
-                  ]}
-                >
-                  {placeName}
-                </Text>
-                <Text
-                  style={[
-                    styles.placeAddress,
-                    selected && styles.selectedPlaceText,
-                  ]}
-                >
-                  {place.vicinity || place.formatted_address}
-                </Text>
-              </View>
-              <View style={styles.rightContainer}>
-                {isResolvingId === place.place_id && (
-                  <ActivityIndicator size="small" color={colors.accent} />
-                )}
-                {distance !== null && (
+          return (
+            <TouchableOpacity
+              key={place.place_id}
+              style={[
+                styles.placeButton,
+                selected && styles.selectedPlaceButton,
+              ]}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                if (selected) {
+                  onSelect(null);
+                } else {
+                  void selectPlace(place, onSelect);
+                }
+              }}
+              disabled={disabled || isResolvingId === place.place_id}
+            >
+              <View style={styles.placeContent}>
+                <View style={styles.placeTextContainer}>
                   <Text
                     style={[
-                      styles.distanceText,
+                      styles.placeName,
                       selected && styles.selectedPlaceText,
                     ]}
                   >
-                    {formatDistance(distance)}
+                    {placeName}
                   </Text>
-                )}
-                {place.tini_time_rating && (
-                  <View style={styles.ratingContainer}>
-                    <View style={styles.ratingCircle}>
-                      <Text style={styles.ratingText}>
-                        {place.tini_time_rating.toFixed(1)}
-                      </Text>
+                  <Text
+                    style={[
+                      styles.placeAddress,
+                      selected && styles.selectedPlaceText,
+                    ]}
+                  >
+                    {place.vicinity || place.formatted_address}
+                  </Text>
+                </View>
+                <View style={styles.rightContainer}>
+                  {isResolvingId === place.place_id && (
+                    <ActivityIndicator size="small" color={colors.accent} />
+                  )}
+                  {distance !== null && (
+                    <Text
+                      style={[
+                        styles.distanceText,
+                        selected && styles.selectedPlaceText,
+                      ]}
+                    >
+                      {formatDistance(distance)}
+                    </Text>
+                  )}
+                  {place.tini_time_rating && (
+                    <View style={styles.ratingContainer}>
+                      <View style={styles.ratingCircle}>
+                        <Text style={styles.ratingText}>
+                          {place.tini_time_rating.toFixed(1)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
+            </TouchableOpacity>
+          );
+        })}
     </ScrollView>
   );
 
@@ -401,6 +406,32 @@ const LocationInput = ({
               </TouchableOpacity>
             )}
           </View>
+
+          {value ? (
+            <View style={styles.currentLocation}>
+              <View style={styles.placeTextContainer}>
+                <Text style={styles.currentLocationName}>{value.name}</Text>
+                {value.address ? (
+                  <Text style={styles.currentLocationAddress}>
+                    {value.address}
+                  </Text>
+                ) : null}
+              </View>
+              <TouchableOpacity
+                onPress={() => onChange(null)}
+                disabled={disabled}
+                accessibilityRole="button"
+                accessibilityLabel="Clear selected location"
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={22}
+                  color={colors.onAccent}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {searchQuery.length > 0 && searchResults.length > 0 ? (
             renderPlaceList(searchResults, value, onChange)
@@ -441,6 +472,26 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
     borderWidth: 1,
     borderColor: t.colors.border,
+  },
+  currentLocation: {
+    minHeight: 64,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+    backgroundColor: t.colors.accent,
+    borderRadius: t.radius.md,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.sm,
+  },
+  currentLocationName: {
+    ...t.typography.bodyStrong,
+    color: t.colors.onAccent,
+    marginBottom: t.spacing.xs,
+  },
+  currentLocationAddress: {
+    ...t.typography.caption,
+    color: t.colors.onAccent,
   },
   clearButton: {
     position: "absolute" as const,

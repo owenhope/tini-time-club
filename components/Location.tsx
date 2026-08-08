@@ -24,6 +24,7 @@ import {
 } from "@/services/regularsService";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
@@ -297,6 +298,14 @@ const Location = () => {
     }
   }, [displayLocation?.id, loadLocationReviews]);
 
+  useEffect(
+    () =>
+      subscribeToReviewUpdates(() => {
+        void loadLocationReviews(true);
+      }),
+    [loadLocationReviews]
+  );
+
   useEffect(() => {
     if (
       displayLocation?.id &&
@@ -350,7 +359,7 @@ const Location = () => {
         tileLabel="reviewer"
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
-            ? router.push(routes.editCaption(review.id))
+            ? router.push(routes.editReview(review.id))
             : undefined
         }
         header={

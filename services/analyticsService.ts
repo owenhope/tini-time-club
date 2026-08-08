@@ -14,6 +14,7 @@ type AnalyticEventType =
   | "shared_app"
   | "share_review"
   | "new_review"
+  | "edit_review"
   | "like_review"
   | "view_location"
   | "comment_on_review"

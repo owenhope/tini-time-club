@@ -33,9 +33,15 @@ const ActionSheet = memo(
       const actions = isOwnReview
         ? [
             ...(onShare ? [{ label: "Share Review", action: onShare }] : []),
-            ...(onEdit ? [{ label: "Edit Caption", action: onEdit }] : []),
+            ...(onEdit ? [{ label: "Edit Review", action: onEdit }] : []),
             ...(onDelete
-              ? [{ label: "Delete Review", action: onDelete, destructive: true }]
+              ? [
+                  {
+                    label: "Delete Review",
+                    action: onDelete,
+                    destructive: true,
+                  },
+                ]
               : []),
           ]
         : [

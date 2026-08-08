@@ -23,6 +23,35 @@ interface QueryOptions {
   forceRefresh?: boolean;
 }
 
+export interface EditableReview {
+  id: string;
+  user_id: string;
+  image_url: string;
+  display_image_url: string;
+  comment: string | null;
+  taste: number;
+  presentation: number;
+  location: string | number | null;
+  spirit: string | number;
+  type: string | number;
+  location_details: {
+    id: string | number;
+    name: string;
+    address: string | null;
+    place_id: string | null;
+  } | null;
+}
+
+export interface ReviewUpdates {
+  image_url?: string;
+  location?: string | number | null;
+  spirit?: string | number;
+  type?: string | number;
+  taste?: number;
+  presentation?: number;
+  comment?: string;
+}
+
 const QUERY_TIMEOUT_MS = 20_000;
 
 class DatabaseService {
@@ -410,6 +439,50 @@ class DatabaseService {
     };
   }
 
+  /** Load the raw values needed to reopen an owned review in the composer. */
+  async getEditableReview(
+    reviewId: string | number,
+    userId: string
+  ): Promise<EditableReview> {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select(
+        `
+        id,
+        user_id,
+        image_url,
+        comment,
+        taste,
+        presentation,
+        location,
+        spirit,
+        type,
+        location_details:locations!reviews_location_fkey(id,name,address,place_id)
+      `
+      )
+      .eq("id", reviewId)
+      .eq("user_id", userId)
+      .eq("state", 1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Review not found or cannot be edited.");
+
+    const locationDetails = Array.isArray(data.location_details)
+      ? (data.location_details[0] ?? null)
+      : data.location_details;
+    const displayImageUrl = data.image_url
+      ? await imageCache.getReviewImageUrl(data.image_url)
+      : null;
+
+    return {
+      ...data,
+      id: String(data.id),
+      display_image_url: displayImageUrl || data.image_url,
+      location_details: locationDetails,
+    } as EditableReview;
+  }
+
   /**
    * Get followed user IDs
    */
@@ -561,23 +634,22 @@ class DatabaseService {
     return data;
   }
 
-  /**
-   * Update a review (e.g., caption)
-   */
+  /** Update the editable fields of an owned review. */
   async updateReview(
     reviewId: string,
-    updates: { comment?: string }
+    updates: ReviewUpdates,
+    userId?: string
   ): Promise<any> {
-    const { data, error } = await supabase
-      .from("reviews")
-      .update(updates)
-      .eq("id", reviewId)
-      .select()
-      .single();
+    let query = supabase.from("reviews").update(updates).eq("id", reviewId);
+
+    if (userId) query = query.eq("user_id", userId);
+
+    const { data, error } = await query.select().single();
 
     if (error) throw error;
 
     // Invalidate related caches
+    this.queryCache.delete(`review_${reviewId}`);
     if (data?.user_id) {
       this.invalidateUserCaches(data.user_id);
     }
