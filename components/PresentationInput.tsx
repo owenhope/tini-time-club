@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Controller } from "react-hook-form";
 import VerdictBlock from "@/components/shared/VerdictBlock";
 import { makeStyles } from "@/theme";
+import { isSelectableRating } from "@/utils/ratingUtils";
 
 const PresentationInput = ({ control }: { control: any }) => {
   const styles = useStyles();
@@ -9,12 +10,19 @@ const PresentationInput = ({ control }: { control: any }) => {
     <Controller
       control={control}
       name="presentation"
-      render={({ field: { onChange, value } }) => (
+      rules={{
+        validate: (value) =>
+          isSelectableRating(value) || "Choose a presentation rating",
+      }}
+      render={({ field: { onBlur, onChange, value } }) => (
         <View style={styles.inputContainer}>
           <VerdictBlock
             tone="paper"
             value={value}
-            onChange={onChange}
+            onChange={(rating) => {
+              onChange(rating);
+              onBlur();
+            }}
             placeholder={"Coupe, garnish, the whole arrival."}
             accessibilityLabel="Presentation rating"
             labels={[

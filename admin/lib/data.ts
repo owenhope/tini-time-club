@@ -47,6 +47,14 @@ export interface SharePreviewReview {
   profile: { username: string | null } | null;
 }
 
+export interface SharePreviewLocation {
+  id: string;
+  name: string;
+  address: string | null;
+  rating: number | null;
+  total_ratings: number;
+}
+
 const db = supabaseAdmin;
 
 const fetchActiveMemberIds = async (): Promise<string[]> => {
@@ -1001,6 +1009,26 @@ export const fetchSharePreviewReviews = async (
       };
     })
     .filter(Boolean) as SharePreviewReview[];
+};
+
+export const fetchSharePreviewLocations = async (
+  limit = 50
+): Promise<SharePreviewLocation[]> => {
+  const { data, error } = await db()
+    .from("location_ratings")
+    .select("id,name,address,rating,total_ratings")
+    .order("total_ratings", { ascending: false })
+    .order("name", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((location) => ({
+    id: String(location.id),
+    name: String(location.name),
+    address: location.address ?? null,
+    rating: location.rating == null ? null : Number(location.rating),
+    total_ratings: Number(location.total_ratings) || 0,
+  }));
 };
 
 export const USERS_PAGE_SIZE = 50;

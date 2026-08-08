@@ -9,6 +9,17 @@ export interface LocationRating {
   total_ratings?: number;
 }
 
+export const RATING_MIN = 1;
+export const RATING_MAX = 5;
+export const RATING_STEP = 0.5;
+
+/** Ratings are selectable from 1.0–5.0 in half-point increments. */
+export const isSelectableRating = (rating: number): boolean =>
+  Number.isFinite(rating) &&
+  rating >= RATING_MIN &&
+  rating <= RATING_MAX &&
+  Number.isInteger(rating / RATING_STEP);
+
 /**
  * Calculate the overall rating from taste and presentation averages
  * @param tasteAvg - Average taste rating

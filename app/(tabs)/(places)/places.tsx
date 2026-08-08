@@ -25,7 +25,7 @@ import {
 } from "react-native-maps";
 import * as Location from "expo-location";
 import * as Device from "expo-device";
-import { mapStyle } from "@/assets/mapStyle";
+import { darkMapStyle, mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
@@ -34,7 +34,7 @@ import RegularsSlider from "@/components/RegularsSlider";
 import { useLocalSearchParams } from "expo-router";
 import Search from "@/components/map/search";
 import AppHeader from "@/components/nav/AppHeader";
-import { fonts, makeStyles } from "@/theme";
+import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError, warn } from "@/utils/log";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
 import {
@@ -140,6 +140,7 @@ const UserDot = () => {
 
 function Map() {
   const styles = useStyles();
+  const { isDark } = useTheme();
   const params = useLocalSearchParams();
   const screenshotSeed = getScreenshotSeed(
     params.screenshotSeed as string | string[] | undefined
@@ -522,6 +523,7 @@ function Map() {
               Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
             }
             mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
+            userInterfaceStyle={isDark ? "dark" : "light"}
             clusteringEnabled={true}
             preserveClusterPressBehavior
             onClusterPress={handleClusterPress}
@@ -534,7 +536,7 @@ function Map() {
             rotateEnabled={false}
             initialRegion={region}
             onRegionChangeComplete={onRegionChangeComplete}
-            customMapStyle={mapStyle}
+            customMapStyle={isDark ? darkMapStyle : mapStyle}
             onPress={() => {
               if (markerPressGuardRef.current) {
                 clearTimeout(markerPressGuardRef.current);

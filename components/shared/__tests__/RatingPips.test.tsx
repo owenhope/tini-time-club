@@ -1,5 +1,6 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
+import { Text } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import RatingPips from "../RatingPips";
 import { ThemeProvider } from "@/theme";
@@ -25,54 +26,36 @@ const olives = (tree: renderer.ReactTestRenderer) =>
     return typeof d === "string" && d.startsWith("M400.249 341.459");
   });
 
-/** The per-olive rate buttons, found by role rather than component type —
- *  the RN jest preset does not preserve Pressable's identity. */
-const rateButtons = (tree: renderer.ReactTestRenderer) => {
-  const seen = new Set<string>();
-  return (
-    tree.root
-      .findAll(
-        (n) =>
-          typeof n.props.onPress === "function" &&
-          typeof n.props.accessibilityLabel === "string" &&
-          n.props.accessibilityLabel.startsWith("Rate ")
-      )
-      // Pressable renders several nodes carrying the same props; keep one per pip.
-      .filter((n) => {
-        const label = n.props.accessibilityLabel as string;
-        if (seen.has(label)) return false;
-        seen.add(label);
-        return true;
-      })
-  );
-};
-
 describe("RatingPips", () => {
   it("fills whole olives at full opacity", () => {
     const tree = render(<RatingPips value={3} />);
-    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+    const filled = olives(tree).filter(
+      (n) => n.props.fill === OLIVE_ICON_COLOR
+    );
     expect(filled).toHaveLength(3);
     expect(filled.every((n) => n.props.opacity === 1)).toBe(true);
   });
 
-  it("uses opacity for the fractional olive", () => {
+  it("renders a complete fractional olive at proportional opacity", () => {
     const tree = render(<RatingPips value={3.5} />);
-    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+    const filled = olives(tree).filter(
+      (n) => n.props.fill === OLIVE_ICON_COLOR
+    );
+
     expect(filled).toHaveLength(4);
-    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 0.5]);
+    expect(filled.map((node) => node.props.opacity)).toEqual([1, 1, 1, 0.5]);
+    expect(
+      tree.root.findAllByProps({ testID: "rating-pip-partial-fill" })
+    ).toHaveLength(0);
   });
 
-  it("caps high fractional olive opacity so decimals do not look whole", () => {
+  it("shows proportional opacity for aggregate decimal ratings", () => {
     const tree = render(<RatingPips value={3.8} />);
-    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+    const filled = olives(tree).filter(
+      (n) => n.props.fill === OLIVE_ICON_COLOR
+    );
 
-    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 0.55]);
-  });
-
-  it("keeps high fractional values distinct from whole olives", () => {
-    const tree = render(<RatingPips value={4.8} />);
-    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
-    expect(filled.map((n) => n.props.opacity)).toEqual([1, 1, 1, 1, 0.55]);
+    expect(filled.map((node) => node.props.opacity)).toEqual([1, 1, 1, 0.8]);
   });
 
   it("omits hollow pips for read-only display ratings", () => {
@@ -84,7 +67,9 @@ describe("RatingPips", () => {
 
   it("keeps filled olives in the brand olive colour on dark surfaces", () => {
     const tree = render(<RatingPips value={2} onDark />);
-    const filled = olives(tree).filter((n) => n.props.fill === OLIVE_ICON_COLOR);
+    const filled = olives(tree).filter(
+      (n) => n.props.fill === OLIVE_ICON_COLOR
+    );
 
     expect(filled).toHaveLength(2);
   });
@@ -102,19 +87,131 @@ describe("RatingPips", () => {
     expect(renderedOlives.every((n) => n.props.stroke == null)).toBe(true);
   });
 
-  it("is only tappable when onRate is supplied", () => {
+  it("selects the whole numbered rating when an olive is touched", () => {
     const readOnly = render(<RatingPips value={4} />);
-    expect(rateButtons(readOnly)).toHaveLength(0);
+    expect(
+      readOnly.root.findAll((n) => n.props.accessibilityRole === "adjustable")
+    ).toHaveLength(0);
 
     const onRate = jest.fn();
-    const interactive = render(<RatingPips value={0} onRate={onRate} />);
-    const buttons = rateButtons(interactive);
-    expect(buttons).toHaveLength(5);
+    const size = 42;
+    const interactive = render(
+      <RatingPips
+        value={1}
+        size={size}
+        onRate={onRate}
+        accessibilityLabel="Taste rating"
+      />
+    );
+    const touchTargets = interactive.root.findAll(
+      (n) =>
+        typeof n.props.testID === "string" &&
+        n.props.testID.startsWith("rating-pip-touch-") &&
+        typeof n.props.onPressIn === "function"
+    );
+    act(() => {
+      touchTargets.forEach((target) => {
+        target.props.onPressIn();
+        target.props.onPressOut();
+      });
+    });
+
+    expect(touchTargets).toHaveLength(5);
+    expect(onRate.mock.calls.map(([rating]) => rating)).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
+  });
+
+  it("selects half ratings while dragging across an olive", () => {
+    const onRate = jest.fn();
+    const size = 42;
+    const tree = render(<RatingPips value={1} size={size} onRate={onRate} />);
+    const control = tree.root.find(
+      (n) => n.props.accessibilityRole === "adjustable"
+    );
+    const canvas = getOliveIconCanvasSize(size);
+    const thirdPipStart = 2 * (canvas.width + 4);
 
     act(() => {
-      buttons[3].props.onPress();
+      control.props.onTouchMove({
+        nativeEvent: { locationX: thirdPipStart + canvas.width * 0.25 },
+      });
     });
-    expect(onRate).toHaveBeenCalledWith(4);
+
+    expect(onRate).toHaveBeenLastCalledWith(2.5);
+  });
+
+  it("updates continuously while dragging across the olives", () => {
+    const onRate = jest.fn();
+    const size = 42;
+    const tree = render(<RatingPips value={1} size={size} onRate={onRate} />);
+    const control = tree.root.find(
+      (n) => n.props.accessibilityRole === "adjustable"
+    );
+    const firstOlive = tree.root.find(
+      (n) =>
+        n.props.testID === "rating-pip-touch-1" &&
+        typeof n.props.onPressIn === "function"
+    );
+    const canvas = getOliveIconCanvasSize(size);
+    const fourthPipStart = 3 * (canvas.width + 4);
+
+    act(() => {
+      firstOlive.props.onPressIn();
+      control.props.onTouchMove({
+        nativeEvent: { locationX: fourthPipStart + canvas.width * 0.25 },
+      });
+      control.props.onTouchMove({
+        nativeEvent: { locationX: fourthPipStart + canvas.width * 0.75 },
+      });
+    });
+
+    expect(onRate.mock.calls.map(([rating]) => rating)).toEqual([1, 3.5, 4]);
+  });
+
+  it("supports half-step accessibility adjustments", () => {
+    const onRate = jest.fn();
+    const tree = render(
+      <RatingPips
+        value={3}
+        onRate={onRate}
+        accessibilityLabel="Presentation rating"
+      />
+    );
+    const control = tree.root.find(
+      (n) => n.props.accessibilityRole === "adjustable"
+    );
+
+    expect(control.props.accessibilityValue).toEqual({
+      min: 1,
+      max: 5,
+      now: 3,
+      text: "3.0 out of 5",
+    });
+
+    act(() => {
+      control.props.onAccessibilityAction({
+        nativeEvent: { actionName: "increment" },
+      });
+    });
+    expect(onRate).toHaveBeenLastCalledWith(3.5);
+  });
+
+  it("uses 1 as the minimum interactive value", () => {
+    const tree = render(<RatingPips value={0} onRate={jest.fn()} showValue />);
+    const control = tree.root.find(
+      (n) => n.props.accessibilityRole === "adjustable"
+    );
+
+    expect(control.props.accessibilityValue).toEqual({
+      min: 1,
+      max: 5,
+      now: 1,
+      text: "1.0 out of 5",
+    });
+    expect(
+      tree.root.findAllByType(Text).map((node) => node.props.children)
+    ).toContain("1.0");
   });
 
   it("describes itself for screen readers", () => {

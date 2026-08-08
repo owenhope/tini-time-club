@@ -67,7 +67,7 @@ const useStyles = makeStyles((t) => ({
     gap: 2,
   },
   name: {
-    color: t.colors.text,
+    color: t.colors.usernameText,
     flexShrink: 1,
   },
   badge: {

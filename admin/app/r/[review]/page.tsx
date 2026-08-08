@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
+import PublicShareHeader from "@/components/PublicShareHeader";
 import ReviewShareCard from "@/components/ReviewShareCard";
 import {
   fetchPublicReview,
@@ -31,8 +31,7 @@ export async function generateMetadata({
     score == null
       ? "Open this Tini Time Club review."
       : `Taste ${review.taste}/5 · Presentation ${review.presentation}/5 on Tini Time Club.`;
-  const image = `${canonicalUrl}/opengraph-image`;
-  const imageAlt = `Review at ${place}`;
+  const image = `${PUBLIC_ORIGIN}/tini-time-logo.png`;
 
   return {
     title,
@@ -49,14 +48,14 @@ export async function generateMetadata({
       images: [
         {
           url: image,
-          width: 1200,
-          height: 1200,
-          alt: imageAlt,
+          width: 200,
+          height: 200,
+          alt: "Tini Time Club logo",
         },
       ],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title,
       description,
       images: [image],
@@ -84,29 +83,7 @@ export default async function PublicReviewPage({
       <OpenInAppAttempt url={appUrl} />
 
       <div className="mx-auto flex min-h-screen max-w-[430px] flex-col sm:px-4 sm:py-5">
-        <header className="flex items-center justify-between bg-[#f8f5ef] px-[10px] py-2 sm:mb-3">
-          <Link href="/" aria-label="Tini Time Club">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/tini-time-logo.png"
-              alt="Tini Time Club"
-              width={60}
-              height={60}
-              className="h-[60px] w-[60px] object-cover"
-            />
-          </Link>
-          <a
-            href={appUrl}
-            className="text-sm font-bold text-[#08261f] underline-offset-4 hover:underline"
-          >
-            Join the Club
-          </a>
-        </header>
-
-        {/* One-line pitch between the header and the review. */}
-        <p className="bg-[#B6A3E2] px-3 py-1.5 text-center text-xs font-bold text-white sm:mb-3">
-          Sip, snap, review, repeat. Welcome to the club.
-        </p>
+        <PublicShareHeader appUrl={appUrl} />
 
         <div className="px-5 sm:px-0">
           <ReviewShareCard review={review} shareUrl={canonicalUrl} />

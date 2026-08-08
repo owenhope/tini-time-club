@@ -264,7 +264,7 @@ const useStyles = makeStyles((t) => ({
   railUsername: {
     ...t.typography.micro,
     fontFamily: fonts.semibold,
-    color: t.colors.text,
+    color: t.colors.usernameText,
     maxWidth: 60,
   },
   person: {
@@ -288,7 +288,7 @@ const useStyles = makeStyles((t) => ({
   },
   username: {
     ...t.typography.bodyStrong,
-    color: t.colors.text,
+    color: t.colors.usernameText,
   },
   reviewCount: {
     ...t.typography.caption,

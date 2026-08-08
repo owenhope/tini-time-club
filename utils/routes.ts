@@ -19,6 +19,11 @@ export type ReviewLocationParams = {
   locationLon?: string;
 };
 
+/** Params that reopen an existing review in the composer. */
+export type EditReviewParams = {
+  editReviewId: string;
+};
+
 /** Params for the favorite-location picker screen. */
 export type FavoriteLocationParams = {
   hasFavoriteLocation: "0" | "1";
@@ -94,10 +99,6 @@ export const routes = {
   /** Edit-profile form. */
   editProfile: () => "/edit-profile" as const satisfies Href,
 
-  /** Caption editor for an existing review. */
-  editCaption: (reviewId: string | number) =>
-    `/edit-caption?reviewId=${reviewId}` as const satisfies Href,
-
   /** Shared review deep link, also used by public web links. */
   sharedReview: (reviewId: string | number) =>
     `/r/${reviewId}` as const satisfies Href,
@@ -110,10 +111,17 @@ export const routes = {
    * Review tab — optionally pre-filled with a location (name/address and,
    * when known, coordinates).
    */
-  review: (params?: ReviewLocationParams) =>
+  review: (params?: ReviewLocationParams | EditReviewParams) =>
     (params
       ? ({ pathname: "/review", params } as const)
       : ("/review" as const)) satisfies Href,
+
+  /** Reopen an owned review in the full composer. */
+  editReview: (reviewId: string | number) =>
+    ({
+      pathname: "/review",
+      params: { editReviewId: String(reviewId) },
+    }) as const satisfies Href,
 
   /**
    * A place's profile. Extra `name`/`address` params let the screen render

@@ -9,6 +9,7 @@ import type {
 } from "@/types/types";
 import { reportError, warn } from "@/utils/log";
 import { withTimeout } from "@/utils/async";
+import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
 
 interface CachedQuery {
   data: any;
@@ -20,6 +21,35 @@ interface QueryOptions {
   cache?: boolean;
   cacheDuration?: number; // in milliseconds
   forceRefresh?: boolean;
+}
+
+export interface EditableReview {
+  id: string;
+  user_id: string;
+  image_url: string;
+  display_image_url: string;
+  comment: string | null;
+  taste: number;
+  presentation: number;
+  location: string | number | null;
+  spirit: string | number;
+  type: string | number;
+  location_details: {
+    id: string | number;
+    name: string;
+    address: string | null;
+    place_id: string | null;
+  } | null;
+}
+
+export interface ReviewUpdates {
+  image_url?: string;
+  location?: string | number | null;
+  spirit?: string | number;
+  type?: string | number;
+  taste?: number;
+  presentation?: number;
+  comment?: string;
 }
 
 const QUERY_TIMEOUT_MS = 20_000;
@@ -409,6 +439,50 @@ class DatabaseService {
     };
   }
 
+  /** Load the raw values needed to reopen an owned review in the composer. */
+  async getEditableReview(
+    reviewId: string | number,
+    userId: string
+  ): Promise<EditableReview> {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select(
+        `
+        id,
+        user_id,
+        image_url,
+        comment,
+        taste,
+        presentation,
+        location,
+        spirit,
+        type,
+        location_details:locations!reviews_location_fkey(id,name,address,place_id)
+      `
+      )
+      .eq("id", reviewId)
+      .eq("user_id", userId)
+      .eq("state", 1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Review not found or cannot be edited.");
+
+    const locationDetails = Array.isArray(data.location_details)
+      ? (data.location_details[0] ?? null)
+      : data.location_details;
+    const displayImageUrl = data.image_url
+      ? await imageCache.getReviewImageUrl(data.image_url)
+      : null;
+
+    return {
+      ...data,
+      id: String(data.id),
+      display_image_url: displayImageUrl || data.image_url,
+      location_details: locationDetails,
+    } as EditableReview;
+  }
+
   /**
    * Get followed user IDs
    */
@@ -457,7 +531,7 @@ class DatabaseService {
    * Get spirits (static data - long cache)
    */
   async getSpirits(): Promise<NamedOption[]> {
-    return this.query(
+    const spirits = await this.query<NamedOption[]>(
       "spirits",
       async () => {
         const { data, error } = await supabase
@@ -469,13 +543,15 @@ class DatabaseService {
       },
       { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
     );
+
+    return getSupportedSpirits(spirits);
   }
 
   /**
    * Get types (static data - long cache)
    */
   async getTypes(): Promise<NamedOption[]> {
-    return this.query(
+    const types = await this.query<NamedOption[]>(
       "types",
       async () => {
         const { data, error } = await supabase.from("types").select("id, name");
@@ -485,6 +561,8 @@ class DatabaseService {
       },
       { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
     );
+
+    return getSupportedTypes(types);
   }
 
   /**
@@ -556,23 +634,22 @@ class DatabaseService {
     return data;
   }
 
-  /**
-   * Update a review (e.g., caption)
-   */
+  /** Update the editable fields of an owned review. */
   async updateReview(
     reviewId: string,
-    updates: { comment?: string }
+    updates: ReviewUpdates,
+    userId?: string
   ): Promise<any> {
-    const { data, error } = await supabase
-      .from("reviews")
-      .update(updates)
-      .eq("id", reviewId)
-      .select()
-      .single();
+    let query = supabase.from("reviews").update(updates).eq("id", reviewId);
+
+    if (userId) query = query.eq("user_id", userId);
+
+    const { data, error } = await query.select().single();
 
     if (error) throw error;
 
     // Invalidate related caches
+    this.queryCache.delete(`review_${reviewId}`);
     if (data?.user_id) {
       this.invalidateUserCaches(data.user_id);
     }

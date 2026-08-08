@@ -22,8 +22,6 @@ import { Review } from "@/types/types";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 
-const COMMENT_TEXT_COLOR = "#141A17";
-
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
   onClose: () => void;
@@ -356,7 +354,7 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 2,
     flexWrap: "wrap" as const,
   },
-  username: { fontFamily: fonts.bold, color: COMMENT_TEXT_COLOR },
+  username: { fontFamily: fonts.bold, color: t.colors.usernameText },
   timestamp: {
     color: t.colors.textMuted,
     fontFamily: fonts.regular,
@@ -365,7 +363,7 @@ const useStyles = makeStyles((t) => ({
   commentBody: {
     fontFamily: fonts.regular,
     fontSize: 13,
-    color: COMMENT_TEXT_COLOR,
+    color: t.colors.postText,
   },
   inputContainer: {
     flexDirection: "row" as const,

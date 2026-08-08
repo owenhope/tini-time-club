@@ -27,12 +27,18 @@ interface CameraComponentProps {
   onClose?: () => void;
   /** Matches the step metadata rendered under the other review-flow headers. */
   headerBelow?: React.ReactNode;
+  title?: string;
+  closeAccessibilityLabel?: string;
+  closeIcon?: keyof typeof Ionicons.glyphMap;
 }
 
 export default function CameraComponent({
   onCapture,
   onClose,
   headerBelow,
+  title = "Capture",
+  closeAccessibilityLabel = "Discard review",
+  closeIcon = "trash-outline",
 }: CameraComponentProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -156,9 +162,9 @@ export default function CameraComponent({
     ...(onClose
       ? [
           {
-            icon: "trash-outline" as const,
+            icon: closeIcon,
             onPress: onClose,
-            accessibilityLabel: "Discard review",
+            accessibilityLabel: closeAccessibilityLabel,
           },
         ]
       : []),
@@ -243,7 +249,7 @@ export default function CameraComponent({
         <>
           <AppHeader
             variant="large"
-            title="Capture"
+            title={title}
             actions={headerActions}
             below={headerBelow}
           />

@@ -34,6 +34,7 @@ import FavoriteLocationLink from "@/components/profile/FavoriteLocationLink";
 import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { RANK_TIERS, getRankTier } from "@/utils/ranking";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 
@@ -127,6 +128,15 @@ const Profile = () => {
         void refreshProfile();
       }
     }, [params.screenshotSeed, params.tab, refreshProfile])
+  );
+
+  React.useEffect(
+    () =>
+      subscribeToReviewUpdates(() => {
+        void loadUserReviews(true);
+        void loadRegularPlaces();
+      }),
+    [loadRegularPlaces, loadUserReviews]
   );
 
   const pickImage = async () => {
@@ -497,7 +507,7 @@ const Profile = () => {
         }
         canDelete
         onDelete={(review) => confirmDeleteReview(review.id)}
-        onEdit={(review) => router.push(routes.editCaption(review.id))}
+        onEdit={(review) => router.push(routes.editReview(review.id))}
       />
     </View>
   );

@@ -17,16 +17,18 @@ import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import {
   getRegularsByLocation,
   type Regular,
 } from "@/services/regularsService";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
+import { shareLocationViaSheet } from "@/utils/locationShare";
 
 // Helper function to format price level
 
@@ -47,6 +49,7 @@ interface LocationType {
 
 const Location = () => {
   const styles = useStyles();
+  const { isDark } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const goBack = useGoBack();
@@ -120,6 +123,11 @@ const Location = () => {
     if (!displayLocation) return [];
 
     const actions: HeaderAction[] = [
+      {
+        icon: "paper-plane-outline",
+        accessibilityLabel: `Share ${displayLocation.name}`,
+        onPress: () => void shareLocationViaSheet(displayLocation),
+      },
       {
         icon: "information-circle-outline",
         accessibilityLabel: "Location information",
@@ -296,6 +304,14 @@ const Location = () => {
     }
   }, [displayLocation?.id, loadLocationReviews]);
 
+  useEffect(
+    () =>
+      subscribeToReviewUpdates(() => {
+        void loadLocationReviews(true);
+      }),
+    [loadLocationReviews]
+  );
+
   useEffect(() => {
     if (
       displayLocation?.id &&
@@ -345,11 +361,11 @@ const Location = () => {
         emptyComponent={renderEmpty()}
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
-        contentTone="surface"
+        contentTone={isDark ? "paper" : "surface"}
         tileLabel="reviewer"
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
-            ? router.push(routes.editCaption(review.id))
+            ? router.push(routes.editReview(review.id))
             : undefined
         }
         header={
@@ -484,10 +500,10 @@ const Location = () => {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.isDark ? t.colors.background : t.colors.surface,
   },
   venueHeader: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   venueHeaderContent: {
     paddingHorizontal: t.spacing.gutter,
@@ -510,16 +526,16 @@ const useStyles = makeStyles((t) => ({
   venueEyebrow: {
     ...t.typography.eyebrow,
     fontSize: 10,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   venueScore: {
     ...t.typography.metricLarge,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
     fontVariant: ["tabular-nums"] as const,
   },
   venueReviewCount: {
     ...t.typography.mono,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   regularsBlock: {
     alignItems: "flex-end" as const,
@@ -536,13 +552,13 @@ const useStyles = makeStyles((t) => ({
   },
   regularAvatar: {
     borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   regularAvatarOverlap: {
     marginLeft: -8,
   },
   reviewsIntro: {
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.isDark ? t.colors.background : t.colors.surface,
     paddingHorizontal: t.spacing.gutter,
     paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.lg - 2,

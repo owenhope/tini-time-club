@@ -1,11 +1,10 @@
 import { Alert, Linking, Platform, Share } from "react-native";
 import type { Review } from "@/types/types";
-import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import { warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
+import { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
 
-export const TTC_WEB_ORIGIN =
-  process.env.EXPO_PUBLIC_TTC_WEB_ORIGIN ?? "https://tinitimeclub.com";
+export { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
 
 export const publicReviewUrl = (reviewId: string | number) =>
   `${TTC_WEB_ORIGIN.replace(/\/$/, "")}/r/${encodeURIComponent(String(reviewId))}`;
@@ -28,15 +27,10 @@ const logReviewShare = async (
   if (error) warn("Review share analytics failed:", error);
 };
 
-const reviewShareText = (review: Review) => {
-  const place = review.location?.name ?? "a Martini spot";
-  const username = review.profile?.username
-    ? `@${review.profile.username}`
-    : "Someone";
-  const score = calculateOverallRating(review.taste, review.presentation);
-  const scoreText = score == null ? "" : ` ${formatRating(score)}/5.`;
-  return `${username} reviewed ${place} on Tini Time Club.${scoreText}`;
-};
+export const reviewShareText = (review: Review) =>
+  review.profile?.username
+    ? `Check out ${review.profile.username}'s review on Tini Time Club.`
+    : "Check out this review on Tini Time Club.";
 
 export const shareReviewViaSheet = async (review: Review) => {
   const url = publicReviewUrl(review.id);
@@ -64,7 +58,7 @@ export const shareReviewViaSheet = async (review: Review) => {
 export const shareReviewViaEmail = async (review: Review) => {
   const url = publicReviewUrl(review.id);
   const subject = `Tini Time Club review at ${review.location?.name ?? "a Martini spot"}`;
-  const body = `${reviewShareText(review)}\n\nOpen it here:\n${url}`;
+  const body = `${reviewShareText(review)}\n\n${url}`;
   const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   const canOpen = await Linking.canOpenURL(mailto);

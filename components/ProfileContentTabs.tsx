@@ -16,8 +16,7 @@ const TABS = [
 
 /**
  * The system's segmented control: a sunken pill track with the selected half
- * filled chartreuse and set in green ink. Controls are pill — this used to be
- * a pair of underlined tabs, which is a different system's idea.
+ * carrying the same brand purple as the profile header.
  */
 const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
   activeTab,
@@ -30,6 +29,7 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
       value={activeTab}
       options={TABS}
       onChange={onChange}
+      tone="brand"
       style={styles.tabs}
     />
   );

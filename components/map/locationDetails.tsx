@@ -175,7 +175,7 @@ const useStyles = makeStyles((t) => ({
   },
   score: {
     ...t.typography.metricLarge,
-    color: t.colors.secondary,
+    color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   reviewCount: {

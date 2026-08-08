@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
-  Dimensions,
   TouchableOpacity,
   Pressable,
   Alert,
@@ -30,30 +29,22 @@ import {
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
+import ReviewImageViewer from "@/components/ReviewImageViewer";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, fonts, makeStyles, spacing, useTheme } from "@/theme";
+import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { shareReviewViaSheet } from "@/utils/reviewShare";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 
-// Constants
-const SCREEN_WIDTH = Dimensions.get("window").width;
-/**
- * The card follows the shared screen gutter on both sides, so the image stays
- * on the same grid as the feed header.
- */
-const CARD_WIDTH = SCREEN_WIDTH - spacing.gutter * 2;
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
  * comment / share row under the tab bar on a 6.1" — with the scores now
  * sitting below the image as well, the photo has to give that height back.
  * Uploads are stored uncropped and centre-crop here via `contentFit="cover"`.
  */
-const PHOTO_HEIGHT = Math.round((CARD_WIDTH * 11) / 16);
 const DOUBLE_TAP_DELAY = 300;
-const COMMENT_TEXT_COLOR = "#141A17";
 const REVIEW_AUTHOR_AVATAR_SIZE = 40;
 
 const ICON_SIZES = {
@@ -706,6 +697,7 @@ const ReviewItemComponent = ({
   const { colors } = useTheme();
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const lastTapRef = useRef<number>(0);
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
 
@@ -819,7 +811,7 @@ const ReviewItemComponent = ({
   if (previewMode) {
     return (
       <View style={styles.previewContainer}>
-        <View style={styles.imageContainer}>
+        <View style={styles.imageContainer} testID="review-photo">
           <ExpoImage
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
@@ -891,6 +883,7 @@ const ReviewItemComponent = ({
           style={styles.imageContainer}
           onPress={handleImagePress}
           accessible={false}
+          testID="review-photo"
         >
           <ExpoImage
             source={{ uri: review.image_url }}
@@ -901,6 +894,20 @@ const ReviewItemComponent = ({
             cachePolicy="memory-disk"
             recyclingKey={review.id}
           />
+          <TouchableOpacity
+            style={styles.imageViewerButton}
+            onPress={() => setImageViewerVisible(true)}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="View review photo"
+            hitSlop={HIT_SLOP}
+          >
+            <Ionicons
+              name="eye-outline"
+              size={ICON_SIZES.small}
+              color={colors.textOnImage}
+            />
+          </TouchableOpacity>
           <PhotoChips review={review} />
         </Pressable>
 
@@ -943,6 +950,12 @@ const ReviewItemComponent = ({
         title="Report Review"
         onClose={() => setReportModalVisible(false)}
         onSelect={handleReportSubmit}
+      />
+
+      <ReviewImageViewer
+        visible={imageViewerVisible}
+        imageUrl={review.image_url}
+        onClose={() => setImageViewerVisible(false)}
       />
     </>
   );
@@ -992,7 +1005,7 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 22,
     fontFamily: fonts.extrabold,
     letterSpacing: -0.15,
-    color: t.colors.text,
+    color: t.colors.usernameText,
   },
   headerTimestamp: {
     ...t.typography.mono,
@@ -1019,14 +1032,25 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.md - 1,
   },
   imageContainer: {
-    width: CARD_WIDTH,
-    height: PHOTO_HEIGHT, // 4:3
+    width: "100%" as const,
+    aspectRatio: 16 / 11,
     position: "relative" as const,
   },
   reviewImage: {
     width: "100%" as const,
     height: "100%" as const,
     backgroundColor: t.colors.imagePlaceholder,
+  },
+  imageViewerButton: {
+    position: "absolute" as const,
+    top: t.spacing.md,
+    left: t.spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.scrimStrong,
   },
   // The only things left on the photo: where it was, how the place is doing,
   // and what was in it. The venue score stays inside the venue chip so it
@@ -1125,6 +1149,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   scoreAxis: {
+    alignItems: "flex-start" as const,
     gap: 7,
   },
   scoreLabel: {
@@ -1143,8 +1168,10 @@ const useStyles = makeStyles((t) => ({
     fontFamily: fonts.black,
     letterSpacing: -1,
     // The score belongs to the olives beside it, so it takes their green
-    // rather than the primary purple.
-    color: t.colors.secondary,
+    // rather than the primary purple. In dark mode that green is a fill token,
+    // not readable text, so the score takes the paper ink used by other key
+    // dark-mode numbers.
+    color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   footer: {
@@ -1196,26 +1223,26 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     fontSize: 17,
     lineHeight: 25,
-    color: COMMENT_TEXT_COLOR,
+    color: t.colors.postText,
   },
   inlineBody: {
     ...t.typography.caption,
     fontSize: 15,
     lineHeight: 21,
-    color: t.colors.text,
+    color: t.colors.postText,
     flexShrink: 1,
   },
   captionUsername: {
     ...t.typography.bodyStrong,
     fontSize: 17,
     lineHeight: 22,
-    color: COMMENT_TEXT_COLOR,
+    color: t.colors.usernameText,
   },
   captionBody: {
     ...t.typography.body,
     fontSize: 17,
     lineHeight: 25,
-    color: COMMENT_TEXT_COLOR,
+    color: t.colors.postText,
   },
   addCaptionText: {
     ...t.typography.body,

@@ -211,7 +211,7 @@ const useStyles = makeStyles((t) => ({
   },
   username: {
     fontFamily: fonts.semibold,
-    color: t.colors.accent,
+    color: t.colors.usernameText,
   },
   input: {
     borderWidth: 1,
