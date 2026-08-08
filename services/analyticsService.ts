@@ -13,6 +13,7 @@ type AnalyticEventType =
   | "create_account"
   | "shared_app"
   | "share_review"
+  | "share_location"
   | "new_review"
   | "edit_review"
   | "like_review"

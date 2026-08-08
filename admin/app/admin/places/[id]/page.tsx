@@ -87,11 +87,20 @@ export default async function PlaceDetailPage({
         surface="transparent"
         density="compact"
         actions={
-          mapsUrl ? (
-            <ActionLink href={mapsUrl} external>
-              Open in Google Maps
+          <div className="flex items-center gap-2">
+            <ActionLink
+              href={`/admin/share-preview?kind=location&location=${encodeURIComponent(
+                String(location.id)
+              )}`}
+            >
+              Preview share page
             </ActionLink>
-          ) : null
+            {mapsUrl ? (
+              <ActionLink href={mapsUrl} external>
+                Open in Google Maps
+              </ActionLink>
+            ) : null}
+          </div>
         }
       />
 

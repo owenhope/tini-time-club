@@ -28,6 +28,7 @@ import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
+import { shareLocationViaSheet } from "@/utils/locationShare";
 
 // Helper function to format price level
 
@@ -122,6 +123,11 @@ const Location = () => {
     if (!displayLocation) return [];
 
     const actions: HeaderAction[] = [
+      {
+        icon: "paper-plane-outline",
+        accessibilityLabel: `Share ${displayLocation.name}`,
+        onPress: () => void shareLocationViaSheet(displayLocation),
+      },
       {
         icon: "information-circle-outline",
         accessibilityLabel: "Location information",
