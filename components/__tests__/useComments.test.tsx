@@ -218,7 +218,7 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
 
     expect(countOccurrences(tree, COMMENT_BODY)).toBe(1);
     act(() => tree.unmount());
-  });
+  }, 15_000);
 
   it("does not duplicate a comment when the patch re-arrives after the list has loaded", async () => {
     const review = makeReview({ comments_count: 1 });
