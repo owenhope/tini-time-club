@@ -35,7 +35,7 @@ import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { shareReviewViaSheet } from "@/utils/reviewShare";
+import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 
 /**
@@ -700,6 +700,7 @@ const ReviewItemComponent = ({
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const lastTapRef = useRef<number>(0);
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
+  const handleShare = useReviewShareMenu(review);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -803,10 +804,6 @@ const ReviewItemComponent = ({
     },
     [profile, review.id, review.profile?.id]
   );
-
-  const handleShare = useCallback(() => {
-    void shareReviewViaSheet(review);
-  }, [review]);
 
   if (previewMode) {
     return (

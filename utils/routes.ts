@@ -56,6 +56,8 @@ export type DiscoverParams = {
   tab?: "places" | "members";
 };
 
+export type ReviewShareFormat = "story" | "post";
+
 export const routes = {
   /** Welcome / sign-in landing screen. */
   welcome: () => "/" as const satisfies Href,
@@ -121,6 +123,13 @@ export const routes = {
     ({
       pathname: "/review",
       params: { editReviewId: String(reviewId) },
+    }) as const satisfies Href,
+
+  /** Compose a social image from any review with a usable photo. */
+  reviewSharePreview: (reviewId: string | number, format: ReviewShareFormat) =>
+    ({
+      pathname: "/review-share-preview",
+      params: { reviewId: String(reviewId), format },
     }) as const satisfies Href,
 
   /**
