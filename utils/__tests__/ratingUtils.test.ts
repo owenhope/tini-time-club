@@ -3,7 +3,21 @@ import {
   formatRating,
   getLocationOverallRating,
   getLocationRatingDisplay,
+  isSelectableRating,
 } from "../ratingUtils";
+
+describe("isSelectableRating", () => {
+  it.each([1, 1.5, 2.5, 4.5, 5])("accepts %s", (rating) => {
+    expect(isSelectableRating(rating)).toBe(true);
+  });
+
+  it.each([0, 0.5, -0.5, 1.25, 4.75, 5.5, Number.NaN])(
+    "rejects %s",
+    (rating) => {
+      expect(isSelectableRating(rating)).toBe(false);
+    }
+  );
+});
 
 describe("calculateOverallRating", () => {
   it("averages taste and presentation", () => {

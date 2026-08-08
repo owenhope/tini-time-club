@@ -154,7 +154,7 @@ const useStyles = makeStyles((t) => ({
   },
   username: {
     ...t.typography.bodyStrong,
-    color: t.colors.text,
+    color: t.colors.usernameText,
   },
   meta: {
     ...t.typography.mono,

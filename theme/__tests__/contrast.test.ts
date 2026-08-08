@@ -58,6 +58,10 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   ["text on surface", c.text, c.surface],
   ["text on background", c.text, c.background],
   ["text on surfaceRaised", c.text, c.surfaceRaised],
+  ["postText on surface", c.postText, c.surface],
+  ["postText on background", c.postText, c.background],
+  ["usernameText on surface", c.usernameText, c.surface],
+  ["usernameText on background", c.usernameText, c.background],
   ["textSecondary on surface", c.textSecondary, c.surface],
   ["textSecondary on background", c.textSecondary, c.background],
   ["textMuted on surface", c.textMuted, c.surface],
@@ -75,6 +79,7 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   // The composer's purple block. Green on purple is the system's approved
   // lockup pairing but only 2.9:1, so the ink is deliberately not `accent`.
   ["onBrand on surfaceBrand", c.onBrand, c.surfaceBrand],
+  ["onHeaderBrand on headerBrand", c.onHeaderBrand, c.headerBrand],
   ["onInk on surfaceInk", c.onInk, c.surfaceInk],
   ["onInk on surfaceInkDeep", c.onInk, c.surfaceInkDeep],
 ];
@@ -162,5 +167,14 @@ describe("contrast helper", () => {
   it("computes the known extremes", () => {
     expect(contrast("#FFFFFF", "#000000")).toBeCloseTo(21, 0);
     expect(contrast("#FFFFFF", "#FFFFFF")).toBeCloseTo(1, 5);
+  });
+});
+
+describe("semantic text colors", () => {
+  it.each([
+    ["light", lightColors],
+    ["dark", darkColors],
+  ])("keeps %s mode usernames consistent with captions", (_name, colors) => {
+    expect(colors.usernameText).toBe(colors.postText);
   });
 });

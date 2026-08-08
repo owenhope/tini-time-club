@@ -110,9 +110,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         ? `Review at ${item.location.name}`
         : "Open review";
       const tileLabelText =
-        tileLabel === "reviewer"
-          ? item.profile?.username
-          : item.location?.name;
+        tileLabel === "reviewer" ? item.profile?.username : item.location?.name;
       const accessibilityLabel =
         tileLabel === "reviewer" && item.profile?.username
           ? `Review by ${item.profile.username} at ${item.location?.name ?? "this location"}`
@@ -148,12 +146,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
           />
           {overallScore != null ? (
             <View style={styles.tileScore} accessibilityElementsHidden>
-              <RatingPips
-                value={1}
-                max={1}
-                size={11}
-                accessibilityLabel=""
-              />
+              <RatingPips value={1} max={1} size={11} accessibilityLabel="" />
               <Text style={styles.tileScoreText}>{scoreLabel}</Text>
             </View>
           ) : null}
@@ -181,6 +174,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         renderItem={renderTile}
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
+        style={[styles.list, contentTone === "surface" && styles.listSurface]}
         ListHeaderComponent={header}
         ListEmptyComponent={
           loading ? (
@@ -273,6 +267,12 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
+  list: {
+    backgroundColor: t.colors.background,
+  },
+  listSurface: {
+    backgroundColor: t.colors.surface,
+  },
   content: {
     paddingBottom: t.spacing.xxl,
     backgroundColor: t.colors.background,
@@ -291,13 +291,17 @@ const useStyles = makeStyles((t) => ({
   tile: {
     backgroundColor: t.colors.imagePlaceholder,
     position: "relative" as const,
+    overflow: "hidden" as const,
   },
   tilePressed: {
     opacity: 0.75,
   },
   tileImage: {
-    width: "100%" as const,
-    height: "100%" as const,
+    position: "absolute" as const,
+    top: -2,
+    right: -2,
+    bottom: -2,
+    left: -2,
   },
   tileScore: {
     position: "absolute" as const,

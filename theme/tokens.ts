@@ -98,6 +98,8 @@ export interface ThemeColors {
 
   // Text
   text: string;
+  postText: string;
+  usernameText: string;
   textSecondary: string;
   textMuted: string;
   textOnAccent: string;
@@ -128,9 +130,11 @@ export interface ThemeColors {
 
   // Brand surfaces (full-bleed colour blocks)
   surfaceBrand: string; // purple — the primary brand background
+  headerBrand: string; // darker purple — app chrome that carries light text
   surfaceInk: string; // green-700 — "club / insider" ground
   surfaceInkDeep: string; // green-900
   onInk: string; // text on green surfaces
+  onHeaderBrand: string; // text on `headerBrand`
   /**
    * Ink for the purple surface. Green on purple is the system's approved
    * *lockup* pairing, but at 2.9:1 it fails as text — so a purple block takes
@@ -200,6 +204,8 @@ export const lightColors: ThemeColors = {
   scrimStrong: "rgba(20,26,23,0.65)", // 5.2:1 for white text over a white photo
 
   text: palette.green900,
+  postText: palette.ink900,
+  usernameText: palette.ink900,
   textSecondary: palette.ink700, // #3F4B46 — 8.6:1
   textMuted: palette.ink500, // #6E7472 — 4.6:1 on surface
   textOnAccent: palette.paper050,
@@ -226,6 +232,8 @@ export const lightColors: ThemeColors = {
   onHighlight: palette.green700,
 
   surfaceBrand: palette.purple500,
+  headerBrand: palette.purple700,
+  onHeaderBrand: palette.paper050,
   onBrand: palette.ink900,
   surfaceInk: palette.green700,
   surfaceInkDeep: palette.green900,
@@ -270,6 +278,8 @@ export const darkColors: ThemeColors = {
   scrimStrong: "rgba(6,10,8,0.66)",
 
   text: "#EEF3F0", // 14.8:1 on surface
+  postText: "#EEF3F0",
+  usernameText: "#EEF3F0",
   textSecondary: palette.paper050,
   textMuted: "#7F978C", // 4.9:1 on surface
   textOnAccent: "#0E1712",
@@ -297,6 +307,8 @@ export const darkColors: ThemeColors = {
   onHighlight: palette.green900,
 
   surfaceBrand: palette.purple700,
+  headerBrand: palette.purple700,
+  onHeaderBrand: palette.paper050,
   onBrand: palette.paper050, // 5.82:1 on purple-700
   surfaceInk: palette.green800,
   surfaceInkDeep: palette.green700,

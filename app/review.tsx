@@ -41,6 +41,8 @@ import {
   isRegularAt,
   type Achievement,
 } from "@/utils/celebrations";
+import { RATING_MIN } from "@/utils/ratingUtils";
+import { isReviewStepComplete } from "@/utils/reviewStepValidation";
 
 interface ReviewFormLocation {
   name: string;
@@ -109,8 +111,8 @@ const ReviewPreview = ({
         user_id: profile?.id || "",
         image_url: photo || "",
         comment: values.comment || "",
-        taste: values.taste || 0,
-        presentation: values.presentation || 0,
+        taste: values.taste || RATING_MIN,
+        presentation: values.presentation || RATING_MIN,
         inserted_at: new Date().toISOString(),
         profile: {
           id: profile?.id || "",
@@ -267,7 +269,7 @@ export default function App() {
   const locationLonParam = params.locationLon;
   const locationPlaceIdParam = params.locationPlaceId;
 
-  const { control, handleSubmit, reset, trigger, setValue } =
+  const { control, formState, handleSubmit, reset, trigger, setValue } =
     useForm<ReviewFormValues>({
       mode: "onChange",
       shouldUnregister: false,
@@ -275,8 +277,8 @@ export default function App() {
         location: null,
         spirit: "",
         type: "",
-        taste: 0,
-        presentation: 0,
+        taste: RATING_MIN,
+        presentation: RATING_MIN,
         comment: "",
       },
       resolver: undefined,
@@ -350,7 +352,7 @@ export default function App() {
 
   const animatedStyle = { opacity };
 
-  const cancelCapture = () => {
+  const discardReview = () => {
     setStep(0);
     setPhoto(null);
     setIsReviewing(false);
@@ -361,6 +363,7 @@ export default function App() {
     captionCanSaveRef.current = false;
     setCaptionCanSave(false);
     reset();
+    router.dismissTo(routes.home());
   };
 
   const saveCaption = () => {
@@ -380,7 +383,7 @@ export default function App() {
       "Your photo and review details will be lost.",
       [
         { text: "Keep editing", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: cancelCapture },
+        { text: "Discard", style: "destructive", onPress: discardReview },
       ]
     );
   };
@@ -645,6 +648,15 @@ export default function App() {
 
   const reviewStepTotal = questions.length;
   const currentQuestionTitle = questions[step].title;
+  const currentQuestionKey = questions[step].key;
+  const currentStepIncomplete = !isReviewStepComplete(
+    currentQuestionKey,
+    watchedValues,
+    {
+      taste: Boolean(formState.touchedFields.taste),
+      presentation: Boolean(formState.touchedFields.presentation),
+    }
+  );
   const headerTitle =
     currentQuestionTitle === "Preview" && isCaptionFocused
       ? "Caption"
@@ -658,7 +670,11 @@ export default function App() {
             onClose={goBack}
             headerBelow={
               <View style={styles.stepHeaderMeta}>
-                <AppText variant="eyebrow" tone="onImage" style={styles.subtitle}>
+                <AppText
+                  variant="eyebrow"
+                  tone="onImage"
+                  style={styles.subtitle}
+                >
                   Step 1 of {reviewStepTotal}
                 </AppText>
                 <View style={styles.progressBar}>
@@ -699,9 +715,7 @@ export default function App() {
                           style={[
                             styles.progressFill,
                             {
-                              width: `${
-                                ((step + 2) / reviewStepTotal) * 100
-                              }%`,
+                              width: `${((step + 2) / reviewStepTotal) * 100}%`,
                             },
                           ]}
                         />
@@ -824,7 +838,7 @@ export default function App() {
                         size="medium"
                         icon="chevron-forward"
                         iconPosition="right"
-                        disabled={isTransitioning}
+                        disabled={isTransitioning || currentStepIncomplete}
                       />
                     ) : (
                       <Button

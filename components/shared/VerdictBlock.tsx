@@ -12,7 +12,7 @@ export interface VerdictBlockProps {
   /** 0 = not yet rated. */
   value: number;
   onChange: (value: number) => void;
-  /** One line per rating, 1–5. Shown under the pips as the reader rates. */
+  /** One line per whole rating, 1–5. Shown under the pips as the reader rates. */
   labels: readonly string[];
   /** Shown while nothing is rated yet — each step asks its own question. */
   placeholder: string;
@@ -29,9 +29,9 @@ export interface VerdictBlockProps {
  * as a full-bleed background surface, and rating a martini is the one moment
  * in the app that earns a block of it.
  *
- * The olives replace the old slider — both snap to whole numbers, so nothing
- * is lost — but the slider's descriptive line stays, because it carries the
- * brand's voice and does the work a bare number can't.
+ * The olives replace the old slider and select in half-point steps. The
+ * descriptive line stays because it carries the brand's voice and does the
+ * work a bare number can't.
  */
 const VerdictBlock: React.FC<VerdictBlockProps> = ({
   eyebrow,
@@ -44,7 +44,7 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const line = value >= 1 ? labels[Math.round(value) - 1] : placeholder;
+  const line = value > 0 ? labels[Math.round(value) - 1] : placeholder;
   const onPaper = tone === "paper";
   const ink = onPaper ? styles.inkPaper : styles.ink;
 
@@ -60,6 +60,9 @@ const VerdictBlock: React.FC<VerdictBlockProps> = ({
         max={PIPS_MAX}
         size={42}
         onRate={onChange}
+        showValue={value > 0}
+        valueColor={onPaper ? colors.text : colors.onBrand}
+        onDark={!onPaper}
         bodyColor={onPaper ? colors.secondary : colors.onBrand}
         emptyColor={onPaper ? colors.ratingPipEmpty : colors.onBrand}
         accessibilityLabel={accessibilityLabel}

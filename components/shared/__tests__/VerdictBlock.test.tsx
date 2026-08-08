@@ -2,7 +2,7 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { Text } from "react-native";
 import VerdictBlock from "../VerdictBlock";
-import { ThemeProvider, lightColors } from "@/theme";
+import { ThemeProvider, lightColors, typography } from "@/theme";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -45,26 +45,38 @@ describe("VerdictBlock", () => {
     expect(texts(build(5))).toContain("Perfect");
   });
 
+  it("shows a large half rating above the picker in the verdict ink", () => {
+    const tree = build(3.5);
+    const rating = tree.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "3.5");
+    const description = tree.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "Enjoyable");
+    const ratingStyles = [rating?.props.style].flat(3);
+    const descriptionStyles = [description?.props.style].flat(3);
+
+    expect(
+      ratingStyles.some(
+        (style) => style?.fontSize === typography.metricLarge.fontSize
+      )
+    ).toBe(true);
+    expect(ratingStyles.findLast((style) => style?.color)?.color).toBe(
+      descriptionStyles.findLast((style) => style?.color)?.color
+    );
+  });
+
   it("reports the tapped rating", () => {
     const onChange = jest.fn();
     const tree = build(0, onChange);
-    const seen = new Set<string>();
-    const buttons = tree.root
-      .findAll(
-        (n) =>
-          typeof n.props.onPress === "function" &&
-          typeof n.props.accessibilityLabel === "string" &&
-          n.props.accessibilityLabel.startsWith("Rate ")
-      )
-      .filter((n) => {
-        const l = n.props.accessibilityLabel as string;
-        if (seen.has(l)) return false;
-        seen.add(l);
-        return true;
-      });
+    const thirdOlive = tree.root.find(
+      (n) =>
+        n.props.testID === "rating-pip-touch-3" &&
+        typeof n.props.onPressIn === "function"
+    );
 
     act(() => {
-      buttons[2].props.onPress();
+      thirdOlive.props.onPressIn();
     });
     expect(onChange).toHaveBeenCalledWith(3);
   });

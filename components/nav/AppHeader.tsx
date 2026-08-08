@@ -575,16 +575,16 @@ const useStyles = makeStyles((t) => ({
 
   // A · large
   large: {
-    backgroundColor: t.colors.surfaceInk,
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInk,
     paddingHorizontal: t.spacing.gutter,
     paddingBottom: t.spacing.md,
     gap: t.spacing.sm,
   },
   largeDeep: {
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInkDeep,
   },
   largeBrand: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   largeRow: {
     flexDirection: "row" as const,
@@ -661,7 +661,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
   },
   compactFillBrand: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   compactEnd: {
     flexDirection: "row" as const,
@@ -678,16 +678,16 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   compactTitleOnBrand: {
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
 
   // C · over media
   media: {
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInkDeep,
     justifyContent: "space-between" as const,
   },
   mediaBrand: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   // The drawn height is the photo's. Without one the block sizes to the name
   // it carries rather than holding open 210pt of empty green — a venue with no

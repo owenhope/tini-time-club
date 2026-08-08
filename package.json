@@ -20,9 +20,6 @@
     "verify": "npm run typecheck && npm run lint && npm test",
     "release:testflight": "npx eas-cli build --profile production --platform ios --auto-submit"
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",
     "@expo-google-fonts/figtree": "^0.4.1",

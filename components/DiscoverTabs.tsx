@@ -331,7 +331,7 @@ export default function DiscoverTabs({
             <VerifiedName
               name={item.username || "Unknown User"}
               isVerified={item.is_verified}
-              textStyle={styles.resultTitle}
+              textStyle={[styles.resultTitle, styles.memberResultTitle]}
             />
             {/* Counts are data: mono, one line, correctly plural. */}
             <Text style={styles.profileStats} numberOfLines={1}>
@@ -533,7 +533,7 @@ const useStyles = makeStyles((t) => ({
   },
   // The chip row belongs to the same green block as the search header.
   segmentRow: {
-    backgroundColor: t.colors.surfaceInk,
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInk,
     paddingTop: t.spacing.md,
     paddingBottom: t.spacing.sm,
   },
@@ -628,7 +628,7 @@ const useStyles = makeStyles((t) => ({
   resultScore: {
     ...t.typography.metric,
     letterSpacing: 0,
-    color: t.colors.secondary,
+    color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   resultReviewCount: {
@@ -652,6 +652,9 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.heading,
     color: t.colors.text,
     flexShrink: 1,
+  },
+  memberResultTitle: {
+    color: t.colors.usernameText,
   },
   resultSubtitle: {
     ...t.typography.caption,

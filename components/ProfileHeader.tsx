@@ -288,7 +288,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 const useStyles = makeStyles((t) => ({
   // The profile identity block wears the app's purple header ground.
   ground: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.headerBrand,
   },
   container: {
     paddingBottom: t.spacing.xl,
@@ -346,12 +346,12 @@ const useStyles = makeStyles((t) => ({
   rankCount: {
     ...t.typography.label,
     fontFamily: fonts.semibold,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   rankRemaining: {
     ...t.typography.label,
     fontFamily: fonts.semibold,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   rankTrack: {
     height: 8,
@@ -388,17 +388,17 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 28,
     fontFamily: fonts.black,
     letterSpacing: -0.7,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   // Handles are data — they set in mono, like every other identifier.
   handle: {
     ...t.typography.mono,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
   bio: {
     ...t.typography.body,
     width: "100%" as const,
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
     lineHeight: 20,
     opacity: 0.85,
   },
@@ -406,7 +406,7 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     // On the deep-green ground the danger red drops below AA, so errors here
     // take the paper ink and lean on placement to read as a problem.
-    color: t.colors.onInk,
+    color: t.colors.onHeaderBrand,
   },
 }));
 

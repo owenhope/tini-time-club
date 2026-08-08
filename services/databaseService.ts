@@ -9,6 +9,7 @@ import type {
 } from "@/types/types";
 import { reportError, warn } from "@/utils/log";
 import { withTimeout } from "@/utils/async";
+import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
 
 interface CachedQuery {
   data: any;
@@ -457,7 +458,7 @@ class DatabaseService {
    * Get spirits (static data - long cache)
    */
   async getSpirits(): Promise<NamedOption[]> {
-    return this.query(
+    const spirits = await this.query<NamedOption[]>(
       "spirits",
       async () => {
         const { data, error } = await supabase
@@ -469,13 +470,15 @@ class DatabaseService {
       },
       { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
     );
+
+    return getSupportedSpirits(spirits);
   }
 
   /**
    * Get types (static data - long cache)
    */
   async getTypes(): Promise<NamedOption[]> {
-    return this.query(
+    const types = await this.query<NamedOption[]>(
       "types",
       async () => {
         const { data, error } = await supabase.from("types").select("id, name");
@@ -485,6 +488,8 @@ class DatabaseService {
       },
       { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
     );
+
+    return getSupportedTypes(types);
   }
 
   /**

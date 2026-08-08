@@ -18,7 +18,7 @@ export interface SegmentedControlProps<Value extends string> {
   options: readonly SegmentedControlOption<Value>[];
   onChange: (value: Value) => void;
   style?: StyleProp<ViewStyle>;
-  tone?: "default" | "ink";
+  tone?: "default" | "ink" | "brand";
 }
 
 /** The app-wide text-only segmented control used to switch peer views. */
@@ -31,6 +31,7 @@ const SegmentedControl = <Value extends string>({
 }: SegmentedControlProps<Value>) => {
   const styles = useStyles();
   const onInk = tone === "ink";
+  const onBrand = tone === "brand";
 
   return (
     <View style={[styles.container, onInk && styles.containerInk, style]}>
@@ -43,6 +44,7 @@ const SegmentedControl = <Value extends string>({
               styles.segment,
               selected && styles.segmentSelected,
               selected && onInk && styles.segmentSelectedInk,
+              selected && onBrand && styles.segmentSelectedBrand,
               pressed && styles.segmentPressed,
             ]}
             onPress={() => onChange(option.value)}
@@ -57,6 +59,7 @@ const SegmentedControl = <Value extends string>({
                 onInk && !selected && styles.labelInkIdle,
                 selected && styles.labelSelected,
                 selected && onInk && styles.labelSelectedInk,
+                selected && onBrand && styles.labelSelectedBrand,
               ]}
             >
               {option.label}
@@ -98,7 +101,10 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
   },
   segmentSelectedInk: {
-    backgroundColor: t.colors.surfaceInkDeep,
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInkDeep,
+  },
+  segmentSelectedBrand: {
+    backgroundColor: t.colors.headerBrand,
   },
   segmentPressed: {
     opacity: 0.7,
@@ -120,6 +126,9 @@ const useStyles = makeStyles((t) => ({
   },
   labelSelectedInk: {
     color: t.colors.onInk,
+  },
+  labelSelectedBrand: {
+    color: t.colors.onHeaderBrand,
   },
 }));
 

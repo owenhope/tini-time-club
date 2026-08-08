@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   FlatList,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { filterRelevantPlaces, getNameMatchScore } from "@/utils/locationUtils";
@@ -224,6 +225,10 @@ const useStyles = makeStyles((t) => ({
   textInput: {
     ...t.typography.body,
     flex: 1,
+    height: "100%",
+    paddingVertical: 0,
+    textAlignVertical: "center" as const,
+    transform: Platform.OS === "ios" ? [{ translateY: -4 }] : undefined,
     color: t.colors.text,
     marginLeft: t.spacing.md,
   },

@@ -31,6 +31,7 @@ const SelectableOptionsInput = <TFieldValues extends FieldValues>({
 
   return (
     <Controller
+      key={name}
       control={control}
       name={name}
       rules={rules}
@@ -52,6 +53,7 @@ const SelectableOptionsInput = <TFieldValues extends FieldValues>({
                     onChange(id);
                   }}
                   accessibilityRole="button"
+                  accessibilityLabel={optionName}
                   accessibilityState={{ selected: isSelected }}
                 >
                   <Text
