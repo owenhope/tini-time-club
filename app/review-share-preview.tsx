@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
 import type { Review } from "@/types/types";
 import { reportError } from "@/utils/log";
+import { logReviewShare } from "@/utils/reviewShare";
 import { routes, type ReviewShareFormat } from "@/utils/routes";
 
 const FORMATS = [
@@ -47,6 +48,7 @@ export default function ReviewSharePreviewScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const trackedFormats = useRef(new Set<ReviewShareFormat>());
   const [positions, setPositions] = useState<
     Record<ReviewShareFormat, ReviewSharePhotoPosition>
   >({
@@ -88,6 +90,17 @@ export default function ReviewSharePreviewScreen() {
       cancelled = true;
     };
   }, [reviewId]);
+
+  useEffect(() => {
+    if (!review || trackedFormats.current.has(format)) return;
+
+    trackedFormats.current.add(format);
+    void logReviewShare(
+      review.id,
+      format === "story" ? "instagram_story" : "instagram_post",
+      "previewed"
+    );
+  }, [format, review]);
 
   const canvasSize = useMemo(() => {
     const targetAspect = format === "story" ? 9 / 16 : 4 / 5;

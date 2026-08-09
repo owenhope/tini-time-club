@@ -9,11 +9,17 @@ export { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
 export const publicReviewUrl = (reviewId: string | number) =>
   `${TTC_WEB_ORIGIN.replace(/\/$/, "")}/r/${encodeURIComponent(String(reviewId))}`;
 
-type ShareChannel = "sheet" | "email" | "instagram";
+export type ReviewShareChannel =
+  | "sheet"
+  | "share_link"
+  | "email"
+  | "instagram"
+  | "instagram_story"
+  | "instagram_post";
 
-const logReviewShare = async (
+export const logReviewShare = async (
   reviewId: string | number,
-  channel: ShareChannel,
+  channel: ReviewShareChannel,
   outcome: string
 ) => {
   const numericReviewId = Number(reviewId);
@@ -32,7 +38,10 @@ export const reviewShareText = (review: Review) =>
     ? `Check out ${review.profile.username}'s review on Tini Time Club.`
     : "Check out this review on Tini Time Club.";
 
-export const shareReviewViaSheet = async (review: Review) => {
+export const shareReviewViaSheet = async (
+  review: Review,
+  channel: ReviewShareChannel = "sheet"
+) => {
   const url = publicReviewUrl(review.id);
   const text = reviewShareText(review);
   const content =
@@ -50,7 +59,7 @@ export const shareReviewViaSheet = async (review: Review) => {
   const result = await Share.share(content);
   await logReviewShare(
     review.id,
-    "sheet",
+    channel,
     result.action === Share.sharedAction ? "shared" : "dismissed"
   );
 };

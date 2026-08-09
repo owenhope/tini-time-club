@@ -1,4 +1,5 @@
-import { reviewShareText } from "../reviewShare";
+import { logReviewShare, reviewShareText } from "../reviewShare";
+import { supabase } from "@/utils/supabase";
 
 jest.mock("react-native", () => ({
   Alert: {},
@@ -27,5 +28,17 @@ describe("review share text", () => {
     expect(reviewShareText({ profile: null } as any)).toBe(
       "Check out this review on Tini Time Club."
     );
+  });
+
+  it("logs the selected Instagram format through the private RPC", async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ error: null });
+
+    await logReviewShare(42, "instagram_story", "previewed");
+
+    expect(supabase.rpc).toHaveBeenCalledWith("log_review_share", {
+      p_review_id: 42,
+      p_channel: "instagram_story",
+      p_outcome: "previewed",
+    });
   });
 });

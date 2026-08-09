@@ -302,6 +302,15 @@ export interface AnalyticsData {
     share_count: number;
     last_shared_at: string;
   })[];
+  recentReviewShares: {
+    id: string;
+    profile: AdminProfile;
+    review_id: number;
+    location_name: string | null;
+    channel: string;
+    outcome: string;
+    shared_at: string;
+  }[];
   totalMembers: number;
   totalPlaces: number;
   topPlaces: {
@@ -439,7 +448,7 @@ export const fetchAnalytics = async (
     activeMemberIds.length > 0
       ? db()
           .from("review_share_events")
-          .select("user_id,channel,outcome,shared_at")
+          .select("id,user_id,review_id,channel,outcome,shared_at")
           .in("user_id", activeMemberIds)
           .gte("shared_at", sinceIso)
           .lte("shared_at", untilIso)
@@ -646,20 +655,49 @@ export const fetchAnalytics = async (
   const topShareEntries = [...sharesByUser.entries()]
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 10);
-  const { data: sharerProfiles } =
-    topShareEntries.length > 0
-      ? await db()
+  const recentShareRows = [...shareRows]
+    .sort(
+      (a, b) =>
+        new Date(b.shared_at).getTime() - new Date(a.shared_at).getTime()
+    )
+    .slice(0, 20);
+  const displayedSharerIds = [
+    ...new Set([
+      ...topShareEntries.map(([id]) => id),
+      ...recentShareRows.map((share) => share.user_id),
+    ]),
+  ];
+  const recentReviewIds = [
+    ...new Set(recentShareRows.map((share) => share.review_id)),
+  ];
+  const [sharerProfilesResult, sharedReviewsResult] = await Promise.all([
+    displayedSharerIds.length > 0
+      ? db()
           .from("profiles")
           .select(
             "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
           )
-          .in(
-            "id",
-            topShareEntries.map(([id]) => id)
-          )
-      : { data: [] };
+          .in("id", displayedSharerIds)
+      : { data: [], error: null },
+    recentReviewIds.length > 0
+      ? db().from("reviews").select("id,location").in("id", recentReviewIds)
+      : { data: [], error: null },
+  ]);
+  if (sharerProfilesResult.error) {
+    throw new Error(sharerProfilesResult.error.message);
+  }
+  if (sharedReviewsResult.error) {
+    throw new Error(sharedReviewsResult.error.message);
+  }
+  const sharerProfiles = sharerProfilesResult.data;
   const sharerProfileMap = new Map(
     (sharerProfiles ?? []).map((profile) => [profile.id, profile])
+  );
+  const sharedReviewLocationMap = new Map(
+    (sharedReviewsResult.data ?? []).map((review) => [
+      review.id,
+      locationMap.get(Number(review.location))?.name ?? null,
+    ])
   );
 
   return {
@@ -723,6 +761,22 @@ export const fetchAnalytics = async (
         };
       })
       .filter(Boolean) as AnalyticsData["topSharers"],
+    recentReviewShares: recentShareRows
+      .map((share) => {
+        const profile = sharerProfileMap.get(share.user_id);
+        if (!profile) return null;
+
+        return {
+          id: share.id,
+          profile: { ...profile, ...authUsers.get(share.user_id) },
+          review_id: share.review_id,
+          location_name: sharedReviewLocationMap.get(share.review_id) ?? null,
+          channel: share.channel,
+          outcome: share.outcome,
+          shared_at: share.shared_at,
+        };
+      })
+      .filter(Boolean) as AnalyticsData["recentReviewShares"],
     totalMembers: (profiles.data ?? []).length,
     totalPlaces: locationRows.length,
     topPlaces: topPlaceEntries

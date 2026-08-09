@@ -27,7 +27,7 @@ export const useReviewShareMenu = (review: Review | null) => {
         return;
       }
 
-      void shareReviewViaSheet(review);
+      void shareReviewViaSheet(review, "share_link");
     };
 
     if (process.env.EXPO_OS === "ios") {
