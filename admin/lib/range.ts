@@ -12,12 +12,12 @@ export const RANGE_PRESETS = [7, 30, 90] as const;
 
 const startOfDay = (d: Date) => {
   const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
+  copy.setUTCHours(0, 0, 0, 0);
   return copy;
 };
 const endOfDay = (d: Date) => {
   const copy = new Date(d);
-  copy.setHours(23, 59, 59, 999);
+  copy.setUTCHours(23, 59, 59, 999);
   return copy;
 };
 
@@ -33,8 +33,8 @@ export const parseRange = (params: {
   const isDate = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
   if (isDate(params.from) && isDate(params.to)) {
-    const since = startOfDay(new Date(`${params.from}T00:00:00`));
-    const until = endOfDay(new Date(`${params.to}T00:00:00`));
+    const since = startOfDay(new Date(`${params.from}T00:00:00Z`));
+    const until = endOfDay(new Date(`${params.to}T00:00:00Z`));
     if (since <= until) {
       const days =
         Math.round(
@@ -55,7 +55,7 @@ export const parseRange = (params: {
     : 30;
   const until = endOfDay(new Date());
   const since = startOfDay(new Date());
-  since.setDate(since.getDate() - (days - 1));
+  since.setUTCDate(since.getUTCDate() - (days - 1));
   return {
     since,
     until,

@@ -67,6 +67,8 @@ export interface Comment {
   review_id?: number | string;
   user_id?: string;
   profile?: ReviewProfile;
+  likes_count?: number;
+  has_liked?: boolean;
 }
 
 /**

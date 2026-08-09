@@ -127,6 +127,76 @@ export async function setReviewActive(reviewId: string, active: boolean) {
   revalidatePath("/admin/places");
 }
 
+const REPORT_STATUSES = ["reviewed", "dismissed"] as const;
+
+export async function setReportStatus(
+  reportId: string,
+  status: (typeof REPORT_STATUSES)[number]
+) {
+  if (!REPORT_STATUSES.includes(status))
+    throw new Error("Invalid report status");
+
+  const { error } = await supabaseAdmin()
+    .from("reports")
+    .update({ status })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/reports");
+}
+
+export async function deleteReportedContentAndResolve(reportId: string) {
+  const admin = supabaseAdmin();
+  const { data: report, error: reportError } = await admin
+    .from("reports")
+    .select("content_type,review_id,comment_id")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (reportError) throw new Error(reportError.message);
+  if (!report) throw new Error("Report not found");
+
+  const contentType =
+    report.content_type ?? (report.comment_id ? "comment" : "review");
+  if (contentType === "comment" && report.comment_id) {
+    const { error: resolveRelatedError } = await admin
+      .from("reports")
+      .update({ status: "resolved" })
+      .eq("comment_id", report.comment_id);
+    if (resolveRelatedError) throw new Error(resolveRelatedError.message);
+
+    const { error } = await admin
+      .from("comments")
+      .delete()
+      .eq("id", report.comment_id);
+    if (error) throw new Error(error.message);
+  } else if (contentType === "review" && report.review_id) {
+    const { error: resolveRelatedError } = await admin
+      .from("reports")
+      .update({ status: "resolved" })
+      .eq("review_id", report.review_id);
+    if (resolveRelatedError) throw new Error(resolveRelatedError.message);
+
+    const { error } = await admin
+      .from("reviews")
+      .update({ state: 3 })
+      .eq("id", report.review_id);
+    if (error) throw new Error(error.message);
+  }
+
+  const { error: resolveError } = await admin
+    .from("reports")
+    .update({ status: "resolved" })
+    .eq("id", reportId);
+  if (resolveError) throw new Error(resolveError.message);
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/admin/reviews");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/places");
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin");
+}
+
 export async function updateLocation(locationId: string, formData: FormData) {
   if (!/^\d+$/.test(locationId)) throw new Error("Invalid location id");
 
