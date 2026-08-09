@@ -6,7 +6,7 @@
  */
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
 import databaseService from "@/services/databaseService";
 import { ThemeProvider } from "@/theme";
@@ -319,6 +319,15 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
         accessibilityLabel: "Unlike comment by alice",
       }).props.accessibilityState
     ).toEqual({ selected: true });
+    const likedButton = tree.root.findByProps({
+      accessibilityLabel: "Unlike comment by alice",
+    });
+    expect(StyleSheet.flatten(likedButton.props.style)).toEqual(
+      expect.objectContaining({ flexDirection: "column" })
+    );
+    expect(
+      StyleSheet.flatten(likedButton.props.children[1].props.style)
+    ).toEqual(expect.objectContaining({ fontSize: 10, lineHeight: 12 }));
     expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });

@@ -1,5 +1,5 @@
 import React from "react";
-import { ActionSheetIOS, Alert, Text } from "react-native";
+import { ActionSheetIOS, Alert, StyleSheet, Text } from "react-native";
 import renderer, { act } from "react-test-renderer";
 import CommentsSlider from "../CommentsSlider";
 import databaseService from "@/services/databaseService";
@@ -79,8 +79,8 @@ jest.mock("@expo/vector-icons", () => {
   const ReactActual = require("react");
   const { Text: RNText } = require("react-native");
   return {
-    Ionicons: ({ name }: { name: string }) =>
-      ReactActual.createElement(RNText, null, name),
+    Ionicons: (props: { name: string; size?: number }) =>
+      ReactActual.createElement(RNText, props, props.name),
   };
 });
 
@@ -147,7 +147,15 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
   const emptyHeart = tree.root.findByProps({
     accessibilityLabel: "Like comment",
   });
+  const commentBody = tree.root
+    .findAllByType(Text)
+    .find((node) => node.props.children === "Perfectly cold.");
+
+  expect(StyleSheet.flatten(commentBody?.props.style)).toEqual(
+    expect.objectContaining({ fontSize: 17, lineHeight: 25 })
+  );
   expect(emptyHeart.props.children[1]).toBeNull();
+  expect(emptyHeart.findByProps({ name: "heart-outline" }).props.size).toBe(16);
 
   await act(async () => {
     await emptyHeart.props.onPress();
@@ -158,6 +166,11 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
     accessibilityLabel: "Unlike comment",
   });
   expect(filledHeart.props.accessibilityState).toEqual({ selected: true });
+  expect(filledHeart.props.style.flexDirection).toBe("column");
+  expect(filledHeart.findByProps({ name: "heart" }).props.size).toBe(16);
+  expect(StyleSheet.flatten(filledHeart.props.children[1].props.style)).toEqual(
+    expect.objectContaining({ fontSize: 10, lineHeight: 12 })
+  );
   expect(
     tree.root
       .findAllByType(Text)

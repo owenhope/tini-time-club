@@ -440,7 +440,7 @@ class DatabaseService {
               inserted_at,
               review_id,
               user_id,
-              profile:profiles(id,username,avatar_url,is_verified,review_count)
+              profile:profiles!comments_user_id_fkey(id,username,avatar_url,is_verified,review_count)
             `
               )
               .eq("review_id", reviewId)
@@ -699,7 +699,7 @@ class DatabaseService {
       .select(
         `
         *,
-        profile:profiles(id, username, avatar_url, is_verified, review_count)
+        profile:profiles!comments_user_id_fkey(id, username, avatar_url, is_verified, review_count)
       `
       )
       .single();
