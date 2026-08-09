@@ -19,7 +19,7 @@ import {
   PIPS_MAX,
   VerifiedName,
 } from "@/components/shared";
-import { Review } from "@/types/types";
+import { Comment, Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import {
   formatCityRegion,
@@ -515,6 +515,7 @@ const ReviewFooter = memo(
     hasLoaded,
     commentCount,
     previewComments,
+    onToggleCommentLike,
     onToggleLike,
     onShowLikes,
     onShowComments,
@@ -531,7 +532,8 @@ const ReviewFooter = memo(
     comments: any[];
     hasLoaded: boolean;
     commentCount: number;
-    previewComments: any[];
+    previewComments: Comment[];
+    onToggleCommentLike: (comment: Comment) => void;
     onToggleLike: () => void;
     onShowLikes: (reviewId: string) => void;
     onShowComments: (
@@ -547,6 +549,7 @@ const ReviewFooter = memo(
     loadCommentsIfNeeded: () => void;
   }) => {
     const styles = useStyles();
+    const { colors } = useTheme();
 
     // Shared route: resolves inside whichever tab stack is rendering.
     const openProfile = useOpenProfile();
@@ -594,24 +597,49 @@ const ReviewFooter = memo(
         {/* Comment previews: from the feed row, or the full list once loaded */}
         {previewComments.length > 0 && (
           <>
-            {previewComments.map((c: any) => (
-              <TouchableOpacity
-                key={c.id}
-                style={styles.commentItem}
-                onPress={handleShowComments}
-                activeOpacity={0.7}
-              >
-                <InlineIdentityText
-                  username={c.profile?.username || "Unknown"}
-                  isVerified={c.profile?.is_verified}
-                  body={c.body}
-                  usernameStyle={styles.captionUsername}
-                  bodyStyle={styles.captionText}
-                  onUsernamePress={() =>
-                    openProfile(c.profile?.username, c.profile?.id)
-                  }
-                />
-              </TouchableOpacity>
+            {previewComments.map((c) => (
+              <View key={c.id} style={styles.commentItem}>
+                <TouchableOpacity
+                  style={styles.commentPreviewBody}
+                  onPress={handleShowComments}
+                  activeOpacity={0.7}
+                >
+                  <InlineIdentityText
+                    username={c.profile?.username || "Unknown"}
+                    isVerified={c.profile?.is_verified}
+                    body={c.body}
+                    usernameStyle={styles.captionUsername}
+                    bodyStyle={styles.captionText}
+                    onUsernamePress={() =>
+                      openProfile(c.profile?.username, c.profile?.id)
+                    }
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.commentLikeButton}
+                  onPress={() => onToggleCommentLike(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${c.has_liked ? "Unlike" : "Like"} comment by ${c.profile?.username || "Unknown"}`}
+                  accessibilityState={{ selected: Boolean(c.has_liked) }}
+                  hitSlop={HIT_SLOP}
+                >
+                  <Ionicons
+                    name={c.has_liked ? "heart" : "heart-outline"}
+                    size={18}
+                    color={c.has_liked ? colors.like : colors.textMuted}
+                  />
+                  {(c.likes_count ?? 0) > 0 ? (
+                    <Text
+                      style={[
+                        styles.commentLikeCount,
+                        c.has_liked && styles.commentLikeCountActive,
+                      ]}
+                    >
+                      {c.likes_count}
+                    </Text>
+                  ) : null}
+                </TouchableOpacity>
+              </View>
             ))}
 
             {commentCount > 2 && (
@@ -655,6 +683,14 @@ const ReviewFooter = memo(
 );
 ReviewFooter.displayName = "ReviewFooter";
 
+const getRecentCommentsKey = (review: Review) =>
+  (review.recent_comments ?? [])
+    .map(
+      (comment) =>
+        `${comment.id}:${comment.likes_count ?? 0}:${Boolean(comment.has_liked)}`
+    )
+    .join("|");
+
 // Comparison function for memo to prevent unnecessary re-renders
 const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
   // Only re-render if review data actually changed
@@ -673,6 +709,8 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prev.likes_count === next.likes_count &&
     prev.comments_count === next.comments_count &&
     prev.has_liked === next.has_liked &&
+    getRecentCommentsKey(prevProps.review) ===
+      getRecentCommentsKey(nextProps.review) &&
     prev.location?.rating === next.location?.rating &&
     prev.location?.total_ratings === next.location?.total_ratings &&
     prev.profile?.is_verified === next.profile?.is_verified &&
@@ -698,7 +736,12 @@ const ReviewItemComponent = ({
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [commentLikeState, setCommentLikeState] = useState<{
+    reviewId: string;
+    overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
+  }>({ reviewId: review.id, overrides: {} });
   const lastTapRef = useRef<number>(0);
+  const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
 
   // Use custom hooks for data management
@@ -720,9 +763,70 @@ const ReviewItemComponent = ({
 
   // Preview comments ride along with the feed row; once the full list has been
   // fetched (user opened the sheet) prefer that.
-  const previewComments = hasLoaded
-    ? comments.slice(-2)
-    : [...(review.recent_comments ?? [])].reverse();
+  const commentLikeOverrides =
+    commentLikeState.reviewId === review.id ? commentLikeState.overrides : {};
+  const previewComments = (
+    hasLoaded
+      ? comments.slice(-2)
+      : [...(review.recent_comments ?? [])].reverse()
+  ).map((comment) => ({
+    ...comment,
+    ...commentLikeOverrides[comment.id],
+  }));
+
+  const handleToggleCommentLike = useCallback(
+    async (comment: Comment) => {
+      if (!profile || pendingCommentLikes.current.has(comment.id)) return;
+
+      const wasLiked = Boolean(comment.has_liked);
+      const previousCount = comment.likes_count ?? 0;
+      const nextLiked = !wasLiked;
+      pendingCommentLikes.current.add(comment.id);
+      setCommentLikeState((current) => ({
+        reviewId: review.id,
+        overrides: {
+          ...(current.reviewId === review.id ? current.overrides : {}),
+          [comment.id]: {
+            has_liked: nextLiked,
+            likes_count: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
+          },
+        },
+      }));
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      try {
+        await databaseService.setCommentLiked(
+          comment.id,
+          profile.id,
+          nextLiked,
+          review.id
+        );
+        if (nextLiked) {
+          AnalyticService.capture("like_comment", {
+            reviewId: review.id,
+            commentId: comment.id,
+            locationId: review.location?.id,
+            locationName: review.location?.name,
+          });
+        }
+      } catch (error) {
+        setCommentLikeState((current) => ({
+          reviewId: review.id,
+          overrides: {
+            ...(current.reviewId === review.id ? current.overrides : {}),
+            [comment.id]: {
+              has_liked: wasLiked,
+              likes_count: previousCount,
+            },
+          },
+        }));
+        reportError("Error toggling preview comment like:", error);
+      } finally {
+        pendingCommentLikes.current.delete(comment.id);
+      }
+    },
+    [profile, review.id, review.location?.id, review.location?.name]
+  );
 
   const loadCommentsIfNeeded = useCallback(() => {
     if (!hasLoaded) fetchComments();
@@ -779,13 +883,7 @@ const ReviewItemComponent = ({
 
       try {
         // Through the service, like every other write.
-        await databaseService.createReport({
-          reporter_id: profile.id,
-          review_id: review.id,
-          creator_id: review.profile?.id,
-          reason: customReason || reason,
-          created_at: new Date().toISOString(),
-        });
+        await databaseService.reportReview(review.id, customReason || reason);
 
         AnalyticService.capture("report", {
           reviewId: review.id,
@@ -834,6 +932,7 @@ const ReviewItemComponent = ({
           hasLoaded={false}
           commentCount={0}
           previewComments={[]}
+          onToggleCommentLike={() => {}}
           onToggleLike={() => {}}
           onShowLikes={() => {}}
           onShowComments={() => {}}
@@ -922,6 +1021,9 @@ const ReviewItemComponent = ({
             hasLoaded={hasLoaded}
             commentCount={commentCount}
             previewComments={previewComments}
+            onToggleCommentLike={(comment) =>
+              void handleToggleCommentLike(comment)
+            }
             onToggleLike={handleToggleLike}
             onShowLikes={onShowLikes}
             onShowComments={onShowComments}
@@ -1252,8 +1354,34 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   commentItem: {
+    width: "100%" as const,
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    justifyContent: "space-between" as const,
     marginBottom: t.spacing.xs,
   },
+  commentPreviewBody: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: t.spacing.sm,
+  },
+  commentLikeButton: {
+    minWidth: 36,
+    minHeight: 38,
+    marginLeft: "auto" as const,
+    flexDirection: "column" as const,
+    alignItems: "center" as const,
+    justifyContent: "flex-start" as const,
+    gap: 1,
+  },
+  commentLikeCount: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: "center" as const,
+    color: t.colors.textMuted,
+  },
+  commentLikeCountActive: { color: t.colors.like },
   timestamp: {
     ...t.typography.micro,
     fontSize: 13,

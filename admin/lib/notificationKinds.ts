@@ -1,5 +1,6 @@
 const NOTIFICATION_KIND_LABELS: Record<string, string> = {
   admin_message: "Admin message",
+  comment_liked: "Comment like",
   regular_joined: "Became a Regular",
   regular_left: "Lost Regular status",
   review_commented: "Review comment",

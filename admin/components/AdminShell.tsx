@@ -6,6 +6,7 @@ type ActiveSection =
   | "users"
   | "reviews"
   | "locations"
+  | "reports"
   | "analytics"
   | "notifications"
   | "share-preview";
@@ -25,6 +26,10 @@ const CORE_NAV = [
     key: "notifications",
     label: "Notifications",
   },
+] as const;
+
+const MODERATION_NAV = [
+  { href: "/admin/reports", key: "reports", label: "Reports" },
 ] as const;
 
 const SECONDARY_NAV = [
@@ -96,6 +101,15 @@ export default function AdminShell({
 
             <div>
               <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
+                Moderation
+              </p>
+              <div className="space-y-1">
+                {MODERATION_NAV.map((item) => navLink(item, active))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
                 Tools
               </p>
               <div className="space-y-1">
@@ -138,7 +152,9 @@ export default function AdminShell({
           className="mt-3 flex gap-1 overflow-x-auto pb-1"
           aria-label="Admin"
         >
-          {[...CORE_NAV, ...SECONDARY_NAV].map((item) => navLink(item, active))}
+          {[...CORE_NAV, ...MODERATION_NAV, ...SECONDARY_NAV].map((item) =>
+            navLink(item, active)
+          )}
         </nav>
       </header>
 

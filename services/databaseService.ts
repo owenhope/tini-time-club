@@ -230,10 +230,14 @@ class DatabaseService {
     if (!reviews?.length) return reviews ?? [];
     const reviewsWithLocationRatings =
       await this.hydrateReviewLocationRatings(reviews);
-    const imageUrls = await imageCache.getReviewImageUrls(
-      reviewsWithLocationRatings.map((review) => review.image_url)
+    const reviewsWithCommentLikes = await this.hydrateRecentCommentLikes(
+      reviewsWithLocationRatings,
+      currentUserId
     );
-    return reviewsWithLocationRatings.map((review) => ({
+    const imageUrls = await imageCache.getReviewImageUrls(
+      reviewsWithCommentLikes.map((review) => review.image_url)
+    );
+    return reviewsWithCommentLikes.map((review) => ({
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     }));
@@ -335,6 +339,49 @@ class DatabaseService {
     }
 
     return reviews;
+  }
+
+  private async hydrateRecentCommentLikes<T extends Review>(
+    reviews: T[],
+    currentUserId?: string
+  ): Promise<T[]> {
+    const commentIds = [
+      ...new Set(
+        reviews.flatMap((review) =>
+          (review.recent_comments ?? []).map((comment) => comment.id)
+        )
+      ),
+    ];
+    if (commentIds.length === 0) return reviews;
+
+    try {
+      const { data, error } = await supabase
+        .from("comment_likes")
+        .select("comment_id,user_id")
+        .in("comment_id", commentIds);
+      if (error) throw error;
+
+      const counts = new Map<number, number>();
+      const likedByViewer = new Set<number>();
+      for (const like of data ?? []) {
+        counts.set(like.comment_id, (counts.get(like.comment_id) ?? 0) + 1);
+        if (currentUserId && like.user_id === currentUserId) {
+          likedByViewer.add(like.comment_id);
+        }
+      }
+
+      return reviews.map((review) => ({
+        ...review,
+        recent_comments: (review.recent_comments ?? []).map((comment) => ({
+          ...comment,
+          likes_count: counts.get(comment.id) ?? 0,
+          has_liked: likedByViewer.has(comment.id),
+        })),
+      }));
+    } catch (error) {
+      warn("Unable to hydrate feed comment likes:", error);
+      return reviews;
+    }
   }
 
   /**
@@ -593,27 +640,12 @@ class DatabaseService {
    * Get comments for a review
    */
   async getComments(reviewId: string): Promise<Comment[]> {
-    return this.query(
-      `comments_${reviewId}`,
-      async () => {
-        const { data, error } = await supabase
-          .from("comments")
-          .select(
-            `
-            *,
-            profile:profiles(id, username, avatar_url, is_verified, review_count)
-          `
-          )
-          .eq("review_id", reviewId)
-          .order("inserted_at", { ascending: true })
-          // Generous cap so one viral review can't pull an unbounded payload.
-          .limit(200);
+    const { data, error } = await supabase.rpc("get_review_comments", {
+      p_review_id: Number(reviewId),
+    });
 
-        if (error) throw error;
-        return data;
-      },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
-    );
+    if (error) throw error;
+    return (data ?? []) as Comment[];
   }
 
   /**
@@ -677,7 +709,7 @@ class DatabaseService {
     // Invalidate comments cache
     this.queryCache.delete(`comments_${commentData.review_id}`);
 
-    return data;
+    return { ...data, likes_count: 0, has_liked: false };
   }
 
   /**
@@ -693,6 +725,40 @@ class DatabaseService {
 
     // Invalidate comments cache
     this.queryCache.delete(`comments_${reviewId}`);
+  }
+
+  async setCommentLiked(
+    commentId: number,
+    userId: string,
+    liked: boolean,
+    reviewId: string
+  ): Promise<void> {
+    const { error } = liked
+      ? await supabase
+          .from("comment_likes")
+          .upsert({ comment_id: commentId, user_id: userId })
+      : await supabase
+          .from("comment_likes")
+          .delete()
+          .eq("comment_id", commentId)
+          .eq("user_id", userId);
+
+    if (error) throw error;
+    this.queryCache.delete(`comments_${reviewId}`);
+  }
+
+  async reportComment(
+    commentId: number,
+    reason: string
+  ): Promise<"created" | "duplicate"> {
+    const { data, error } = await supabase.rpc("report_comment", {
+      p_comment_id: commentId,
+      p_reason: reason,
+    });
+
+    if (error) throw error;
+    if (data === "created" || data === "duplicate") return data;
+    throw new Error(`Unable to report comment: ${data ?? "unknown"}`);
   }
 
   /**
@@ -731,13 +797,16 @@ class DatabaseService {
     this.invalidateUserCaches(blockerId);
   }
 
-  /**
-   * Create a report
-   */
-  async createReport(reportData: any): Promise<void> {
-    const { error } = await supabase.from("reports").insert([reportData]);
+  async reportReview(reviewId: string, reason: string): Promise<void> {
+    const { data, error } = await supabase.rpc("report_review", {
+      p_review_id: Number(reviewId),
+      p_reason: reason,
+    });
 
     if (error) throw error;
+    if (data !== "created") {
+      throw new Error(`Unable to report review: ${data ?? "unknown"}`);
+    }
   }
 
   /**
