@@ -32,6 +32,8 @@ import { Comment, Review } from "@/types/types";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
+const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
+
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
   onClose: () => void;
@@ -375,7 +377,7 @@ export default function CommentsSlider({
           >
             <Ionicons
               name={hasLiked ? "heart" : "heart-outline"}
-              size={20}
+              size={COMMENT_SHEET_LIKE_ICON_SIZE}
               color={hasLiked ? colors.like : colors.textMuted}
             />
             {likesCount > 0 ? (
@@ -491,10 +493,10 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,
   },
-  commentRow: { marginBottom: t.spacing.lg },
+  commentRow: { marginBottom: t.spacing.md },
   commentOuter: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
+    alignItems: "center" as const,
     justifyContent: "space-between" as const,
   },
   commentInner: {
@@ -517,8 +519,9 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
   },
   commentBody: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.body,
+    fontSize: 17,
+    lineHeight: 25,
     color: t.colors.postText,
   },
   inputContainer: {
@@ -549,18 +552,20 @@ const useStyles = makeStyles((t) => ({
   sendButton: { color: t.colors.text, fontFamily: fonts.bold },
   likeButton: {
     minWidth: 40,
-    minHeight: 40,
+    minHeight: 34,
     paddingLeft: t.spacing.sm,
-    flexDirection: "row" as const,
+    flexDirection: "column" as const,
     alignItems: "center" as const,
     justifyContent: "flex-end" as const,
-    gap: 4,
+    gap: 1,
   },
   likeCount: {
-    minWidth: 10,
+    minWidth: 8,
     color: t.colors.textMuted,
     fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: 10,
+    lineHeight: 12,
+    textAlign: "center" as const,
   },
   likeCountActive: { color: t.colors.like },
 }));
