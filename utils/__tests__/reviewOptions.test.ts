@@ -19,21 +19,27 @@ describe("review options", () => {
     ]);
   });
 
-  it("returns one each of Twist, Dirty, and Espresso in the product order", () => {
+  it("returns the martini type set in the product order", () => {
     const types = [
       { id: 5, name: "Dry" },
       { id: 3, name: "Espresso" },
       { id: 2, name: "Dirty" },
       { id: 22, name: " dirty " },
-      { id: 6, name: "Gibson" },
       { id: 1, name: "Twist" },
       { id: 33, name: "ESPRESSO" },
+      { id: 8, name: "50/50" },
+      { id: 9, name: "Filthy" },
+      { id: 11, name: "Classic" },
       { id: 7, name: "Lemon Twist" },
     ];
 
     expect(getSupportedTypes(types)).toEqual([
+      { id: 11, name: "Classic" },
+      { id: 5, name: "Dry" },
+      { id: 8, name: "50/50" },
       { id: 1, name: "Twist" },
       { id: 2, name: "Dirty" },
+      { id: 9, name: "Filthy" },
       { id: 3, name: "Espresso" },
     ]);
   });

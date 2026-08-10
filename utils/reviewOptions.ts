@@ -1,7 +1,15 @@
 import type { NamedOption } from "@/types/types";
 
 const SPIRIT_ORDER = ["vodka", "gin", "vesper"] as const;
-const TYPE_ORDER = ["twist", "dirty", "espresso"] as const;
+const TYPE_ORDER = [
+  "classic",
+  "dry",
+  "50/50",
+  "twist",
+  "dirty",
+  "filthy",
+  "espresso",
+] as const;
 
 const normalizeOptionName = (name: string) => name.trim().toLowerCase();
 

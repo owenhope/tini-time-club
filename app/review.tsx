@@ -62,6 +62,8 @@ interface ReviewFormValues {
   comment: string;
 }
 
+type Option = { id: number; name: string };
+
 type ReviewQuestionKey =
   "location" | "spirit" | "type" | "taste" | "presentation";
 
@@ -200,7 +202,6 @@ export default function App() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
-  type Option = { id: number; name: string };
 
   const [types, setTypes] = useState<Option[]>([]);
   const [spirits, setSpirits] = useState<Option[]>([]);
@@ -254,7 +255,7 @@ export default function App() {
 
   const getTypes = useCallback(async () => {
     try {
-      const data = await databaseService.getTypes();
+      const data = await databaseService.getTypes({ forceRefresh: true });
       setTypes(data);
       setOptionsError(null);
     } catch (error) {
@@ -266,7 +267,7 @@ export default function App() {
 
   const getSpirits = useCallback(async () => {
     try {
-      const data = await databaseService.getSpirits();
+      const data = await databaseService.getSpirits({ forceRefresh: true });
       setSpirits(data);
       setOptionsError(null);
     } catch (error) {
@@ -447,11 +448,18 @@ export default function App() {
         );
       case "type":
         return (
-          <SelectableOptionsInput
-            control={control}
-            name="type"
-            options={types}
-          />
+          <ScrollView
+            style={styles.typeStepScroller}
+            contentContainerStyle={styles.typeStepContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <SelectableOptionsInput
+              control={control}
+              name="type"
+              options={types}
+            />
+          </ScrollView>
         );
       case "presentation":
         return <PresentationInput control={control} />;
@@ -1041,6 +1049,13 @@ const useStyles = makeStyles((t) => ({
   },
   locationContent: {
     paddingTop: t.spacing.xl - 4,
+  },
+  typeStepScroller: {
+    flex: 1,
+  },
+  typeStepContent: {
+    flexGrow: 1,
+    paddingBottom: t.spacing.xxl,
   },
   footer: {
     paddingHorizontal: t.spacing.xl - 4,

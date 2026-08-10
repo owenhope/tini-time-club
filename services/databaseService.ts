@@ -577,7 +577,9 @@ class DatabaseService {
   /**
    * Get spirits (static data - long cache)
    */
-  async getSpirits(): Promise<NamedOption[]> {
+  async getSpirits(
+    options: { forceRefresh?: boolean } = {}
+  ): Promise<NamedOption[]> {
     const spirits = await this.query<NamedOption[]>(
       "spirits",
       async () => {
@@ -588,7 +590,10 @@ class DatabaseService {
         if (error) throw error;
         return data;
       },
-      { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
+      {
+        cacheDuration: this.STATIC_DATA_CACHE_DURATION,
+        forceRefresh: options.forceRefresh,
+      }
     );
 
     return getSupportedSpirits(spirits);
@@ -597,7 +602,9 @@ class DatabaseService {
   /**
    * Get types (static data - long cache)
    */
-  async getTypes(): Promise<NamedOption[]> {
+  async getTypes(
+    options: { forceRefresh?: boolean } = {}
+  ): Promise<NamedOption[]> {
     const types = await this.query<NamedOption[]>(
       "types",
       async () => {
@@ -606,7 +613,10 @@ class DatabaseService {
         if (error) throw error;
         return data;
       },
-      { cacheDuration: this.STATIC_DATA_CACHE_DURATION }
+      {
+        cacheDuration: this.STATIC_DATA_CACHE_DURATION,
+        forceRefresh: options.forceRefresh,
+      }
     );
 
     return getSupportedTypes(types);
