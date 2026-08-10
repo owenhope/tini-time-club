@@ -283,6 +283,7 @@ export interface AnalyticsData {
   reviewsByDay: { day: string; count: number }[];
   placesByDay: { day: string; count: number }[];
   likesByDay: { day: string; count: number }[];
+  commentLikesByDay: { day: string; count: number }[];
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
   invitesByDay: { day: string; count: number }[];
@@ -331,6 +332,7 @@ export interface AnalyticsData {
     signups: number;
     reviews: number;
     likes: number;
+    commentLikes: number;
     comments: number;
     places: number;
     shares: number;
@@ -407,6 +409,7 @@ export const fetchAnalytics = async (
     reviews,
     locations,
     likes,
+    commentLikes,
     comments,
     shares,
     celebrations,
@@ -432,6 +435,14 @@ export const fetchAnalytics = async (
     activeMemberIds.length > 0
       ? db()
           .from("likes")
+          .select("liked_at")
+          .in("user_id", activeMemberIds)
+          .gte("liked_at", sinceIso)
+          .lte("liked_at", untilIso)
+      : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("comment_likes")
           .select("liked_at")
           .in("user_id", activeMemberIds)
           .gte("liked_at", sinceIso)
@@ -475,12 +486,19 @@ export const fetchAnalytics = async (
       .eq("deleted", false),
   ]);
 
+  if (commentLikes.error) {
+    throw new Error(
+      `Unable to load comment likes: ${commentLikes.error.message}`
+    );
+  }
+
   // Previous equal-length window, counts only — enough to say whether each
   // feature is progressing without pulling a second set of rows.
   const prior = previousWindow(range);
   const [
     priorReviews,
     priorLikes,
+    priorCommentLikes,
     priorComments,
     priorPlaces,
     priorShares,
@@ -499,6 +517,14 @@ export const fetchAnalytics = async (
     activeMemberIds.length > 0
       ? db()
           .from("likes")
+          .select("*", { count: "exact", head: true })
+          .in("user_id", activeMemberIds)
+          .gte("liked_at", prior.since.toISOString())
+          .lte("liked_at", prior.until.toISOString())
+      : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("comment_likes")
           .select("*", { count: "exact", head: true })
           .in("user_id", activeMemberIds)
           .gte("liked_at", prior.since.toISOString())
@@ -537,6 +563,12 @@ export const fetchAnalytics = async (
           .lte("created_at", prior.until.toISOString())
       : noRows,
   ]);
+
+  if (priorCommentLikes.error) {
+    throw new Error(
+      `Unable to load previous comment likes: ${priorCommentLikes.error.message}`
+    );
+  }
 
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -721,6 +753,11 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    commentLikesByDay: bucketByDay(
+      (commentLikes.data ?? []).map((like) => like.liked_at),
+      range.since,
+      range.until
+    ),
     commentsByDay: bucketByDay(
       (comments.data ?? []).map((c) => c.inserted_at),
       range.since,
@@ -807,6 +844,7 @@ export const fetchAnalytics = async (
       }).length,
       reviews: priorReviews.count ?? 0,
       likes: priorLikes.count ?? 0,
+      commentLikes: priorCommentLikes.count ?? 0,
       comments: priorComments.count ?? 0,
       places: priorPlaces.count ?? 0,
       shares: priorShares.count ?? 0,
@@ -903,6 +941,218 @@ export interface NotificationKindStats {
   openRate: number | null;
 }
 
+export type ModerationContentType = "review" | "comment";
+export type ModerationStatus =
+  "pending" | "reviewed" | "resolved" | "dismissed";
+
+export interface ModerationReport {
+  id: string;
+  created_at: string;
+  reason: string;
+  status: ModerationStatus;
+  content_type: ModerationContentType;
+  review_id: number | null;
+  comment_id: number | null;
+  content_snapshot: Record<string, unknown>;
+  reporter: AdminProfile | null;
+  creator: AdminProfile | null;
+  review: {
+    id: number;
+    comment: string | null;
+    state: number | null;
+    location: { name: string | null } | null;
+  } | null;
+  comment: { id: number; body: string } | null;
+}
+
+export interface ModerationReportCounts {
+  total: number;
+  pending: number;
+  reviews: number;
+  comments: number;
+}
+
+const reportSnapshot = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+export const fetchModerationReports = async ({
+  query,
+  status,
+  contentType,
+  page,
+  perPage,
+}: {
+  query?: string;
+  status?: ModerationStatus;
+  contentType?: ModerationContentType;
+  page: number;
+  perPage: number;
+}): Promise<{ reports: ModerationReport[]; total: number }> => {
+  let request = db()
+    .from("reports")
+    .select(
+      "id,reporter_id,review_id,comment_id,creator_id,reason,created_at,status,content_type,content_snapshot"
+    )
+    .limit(2000);
+  if (status) request = request.eq("status", status);
+  if (contentType) request = request.eq("content_type", contentType);
+
+  const { data: reportRows, error } = await request;
+  if (error) throw new Error(error.message);
+
+  const rows = reportRows ?? [];
+  const profileIds = [
+    ...new Set(
+      rows
+        .flatMap((report) => [report.reporter_id, report.creator_id])
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+  const reviewIds = [
+    ...new Set(
+      rows
+        .map((report) => report.review_id)
+        .filter((id): id is number => id != null)
+    ),
+  ];
+  const commentIds = [
+    ...new Set(
+      rows
+        .map((report) => report.comment_id)
+        .filter((id): id is number => id != null)
+    ),
+  ];
+
+  const [profilesResult, reviewsResult, commentsResult] = await Promise.all([
+    profileIds.length > 0
+      ? db()
+          .from("profiles")
+          .select(
+            "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio"
+          )
+          .in("id", profileIds)
+      : Promise.resolve({ data: [], error: null }),
+    reviewIds.length > 0
+      ? db()
+          .from("reviews")
+          .select(
+            "id,comment,state,location:locations!reviews_location_fkey(name)"
+          )
+          .in("id", reviewIds)
+      : Promise.resolve({ data: [], error: null }),
+    commentIds.length > 0
+      ? db().from("comments").select("id,body").in("id", commentIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (profilesResult.error) throw new Error(profilesResult.error.message);
+  if (reviewsResult.error) throw new Error(reviewsResult.error.message);
+  if (commentsResult.error) throw new Error(commentsResult.error.message);
+
+  const profiles = new Map(
+    ((profilesResult.data ?? []) as AdminProfile[]).map((profile) => [
+      profile.id,
+      profile,
+    ])
+  );
+  const reviews = new Map(
+    (reviewsResult.data ?? []).map((review) => [
+      review.id,
+      {
+        id: review.id,
+        comment: review.comment,
+        state: review.state,
+        location: Array.isArray(review.location)
+          ? (review.location[0] ?? null)
+          : review.location,
+      },
+    ])
+  );
+  const comments = new Map(
+    (commentsResult.data ?? []).map((comment) => [comment.id, comment])
+  );
+
+  const normalized = rows.map((report) => ({
+    id: report.id,
+    created_at: report.created_at,
+    reason: report.reason,
+    status: (report.status ?? "pending") as ModerationStatus,
+    content_type: (report.content_type ??
+      (report.comment_id ? "comment" : "review")) as ModerationContentType,
+    review_id: report.review_id,
+    comment_id: report.comment_id,
+    content_snapshot: reportSnapshot(report.content_snapshot),
+    reporter: profiles.get(report.reporter_id) ?? null,
+    creator: profiles.get(report.creator_id) ?? null,
+    review: report.review_id ? (reviews.get(report.review_id) ?? null) : null,
+    comment: report.comment_id
+      ? (comments.get(report.comment_id) ?? null)
+      : null,
+  })) satisfies ModerationReport[];
+
+  const needle = query?.trim().toLowerCase();
+  const filtered = needle
+    ? normalized.filter((report) => {
+        const snapshotText = Object.values(report.content_snapshot)
+          .filter((value) => typeof value === "string")
+          .join(" ");
+        return [
+          report.reason,
+          report.reporter?.username,
+          report.reporter?.name,
+          report.creator?.username,
+          report.creator?.name,
+          report.comment?.body,
+          report.review?.comment,
+          report.review?.location?.name,
+          snapshotText,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(needle));
+      })
+    : normalized;
+
+  filtered.sort((left, right) => {
+    const pendingOrder =
+      Number(right.status === "pending") - Number(left.status === "pending");
+    return (
+      pendingOrder ||
+      new Date(right.created_at).getTime() - new Date(left.created_at).getTime()
+    );
+  });
+
+  const offset = (Math.max(1, page) - 1) * perPage;
+  return {
+    reports: filtered.slice(offset, offset + perPage),
+    total: filtered.length,
+  };
+};
+
+export const fetchModerationReportCounts =
+  async (): Promise<ModerationReportCounts> => {
+    const { data, error } = await db()
+      .from("reports")
+      .select("status,content_type,comment_id");
+    if (error) throw new Error(error.message);
+
+    const rows = data ?? [];
+    return {
+      total: rows.length,
+      pending: rows.filter((report) => report.status === "pending").length,
+      reviews: rows.filter(
+        (report) =>
+          (report.content_type ??
+            (report.comment_id ? "comment" : "review")) === "review"
+      ).length,
+      comments: rows.filter(
+        (report) =>
+          (report.content_type ??
+            (report.comment_id ? "comment" : "review")) === "comment"
+      ).length,
+    };
+  };
+
 export interface NotificationAnalytics {
   totalSent: number;
   totalOpened: number;
@@ -952,19 +1202,21 @@ export const fetchNotificationAnalytics = async (
   const kinds = [
     ...new Set([...sentByKind.keys(), ...openedByKind.keys()]),
   ].sort();
-  const byKind = kinds.map((kind) => {
-    const sentCount = sentByKind.get(kind) ?? 0;
-    const openedCount = openedByKind.get(kind) ?? 0;
-    return {
-      kind,
-      sent: sentCount,
-      opened: openedCount,
-      openRate: sentCount > 0 ? openedCount / sentCount : null,
-    };
-  }).sort((left, right) => {
-    if (right.sent !== left.sent) return right.sent - left.sent;
-    return right.opened - left.opened;
-  });
+  const byKind = kinds
+    .map((kind) => {
+      const sentCount = sentByKind.get(kind) ?? 0;
+      const openedCount = openedByKind.get(kind) ?? 0;
+      return {
+        kind,
+        sent: sentCount,
+        opened: openedCount,
+        openRate: sentCount > 0 ? openedCount / sentCount : null,
+      };
+    })
+    .sort((left, right) => {
+      if (right.sent !== left.sent) return right.sent - left.sent;
+      return right.opened - left.opened;
+    });
 
   // Conversion: an open counts if that member posted a review within 24h.
   const dayMs = 24 * 60 * 60 * 1000;
@@ -1400,7 +1652,10 @@ const fetchReviewEngagement = async (
     throw new Error(shares.error.message);
   }
 
-  const tally = (reviewId: unknown, key: keyof ReturnType<typeof emptyEngagement>) => {
+  const tally = (
+    reviewId: unknown,
+    key: keyof ReturnType<typeof emptyEngagement>
+  ) => {
     if (reviewId == null) return;
     const row = engagement.get(String(reviewId));
     if (row) row[key] += 1;
@@ -1726,10 +1981,7 @@ export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
       ? db().from("likes").select("review_id").in("user_id", activeMemberIds)
       : { data: [], error: null },
     activeMemberIds.length > 0
-      ? db()
-          .from("comments")
-          .select("review_id")
-          .in("user_id", activeMemberIds)
+      ? db().from("comments").select("review_id").in("user_id", activeMemberIds)
       : { data: [], error: null },
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
@@ -1863,8 +2115,7 @@ export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
     )
     .sort(
       (a, b) =>
-        (b.rating ?? 0) - (a.rating ?? 0) ||
-        b.total_ratings - a.total_ratings
+        (b.rating ?? 0) - (a.rating ?? 0) || b.total_ratings - a.total_ratings
     )
     .slice(0, limit);
 

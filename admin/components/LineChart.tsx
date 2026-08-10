@@ -121,7 +121,7 @@ export default function LineChart({
                   x2={W - PAD.right}
                   y1={gy}
                   y2={gy}
-                  stroke="#e7e5e4"
+                  stroke="var(--admin-chart-grid, #e7e5e4)"
                   strokeWidth="1"
                 />
                 <text
@@ -129,7 +129,7 @@ export default function LineChart({
                   y={gy + 3.5}
                   textAnchor="end"
                   fontSize="10"
-                  fill="#a8a29e"
+                  fill="var(--admin-chart-muted, #a8a29e)"
                 >
                   {value}
                 </text>
@@ -155,7 +155,7 @@ export default function LineChart({
                     x2={x(hover)}
                     y1={PAD.top}
                     y2={PAD.top + innerH}
-                    stroke="#a8a29e"
+                    stroke="var(--admin-chart-muted, #a8a29e)"
                     strokeWidth="1"
                     strokeDasharray="3 3"
                   />
@@ -163,7 +163,7 @@ export default function LineChart({
                     cx={x(hover)}
                     cy={y(hovered.count)}
                     r="4.5"
-                    fill="#ffffff"
+                    fill="var(--admin-chart-point, #ffffff)"
                     stroke={color}
                     strokeWidth="2.5"
                   />

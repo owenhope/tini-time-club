@@ -6,7 +6,7 @@
  */
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
 import databaseService from "@/services/databaseService";
 import { ThemeProvider } from "@/theme";
@@ -23,7 +23,9 @@ jest.mock("@/utils/supabase", () => {
   for (const method of ["select", "eq", "upsert", "delete", "insert"]) {
     chain[method] = jest.fn(() => chain);
   }
-  chain.maybeSingle = jest.fn(() => Promise.resolve({ data: null, error: null }));
+  chain.maybeSingle = jest.fn(() =>
+    Promise.resolve({ data: null, error: null })
+  );
   chain.single = chain.maybeSingle;
   return {
     supabase: { from: jest.fn(() => chain) },
@@ -42,7 +44,7 @@ jest.mock("@/context/profile-context", () => ({
 
 jest.mock("@/services/databaseService", () => ({
   __esModule: true,
-  default: { getComments: jest.fn() },
+  default: { getComments: jest.fn(), setCommentLiked: jest.fn() },
 }));
 
 jest.mock("@/services/analyticsService", () => ({
@@ -61,7 +63,7 @@ jest.mock("expo-router", () => ({
 
 jest.mock("expo-haptics", () => ({
   impactAsync: jest.fn(),
-  ImpactFeedbackStyle: { Medium: "medium" },
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium" },
 }));
 
 jest.mock("@expo/vector-icons", () => ({
@@ -94,6 +96,7 @@ jest.mock("@/components/ActionSheet", () => ({
 }));
 
 const getComments = databaseService.getComments as jest.Mock;
+const setCommentLiked = databaseService.setCommentLiked as jest.Mock;
 
 const COMMENT_BODY = "Great martini!";
 const comment = {
@@ -197,6 +200,7 @@ const countOccurrences = (
 beforeEach(() => {
   jest.clearAllMocks();
   getComments.mockResolvedValue([comment]);
+  setCommentLiked.mockResolvedValue(undefined);
 });
 
 describe("ReviewItem comment patches (useComments idempotency)", () => {
@@ -279,6 +283,52 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
 
     expect(countOccurrences(tree, COMMENT_BODY)).toBe(1);
     expect(countOccurrences(tree, "Perfectly chilled.")).toBe(1);
+    act(() => tree.unmount());
+  });
+
+  it("likes a visible feed comment without opening the drawer", async () => {
+    const review = makeReview({
+      comments_count: 1,
+      recent_comments: [
+        {
+          ...comment,
+          inserted_at: new Date().toISOString(),
+          user_id: "comment-author",
+          likes_count: 0,
+          has_liked: false,
+        },
+      ],
+    });
+    const tree = renderReview(review);
+    const likeButton = tree.root.findByProps({
+      accessibilityLabel: "Like comment by alice",
+    });
+
+    await act(async () => {
+      await likeButton.props.onPress();
+    });
+
+    expect(setCommentLiked).toHaveBeenCalledWith(
+      comment.id,
+      "viewer-1",
+      true,
+      review.id
+    );
+    expect(
+      tree.root.findByProps({
+        accessibilityLabel: "Unlike comment by alice",
+      }).props.accessibilityState
+    ).toEqual({ selected: true });
+    const likedButton = tree.root.findByProps({
+      accessibilityLabel: "Unlike comment by alice",
+    });
+    expect(StyleSheet.flatten(likedButton.props.style)).toEqual(
+      expect.objectContaining({ flexDirection: "column" })
+    );
+    expect(
+      StyleSheet.flatten(likedButton.props.children[1].props.style)
+    ).toEqual(expect.objectContaining({ fontSize: 10, lineHeight: 12 }));
+    expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });
 });

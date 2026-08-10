@@ -17,6 +17,7 @@ type AnalyticEventType =
   | "new_review"
   | "edit_review"
   | "like_review"
+  | "like_comment"
   | "view_location"
   | "comment_on_review"
   | "follow_user"

@@ -1,4 +1,5 @@
 import { login } from "@/lib/actions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default async function LoginPage({
   searchParams,
@@ -8,14 +9,17 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-emerald-950 p-6">
+    <main className="admin-theme flex min-h-screen items-center justify-center bg-emerald-950 p-6">
       <form
         action={login}
         className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl"
       >
-        <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
-          tini time club<span className="text-violet-500">.</span>
-        </h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
+            tini time club<span className="text-violet-500">.</span>
+          </h1>
+          <ThemeToggle compact />
+        </div>
         <p className="mt-1 text-sm text-stone-500">Admin sign-in</p>
 
         {error ? (

@@ -14,9 +14,14 @@ import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 export default function SharedReviewScreen() {
-  const { review: reviewParam, screenshotSeed } = useLocalSearchParams<{
+  const {
+    review: reviewParam,
+    screenshotSeed,
+    comments,
+  } = useLocalSearchParams<{
     review?: string;
     screenshotSeed?: string;
+    comments?: string;
   }>();
   const reviewId = Array.isArray(reviewParam) ? reviewParam[0] : reviewParam;
   const router = useRouter();
@@ -54,10 +59,13 @@ export default function SharedReviewScreen() {
   }, [loadReview]);
 
   useEffect(() => {
-    if (review && isScreenshotSeed(screenshotSeed, "comments")) {
+    if (
+      review &&
+      (comments === "1" || isScreenshotSeed(screenshotSeed, "comments"))
+    ) {
       setCommentsOpen(true);
     }
-  }, [review, screenshotSeed]);
+  }, [comments, review, screenshotSeed]);
 
   const goBack = () => {
     if (router.canGoBack()) {

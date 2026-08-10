@@ -1,6 +1,16 @@
 // CommentsSlider.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Alert, View, Text, TouchableOpacity, FlatList } from "react-native";
+import {
+  ActionSheetIOS,
+  Alert,
+  FlatList,
+  Platform,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import * as Haptics from "expo-haptics";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetFlatList,
@@ -18,9 +28,11 @@ import ReportModal from "@/components/ReportModal";
 import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { Review } from "@/types/types";
+import { Comment, Review } from "@/types/types";
 import { fonts, makeStyles, useTheme } from "@/theme";
-import { log, reportError } from "@/utils/log";
+import { reportError } from "@/utils/log";
+
+const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -85,20 +97,26 @@ export default function CommentsSlider({
   const { profile } = useProfile();
   const openProfile = useOpenProfile();
   const styles = useStyles();
-  const { colors } = useTheme();
-  const [comments, setComments] = useState<any[]>([]);
+  const { colors, isDark } = useTheme();
+  const [comments, setComments] = useState<Comment[]>([]);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
   const listRef = useRef<FlatList>(null);
+  const pendingLikes = useRef(new Set<number>());
 
   useEffect(() => {
     let cancelled = false;
     const loadComments = async () => {
-      const data = await databaseService.getComments(review.id);
-      if (cancelled) return;
-      setComments(data || []);
-      setTimeout(() => {
-        listRef.current?.scrollToEnd({ animated: false });
-      }, 100);
+      try {
+        const data = await databaseService.getComments(review.id);
+        if (cancelled) return;
+        setComments(data || []);
+        setTimeout(() => {
+          listRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      } catch (error) {
+        reportError("Error loading comments:", error);
+      }
     };
     loadComments();
     return () => {
@@ -138,29 +156,161 @@ export default function CommentsSlider({
     [onCommentAdded, profile, review]
   );
 
-  const deleteComment = async (id: number) => {
-    try {
-      await databaseService.deleteComment(id, review.id);
-      setComments((prev) => prev.filter((c) => c.id !== id));
-      onCommentDeleted?.(review.id, id);
-    } catch (error) {
-      reportError("Error deleting comment:", error);
-    }
-  };
+  const deleteComment = useCallback(
+    async (id: number) => {
+      try {
+        await databaseService.deleteComment(id, review.id);
+        setComments((prev) => prev.filter((c) => c.id !== id));
+        onCommentDeleted?.(review.id, id);
+      } catch (error) {
+        reportError("Error deleting comment:", error);
+      }
+    },
+    [onCommentDeleted, review.id]
+  );
 
-  const confirmDeleteComment = (id: number) => {
-    Alert.alert("Delete Comment", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => deleteComment(id),
-      },
-    ]);
-  };
+  const confirmDeleteComment = useCallback(
+    (id: number) => {
+      Alert.alert("Delete Comment", "Are you sure?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => void deleteComment(id),
+        },
+      ]);
+    },
+    [deleteComment]
+  );
 
-  const navigateToUserProfile = (username: string, userId: string) =>
-    openProfile(username, userId);
+  const toggleCommentLike = useCallback(
+    async (comment: Comment) => {
+      if (!profile || pendingLikes.current.has(comment.id)) return;
+
+      const wasLiked = Boolean(comment.has_liked);
+      const previousCount = comment.likes_count ?? 0;
+      const nextLiked = !wasLiked;
+      pendingLikes.current.add(comment.id);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setComments((current) =>
+        current.map((item) =>
+          item.id === comment.id
+            ? {
+                ...item,
+                has_liked: nextLiked,
+                likes_count: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
+              }
+            : item
+        )
+      );
+
+      try {
+        await databaseService.setCommentLiked(
+          comment.id,
+          profile.id,
+          nextLiked,
+          review.id
+        );
+        if (nextLiked) {
+          AnalyticService.capture("like_comment", {
+            reviewId: review.id,
+            commentId: comment.id,
+            locationId: review.location?.id,
+            locationName: review.location?.name,
+          });
+        }
+      } catch (error) {
+        setComments((current) =>
+          current.map((item) =>
+            item.id === comment.id
+              ? {
+                  ...item,
+                  has_liked: wasLiked,
+                  likes_count: previousCount,
+                }
+              : item
+          )
+        );
+        reportError("Error toggling comment like:", error);
+      } finally {
+        pendingLikes.current.delete(comment.id);
+      }
+    },
+    [profile, review]
+  );
+
+  const openReport = useCallback((comment: Comment) => {
+    setSelectedComment(comment);
+    setReportModalVisible(true);
+  }, []);
+
+  const showCommentActions = useCallback(
+    (comment: Comment) => {
+      const isOwnComment = profile?.id === comment.user_id;
+      const actionLabel = isOwnComment ? "Delete Comment" : "Report Comment";
+      const runAction = () =>
+        isOwnComment ? confirmDeleteComment(comment.id) : openReport(comment);
+
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ["Cancel", actionLabel],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: isOwnComment ? 1 : undefined,
+            userInterfaceStyle: isDark ? "dark" : "light",
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) runAction();
+          }
+        );
+        return;
+      }
+
+      Alert.alert("Comment Options", undefined, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: actionLabel,
+          style: isOwnComment ? "destructive" : "default",
+          onPress: runAction,
+        },
+      ]);
+    },
+    [confirmDeleteComment, isDark, openReport, profile?.id]
+  );
+
+  const handleReportSubmit = useCallback(
+    async (reason: string, customReason?: string) => {
+      if (!selectedComment) return;
+
+      try {
+        const result = await databaseService.reportComment(
+          selectedComment.id,
+          customReason || reason
+        );
+        AnalyticService.capture("report", {
+          reviewId: review.id,
+          commentId: selectedComment.id,
+          reason: customReason || reason,
+          targetUserId: selectedComment.user_id,
+        });
+        Alert.alert(
+          result === "created" ? "Report Submitted" : "Already Reported",
+          result === "created"
+            ? "Thanks. We’ll review this comment."
+            : "You already reported this comment."
+        );
+      } catch (error) {
+        reportError("Error reporting comment:", error);
+        Alert.alert("Error", "Failed to submit report. Please try again.");
+      }
+    },
+    [review.id, selectedComment]
+  );
+
+  const navigateToUserProfile = (username: string, userId?: string) => {
+    if (userId) openProfile(username, userId);
+  };
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -174,14 +324,20 @@ export default function CommentsSlider({
     []
   );
 
-  const renderComment = ({ item }: { item: any }) => {
+  const renderComment = ({ item }: { item: Comment }) => {
     const username = item.profile?.username || "Unknown";
     const relativeDate = formatRelativeDate(item.inserted_at);
-    const isOwnComment = profile?.id === item.user_id;
     const avatarPath = item.profile?.avatar_url || null;
+    const likesCount = item.likes_count ?? 0;
+    const hasLiked = Boolean(item.has_liked);
 
     return (
-      <View style={styles.commentRow}>
+      <Pressable
+        style={styles.commentRow}
+        onLongPress={() => showCommentActions(item)}
+        delayLongPress={350}
+        accessibilityHint="Long press for comment options"
+      >
         <View style={styles.commentOuter}>
           <View style={styles.commentInner}>
             <TouchableOpacity
@@ -212,31 +368,28 @@ export default function CommentsSlider({
               <Text style={styles.commentBody}>{item.body}</Text>
             </View>
           </View>
-          {isOwnComment ? (
-            <TouchableOpacity
-              onPress={() => confirmDeleteComment(item.id)}
-              style={styles.deleteIcon}
-            >
-              <Ionicons
-                name="trash-outline"
-                size={16}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setReportModalVisible(true)}
-              style={styles.deleteIcon}
-            >
-              <Ionicons
-                name="flag-outline"
-                size={16}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => void toggleCommentLike(item)}
+            style={styles.likeButton}
+            accessibilityRole="button"
+            accessibilityLabel={hasLiked ? "Unlike comment" : "Like comment"}
+            accessibilityState={{ selected: hasLiked }}
+          >
+            <Ionicons
+              name={hasLiked ? "heart" : "heart-outline"}
+              size={COMMENT_SHEET_LIKE_ICON_SIZE}
+              color={hasLiked ? colors.like : colors.textMuted}
+            />
+            {likesCount > 0 ? (
+              <Text
+                style={[styles.likeCount, hasLiked && styles.likeCountActive]}
+              >
+                {likesCount}
+              </Text>
+            ) : null}
+          </TouchableOpacity>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -286,8 +439,13 @@ export default function CommentsSlider({
       <ReportModal
         visible={reportModalVisible}
         title="Report Comment"
-        onClose={() => setReportModalVisible(false)}
-        onSelect={(option) => log("report pressed", option)}
+        onClose={() => {
+          setReportModalVisible(false);
+          setSelectedComment(null);
+        }}
+        onSelect={(option, customReason) =>
+          void handleReportSubmit(option, customReason)
+        }
       />
     </>
   );
@@ -335,10 +493,10 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,
   },
-  commentRow: { marginBottom: t.spacing.lg },
+  commentRow: { marginBottom: t.spacing.md },
   commentOuter: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
+    alignItems: "center" as const,
     justifyContent: "space-between" as const,
   },
   commentInner: {
@@ -361,8 +519,9 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
   },
   commentBody: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.body,
+    fontSize: 17,
+    lineHeight: 25,
     color: t.colors.postText,
   },
   inputContainer: {
@@ -391,5 +550,22 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   sendButton: { color: t.colors.text, fontFamily: fonts.bold },
-  deleteIcon: { paddingLeft: t.spacing.sm, paddingTop: 2 },
+  likeButton: {
+    minWidth: 40,
+    minHeight: 34,
+    paddingLeft: t.spacing.sm,
+    flexDirection: "column" as const,
+    alignItems: "center" as const,
+    justifyContent: "flex-end" as const,
+    gap: 1,
+  },
+  likeCount: {
+    minWidth: 8,
+    color: t.colors.textMuted,
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    lineHeight: 12,
+    textAlign: "center" as const,
+  },
+  likeCountActive: { color: t.colors.like },
 }));

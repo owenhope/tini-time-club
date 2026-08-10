@@ -19,7 +19,7 @@ import {
   PIPS_MAX,
   VerifiedName,
 } from "@/components/shared";
-import { Review } from "@/types/types";
+import { Comment, Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import {
   formatCityRegion,
@@ -46,6 +46,8 @@ import { getReviewTagColors } from "@/utils/reviewTagColors";
  */
 const DOUBLE_TAP_DELAY = 300;
 const REVIEW_AUTHOR_AVATAR_SIZE = 40;
+const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
+const MAX_PREVIEW_COMMENTS = 2;
 
 const ICON_SIZES = {
   small: 20,
@@ -58,6 +60,8 @@ const InlineIdentityText = ({
   body,
   usernameStyle,
   bodyStyle,
+  numberOfLines,
+  onTextLayout,
   onUsernamePress,
 }: {
   username: string;
@@ -65,6 +69,8 @@ const InlineIdentityText = ({
   body: string;
   usernameStyle: StyleProp<TextStyle>;
   bodyStyle?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  onTextLayout?: React.ComponentProps<typeof Text>["onTextLayout"];
   /** Omit for the viewer's own name, which has nowhere to navigate to. */
   onUsernamePress?: () => void;
 }) => {
@@ -72,7 +78,11 @@ const InlineIdentityText = ({
   const { colors } = useTheme();
 
   return (
-    <Text style={[styles.inlineBody, bodyStyle]}>
+    <Text
+      style={[styles.inlineBody, bodyStyle]}
+      numberOfLines={numberOfLines}
+      onTextLayout={onTextLayout}
+    >
       <Text
         style={usernameStyle}
         onPress={onUsernamePress}
@@ -226,14 +236,12 @@ const AvatarWrapper = memo(
     isVerified,
     authorId,
     reviewCount,
-    postedAt,
   }: {
     avatarUrl: string | null;
     username?: string;
     isVerified?: boolean;
     authorId?: string | null;
     reviewCount?: number | null;
-    postedAt?: string | null;
   }) => {
     const openProfile = useOpenProfile();
     const styles = useStyles();
@@ -257,13 +265,9 @@ const AvatarWrapper = memo(
             isVerified={isVerified}
             textStyle={styles.headerUsername}
           />
-          {/* Timestamps are data, so they set in mono — and they belong up
-              here beside the poster, not orphaned under the comments. */}
-          {postedAt ? (
-            <Text style={styles.headerTimestamp}>
-              {formatRelativeDate(postedAt)}
-            </Text>
-          ) : null}
+          <Text style={styles.headerMeta}>
+            {reviewCount === 1 ? "1 review" : `${reviewCount ?? 0} reviews`}
+          </Text>
         </View>
       </View>
     );
@@ -350,11 +354,6 @@ const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
   );
 });
 ShareButton.displayName = "ShareButton";
-
-const CommentCount = memo(({ count }: { count: number }) => {
-  const styles = useStyles();
-  return <Text style={styles.likesCount}>{count}</Text>;
-});
 
 /**
  * What sits *on* the photo: the venue on a scrimStrong plate bottom-left, the
@@ -504,17 +503,117 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
   );
 });
 ReviewScores.displayName = "ReviewScores";
-CommentCount.displayName = "CommentCount";
+
+const CommentPreviewItem = memo(
+  ({
+    comment,
+    onShowComments,
+    onToggleLike,
+  }: {
+    comment: Comment;
+    onShowComments: () => void;
+    onToggleLike: (comment: Comment) => void;
+  }) => {
+    const styles = useStyles();
+    const { colors } = useTheme();
+    const openProfile = useOpenProfile();
+    const [expanded, setExpanded] = useState(false);
+    const [canExpand, setCanExpand] = useState(false);
+    const likesCount = comment.likes_count ?? 0;
+    const hasLiked = Boolean(comment.has_liked);
+
+    const handleTextLayout = useCallback<
+      NonNullable<React.ComponentProps<typeof Text>["onTextLayout"]>
+    >(
+      (event) => {
+        if (!expanded) {
+          setCanExpand(
+            event.nativeEvent.lines.length > COMMENT_PREVIEW_COLLAPSED_LINES
+          );
+        }
+      },
+      [expanded]
+    );
+
+    const handleExpand = useCallback(() => {
+      setExpanded(true);
+    }, []);
+
+    return (
+      <View style={styles.commentItem}>
+        <View style={styles.commentPreviewBody}>
+          <TouchableOpacity
+            onPress={onShowComments}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Open comments from ${comment.profile?.username || "Unknown"}`}
+          >
+            <InlineIdentityText
+              username={comment.profile?.username || "Unknown"}
+              isVerified={comment.profile?.is_verified}
+              body={comment.body}
+              usernameStyle={styles.captionUsername}
+              bodyStyle={styles.captionText}
+              numberOfLines={
+                expanded ? undefined : COMMENT_PREVIEW_COLLAPSED_LINES
+              }
+              onTextLayout={handleTextLayout}
+              onUsernamePress={() =>
+                openProfile(comment.profile?.username, comment.profile?.id)
+              }
+            />
+          </TouchableOpacity>
+          {!expanded && canExpand ? (
+            <TouchableOpacity
+              onPress={handleExpand}
+              activeOpacity={0.7}
+              hitSlop={HIT_SLOP}
+              style={styles.commentMoreButton}
+              accessibilityRole="button"
+              accessibilityLabel="Show full comment"
+            >
+              <Text style={styles.commentMoreText}>More</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={styles.commentLikeButton}
+          onPress={() => onToggleLike(comment)}
+          accessibilityRole="button"
+          accessibilityLabel={`${hasLiked ? "Unlike" : "Like"} comment by ${comment.profile?.username || "Unknown"}`}
+          accessibilityState={{ selected: hasLiked }}
+          hitSlop={HIT_SLOP}
+        >
+          <Ionicons
+            name={hasLiked ? "heart" : "heart-outline"}
+            size={18}
+            color={hasLiked ? colors.like : colors.textMuted}
+          />
+          {likesCount > 0 ? (
+            <Text
+              style={[
+                styles.commentLikeCount,
+                hasLiked && styles.commentLikeCountActive,
+              ]}
+            >
+              {likesCount}
+            </Text>
+          ) : null}
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
+CommentPreviewItem.displayName = "CommentPreviewItem";
 
 const ReviewFooter = memo(
   ({
     review,
     hasLiked,
     likesCount,
-    comments,
-    hasLoaded,
     commentCount,
     previewComments,
+    onToggleCommentLike,
     onToggleLike,
     onShowLikes,
     onShowComments,
@@ -528,10 +627,9 @@ const ReviewFooter = memo(
     review: Review;
     hasLiked: boolean;
     likesCount: number;
-    comments: any[];
-    hasLoaded: boolean;
     commentCount: number;
-    previewComments: any[];
+    previewComments: Comment[];
+    onToggleCommentLike: (comment: Comment) => void;
     onToggleLike: () => void;
     onShowLikes: (reviewId: string) => void;
     onShowComments: (
@@ -570,6 +668,32 @@ const ReviewFooter = memo(
 
     return (
       <View style={styles.footer}>
+        {/* Engagement belongs directly under the score summary, before the
+            reading matter. */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            onPress={handleShowLikes}
+            onLongPress={onToggleLike}
+            style={styles.action}
+            activeOpacity={0.7}
+          >
+            <LikeButton hasLiked={hasLiked} onPress={onToggleLike} />
+            <Text style={[styles.actionCount, hasLiked && styles.actionLiked]}>
+              {likesCount}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShowComments}
+            style={styles.action}
+            activeOpacity={0.7}
+          >
+            <CommentButton onPress={handleShowComments} count={commentCount} />
+            <Text style={styles.actionCount}>{commentCount}</Text>
+          </TouchableOpacity>
+          <View style={styles.actionSpacer} />
+          <ShareButton onPress={onShare} />
+        </View>
+
         {(hasCaption || (isOwnReview && onEdit)) && (
           <View style={styles.captionSection}>
             {hasCaption ? (
@@ -594,27 +718,16 @@ const ReviewFooter = memo(
         {/* Comment previews: from the feed row, or the full list once loaded */}
         {previewComments.length > 0 && (
           <>
-            {previewComments.map((c: any) => (
-              <TouchableOpacity
+            {previewComments.map((c) => (
+              <CommentPreviewItem
                 key={c.id}
-                style={styles.commentItem}
-                onPress={handleShowComments}
-                activeOpacity={0.7}
-              >
-                <InlineIdentityText
-                  username={c.profile?.username || "Unknown"}
-                  isVerified={c.profile?.is_verified}
-                  body={c.body}
-                  usernameStyle={styles.captionUsername}
-                  bodyStyle={styles.captionText}
-                  onUsernamePress={() =>
-                    openProfile(c.profile?.username, c.profile?.id)
-                  }
-                />
-              </TouchableOpacity>
+                comment={c}
+                onShowComments={handleShowComments}
+                onToggleLike={onToggleCommentLike}
+              />
             ))}
 
-            {commentCount > 2 && (
+            {commentCount > MAX_PREVIEW_COMMENTS && (
               <TouchableOpacity onPress={handleShowComments}>
                 <Text style={styles.viewAllCommentsText}>
                   View all {commentCount} comments
@@ -624,36 +737,24 @@ const ReviewFooter = memo(
           </>
         )}
 
-        {/* The actions sit under a hairline at the foot of the card, where
-            the design puts them — and where they stay above the tab bar. */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            onPress={handleShowLikes}
-            onLongPress={onToggleLike}
-            style={styles.action}
-            activeOpacity={0.7}
-          >
-            <LikeButton hasLiked={hasLiked} onPress={onToggleLike} />
-            <Text style={[styles.actionCount, hasLiked && styles.actionLiked]}>
-              {likesCount}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleShowComments}
-            style={styles.action}
-            activeOpacity={0.7}
-          >
-            <CommentButton onPress={handleShowComments} count={commentCount} />
-            <Text style={styles.actionCount}>{commentCount}</Text>
-          </TouchableOpacity>
-          <View style={styles.actionSpacer} />
-          <ShareButton onPress={onShare} />
-        </View>
+        {review.inserted_at ? (
+          <Text style={styles.footerTimestamp}>
+            {formatRelativeDate(review.inserted_at)}
+          </Text>
+        ) : null}
       </View>
     );
   }
 );
 ReviewFooter.displayName = "ReviewFooter";
+
+const getRecentCommentsKey = (review: Review) =>
+  (review.recent_comments ?? [])
+    .map(
+      (comment) =>
+        `${comment.id}:${comment.likes_count ?? 0}:${Boolean(comment.has_liked)}`
+    )
+    .join("|");
 
 // Comparison function for memo to prevent unnecessary re-renders
 const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
@@ -673,6 +774,8 @@ const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
     prev.likes_count === next.likes_count &&
     prev.comments_count === next.comments_count &&
     prev.has_liked === next.has_liked &&
+    getRecentCommentsKey(prevProps.review) ===
+      getRecentCommentsKey(nextProps.review) &&
     prev.location?.rating === next.location?.rating &&
     prev.location?.total_ratings === next.location?.total_ratings &&
     prev.profile?.is_verified === next.profile?.is_verified &&
@@ -698,7 +801,12 @@ const ReviewItemComponent = ({
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [commentLikeState, setCommentLikeState] = useState<{
+    reviewId: string;
+    overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
+  }>({ reviewId: review.id, overrides: {} });
   const lastTapRef = useRef<number>(0);
+  const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
   const handleShare = useReviewShareMenu(review);
 
@@ -721,9 +829,72 @@ const ReviewItemComponent = ({
 
   // Preview comments ride along with the feed row; once the full list has been
   // fetched (user opened the sheet) prefer that.
-  const previewComments = hasLoaded
-    ? comments.slice(-2)
-    : [...(review.recent_comments ?? [])].reverse();
+  const commentLikeOverrides =
+    commentLikeState.reviewId === review.id ? commentLikeState.overrides : {};
+  const previewComments = (
+    hasLoaded
+      ? comments.slice(-2)
+      : [...(review.recent_comments ?? [])]
+          .slice(0, MAX_PREVIEW_COMMENTS)
+          .reverse()
+  ).map((comment) => ({
+    ...comment,
+    ...commentLikeOverrides[comment.id],
+  }));
+
+  const handleToggleCommentLike = useCallback(
+    async (comment: Comment) => {
+      if (!profile || pendingCommentLikes.current.has(comment.id)) return;
+
+      const wasLiked = Boolean(comment.has_liked);
+      const previousCount = comment.likes_count ?? 0;
+      const nextLiked = !wasLiked;
+      pendingCommentLikes.current.add(comment.id);
+      setCommentLikeState((current) => ({
+        reviewId: review.id,
+        overrides: {
+          ...(current.reviewId === review.id ? current.overrides : {}),
+          [comment.id]: {
+            has_liked: nextLiked,
+            likes_count: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
+          },
+        },
+      }));
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      try {
+        await databaseService.setCommentLiked(
+          comment.id,
+          profile.id,
+          nextLiked,
+          review.id
+        );
+        if (nextLiked) {
+          AnalyticService.capture("like_comment", {
+            reviewId: review.id,
+            commentId: comment.id,
+            locationId: review.location?.id,
+            locationName: review.location?.name,
+          });
+        }
+      } catch (error) {
+        setCommentLikeState((current) => ({
+          reviewId: review.id,
+          overrides: {
+            ...(current.reviewId === review.id ? current.overrides : {}),
+            [comment.id]: {
+              has_liked: wasLiked,
+              likes_count: previousCount,
+            },
+          },
+        }));
+        reportError("Error toggling preview comment like:", error);
+      } finally {
+        pendingCommentLikes.current.delete(comment.id);
+      }
+    },
+    [profile, review.id, review.location?.id, review.location?.name]
+  );
 
   const loadCommentsIfNeeded = useCallback(() => {
     if (!hasLoaded) fetchComments();
@@ -780,13 +951,7 @@ const ReviewItemComponent = ({
 
       try {
         // Through the service, like every other write.
-        await databaseService.createReport({
-          reporter_id: profile.id,
-          review_id: review.id,
-          creator_id: review.profile?.id,
-          reason: customReason || reason,
-          created_at: new Date().toISOString(),
-        });
+        await databaseService.reportReview(review.id, customReason || reason);
 
         AnalyticService.capture("report", {
           reviewId: review.id,
@@ -827,10 +992,9 @@ const ReviewItemComponent = ({
           review={review}
           hasLiked={false}
           likesCount={0}
-          comments={[]}
-          hasLoaded={false}
           commentCount={0}
           previewComments={[]}
+          onToggleCommentLike={() => {}}
           onToggleLike={() => {}}
           onShowLikes={() => {}}
           onShowComments={() => {}}
@@ -856,7 +1020,6 @@ const ReviewItemComponent = ({
               isVerified={review.profile?.is_verified}
               authorId={review.profile?.id}
               reviewCount={review.profile?.review_count}
-              postedAt={review.inserted_at}
             />
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -915,10 +1078,11 @@ const ReviewItemComponent = ({
             review={review}
             hasLiked={hasLiked}
             likesCount={likesCount}
-            comments={comments}
-            hasLoaded={hasLoaded}
             commentCount={commentCount}
             previewComments={previewComments}
+            onToggleCommentLike={(comment) =>
+              void handleToggleCommentLike(comment)
+            }
             onToggleLike={handleToggleLike}
             onShowLikes={onShowLikes}
             onShowComments={onShowComments}
@@ -1004,7 +1168,7 @@ const useStyles = makeStyles((t) => ({
     letterSpacing: -0.15,
     color: t.colors.usernameText,
   },
-  headerTimestamp: {
+  headerMeta: {
     ...t.typography.mono,
     fontSize: 14,
     lineHeight: 18,
@@ -1174,19 +1338,18 @@ const useStyles = makeStyles((t) => ({
   footer: {
     backgroundColor: t.colors.surface,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.xs + 2,
+    paddingTop: t.spacing.sm,
   },
-  // A hairline separates the actions from the reading matter above them,
-  // rather than boxing the whole footer.
+  // The metrics sit directly under the rating summary, with the comment
+  // previews below.
   actionRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.lg + 2,
-    borderTopWidth: 1,
-    borderTopColor: t.colors.divider,
-    marginTop: t.spacing.md - 1,
-    paddingTop: t.spacing.md - 1,
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.divider,
     paddingBottom: t.spacing.md + 1,
+    marginBottom: t.spacing.md - 1,
   },
   action: {
     flexDirection: "row" as const,
@@ -1206,12 +1369,6 @@ const useStyles = makeStyles((t) => ({
   },
   actionLiked: {
     color: t.colors.like,
-  },
-  likesCount: {
-    ...t.typography.bodyStrong,
-    fontSize: 17,
-    lineHeight: 22,
-    color: t.colors.text,
   },
   captionSection: {
     marginBottom: t.spacing.xs,
@@ -1249,8 +1406,44 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   commentItem: {
-    marginBottom: t.spacing.xs,
+    width: "100%" as const,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    marginBottom: 4,
   },
+  commentPreviewBody: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: t.spacing.xs,
+  },
+  commentLikeButton: {
+    minHeight: 34,
+    flexShrink: 0,
+    flexDirection: "column" as const,
+    alignItems: "center" as const,
+    justifyContent: "flex-end" as const,
+    gap: 1,
+  },
+  commentMoreButton: {
+    alignSelf: "flex-start" as const,
+    paddingTop: 1,
+  },
+  commentMoreText: {
+    ...t.typography.caption,
+    fontSize: 15,
+    lineHeight: 19,
+    fontFamily: fonts.semibold,
+    color: t.colors.textMuted,
+  },
+  commentLikeCount: {
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    lineHeight: 12,
+    textAlign: "center" as const,
+    color: t.colors.textMuted,
+  },
+  commentLikeCountActive: { color: t.colors.like },
   timestamp: {
     ...t.typography.micro,
     fontSize: 13,
@@ -1263,6 +1456,14 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 21,
     color: t.colors.textMuted,
     marginBottom: t.spacing.xs,
+  },
+  footerTimestamp: {
+    ...t.typography.mono,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textMuted,
+    paddingTop: t.spacing.xs,
+    paddingBottom: t.spacing.md,
   },
   // The composer's preview must look like what actually lands in the feed:
   // same card, same edge, same clipped corners.

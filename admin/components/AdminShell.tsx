@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { logout } from "@/lib/actions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type ActiveSection =
   | "dashboard"
   | "users"
   | "reviews"
   | "locations"
+  | "reports"
   | "analytics"
   | "notifications"
   | "share-preview";
@@ -25,6 +27,10 @@ const CORE_NAV = [
     key: "notifications",
     label: "Notifications",
   },
+] as const;
+
+const MODERATION_NAV = [
+  { href: "/admin/reports", key: "reports", label: "Reports" },
 ] as const;
 
 const SECONDARY_NAV = [
@@ -72,7 +78,7 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900">
+    <div className="admin-theme min-h-screen bg-stone-50 text-stone-900">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-stone-200 bg-white px-4 py-5 xl:block">
         <div className="flex h-full flex-col">
           <Link href="/admin" className="block rounded-lg px-2">
@@ -96,6 +102,15 @@ export default function AdminShell({
 
             <div>
               <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
+                Moderation
+              </p>
+              <div className="space-y-1">
+                {MODERATION_NAV.map((item) => navLink(item, active))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
                 Tools
               </p>
               <div className="space-y-1">
@@ -107,6 +122,7 @@ export default function AdminShell({
               <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-stone-400">
                 Account
               </p>
+              <ThemeToggle />
               <form action={logout}>
                 <button
                   type="submit"
@@ -125,20 +141,25 @@ export default function AdminShell({
           <Link href="/admin" className="font-black text-emerald-950">
             tini time club<span className="text-violet-500">.</span> admin
           </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="text-sm font-bold text-stone-500 hover:text-stone-900"
-            >
-              Sign out
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <ThemeToggle compact />
+            <form action={logout}>
+              <button
+                type="submit"
+                className="text-sm font-bold text-stone-500 hover:text-stone-900"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
         <nav
           className="mt-3 flex gap-1 overflow-x-auto pb-1"
           aria-label="Admin"
         >
-          {[...CORE_NAV, ...SECONDARY_NAV].map((item) => navLink(item, active))}
+          {[...CORE_NAV, ...MODERATION_NAV, ...SECONDARY_NAV].map((item) =>
+            navLink(item, active)
+          )}
         </nav>
       </header>
 

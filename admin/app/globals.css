@@ -68,3 +68,153 @@
 body {
   font-family: var(--font-sans);
 }
+
+.admin-theme {
+  color-scheme: light;
+  --admin-chart-grid: #e5e6e8;
+  --admin-chart-muted: #8a918d;
+  --admin-chart-point: #ffffff;
+}
+
+.theme-toggle__track {
+  position: relative;
+  display: inline-flex;
+  width: 2.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid var(--color-stone-300);
+  border-radius: 999px;
+  background: var(--color-stone-200);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.theme-toggle__thumb {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: 0.125rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(28 58 46 / 20%);
+  transition: transform 150ms ease;
+}
+
+html.dark .admin-theme {
+  color-scheme: dark;
+  --color-stone-50: #09150f;
+  --color-stone-100: #11241c;
+  --color-stone-200: #203b30;
+  --color-stone-300: #365548;
+  --color-stone-400: #82968d;
+  --color-stone-500: #9eafa7;
+  --color-stone-600: #bdc9c3;
+  --color-stone-700: #d8e0dc;
+  --color-stone-900: #f5f7f6;
+  --admin-chart-grid: #29463a;
+  --admin-chart-muted: #82968d;
+  --admin-chart-point: #11241c;
+}
+
+html.dark .admin-theme .bg-white {
+  background-color: #11241c;
+}
+
+html.dark .admin-theme .bg-stone-900 {
+  background-color: #07110c;
+}
+
+html.dark .admin-theme .bg-emerald-50 {
+  background-color: #173b2e;
+}
+
+html.dark .admin-theme .bg-emerald-100 {
+  background-color: #204f3d;
+}
+
+html.dark .admin-theme .bg-violet-100 {
+  background-color: #2c2342;
+}
+
+html.dark .admin-theme .bg-red-50 {
+  background-color: #351b1c;
+}
+
+html.dark .admin-theme .bg-rose-100 {
+  background-color: #3d2025;
+}
+
+html.dark .admin-theme .bg-sky-50 {
+  background-color: #142d3a;
+}
+
+html.dark .admin-theme .text-emerald-950,
+html.dark .admin-theme .text-emerald-800 {
+  color: #c9ddd3;
+}
+
+html.dark .admin-theme .text-violet-700,
+html.dark .admin-theme .text-violet-800,
+html.dark .admin-theme .hover\:text-violet-700:hover,
+html.dark .admin-theme .hover\:text-violet-800:hover,
+html.dark .admin-theme .hover\:text-violet-900:hover {
+  color: #cbbdeb;
+}
+
+html.dark .admin-theme .text-red-600,
+html.dark .admin-theme .text-red-700,
+html.dark .admin-theme .hover\:text-red-800:hover {
+  color: #f29a96;
+}
+
+html.dark .admin-theme .text-rose-800 {
+  color: #fda4af;
+}
+
+html.dark .admin-theme .text-sky-950 {
+  color: #bae6fd;
+}
+
+html.dark .admin-theme .bg-chartreuse.text-emerald-950 {
+  color: #1c3a2e;
+}
+
+html.dark .admin-theme .ring-emerald-200,
+html.dark .admin-theme .border-emerald-200 {
+  --tw-ring-color: #336654;
+  border-color: #336654;
+}
+
+html.dark .admin-theme .ring-violet-300,
+html.dark .admin-theme .border-violet-300 {
+  --tw-ring-color: #5a4691;
+  border-color: #5a4691;
+}
+
+html.dark .admin-theme .ring-red-100 {
+  --tw-ring-color: #773936;
+}
+
+html.dark .admin-theme .border-sky-200 {
+  border-color: #25627c;
+}
+
+html.dark .admin-theme input,
+html.dark .admin-theme select,
+html.dark .admin-theme textarea {
+  caret-color: var(--color-violet-500);
+}
+
+html.dark .admin-theme ::selection {
+  color: #11241c;
+  background: var(--color-violet-500);
+}
+
+html.dark .admin-theme .theme-toggle__track {
+  border-color: var(--color-violet-500);
+  background: var(--color-violet-600);
+}
+
+html.dark .admin-theme .theme-toggle__thumb {
+  transform: translateX(1rem);
+}

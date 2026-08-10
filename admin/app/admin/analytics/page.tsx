@@ -53,6 +53,10 @@ export default async function AnalyticsPage({
   const pct = (n: number, of: number) =>
     of > 0 ? `${Math.round((n / of) * 100)}%` : "—";
   const totalLikes = a.likesByDay.reduce((sum, d) => sum + d.count, 0);
+  const totalCommentLikes = a.commentLikesByDay.reduce(
+    (sum, day) => sum + day.count,
+    0
+  );
   const totalComments = a.commentsByDay.reduce((sum, d) => sum + d.count, 0);
   const totalReviews = a.reviewsByDay.reduce((sum, d) => sum + d.count, 0);
 
@@ -232,37 +236,52 @@ export default async function AnalyticsPage({
             id="engagement"
             link={{ href: "/admin/reviews", label: "All reviews" }}
             title="Engagement"
-            description="Likes and comments on reviews — whether the feed is social or silent."
+            description="Review likes, comment likes, and conversations across the club."
           >
             <div className="grid grid-cols-12 gap-4">
               <MetricTile
-                label="Likes"
+                label="Review likes"
                 value={totalLikes}
                 previous={a.previous.likes}
-                className="col-span-12 md:col-span-6 xl:col-span-4"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Comment likes"
+                value={totalCommentLikes}
+                previous={a.previous.commentLikes}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Comments"
                 value={totalComments}
                 previous={a.previous.comments}
-                className="col-span-12 md:col-span-6 xl:col-span-4"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
                 label="Interactions per review"
                 value={
                   totalReviews > 0
-                    ? ((totalLikes + totalComments) / totalReviews).toFixed(1)
+                    ? (
+                        (totalLikes + totalCommentLikes + totalComments) /
+                        totalReviews
+                      ).toFixed(1)
                     : "—"
                 }
-                hint="likes + comments ÷ reviews in range"
-                className="col-span-12 md:col-span-6 xl:col-span-4"
+                hint="review likes + comment likes + comments ÷ reviews"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
               />
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-3">
               <LineChart
-                title="Likes"
+                title="Review likes"
                 data={a.likesByDay}
                 color="#e11d48"
+                unit="likes"
+              />
+              <LineChart
+                title="Comment likes"
+                data={a.commentLikesByDay}
+                color="#7c3aed"
                 unit="likes"
               />
               <LineChart
