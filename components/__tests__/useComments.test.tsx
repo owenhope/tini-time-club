@@ -331,4 +331,39 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });
+
+  it("shows one feed comment preview before the more comments link", () => {
+    const review = makeReview({
+      comments_count: 3,
+      recent_comments: [
+        {
+          ...comment,
+          id: 10,
+          body: "First visible preview.",
+          inserted_at: new Date().toISOString(),
+          user_id: "comment-author-1",
+          likes_count: 0,
+          has_liked: false,
+        },
+        {
+          ...comment,
+          id: 11,
+          body: "Second hidden preview.",
+          inserted_at: new Date().toISOString(),
+          user_id: "comment-author-2",
+          likes_count: 0,
+          has_liked: false,
+        },
+      ],
+    });
+    const tree = renderReview(review);
+
+    expect(countOccurrences(tree, "First visible preview.")).toBe(1);
+    expect(countOccurrences(tree, "Second hidden preview.")).toBe(0);
+    expect(countOccurrences(tree, "view more comments")).toBe(1);
+    expect(countOccurrences(tree, "more comments")).toBe(1);
+    expect(countOccurrences(tree, "View all 3 comments")).toBe(0);
+
+    act(() => tree.unmount());
+  });
 });

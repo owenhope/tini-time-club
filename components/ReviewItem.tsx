@@ -47,7 +47,7 @@ import { getReviewTagColors } from "@/utils/reviewTagColors";
 const DOUBLE_TAP_DELAY = 300;
 const REVIEW_AUTHOR_AVATAR_SIZE = 40;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
-const MAX_PREVIEW_COMMENTS = 2;
+const MAX_PREVIEW_COMMENTS = 1;
 
 const ICON_SIZES = {
   small: 20,
@@ -730,7 +730,7 @@ const ReviewFooter = memo(
             {commentCount > MAX_PREVIEW_COMMENTS && (
               <TouchableOpacity onPress={handleShowComments}>
                 <Text style={styles.viewAllCommentsText}>
-                  View all {commentCount} comments
+                  view more comments
                 </Text>
               </TouchableOpacity>
             )}
@@ -1349,8 +1349,11 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.lg + 2,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.divider,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.divider,
+    paddingTop: t.spacing.md - 1,
     paddingBottom: t.spacing.md + 1,
     marginBottom: t.spacing.md - 1,
   },
