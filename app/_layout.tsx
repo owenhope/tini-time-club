@@ -1,4 +1,5 @@
 import "react-native-get-random-values";
+import { Sentry } from "@/utils/sentry";
 import { useEffect, useState, useRef } from "react";
 import {
   Stack,
@@ -131,7 +132,7 @@ const errorBoundaryStyles = StyleSheet.create({
   },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     // Required by @gorhom/bottom-sheet's gestures (the map sheet).
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -146,6 +147,8 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();

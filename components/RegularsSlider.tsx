@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -9,21 +9,33 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { makeStyles } from "@/theme";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
+
+const REGULARS_SHEET_VISIBLE_HEIGHT = 430;
+const CONTENT_BOTTOM_PADDING = 16;
 
 interface RegularsSliderProps {
   regulars: Regular[];
   locationName?: string | null;
+  bottomContentInset?: number;
   onClose: () => void;
 }
 
 export default function RegularsSlider({
   regulars,
   locationName,
+  bottomContentInset,
   onClose,
 }: RegularsSliderProps) {
   const styles = useStyles();
   const openProfile = useOpenProfile();
   const topRegulars = regulars.slice(0, 3);
+  const nativeTabBarInset = useNativeTabBarContentInset();
+  const sheetBottomInset = bottomContentInset ?? nativeTabBarInset;
+  const snapPoints = useMemo(
+    () => [REGULARS_SHEET_VISIBLE_HEIGHT + sheetBottomInset],
+    [sheetBottomInset]
+  );
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -44,7 +56,7 @@ export default function RegularsSlider({
 
   return (
     <BottomSheet
-      snapPoints={["42%"]}
+      snapPoints={snapPoints}
       enableDynamicSizing={false}
       enablePanDownToClose
       onClose={onClose}
@@ -53,7 +65,12 @@ export default function RegularsSlider({
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.sheetHandle}
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetView
+        style={[
+          styles.content,
+          { paddingBottom: CONTENT_BOTTOM_PADDING + sheetBottomInset },
+        ]}
+      >
         <View style={styles.header}>
           <Text style={styles.eyebrow}>Regulars</Text>
           {locationName ? (
@@ -115,7 +132,7 @@ const useStyles = makeStyles((t) => ({
   content: {
     flex: 1,
     paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: t.spacing.lg,
+    paddingBottom: CONTENT_BOTTOM_PADDING,
     gap: t.spacing.lg,
   },
   header: {

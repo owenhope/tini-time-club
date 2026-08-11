@@ -176,45 +176,66 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <View style={styles.container}>
         {/* Then the face, the name and the tier the member holds. */}
         <View style={styles.topRow}>
-          <Pressable
-            onPress={onAvatarPress}
-            onLongPress={onAvatarLongPress}
-            disabled={!canPressAvatar && !onAvatarLongPress}
-            accessibilityRole={canPressAvatar ? "button" : undefined}
-            accessibilityLabel={
-              canPressAvatar
-                ? isOwnProfile
-                  ? "Change profile photo"
-                  : `View ${profile.username}'s profile photo`
-                : undefined
-            }
-            accessibilityState={{ busy: avatarLoading }}
-          >
-            <Avatar
-              avatarPath={profile.avatar_url}
-              username={profile.username}
-              size={AVATAR_SIZE}
-              reviewCount={displayedRankCount}
-              onInk
-            />
-            {avatarLoading && (
-              <View style={styles.avatarLoading}>
-                <ActivityIndicator size="small" color={colors.onAccent} />
+          <View style={styles.avatarColumn}>
+            <Pressable
+              onPress={onAvatarPress}
+              onLongPress={onAvatarLongPress}
+              disabled={!canPressAvatar && !onAvatarLongPress}
+              accessibilityRole={canPressAvatar ? "button" : undefined}
+              accessibilityLabel={
+                canPressAvatar
+                  ? isOwnProfile
+                    ? "Change profile photo"
+                    : `View ${profile.username}'s profile photo`
+                  : undefined
+              }
+              accessibilityState={{ busy: avatarLoading }}
+            >
+              <Avatar
+                avatarPath={profile.avatar_url}
+                username={profile.username}
+                size={AVATAR_SIZE}
+                reviewCount={displayedRankCount}
+                onInk
+              />
+              {avatarLoading && (
+                <View style={styles.avatarLoading}>
+                  <ActivityIndicator size="small" color={colors.onAccent} />
+                </View>
+              )}
+            </Pressable>
+            {rank.tier ? (
+              <View style={styles.tierBadge}>
+                <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
               </View>
-            )}
-          </Pressable>
+            ) : null}
+          </View>
 
           <View style={styles.identity}>
-            <Text style={styles.name} numberOfLines={1}>
+            <Text
+              style={styles.name}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.55}
+            >
               {profile.name || profile.username}
             </Text>
-            <View style={styles.identityFoot}>
-              {rank.tier ? (
-                <View style={styles.tierBadge}>
-                  <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
-                </View>
-              ) : null}
-              {action}
+            {action ? (
+              <View style={styles.identityFoot}>
+                {action}
+              </View>
+            ) : null}
+            <View style={styles.compactMetrics}>
+              {metrics.map((m) => (
+                <StatCard
+                  key={m.key}
+                  tone="ink"
+                  size="compact"
+                  value={m.value}
+                  label={m.label}
+                  onPress={m.onPress}
+                />
+              ))}
             </View>
           </View>
         </View>
@@ -252,18 +273,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
         ) : null}
 
-        <View style={styles.metrics}>
-          {metrics.map((m) => (
-            <StatCard
-              key={m.key}
-              tone="ink"
-              value={m.value}
-              label={m.label}
-              onPress={m.onPress}
-            />
-          ))}
-        </View>
-
         {profile.bio ? (
           <Text style={styles.bio} numberOfLines={3}>
             {profile.bio}
@@ -297,12 +306,19 @@ const useStyles = makeStyles((t) => ({
   },
   topRow: {
     flexDirection: "row" as const,
-    alignItems: "center" as const,
+    alignItems: "flex-start" as const,
     gap: t.spacing.lg,
   },
-  metrics: {
+  avatarColumn: {
+    width: AVATAR_SIZE + 18,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+  },
+  compactMetrics: {
     flexDirection: "row" as const,
-    gap: 9,
+    gap: 5,
+    marginTop: t.spacing.xs,
+    alignSelf: "stretch" as const,
   },
   avatarLoading: {
     ...({ position: "absolute" } as const),
@@ -387,7 +403,7 @@ const useStyles = makeStyles((t) => ({
     fontSize: 24,
     lineHeight: 28,
     fontFamily: fonts.black,
-    letterSpacing: -0.7,
+    letterSpacing: 0,
     color: t.colors.onHeaderBrand,
   },
   // Handles are data — they set in mono, like every other identifier.

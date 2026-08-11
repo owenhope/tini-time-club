@@ -124,6 +124,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           appleSignInEnabled: true,
         },
       ],
+      "@sentry/react-native",
       ["expo-localization"],
       "expo-secure-store",
     ],

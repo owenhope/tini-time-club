@@ -8,6 +8,7 @@ export interface StatCardProps {
   label: string;
   /** `ink` for the deep-green profile and bar headers. */
   tone?: "default" | "ink";
+  size?: "regular" | "compact";
   /** Counts that navigate — followers, following. */
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -21,22 +22,35 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   label,
   tone = "default",
+  size = "regular",
   onPress,
   style,
 }) => {
   const styles = useStyles();
   const onInk = tone === "ink";
+  const compact = size === "compact";
 
   const content = (
     <>
-      <AppText variant="metric" tone={onInk ? "onImage" : "default"}>
-        {value}
-      </AppText>
       <AppText
         variant={onInk ? "eyebrow" : "micro"}
         tone={onInk ? "onImage" : "muted"}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        style={compact && styles.compactLabel}
       >
         {label}
+      </AppText>
+      <AppText
+        variant="metric"
+        tone={onInk ? "onImage" : "default"}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+        style={compact && styles.compactValue}
+      >
+        {value}
       </AppText>
     </>
   );
@@ -44,7 +58,12 @@ const StatCard: React.FC<StatCardProps> = ({
   if (!onPress) {
     return (
       <View
-        style={[styles.card, onInk && styles.ink, style]}
+        style={[
+          styles.card,
+          compact && styles.compact,
+          onInk && styles.ink,
+          style,
+        ]}
         accessible
         accessibilityLabel={`${value} ${label}`}
       >
@@ -60,6 +79,7 @@ const StatCard: React.FC<StatCardProps> = ({
       accessibilityLabel={`${value} ${label}`}
       style={({ pressed }) => [
         styles.card,
+        compact && styles.compact,
         onInk && styles.ink,
         pressed && styles.pressed,
         style,
@@ -78,6 +98,22 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.md,
     borderRadius: t.radius.thumb,
     backgroundColor: t.colors.surfaceSunken,
+  },
+  compact: {
+    minHeight: 48,
+    gap: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+  },
+  compactValue: {
+    fontSize: 18,
+    lineHeight: 20,
+    letterSpacing: 0,
+  },
+  compactLabel: {
+    fontSize: 8,
+    lineHeight: 11,
+    letterSpacing: 0,
   },
   ink: {
     // A lift off the green ground rather than a second colour.
