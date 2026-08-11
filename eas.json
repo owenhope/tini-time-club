@@ -21,6 +21,9 @@
       "distribution": "store",
       "channel": "preview",
       "environment": "preview",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "autoIncrement": true
     },
     "preview-adhoc": {
@@ -31,6 +34,9 @@
     },
     "production": {
       "channel": "production",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "autoIncrement": true,
       "environment": "production"
     }
