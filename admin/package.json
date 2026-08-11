@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/defer-nomodule-polyfills.mjs",
     "start": "next start",
     "lint": "eslint"
   },

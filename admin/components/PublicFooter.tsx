@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const links = [
+  { href: "/about", label: "About", rel: "author" },
   { href: "/support", label: "Support" },
   { href: "/terms", label: "Terms of Service" },
   { href: "/privacy", label: "Privacy Policy" },
@@ -18,6 +19,7 @@ export default function PublicFooter() {
             <Link
               key={link.href}
               href={link.href}
+              rel={link.rel}
               className="font-semibold transition hover:text-emerald-950"
             >
               {link.label}

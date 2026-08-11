@@ -1,5 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
+import { siteAuthor } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "https://tinitimeclub.com/",
+  },
+};
+
+const homeJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Tini Time Club",
+  url: "https://tinitimeclub.com/",
+  description: "Martini reviews from Tini Time Club.",
+  datePublished: "2026-08-11",
+  dateModified: "2026-08-11",
+  author: siteAuthor,
+  publisher: siteAuthor,
+  about: {
+    "@type": "SoftwareApplication",
+    name: "Tini Time Club",
+    applicationCategory: "LifestyleApplication",
+    operatingSystem: "iOS",
+  },
+};
 
 const features = [
   {
@@ -32,6 +59,7 @@ const features = [
 export default function PublicHomePage() {
   return (
     <main className="min-h-screen bg-[#FAF9F6] text-emerald-950">
+      <JsonLd data={homeJsonLd} />
       <section className="min-h-svh overflow-hidden bg-violet-600 text-white">
         <div className="mx-auto flex min-h-svh max-w-6xl flex-col px-5 py-5 sm:px-6 lg:px-8">
           <header className="flex items-center justify-between gap-4">
@@ -51,20 +79,19 @@ export default function PublicHomePage() {
           <div className="flex flex-1 items-center py-14">
             <div className="max-w-3xl">
               <p className="inline-flex rounded-[6px] bg-chartreuse px-3 py-2 font-mono text-xs font-black uppercase tracking-[0.18em] text-emerald-950 shadow-sm shadow-emerald-950/15">
-                Sip, snap, review, repeat
+                Sip, score, share, repeat
               </p>
               <h1 className="mt-5 text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
                 Tini Time Club
               </h1>
               <p className="mt-5 max-w-2xl text-xl leading-8 text-white/78">
-                The Martini review app for remembering the pours, finding the
-                regular spots, and sharing the table worth coming back to.
+                The Martini review app for remembering every pour, every place,
+                and every person worth coming back to.
               </p>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
-                Use it to log where you ordered a Martini, who you were with,
-                how it tasted, and whether the bar deserves another round. Each
-                review becomes a saved recommendation for friends, followers,
-                and regulars comparing the next spot.
+                Log the bar, photo, notes, and ratings in seconds. Build a
+                personal shortlist, follow friends, and find the next round with
+                a little more confidence.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
@@ -77,7 +104,7 @@ export default function PublicHomePage() {
                   href="#club"
                   className="rounded-md border border-white/25 px-5 py-3 text-sm font-bold text-white transition hover:border-white/50 hover:bg-white/10"
                 >
-                  Explore features
+                  See how it works
                 </a>
               </div>
             </div>
