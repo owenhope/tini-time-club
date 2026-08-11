@@ -334,9 +334,9 @@ const ReviewShareCard = ({
           ]}
         >
           <ExpoImage
-            source={require("@/assets/images/tini-time-logo-2x.png")}
-            style={{ width: 56 * artworkScale, height: 56 * artworkScale }}
-            contentFit="contain"
+            source={require("@/assets/images/icon-purple.png")}
+            style={{ width: 78 * artworkScale, height: 78 * artworkScale }}
+            contentFit="cover"
           />
         </View>
 
@@ -450,7 +450,7 @@ const ReviewShareCard = ({
                 marginHorizontal: -panelPadding,
                 marginBottom: -panelPadding,
                 paddingHorizontal: panelPadding,
-                paddingVertical: 7 * artworkScale,
+                paddingVertical: 9 * artworkScale,
               },
             ]}
           >
@@ -459,8 +459,8 @@ const ReviewShareCard = ({
               style={[
                 styles.shareMessageText,
                 {
-                  fontSize: 10 * artworkScale,
-                  lineHeight: 13 * artworkScale,
+                  fontSize: 13 * artworkScale,
+                  lineHeight: 16 * artworkScale,
                 },
               ]}
             >
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: "rgba(250,249,246,0.48)",
-    backgroundColor: CARD.chartreuse,
+    backgroundColor: CARD.purple,
   },
   panel: {
     position: "absolute",
