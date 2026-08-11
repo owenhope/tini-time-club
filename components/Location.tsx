@@ -11,7 +11,12 @@ import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
-import { Avatar, SectionHeader, Skeleton } from "@/components/shared";
+import {
+  Avatar,
+  RatingPips,
+  SectionHeader,
+  Skeleton,
+} from "@/components/shared";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
@@ -28,7 +33,7 @@ import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
-import { shareLocationViaSheet } from "@/utils/locationShare";
+import { useLocationShareMenu } from "@/hooks/useLocationShareMenu";
 
 // Helper function to format price level
 
@@ -113,6 +118,7 @@ const Location = () => {
   }`;
   const hasRating = displayLocation?.rating != null && reviewCount > 0;
   const regularPreview = regulars.slice(0, 3);
+  const shareLocation = useLocationShareMenu(displayLocation);
 
   /**
    * The two controls the venue carries, in the order the drawing puts them.
@@ -126,7 +132,7 @@ const Location = () => {
       {
         icon: "paper-plane-outline",
         accessibilityLabel: `Share ${displayLocation.name}`,
-        onPress: () => void shareLocationViaSheet(displayLocation),
+        onPress: shareLocation,
       },
       {
         icon: "information-circle-outline",
@@ -163,7 +169,7 @@ const Location = () => {
     }
 
     return actions;
-  }, [displayLocation, router]);
+  }, [displayLocation, router, shareLocation]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
@@ -406,6 +412,15 @@ const Location = () => {
                           ? formatRating(displayLocation?.rating)
                           : "--"}
                       </Text>
+                      {hasRating ? (
+                        <View style={styles.venuePips}>
+                          <RatingPips
+                            value={displayLocation?.rating}
+                            size={15}
+                            accessibilityLabel=""
+                          />
+                        </View>
+                      ) : null}
                     </View>
                     <Text style={styles.venueReviewCount}>{reviewLabel}</Text>
                   </View>
@@ -522,6 +537,12 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
+  },
+  venuePips: {
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: 5,
+    borderRadius: t.radius.sm,
+    backgroundColor: "rgba(250,249,246,0.10)",
   },
   venueEyebrow: {
     ...t.typography.eyebrow,

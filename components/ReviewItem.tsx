@@ -35,7 +35,7 @@ import databaseService from "@/services/databaseService";
 import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { shareReviewViaSheet } from "@/utils/reviewShare";
+import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 
 /**
@@ -48,6 +48,7 @@ const DOUBLE_TAP_DELAY = 300;
 const REVIEW_AUTHOR_AVATAR_SIZE = 40;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
 const MAX_PREVIEW_COMMENTS = 1;
+const REVIEW_ACTION_ICON_COLOR = "#000000";
 
 const ICON_SIZES = {
   small: 20,
@@ -311,7 +312,7 @@ const LikeButton = memo(
         <Ionicons
           name={hasLiked ? "heart" : "heart-outline"}
           size={ICON_SIZES.medium}
-          color={hasLiked ? colors.like : colors.text}
+          color={hasLiked ? colors.like : REVIEW_ACTION_ICON_COLOR}
         />
       </TouchableOpacity>
     );
@@ -321,13 +322,11 @@ LikeButton.displayName = "LikeButton";
 
 const CommentButton = memo(
   ({ count }: { onPress: () => void; count: number }) => {
-    const { colors } = useTheme();
-
     return (
       <Ionicons
         name="chatbubble-outline"
         size={ICON_SIZES.medium}
-        color={colors.text}
+        color={REVIEW_ACTION_ICON_COLOR}
         accessibilityLabel={count === 1 ? "1 comment" : `${count} comments`}
       />
     );
@@ -336,8 +335,6 @@ const CommentButton = memo(
 CommentButton.displayName = "CommentButton";
 
 const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
-  const { colors } = useTheme();
-
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -348,7 +345,7 @@ const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
       <Ionicons
         name="paper-plane-outline"
         size={ICON_SIZES.medium}
-        color={colors.text}
+        color={REVIEW_ACTION_ICON_COLOR}
       />
     </TouchableOpacity>
   );
@@ -808,6 +805,7 @@ const ReviewItemComponent = ({
   const lastTapRef = useRef<number>(0);
   const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
+  const handleShare = useReviewShareMenu(review);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -968,10 +966,6 @@ const ReviewItemComponent = ({
     },
     [profile, review.id, review.profile?.id]
   );
-
-  const handleShare = useCallback(() => {
-    void shareReviewViaSheet(review);
-  }, [review]);
 
   if (previewMode) {
     return (

@@ -1,4 +1,5 @@
 import "react-native-get-random-values";
+import { Sentry } from "@/utils/sentry";
 import { useEffect, useState, useRef } from "react";
 import {
   Stack,
@@ -40,6 +41,7 @@ import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
+import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
 import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
@@ -47,6 +49,7 @@ import {
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { withTimeout } from "@/utils/async";
+import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -131,7 +134,7 @@ const errorBoundaryStyles = StyleSheet.create({
   },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     // Required by @gorhom/bottom-sheet's gestures (the map sheet).
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -140,12 +143,16 @@ export default function RootLayout() {
             editor are presented over the tabs from the root stack, and they
             need the same signed-in member the tabs do. */}
         <ProfileProvider>
-          <RootLayoutNav />
+          <ShareMenuProvider>
+            <RootLayoutNav />
+          </ShareMenuProvider>
         </ProfileProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();
@@ -210,6 +217,12 @@ function RootLayoutNav() {
     rootNavigationState?.key,
     router,
   ]);
+
+  useEffect(() => {
+    if (!isReady || !fontsLoaded) return;
+
+    void requestAppTrackingTransparencyAsync();
+  }, [fontsLoaded, isReady]);
 
   // Perform the initial-launch navigation as soon as the router is ready —
   // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.
@@ -429,6 +442,13 @@ function RootLayoutNav() {
             leaving a half-written draft parked in a tab. */}
         <Stack.Screen
           name="review"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="review-share-preview"
           options={{
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",

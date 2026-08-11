@@ -19,7 +19,6 @@ import BottomSheet, {
   type BottomSheetBackdropProps,
   type BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfile } from "@/context/profile-context";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { formatRelativeDate } from "@/utils/helpers";
@@ -31,8 +30,12 @@ import databaseService from "@/services/databaseService";
 import { Comment, Review } from "@/types/types";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
+const COMMENT_SHEET_RESTING_HEIGHT = 430;
+const COMMENT_INPUT_BOTTOM_PADDING = 22;
+const COMMENT_LIST_FOOTER_CLEARANCE = 88;
 
 interface CommentsSliderProps {
   review: Pick<Review, "id" | "user_id" | "location">;
@@ -43,15 +46,16 @@ interface CommentsSliderProps {
 
 interface CommentInputFooterProps extends BottomSheetFooterProps {
   onSubmit: (comment: string) => Promise<boolean>;
+  bottomContentInset: number;
 }
 
 function CommentInputFooter({
   onSubmit,
+  bottomContentInset,
   ...footerProps
 }: CommentInputFooterProps) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState("");
 
   const handleSubmit = useCallback(async () => {
@@ -68,7 +72,10 @@ function CommentInputFooter({
       <View
         style={[
           styles.inputContainer,
-          { paddingBottom: Math.max(insets.bottom, 12) + 10 },
+          {
+            paddingBottom:
+              Math.max(bottomContentInset, 12) + COMMENT_INPUT_BOTTOM_PADDING,
+          },
         ]}
       >
         <BottomSheetTextInput
@@ -98,6 +105,11 @@ export default function CommentsSlider({
   const openProfile = useOpenProfile();
   const styles = useStyles();
   const { colors, isDark } = useTheme();
+  const bottomContentInset = useNativeTabBarContentInset();
+  const snapPoints = React.useMemo(
+    () => [COMMENT_SHEET_RESTING_HEIGHT + bottomContentInset, "85%"],
+    [bottomContentInset]
+  );
   const [comments, setComments] = useState<Comment[]>([]);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
@@ -395,15 +407,19 @@ export default function CommentsSlider({
 
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
-      <CommentInputFooter {...props} onSubmit={handleAddComment} />
+      <CommentInputFooter
+        {...props}
+        bottomContentInset={bottomContentInset}
+        onSubmit={handleAddComment}
+      />
     ),
-    [handleAddComment]
+    [bottomContentInset, handleAddComment]
   );
 
   return (
     <>
       <BottomSheet
-        snapPoints={["45%", "85%"]}
+        snapPoints={snapPoints}
         enableDynamicSizing={false}
         enablePanDownToClose
         onClose={onClose}
@@ -431,7 +447,13 @@ export default function CommentsSlider({
               </Text>
             </View>
           }
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingBottom:
+                COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
+            },
+          ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         />
@@ -469,7 +491,7 @@ const useStyles = makeStyles((t) => ({
   listContent: {
     padding: t.spacing.lg,
     // Keep the last comment clear of the pinned input footer.
-    paddingBottom: 88,
+    paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE,
   },
   // Fixed offset rather than flex centering: the sheet's scroll container is
   // sized to the tallest snap point, so "centered" would land off-screen at

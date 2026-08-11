@@ -38,7 +38,7 @@ export default function CameraComponent({
   headerBelow,
   title = "Capture",
   closeAccessibilityLabel = "Discard review",
-  closeIcon = "trash-outline",
+  closeIcon = "close-outline",
 }: CameraComponentProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -159,6 +159,7 @@ export default function CameraComponent({
     accessibilityLabel: "Choose a photo from your library",
   };
   const headerActions: HeaderAction[] = [
+    libraryAction,
     ...(onClose
       ? [
           {
@@ -168,7 +169,6 @@ export default function CameraComponent({
           },
         ]
       : []),
-    libraryAction,
   ];
 
   // Render a preview of the captured or selected image.

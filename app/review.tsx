@@ -763,7 +763,7 @@ export default function App() {
             closeAccessibilityLabel={
               isChangingPhoto ? "Keep current review photo" : "Discard review"
             }
-            closeIcon={isChangingPhoto ? "close-outline" : "trash-outline"}
+            closeIcon="close-outline"
             onClose={
               isChangingPhoto
                 ? () => {

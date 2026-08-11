@@ -1,6 +1,11 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import AnalyticsNav from "@/components/AnalyticsNav";
+import {
+  DataTable,
+  EmptyState,
+  StatusPill,
+} from "@/components/AdminPrimitives";
 import FeatureSection, { BreakdownList } from "@/components/FeatureSection";
 import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
@@ -19,6 +24,18 @@ const SECTIONS = [
   { id: "engagement", label: "Engagement" },
   { id: "sharing", label: "Sharing & referral" },
 ];
+
+const REVIEW_SHARE_CHANNEL_LABELS: Record<string, string> = {
+  instagram_story: "Instagram Story",
+  instagram_post: "Instagram Post",
+  share_link: "Share Link",
+  sheet: "Share Sheet",
+  email: "Email",
+  instagram: "Instagram",
+};
+
+const reviewShareChannelLabel = (channel: string) =>
+  REVIEW_SHARE_CHANNEL_LABELS[channel] ?? channel.replaceAll("_", " ");
 
 /**
  * Analytics is organised by product area rather than by chart type: each
@@ -315,7 +332,7 @@ export default async function AnalyticsPage({
                 title="Review share channels"
                 rows={a.shareChannels.map((channel) => ({
                   key: channel.channel,
-                  label: channel.channel,
+                  label: reviewShareChannelLabel(channel.channel),
                   value: String(channel.count),
                 }))}
                 empty="No shares in this range."
@@ -330,6 +347,74 @@ export default async function AnalyticsPage({
                 empty="No invites in this range."
               />
             </div>
+            <DataTable
+              columns={["Member", "Format", "Review", "Outcome", "When"]}
+              toolbar={
+                <div className="px-2 py-1">
+                  <h3 className="font-semibold text-stone-900">
+                    Recent review sharing
+                  </h3>
+                  <p className="mt-0.5 text-xs text-stone-500">
+                    The latest Story, Post, and link activity in this range.
+                  </p>
+                </div>
+              }
+              empty={
+                a.recentReviewShares.length === 0 ? (
+                  <EmptyState>
+                    No review sharing activity in this range.
+                  </EmptyState>
+                ) : null
+              }
+            >
+              {a.recentReviewShares.map((share) => (
+                <tr key={share.id}>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/users/${share.profile.id}`}>
+                      <UserBadge profile={share.profile} size="compact" />
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusPill
+                      tone={
+                        share.channel.startsWith("instagram_")
+                          ? "purple"
+                          : "green"
+                      }
+                    >
+                      {reviewShareChannelLabel(share.channel)}
+                    </StatusPill>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/admin/reviews/${share.review_id}`}
+                      className="font-semibold text-stone-800 transition hover:text-violet-700"
+                    >
+                      {share.location_name ?? `Review #${share.review_id}`}
+                    </Link>
+                    {share.location_name ? (
+                      <span className="mt-0.5 block font-mono text-xs text-stone-400">
+                        Review #{share.review_id}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3 text-sm capitalize text-stone-600">
+                    {share.outcome}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-stone-500">
+                    <span className="block">
+                      {new Date(share.shared_at).toLocaleDateString()}
+                    </span>
+                    <span className="font-mono text-xs text-stone-400">
+                      {new Date(share.shared_at).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
             <div className="rounded-lg border border-stone-200 bg-white p-5">
               <h3 className="font-semibold">Top sharers</h3>
               <ul className="mt-3 divide-y divide-stone-100">

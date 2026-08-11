@@ -779,8 +779,6 @@ function Home() {
 
   return (
     <View style={styles.container}>
-      {/* Header A. No trailing control: compose is the pour button and search
-          is the Discover tab, so both had a home already. */}
       <AppHeader
         variant="large"
         title={greeting.headline}

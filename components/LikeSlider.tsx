@@ -9,6 +9,10 @@ import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
+
+const LIKES_SHEET_VISIBLE_HEIGHT = 420;
+const CONTENT_BOTTOM_PADDING = 16;
 
 interface LikesSliderProps {
   reviewId: string;
@@ -18,6 +22,11 @@ interface LikesSliderProps {
 export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const bottomContentInset = useNativeTabBarContentInset();
+  const snapPoints = React.useMemo(
+    () => [LIKES_SHEET_VISIBLE_HEIGHT + bottomContentInset],
+    [bottomContentInset]
+  );
   const [likesUsers, setLikesUsers] = useState<any[]>([]);
   // An in-flight fetch and an unliked review both left the list empty, which
   // read as "nobody" for as long as the query took.
@@ -67,7 +76,7 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
 
   return (
     <BottomSheet
-      snapPoints={["50%"]}
+      snapPoints={snapPoints}
       enableDynamicSizing={false}
       enablePanDownToClose
       onClose={onClose}
@@ -79,7 +88,12 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.sheetHandle}
     >
-      <BottomSheetView style={styles.content}>
+      <BottomSheetView
+        style={[
+          styles.content,
+          { paddingBottom: CONTENT_BOTTOM_PADDING + bottomContentInset },
+        ]}
+      >
         {loading ? (
           <View style={styles.state}>
             <ActivityIndicator color={colors.accent} />
@@ -121,7 +135,7 @@ const useStyles = makeStyles((t) => ({
   content: {
     flex: 1,
     paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: t.spacing.lg,
+    paddingBottom: CONTENT_BOTTOM_PADDING,
   },
   state: {
     alignItems: "center" as const,

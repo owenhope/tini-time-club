@@ -1,8 +1,14 @@
 import { locationShareText, publicLocationUrl } from "../locationShare";
 
 jest.mock("react-native", () => ({
+  Alert: {},
+  Linking: {},
   Platform: { OS: "ios" },
   Share: {},
+}));
+
+jest.mock("expo-clipboard", () => ({
+  setStringAsync: jest.fn(),
 }));
 
 jest.mock("@/services/analyticsService", () => ({

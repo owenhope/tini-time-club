@@ -10,7 +10,7 @@ import type { Review } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
-import { shareReviewViaSheet } from "@/utils/reviewShare";
+import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 
 export default function SharedReviewScreen() {
@@ -31,6 +31,8 @@ export default function SharedReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
+
+  const shareReview = useReviewShareMenu(review);
 
   const loadReview = useCallback(async () => {
     if (!reviewId) {
@@ -90,7 +92,7 @@ export default function SharedReviewScreen() {
             ? [
                 {
                   icon: "share-outline",
-                  onPress: () => void shareReviewViaSheet(review),
+                  onPress: shareReview,
                   accessibilityLabel: "Share this review",
                 },
               ]

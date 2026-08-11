@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import { Tabs, usePathname, useRouter, type Href } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { MartiniIcon } from "@/components/shared";
+import { usePathname, useRouter, type Href } from "expo-router";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
-import TabBar from "@/components/nav/TabBar";
 import { fonts, useTheme } from "@/theme";
 import {
   getNotificationRoute,
@@ -15,6 +15,7 @@ import {
 import { syncFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
+import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,6 +33,9 @@ const LayoutContent = () => {
   const router = useRouter();
   const pathname = usePathname();
   const isOnboardingLocationPicker = pathname === "/favorite-location";
+  const tabBarAccent = getTabBarAccentForPath(pathname);
+  const tabBarActiveColor =
+    tabBarAccent === "purple" ? colors.accent : colors.secondary;
 
   useEffect(() => {
     if (!profile?.eula_accepted || !profile.username) return;
@@ -102,63 +106,104 @@ const LayoutContent = () => {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.accent,
-        headerTitleStyle: {
-          color: colors.text,
-          fontFamily: fonts.bold,
-          fontSize: 17,
-        },
-        tabBarActiveTintColor: colors.tabBarActive,
-        tabBarStyle: { backgroundColor: colors.tabBar },
-        sceneStyle: { backgroundColor: colors.background },
+    <NativeTabs
+      tintColor={tabBarActiveColor}
+      backgroundColor={colors.tabBar}
+      shadowColor={colors.divider}
+      iconColor={{
+        default: colors.tabBarInactive,
+        selected: tabBarActiveColor,
       }}
-      tabBar={(props) => <TabBar {...props} />}
+      labelStyle={{
+        default: {
+          fontFamily: fonts.medium,
+          fontSize: 11,
+          color: colors.tabBarInactive,
+        },
+        selected: {
+          fontFamily: fonts.semibold,
+          fontSize: 11,
+          color: tabBarActiveColor,
+        },
+      }}
+      minimizeBehavior="onScrollDown"
     >
-      <Tabs.Screen
+      <NativeTabs.Trigger
         name="(home)"
-        options={{
-          title: "Feed",
-          headerShown: false,
-          tabBarIcon: ({ size, color }) => (
-            <MartiniIcon size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
+        accessibilityLabel="Feed"
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon
+          src={{
+            default: (
+              <NativeTabs.Trigger.VectorIcon
+                family={Ionicons}
+                name="wine-outline"
+              />
+            ),
+            selected: (
+              <NativeTabs.Trigger.VectorIcon family={Ionicons} name="wine" />
+            ),
+          }}
+          md={{ default: "local_bar", selected: "local_bar" }}
+        />
+        <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="(places)"
-        options={{
-          title: "Places",
-          headerShown: false,
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="location-outline" size={size} color={color} />
-          ),
+        accessibilityLabel="Places"
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={MaterialIcons}
+              name="location-on"
+            />
+          }
+        />
+        <NativeTabs.Trigger.Label>Places</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
+        name="(review)"
+        disabled
+        accessibilityLabel="Log a martini"
+        listeners={{
+          tabPress: () => {
+            router.push(routes.review());
+          },
         }}
-      />
-      <Tabs.Screen
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "plus.circle", selected: "plus.circle.fill" }}
+          md={{ default: "add_circle_outline", selected: "add_circle" }}
+        />
+        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="(discover)"
-        options={{
-          title: "Discover",
-          headerShown: false,
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="search-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
+        accessibilityLabel="Discover"
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+        <NativeTabs.Trigger.Label>Discover</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="(profile)"
-        options={{
-          title: "Profile",
-          headerShown: false,
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+        accessibilityLabel="Profile"
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon
+          sf={{
+            default: "person.crop.circle",
+            selected: "person.crop.circle.fill",
+          }}
+          md="account_circle"
+        />
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 };
 

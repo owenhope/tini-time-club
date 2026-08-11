@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
+import { siteAuthor, siteShareImage } from "@/lib/seo";
 
 const gettingStarted = [
   "Download Tini Time Club from the App Store.",
@@ -75,8 +77,40 @@ const faqs = [
 ];
 
 export const metadata: Metadata = {
-  title: "Support | Tini Time Club",
+  title: "iPhone App Support | Tini Time Club",
   description: "Support, account help, and app information for Tini Time Club.",
+  alternates: {
+    canonical: "https://tinitimeclub.com/support",
+  },
+  openGraph: {
+    siteName: "Tini Time Club",
+    type: "website",
+    url: "https://tinitimeclub.com/support",
+    title: "iPhone App Support | Tini Time Club",
+    description:
+      "Support, account help, and app information for Tini Time Club.",
+    images: [siteShareImage],
+  },
+};
+
+const supportJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  name: "iPhone App Support | Tini Time Club",
+  url: "https://tinitimeclub.com/support",
+  description: "Support, account help, and app information for Tini Time Club.",
+  datePublished: "2026-08-11",
+  dateModified: "2026-08-11",
+  author: siteAuthor,
+  publisher: siteAuthor,
+  mainEntity: [...appFeatures, ...faqs].map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
 };
 
 function QuestionAnswer({
@@ -97,6 +131,7 @@ function QuestionAnswer({
 export default function SupportPage() {
   return (
     <main className="min-h-screen bg-[#f8f5ef] text-emerald-950">
+      <JsonLd data={supportJsonLd} />
       <div className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
         <p className="text-sm font-bold uppercase text-emerald-800">
           tini time club<span className="text-violet-600">.</span>

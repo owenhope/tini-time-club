@@ -36,6 +36,7 @@ import Search from "@/components/map/search";
 import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError, warn } from "@/utils/log";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
 import {
   getClusterPressRegion,
@@ -54,6 +55,7 @@ const INITIAL_REGION: Region = {
 };
 
 const SHEET_HEIGHT = 240;
+const SHEET_CONTENT_BOTTOM_PADDING = 16;
 const FETCH_DEBOUNCE_MS = 250;
 const FETCH_PADDING = 0.35;
 const CLUSTER_FIT_PADDING = 1.8;
@@ -142,6 +144,7 @@ function Map() {
   const styles = useStyles();
   const { isDark } = useTheme();
   const params = useLocalSearchParams();
+  const tabBarContentInset = useNativeTabBarContentInset();
   const screenshotSeed = getScreenshotSeed(
     params.screenshotSeed as string | string[] | undefined
   );
@@ -172,6 +175,11 @@ function Map() {
   >(null);
   const [regularsSheetOpen, setRegularsSheetOpen] = useState(false);
   const sheetRef = useRef<BottomSheet>(null);
+  const sheetCoveredHeight = SHEET_HEIGHT + tabBarContentInset;
+  const sheetSnapPoints = useMemo(
+    () => [sheetCoveredHeight],
+    [sheetCoveredHeight]
+  );
 
   const selectedLocation = useMemo(
     () =>
@@ -199,7 +207,7 @@ function Map() {
         : regionRef.current;
       const sheetLatitudeOffset =
         mapHeight > 0
-          ? baseRegion.latitudeDelta * (SHEET_HEIGHT / (2 * mapHeight))
+          ? baseRegion.latitudeDelta * (sheetCoveredHeight / (2 * mapHeight))
           : 0;
       const centeredRegion = {
         ...baseRegion,
@@ -212,7 +220,7 @@ function Map() {
       setRegularsSheetOpen(false);
       setSelectedLocationId(location.id);
     },
-    []
+    [sheetCoveredHeight]
   );
 
   useEffect(() => {
@@ -570,7 +578,7 @@ function Map() {
         <BottomSheet
           ref={sheetRef}
           index={-1}
-          snapPoints={[SHEET_HEIGHT]}
+          snapPoints={sheetSnapPoints}
           enableDynamicSizing={false}
           enablePanDownToClose
           onClose={() => {
@@ -581,7 +589,15 @@ function Map() {
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.sheetHandle}
         >
-          <BottomSheetView style={styles.sheetContent}>
+          <BottomSheetView
+            style={[
+              styles.sheetContent,
+              {
+                paddingBottom:
+                  SHEET_CONTENT_BOTTOM_PADDING + tabBarContentInset,
+              },
+            ]}
+          >
             {selectedLocation && (
               <LocationDetails
                 loc={selectedLocation}
@@ -695,7 +711,7 @@ const useStyles = makeStyles((t) => ({
   sheetContent: {
     flex: 1,
     paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: t.spacing.lg,
+    paddingBottom: SHEET_CONTENT_BOTTOM_PADDING,
   },
 }));
 

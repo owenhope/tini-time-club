@@ -32,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "3.0.1",
+    version: "3.1.0",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
@@ -112,6 +112,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       [
+        "expo-tracking-transparency",
+        {
+          userTrackingPermission:
+            "Allow Tini Time Club to use your app activity to measure and improve the app experience.",
+        },
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme:
@@ -124,6 +131,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           appleSignInEnabled: true,
         },
       ],
+      "@sentry/react-native",
       ["expo-localization"],
       "expo-secure-store",
     ],
