@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Figtree, DM_Mono } from "next/font/google";
-import { siteShareImage } from "@/lib/seo";
+import { siteDescription, siteShareImage } from "@/lib/seo";
 import "./globals.css";
 
 // Figtree stands in for the wordmark's geometric grotesque; DM Mono for
@@ -23,7 +23,7 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://tinitimeclub.com"),
   title: "Martini Review App | Tini Time Club",
-  description: "Martini reviews from Tini Time Club.",
+  description: siteDescription,
   authors: [
     {
       name: "Hope Media House Inc.",
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://tinitimeclub.com/",
     title: "Martini Review App | Tini Time Club",
-    description: "Martini reviews from Tini Time Club.",
+    description: siteDescription,
     images: [siteShareImage],
   },
   twitter: {
     card: "summary_large_image",
     title: "Martini Review App | Tini Time Club",
-    description: "Martini reviews from Tini Time Club.",
+    description: siteDescription,
     images: ["/tini-time-share.png"],
   },
 };

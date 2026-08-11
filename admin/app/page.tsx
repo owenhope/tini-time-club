@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
-import { siteAuthor } from "@/lib/seo";
+import PublicHeader from "@/components/PublicHeader";
+import {
+  createBreadcrumbList,
+  siteAuthor,
+  siteDescription,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
   alternates: {
@@ -15,7 +19,7 @@ const homeJsonLd = {
   "@type": "WebSite",
   name: "Tini Time Club",
   url: "https://tinitimeclub.com/",
-  description: "Martini reviews from Tini Time Club.",
+  description: siteDescription,
   datePublished: "2026-08-11",
   dateModified: "2026-08-11",
   author: siteAuthor,
@@ -26,6 +30,13 @@ const homeJsonLd = {
     applicationCategory: "LifestyleApplication",
     operatingSystem: "iOS",
   },
+};
+
+const homeBreadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  ...createBreadcrumbList([
+    { name: "Tini Time Club", url: "https://tinitimeclub.com/" },
+  ]),
 };
 
 const features = [
@@ -60,52 +71,42 @@ export default function PublicHomePage() {
   return (
     <main className="min-h-screen bg-[#FAF9F6] text-emerald-950">
       <JsonLd data={homeJsonLd} />
+      <JsonLd data={homeBreadcrumbJsonLd} />
       <section className="min-h-svh overflow-hidden bg-violet-600 text-white">
-        <div className="mx-auto flex min-h-svh max-w-6xl flex-col px-5 py-5 sm:px-6 lg:px-8">
-          <header className="flex items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <span className="text-base font-black tracking-tight text-white sm:text-lg">
-                tini time club
-              </span>
-            </Link>
-            <Link
-              href="/support"
-              className="rounded-md border border-white/25 px-3 py-2 text-sm font-bold text-white transition hover:border-white/50 hover:bg-white/10"
-            >
-              Support
-            </Link>
-          </header>
-
+        <div className="flex min-h-svh flex-col">
+          <PublicHeader tone="purple" />
           <div className="flex flex-1 items-center py-14">
-            <div className="max-w-3xl">
+            <div className="mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8">
               <p className="inline-flex rounded-[6px] bg-chartreuse px-3 py-2 font-mono text-xs font-black uppercase tracking-[0.18em] text-emerald-950 shadow-sm shadow-emerald-950/15">
                 Sip, score, share, repeat
               </p>
               <h1 className="mt-5 text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
                 Tini Time Club
               </h1>
-              <p className="mt-5 max-w-2xl text-xl leading-8 text-white/78">
-                The Martini review app for remembering every pour, every place,
-                and every person worth coming back to.
-              </p>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
-                Log the bar, photo, notes, and ratings in seconds. Build a
-                personal shortlist, follow friends, and find the next round with
-                a little more confidence.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href="https://apps.apple.com/app/tini-time-club/id6741620393"
-                  className="rounded-md bg-white px-5 py-3 text-sm font-black text-violet-600 shadow-lg shadow-emerald-950/20 transition hover:bg-chartreuse"
-                >
-                  Download for iPhone
-                </a>
-                <a
-                  href="#club"
-                  className="rounded-md border border-white/25 px-5 py-3 text-sm font-bold text-white transition hover:border-white/50 hover:bg-white/10"
-                >
-                  See how it works
-                </a>
+              <div className="max-w-3xl">
+                <p className="mt-5 max-w-2xl text-xl leading-8 text-white/78">
+                  The Martini review app for remembering every pour, every
+                  place, and every person worth coming back to.
+                </p>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
+                  Log the bar, photo, notes, and ratings in seconds. Build a
+                  personal shortlist, follow friends, and find the next round
+                  with a little more confidence.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <a
+                    href="https://apps.apple.com/app/tini-time-club/id6741620393"
+                    className="rounded-md bg-white px-5 py-3 text-sm font-black text-violet-600 shadow-lg shadow-emerald-950/20 transition hover:bg-chartreuse"
+                  >
+                    Download for iPhone
+                  </a>
+                  <a
+                    href="#club"
+                    className="rounded-md border border-white/25 px-5 py-3 text-sm font-bold text-white transition hover:border-white/50 hover:bg-white/10"
+                  >
+                    See how it works
+                  </a>
+                </div>
               </div>
             </div>
           </div>

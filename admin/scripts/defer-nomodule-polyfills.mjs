@@ -2,7 +2,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const outputDirs = [
-  join(process.cwd(), ".next/server/app"),
+  join(process.cwd(), ".next/server"),
   join(process.cwd(), ".vercel/output"),
   "/vercel/output",
 ];

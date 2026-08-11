@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
+import PublicHeader from "@/components/PublicHeader";
 import { siteAuthor, siteShareImage } from "@/lib/seo";
+
+const description =
+  "Support for Tini Time Club covering iPhone setup, reviews, profiles, locations, notifications, account deletion, and reporting.";
 
 const gettingStarted = [
   "Download Tini Time Club from the App Store.",
@@ -78,7 +82,7 @@ const faqs = [
 
 export const metadata: Metadata = {
   title: "iPhone App Support | Tini Time Club",
-  description: "Support, account help, and app information for Tini Time Club.",
+  description,
   alternates: {
     canonical: "https://tinitimeclub.com/support",
   },
@@ -87,8 +91,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://tinitimeclub.com/support",
     title: "iPhone App Support | Tini Time Club",
-    description:
-      "Support, account help, and app information for Tini Time Club.",
+    description,
     images: [siteShareImage],
   },
 };
@@ -98,7 +101,7 @@ const supportJsonLd = {
   "@type": "FAQPage",
   name: "iPhone App Support | Tini Time Club",
   url: "https://tinitimeclub.com/support",
-  description: "Support, account help, and app information for Tini Time Club.",
+  description,
   datePublished: "2026-08-11",
   dateModified: "2026-08-11",
   author: siteAuthor,
@@ -132,47 +135,56 @@ export default function SupportPage() {
   return (
     <main className="min-h-screen bg-[#f8f5ef] text-emerald-950">
       <JsonLd data={supportJsonLd} />
-      <div className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
-        <p className="text-sm font-bold uppercase text-emerald-800">
-          tini time club<span className="text-violet-600">.</span>
-        </p>
-        <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
-          Support
-        </h1>
-        <p className="mt-5 text-lg leading-8 text-emerald-900/72">
-          Tini Time Club helps you review and discover great martinis. Log your
-          sips, rate Taste and Presentation, add photos, and find new spots.
-        </p>
+      <section className="bg-violet-600 text-white">
+        <PublicHeader tone="purple" />
+        <div className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8">
+          <p className="inline-flex rounded-[6px] bg-chartreuse px-3 py-2 font-mono text-xs font-black uppercase tracking-[0.18em] text-emerald-950 shadow-sm shadow-emerald-950/15">
+            Help center
+          </p>
+          <h1 className="mt-5 max-w-3xl text-5xl font-black tracking-tight text-white sm:text-6xl">
+            Support
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-white/76">
+            Tini Time Club helps you review and discover great martinis. Log
+            your sips, rate Taste and Presentation, add photos, and find new
+            spots.
+          </p>
+        </div>
+      </section>
 
-        <section className="mt-10 border-t border-emerald-950/12 pt-5">
+      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-6 sm:py-18 lg:px-8">
+        <section className="grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">
             Contact and response time
           </h2>
-          <p className="mt-3 leading-7 text-emerald-950/72">
+          <p className="leading-7 text-emerald-950/72">
             Email{" "}
-            <a className="font-bold underline" href="mailto:support@hopemediahouse.com">
+            <a
+              className="font-bold underline"
+              href="mailto:support@hopemediahouse.com"
+            >
               support@hopemediahouse.com
             </a>
             . We typically reply within 1-2 business days.
           </p>
         </section>
 
-        <section className="mt-10">
+        <section className="mt-10 grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">
             Getting started
           </h2>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 leading-7 text-emerald-950/72">
+          <ol className="list-decimal space-y-2 pl-5 leading-7 text-emerald-950/72">
             {gettingStarted.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ol>
         </section>
 
-        <section className="mt-10">
+        <section className="mt-10 grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">
             Using the app
           </h2>
-          <div className="mt-2">
+          <div>
             {appFeatures.map((item) => (
               <QuestionAnswer
                 key={item.question}
@@ -183,9 +195,9 @@ export default function SupportPage() {
           </div>
         </section>
 
-        <section className="mt-10">
+        <section className="mt-10 grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">FAQs</h2>
-          <div className="mt-2">
+          <div>
             {faqs.map((item) => (
               <QuestionAnswer
                 key={item.question}
@@ -196,60 +208,64 @@ export default function SupportPage() {
           </div>
         </section>
 
-        <section className="mt-10">
+        <section className="mt-10 grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">
             Account and data
           </h2>
-          <QuestionAnswer
-            question="How do I request a copy of my data?"
-            answer="Email support@hopemediahouse.com with the subject: Tini Time Club - Data Export."
-          />
-          <QuestionAnswer
-            question="How do I delete my account?"
-            answer="You can delete your account in Settings, then Delete Account. You can also email support@hopemediahouse.com from the address on your account with the subject: Tini Time Club - Delete My Account. We will confirm and complete deletion within 30 days."
-          />
+          <div>
+            <QuestionAnswer
+              question="How do I request a copy of my data?"
+              answer="Email support@hopemediahouse.com with the subject: Tini Time Club - Data Export."
+            />
+            <QuestionAnswer
+              question="How do I delete my account?"
+              answer="You can delete your account in Settings, then Delete Account. You can also email support@hopemediahouse.com from the address on your account with the subject: Tini Time Club - Delete My Account. We will confirm and complete deletion within 30 days."
+            />
+          </div>
         </section>
 
-        <section className="mt-10">
+        <section className="mt-10 grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]">
           <h2 className="text-sm font-bold uppercase text-violet-700">
             Privacy, safety, and legal
           </h2>
-          <QuestionAnswer
-            question="Where can I read the Privacy Policy?"
-            answer={
-              <>
-                Read our{" "}
-                <Link className="font-bold underline" href="/privacy">
-                  Privacy Policy
-                </Link>
-                .
-              </>
-            }
-          />
-          <QuestionAnswer
-            question="How is content moderated?"
-            answer="We remove content that is abusive, hateful, spammy, or illegal. Report issues via the in-app report option or by emailing support@hopemediahouse.com."
-          />
-          <QuestionAnswer
-            question="How do I report an accessibility issue?"
-            answer="If you encounter any accessibility barriers, tell us at support@hopemediahouse.com. We will work with you on a fix or workaround."
-          />
-          <QuestionAnswer
-            question="Where can I read the Terms of Use?"
-            answer={
-              <>
-                Read our{" "}
-                <Link className="font-bold underline" href="/terms">
-                  Terms of Service
-                </Link>
-                .
-              </>
-            }
-          />
-          <p className="border-t border-emerald-950/12 pt-5 text-sm leading-6 text-emerald-950/65">
-            Tini Time Club is a trademark of Hope Media House. &copy; Hope
-            Media House.
-          </p>
+          <div>
+            <QuestionAnswer
+              question="Where can I read the Privacy Policy?"
+              answer={
+                <>
+                  Read our{" "}
+                  <Link className="font-bold underline" href="/privacy">
+                    Privacy Policy
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <QuestionAnswer
+              question="How is content moderated?"
+              answer="We remove content that is abusive, hateful, spammy, or illegal. Report issues via the in-app report option or by emailing support@hopemediahouse.com."
+            />
+            <QuestionAnswer
+              question="How do I report an accessibility issue?"
+              answer="If you encounter any accessibility barriers, tell us at support@hopemediahouse.com. We will work with you on a fix or workaround."
+            />
+            <QuestionAnswer
+              question="Where can I read the Terms of Use?"
+              answer={
+                <>
+                  Read our{" "}
+                  <Link className="font-bold underline" href="/terms">
+                    Terms of Service
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <p className="border-t border-emerald-950/12 pt-5 text-sm leading-6 text-emerald-950/65">
+              Tini Time Club is a trademark of Hope Media House. &copy; Hope
+              Media House.
+            </p>
+          </div>
         </section>
       </div>
 

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import PublicFooter from "@/components/PublicFooter";
+import PublicHeader from "@/components/PublicHeader";
 
 export interface LegalSection {
   title: string;
@@ -25,47 +25,58 @@ export default function PublicLegalPage({
   sections,
 }: PublicLegalPageProps) {
   return (
-    <main className="min-h-screen bg-stone-50 text-emerald-950">
-      <section className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
-        <Link
-          href="/support"
-          className="text-sm font-bold text-emerald-800 transition hover:text-emerald-950"
-        >
-          Tini Time Club
-        </Link>
-        <p className="mt-8 text-sm font-bold uppercase text-violet-700">
-          {eyebrow}
-        </p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-          {title}
-        </h1>
-        <div className="mt-5 space-y-1 text-sm font-semibold text-emerald-950/65">
-          <p>Effective Date: {effectiveDate}</p>
-          <p>
-            Contact:{" "}
-            <a className="underline" href={`mailto:${contactEmail}`}>
-              {contactEmail}
-            </a>
+    <main className="min-h-screen bg-[#f8f5ef] text-emerald-950">
+      <section className="bg-violet-600 text-white">
+        <PublicHeader tone="purple" />
+        <div className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8">
+          <p className="inline-flex rounded-[6px] bg-chartreuse px-3 py-2 font-mono text-xs font-black uppercase tracking-[0.18em] text-emerald-950 shadow-sm shadow-emerald-950/15">
+            {eyebrow}
+          </p>
+          <h1 className="mt-5 max-w-3xl text-5xl font-black tracking-tight text-white sm:text-6xl">
+            {title}
+          </h1>
+          <div className="mt-5 space-y-1 text-sm font-semibold text-white/70">
+            <p>Effective Date: {effectiveDate}</p>
+            <p>
+              Contact:{" "}
+              <a
+                className="font-bold text-white underline"
+                href={`mailto:${contactEmail}`}
+              >
+                {contactEmail}
+              </a>
+            </p>
+          </div>
+          <p className="mt-8 max-w-3xl text-lg leading-8 text-white/76">
+            {intro}
           </p>
         </div>
-        <p className="mt-8 text-lg leading-8 text-emerald-950/75">{intro}</p>
+      </section>
 
-        <div className="mt-10 space-y-9">
+      <section className="mx-auto max-w-6xl px-5 py-14 sm:px-6 sm:py-18 lg:px-8">
+        <div className="space-y-9">
           {sections.map((section) => (
-            <section key={section.title}>
-              <h2 className="text-xl font-black">{section.title}</h2>
-              {section.body ? (
-                <p className="mt-3 leading-7 text-emerald-950/75">
-                  {section.body}
-                </p>
-              ) : null}
-              {section.items ? (
-                <ul className="mt-3 list-disc space-y-2 pl-5 leading-7 text-emerald-950/75">
-                  {section.items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : null}
+            <section
+              key={section.title}
+              className="grid gap-4 border-t border-emerald-950/12 pt-6 md:grid-cols-[0.45fr_1fr]"
+            >
+              <h2 className="text-xl font-black text-emerald-950 md:max-w-xs">
+                {section.title}
+              </h2>
+              <div>
+                {section.body ? (
+                  <p className="leading-7 text-emerald-950/75">
+                    {section.body}
+                  </p>
+                ) : null}
+                {section.items ? (
+                  <ul className="list-disc space-y-2 pl-5 leading-7 text-emerald-950/75">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             </section>
           ))}
         </div>

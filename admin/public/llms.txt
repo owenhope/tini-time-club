@@ -1,0 +1,19 @@
+# Tini Time Club
+
+> Tini Time Club is an iPhone app for reviewing Martinis, saving favorite locations, and sharing trusted recommendations with friends and followers.
+
+This file points agents and language models to the public pages that explain Tini Time Club, its publisher, support resources, and legal policies. The canonical website is https://tinitimeclub.com.
+
+## Public Pages
+
+- [Tini Time Club homepage](https://tinitimeclub.com/): Product overview for the Martini review app, including core features and the iOS download link.
+- [About Hope Media House](https://tinitimeclub.com/about): Publisher information, editorial responsibility, and contact context for Tini Time Club.
+- [Support](https://tinitimeclub.com/support): App support, account help, feature answers, reporting guidance, and accessibility contact information.
+- [Privacy Policy](https://tinitimeclub.com/privacy): How Hope Media House Inc. collects, uses, shares, and protects information for Tini Time Club.
+- [Terms of Service](https://tinitimeclub.com/terms): Terms, community guidelines, user content rules, and legal conditions for using Tini Time Club.
+
+## Optional
+
+- [App Store listing](https://apps.apple.com/us/app/tini-time-club-martini-finder/id6741620393): Official iOS listing for Tini Time Club.
+- [Sitemap](https://tinitimeclub.com/sitemap.xml): XML sitemap for crawler discovery.
+- [Robots policy](https://tinitimeclub.com/robots.txt): Crawl policy for the public website.
