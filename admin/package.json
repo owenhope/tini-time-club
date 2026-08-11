@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/defer-nomodule-polyfills.mjs",
+    "vercel-build": "npm run build",
     "start": "next start",
     "lint": "eslint"
   },
