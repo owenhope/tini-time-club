@@ -33,7 +33,7 @@ import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
-import { shareLocationViaSheet } from "@/utils/locationShare";
+import { useLocationShareMenu } from "@/hooks/useLocationShareMenu";
 
 // Helper function to format price level
 
@@ -118,6 +118,7 @@ const Location = () => {
   }`;
   const hasRating = displayLocation?.rating != null && reviewCount > 0;
   const regularPreview = regulars.slice(0, 3);
+  const shareLocation = useLocationShareMenu(displayLocation);
 
   /**
    * The two controls the venue carries, in the order the drawing puts them.
@@ -131,7 +132,7 @@ const Location = () => {
       {
         icon: "paper-plane-outline",
         accessibilityLabel: `Share ${displayLocation.name}`,
-        onPress: () => void shareLocationViaSheet(displayLocation),
+        onPress: shareLocation,
       },
       {
         icon: "information-circle-outline",
@@ -168,7 +169,7 @@ const Location = () => {
     }
 
     return actions;
-  }, [displayLocation, router]);
+  }, [displayLocation, router, shareLocation]);
 
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {

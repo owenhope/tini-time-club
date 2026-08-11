@@ -31,7 +31,7 @@ export async function generateMetadata({
     score == null
       ? "Open this Tini Time Club review."
       : `Taste ${review.taste}/5 · Presentation ${review.presentation}/5 on Tini Time Club.`;
-  const image = `${PUBLIC_ORIGIN}/tini-time-logo.png`;
+  const image = `${PUBLIC_ORIGIN}/tini-time-share.png`;
 
   return {
     title,
@@ -48,14 +48,14 @@ export async function generateMetadata({
       images: [
         {
           url: image,
-          width: 200,
-          height: 200,
-          alt: "Tini Time Club logo",
+          width: 1200,
+          height: 630,
+          alt: "Tini Time Club logo on the brand splash color",
         },
       ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
       images: [image],
@@ -79,7 +79,7 @@ export default async function PublicReviewPage({
   const canonicalUrl = `${PUBLIC_ORIGIN}/r/${encodeURIComponent(review.id)}`;
 
   return (
-    <main className="min-h-screen bg-[#f8f5ef] text-[#08261f]">
+    <main className="min-h-screen bg-[#FAF9F6] text-[#1C3A2E]">
       <OpenInAppAttempt url={appUrl} />
 
       <div className="mx-auto flex min-h-screen max-w-[430px] flex-col sm:px-4 sm:py-5">

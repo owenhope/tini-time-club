@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function PublicShareHeader({ appUrl }: { appUrl: string }) {
   return (
     <>
-      <header className="flex items-center justify-between bg-[#f8f5ef] px-[10px] py-2 sm:mb-3">
+      <header className="flex items-center justify-between bg-[#FAF9F6] px-[10px] py-2 sm:mb-3">
         <Link href="/" aria-label="Tini Time Club">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -16,13 +16,13 @@ export default function PublicShareHeader({ appUrl }: { appUrl: string }) {
         </Link>
         <a
           href={appUrl}
-          className="text-sm font-bold text-[#08261f] underline-offset-4 hover:underline"
+          className="rounded-full bg-[#6B53A8] px-3 py-1.5 text-sm font-black text-[#FAF9F6] shadow-[0_1px_0_rgba(28,58,46,0.12)] transition hover:bg-[#54408A]"
         >
           Join the Club
         </a>
       </header>
 
-      <p className="bg-[#B6A3E2] px-3 py-1.5 text-center text-xs font-bold text-white sm:mb-3">
+      <p className="bg-[#B6A3E2] px-3 py-1.5 text-center text-xs font-bold text-[#1C3A2E] sm:mb-3">
         Sip, snap, review, repeat. Welcome to the club.
       </p>
     </>

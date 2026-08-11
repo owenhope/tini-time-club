@@ -1,17 +1,28 @@
 import type { ReviewShareFormat } from "@/utils/routes";
+import type { ShareDestination } from "@/utils/shareDestinations";
 
 export type ReviewShareMenuAction =
-  { label: string; format: ReviewShareFormat } | { label: string; link: true };
+  | {
+      label: string;
+      destination: Extract<
+        ShareDestination,
+        "instagram_story" | "instagram_post"
+      >;
+      format: ReviewShareFormat;
+    }
+  | {
+      label: string;
+      destination: Extract<
+        ShareDestination,
+        "whatsapp" | "message" | "copy_link"
+      >;
+    };
 
-/** Keeps ownership and photo eligibility out of the presentation layer. */
-export const getReviewShareMenuActions = (
-  hasPhoto: boolean
-): ReviewShareMenuAction[] => [
-  ...(hasPhoto
-    ? ([
-        { label: "Instagram Story", format: "story" },
-        { label: "Instagram Post", format: "post" },
-      ] satisfies ReviewShareMenuAction[])
-    : []),
-  { label: "Share Link", link: true },
+/** Keeps review share destinations consistent everywhere a review can share. */
+export const getReviewShareMenuActions = (): ReviewShareMenuAction[] => [
+  { label: "Instagram Story", destination: "instagram_story", format: "story" },
+  { label: "Instagram Post", destination: "instagram_post", format: "post" },
+  { label: "WhatsApp", destination: "whatsapp" },
+  { label: "Message", destination: "message" },
+  { label: "Copy Link", destination: "copy_link" },
 ];

@@ -31,6 +31,8 @@ export interface PublicLocation {
   id: string;
   name: string;
   address: string | null;
+  lat: number | null;
+  lon: number | null;
   rating: number | null;
   taste_avg: number | null;
   presentation_avg: number | null;
@@ -48,7 +50,9 @@ export const fetchPublicLocation = async (
   const client = supabaseAdmin();
   const { data: location, error: locationError } = await client
     .from("location_ratings")
-    .select("id,name,address,rating,taste_avg,presentation_avg,total_ratings")
+    .select(
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+    )
     .eq("id", locationId)
     .single();
 
@@ -129,6 +133,8 @@ export const fetchPublicLocation = async (
     id: String(location.id),
     name: String(location.name),
     address: location.address ?? null,
+    lat: location.lat == null ? null : Number(location.lat),
+    lon: location.lon == null ? null : Number(location.lon),
     rating: location.rating == null ? null : Number(location.rating),
     taste_avg: location.taste_avg == null ? null : Number(location.taste_avg),
     presentation_avg:

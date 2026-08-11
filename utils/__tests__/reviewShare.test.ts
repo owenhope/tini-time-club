@@ -8,6 +8,10 @@ jest.mock("react-native", () => ({
   Share: {},
 }));
 
+jest.mock("expo-clipboard", () => ({
+  setStringAsync: jest.fn(),
+}));
+
 jest.mock("@/utils/supabase", () => ({
   supabase: { rpc: jest.fn() },
 }));

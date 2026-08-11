@@ -41,6 +41,7 @@ import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { ThemeProvider, fonts, useTheme } from "@/theme";
+import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
 import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
@@ -142,7 +143,9 @@ function RootLayout() {
             editor are presented over the tabs from the root stack, and they
             need the same signed-in member the tabs do. */}
         <ProfileProvider>
-          <RootLayoutNav />
+          <ShareMenuProvider>
+            <RootLayoutNav />
+          </ShareMenuProvider>
         </ProfileProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

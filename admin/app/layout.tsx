@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     description: "Martini reviews from Tini Time Club.",
     images: [
       {
-        url: "/nightlife-martini-table.png",
+        url: "/tini-time-share.png",
         width: 1200,
-        height: 1200,
-        alt: "Martinis on a low-lit table",
+        height: 630,
+        alt: "Tini Time Club logo on the brand splash color",
       },
     ],
   },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tini Time Club",
     description: "Martini reviews from Tini Time Club.",
-    images: ["/nightlife-martini-table.png"],
+    images: ["/tini-time-share.png"],
   },
 };
 

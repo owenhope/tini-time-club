@@ -15,6 +15,7 @@ import {
 import { syncFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
+import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,6 +33,9 @@ const LayoutContent = () => {
   const router = useRouter();
   const pathname = usePathname();
   const isOnboardingLocationPicker = pathname === "/favorite-location";
+  const tabBarAccent = getTabBarAccentForPath(pathname);
+  const tabBarActiveColor =
+    tabBarAccent === "purple" ? colors.accent : colors.secondary;
 
   useEffect(() => {
     if (!profile?.eula_accepted || !profile.username) return;
@@ -103,12 +107,12 @@ const LayoutContent = () => {
 
   return (
     <NativeTabs
-      tintColor={colors.tabBarActive}
+      tintColor={tabBarActiveColor}
       backgroundColor={colors.tabBar}
       shadowColor={colors.divider}
       iconColor={{
         default: colors.tabBarInactive,
-        selected: colors.tabBarActive,
+        selected: tabBarActiveColor,
       }}
       labelStyle={{
         default: {
@@ -119,7 +123,7 @@ const LayoutContent = () => {
         selected: {
           fontFamily: fonts.semibold,
           fontSize: 11,
-          color: colors.tabBarActive,
+          color: tabBarActiveColor,
         },
       }}
       minimizeBehavior="onScrollDown"

@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image as ExpoImage } from "expo-image";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { OLIVE_ICON_COLOR, RatingPips } from "@/components/shared";
 import type { Review } from "@/types/types";
 import { fonts } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
@@ -42,14 +42,9 @@ interface ReviewShareCardProps {
 
 const CARD = {
   ink: "#10241B",
-  inkRaised: "#183328",
   paper: "#FAF9F6",
-  sage: "#8EC4AC",
   purple: "#B6A3E2",
-  purpleDeep: "#6B53A8",
-  purplePale: "#EDE7F8",
   chartreuse: "#F2FF71",
-  border: "rgba(250,249,246,0.22)",
 } as const;
 
 const clamp = (value: number, min: number, max: number) => {
@@ -78,8 +73,7 @@ const ReviewShareCard = ({
   const maxOffsetY = useSharedValue(0);
 
   const artworkScale = width / 360;
-  const panelHeight = height * (format === "story" ? 0.4 : 0.54);
-  const photoFrameHeight = height - panelHeight;
+  const photoFrameHeight = height;
   const imageSize = useMemo(
     () =>
       imageAspect
@@ -203,6 +197,10 @@ const ReviewShareCard = ({
   }));
 
   const panelPadding = (format === "story" ? 20 : 17) * artworkScale;
+  const sideMetricGap = 12 * artworkScale;
+  const sideMetricWidth = 96 * artworkScale;
+  const overallMetricWidth = 82 * artworkScale;
+  const logoSize = (format === "story" ? 58 : 48) * artworkScale;
   const cityCountry = review.location?.address
     ? formatCityRegion(
         stripNameFromAddress(review.location.name, review.location.address)
@@ -212,7 +210,11 @@ const ReviewShareCard = ({
   const spiritColors = getReviewTagColors(review.spirit?.name);
   const typeColors = getReviewTagColors(review.type?.name);
   const chipFontSize = 12 * artworkScale;
-  const ratingPipSize = 14 * artworkScale;
+  const headline =
+    review.location?.name || `${review.profile?.username ?? "TTC"} review`;
+  const username = review.profile?.username
+    ? `@${review.profile.username}`
+    : "@tinitimeclub";
 
   return (
     <GestureDetector gesture={photoGesture}>
@@ -250,12 +252,37 @@ const ReviewShareCard = ({
           />
         </Animated.View>
 
-        <View
+        <Svg
           pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          width={width}
+          height={height}
+        >
+          <Defs>
+            <LinearGradient id="sharePhotoShade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#000000" stopOpacity={0.02} />
+              <Stop offset="0.36" stopColor="#000000" stopOpacity={0.08} />
+              <Stop offset="0.62" stopColor="#000000" stopOpacity={0.58} />
+              <Stop offset="1" stopColor="#000000" stopOpacity={0.92} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#sharePhotoShade)" />
+        </Svg>
+
+        <ExpoImage
+          pointerEvents="none"
+          source={require("@/assets/images/icon-purple.png")}
           style={[
-            styles.photoShade,
-            { height: Math.max(panelHeight * 0.5, 110 * artworkScale) },
+            styles.logo,
+            {
+              top: 18 * artworkScale,
+              left: 18 * artworkScale,
+              width: logoSize,
+              height: logoSize,
+              borderRadius: 10 * artworkScale,
+            },
           ]}
+          contentFit="cover"
         />
 
         <View
@@ -323,31 +350,11 @@ const ReviewShareCard = ({
         <View
           pointerEvents="none"
           style={[
-            styles.photoLogo,
+            styles.content,
             {
-              top: 0,
-              left: 0,
-              width: 78 * artworkScale,
-              height: 78 * artworkScale,
-              borderBottomRightRadius: 11 * artworkScale,
-            },
-          ]}
-        >
-          <ExpoImage
-            source={require("@/assets/images/icon-purple.png")}
-            style={{ width: 78 * artworkScale, height: 78 * artworkScale }}
-            contentFit="cover"
-          />
-        </View>
-
-        <View
-          pointerEvents="none"
-          style={[
-            styles.panel,
-            {
-              height: panelHeight,
-              padding: panelPadding,
-              gap: 6 * artworkScale,
+              paddingHorizontal: panelPadding,
+              paddingBottom: (format === "story" ? 22 : 18) * artworkScale,
+              gap: 10 * artworkScale,
             },
           ]}
         >
@@ -356,35 +363,35 @@ const ReviewShareCard = ({
             style={[
               styles.username,
               {
-                fontSize: 12 * artworkScale,
-                lineHeight: 15 * artworkScale,
+                fontSize: 15 * artworkScale,
+                lineHeight: 19 * artworkScale,
               },
             ]}
           >
-            @{review.profile?.username || "tinitimeclub"}
+            {username}
           </Text>
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.65}
             style={[
-              styles.venue,
+              styles.headline,
               {
                 fontSize: 28 * artworkScale,
-                lineHeight: 31 * artworkScale,
+                lineHeight: 32 * artworkScale,
               },
             ]}
           >
-            {review.location?.name || "Martini review"}
+            {headline}
           </Text>
           {cityCountry ? (
             <Text
               numberOfLines={1}
               style={[
-                styles.city,
+                styles.meta,
                 {
-                  fontSize: 12 * artworkScale,
-                  lineHeight: 16 * artworkScale,
+                  fontSize: 14 * artworkScale,
+                  lineHeight: 18 * artworkScale,
                 },
               ]}
             >
@@ -394,79 +401,37 @@ const ReviewShareCard = ({
 
           <View
             style={[
-              styles.divider,
+              styles.metrics,
               {
-                marginTop: 3 * artworkScale,
-                marginBottom: 3 * artworkScale,
-              },
-            ]}
-          />
-
-          <View style={[styles.ratings, { gap: 10 * artworkScale }]}>
-            <View style={[styles.ratingAxes, { gap: 12 * artworkScale }]}>
-              <ShareRatingAxis
-                label="Taste"
-                value={review.taste}
-                pipSize={ratingPipSize}
-                scale={artworkScale}
-              />
-              <ShareRatingAxis
-                label="Presentation"
-                value={review.presentation}
-                pipSize={ratingPipSize}
-                scale={artworkScale}
-              />
-            </View>
-            <View style={[styles.overall, { width: 74 * artworkScale }]}>
-              <Text
-                style={[
-                  styles.ratingLabel,
-                  {
-                    fontSize: 9 * artworkScale,
-                    lineHeight: 12 * artworkScale,
-                  },
-                ]}
-              >
-                OVERALL
-              </Text>
-              <Text
-                style={[
-                  styles.overallValue,
-                  {
-                    fontSize: 38 * artworkScale,
-                    lineHeight: 39 * artworkScale,
-                  },
-                ]}
-              >
-                {formatRating(overall)}
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.shareMessage,
-              {
-                marginHorizontal: -panelPadding,
-                marginBottom: -panelPadding,
-                paddingHorizontal: panelPadding,
-                paddingVertical: 9 * artworkScale,
+                marginTop: 8 * artworkScale,
               },
             ]}
           >
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.shareMessageText,
-                {
-                  fontSize: 13 * artworkScale,
-                  lineHeight: 16 * artworkScale,
-                },
-              ]}
-            >
-              Join the Club{" "}
-              <Text style={styles.shareMessageJoin}>@tinitimeclub</Text>
-            </Text>
+            <View style={[styles.sideMetrics, { gap: sideMetricGap }]}>
+              <ShareMetric
+                label="Taste"
+                value={formatRating(review.taste)}
+                unit="/5"
+                width={sideMetricWidth}
+                scale={artworkScale}
+              />
+              <ShareMetric
+                label="Presentation"
+                value={formatRating(review.presentation)}
+                unit="/5"
+                width={sideMetricWidth}
+                scale={artworkScale}
+              />
+            </View>
+            <ShareMetric
+              label="Overall"
+              value={formatRating(overall)}
+              unit="/5"
+              width={overallMetricWidth}
+              scale={artworkScale}
+              align="right"
+              strong
+            />
           </View>
         </View>
       </Animated.View>
@@ -474,61 +439,74 @@ const ReviewShareCard = ({
   );
 };
 
-const ShareRatingAxis = ({
+const ShareMetric = ({
   label,
   value,
-  pipSize,
+  unit,
+  width,
   scale,
+  align = "left",
+  strong = false,
 }: {
   label: string;
-  value: number;
-  pipSize: number;
+  value: string;
+  unit: string;
+  width: number;
   scale: number;
+  align?: "left" | "right";
+  strong?: boolean;
 }) => (
   <View
-    style={[
-      styles.axis,
-      {
-        paddingHorizontal: 7 * scale,
-        paddingVertical: 7 * scale,
-        borderRadius: 10 * scale,
-      },
-    ]}
+    style={[styles.metric, align === "right" && styles.metricRight, { width }]}
   >
     <Text
       numberOfLines={1}
       style={[
-        styles.ratingLabel,
+        styles.metricLabel,
+        align === "right" && styles.metricTextRight,
         {
-          marginBottom: 6 * scale,
-          fontSize: 9 * scale,
-          lineHeight: 12 * scale,
+          fontSize: 13 * scale,
+          lineHeight: 17 * scale,
         },
       ]}
     >
-      {label.toUpperCase()}
+      {label}
     </Text>
-    <RatingPips
-      value={value}
-      size={pipSize}
-      bodyColor={OLIVE_ICON_COLOR}
-      emptyColor={OLIVE_ICON_COLOR}
-      style={[styles.sharePips, { gap: 4.5 * scale }]}
-      accessibilityLabel=""
-    />
+    <Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+      style={[
+        styles.metricValue,
+        strong && styles.metricValueStrong,
+        align === "right" && styles.metricTextRight,
+        {
+          fontSize: (strong ? 26 : 20) * scale,
+          lineHeight: (strong ? 31 : 25) * scale,
+        },
+      ]}
+    >
+      {value}
+      <Text
+        style={[
+          styles.metricUnit,
+          strong && styles.metricUnitStrong,
+          {
+            fontSize: (strong ? 14 : 11) * scale,
+            lineHeight: (strong ? 18 : 15) * scale,
+          },
+        ]}
+      >
+        {" "}
+        {unit}
+      </Text>
+    </Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   photo: {
     position: "absolute",
-  },
-  photoShade: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(16,36,27,0.28)",
   },
   tagRow: {
     position: "absolute",
@@ -545,88 +523,78 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     letterSpacing: 0,
   },
-  photoLogo: {
+  logo: {
     position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
     overflow: "hidden",
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "rgba(250,249,246,0.48)",
-    backgroundColor: CARD.purple,
   },
-  panel: {
+  content: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: CARD.purpleDeep,
   },
   username: {
-    color: CARD.chartreuse,
+    color: CARD.paper,
     fontFamily: fonts.bold,
     letterSpacing: 0,
+    opacity: 0.94,
   },
-  venue: {
+  headline: {
     color: CARD.paper,
     fontFamily: fonts.black,
     letterSpacing: 0,
   },
-  city: {
-    color: CARD.purplePale,
+  meta: {
+    color: CARD.paper,
     fontFamily: fonts.mono,
     letterSpacing: 0,
+    opacity: 0.9,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: CARD.border,
-  },
-  ratings: {
+  metrics: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
   },
-  ratingAxes: {
-    flex: 1,
+  sideMetrics: {
     flexDirection: "row",
-  },
-  axis: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: "flex-start",
-    backgroundColor: "rgba(250,249,246,0.10)",
-  },
-  ratingLabel: {
-    color: CARD.purplePale,
-    fontFamily: fonts.bold,
-    letterSpacing: 0,
-  },
-  sharePips: {
-    alignSelf: "flex-start",
-  },
-  overall: {
     alignItems: "flex-end",
   },
-  overallValue: {
+  metric: {
+    minWidth: 0,
+    justifyContent: "flex-end",
+  },
+  metricRight: {
+    alignItems: "flex-end",
+  },
+  metricTextRight: {
+    textAlign: "right",
+  },
+  metricLabel: {
     color: CARD.paper,
-    fontFamily: fonts.black,
+    fontFamily: fonts.medium,
+    letterSpacing: 0,
+    opacity: 0.92,
+  },
+  metricValue: {
+    color: CARD.paper,
+    fontFamily: fonts.semibold,
     fontVariant: ["tabular-nums"],
     letterSpacing: 0,
+    opacity: 0.92,
   },
-  shareMessage: {
-    marginTop: "auto",
-    alignItems: "center",
-    backgroundColor: CARD.chartreuse,
-  },
-  shareMessageText: {
-    color: CARD.ink,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0,
-    textAlign: "center",
-  },
-  shareMessageJoin: {
-    color: CARD.ink,
+  metricValueStrong: {
     fontFamily: fonts.black,
+    opacity: 1,
+  },
+  metricUnit: {
+    color: CARD.paper,
+    fontFamily: fonts.medium,
     letterSpacing: 0,
+    opacity: 0.82,
+  },
+  metricUnitStrong: {
+    fontFamily: fonts.bold,
+    opacity: 0.96,
   },
 });
 

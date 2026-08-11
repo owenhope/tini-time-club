@@ -3,6 +3,13 @@ import type { Review } from "@/types/types";
 import { warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 import { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
+import {
+  copyShareText,
+  messageShareUrl,
+  openShareUrl,
+  shareMessageWithUrl,
+  whatsappShareUrl,
+} from "@/utils/shareDestinations";
 
 export { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
 
@@ -12,10 +19,13 @@ export const publicReviewUrl = (reviewId: string | number) =>
 export type ReviewShareChannel =
   | "sheet"
   | "share_link"
+  | "copy_link"
   | "email"
   | "instagram"
   | "instagram_story"
-  | "instagram_post";
+  | "instagram_post"
+  | "message"
+  | "whatsapp";
 
 export const logReviewShare = async (
   reviewId: string | number,
@@ -37,6 +47,9 @@ export const reviewShareText = (review: Review) =>
   review.profile?.username
     ? `Check out ${review.profile.username}'s review on Tini Time Club.`
     : "Check out this review on Tini Time Club.";
+
+const reviewShareMessage = (review: Review) =>
+  shareMessageWithUrl(reviewShareText(review), publicReviewUrl(review.id));
 
 export const shareReviewViaSheet = async (
   review: Review,
@@ -77,6 +90,42 @@ export const shareReviewViaEmail = async (review: Review) => {
   }
   await Linking.openURL(mailto);
   await logReviewShare(review.id, "email", "opened");
+};
+
+export const shareReviewViaWhatsApp = async (review: Review) => {
+  const opened = await openShareUrl(
+    whatsappShareUrl(reviewShareMessage(review)),
+    "WhatsApp unavailable",
+    "WhatsApp does not appear to be installed on this device.",
+    "WhatsApp review share failed:"
+  );
+  await logReviewShare(
+    review.id,
+    "whatsapp",
+    opened ? "opened" : "unavailable"
+  );
+};
+
+export const shareReviewViaMessage = async (review: Review) => {
+  const opened = await openShareUrl(
+    messageShareUrl(reviewShareMessage(review)),
+    "Messages unavailable",
+    "Messages could not be opened on this device.",
+    "Message review share failed:"
+  );
+  await logReviewShare(review.id, "message", opened ? "opened" : "unavailable");
+};
+
+export const copyReviewLink = async (review: Review) => {
+  try {
+    await copyShareText(publicReviewUrl(review.id));
+    Alert.alert("Link copied", "Review link copied to clipboard.");
+    await logReviewShare(review.id, "copy_link", "copied");
+  } catch (error) {
+    warn("Review link copy failed:", error);
+    Alert.alert("Copy failed", "The review link could not be copied.");
+    await logReviewShare(review.id, "copy_link", "failed");
+  }
 };
 
 export const shareReviewViaInstagram = async (review: Review) => {

@@ -1,48 +1,46 @@
 import { useCallback } from "react";
-import { useRouter } from "expo-router";
 import { useShareMenuSheet } from "@/components/share/shareMenuContext";
-import type { Review } from "@/types/types";
-import { routes } from "@/utils/routes";
 import {
-  copyReviewLink,
-  shareReviewViaMessage,
-  shareReviewViaWhatsApp,
-} from "@/utils/reviewShare";
+  copyLocationLink,
+  shareLocationViaInstagram,
+  shareLocationViaMessage,
+  shareLocationViaWhatsApp,
+  type ShareableLocation,
+} from "@/utils/locationShare";
 import {
-  getReviewShareMenuActions,
-  type ReviewShareMenuAction,
-} from "@/utils/reviewShareMenu";
+  getShareDestinationActions,
+  type ShareDestinationAction,
+} from "@/utils/shareDestinations";
 
-/** Presents the review's complete share menu from every existing share icon. */
-export const useReviewShareMenu = (review: Review | null) => {
-  const router = useRouter();
+/** Presents the venue share menu from location header actions. */
+export const useLocationShareMenu = (location: ShareableLocation | null) => {
   const showShareMenu = useShareMenuSheet();
 
   return useCallback(() => {
-    if (!review) return;
+    if (!location) return;
 
-    const actions = getReviewShareMenuActions();
+    const actions = getShareDestinationActions();
 
-    const runAction = (action: ReviewShareMenuAction) => {
+    const runAction = (action: ShareDestinationAction) => {
       switch (action.destination) {
         case "instagram_story":
         case "instagram_post":
-          router.push(routes.reviewSharePreview(review.id, action.format));
+          void shareLocationViaInstagram(location, action.destination);
           return;
         case "whatsapp":
-          void shareReviewViaWhatsApp(review);
+          void shareLocationViaWhatsApp(location);
           return;
         case "message":
-          void shareReviewViaMessage(review);
+          void shareLocationViaMessage(location);
           return;
         case "copy_link":
-          void copyReviewLink(review);
+          void copyLocationLink(location);
           return;
       }
     };
 
     showShareMenu({
-      title: "Share review",
+      title: "Share location",
       actions: actions.map((action) => ({
         label: action.label,
         destination: action.destination,
@@ -58,5 +56,5 @@ export const useReviewShareMenu = (review: Review | null) => {
         onPress: () => runAction(action),
       })),
     });
-  }, [review, router, showShareMenu]);
+  }, [location, showShareMenu]);
 };
