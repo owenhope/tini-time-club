@@ -4,6 +4,7 @@ import { join } from "node:path";
 const outputDirs = [
   join(process.cwd(), ".next/server/app"),
   join(process.cwd(), ".vercel/output"),
+  "/vercel/output",
 ];
 const noModuleScriptPattern =
   /<script(?=[^>]*\bnoModule="")(?=[^>]*\bsrc="\/_next\/static\/chunks\/[^"]+\.js[^"]*")(?![^>]*\bdefer\b)([^>]*)>/g;
