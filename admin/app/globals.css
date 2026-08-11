@@ -153,6 +153,10 @@ html.dark .admin-theme .text-emerald-800 {
   color: #c9ddd3;
 }
 
+html.dark .admin-theme .text-stone-800 {
+  color: #e6ece9;
+}
+
 html.dark .admin-theme .text-violet-700,
 html.dark .admin-theme .text-violet-800,
 html.dark .admin-theme .hover\:text-violet-700:hover,
