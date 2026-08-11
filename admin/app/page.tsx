@@ -60,6 +60,12 @@ export default function PublicHomePage() {
                 The Martini review app for remembering the pours, finding the
                 regular spots, and sharing the table worth coming back to.
               </p>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
+                Use it to log where you ordered a Martini, who you were with,
+                how it tasted, and whether the bar deserves another round. Each
+                review becomes a saved recommendation for friends, followers,
+                and regulars comparing the next spot.
+              </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
                   href="https://apps.apple.com/app/tini-time-club/id6741620393"
@@ -94,9 +100,10 @@ export default function PublicHomePage() {
               </h2>
             </div>
             <p className="max-w-2xl text-base leading-7 text-white/72">
-              Tini Time Club is part tasting journal, part city guide, part
-              social club. The app is built around the habits that happen after
-              someone says, “Where did you get that?”
+              Tini Time Club is part tasting journal, part city guide, and part
+              social club for Martini drinkers. Reviews capture the details
+              people actually ask about: the venue, drink style, score, notes,
+              and the regulars who keep coming back.
             </p>
           </div>
 
@@ -131,6 +138,11 @@ export default function PublicHomePage() {
             <h2 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
               Start your Martini list before the next round.
             </h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-emerald-950/75">
+              The iPhone app is designed for nights out: quick enough to use at
+              the table, structured enough to remember later, and social enough
+              to turn a good pour into a recommendation the club can find.
+            </p>
           </div>
           <a
             href="https://apps.apple.com/app/tini-time-club/id6741620393"

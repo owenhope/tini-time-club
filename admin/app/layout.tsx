@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Figtree, DM_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -54,7 +55,21 @@ export default function RootLayout({
       lang="en"
       className={`h-full antialiased ${figtree.variable} ${dmMono.variable}`}
     >
-      <body className="min-h-full bg-stone-50 text-stone-900">{children}</body>
+      <body className="min-h-full bg-stone-50 text-stone-900">
+        {children}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-53R4Z4BZ3D"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-53R4Z4BZ3D');
+          `}
+        </Script>
+      </body>
     </html>
   );
 }
