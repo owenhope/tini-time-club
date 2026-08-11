@@ -1,12 +1,27 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const appOutputDir = join(process.cwd(), ".next/server/app");
+const outputDirs = [
+  join(process.cwd(), ".next/server/app"),
+  join(process.cwd(), ".vercel/output"),
+];
 const noModuleScriptPattern =
   /<script(?=[^>]*\bnoModule="")(?=[^>]*\bsrc="\/_next\/static\/chunks\/[^"]+\.js[^"]*")(?![^>]*\bdefer\b)([^>]*)>/g;
 
 async function getHtmlFiles(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
+  let entries;
+
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error) {
+      const code = error.code;
+      if (code === "ENOENT") return [];
+    }
+
+    throw error;
+  }
+
   const files = await Promise.all(
     entries.map((entry) => {
       const path = join(directory, entry.name);
@@ -20,7 +35,7 @@ async function getHtmlFiles(directory) {
   return files.flat();
 }
 
-const htmlFiles = await getHtmlFiles(appOutputDir);
+const htmlFiles = (await Promise.all(outputDirs.map(getHtmlFiles))).flat();
 let updatedCount = 0;
 
 for (const file of htmlFiles) {
