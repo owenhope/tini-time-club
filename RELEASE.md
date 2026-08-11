@@ -121,3 +121,16 @@ activity must not notify production users.
    native changes.
 6. Run `npm run release:testflight` to build and submit the production app.
 7. Verify the TestFlight build, then tag the release.
+
+## App privacy answers
+
+Tini Time Club collects account, profile, review, comment, photo, favorite
+place, notification, and nearby-discovery data to operate the app and measure
+product usage. If App Store Connect marks any collected data type as being
+used to track users, the iOS app must include App Tracking Transparency and
+must request permission before that tracking use.
+
+The ATT prompt is configured through `expo-tracking-transparency` in
+`app.config.ts` and requested once from the root layout. If App Review rejects
+a build under Guideline 5.1.2(i), confirm App Privacy is current, submit a new
+iOS build, and note that the tracking permission prompt appears at app launch.

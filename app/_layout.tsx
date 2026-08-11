@@ -48,6 +48,7 @@ import {
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { withTimeout } from "@/utils/async";
+import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -213,6 +214,12 @@ function RootLayoutNav() {
     rootNavigationState?.key,
     router,
   ]);
+
+  useEffect(() => {
+    if (!isReady || !fontsLoaded) return;
+
+    void requestAppTrackingTransparencyAsync();
+  }, [fontsLoaded, isReady]);
 
   // Perform the initial-launch navigation as soon as the router is ready —
   // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.

@@ -120,7 +120,7 @@ export const privacySections: LegalSection[] = [
   },
   {
     title: "3. Sharing",
-    body: "We may share information with service providers that help operate the app, including hosting, database, authentication, maps, storage, analytics, notifications, and app-store services. We may also share information when required by law, to protect rights and safety, or in connection with a business transfer. We do not sell or serve alcohol.",
+    body: "We may share information with service providers that help operate the app, including hosting, database, authentication, maps, storage, analytics, notifications, and app-store services. We do not sell personal information or share personal information with data brokers. If a data use requires App Tracking Transparency permission on iOS, we request that permission before using data for that purpose. We may also share information when required by law, to protect rights and safety, or in connection with a business transfer. We do not sell or serve alcohol.",
   },
   {
     title: "4. Public Content",
