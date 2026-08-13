@@ -8,7 +8,9 @@ import * as Notifications from "expo-notifications";
 import { fonts, useTheme } from "@/theme";
 import {
   getNotificationRoute,
+  arePushNotificationsEnabled,
   registerPushNotificationsAsync,
+  unregisterPushNotificationsAsync,
   subscribeToPushRegistrationRetry,
   subscribeToPushTokenChanges,
 } from "@/services/pushNotificationService";
@@ -41,6 +43,11 @@ const LayoutContent = () => {
     if (!profile?.eula_accepted || !profile.username) return;
 
     const syncToken = (requestPermission = false) => {
+      if (!arePushNotificationsEnabled()) {
+        void unregisterPushNotificationsAsync();
+        void syncFridayMartiniReminder(false);
+        return;
+      }
       void registerPushNotificationsAsync({ requestPermission }).then(() => {
         // Local weekly nudge; no-op until notification permission is granted.
         void syncFridayMartiniReminder(

@@ -40,6 +40,7 @@ const TITLES: Record<string, string> = {
   "edit-profile": "Edit Profile",
   "favorite-location": "Favorite Location",
   notifications: "Notifications",
+  activity: "Activity",
   "place-info": "Information",
   terms: "Terms of Service",
   "delete-account": "Delete Account",
@@ -60,6 +61,7 @@ export default function SharedTabLayout() {
         header: ({ options, navigation, back }) => (
           <AppHeader
             variant="compact"
+            ground={route.name === "activity" ? "ink" : undefined}
             title={options.title ?? ""}
             onBack={back ? navigation.goBack : undefined}
           />

@@ -150,6 +150,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       environment: appEnvironment,
       backendEnvironment,
+      enableDevPushNotifications:
+        process.env.EXPO_PUBLIC_ENABLE_DEV_PUSH_NOTIFICATIONS === "1",
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     },

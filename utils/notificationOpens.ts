@@ -1,6 +1,7 @@
 import type * as Notifications from "expo-notifications";
 import { supabase } from "@/utils/supabase";
 import { warn } from "@/utils/log";
+import { markActivityRead } from "@/services/activityService";
 
 /**
  * Record that the member opened (tapped) a notification, feeding the
@@ -23,6 +24,12 @@ export function logNotificationOpen(
         : null;
     const notificationId =
       typeof data.notificationId === "string" ? data.notificationId : null;
+
+    if (notificationId) {
+      void markActivityRead([notificationId]).catch((error) =>
+        warn("Failed to mark tapped Activity as read:", error)
+      );
+    }
 
     void supabase
       .rpc("log_notification_open", {

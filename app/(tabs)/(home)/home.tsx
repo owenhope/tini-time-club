@@ -30,6 +30,7 @@ import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
+import { useActivity } from "@/context/activity-context";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -52,6 +53,8 @@ function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
+  const { unseenCount, refreshUnseenCount } = useActivity();
+  const showActivityDot = unseenCount > 0;
   const router = useRouter();
   const params = useLocalSearchParams<{
     postedReviewId?: string;
@@ -295,6 +298,7 @@ function Home() {
 
   useFocusEffect(
     useCallback(() => {
+      void refreshUnseenCount();
       // Refresh on focus only when the feed has actually gone stale. Doing it
       // unconditionally cleared the caches and reset scroll position every
       // time the user tabbed away and back, even seconds later.
@@ -312,7 +316,7 @@ function Home() {
       // loadReviews/lastRefreshTime intentionally excluded: including them
       // would re-run this on every fetch, defeating the staleness check.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile?.id, scrollToTop, reviews.length])
+    }, [profile?.id, refreshUnseenCount, scrollToTop, reviews.length])
   );
 
   // Optimized refresh handler
@@ -783,6 +787,17 @@ function Home() {
         variant="large"
         title={greeting.headline}
         meta={greeting.subline}
+        actions={[
+          {
+            icon: "heart-outline",
+            iconColor: colors.onInk,
+            showNotificationDot: showActivityDot,
+            onPress: () => router.push(routes.activity()),
+            accessibilityLabel: showActivityDot
+              ? "Activity, new notifications"
+              : "Activity",
+          },
+        ]}
       />
 
       <FlatList

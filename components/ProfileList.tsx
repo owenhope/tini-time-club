@@ -14,6 +14,7 @@ import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import { setFollowing } from "@/services/followService";
 export interface ProfileType {
   id: string;
   username: string;
@@ -92,24 +93,11 @@ export default function ProfileList({
 
     setUpdatingFollowIds((prev) => [...prev, targetProfileId]);
     const isFollowing = followedIds.includes(targetProfileId);
-    if (isFollowing) {
-      const { error } = await supabase
-        .from("followers")
-        .delete()
-        .eq("follower_id", profile.id)
-        .eq("following_id", targetProfileId);
-      if (error) {
-        reportError("Error unfollowing:", error);
-      } else {
+    try {
+      await setFollowing(profile.id, targetProfileId, !isFollowing);
+      if (isFollowing) {
         databaseService.clearFollowCaches(profile.id);
         setFollowedIds((prev) => prev.filter((id) => id !== targetProfileId));
-      }
-    } else {
-      const { error } = await supabase
-        .from("followers")
-        .upsert([{ follower_id: profile.id, following_id: targetProfileId }]);
-      if (error) {
-        reportError("Error following:", error);
       } else {
         databaseService.clearFollowCaches(profile.id);
         setFollowedIds((prev) => [...prev, targetProfileId]);
@@ -122,6 +110,11 @@ export default function ProfileList({
           });
         }
       }
+    } catch (error) {
+      reportError(
+        isFollowing ? "Error unfollowing:" : "Error following:",
+        error
+      );
     }
     setUpdatingFollowIds((prev) => prev.filter((id) => id !== targetProfileId));
   };

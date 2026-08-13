@@ -25,7 +25,12 @@ type AnalyticEventType =
   | "change_avatar"
   | "report"
   | "delete_review"
-  | "logout";
+  | "logout"
+  | "activity_open"
+  | "activity_notification_open"
+  | "activity_follow_back"
+  | "activity_page_load"
+  | "activity_load_error";
 
 const AnalyticService = {
   capture: (event: AnalyticEventType, properties?: Record<string, any>) => {

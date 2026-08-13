@@ -37,6 +37,11 @@ const getAppEnvironment = (): string =>
   Constants.expoConfig?.extra?.environment ??
   "production";
 
+export const arePushNotificationsEnabled = (): boolean => {
+  if (getAppEnvironment() !== "development") return true;
+  return Constants.expoConfig?.extra?.enableDevPushNotifications === true;
+};
+
 async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== "android") return;
 
@@ -120,6 +125,10 @@ export async function registerPushNotificationsAsync({
 }: {
   requestPermission?: boolean;
 } = {}): Promise<string | null> {
+  if (!arePushNotificationsEnabled()) {
+    await unregisterPushNotificationsAsync();
+    return null;
+  }
   if (registrationPromise) return registrationPromise;
   if (Date.now() < registrationRetryAfter) return null;
 

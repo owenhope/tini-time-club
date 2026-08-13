@@ -1,6 +1,6 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import AppHeader, {
   type AppHeaderProps,
   type AppHeaderVariant,
@@ -94,6 +94,69 @@ describe("AppHeader dark mode", () => {
       darkColors.headerBrand
     );
 
+    act(() => tree!.unmount());
+  });
+
+  it("renders a capped activity count badge", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="large"
+            title="Header"
+            actions={[
+              {
+                icon: "heart-outline",
+                badgeCount: 120,
+                onPress: jest.fn(),
+                accessibilityLabel: "Activity, 120 unread notifications",
+              },
+            ]}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    expect(
+      tree!.root
+        .findAllByType(Text)
+        .some((node) => node.props.children === "99+")
+    ).toBe(true);
+    act(() => tree!.unmount());
+  });
+
+  it("renders a notification dot for pending activity", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="large"
+            title="Header"
+            actions={[
+              {
+                icon: "heart-outline",
+                showNotificationDot: true,
+                onPress: jest.fn(),
+                accessibilityLabel: "Activity, new notifications",
+              },
+            ]}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    expect(
+      tree!.root.findAllByType(View).some((node) => {
+        const style = StyleSheet.flatten(node.props.style);
+        return (
+          style?.width === 9 &&
+          style?.height === 9 &&
+          style?.backgroundColor === darkColors.unread
+        );
+      })
+    ).toBe(true);
     act(() => tree!.unmount());
   });
 });

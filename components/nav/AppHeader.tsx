@@ -38,6 +38,12 @@ export interface HeaderAction {
   onPress: () => void;
   accessibilityLabel: string;
   disabled?: boolean;
+  /** Optional explicit icon color for stateful actions. */
+  iconColor?: string;
+  /** Optional red indicator for actions with pending activity. */
+  showNotificationDot?: boolean;
+  /** Optional unread count rendered as a compact adornment on icon actions. */
+  badgeCount?: number;
 }
 
 export interface AppHeaderProps {
@@ -116,11 +122,13 @@ const NavActionControl = ({
   const styles = useStyles();
   const { colors } = useTheme();
 
-  const glyph = {
-    onInk: colors.onInk,
-    outline: colors.accent,
-    scrim: colors.textOnImage,
-  }[tone];
+  const glyph =
+    action.iconColor ??
+    {
+      onInk: colors.onInk,
+      outline: colors.accent,
+      scrim: colors.textOnImage,
+    }[tone];
 
   if (action.label) {
     return (
@@ -166,7 +174,23 @@ const NavActionControl = ({
         pressed && !action.disabled && styles.circlePressed,
       ]}
     >
-      <Ionicons name={action.icon} size={size} color={glyph} />
+      <View style={styles.actionGlyph}>
+        <Ionicons name={action.icon} size={size} color={glyph} />
+        {action.showNotificationDot ? (
+          <View
+            style={styles.notificationDot}
+            pointerEvents="none"
+            accessibilityElementsHidden
+          />
+        ) : null}
+        {action.badgeCount && action.badgeCount > 0 ? (
+          <View style={styles.countBadge} accessibilityElementsHidden>
+            <Text style={styles.countBadgeText}>
+              {action.badgeCount > 99 ? "99+" : action.badgeCount}
+            </Text>
+          </View>
+        ) : null}
+      </View>
     </Pressable>
   );
 };
@@ -199,6 +223,7 @@ const CompactBar = ({
 }) => {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const onInk = ground === "ink" || ground === "inkDeep";
   const onBrand = ground === "brand";
 
   const right = actions ?? (trailing ? [trailing] : []);
@@ -213,6 +238,7 @@ const CompactBar = ({
       // client; until then the bar leans on the paper at 94% alone.
       style={[
         styles.compact,
+        onInk && styles.compactInk,
         onBrand && styles.compactBrand,
         { paddingTop: insets.top + 8 },
         overlay && styles.compactOverlay,
@@ -221,13 +247,17 @@ const CompactBar = ({
       pointerEvents={overlay && !collapsed ? "none" : "auto"}
     >
       <View
-        style={[styles.compactFill, onBrand && styles.compactFillBrand]}
+        style={[
+          styles.compactFill,
+          onInk && styles.compactFillInk,
+          onBrand && styles.compactFillBrand,
+        ]}
         pointerEvents="none"
       />
       <View style={[styles.compactEnd, { width: leadingWidth }]}>
         {onBack ? (
           <NavActionControl
-            tone={onBrand ? "onInk" : "outline"}
+            tone={onInk || onBrand ? "onInk" : "outline"}
             action={{
               icon: "chevron-back",
               onPress: onBack,
@@ -239,6 +269,7 @@ const CompactBar = ({
       <Text
         style={[
           styles.compactTitle,
+          onInk && styles.compactTitleOnInk,
           onBrand && styles.compactTitleOnBrand,
           preserveCase && styles.titlePlain,
         ]}
@@ -256,7 +287,7 @@ const CompactBar = ({
         {right.map((action) => (
           <NavActionControl
             key={getActionKey(action)}
-            tone={onBrand ? "onInk" : "outline"}
+            tone={onInk || onBrand ? "onInk" : "outline"}
             action={action}
             size={19}
           />
@@ -277,7 +308,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onBack,
   below,
   preserveCase = false,
-  ground = "ink",
+  ground,
   progress,
   collapsed = false,
   overlay = false,
@@ -572,6 +603,37 @@ const useStyles = makeStyles((t) => ({
   circlePressed: {
     opacity: 0.6,
   },
+  actionGlyph: {
+    position: "relative" as const,
+  },
+  notificationDot: {
+    position: "absolute" as const,
+    top: -5,
+    right: -5,
+    width: 9,
+    height: 9,
+    borderRadius: t.radius.pill,
+    backgroundColor: t.colors.unread,
+  },
+  countBadge: {
+    position: "absolute" as const,
+    top: -10,
+    right: -14,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.unread,
+    borderWidth: 1.5,
+    borderColor: t.colors.surface,
+  },
+  countBadgeText: {
+    ...t.typography.micro,
+    fontFamily: fonts.bold,
+    color: t.colors.textOnAccent,
+  },
 
   // A · large
   large: {
@@ -634,6 +696,9 @@ const useStyles = makeStyles((t) => ({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: t.colors.divider,
   },
+  compactInk: {
+    borderBottomColor: t.colors.ratingTrackOnInk,
+  },
   compactBrand: {
     borderBottomColor: t.colors.ratingTrackOnInk,
   },
@@ -660,6 +725,9 @@ const useStyles = makeStyles((t) => ({
     bottom: 0,
     backgroundColor: t.colors.background,
   },
+  compactFillInk: {
+    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInk,
+  },
   compactFillBrand: {
     backgroundColor: t.colors.headerBrand,
   },
@@ -676,6 +744,9 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     textAlign: "center" as const,
     color: t.colors.text,
+  },
+  compactTitleOnInk: {
+    color: t.colors.onInk,
   },
   compactTitleOnBrand: {
     color: t.colors.onHeaderBrand,

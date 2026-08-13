@@ -147,6 +147,7 @@ export interface ThemeColors {
   dangerSubtle: string;
   success: string;
   warning: string;
+  unread: string;
 
   // Tonal (low-emphasis filled) surfaces for secondary actions
   accentTonal: string;
@@ -243,6 +244,7 @@ export const lightColors: ThemeColors = {
   dangerSubtle: "#FBEAE9",
   success: palette.green500,
   warning: palette.pimento600,
+  unread: palette.pimento600,
 
   accentTonal: palette.purple100,
   onAccentTonal: palette.purple700, // 4.8:1 on purple-100
@@ -318,6 +320,7 @@ export const darkColors: ThemeColors = {
   dangerSubtle: "#2E1615",
   success: "#4F9D7C", // 4.9:1 on dark surface — success text/UI
   warning: "#EF8A54",
+  unread: "#EF8A54",
 
   accentTonal: "#2A2340",
   onAccentTonal: palette.purple300, // 7.6:1 on the tonal fill

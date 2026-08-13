@@ -29,6 +29,9 @@ export type { AppTextProps, TypographyVariant, TextTone } from "./AppText";
 export { default as VerifiedName } from "./VerifiedName";
 export type { VerifiedNameProps } from "./VerifiedName";
 
+export { default as FollowButton } from "./FollowButton";
+export type { FollowButtonProps } from "./FollowButton";
+
 // Profile system primitives — shared by the user, place and review surfaces.
 export { default as RatingSummary, RATING_MAX } from "./RatingSummary";
 export type { RatingSummaryProps, RatingSummaryTone } from "./RatingSummary";

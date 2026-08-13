@@ -12,6 +12,11 @@ interface NotificationRecord {
   data: Record<string, unknown> | null;
 }
 
+interface PushTokenRecord {
+  expo_push_token: string;
+  app_environment: string | null;
+}
+
 interface WebhookPayload {
   type: "INSERT" | "UPDATE" | "DELETE";
   table: string;
@@ -44,6 +49,8 @@ const RECEIPT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 const EXPO_TOKEN_PATTERN = /^(ExponentPushToken|ExpoPushToken)\[[^\]]+\]$/;
 
 const expoAccessToken = Deno.env.get("EXPO_ACCESS_TOKEN");
+const allowDevelopmentPushNotifications =
+  Deno.env.get("ALLOW_DEVELOPMENT_PUSH_NOTIFICATIONS") === "true";
 let supabaseClient: ReturnType<typeof createClient> | null = null;
 
 function getSupabaseClient(): ReturnType<typeof createClient> {
@@ -196,12 +203,16 @@ async function getTokensForUsers(userIds: string[]): Promise<string[]> {
     const userBatch = userIds.slice(index, index + TOKEN_QUERY_BATCH_SIZE);
     const { data, error } = await getSupabaseClient()
       .from("push_tokens")
-      .select("expo_push_token")
+      .select("expo_push_token, app_environment")
       .in("user_id", userBatch);
 
     if (error) throw error;
-    for (const row of data ?? []) {
-      if (EXPO_TOKEN_PATTERN.test(row.expo_push_token)) {
+    for (const row of (data ?? []) as PushTokenRecord[]) {
+      const isDevelopmentToken = row.app_environment === "development";
+      if (
+        (!isDevelopmentToken || allowDevelopmentPushNotifications) &&
+        EXPO_TOKEN_PATTERN.test(row.expo_push_token)
+      ) {
         tokens.add(row.expo_push_token);
       }
     }
