@@ -322,6 +322,12 @@ export interface AnalyticsData {
     total_ratings: number;
     reviews_in_range: number;
   }[];
+  typePopularity: {
+    id: number;
+    name: string;
+    reviewCount: number;
+    share: number;
+  }[];
   /** Signups inside the range, for the growth section. */
   signupsInRange: number;
   /**
@@ -415,11 +421,12 @@ export const fetchAnalytics = async (
     celebrations,
     invites,
     profiles,
+    typeCatalog,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
           .from("reviews")
-          .select("inserted_at,user_id,location")
+          .select("inserted_at,user_id,location,type")
           .eq("state", 1)
           .in("user_id", activeMemberIds)
           .in("location", activeLocationIds)
@@ -484,8 +491,12 @@ export const fetchAnalytics = async (
       .from("profiles")
       .select("id,review_count,deleted")
       .eq("deleted", false),
+    db().from("types").select("id,name").order("name"),
   ]);
 
+  if (reviews.error) {
+    throw new Error(`Unable to load reviews: ${reviews.error.message}`);
+  }
   if (commentLikes.error) {
     throw new Error(
       `Unable to load comment likes: ${commentLikes.error.message}`
@@ -570,6 +581,15 @@ export const fetchAnalytics = async (
     );
   }
 
+  if (profiles.error) {
+    throw new Error(`Unable to load profiles: ${profiles.error.message}`);
+  }
+  if (typeCatalog.error) {
+    throw new Error(
+      `Unable to load active review types: ${typeCatalog.error.message}`
+    );
+  }
+
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
   const authRows = [...authUsers.entries()]
@@ -587,6 +607,89 @@ export const fetchAnalytics = async (
   const inviteRows = invites.data ?? [];
   const locationRows = locations.data ?? [];
   const reviewRows = reviews.data ?? [];
+  const catalogRows = typeCatalog.data ?? [];
+
+  /** Keep this list aligned with utils/reviewOptions.ts in the app. */
+  const enabledTypeOrder = [
+    "classic",
+    "dry",
+    "50/50",
+    "twist",
+    "dirty",
+    "filthy",
+    "espresso",
+  ];
+  const enabledTypeIndex = new Map(
+    enabledTypeOrder.map((name, index) => [name, index])
+  );
+  const activeCatalogRows = catalogRows
+    .map((type) => ({
+      id: Number(type.id),
+      name: type.name?.trim() ?? "",
+    }))
+    .filter(
+      (type) =>
+        Number.isFinite(type.id) &&
+        type.name.length > 0 &&
+        enabledTypeIndex.has(type.name.toLowerCase())
+    )
+    .sort(
+      (a, b) =>
+        enabledTypeIndex.get(a.name.toLowerCase())! -
+          enabledTypeIndex.get(b.name.toLowerCase())! ||
+        a.id - b.id
+    )
+    .filter((type, index, rows) => {
+      const normalizedName = type.name.toLowerCase();
+      return (
+        rows.findIndex(
+          (candidate) => candidate.name.toLowerCase() === normalizedName
+        ) === index
+      );
+    })
+    .map((type) => ({
+      ...type,
+      name:
+        type.name === "50/50"
+          ? type.name
+          : `${type.name.charAt(0).toUpperCase()}${type.name.slice(1).toLowerCase()}`,
+    }));
+  const typeNames = new Map(activeCatalogRows.map((type) => [type.id, type.name]));
+  const typeOrder = new Map(
+    activeCatalogRows.map((type, index) => [type.id, index])
+  );
+  const typeStats = new Map<
+    number,
+    { id: number; name: string; reviewCount: number }
+  >();
+  for (const type of activeCatalogRows) {
+    typeStats.set(type.id, { ...type, reviewCount: 0 });
+  }
+  for (const review of reviewRows) {
+    const id = review.type == null ? null : Number(review.type);
+    if (id == null || !Number.isFinite(id) || !typeNames.has(id)) continue;
+    typeStats.get(id)!.reviewCount += 1;
+  }
+  const activeTypeReviewTotal = [...typeStats.values()].reduce(
+    (total, type) => total + type.reviewCount,
+    0
+  );
+
+  const typePopularity = [...typeStats.values()]
+    .map((type) => ({
+      id: type.id,
+      name: type.name,
+      reviewCount: type.reviewCount,
+      share:
+        activeTypeReviewTotal > 0
+          ? type.reviewCount / activeTypeReviewTotal
+          : 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.reviewCount - a.reviewCount ||
+        typeOrder.get(a.id)! - typeOrder.get(b.id)!
+    );
   const locationsInRange = locationRows.filter((location) => {
     if (!location.inserted_at) return false;
     const at = new Date(location.inserted_at).getTime();
@@ -831,6 +934,7 @@ export const fetchAnalytics = async (
         };
       })
       .filter(Boolean) as AnalyticsData["topPlaces"],
+    typePopularity,
     signupsInRange: authRows.filter((user) => {
       if (!user.created_at) return false;
       const at = new Date(user.created_at).getTime();

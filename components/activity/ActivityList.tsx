@@ -82,8 +82,8 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.eyebrow,
     color: t.colors.textMuted,
     paddingHorizontal: t.spacing.gutter,
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.sm,
+    paddingTop: t.spacing.sm,
+    paddingBottom: t.spacing.xs,
     backgroundColor: t.colors.background,
   },
   footer: {

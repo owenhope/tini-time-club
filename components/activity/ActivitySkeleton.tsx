@@ -14,7 +14,7 @@ export default function ActivitySkeleton() {
             <Skeleton width="88%" height={15} />
             <Skeleton width="32%" height={13} />
           </View>
-          <Skeleton width={48} height={48} radius={10} />
+          <Skeleton width={44} height={44} radius={6} />
         </View>
       ))}
     </View>
@@ -26,12 +26,12 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   row: {
-    minHeight: 76,
+    minHeight: 64,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.md,
+    gap: t.spacing.sm,
     paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.md,
+    paddingVertical: t.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.divider,
   },

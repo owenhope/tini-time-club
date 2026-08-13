@@ -1,8 +1,8 @@
 import React, { memo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
-import type { ActivityDisplayRow, ActivityActor } from "@/types/activity";
+import type { ActivityDisplayRow } from "@/types/activity";
 import Avatar from "@/components/shared/Avatar";
 import FollowButton from "@/components/shared/FollowButton";
 import VerifiedName from "@/components/shared/VerifiedName";
@@ -15,27 +15,6 @@ interface ActivityRowProps {
   onFollowBack: () => Promise<void>;
   mutationsDisabled?: boolean;
 }
-
-const AvatarStack = ({ actors }: { actors: ActivityActor[] }) => {
-  const styles = useStyles();
-  return (
-    <View style={styles.avatarStack}>
-      {actors.slice(0, 3).map((actor, index) => (
-        <View
-          key={actor.id}
-          style={[styles.stackItem, index > 0 && styles.stackedAvatar]}
-        >
-          <Avatar
-            avatarPath={actor.avatarUrl}
-            username={actor.username}
-            size={32}
-            reviewCount={actor.reviewCount}
-          />
-        </View>
-      ))}
-    </View>
-  );
-};
 
 const ActivityRow: React.FC<ActivityRowProps> = ({
   row,
@@ -96,7 +75,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
         </View>
         {"preview" in row && row.preview ? (
           <Text style={styles.preview} numberOfLines={1}>
-            : {row.preview}
+            {row.preview}
           </Text>
         ) : null}
       </View>
@@ -116,13 +95,11 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
           <View style={styles.adminIcon}>
             <Ionicons name="heart" size={19} color={colors.onAccent} />
           </View>
-        ) : row.kind === "review_liked" ? (
-          <AvatarStack actors={row.actors} />
         ) : actor ? (
           <Avatar
             avatarPath={actor.avatarUrl}
             username={actor.username}
-            size={36}
+            size={32}
             reviewCount={actor.reviewCount}
           />
         ) : null}
@@ -145,9 +122,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
           contentFit="cover"
           transition={120}
         />
-      ) : row.kind === "admin_message" ? (
-        <MaterialIcons name="campaign" size={24} color={colors.accent} />
-      ) : (
+      ) : row.kind === "admin_message" ? null : (
         <View style={styles.thumbnailFallback}>
           <Ionicons name="wine-outline" size={20} color={colors.accent} />
         </View>
@@ -158,12 +133,12 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
 
 const useStyles = makeStyles((t) => ({
   row: {
-    minHeight: 72,
+    minHeight: 64,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.md - 2,
+    gap: t.spacing.sm,
     paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.sm + 2,
+    paddingVertical: t.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.divider,
     backgroundColor: t.colors.surface,
@@ -172,28 +147,14 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.68,
   },
   leading: {
-    width: 48,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  avatarStack: {
-    width: 48,
-    height: 44,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-  },
-  stackItem: {
     width: 44,
     height: 44,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
-  stackedAvatar: {
-    marginLeft: -18,
-  },
   adminIcon: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
     alignItems: "center" as const,
@@ -216,12 +177,12 @@ const useStyles = makeStyles((t) => ({
   },
   action: {
     ...t.typography.body,
-    color: t.colors.text,
+    color: t.colors.postText,
     flexShrink: 1,
   },
   body: {
     ...t.typography.body,
-    color: t.colors.text,
+    color: t.colors.postText,
   },
   actorName: {
     flexShrink: 1,
@@ -231,22 +192,23 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.usernameText,
   },
   preview: {
-    color: t.colors.textSecondary,
+    ...t.typography.caption,
+    color: t.colors.postText,
   },
   time: {
-    ...t.typography.caption,
+    ...t.typography.micro,
     color: t.colors.textMuted,
   },
   thumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: t.radius.sm,
+    width: 44,
+    height: 44,
+    borderRadius: t.radius.xs,
     backgroundColor: t.colors.imagePlaceholder,
   },
   thumbnailFallback: {
-    width: 48,
-    height: 48,
-    borderRadius: t.radius.sm,
+    width: 44,
+    height: 44,
+    borderRadius: t.radius.xs,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.imagePlaceholder,

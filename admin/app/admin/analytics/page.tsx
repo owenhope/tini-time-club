@@ -7,6 +7,7 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import FeatureSection, { BreakdownList } from "@/components/FeatureSection";
+import DonutChart from "@/components/DonutChart";
 import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
@@ -20,6 +21,7 @@ export const dynamic = "force-dynamic";
 const SECTIONS = [
   { id: "membership", label: "Membership" },
   { id: "reviews", label: "Reviews" },
+  { id: "types", label: "Types" },
   { id: "places", label: "Places" },
   { id: "engagement", label: "Engagement" },
   { id: "sharing", label: "Sharing & referral" },
@@ -59,6 +61,10 @@ export default async function AnalyticsPage({
   );
   const totalComments = a.commentsByDay.reduce((sum, d) => sum + d.count, 0);
   const totalReviews = a.reviewsByDay.reduce((sum, d) => sum + d.count, 0);
+  const activeTypeReviews = a.typePopularity.reduce(
+    (sum, type) => sum + type.reviewCount,
+    0
+  );
 
   return (
     <AdminShell active="analytics">
@@ -149,6 +155,23 @@ export default async function AnalyticsPage({
               />
             </div>
             <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
+          </FeatureSection>
+
+          <FeatureSection
+            id="types"
+            title="Types"
+            description="Review volume by type enabled in the review composer."
+          >
+            <DonutChart
+              title="Review types"
+              total={activeTypeReviews}
+              rows={a.typePopularity.map((type) => ({
+                key: String(type.id),
+                label: type.name,
+                count: type.reviewCount,
+                share: type.share,
+              }))}
+            />
           </FeatureSection>
 
           <FeatureSection
