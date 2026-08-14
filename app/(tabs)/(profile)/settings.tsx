@@ -152,7 +152,9 @@ const Settings = () => {
                 <Ionicons
                   name={item.icon as any}
                   size={24}
-                  color={item.id === "delete" ? colors.danger : colors.text}
+                  color={
+                    item.id === "delete" ? colors.danger : colors.postText
+                  }
                 />
                 <Text
                   style={[
@@ -242,7 +244,7 @@ const useStyles = makeStyles((t) => ({
   menuItemText: {
     ...t.typography.body,
     fontSize: 15,
-    color: t.colors.text,
+    color: t.colors.postText,
     marginLeft: t.spacing.lg,
     fontFamily: fonts.medium,
   },

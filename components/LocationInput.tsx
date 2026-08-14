@@ -503,7 +503,7 @@ const useStyles = makeStyles((t) => ({
     maxHeight: 450,
   },
   placeButton: {
-    backgroundColor: t.colors.surfaceSunken,
+    backgroundColor: t.colors.surface,
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: t.radius.md,

@@ -527,14 +527,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       <Animated.View style={fade}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <View style={styles.largeRow}>
-          <Text
-            style={[styles.largeTitle, preserveCase && styles.titlePlain]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
-          >
-            {title}
-          </Text>
+          <View style={styles.largeIdentity}>
+            <Text
+              style={[styles.largeTitle, preserveCase && styles.titlePlain]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.55}
+            >
+              {title}
+            </Text>
+            {meta ? <Text style={styles.largeMeta}>{meta}</Text> : null}
+          </View>
           <View style={styles.largeActions}>
             {(actions ?? (trailing ? [trailing] : [])).map((a) => (
               <NavActionControl
@@ -546,7 +549,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             ))}
           </View>
         </View>
-        {meta ? <Text style={styles.largeMeta}>{meta}</Text> : null}
       </Animated.View>
       {below ? <View style={styles.largeBelow}>{below}</View> : null}
     </View>
@@ -653,6 +655,9 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
+  },
+  largeIdentity: {
+    flex: 1,
   },
   largeActions: {
     flexDirection: "row" as const,

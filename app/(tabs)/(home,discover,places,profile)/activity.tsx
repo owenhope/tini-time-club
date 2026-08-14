@@ -4,6 +4,7 @@ import { useRouter, type Href } from "expo-router";
 import ActivityEmptyState from "@/components/activity/ActivityEmptyState";
 import ActivityList from "@/components/activity/ActivityList";
 import ActivitySkeleton from "@/components/activity/ActivitySkeleton";
+import LikeSlider from "@/components/LikeSlider";
 import AppText from "@/components/shared/AppText";
 import Button from "@/components/shared/Button";
 import { useActivityFeed } from "@/hooks/useActivityFeed";
@@ -11,23 +12,57 @@ import { useActivity } from "@/context/activity-context";
 import { makeStyles } from "@/theme";
 import type { ActivityDisplayRow, FollowActivityRow } from "@/types/activity";
 import AnalyticService from "@/services/analyticsService";
+import { routes } from "@/utils/routes";
 
 export default function ActivityScreen() {
   const styles = useStyles();
   const router = useRouter();
   const { clearUnseenIndicator } = useActivity();
   const feed = useActivityFeed();
+  const [likesReviewId, setLikesReviewId] = React.useState<string | null>(null);
 
-  const activate = useCallback(
-    async (row: ActivityDisplayRow) => {
+  const recordOpen = useCallback(
+    async (row: ActivityDisplayRow, target: "row" | "actor" | "review") => {
       await feed.activate(row);
       AnalyticService.capture("activity_notification_open", {
         kind: row.kind,
         notificationCount: row.notificationIds.length,
+        target,
       });
+    },
+    [feed]
+  );
+
+  const activate = useCallback(
+    async (row: ActivityDisplayRow) => {
+      await recordOpen(row, "row");
       if (row.route) router.push(row.route as Href);
     },
-    [feed, router]
+    [recordOpen, router]
+  );
+
+  const activateActor = useCallback(
+    async (row: ActivityDisplayRow) => {
+      if (!("actor" in row)) return;
+      await recordOpen(row, "actor");
+
+      if (row.kind === "review_liked" && row.notificationIds.length > 1) {
+        setLikesReviewId(row.review.id);
+        return;
+      }
+
+      router.push(routes.user(row.actor.username));
+    },
+    [recordOpen, router]
+  );
+
+  const activateReview = useCallback(
+    async (row: ActivityDisplayRow) => {
+      if (!("review" in row)) return;
+      await recordOpen(row, "review");
+      router.push((row.route ?? routes.sharedReview(row.review.id)) as Href);
+    },
+    [recordOpen, router]
   );
 
   const followBack = useCallback(
@@ -76,11 +111,19 @@ export default function ActivityScreen() {
             onRefresh={() => void feed.refresh()}
             onLoadMore={() => void feed.loadMore()}
             onPress={(row) => void activate(row)}
+            onActorPress={(row) => void activateActor(row)}
+            onReviewPress={(row) => void activateReview(row)}
             onFollowBack={followBack}
             mutationsDisabled={feed.state === "offline"}
           />
         </>
       )}
+      {likesReviewId ? (
+        <LikeSlider
+          reviewId={likesReviewId}
+          onClose={() => setLikesReviewId(null)}
+        />
+      ) : null}
     </View>
   );
 }

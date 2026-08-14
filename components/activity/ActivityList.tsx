@@ -15,6 +15,8 @@ interface ActivityListProps {
   onRefresh: () => void;
   onLoadMore: () => void;
   onPress: (row: ActivityDisplayRow) => void;
+  onActorPress: (row: ActivityDisplayRow) => void;
+  onReviewPress: (row: ActivityDisplayRow) => void;
   onFollowBack: (row: FollowActivityRow) => Promise<void>;
   mutationsDisabled?: boolean;
 }
@@ -26,6 +28,8 @@ export default function ActivityList({
   onRefresh,
   onLoadMore,
   onPress,
+  onActorPress,
+  onReviewPress,
   onFollowBack,
   mutationsDisabled = false,
 }: ActivityListProps) {
@@ -40,6 +44,8 @@ export default function ActivityList({
         <ActivityRow
           row={item}
           onPress={() => onPress(item)}
+          onActorPress={() => onActorPress(item)}
+          onReviewPress={() => onReviewPress(item)}
           onFollowBack={() =>
             item.kind === "user_followed"
               ? onFollowBack(item)

@@ -8,10 +8,8 @@ import {
   Alert,
   Animated,
   ScrollView,
-  StyleSheet,
   TextInput,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useForm, useWatch } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -374,14 +372,14 @@ export default function App() {
 
   const confirmDiscardReview = () => {
     Alert.alert(
-      isEditMode ? "Cancel editing?" : "Discard review?",
+      isEditMode ? "Cancel editing?" : "Quit review?",
       isEditMode
         ? "Your changes will not be saved."
         : "Your photo and review details will be lost.",
       [
         { text: "Keep editing", style: "cancel" },
         {
-          text: isEditMode ? "Discard changes" : "Discard",
+          text: isEditMode ? "Discard changes" : "Quit",
           style: "destructive",
           onPress: discardReview,
         },
@@ -729,23 +727,25 @@ export default function App() {
       presentation: isEditMode || Boolean(formState.touchedFields.presentation),
     }
   );
-  const editHeaderActions: HeaderAction[] = isEditMode
-    ? [
-        {
-          icon: "camera-outline",
-          onPress: () => {
-            setIsChangingPhoto(true);
-            setIsReviewing(false);
+  const reviewHeaderActions: HeaderAction[] = [
+    ...(isEditMode
+      ? [
+          {
+            icon: "camera-outline",
+            onPress: () => {
+              setIsChangingPhoto(true);
+              setIsReviewing(false);
+            },
+            accessibilityLabel: "Change review photo",
           },
-          accessibilityLabel: "Change review photo",
-        },
-        {
-          icon: "close-outline",
-          onPress: confirmDiscardReview,
-          accessibilityLabel: "Cancel editing review",
-        },
-      ]
-    : [];
+        ] satisfies HeaderAction[]
+      : []),
+    {
+      icon: "close-outline",
+      onPress: confirmDiscardReview,
+      accessibilityLabel: isEditMode ? "Cancel editing review" : "Quit review",
+    },
+  ];
 
   return (
     <>
@@ -808,7 +808,7 @@ export default function App() {
               <AppHeader
                 variant="large"
                 title={currentQuestionTitle}
-                actions={editHeaderActions}
+                actions={reviewHeaderActions}
                 below={
                   currentQuestionTitle !== "Preview" ? (
                     <View style={styles.stepHeaderMeta}>
@@ -916,22 +916,6 @@ export default function App() {
                       />
                     )}
                   </View>
-
-                  <TouchableOpacity
-                    style={styles.quitButton}
-                    onPress={confirmDiscardReview}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel="Discard review"
-                  >
-                    <View style={styles.quitButtonVisual}>
-                      <Ionicons
-                        name="trash-outline"
-                        size={16}
-                        color={colors.danger}
-                      />
-                    </View>
-                  </TouchableOpacity>
 
                   <View style={styles.navRight}>
                     {step < questions.length - 1 ? (
@@ -1076,22 +1060,6 @@ const useStyles = makeStyles((t) => ({
   navRight: {
     flex: 1,
     alignItems: "flex-end" as const,
-  },
-  quitButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  quitButtonVisual: {
-    width: 28,
-    height: 28,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.dangerSubtle,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.colors.danger,
   },
   previewContainer: {
     flex: 1,

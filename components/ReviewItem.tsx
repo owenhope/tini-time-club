@@ -48,8 +48,6 @@ const DOUBLE_TAP_DELAY = 300;
 const REVIEW_AUTHOR_AVATAR_SIZE = 40;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
 const MAX_PREVIEW_COMMENTS = 1;
-const REVIEW_ACTION_ICON_COLOR = "#000000";
-
 const ICON_SIZES = {
   small: 20,
   medium: 24,
@@ -312,7 +310,7 @@ const LikeButton = memo(
         <Ionicons
           name={hasLiked ? "heart" : "heart-outline"}
           size={ICON_SIZES.medium}
-          color={hasLiked ? colors.like : REVIEW_ACTION_ICON_COLOR}
+          color={hasLiked ? colors.like : colors.postText}
         />
       </TouchableOpacity>
     );
@@ -322,11 +320,13 @@ LikeButton.displayName = "LikeButton";
 
 const CommentButton = memo(
   ({ count }: { onPress: () => void; count: number }) => {
+    const { colors } = useTheme();
+
     return (
       <Ionicons
         name="chatbubble-outline"
         size={ICON_SIZES.medium}
-        color={REVIEW_ACTION_ICON_COLOR}
+        color={colors.postText}
         accessibilityLabel={count === 1 ? "1 comment" : `${count} comments`}
       />
     );
@@ -335,6 +335,8 @@ const CommentButton = memo(
 CommentButton.displayName = "CommentButton";
 
 const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -345,7 +347,7 @@ const ShareButton = memo(({ onPress }: { onPress: () => void }) => {
       <Ionicons
         name="paper-plane-outline"
         size={ICON_SIZES.medium}
-        color={REVIEW_ACTION_ICON_COLOR}
+        color={colors.postText}
       />
     </TouchableOpacity>
   );
@@ -1364,7 +1366,7 @@ const useStyles = makeStyles((t) => ({
     fontSize: 16,
     lineHeight: 21,
     fontFamily: fonts.semibold,
-    color: t.colors.textSecondary,
+    color: t.colors.postText,
     fontVariant: ["tabular-nums"] as const,
   },
   actionLiked: {

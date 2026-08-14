@@ -148,7 +148,7 @@ const FavoriteLocation = () => {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.isDark ? t.colors.background : t.colors.surface,
   },
   content: {
     flex: 1,

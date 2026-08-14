@@ -1,5 +1,10 @@
 import React, { memo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import {
+  type GestureResponderEvent,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import type { ActivityDisplayRow } from "@/types/activity";
@@ -12,6 +17,8 @@ import { makeStyles, useTheme } from "@/theme";
 interface ActivityRowProps {
   row: ActivityDisplayRow;
   onPress: () => void;
+  onActorPress: () => void;
+  onReviewPress: () => void;
   onFollowBack: () => Promise<void>;
   mutationsDisabled?: boolean;
 }
@@ -19,6 +26,8 @@ interface ActivityRowProps {
 const ActivityRow: React.FC<ActivityRowProps> = ({
   row,
   onPress,
+  onActorPress,
+  onReviewPress,
   onFollowBack,
   mutationsDisabled = false,
 }) => {
@@ -26,6 +35,16 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
   const { colors } = useTheme();
   const [followLoading, setFollowLoading] = useState(false);
   const actor = "actor" in row ? row.actor : null;
+
+  const handleActorPress = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    onActorPress();
+  };
+
+  const handleReviewPress = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    onReviewPress();
+  };
 
   const runFollowBack = async () => {
     if (
@@ -62,13 +81,23 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
     return (
       <View style={styles.copyBlock}>
         <View style={styles.metaLine}>
-          <VerifiedName
-            name={actor?.username ?? "Someone"}
-            isVerified={actor?.isVerified}
-            badgeSize={13}
-            style={styles.actorName}
-            textStyle={styles.actorNameText}
-          />
+          <Pressable
+            onPress={handleActorPress}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${actor?.username ?? "member"}'s profile`}
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.actorName,
+              pressed && styles.pressed,
+            ]}
+          >
+            <VerifiedName
+              name={actor?.username ?? "Someone"}
+              isVerified={actor?.isVerified}
+              badgeSize={13}
+              textStyle={styles.actorNameText}
+            />
+          </Pressable>
           <Text style={styles.action} numberOfLines={1}>
             {action}
           </Text>
@@ -96,12 +125,19 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
             <Ionicons name="heart" size={19} color={colors.onAccent} />
           </View>
         ) : actor ? (
-          <Avatar
-            avatarPath={actor.avatarUrl}
-            username={actor.username}
-            size={32}
-            reviewCount={actor.reviewCount}
-          />
+          <Pressable
+            onPress={handleActorPress}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${actor.username}'s profile`}
+            hitSlop={6}
+          >
+            <Avatar
+              avatarPath={actor.avatarUrl}
+              username={actor.username}
+              size={32}
+              reviewCount={actor.reviewCount}
+            />
+          </Pressable>
         ) : null}
       </View>
       <View style={styles.content}>
@@ -116,16 +152,30 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
           onPress={() => void runFollowBack()}
         />
       ) : imageUri ? (
-        <ExpoImage
-          source={{ uri: imageUri }}
-          style={styles.thumbnail}
-          contentFit="cover"
-          transition={120}
-        />
+        <Pressable
+          onPress={handleReviewPress}
+          accessibilityRole="link"
+          accessibilityLabel="Open review"
+          hitSlop={6}
+        >
+          <ExpoImage
+            source={{ uri: imageUri }}
+            style={styles.thumbnail}
+            contentFit="cover"
+            transition={120}
+          />
+        </Pressable>
       ) : row.kind === "admin_message" ? null : (
-        <View style={styles.thumbnailFallback}>
-          <Ionicons name="wine-outline" size={20} color={colors.accent} />
-        </View>
+        <Pressable
+          onPress={handleReviewPress}
+          accessibilityRole="link"
+          accessibilityLabel="Open review"
+          hitSlop={6}
+        >
+          <View style={styles.thumbnailFallback}>
+            <Ionicons name="wine-outline" size={20} color={colors.accent} />
+          </View>
+        </Pressable>
       )}
     </Pressable>
   );
