@@ -62,9 +62,28 @@ export const ProfileProvider = ({
     setProfile(null);
     await unregisterPushNotificationsAsync();
     await authCache.invalidateCache();
-    await supabase.auth.signOut();
-    router.replace(routes.welcome());
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      reportError("Error signing out unavailable account:", error);
+      router.replace(routes.welcome());
+    }
     Alert.alert("Signed out", ACCOUNT_GONE_MESSAGE);
+  }, [router]);
+
+  /**
+   * A session whose profile cannot be resolved is not safe to leave active:
+   * the router cannot distinguish onboarding from a deleted/corrupt account.
+   * Clear the local session so the root auth listener owns one clean
+   * transition to Welcome. The direct replace is only an error fallback.
+   */
+  const handleProfileUnavailable = useCallback(async () => {
+    setProfile(null);
+    await authCache.invalidateCache();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) {
+      reportError("Error clearing session after profile failure:", error);
+      router.replace(routes.welcome());
+    }
   }, [router]);
 
   const fetchProfile = useCallback(async () => {
@@ -99,9 +118,7 @@ export const ProfileProvider = ({
           return;
         }
 
-        // Any other profile fetch error: fall back to the auth screen.
-        await authCache.invalidateCache();
-        router.replace(routes.welcome());
+        await handleProfileUnavailable();
         return;
       }
 
@@ -114,15 +131,11 @@ export const ProfileProvider = ({
         return;
       }
 
-      const message = error instanceof Error ? error.message : "";
-      if (message.includes("Profile fetch error")) {
-        await authCache.invalidateCache();
-        router.replace(routes.welcome());
-      }
+      await handleProfileUnavailable();
     } finally {
       setLoading(false);
     }
-  }, [handleAccountGone, router]);
+  }, [handleAccountGone, handleProfileUnavailable]);
 
   useEffect(() => {
     fetchProfile();

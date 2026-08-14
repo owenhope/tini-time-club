@@ -6,10 +6,8 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "@/utils/supabase";
-import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { fonts, makeStyles, useTheme } from "@/theme";
-import { routes } from "@/utils/routes";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -19,7 +17,6 @@ export function GoogleAuth() {
       "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
   });
   const styles = useStyles();
-  const router = useRouter();
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +38,6 @@ export function GoogleAuth() {
         }
 
         AnalyticService.capture("login", { method: "google" });
-        router.replace(routes.home());
       } else {
         throw new Error("No ID token present");
       }
@@ -59,7 +55,7 @@ export function GoogleAuth() {
     } finally {
       setLoading(false);
     }
-  }, [loading, router]);
+  }, [loading]);
 
   const title = "Continue with Google";
 

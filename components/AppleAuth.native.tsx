@@ -2,14 +2,11 @@ import React from "react";
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
-import { useRouter } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { routes } from "@/utils/routes";
 
 export function AppleAuth() {
-  const router = useRouter();
   const { isDark } = useTheme();
 
   // Check if Apple Sign-In is available
@@ -68,7 +65,6 @@ export function AppleAuth() {
                 throw new Error(`Authentication failed: ${error.message}`);
               } else {
                 AnalyticService.capture("login", { method: "apple" });
-                router.replace(routes.home());
               }
             } else {
               reportError("[AppleAuth] ❌ No identityToken received");

@@ -8,7 +8,11 @@ let mockAuthStateChange:
   | ((event: string, session: { user: { id: string } } | null) => Promise<void>)
   | undefined;
 let mockProfileState: {
-  profile: { username: string | null; eula_accepted: boolean } | null;
+  profile: {
+    id: string;
+    username: string | null;
+    eula_accepted: boolean;
+  } | null;
   loading: boolean;
 };
 let mockPathname = "/";
@@ -18,6 +22,7 @@ let mockStackScreenOptions: { animation?: string } | undefined;
 const mockReplace = jest.fn();
 const mockHideAsync = jest.fn(async () => undefined);
 const mockGetSession = jest.fn<Promise<unknown>, []>();
+const mockIsAuthCallbackUrl = jest.fn((_url: string) => false);
 const mockSignOut = jest.fn(async () => {
   await mockAuthStateChange?.("SIGNED_OUT", null);
   return { error: null };
@@ -86,7 +91,7 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 jest.mock("@/utils/authDeepLink", () => ({
   createSessionFromAuthUrl: jest.fn(),
-  isAuthCallbackUrl: jest.fn(() => false),
+  isAuthCallbackUrl: (url: string) => mockIsAuthCallbackUrl(url),
 }));
 jest.mock("@/services/pushNotificationService", () => ({
   retryPendingPushUnregistrationAsync: jest.fn(),
@@ -179,6 +184,8 @@ describe("root startup routing", () => {
     mockHideAsync.mockClear();
     mockGetSession.mockReset();
     mockGetSession.mockImplementation(() => new Promise(() => undefined));
+    mockIsAuthCallbackUrl.mockReset();
+    mockIsAuthCallbackUrl.mockReturnValue(false);
     mockSignOut.mockClear();
   });
 
@@ -219,7 +226,11 @@ describe("root startup routing", () => {
       name: "signed in with onboarding incomplete",
       session: { user: { id: "member-1" } },
       resolvedProfile: {
-        profile: { username: null, eula_accepted: false },
+        profile: {
+          id: "member-1",
+          username: null,
+          eula_accepted: false,
+        },
         loading: false,
       },
       route: "/onboarding",
@@ -228,7 +239,11 @@ describe("root startup routing", () => {
       name: "signed in with onboarding complete",
       session: { user: { id: "member-1" } },
       resolvedProfile: {
-        profile: { username: "olive", eula_accepted: true },
+        profile: {
+          id: "member-1",
+          username: "olive",
+          eula_accepted: true,
+        },
         loading: false,
       },
       route: "/home",
@@ -280,7 +295,11 @@ describe("root startup routing", () => {
 
   it("does not animate from the empty startup gate to the resolved route", async () => {
     mockProfileState = {
-      profile: { username: "olive", eula_accepted: true },
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
       loading: false,
     };
 
@@ -311,7 +330,11 @@ describe("root startup routing", () => {
     });
 
     mockProfileState = {
-      profile: { username: null, eula_accepted: false },
+      profile: {
+        id: "member-1",
+        username: null,
+        eula_accepted: false,
+      },
       loading: false,
     };
     await act(async () => {
@@ -322,9 +345,106 @@ describe("root startup routing", () => {
     expect(mockHideAsync).not.toHaveBeenCalled();
   });
 
+  it("routes an unauthenticated deep link to Welcome", async () => {
+    mockInitialUrl = "tinitime://r/review-1";
+    mockPathname = "/r/review-1";
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", null);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
+    expect(mockHideAsync).not.toHaveBeenCalled();
+  });
+
+  it("waits for onboarding state after a fresh sign-in before routing", async () => {
+    mockProfileState = { profile: null, loading: false };
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", null);
+    });
+
+    mockPathname = "/welcome";
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+    mockReplace.mockClear();
+    mockProfileState = { profile: null, loading: true };
+
+    await act(async () => {
+      await mockAuthStateChange?.("SIGNED_IN", {
+        user: { id: "member-1" },
+      });
+    });
+
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: null,
+        eula_accepted: false,
+      },
+      loading: false,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith("/onboarding");
+    expect(mockReplace).not.toHaveBeenCalledWith("/home");
+  });
+
+  it("keeps the splash over an auth callback until its session resolves", async () => {
+    mockInitialUrl = "tinitime://auth/callback#access_token=AT&refresh_token=RT";
+    mockIsAuthCallbackUrl.mockReturnValue(true);
+    mockPathname = "/auth/callback";
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", null);
+    });
+
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+    expect(mockHideAsync).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await mockAuthStateChange?.("SIGNED_IN", {
+        user: { id: "member-1" },
+      });
+    });
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/home");
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+  });
+
   it("routes an initialized app to Welcome after logout", async () => {
     mockProfileState = {
-      profile: { username: "olive", eula_accepted: true },
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
       loading: false,
     };
 
@@ -350,7 +470,11 @@ describe("root startup routing", () => {
 
   it("performs one Welcome navigation when Settings signs out", async () => {
     mockProfileState = {
-      profile: { username: "olive", eula_accepted: true },
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
       loading: false,
     };
 

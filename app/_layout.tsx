@@ -52,6 +52,7 @@ import { retryPendingPushUnregistrationAsync } from "@/services/pushNotification
 import { withTimeout } from "@/utils/async";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import type { Session } from "@supabase/supabase-js";
+import type { Profile } from "@/types/types";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -69,6 +70,20 @@ const isOnboardingExemptPath = (path: string) =>
   path.startsWith("/auth");
 
 const RESUME_SESSION_TIMEOUT_MS = 5000;
+
+const isAuthenticationPath = (path: string) =>
+  path === "/" ||
+  path === "/welcome" ||
+  path === "/auth" ||
+  path === "/sign-in" ||
+  path === "/sign-up" ||
+  path.startsWith("/auth/");
+
+const getAuthenticatedDefaultRoute = (profile: Profile | null) => {
+  if (!profile) return routes.welcome();
+  if (!profile.username || !profile.eula_accepted) return routes.onboarding();
+  return routes.home();
+};
 
 type InitialAuthResolution = {
   session: Session | null;
@@ -186,25 +201,26 @@ export function RootLayoutNav() {
   const [initialAuth, setInitialAuth] = useState<InitialAuthResolution | null>(
     null
   );
+  const [pendingSignedInUserId, setPendingSignedInUserId] = useState<
+    string | null
+  >(null);
   const isStartupResolved = Boolean(
     fontsLoaded && initialAuth && (!initialAuth.session || !profileLoading)
   );
   const startupTarget = (() => {
     if (!isStartupResolved || !initialAuth) return null;
-    if (!initialAuth.session) {
-      return initialAuth.shouldChooseDefaultRoute ? routes.welcome() : null;
-    }
-    if (!profile) return routes.welcome();
-    if (!profile.username || !profile.eula_accepted) {
-      return routes.onboarding();
-    }
-    return initialAuth.shouldChooseDefaultRoute ? routes.home() : null;
+    if (!initialAuth.session) return routes.welcome();
+
+    const authenticatedTarget = getAuthenticatedDefaultRoute(profile);
+    if (authenticatedTarget !== routes.home()) return authenticatedTarget;
+    return initialAuth.shouldChooseDefaultRoute ? authenticatedTarget : null;
   })();
   const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
   const hasHandledInitialSession = useRef(false);
+  const authSessionRef = useRef<Session | null>(null);
   const lastHandledAuthUrl = useRef<string | null>(null);
 
   // The auth effect below runs once, so reading `pathname`/`isReady` directly
@@ -248,6 +264,34 @@ export function RootLayoutNav() {
 
     void requestAppTrackingTransparencyAsync();
   }, [fontsLoaded, isReady]);
+
+  // A fresh sign-in is not a complete routing decision: first wait for the
+  // signed-in member's profile so a new account goes straight to Onboarding
+  // and an existing account goes straight to Home. Keeping the auth screen
+  // mounted while that read completes avoids briefly mounting the wrong tree.
+  useEffect(() => {
+    if (
+      !pendingSignedInUserId ||
+      !isReady ||
+      !rootNavigationState?.key ||
+      profileLoading ||
+      profile?.id !== pendingSignedInUserId
+    ) {
+      return;
+    }
+
+    const target = getAuthenticatedDefaultRoute(profile);
+    setPendingSignedInUserId(null);
+    if (pathname !== target) router.replace(target);
+  }, [
+    isReady,
+    pathname,
+    pendingSignedInUserId,
+    profile,
+    profileLoading,
+    rootNavigationState?.key,
+    router,
+  ]);
 
   // Startup is resolved only after both the persisted session and, for a
   // signed-in member, the profile fields that determine onboarding are known.
@@ -316,7 +360,6 @@ export function RootLayoutNav() {
 
     const resolveInitialSession = async (session: Session | null) => {
       if (hasHandledInitialSession.current || isReadyRef.current) return;
-      hasHandledInitialSession.current = true;
 
       let launchedViaDeepLink: string | null = null;
       try {
@@ -327,12 +370,23 @@ export function RootLayoutNav() {
 
       const isAuthLaunch =
         !!launchedViaDeepLink && isAuthCallbackUrl(launchedViaDeepLink);
-      const deepLinkRouted =
-        !!launchedViaDeepLink && pathnameRef.current !== "/";
 
+      // The first persisted-session result is normally signed out while an
+      // auth callback is still exchanging its tokens. Keep the native splash
+      // up until that callback emits SIGNED_IN, or handleAuthUrl reports a
+      // definitive failure and reveals the auth screen.
+      if (isAuthLaunch && !session) return;
+
+      const deepLinkRouted =
+        !!launchedViaDeepLink &&
+        !isAuthLaunch &&
+        pathnameRef.current !== "/";
+
+      hasHandledInitialSession.current = true;
+      authSessionRef.current = session;
       setInitialAuth({
         session,
-        shouldChooseDefaultRoute: !isAuthLaunch && !deepLinkRouted,
+        shouldChooseDefaultRoute: !deepLinkRouted,
       });
     };
 
@@ -345,6 +399,7 @@ export function RootLayoutNav() {
       if (event === "PASSWORD_RECOVERY") {
         // Recovery deep link: let the user set a new password instead of
         // dropping them on the feed.
+        authSessionRef.current = session;
         setIsReady(true);
         router.replace(routes.resetPassword());
         await SplashScreen.hideAsync();
@@ -354,15 +409,34 @@ export function RootLayoutNav() {
       if (event === "INITIAL_SESSION") {
         await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
-        // User signed in (email, Apple, Google, etc.). Recovery links also emit
-        // SIGNED_IN; staying put keeps the reset screen on screen.
-        if (pathnameRef.current !== "/reset-password") {
-          router.replace(routes.home());
+        if (!hasHandledInitialSession.current) {
+          await resolveInitialSession(session);
+        } else {
+          const wasSignedOut = !authSessionRef.current;
+          authSessionRef.current = session;
+
+          // Recovery links also emit SIGNED_IN; staying put keeps the reset
+          // screen visible. Existing sessions can also re-emit SIGNED_IN when
+          // refreshed, so only a real signed-out -> signed-in transition from
+          // an auth screen starts destination selection.
+          if (
+            wasSignedOut &&
+            pathnameRef.current !== "/reset-password" &&
+            isAuthenticationPath(pathnameRef.current)
+          ) {
+            setPendingSignedInUserId(session.user.id);
+          }
         }
       } else if (event === "SIGNED_OUT") {
         // User signed out
+        authSessionRef.current = null;
+        setPendingSignedInUserId(null);
         await authCache.invalidateCache();
-        router.replace(routes.welcome());
+        if (!hasHandledInitialSession.current) {
+          await resolveInitialSession(null);
+        } else {
+          router.replace(routes.welcome());
+        }
       }
     });
 
