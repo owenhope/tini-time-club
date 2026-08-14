@@ -344,68 +344,99 @@ export default function DiscoverTabs({
     );
   };
 
-  const renderLocation = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.resultCard}
-      onPress={() =>
-        router.navigate(
-          routes.place(item.id, {
-            name: item.name || "",
-            address: item.address || "",
-          })
-        )
-      }
-      activeOpacity={0.7}
-      accessibilityRole="link"
-      accessibilityLabel={`View ${item.name}`}
-      accessibilityHint="Opens the location page"
-    >
-      <View style={styles.cardContent}>
-        <View style={styles.textContainer}>
-          <View style={styles.resultTitleRow}>
-            <Text style={styles.resultTitle} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={colors.accent}
-              pointerEvents="none"
-            />
-          </View>
-          {item.address && (
-            <Text style={styles.resultSubtitle} numberOfLines={1}>
-              {formatCityRegion(stripNameFromAddress(item.name, item.address))}
-            </Text>
-          )}
-          {/* Olives and the aggregate on one line, the way the design's
-              place rows read — the stacked column beside the name was a
-              second hierarchy competing with the first. */}
-          <View style={styles.resultRating}>
-            <RatingPips
-              value={item.rating ?? 0}
-              size={18}
-              accessibilityLabel=""
-            />
-            {item.rating != null ? (
-              <View style={styles.resultRatingMeta}>
-                <Text style={styles.resultScore}>
-                  {formatRating(item.rating)}
-                </Text>
-                <Text style={styles.resultReviewCount}>
-                  {item.total_ratings ?? 0}{" "}
-                  {item.total_ratings === 1 ? "review" : "reviews"}
-                </Text>
+  const renderLocation = ({ item }: { item: any }) => {
+    const reviewCount = item.total_ratings ?? 0;
+    const reviewLabel = `${reviewCount} ${
+      reviewCount === 1 ? "review" : "reviews"
+    }`;
+    const hasRating = item.rating != null && reviewCount > 0;
+
+    return (
+      <TouchableOpacity
+        style={styles.resultCard}
+        onPress={() =>
+          router.navigate(
+            routes.place(item.id, {
+              name: item.name || "",
+              address: item.address || "",
+            })
+          )
+        }
+        activeOpacity={0.7}
+        accessibilityRole="link"
+        accessibilityLabel={`View ${item.name}`}
+        accessibilityHint="Opens the location page"
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.textContainer}>
+            <View style={styles.resultTitleRow}>
+              <Text
+                style={[styles.resultTitle, styles.memberResultTitle]}
+                numberOfLines={2}
+              >
+                {item.name}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={colors.accent}
+                pointerEvents="none"
+              />
+            </View>
+            {item.address ? (
+              <Text style={styles.resultSubtitle} numberOfLines={1}>
+                {formatCityRegion(
+                  stripNameFromAddress(item.name, item.address)
+                )}
+              </Text>
+            ) : null}
+
+            <View style={styles.resultSummaryRow}>
+              <View
+                style={styles.resultMetricBlock}
+                accessible
+                accessibilityRole="summary"
+                accessibilityLabel={
+                  hasRating
+                    ? `Overall ${formatRating(item.rating)} from ${reviewLabel}`
+                    : "Not yet rated"
+                }
+              >
+                <Text style={styles.resultEyebrow}>OVERALL</Text>
+                <View style={styles.resultRatingRow}>
+                  <Text style={styles.resultScore}>
+                    {hasRating ? formatRating(item.rating) : "--"}
+                  </Text>
+                  {hasRating ? (
+                    <View style={styles.resultPips}>
+                      <RatingPips
+                        value={item.rating}
+                        size={13}
+                        accessibilityLabel=""
+                      />
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.resultReviewCount}>{reviewLabel}</Text>
               </View>
-            ) : (
-              <Text style={styles.resultUnrated}>Not yet rated</Text>
-            )}
+
+              {item.regulars?.length ? (
+                <View style={styles.resultRegulars}>
+                  <Text style={styles.resultEyebrow}>REGULARS</Text>
+                  <Regulars
+                    regulars={item.regulars}
+                    variant="compact"
+                    compactAvatarSize={24}
+                    showLabel={false}
+                  />
+                </View>
+              ) : null}
+            </View>
           </View>
-          <Regulars regulars={item.regulars} variant="compact" />
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -614,33 +645,48 @@ const useStyles = makeStyles((t) => ({
   avatarContainer: {
     marginRight: t.spacing.md,
   },
-  resultRating: {
+  resultSummaryRow: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
+    marginTop: t.spacing.md,
+  },
+  resultMetricBlock: {
+    gap: t.spacing.xs,
+  },
+  resultRatingRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.md,
-    marginTop: t.spacing.xs,
-  },
-  resultRatingMeta: {
-    flexDirection: "row" as const,
-    alignItems: "baseline" as const,
     gap: t.spacing.sm,
+  },
+  resultPips: {
+    paddingHorizontal: t.spacing.xs,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.surfaceSunken,
   },
   resultScore: {
     ...t.typography.metric,
-    letterSpacing: 0,
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   resultReviewCount: {
-    ...t.typography.mono,
-    color: t.colors.textMuted,
-  },
-  resultUnrated: {
-    ...t.typography.mono,
+    ...t.typography.caption,
     color: t.colors.textMuted,
   },
   textContainer: {
     flex: 1,
+  },
+  resultRegulars: {
+    alignItems: "flex-end" as const,
+    flexShrink: 0,
+    gap: t.spacing.xs,
+    paddingTop: 1,
+  },
+  resultEyebrow: {
+    ...t.typography.label,
+    color: t.colors.textMuted,
   },
   resultTitleRow: {
     flexDirection: "row" as const,

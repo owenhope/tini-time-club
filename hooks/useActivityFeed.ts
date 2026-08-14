@@ -71,58 +71,65 @@ export function useActivityFeed(): ActivityFeed {
     []
   );
 
-  const refresh = useCallback(async () => {
-    if (!profileId) return;
-    const token = ++refreshTokenRef.current;
-    setRefreshing(true);
-    try {
-      const page = await fetchActivityPage(null, 30);
-      if (!mountedRef.current || token !== refreshTokenRef.current) return;
-      const unseenAtSnapshot = page.events
-        .filter((event) => event.seenAt === null)
-        .map((event) => event.id);
-      setNewIds((current) => new Set([...current, ...unseenAtSnapshot]));
-      mergeEvents(page.events, true);
-      setCursor(page.nextCursor);
-      setHasMore(page.hasMore);
-      setState(page.events.length ? "ready" : "empty");
-      pageNumberRef.current = 1;
-      AnalyticService.capture("activity_page_load", {
-        page: 1,
-        count: page.events.length,
-        cached: false,
-      });
-      void markActivitySeenThrough(page.snapshotAt).catch((error) =>
-        reportError("Failed to mark Activity seen:", error)
-      );
-      await writeActivityCache(profileId, page).catch((error) =>
-        reportError("Failed to cache Activity:", error)
-      );
-    } catch (error) {
-      const cached = await readActivityCache(profileId);
-      if (!mountedRef.current || token !== refreshTokenRef.current) return;
-      if (cached) {
-        mergeEvents(cached.events, true);
-        setCursor(cached.nextCursor);
-        setHasMore(cached.hasMore);
-        setState(cached.events.length ? "offline" : "empty");
+  const refresh = useCallback(
+    async (showRefreshIndicator = true) => {
+      if (!profileId) return;
+      const token = ++refreshTokenRef.current;
+      if (showRefreshIndicator) setRefreshing(true);
+      try {
+        const page = await fetchActivityPage(null, 30);
+        if (!mountedRef.current || token !== refreshTokenRef.current) return;
+        const unseenAtSnapshot = page.events
+          .filter((event) => event.seenAt === null)
+          .map((event) => event.id);
+        setNewIds((current) => new Set([...current, ...unseenAtSnapshot]));
+        mergeEvents(page.events, true);
+        setCursor(page.nextCursor);
+        setHasMore(page.hasMore);
+        setState(page.events.length ? "ready" : "empty");
         pageNumberRef.current = 1;
         AnalyticService.capture("activity_page_load", {
           page: 1,
-          count: cached.events.length,
-          cached: true,
+          count: page.events.length,
+          cached: false,
         });
-      } else {
-        setState("error");
+        void markActivitySeenThrough(page.snapshotAt).catch((error) =>
+          reportError("Failed to mark Activity seen:", error)
+        );
+        await writeActivityCache(profileId, page).catch((error) =>
+          reportError("Failed to cache Activity:", error)
+        );
+      } catch (error) {
+        const cached = await readActivityCache(profileId);
+        if (!mountedRef.current || token !== refreshTokenRef.current) return;
+        if (cached) {
+          mergeEvents(cached.events, true);
+          setCursor(cached.nextCursor);
+          setHasMore(cached.hasMore);
+          setState(cached.events.length ? "offline" : "empty");
+          pageNumberRef.current = 1;
+          AnalyticService.capture("activity_page_load", {
+            page: 1,
+            count: cached.events.length,
+            cached: true,
+          });
+        } else {
+          setState("error");
+        }
+        AnalyticService.capture("activity_load_error", { phase: "refresh" });
+        reportError("Failed to load Activity:", error);
+      } finally {
+        if (
+          showRefreshIndicator &&
+          mountedRef.current &&
+          token === refreshTokenRef.current
+        ) {
+          setRefreshing(false);
+        }
       }
-      AnalyticService.capture("activity_load_error", { phase: "refresh" });
-      reportError("Failed to load Activity:", error);
-    } finally {
-      if (mountedRef.current && token === refreshTokenRef.current) {
-        setRefreshing(false);
-      }
-    }
-  }, [mergeEvents, profileId]);
+    },
+    [mergeEvents, profileId]
+  );
 
   const loadMore = useCallback(async () => {
     if (!profileId || !hasMore || !cursor || loadingMoreRef.current) return;
@@ -181,7 +188,7 @@ export function useActivityFeed(): ActivityFeed {
 
   useEffect(() => {
     mountedRef.current = true;
-    if (profileId) void refresh();
+    if (profileId) void refresh(false);
     return () => {
       mountedRef.current = false;
     };

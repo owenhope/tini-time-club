@@ -51,6 +51,7 @@ import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { withTimeout } from "@/utils/async";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
+import type { Session } from "@supabase/supabase-js";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -58,6 +59,7 @@ SplashScreen.preventAutoHideAsync();
 
 const isOnboardingExemptPath = (path: string) =>
   path === "/" ||
+  path === "/welcome" ||
   path === "/onboarding" ||
   path === "/favorite-location" ||
   path === "/forgot-password" ||
@@ -67,6 +69,11 @@ const isOnboardingExemptPath = (path: string) =>
   path.startsWith("/auth");
 
 const RESUME_SESSION_TIMEOUT_MS = 5000;
+
+type InitialAuthResolution = {
+  session: Session | null;
+  shouldChooseDefaultRoute: boolean;
+};
 
 /**
  * Last-resort catch for render-time throws anywhere in the app — without it
@@ -157,7 +164,7 @@ function RootLayout() {
 
 export default Sentry.wrap(RootLayout);
 
-function RootLayoutNav() {
+export function RootLayoutNav() {
   const { colors, isDark } = useTheme();
   const { profile, loading: profileLoading } = useProfile();
   const [fontsLoaded] = useFonts({
@@ -173,12 +180,27 @@ function RootLayoutNav() {
   });
   const router = useRouter();
   const pathname = usePathname();
-  const [isReady, setIsReady] = useState(false);
-  // Initial-launch destination waiting on the router to mount; the splash
-  // stays up until we actually arrive there.
-  const [pendingRoute, setPendingRoute] = useState<
-    ReturnType<typeof routes.home> | ReturnType<typeof routes.welcome> | null
-  >(null);
+  const [isReadyOverride, setIsReady] = useState(false);
+  const [hasCompletedStartupNavigation, setHasCompletedStartupNavigation] =
+    useState(false);
+  const [initialAuth, setInitialAuth] = useState<InitialAuthResolution | null>(
+    null
+  );
+  const isStartupResolved = Boolean(
+    fontsLoaded && initialAuth && (!initialAuth.session || !profileLoading)
+  );
+  const startupTarget = (() => {
+    if (!isStartupResolved || !initialAuth) return null;
+    if (!initialAuth.session) {
+      return initialAuth.shouldChooseDefaultRoute ? routes.welcome() : null;
+    }
+    if (!profile) return routes.welcome();
+    if (!profile.username || !profile.eula_accepted) {
+      return routes.onboarding();
+    }
+    return initialAuth.shouldChooseDefaultRoute ? routes.home() : null;
+  })();
+  const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
   const appState = useRef(AppState.currentState);
   const isCheckingSession = useRef(false);
@@ -227,32 +249,36 @@ function RootLayoutNav() {
     void requestAppTrackingTransparencyAsync();
   }, [fontsLoaded, isReady]);
 
-  // Perform the initial-launch navigation as soon as the router is ready —
-  // this replaces the old fixed 200 ms "wait for Stack to mount" sleep.
+  // Startup is resolved only after both the persisted session and, for a
+  // signed-in member, the profile fields that determine onboarding are known.
+  // Until this point RootLayoutNav returns null, leaving the native splash in
+  // place and keeping every route screen unmounted. Once the navigator exists,
+  // keep that splash up until the selected route is the current route.
   useEffect(() => {
-    if (pendingRoute && rootNavigationState?.key) {
-      router.replace(pendingRoute);
-    }
-  }, [pendingRoute, rootNavigationState?.key, router]);
-
-  // Hide the splash when we arrive at the launch destination — this replaces
-  // the old fixed 400 ms "wait for navigation" sleep. The timeout is a
-  // backstop so a route mismatch can never strand the splash.
-  useEffect(() => {
-    if (!pendingRoute) return;
-
-    if (pathname === pendingRoute) {
-      setPendingRoute(null);
-      void SplashScreen.hideAsync();
+    if (
+      !isStartupResolved ||
+      hasCompletedStartupNavigation ||
+      !rootNavigationState?.key
+    ) {
       return;
     }
 
-    const backstop = setTimeout(() => {
-      setPendingRoute(null);
-      void SplashScreen.hideAsync();
-    }, 2000);
-    return () => clearTimeout(backstop);
-  }, [pathname, pendingRoute]);
+    if (startupTarget && pathname !== startupTarget) {
+      router.replace(startupTarget);
+      return;
+    }
+
+    void SplashScreen.hideAsync().finally(() => {
+      setHasCompletedStartupNavigation(true);
+    });
+  }, [
+    hasCompletedStartupNavigation,
+    isStartupResolved,
+    pathname,
+    rootNavigationState?.key,
+    router,
+    startupTarget,
+  ]);
 
   useEffect(() => {
     // Initialize caches (non-blocking). loadFromStorage already prunes
@@ -288,20 +314,27 @@ function RootLayoutNav() {
       if (url) void handleAuthUrl(url);
     });
 
-    // Watchdog: if auth never reports (e.g. session restore failed in a way
-    // the storage adapter couldn't absorb), don't leave the user on the
-    // splash screen forever — surface the sign-in screen instead.
-    const splashWatchdog = setTimeout(() => {
-      // isReadyRef also covers the paths that mount the app without marking
-      // the initial session handled (password recovery, auth-link errors).
-      if (!hasHandledInitialSession.current && !isReadyRef.current) {
-        hasHandledInitialSession.current = true;
-        reportError("[RootLayout] Auth never initialized; forcing sign-in");
-        setIsReady(true);
-        router.replace(routes.welcome());
-        void SplashScreen.hideAsync();
+    const resolveInitialSession = async (session: Session | null) => {
+      if (hasHandledInitialSession.current || isReadyRef.current) return;
+      hasHandledInitialSession.current = true;
+
+      let launchedViaDeepLink: string | null = null;
+      try {
+        launchedViaDeepLink = await Linking.getInitialURL();
+      } catch (error) {
+        reportError("[RootLayout] Failed to read the initial URL:", error);
       }
-    }, 5000);
+
+      const isAuthLaunch =
+        !!launchedViaDeepLink && isAuthCallbackUrl(launchedViaDeepLink);
+      const deepLinkRouted =
+        !!launchedViaDeepLink && pathnameRef.current !== "/";
+
+      setInitialAuth({
+        session,
+        shouldChooseDefaultRoute: !isAuthLaunch && !deepLinkRouted,
+      });
+    };
 
     // Listen for authentication state changes - single source of truth
     const {
@@ -318,36 +351,8 @@ function RootLayoutNav() {
         return;
       }
 
-      if (event === "INITIAL_SESSION" && !hasHandledInitialSession.current) {
-        hasHandledInitialSession.current = true;
-
-        // Decide where this launch should land — unless a deep link is being
-        // handled. Auth callbacks navigate from handleAuthUrl, and a routable
-        // link (a shared review, a profile) has already moved us off the
-        // entry route. But an unroutable launch URL must NOT suppress the
-        // redirect, or a signed-in user gets stranded on the welcome screen.
-        const launchedViaDeepLink = await Linking.getInitialURL();
-        const isAuthLaunch =
-          !!launchedViaDeepLink && isAuthCallbackUrl(launchedViaDeepLink);
-        const deepLinkRouted =
-          !!launchedViaDeepLink && pathnameRef.current !== "/";
-
-        const target =
-          !isAuthLaunch && !deepLinkRouted
-            ? session
-              ? routes.home()
-              : routes.welcome()
-            : null;
-
-        // Mount the Stack; the navigation + splash-hide effects below take
-        // over once the router reports ready — no fixed timers.
-        setIsReady(true);
-
-        if (target && pathnameRef.current !== target) {
-          setPendingRoute(target);
-        } else {
-          await SplashScreen.hideAsync();
-        }
+      if (event === "INITIAL_SESSION") {
+        await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
         // User signed in (email, Apple, Google, etc.). Recovery links also emit
         // SIGNED_IN; staying put keeps the reset screen on screen.
@@ -360,6 +365,23 @@ function RootLayoutNav() {
         router.replace(routes.welcome());
       }
     });
+
+    // INITIAL_SESSION is normally emitted by the listener. The explicit
+    // read gives initialization a deterministic error path as well: invalid
+    // or unreadable persisted sessions resolve to signed-out without relying
+    // on a timer to reveal the Welcome screen.
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          reportError("[RootLayout] Failed to restore the session:", error);
+        }
+        return resolveInitialSession(error ? null : session);
+      })
+      .catch((error) => {
+        reportError("[RootLayout] Failed to initialize auth:", error);
+        return resolveInitialSession(null);
+      });
 
     // Handle app state changes (resume from background)
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
@@ -410,7 +432,6 @@ function RootLayoutNav() {
     );
 
     return () => {
-      clearTimeout(splashWatchdog);
       subscription.unsubscribe();
       linkingSubscription.remove();
       appStateSubscription?.remove();
@@ -429,6 +450,7 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerShown: false,
+          animation: hasCompletedStartupNavigation ? "default" : "none",
           contentStyle: { backgroundColor: colors.background },
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.accent,

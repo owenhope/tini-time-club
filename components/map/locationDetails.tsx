@@ -74,13 +74,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               : "Not yet rated"
           }
         >
-          <Text style={styles.eyebrow}>Overall</Text>
+          <Text style={styles.eyebrow}>OVERALL</Text>
           <View style={styles.ratingRow}>
             <Text style={styles.score}>
               {hasRating ? formatRating(loc.rating) : "--"}
             </Text>
             {hasRating ? (
-              <RatingPips value={loc.rating} size={18} accessibilityLabel="" />
+              <View style={styles.ratingPips}>
+                <RatingPips
+                  value={loc.rating}
+                  size={16}
+                  accessibilityLabel=""
+                />
+              </View>
             ) : null}
           </View>
           <Text style={styles.reviewCount} numberOfLines={1}>
@@ -98,7 +104,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             accessibilityRole="button"
             accessibilityLabel={`Show regulars at ${loc.name}`}
           >
-            <Text style={styles.eyebrow}>Regulars</Text>
+            <Text style={styles.eyebrow}>REGULARS</Text>
             <View
               style={styles.regularAvatars}
               accessibilityLabel={`${regulars.length} regulars`}
@@ -146,11 +152,11 @@ const useStyles = makeStyles((t) => ({
   },
   name: {
     ...t.typography.title,
-    color: t.colors.text,
+    color: t.colors.usernameText,
     flexShrink: 1,
   },
   meta: {
-    ...t.typography.mono,
+    ...t.typography.body,
     color: t.colors.textSecondary,
   },
   detailRow: {
@@ -158,7 +164,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-start" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.lg,
-    paddingTop: t.spacing.lg - 2,
+    paddingTop: t.spacing.md,
   },
   metricBlock: {
     gap: t.spacing.xs,
@@ -168,9 +174,14 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     gap: t.spacing.md,
   },
+  ratingPips: {
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.surfaceSunken,
+  },
   eyebrow: {
-    ...t.typography.eyebrow,
-    fontSize: 10,
+    ...t.typography.label,
     color: t.colors.textMuted,
   },
   score: {
@@ -179,8 +190,8 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ["tabular-nums"] as const,
   },
   reviewCount: {
-    ...t.typography.mono,
-    color: t.colors.textSecondary,
+    ...t.typography.body,
+    color: t.colors.textMuted,
   },
   regularsBlock: {
     alignItems: "flex-end" as const,

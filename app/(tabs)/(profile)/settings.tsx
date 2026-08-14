@@ -45,11 +45,11 @@ const Settings = () => {
 
       if (error) {
         reportError("Error signing out:", error);
-        // Still navigate to login even if signOut has an error
+        // A failed sign-out does not emit SIGNED_OUT, so use the screen-level
+        // fallback only in this error path. Successful logout navigation is
+        // owned by the root auth listener to avoid two page transitions.
+        router.replace(routes.welcome());
       }
-
-      // Navigate to login screen - don't rely on SIGNED_OUT event
-      router.replace(routes.welcome());
     } catch (error) {
       reportError("Error signing out:", error);
       // Still try to navigate to login

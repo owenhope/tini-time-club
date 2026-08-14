@@ -9,7 +9,7 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import type { Review } from "@/types/types";
-import { fonts } from "@/theme";
+import { fonts, typography } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import {
@@ -358,46 +358,50 @@ const ReviewShareCard = ({
             },
           ]}
         >
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.username,
-              {
-                fontSize: 15 * artworkScale,
-                lineHeight: 19 * artworkScale,
-              },
-            ]}
-          >
-            {username}
-          </Text>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.65}
-            style={[
-              styles.headline,
-              {
-                fontSize: 28 * artworkScale,
-                lineHeight: 32 * artworkScale,
-              },
-            ]}
-          >
-            {headline}
-          </Text>
-          {cityCountry ? (
+          <View style={{ gap: 5 * artworkScale }}>
             <Text
               numberOfLines={1}
               style={[
-                styles.meta,
+                styles.username,
                 {
-                  fontSize: 14 * artworkScale,
-                  lineHeight: 18 * artworkScale,
+                  fontSize: 15 * artworkScale,
+                  lineHeight: 19 * artworkScale,
                 },
               ]}
             >
-              {cityCountry}
+              {username}
             </Text>
-          ) : null}
+            <View style={{ gap: 3 * artworkScale }}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
+                style={[
+                  styles.headline,
+                  {
+                    fontSize: 26 * artworkScale,
+                    lineHeight: 30 * artworkScale,
+                  },
+                ]}
+              >
+                {headline}
+              </Text>
+              {cityCountry ? (
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.meta,
+                    {
+                      fontSize: 14 * artworkScale,
+                      lineHeight: 18 * artworkScale,
+                    },
+                  ]}
+                >
+                  {cityCountry}
+                </Text>
+              ) : null}
+            </View>
+          </View>
 
           <View
             style={[
@@ -465,29 +469,37 @@ const ShareMetric = ({
         styles.metricLabel,
         align === "right" && styles.metricTextRight,
         {
-          fontSize: 13 * scale,
-          lineHeight: 17 * scale,
+          fontSize: 12 * scale,
+          lineHeight: 16 * scale,
         },
       ]}
     >
       {label}
     </Text>
-    <Text
-      numberOfLines={1}
-      adjustsFontSizeToFit
-      minimumFontScale={0.7}
+    <View
       style={[
-        styles.metricValue,
-        strong && styles.metricValueStrong,
-        align === "right" && styles.metricTextRight,
-        {
-          fontSize: (strong ? 26 : 20) * scale,
-          lineHeight: (strong ? 31 : 25) * scale,
-        },
+        styles.metricValueRow,
+        align === "right" && styles.metricValueRowRight,
+        { gap: 3 * scale },
       ]}
     >
-      {value}
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        style={[
+          styles.metricValue,
+          strong && styles.metricValueStrong,
+          {
+            fontSize: (strong ? 26 : 20) * scale,
+            lineHeight: (strong ? 31 : 25) * scale,
+          },
+        ]}
+      >
+        {value}
+      </Text>
+      <Text
+        numberOfLines={1}
         style={[
           styles.metricUnit,
           strong && styles.metricUnitStrong,
@@ -497,10 +509,9 @@ const ShareMetric = ({
           },
         ]}
       >
-        {" "}
         {unit}
       </Text>
-    </Text>
+    </View>
   </View>
 );
 
@@ -570,10 +581,17 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   metricLabel: {
+    ...typography.label,
     color: CARD.paper,
-    fontFamily: fonts.medium,
-    letterSpacing: 0,
+    textTransform: "uppercase",
     opacity: 0.92,
+  },
+  metricValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  metricValueRowRight: {
+    justifyContent: "flex-end",
   },
   metricValue: {
     color: CARD.paper,

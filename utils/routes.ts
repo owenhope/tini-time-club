@@ -60,7 +60,7 @@ export type ReviewShareFormat = "story" | "post";
 
 export const routes = {
   /** Welcome / sign-in landing screen. */
-  welcome: () => "/" as const satisfies Href,
+  welcome: () => "/welcome" as const satisfies Href,
 
   /** Main feed tab. */
   home: (params?: HomeParams) =>

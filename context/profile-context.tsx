@@ -15,6 +15,7 @@ import {
   ACCOUNT_GONE_MESSAGE,
 } from "@/utils/accountErrors";
 import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 import type { Profile } from "@/types/types";
 
 interface ProfileResult {
@@ -62,7 +63,7 @@ export const ProfileProvider = ({
     await unregisterPushNotificationsAsync();
     await authCache.invalidateCache();
     await supabase.auth.signOut();
-    router.replace("/");
+    router.replace(routes.welcome());
     Alert.alert("Signed out", ACCOUNT_GONE_MESSAGE);
   }, [router]);
 
@@ -100,7 +101,7 @@ export const ProfileProvider = ({
 
         // Any other profile fetch error: fall back to the auth screen.
         await authCache.invalidateCache();
-        router.replace("/");
+        router.replace(routes.welcome());
         return;
       }
 
@@ -116,7 +117,7 @@ export const ProfileProvider = ({
       const message = error instanceof Error ? error.message : "";
       if (message.includes("Profile fetch error")) {
         await authCache.invalidateCache();
-        router.replace("/");
+        router.replace(routes.welcome());
       }
     } finally {
       setLoading(false);

@@ -9,7 +9,7 @@ export default function CelebrationPreview() {
   const styles = useStyles();
   const [visible, setVisible] = useState(true);
 
-  if (!__DEV__) return <Redirect href="/" />;
+  if (!__DEV__) return <Redirect href="/welcome" />;
 
   return (
     <View style={styles.container}>

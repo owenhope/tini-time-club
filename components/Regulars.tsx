@@ -8,6 +8,7 @@ import { fonts, makeStyles } from "@/theme";
 interface RegularsProps {
   regulars?: Regular[] | null;
   variant?: "default" | "compact" | "rail";
+  compactAvatarSize?: number;
   showLabel?: boolean;
   interactive?: boolean;
   /** Rendered on a green ground, where the default greys disappear. */
@@ -43,6 +44,7 @@ export const RegularsRailSkeleton = ({
 const Regulars: React.FC<RegularsProps> = ({
   regulars,
   variant = "default",
+  compactAvatarSize = 28,
   onInk = false,
   showLabel = true,
   interactive = true,
@@ -119,7 +121,7 @@ const Regulars: React.FC<RegularsProps> = ({
                 <Avatar
                   avatarPath={regular.avatar_url}
                   username={regular.username}
-                  size={28}
+                  size={compactAvatarSize}
                   reviewCount={regular.profile_review_count}
                 />
               </Pressable>
