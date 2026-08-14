@@ -11,7 +11,6 @@ export interface ShareDestinationAction {
 
 export const getShareDestinationActions = (): ShareDestinationAction[] => [
   { label: "Instagram Story", destination: "instagram_story" },
-  { label: "Instagram Post", destination: "instagram_post" },
   { label: "WhatsApp", destination: "whatsapp" },
   { label: "Message", destination: "message" },
   { label: "Copy Link", destination: "copy_link" },

@@ -37,6 +37,7 @@ interface ReviewShareCardProps {
   height: number;
   photoPosition: ReviewSharePhotoPosition;
   onPhotoPositionChange: (position: ReviewSharePhotoPosition) => void;
+  onImageLoad?: () => void;
   onImageError?: () => void;
 }
 
@@ -60,6 +61,7 @@ const ReviewShareCard = ({
   height,
   photoPosition,
   onPhotoPositionChange,
+  onImageLoad,
   onImageError,
 }: ReviewShareCardProps) => {
   const [imageAspect, setImageAspect] = useState<number | null>(null);
@@ -247,6 +249,7 @@ const ReviewShareCard = ({
               if (source.width > 0 && source.height > 0) {
                 setImageAspect(source.width / source.height);
               }
+              onImageLoad?.();
             }}
             onError={onImageError}
           />

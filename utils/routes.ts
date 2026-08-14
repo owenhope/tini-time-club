@@ -137,10 +137,10 @@ export const routes = {
     }) as const satisfies Href,
 
   /** Compose a social image from any review with a usable photo. */
-  reviewSharePreview: (reviewId: string | number, format: ReviewShareFormat) =>
+  reviewSharePreview: (reviewId: string | number) =>
     ({
       pathname: "/review-share-preview",
-      params: { reviewId: String(reviewId), format },
+      params: { reviewId: String(reviewId) },
     }) as const satisfies Href,
 
   /**

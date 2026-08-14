@@ -8,6 +8,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "environment": "development"
     },
     "ios-simulator": {
@@ -15,6 +18,9 @@
       "distribution": "internal",
       "channel": "development",
       "ios": { "simulator": true },
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "environment": "development"
     },
     "preview": {
