@@ -141,17 +141,15 @@ const LayoutContent = () => {
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
-          src={{
-            default: (
-              <NativeTabs.Trigger.VectorIcon
-                family={Ionicons}
-                name="wine-outline"
-              />
-            ),
-            selected: (
-              <NativeTabs.Trigger.VectorIcon family={Ionicons} name="wine" />
-            ),
-          }}
+          // A single async vector source is intentional. Separate default and
+          // selected vector promises can resolve out of order on cold start,
+          // causing react-native-screens to receive selectedIcon without icon.
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={Ionicons}
+              name="wine-outline"
+            />
+          }
           md={{ default: "local_bar", selected: "local_bar" }}
         />
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
