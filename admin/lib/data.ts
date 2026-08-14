@@ -1,7 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { bucketByDay } from "@/lib/bucket";
-import { isSystemPushKind } from "@/lib/notificationKinds";
+import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { formatCityRegion } from "@/lib/format";
 import type { DateRange } from "@/lib/range";
 
@@ -1286,20 +1286,20 @@ export const fetchNotificationAnalytics = async (
   ]);
 
   const sentRows = (sent.data ?? []).filter((row) =>
-    isSystemPushKind(row.kind ?? "unknown")
+    isAnalyticsNotificationKind(row.kind)
   );
   const openRows = (opens.data ?? []).filter((row) =>
-    isSystemPushKind(row.kind ?? "unknown")
+    isAnalyticsNotificationKind(row.kind)
   );
 
   const sentByKind = new Map<string, number>();
   for (const row of sentRows) {
-    const kind = row.kind ?? "unknown";
+    const kind = row.kind;
     sentByKind.set(kind, (sentByKind.get(kind) ?? 0) + 1);
   }
   const openedByKind = new Map<string, number>();
   for (const row of openRows) {
-    const kind = row.kind ?? "unknown";
+    const kind = row.kind;
     openedByKind.set(kind, (openedByKind.get(kind) ?? 0) + 1);
   }
 

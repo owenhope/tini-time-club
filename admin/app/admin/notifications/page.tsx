@@ -6,7 +6,10 @@ import {
   fetchWeeklyPushSubscriberCount,
 } from "@/lib/data";
 import { sendNotification } from "@/lib/actions";
-import { humanizeNotificationKind } from "@/lib/notificationKinds";
+import {
+  formatNotificationSentValue,
+  humanizeNotificationKind,
+} from "@/lib/notificationKinds";
 
 export const dynamic = "force-dynamic";
 
@@ -161,7 +164,7 @@ export default async function NotificationsPage({
                       </span>
                     </td>
                     <td className="px-5 py-2.5">
-                      {row.kind === "tini_time_reminder" ? "local" : row.sent}
+                      {formatNotificationSentValue(row.kind, row.sent)}
                     </td>
                     <td className="px-5 py-2.5">{row.opened}</td>
                     <td className="px-5 py-2.5">

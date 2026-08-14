@@ -7,7 +7,6 @@ const NOTIFICATION_KIND_LABELS: Record<string, string> = {
   review_created: "New review",
   review_liked: "Review like",
   tini_time_reminder: "Tini Time reminder",
-  unknown: "Unknown",
   user_followed: "New follower",
 };
 
@@ -15,6 +14,18 @@ const NON_SYSTEM_PUSH_KINDS = new Set(["admin_message", "test_push"]);
 
 export const isSystemPushKind = (kind: string) =>
   !NON_SYSTEM_PUSH_KINDS.has(kind);
+
+/** Legacy rows without a typed kind cannot produce meaningful open rates. */
+export const isAnalyticsNotificationKind = (
+  kind: string | null | undefined
+): kind is string =>
+  typeof kind === "string" &&
+  kind.length > 0 &&
+  kind !== "unknown" &&
+  isSystemPushKind(kind);
+
+export const formatNotificationSentValue = (kind: string, sent: number) =>
+  kind === "tini_time_reminder" ? "On-device" : sent;
 
 export const humanizeNotificationKind = (kind: string) =>
   NOTIFICATION_KIND_LABELS[kind] ??
