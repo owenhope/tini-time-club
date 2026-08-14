@@ -12,7 +12,7 @@ const gettingStarted = [
   "Download Tini Time Club from the App Store.",
   "Create an account, finish onboarding, and choose your Martini preferences.",
   "Tap + to add a review with a photo, location, spirit, type, Taste and Presentation ratings, and notes.",
-  "Use the map, search, Discover, profiles, regulars, and favorite locations to find new places.",
+  "Use Explore's map, Top Places, Members, profiles, regulars, and favorite locations to find new places.",
 ];
 
 const appFeatures = [

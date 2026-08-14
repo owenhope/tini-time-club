@@ -1,47 +1,43 @@
-import React, { useState } from "react";
-import { View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import DiscoverTabs from "@/components/DiscoverTabs";
-import { makeStyles } from "@/theme";
+import React, { useCallback } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import ExploreScreen from "@/components/explore/ExploreScreen";
+import {
+  getFirstExploreParam,
+  resolveExploreView,
+  type ExploreView,
+} from "@/components/explore/exploreView";
 
-export default function SearchScreen() {
-  const styles = useStyles();
-  const params = useLocalSearchParams<{ tab?: string }>();
-  const initialTab = params.tab === "members" ? "profiles" : "locations";
-  const [query, setQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"profiles" | "locations">(
-    initialTab
+type ExploreRouteParams = {
+  view?: string | string[];
+  tab?: string | string[];
+  lat?: string | string[];
+  lon?: string | string[];
+  locationId?: string | string[];
+  screenshotSeed?: string | string[];
+};
+
+export default function ExploreRoute() {
+  const router = useRouter();
+  const params = useLocalSearchParams<ExploreRouteParams>();
+  const view = resolveExploreView(params);
+
+  const handleViewChange = useCallback(
+    (nextView: ExploreView) => {
+      router.setParams({ view: nextView });
+    },
+    [router]
   );
-
-  React.useEffect(() => {
-    if (params.tab === "members") {
-      setActiveTab("profiles");
-    }
-  }, [params.tab]);
-
-  const handleQueryChange = (text: string) => {
-    setQuery(text);
-  };
 
   return (
-    <View style={styles.container}>
-      {/* The header owns the top inset and the status bar with it, so the
-          green runs up behind the notch rather than starting under it. */}
-      <DiscoverTabs
-        query={query}
-        onTabChange={setActiveTab}
-        activeTab={activeTab}
-        onQueryChange={handleQueryChange}
-      />
-    </View>
+    <ExploreScreen
+      view={view}
+      onViewChange={handleViewChange}
+      mapFocus={{
+        lat: getFirstExploreParam(params.lat),
+        lon: getFirstExploreParam(params.lon),
+        locationId: getFirstExploreParam(params.locationId),
+        screenshotSeed: getFirstExploreParam(params.screenshotSeed),
+      }}
+    />
   );
 }
-
-const useStyles = makeStyles((t) => ({
-  // The green runs up behind the notch so the search block reads as one
-  // continuous brand surface; the results below paint their own paper.
-  container: {
-    flex: 1,
-    backgroundColor: t.colors.surfaceInk,
-  },
-}));

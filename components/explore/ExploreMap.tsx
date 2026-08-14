@@ -23,33 +23,29 @@ import {
   PROVIDER_GOOGLE,
   PROVIDER_DEFAULT,
 } from "react-native-maps";
-import * as Location from "expo-location";
-import * as Device from "expo-device";
 import { darkMapStyle, mapStyle } from "@/assets/mapStyle";
 import { supabase } from "@/utils/supabase";
 import LocationPin from "@/components/map/locationPin";
 import LocationDetails from "@/components/map/locationDetails";
 import { withRegulars, type Regular } from "@/services/regularsService";
 import RegularsSlider from "@/components/RegularsSlider";
-import { useLocalSearchParams } from "expo-router";
 import Search from "@/components/map/search";
-import AppHeader from "@/components/nav/AppHeader";
 import { fonts, makeStyles, useTheme } from "@/theme";
-import { reportError, warn } from "@/utils/log";
+import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
 import {
   getClusterPressRegion,
   type ClusterCoordinate,
 } from "@/utils/mapClusterRegion";
-
-const LOWER_LONSDALE_COORDINATES = {
-  latitude: 49.3104,
-  longitude: -123.0815,
-};
+import {
+  EXPLORE_DEFAULT_COORDINATES,
+  type ExploreLocationState,
+} from "@/components/explore/useExploreLocation";
+import { ExploreSearchArea } from "@/components/explore/ExploreSearchField";
 
 const INITIAL_REGION: Region = {
-  ...LOWER_LONSDALE_COORDINATES,
+  ...EXPLORE_DEFAULT_COORDINATES,
   latitudeDelta: 0.12,
   longitudeDelta: 0.12,
 };
@@ -63,6 +59,20 @@ const CLUSTER_MIN_DELTA = 0.008;
 const CLUSTER_FALLBACK_ZOOM = 0.4;
 const MARKER_PRESS_GUARD_MS = 250;
 const ROUTE_LOCATION_FOCUS_DELTA = 0.001;
+
+export interface ExploreMapFocus {
+  lat?: string;
+  lon?: string;
+  locationId?: string;
+  screenshotSeed?: string;
+}
+
+interface ExploreMapProps {
+  enabled: boolean;
+  focus: ExploreMapFocus;
+  location: ExploreLocationState;
+  requestLocation: () => Promise<void>;
+}
 
 interface MapLocation {
   id: number | string;
@@ -140,14 +150,16 @@ const UserDot = () => {
   );
 };
 
-function Map() {
+function ExploreMap({
+  enabled,
+  focus,
+  location,
+  requestLocation,
+}: ExploreMapProps) {
   const styles = useStyles();
   const { isDark } = useTheme();
-  const params = useLocalSearchParams();
   const tabBarContentInset = useNativeTabBarContentInset();
-  const screenshotSeed = getScreenshotSeed(
-    params.screenshotSeed as string | string[] | undefined
-  );
+  const screenshotSeed = getScreenshotSeed(focus.screenshotSeed);
   const isScreenshotMap =
     screenshotSeed === "map" || screenshotSeed === "place";
   const searchRef = useRef<any>(null);
@@ -167,6 +179,9 @@ function Map() {
   const fetchedBoundsRef = useRef<MapBounds | null>(null);
   const fetchRequestRef = useRef(0);
   const openedRouteLocationRef = useRef<string | null>(null);
+  const focusedCoordinatesRef = useRef<string | null>(null);
+  const initialLocationAppliedRef = useRef(false);
+  const screenshotFocusRef = useRef<string | null>(null);
   const markerPressGuardRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -327,104 +342,119 @@ function Map() {
   }, []);
 
   useEffect(() => {
-    const getLocation = async () => {
-      if (isScreenshotMap) {
-        const latitude =
-          Number(params.lat) || LOWER_LONSDALE_COORDINATES.latitude;
-        const longitude =
-          Number(params.lon) || LOWER_LONSDALE_COORDINATES.longitude;
-        const initial = {
-          latitude,
-          longitude,
-          latitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
-          longitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
-        };
+    if (!enabled || !isScreenshotMap) return;
 
-        setLocationNotice(null);
-        setCanOpenLocationSettings(false);
-        setUserCoordinate(null);
-        regionRef.current = initial;
-        setRegion(initial);
-        setLocationResolved(true);
-        return;
-      }
+    const focusKey = `${screenshotSeed}:${focus.lat ?? ""}:${focus.lon ?? ""}`;
+    if (screenshotFocusRef.current === focusKey) return;
+    screenshotFocusRef.current = focusKey;
 
-      try {
-        const { status, canAskAgain } =
-          await Location.requestForegroundPermissionsAsync();
-
-        if (status !== "granted") {
-          // Without this the map silently sits on its hardcoded default region
-          // and the user has no idea why nothing is nearby.
-          setLocationNotice(
-            canAskAgain
-              ? "Location is off, so we can't show bars near you."
-              : "Location is off. Enable it in Settings to see bars near you."
-          );
-          setCanOpenLocationSettings(!canAskAgain);
-          return;
-        }
-
-        setLocationNotice(null);
-        const coordinates =
-          __DEV__ && !Device.isDevice
-            ? LOWER_LONSDALE_COORDINATES
-            : (await Location.getCurrentPositionAsync({})).coords;
-        const initial = {
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        setUserCoordinate({
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-        });
-        regionRef.current = initial;
-        setRegion(initial);
-        mapRef.current?.animateToRegion(initial, 1000);
-      } catch (error) {
-        warn("Current location unavailable; showing the default map.", error);
-        setLocationNotice("We couldn't determine your location.");
-      } finally {
-        setLocationResolved(true);
-      }
+    const latitude = Number(focus.lat) || EXPLORE_DEFAULT_COORDINATES.latitude;
+    const longitude =
+      Number(focus.lon) || EXPLORE_DEFAULT_COORDINATES.longitude;
+    const initial = {
+      latitude,
+      longitude,
+      latitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
+      longitudeDelta: screenshotSeed === "place" ? 0.012 : 0.018,
     };
 
-    getLocation();
-  }, [isScreenshotMap, params.lat, params.lon, screenshotSeed]);
+    setLocationNotice(null);
+    setCanOpenLocationSettings(false);
+    setUserCoordinate(null);
+    regionRef.current = initial;
+    setRegion(initial);
+    setLocationResolved(true);
+  }, [enabled, focus.lat, focus.lon, isScreenshotMap, screenshotSeed]);
+
+  useEffect(() => {
+    if (enabled && !isScreenshotMap && location.status === "idle") {
+      void requestLocation();
+    }
+  }, [enabled, isScreenshotMap, location.status, requestLocation]);
+
+  useEffect(() => {
+    if (
+      !enabled ||
+      isScreenshotMap ||
+      initialLocationAppliedRef.current ||
+      location.status === "idle" ||
+      location.status === "loading"
+    ) {
+      return;
+    }
+
+    initialLocationAppliedRef.current = true;
+    setLocationResolved(true);
+
+    if (location.status === "denied") {
+      setLocationNotice(
+        location.canOpenSettings
+          ? "Location is off. Enable it in Settings to see bars near you."
+          : "Location is off, so we can't show bars near you."
+      );
+      setCanOpenLocationSettings(location.canOpenSettings);
+      return;
+    }
+
+    if (location.status === "unavailable") {
+      setLocationNotice("We couldn't determine your location.");
+      return;
+    }
+
+    if (location.status !== "ready") return;
+
+    setLocationNotice(null);
+    setCanOpenLocationSettings(false);
+    setUserCoordinate(location.coordinates);
+
+    // A routed venue focus wins over the user's current position.
+    if (focus.lat && focus.lon) return;
+
+    const initial = {
+      ...location.coordinates,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
+    regionRef.current = initial;
+    setRegion(initial);
+    mapRef.current?.animateToRegion(initial, 1000);
+  }, [enabled, focus.lat, focus.lon, isScreenshotMap, location]);
 
   // Handle navigation to specific location from Location component
   useEffect(() => {
-    if (params.lat && params.lon) {
-      const lat = parseFloat(params.lat as string);
-      const lon = parseFloat(params.lon as string);
+    if (!enabled || !focus.lat || !focus.lon) return;
 
-      if (!isNaN(lat) && !isNaN(lon)) {
-        const targetRegion: Region = {
-          latitude: lat,
-          longitude: lon,
-          latitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
-          longitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
-        };
-        const animationTimer = setTimeout(() => {
-          regionRef.current = targetRegion;
-          setRegion(targetRegion);
-          mapRef.current?.animateToRegion(targetRegion, 1000);
-        }, 300);
+    const focusKey = `${focus.lat}:${focus.lon}`;
+    if (focusedCoordinatesRef.current === focusKey) return;
 
-        return () => clearTimeout(animationTimer);
-      }
+    const lat = parseFloat(focus.lat);
+    const lon = parseFloat(focus.lon);
+
+    if (!isNaN(lat) && !isNaN(lon)) {
+      focusedCoordinatesRef.current = focusKey;
+      const targetRegion: Region = {
+        latitude: lat,
+        longitude: lon,
+        latitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
+        longitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
+      };
+      const animationTimer = setTimeout(() => {
+        regionRef.current = targetRegion;
+        setRegion(targetRegion);
+        mapRef.current?.animateToRegion(targetRegion, 1000);
+      }, 300);
+
+      return () => clearTimeout(animationTimer);
     }
-  }, [params.lat, params.lon]);
+  }, [enabled, focus.lat, focus.lon]);
 
   useEffect(() => {
-    if (!params.locationId) {
+    if (!enabled || !focus.locationId) {
       openedRouteLocationRef.current = null;
       return;
     }
 
-    const routeLocationId = String(params.locationId);
+    const routeLocationId = String(focus.locationId);
     if (openedRouteLocationRef.current === routeLocationId) return;
 
     const target = locations.find(
@@ -438,10 +468,10 @@ function Map() {
     }, 0);
 
     return () => clearTimeout(openTimer);
-  }, [handleMarkerPress, locations, params.locationId]);
+  }, [enabled, focus.locationId, handleMarkerPress, locations]);
 
   useEffect(() => {
-    if (!locationResolved) return;
+    if (!enabled || !locationResolved) return;
 
     const visibleBounds = getBounds(region);
     if (
@@ -490,24 +520,20 @@ function Map() {
         fetchRequestRef.current += 1;
       }
     };
-  }, [locationResolved, region]);
+  }, [enabled, locationResolved, region]);
 
   return (
     <View style={styles.screen}>
-      <AppHeader
-        variant="large"
-        title="Places"
-        below={
-          <Search
-            ref={searchRef}
-            onPlaceSelected={handleSearchPlaceSelected}
-            currentLocation={{
-              latitude: region.latitude,
-              longitude: region.longitude,
-            }}
-          />
-        }
-      />
+      <ExploreSearchArea>
+        <Search
+          ref={searchRef}
+          onPlaceSelected={handleSearchPlaceSelected}
+          currentLocation={{
+            latitude: region.latitude,
+            longitude: region.longitude,
+          }}
+        />
+      </ExploreSearchArea>
       <View
         style={styles.mapFrame}
         onLayout={(event) => {
@@ -715,4 +741,4 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
-export default Map;
+export default ExploreMap;

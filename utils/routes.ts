@@ -1,4 +1,5 @@
 import type { Href } from "expo-router";
+import type { ExploreView } from "@/components/explore/exploreView";
 
 /**
  * Typed route builders for every screen the app navigates to.
@@ -53,7 +54,11 @@ export type HomeParams = {
 };
 
 export type DiscoverParams = {
-  tab?: "places" | "members";
+  view?: ExploreView;
+  lat?: string;
+  lon?: string;
+  locationId?: string | number;
+  screenshotSeed?: string;
 };
 
 export type ReviewShareFormat = "story" | "post";
@@ -77,7 +82,7 @@ export const routes = {
   /** Password reset screen (recovery deep links land here). */
   resetPassword: () => "/reset-password" as const satisfies Href,
 
-  /** Discover tab. */
+  /** Explore tab, optionally selecting or focusing one of its three views. */
   discover: (params?: DiscoverParams) =>
     (params
       ? ({ pathname: "/discover", params } as const)
@@ -154,11 +159,14 @@ export const routes = {
   placeInfo: (params: PlaceInfoParams) =>
     ({ pathname: "/place-info", params }) as const satisfies Href,
 
-  /** Places map tab — optionally focused on a specific location. */
+  /** Compatibility alias for callers that still think in terms of the map. */
   places: (params?: PlacesMapParams) =>
     (params
-      ? ({ pathname: "/places", params } as const)
-      : ("/places" as const)) satisfies Href,
+      ? ({ pathname: "/discover", params: { view: "map", ...params } } as const)
+      : ({
+          pathname: "/discover",
+          params: { view: "map" },
+        } as const)) satisfies Href,
 
   /** Another user's profile. */
   user: (username: string) => `/users/${username}` as const satisfies Href,

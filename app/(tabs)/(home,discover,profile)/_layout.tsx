@@ -14,12 +14,11 @@ import { useTheme } from "@/theme";
 export const unstable_settings = {
   initialRouteName: "home",
   discover: { initialRouteName: "discover" },
-  places: { initialRouteName: "places" },
   profile: { initialRouteName: "profile" },
 };
 
 /**
- * These routes draw their own chrome: the four tab roots wear header A, and
+ * These routes draw their own chrome: the three tab roots wear header A, and
  * the two detail screens wear header C inside their own scrolling content.
  * Everything else is a pushed list or a settings page, which is header B —
  * and B is what the `header` renderer below hands them.
@@ -27,7 +26,6 @@ export const unstable_settings = {
 const HEADERLESS = new Set([
   "home",
   "discover",
-  "places",
   "profile",
   "places/[place]",
   "users/[username]",

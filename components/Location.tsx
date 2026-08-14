@@ -154,12 +154,12 @@ const Location = () => {
       actions.push({
         icon: "map-outline",
         accessibilityLabel: "Show on map",
-        // navigate, not push: this switches to the Places tab (or pops back to
-        // the map when already in that stack) instead of stacking a tab root
-        // with no back button.
+        // navigate, not push: this switches to Explore's Map view (or pops
+        // back to it) instead of stacking a tab root with no back button.
         onPress: () =>
           router.navigate(
-            routes.places({
+            routes.discover({
+              view: "map",
               lat: displayLocation.lat!.toString(),
               lon: displayLocation.lon!.toString(),
               locationId: displayLocation.id,

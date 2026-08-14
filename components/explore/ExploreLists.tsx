@@ -4,28 +4,26 @@ import {
   Text,
   TouchableOpacity,
   FlatList,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import {
-  Avatar,
-  RatingPips,
-  SegmentedControl,
-  VerifiedName,
-} from "@/components/shared";
+import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
-import AppHeader from "@/components/nav/AppHeader";
 import { withRegulars } from "@/services/regularsService";
-import * as Location from "expo-location";
 import { formatRating } from "@/utils/ratingUtils";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { reportError, warn } from "@/utils/log";
+import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import type { ExploreListView } from "@/components/explore/exploreView";
+import type { ExploreLocationState } from "@/components/explore/useExploreLocation";
+import {
+  ExploreSearchArea,
+  ExploreSearchField,
+} from "@/components/explore/ExploreSearchField";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -52,71 +50,50 @@ const ListState = ({
   );
 };
 
-interface DiscoverTabsProps {
+interface ExploreListsProps {
+  enabled: boolean;
   query: string;
-  activeTab: "profiles" | "locations";
-  onTabChange: (tab: "profiles" | "locations") => void;
+  activeView: ExploreListView;
   onQueryChange: (query: string) => void;
+  location: ExploreLocationState;
+  requestLocation: () => Promise<void>;
 }
-
-const DISCOVER_TABS = [
-  { value: "locations", label: "Places" },
-  { value: "profiles", label: "Members" },
-] as const;
 
 const DISCOVER_PROFILE_AVATAR_SIZE = 40;
 
-export default function DiscoverTabs({
+export default function ExploreLists({
+  enabled,
   query,
-  activeTab,
-  onTabChange,
+  activeView,
   onQueryChange,
-}: DiscoverTabsProps) {
+  location,
+  requestLocation,
+}: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const activeTab = activeView === "members" ? "profiles" : "locations";
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [nearby, setNearby] = useState(true); // Default enabled
-  const [userLocation, setUserLocation] = useState<
-    | {
-        latitude: number;
-        longitude: number;
-      }
-    | null
-    | undefined
-  >(undefined); // undefined = not attempted, null = denied/failed, object = success
+  const nearbyEnabled =
+    nearby && location.status !== "denied" && location.status !== "unavailable";
+  const userLocation =
+    location.status === "ready"
+      ? location.coordinates
+      : location.status === "idle" || location.status === "loading"
+        ? undefined
+        : null;
   const router = useRouter();
   const openProfile = useOpenProfile();
 
-  // Get user location on component mount
   useEffect(() => {
-    getCurrentLocation();
-  }, []);
+    if (!enabled || activeView !== "places" || !nearbyEnabled) return;
 
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        // If permission denied, set a flag to indicate we should show all locations
-        setNearby(false);
-        setUserLocation(null);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const userCoords = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-      setUserLocation(userCoords);
-    } catch (error) {
-      warn("Current location unavailable; showing all places instead.", error);
-      // On error, set to null so we can still show locations without nearby filtering
-      setNearby(false);
-      setUserLocation(null);
+    if (location.status === "idle") {
+      void requestLocation();
     }
-  };
+  }, [activeView, enabled, location.status, nearbyEnabled, requestLocation]);
 
   // Calculate distance between two points using Haversine formula
   const calculateDistance = (
@@ -203,7 +180,7 @@ export default function DiscoverTabs({
           }) || [];
 
         // Filter by distance if nearby is enabled and we have user location
-        if (nearby && userLocation) {
+        if (nearbyEnabled && userLocation) {
           // Temporary: show all locations with coordinates for debugging
           const locationsWithCoords = processedLocations.filter((location) => {
             if (!location.latitude || !location.longitude) {
@@ -289,6 +266,8 @@ export default function DiscoverTabs({
   };
 
   React.useEffect(() => {
+    if (!enabled) return;
+
     // Debounce: without this every keystroke fires its own Supabase request.
     const handle = setTimeout(
       () => {
@@ -297,7 +276,7 @@ export default function DiscoverTabs({
         } else {
           // For locations tab, if nearby is enabled and we don't have user location yet, wait
           // But if userLocation is explicitly null (permission denied), proceed anyway
-          if (nearby && userLocation === undefined) {
+          if (nearbyEnabled && userLocation === undefined) {
             return; // Don't fetch until we have location or permission is denied
           }
           fetchLocations(query);
@@ -307,7 +286,7 @@ export default function DiscoverTabs({
     );
 
     return () => clearTimeout(handle);
-  }, [activeTab, query, nearby, userLocation]);
+  }, [activeTab, enabled, query, nearbyEnabled, userLocation]);
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = item.review_count || 0;
@@ -440,36 +419,19 @@ export default function DiscoverTabs({
 
   return (
     <View style={styles.container}>
-      {/* Header A: the screen's name, and the search field inside the green
-          with it. The segmented control used to sit in there too — the green
-          carries a search field or a chip row, never both — so it moved down
-          onto the paper it filters. */}
-      <AppHeader
-        variant="large"
-        title="Discover"
-        below={
-          <View style={styles.searchBar}>
-            <Ionicons
-              name="search-outline"
-              size={20}
-              color={colors.textMuted}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={
-                activeTab === "locations"
-                  ? "Search for places"
-                  : "Search for members"
-              }
-              value={query}
-              onChangeText={onQueryChange}
-              placeholderTextColor={colors.textMuted}
-            />
-            {activeTab === "locations" && (
+      <ExploreSearchArea>
+        <ExploreSearchField
+          value={query}
+          onChangeText={onQueryChange}
+          placeholder={
+            activeTab === "locations" ? "Search top places" : "Search members"
+          }
+          trailing={
+            activeTab === "locations" ? (
               <TouchableOpacity
                 style={[
                   styles.nearbyButton,
-                  nearby && styles.nearbyButtonActive,
+                  nearbyEnabled && styles.nearbyButtonActive,
                 ]}
                 onPress={() => setNearby(!nearby)}
                 activeOpacity={0.7}
@@ -477,40 +439,21 @@ export default function DiscoverTabs({
                 <Ionicons
                   name="location"
                   size={16}
-                  color={nearby ? colors.accent : colors.textMuted}
+                  color={nearbyEnabled ? colors.accent : colors.textMuted}
                 />
                 <Text
-                  style={[styles.nearbyText, nearby && styles.nearbyTextActive]}
+                  style={[
+                    styles.nearbyText,
+                    nearbyEnabled && styles.nearbyTextActive,
+                  ]}
                 >
                   Nearby
                 </Text>
               </TouchableOpacity>
-            )}
-            {query !== "" && (
-              <TouchableOpacity
-                onPress={() => onQueryChange("")}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={colors.textMuted}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-      />
-
-      <View style={styles.segmentRow}>
-        <SegmentedControl
-          value={activeTab}
-          options={DISCOVER_TABS}
-          onChange={onTabChange}
-          style={styles.tabContainer}
-          tone="ink"
+            ) : undefined
+          }
         />
-      </View>
+      </ExploreSearchArea>
 
       {/* Tab Content */}
       <View style={styles.contentContainer}>
@@ -545,7 +488,7 @@ export default function DiscoverTabs({
                 message={
                   query
                     ? `No places matching "${query}".`
-                    : nearby
+                    : nearbyEnabled
                       ? "Nothing poured near you yet. Widen the net \u2014 turn off Nearby."
                       : "No bars on the board yet. Be the first to log one."
                 }
@@ -561,34 +504,7 @@ export default function DiscoverTabs({
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-  },
-  // The chip row belongs to the same green block as the search header.
-  segmentRow: {
-    backgroundColor: t.isDark ? t.colors.tabBar : t.colors.surfaceInk,
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.sm,
-  },
-  tabContainer: {
-    marginHorizontal: t.spacing.gutter,
-  },
-  // Inside the green, so the header owns its inset.
-  searchBar: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    backgroundColor: t.colors.surface,
-    paddingHorizontal: t.spacing.lg,
-    borderRadius: t.radius.pill,
-    height: 48,
-    ...t.elevation.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    marginLeft: t.spacing.md,
-    color: t.colors.text,
+    backgroundColor: t.colors.background,
   },
   nearbyButton: {
     flexDirection: "row" as const,

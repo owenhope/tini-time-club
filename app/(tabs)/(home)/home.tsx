@@ -465,7 +465,7 @@ function Home() {
   }, [newUsername, updateProfile, usernameValidation.isValid]);
 
   const navigateToLocations = useCallback(() => {
-    router.navigate(routes.places());
+    router.navigate(routes.discover({ view: "map" }));
   }, [router]);
 
   const navigateToReview = useCallback(() => {
@@ -473,7 +473,7 @@ function Home() {
   }, [router]);
 
   const navigateToDiscover = useCallback(() => {
-    router.navigate(routes.discover({ tab: "members" }));
+    router.navigate(routes.discover({ view: "members" }));
   }, [router]);
 
   // Memoized empty component

@@ -14,7 +14,7 @@ inputs into sequenced updates with a test expectation for every phase.
   include sharing.
 - Onboarding collects the profile, explains rankings and Regulars, then presents
   the Terms of Service.
-- The mobile app has Feed, Places, Discover, review creation, profiles, and push
+- The mobile app has Feed, Explore (Map, Top Places, and Members), review creation, profiles, and push
   notifications.
 - The admin web app provides operations, analytics, and public review pages.
 - Automated tests: 19 suites and 214 tests.
@@ -55,8 +55,8 @@ Goal: make the existing club feel active and worth returning to.
 - Add reliable notification deep links for comments, likes, follows, rank
   changes, and Regular membership changes.
 - Add weekly recap and review-progress reminders with user-level controls.
-- Improve empty, loading, offline, and retry states across Feed, Places,
-  Discover, and profiles.
+- Improve empty, loading, offline, and retry states across Feed, Explore, and
+  profiles.
 - Add report moderation states to the admin dashboard.
 - Measure onboarding completion, first review, second review, and seven-day
   return without mixing development and production analytics.

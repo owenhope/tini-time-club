@@ -80,7 +80,6 @@ jest.mock("@/utils/notificationOpens", () => ({
   logNotificationOpen: jest.fn(),
 }));
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
-jest.mock("@expo/vector-icons/MaterialIcons", () => () => null);
 
 import TabsLayout from "@/app/(tabs)/_layout";
 
@@ -106,5 +105,26 @@ describe("native tab icon configuration", () => {
         typeof feedIcon.props.src === "object" &&
         "selected" in feedIcon.props.src
     ).toBe(false);
+  });
+
+  it("shows one Explore tab in the four-item native navigation", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const triggers = renderer!.root.findAllByType(
+      "NativeTabTrigger" as React.ElementType
+    );
+
+    expect(triggers.map((trigger) => trigger.props.name)).toEqual([
+      "(home)",
+      "(discover)",
+      "(review)",
+      "(profile)",
+    ]);
+    expect(renderer!.root.findByProps({ name: "(discover)" }).props).toEqual(
+      expect.objectContaining({ accessibilityLabel: "Explore" })
+    );
+    expect(renderer!.root.findAllByProps({ name: "(places)" })).toHaveLength(0);
   });
 });

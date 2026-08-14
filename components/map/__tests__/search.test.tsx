@@ -32,7 +32,7 @@ const renderSearch = () => {
 };
 
 describe("map search", () => {
-  it("vertically centers its text and placeholder inside the search field", () => {
+  it("uses the normalized Explore field geometry", () => {
     const tree = renderSearch();
     const input = tree.root.findByType(TextInput);
     const style = StyleSheet.flatten(input.props.style);
@@ -40,7 +40,7 @@ describe("map search", () => {
     expect(style.height).toBe("100%");
     expect(style.paddingVertical).toBe(0);
     expect(style.textAlignVertical).toBe("center");
-    expect(style.transform).toEqual([{ translateY: -4 }]);
+    expect(style.transform).toBeUndefined();
 
     act(() => tree.unmount());
   });

@@ -1,4 +1,5 @@
 import { Redirect, useLocalSearchParams } from "expo-router";
+import { routes } from "@/utils/routes";
 
 /**
  * The locations tab was renamed to places. Old deep links
@@ -6,5 +7,5 @@ import { Redirect, useLocalSearchParams } from "expo-router";
  */
 export default function LegacyLocationRedirect() {
   const { location } = useLocalSearchParams<{ location: string }>();
-  return <Redirect href={`/(tabs)/(places)/places/${location}`} />;
+  return <Redirect href={routes.place(location)} />;
 }

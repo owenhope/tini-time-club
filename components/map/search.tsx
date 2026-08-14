@@ -5,15 +5,7 @@ import React, {
   useRef,
   useEffect,
 } from "react";
-import {
-  TouchableOpacity,
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Platform,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { TouchableOpacity, View, Text, FlatList } from "react-native";
 import { filterRelevantPlaces, getNameMatchScore } from "@/utils/locationUtils";
 import {
   autocompleteVenues,
@@ -21,8 +13,9 @@ import {
   newSessionToken,
   type PlaceResult,
 } from "@/services/placesService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { fonts, makeStyles } from "@/theme";
 import { reportError } from "@/utils/log";
+import { ExploreSearchField } from "@/components/explore/ExploreSearchField";
 
 interface SearchProps {
   onPlaceSelected: (newRegion: {
@@ -37,7 +30,6 @@ interface SearchProps {
 const Search = forwardRef<any, SearchProps>(
   ({ onPlaceSelected, currentLocation }, ref) => {
     const styles = useStyles();
-    const { colors } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
     const [, setIsSearching] = useState(false);
@@ -156,31 +148,15 @@ const Search = forwardRef<any, SearchProps>(
 
     return (
       <View style={styles.container}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Search bars and neighbourhoods"
-            value={searchQuery}
-            onChangeText={handleSearch}
-            placeholderTextColor={colors.textMuted}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => {
-                setSearchQuery("");
-                setSearchResults([]);
-              }}
-            >
-              <Ionicons
-                name="close-circle-outline"
-                color={colors.textSecondary}
-                size={22}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        <ExploreSearchField
+          value={searchQuery}
+          onChangeText={handleSearch}
+          placeholder="Search bars and neighbourhoods"
+          onClear={() => {
+            setSearchQuery("");
+            setSearchResults([]);
+          }}
+        />
         {searchResults.length > 0 && (
           <View style={styles.resultsContainer}>
             <FlatList
@@ -209,36 +185,16 @@ const Search = forwardRef<any, SearchProps>(
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 0,
+    position: "relative" as const,
     zIndex: 1,
   },
-  searchContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    backgroundColor: t.colors.surface,
-    paddingHorizontal: t.spacing.lg,
-    borderRadius: t.radius.pill,
-    height: 48,
-    ...t.elevation.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  textInput: {
-    ...t.typography.body,
-    flex: 1,
-    height: "100%",
-    paddingVertical: 0,
-    textAlignVertical: "center" as const,
-    transform: Platform.OS === "ios" ? [{ translateY: -4 }] : undefined,
-    color: t.colors.text,
-    marginLeft: t.spacing.md,
-  },
-  clearButton: {
-    marginLeft: t.spacing.sm,
-  },
   resultsContainer: {
+    position: "absolute" as const,
+    top: 52,
+    left: 0,
+    right: 0,
     backgroundColor: t.colors.surface,
     borderRadius: t.radius.md,
-    marginTop: t.spacing.xs,
     maxHeight: 200,
     ...t.elevation.card,
   },

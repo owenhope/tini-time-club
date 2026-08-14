@@ -57,8 +57,8 @@ Use the development scheme from `app.config.ts`: `tini-time-club-dev://`.
 3. Hero review comments:
    `tini-time-club-dev://r/91000001?screenshotSeed=comments`
 
-4. Places map:
-   `tini-time-club-dev://places?screenshotSeed=map&lat=49.3109&lon=-123.0812&locationId=910001`
+4. Explore map:
+   `tini-time-club-dev://discover?view=map&screenshotSeed=map&lat=49.3109&lon=-123.0812&locationId=910001`
 
 5. Featured place detail:
    `tini-time-club-dev://places/910001?screenshotSeed=place`

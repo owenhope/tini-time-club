@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
 import { fonts, useTheme } from "@/theme";
@@ -155,19 +154,12 @@ const LayoutContent = () => {
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
-        name="(places)"
-        accessibilityLabel="Places"
+        name="(discover)"
+        accessibilityLabel="Explore"
         contentStyle={{ backgroundColor: colors.background }}
       >
-        <NativeTabs.Trigger.Icon
-          src={
-            <NativeTabs.Trigger.VectorIcon
-              family={MaterialIcons}
-              name="location-on"
-            />
-          }
-        />
-        <NativeTabs.Trigger.Label>Places</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="(review)"
@@ -185,14 +177,6 @@ const LayoutContent = () => {
           md={{ default: "add_circle_outline", selected: "add_circle" }}
         />
         <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger
-        name="(discover)"
-        accessibilityLabel="Discover"
-        contentStyle={{ backgroundColor: colors.background }}
-      >
-        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
-        <NativeTabs.Trigger.Label>Discover</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="(profile)"
