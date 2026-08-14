@@ -1,7 +1,7 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { Text, TouchableOpacity } from "react-native";
-import { RootLayoutNav } from "../_layout";
+import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
 
 let mockAuthStateChange:
@@ -23,6 +23,7 @@ const mockReplace = jest.fn();
 const mockHideAsync = jest.fn(async () => undefined);
 const mockGetSession = jest.fn<Promise<unknown>, []>();
 const mockIsAuthCallbackUrl = jest.fn((_url: string) => false);
+const mockCaptureException = jest.fn();
 const mockSignOut = jest.fn(async () => {
   await mockAuthStateChange?.("SIGNED_OUT", null);
   return { error: null };
@@ -30,7 +31,10 @@ const mockSignOut = jest.fn(async () => {
 let renderer: ReactTestRenderer | undefined;
 
 jest.mock("@/utils/sentry", () => ({
-  Sentry: { wrap: (component: unknown) => component },
+  Sentry: {
+    captureException: (...args: unknown[]) => mockCaptureException(...args),
+    wrap: (component: unknown) => component,
+  },
 }));
 jest.mock("@/utils/log", () => ({ log: jest.fn(), reportError: jest.fn() }));
 jest.mock("@/utils/supabase", () => ({
@@ -514,5 +518,22 @@ describe("root startup routing", () => {
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith("/welcome");
+  });
+});
+
+describe("root error reporting", () => {
+  it("forwards caught render errors to Sentry", async () => {
+    const error = new Error("startup render failed");
+    let errorRenderer: ReactTestRenderer | undefined;
+
+    await act(async () => {
+      errorRenderer = create(<ErrorBoundary error={error} retry={jest.fn()} />);
+    });
+
+    expect(mockCaptureException).toHaveBeenCalledWith(error, {
+      tags: { surface: "root-error-boundary" },
+    });
+
+    await act(async () => errorRenderer?.unmount());
   });
 });

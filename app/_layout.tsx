@@ -97,7 +97,12 @@ type InitialAuthResolution = {
  * broke. expo-router picks this export up automatically.
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  reportError("[ErrorBoundary] Render error:", error);
+  useEffect(() => {
+    reportError("[ErrorBoundary] Render error:", error);
+    Sentry.captureException(error, {
+      tags: { surface: "root-error-boundary" },
+    });
+  }, [error]);
 
   return (
     <View style={errorBoundaryStyles.container}>

@@ -20,7 +20,6 @@ import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
-import { Image as ExpoImage } from "expo-image";
 import { Button, Input, MartiniIcon } from "@/components/shared";
 import { fonts, makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
@@ -95,16 +94,6 @@ function Home() {
   // club says to you, and saying the same thing seven days running is how a
   // welcome stops being read.
   const greeting = getTiniTimeGreeting();
-
-  useEffect(() => {
-    if (profile?.id) {
-      // Silent: the pull-to-refresh spinner belongs to a pull. A load the app
-      // started itself has the first-run loader (or nothing) to show for it,
-      // and flipping `refreshing` here left the control parked on screen,
-      // pushing the feed down by its height.
-      loadReviews(true, true);
-    }
-  }, [profile?.id]);
 
   useEffect(() => {
     if (profile) {
@@ -346,29 +335,6 @@ function Home() {
     void loadReviews(true, true, nextSource, false);
     requestAnimationFrame(scrollToTop);
   }, [feedSource, loadReviews, scrollToTop]);
-
-  // Preload images for visible and upcoming items (optimized)
-  useEffect(() => {
-    if (reviews.length > 0) {
-      // Preload more items for smoother scrolling
-      const preloadCount = Math.min(15, reviews.length);
-      // review.image_url already holds a signed URL (resolved in loadReviews);
-      // re-resolving it here would sign the signed URL and 400.
-      // Prefetch through expo-image: the cards render with ExpoImage, so
-      // RN's Image.prefetch warmed a cache nothing reads and every photo
-      // downloaded twice.
-      const urls = reviews
-        .slice(0, preloadCount)
-        .map((review) => review.image_url)
-        .filter(
-          (url): url is string =>
-            typeof url === "string" && url.startsWith("http")
-        );
-      if (urls.length > 0) {
-        void ExpoImage.prefetch(urls, { cachePolicy: "memory-disk" });
-      }
-    }
-  }, [reviews.length]);
 
   // Check if username is unique
   const checkUsernameUnique = async (username: string) => {
