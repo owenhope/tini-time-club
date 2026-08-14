@@ -45,6 +45,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // iOS, so the map uses Apple Maps there (Google remains on Android).
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription:
+          "Allow Tini Time Club to add a review card to Instagram.",
+        NSPhotoLibraryAddUsageDescription:
+          "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
     },
     android: {
@@ -134,6 +138,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "@sentry/react-native",
       ["expo-localization"],
       "expo-secure-store",
+      "expo-build-properties",
+      [
+        "react-native-share",
+        {
+          ios: ["instagram", "instagram-stories"],
+          android: ["com.instagram.android"],
+        },
+      ],
     ],
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

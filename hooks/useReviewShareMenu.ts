@@ -26,8 +26,7 @@ export const useReviewShareMenu = (review: Review | null) => {
     const runAction = (action: ReviewShareMenuAction) => {
       switch (action.destination) {
         case "instagram_story":
-        case "instagram_post":
-          router.push(routes.reviewSharePreview(review.id, action.format));
+          router.push(routes.reviewSharePreview(review.id));
           return;
         case "whatsapp":
           void shareReviewViaWhatsApp(review);
@@ -47,8 +46,7 @@ export const useReviewShareMenu = (review: Review | null) => {
         label: action.label,
         destination: action.destination,
         icon:
-          action.destination === "instagram_story" ||
-          action.destination === "instagram_post"
+          action.destination === "instagram_story"
             ? "logo-instagram"
             : action.destination === "whatsapp"
               ? "logo-whatsapp"

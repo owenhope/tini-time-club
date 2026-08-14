@@ -141,17 +141,12 @@ const LayoutContent = () => {
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
-          src={{
-            default: (
-              <NativeTabs.Trigger.VectorIcon
-                family={Ionicons}
-                name="wine-outline"
-              />
-            ),
-            selected: (
-              <NativeTabs.Trigger.VectorIcon family={Ionicons} name="wine" />
-            ),
-          }}
+          src={
+            <NativeTabs.Trigger.VectorIcon
+              family={Ionicons}
+              name="wine-outline"
+            />
+          }
           md={{ default: "local_bar", selected: "local_bar" }}
         />
         <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
