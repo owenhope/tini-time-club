@@ -22,6 +22,7 @@ const SECTIONS = [
   { id: "membership", label: "Membership" },
   { id: "reviews", label: "Reviews" },
   { id: "types", label: "Types" },
+  { id: "martini-index", label: "Martini Index" },
   { id: "places", label: "Places" },
   { id: "engagement", label: "Engagement" },
   { id: "sharing", label: "Sharing & referral" },
@@ -172,6 +173,33 @@ export default async function AnalyticsPage({
                 share: type.share,
               }))}
             />
+          </FeatureSection>
+
+          <FeatureSection
+            id="martini-index"
+            title="Martini Index"
+            description="How often members browse the Index, use its spirit filters, and ask the shaker to choose a Martini."
+          >
+            <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="Index views"
+                value={a.martiniIndexViews}
+                previous={a.previous.martiniIndexViews}
+                className="col-span-12 md:col-span-4"
+              />
+              <MetricTile
+                label="Filter uses"
+                value={a.martiniIndexFilters}
+                previous={a.previous.martiniIndexFilters}
+                className="col-span-12 md:col-span-4"
+              />
+              <MetricTile
+                label="Martinis generated"
+                value={a.martiniIndexGenerations}
+                previous={a.previous.martiniIndexGenerations}
+                className="col-span-12 md:col-span-4"
+              />
+            </div>
           </FeatureSection>
 
           <FeatureSection

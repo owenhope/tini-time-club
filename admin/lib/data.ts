@@ -287,6 +287,9 @@ export interface AnalyticsData {
   commentsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
   invitesByDay: { day: string; count: number }[];
+  martiniIndexViews: number;
+  martiniIndexFilters: number;
+  martiniIndexGenerations: number;
   activeLast7Days: number;
   activeLast30Days: number;
   /** Distinct members who reviewed within the selected range. */
@@ -343,6 +346,9 @@ export interface AnalyticsData {
     places: number;
     shares: number;
     invites: number;
+    martiniIndexViews: number;
+    martiniIndexFilters: number;
+    martiniIndexGenerations: number;
   };
 }
 
@@ -410,6 +416,7 @@ export const fetchAnalytics = async (
   const activeMemberIdSet = new Set(activeMemberIds);
   const activeLocationIds = await fetchActiveLocationIds(activeMemberIds);
   const noRows = { data: [], count: 0, error: null };
+  const prior = previousWindow(range);
 
   const [
     reviews,
@@ -422,6 +429,7 @@ export const fetchAnalytics = async (
     invites,
     profiles,
     typeCatalog,
+    martiniIndexEvents,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
@@ -492,6 +500,14 @@ export const fetchAnalytics = async (
       .select("id,review_count,deleted")
       .eq("deleted", false),
     db().from("types").select("id,name").order("name"),
+    activeMemberIds.length > 0
+      ? db()
+          .from("martini_index_events")
+          .select("kind,created_at")
+          .in("user_id", activeMemberIds)
+          .gte("created_at", sinceIso)
+          .lte("created_at", untilIso)
+      : noRows,
   ]);
 
   if (reviews.error) {
@@ -502,10 +518,14 @@ export const fetchAnalytics = async (
       `Unable to load comment likes: ${commentLikes.error.message}`
     );
   }
+  if (martiniIndexEvents.error) {
+    throw new Error(
+      `Unable to load Martini Index analytics: ${martiniIndexEvents.error.message}`
+    );
+  }
 
   // Previous equal-length window, counts only — enough to say whether each
   // feature is progressing without pulling a second set of rows.
-  const prior = previousWindow(range);
   const [
     priorReviews,
     priorLikes,
@@ -514,6 +534,7 @@ export const fetchAnalytics = async (
     priorPlaces,
     priorShares,
     priorInvites,
+    priorMartiniIndexEvents,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
@@ -573,11 +594,24 @@ export const fetchAnalytics = async (
           .gte("created_at", prior.since.toISOString())
           .lte("created_at", prior.until.toISOString())
       : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("martini_index_events")
+          .select("kind")
+          .in("user_id", activeMemberIds)
+          .gte("created_at", prior.since.toISOString())
+          .lte("created_at", prior.until.toISOString())
+      : noRows,
   ]);
 
   if (priorCommentLikes.error) {
     throw new Error(
       `Unable to load previous comment likes: ${priorCommentLikes.error.message}`
+    );
+  }
+  if (priorMartiniIndexEvents.error) {
+    throw new Error(
+      `Unable to load previous Martini Index analytics: ${priorMartiniIndexEvents.error.message}`
     );
   }
 
@@ -605,6 +639,12 @@ export const fetchAnalytics = async (
   const shareRows = shares.data ?? [];
   const celebrationRows = celebrations.data ?? [];
   const inviteRows = invites.data ?? [];
+  const martiniIndexEventRows = martiniIndexEvents.data ?? [];
+  const priorMartiniIndexEventRows = priorMartiniIndexEvents.data ?? [];
+  const countMartiniIndexEvents = (
+    rows: { kind: string | null }[],
+    kind: "view" | "filter" | "generate"
+  ) => rows.filter((event) => event.kind === kind).length;
   const locationRows = locations.data ?? [];
   const reviewRows = reviews.data ?? [];
   const catalogRows = typeCatalog.data ?? [];
@@ -636,8 +676,7 @@ export const fetchAnalytics = async (
     .sort(
       (a, b) =>
         enabledTypeIndex.get(a.name.toLowerCase())! -
-          enabledTypeIndex.get(b.name.toLowerCase())! ||
-        a.id - b.id
+          enabledTypeIndex.get(b.name.toLowerCase())! || a.id - b.id
     )
     .filter((type, index, rows) => {
       const normalizedName = type.name.toLowerCase();
@@ -654,7 +693,9 @@ export const fetchAnalytics = async (
           ? type.name
           : `${type.name.charAt(0).toUpperCase()}${type.name.slice(1).toLowerCase()}`,
     }));
-  const typeNames = new Map(activeCatalogRows.map((type) => [type.id, type.name]));
+  const typeNames = new Map(
+    activeCatalogRows.map((type) => [type.id, type.name])
+  );
   const typeOrder = new Map(
     activeCatalogRows.map((type, index) => [type.id, index])
   );
@@ -876,6 +917,15 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    martiniIndexViews: countMartiniIndexEvents(martiniIndexEventRows, "view"),
+    martiniIndexFilters: countMartiniIndexEvents(
+      martiniIndexEventRows,
+      "filter"
+    ),
+    martiniIndexGenerations: countMartiniIndexEvents(
+      martiniIndexEventRows,
+      "generate"
+    ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
     reviewedInRange: new Set(reviewRows.map((r) => r.user_id)).size,
@@ -953,6 +1003,18 @@ export const fetchAnalytics = async (
       places: priorPlaces.count ?? 0,
       shares: priorShares.count ?? 0,
       invites: priorInvites.count ?? 0,
+      martiniIndexViews: countMartiniIndexEvents(
+        priorMartiniIndexEventRows,
+        "view"
+      ),
+      martiniIndexFilters: countMartiniIndexEvents(
+        priorMartiniIndexEventRows,
+        "filter"
+      ),
+      martiniIndexGenerations: countMartiniIndexEvents(
+        priorMartiniIndexEventRows,
+        "generate"
+      ),
     },
   };
 };

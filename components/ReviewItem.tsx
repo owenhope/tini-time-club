@@ -19,6 +19,7 @@ import {
   PIPS_MAX,
   VerifiedName,
 } from "@/components/shared";
+import ReviewTag from "@/components/shared/review-tag";
 import { Comment, Review } from "@/types/types";
 import * as Haptics from "expo-haptics";
 import {
@@ -36,7 +37,6 @@ import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
-import { getReviewTagColors } from "@/utils/reviewTagColors";
 
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
@@ -362,8 +362,6 @@ ShareButton.displayName = "ShareButton";
  */
 const PhotoChips = memo(({ review }: { review: Review }) => {
   const styles = useStyles();
-  const spiritColors = getReviewTagColors(review.spirit?.name);
-  const typeColors = getReviewTagColors(review.type?.name);
   // Where in the world it was poured — a venue name alone means nothing to
   // anyone who doesn't already drink there.
   const cityCountry = review.location?.address
@@ -384,41 +382,10 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
     <>
       <View style={styles.photoPills}>
         {review.spirit?.name ? (
-          <View
-            style={[
-              styles.photoPill,
-              styles.photoPillSpiritDefault,
-              spiritColors && { backgroundColor: spiritColors.backgroundColor },
-            ]}
-          >
-            <Text
-              style={[
-                styles.photoPillText,
-                spiritColors && { color: spiritColors.textColor },
-              ]}
-            >
-              {review.spirit.name}
-            </Text>
-          </View>
+          <ReviewTag name={review.spirit.name} fallback="spirit" />
         ) : null}
         {review.type?.name ? (
-          <View
-            style={[
-              styles.photoPill,
-              styles.photoPillTypeDefault,
-              typeColors && { backgroundColor: typeColors.backgroundColor },
-            ]}
-          >
-            <Text
-              style={[
-                styles.photoPillText,
-                styles.photoPillTypeTextDefault,
-                typeColors && { color: typeColors.textColor },
-              ]}
-            >
-              {review.type.name}
-            </Text>
-          </View>
+          <ReviewTag name={review.type.name} fallback="type" />
         ) : null}
       </View>
 
@@ -1277,26 +1244,6 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 0,
     flexDirection: "row" as const,
     gap: 6,
-  },
-  photoPill: {
-    paddingHorizontal: t.spacing.md - 1,
-    paddingVertical: 7,
-    borderRadius: t.radius.pill,
-  },
-  photoPillSpiritDefault: {
-    backgroundColor: t.colors.highlight,
-  },
-  photoPillTypeDefault: {
-    backgroundColor: t.colors.scrimStrong,
-  },
-  photoPillText: {
-    ...t.typography.eyebrow,
-    fontSize: 12.5,
-    letterSpacing: 1,
-    color: t.colors.surfaceInkDeep,
-  },
-  photoPillTypeTextDefault: {
-    color: t.colors.textOnImage,
   },
   // A review is two scores. They read as olives — the brand's own scale —
   // with the blended TTC number beside them, never instead of them.

@@ -6,6 +6,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
+import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
 import { fonts, makeStyles, useTheme } from "@/theme";
 
 /**
@@ -34,6 +35,7 @@ export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
   icon?: keyof typeof Ionicons.glyphMap;
+  customIcon?: "martini-shaker";
   label?: string;
   onPress: () => void;
   accessibilityLabel: string;
@@ -63,6 +65,8 @@ export interface AppHeaderProps {
   onBack?: () => void;
   /** Variant A: the search field or the chip row that sits inside the green. */
   below?: React.ReactNode;
+  /** Variant B: replaces the centred title with compact custom controls. */
+  compactContent?: React.ReactNode;
   /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
   /** The coloured ground under variant A/C. `brand` uses the app's purple. */
@@ -78,6 +82,8 @@ export interface AppHeaderProps {
   overlay?: boolean;
   /** Variant D only: the left-hand text action. */
   onCancel?: () => void;
+  /** Variant D only: overrides the default left-hand “Cancel” label. */
+  cancelLabel?: string;
   /** Variant D only: the right-hand primary. Greys out until the form is valid. */
   action?: { label: string; onPress: () => void; disabled?: boolean };
   /** Variant D only — a presented sheet owns its own top, a full-screen one doesn't. */
@@ -99,7 +105,7 @@ const MEDIA_HEIGHT = 210;
 type CircleTone = "onInk" | "outline" | "scrim";
 
 const getActionKey = (action: HeaderAction) =>
-  `${action.icon ?? action.label ?? "action"}-${action.accessibilityLabel}`;
+  `${action.customIcon ?? action.icon ?? action.label ?? "action"}-${action.accessibilityLabel}`;
 
 const getActionWidth = (action: HeaderAction) =>
   action.label ? Math.max(72, action.label.length * 8 + 28) : CIRCLE;
@@ -130,6 +136,13 @@ const NavActionControl = ({
       scrim: colors.textOnImage,
     }[tone];
 
+  const renderIcon = (iconSize: number) =>
+    action.customIcon === "martini-shaker" ? (
+      <MartiniShakerIcon size={iconSize} color={glyph} />
+    ) : action.icon ? (
+      <Ionicons name={action.icon} size={iconSize} color={glyph} />
+    ) : null;
+
   if (action.label) {
     return (
       <Pressable
@@ -147,9 +160,7 @@ const NavActionControl = ({
           pressed && !action.disabled && styles.circlePressed,
         ]}
       >
-        {action.icon ? (
-          <Ionicons name={action.icon} size={15} color={glyph} />
-        ) : null}
+        {renderIcon(15)}
         <Text style={[styles.actionPillText, { color: glyph }]}>
           {action.label}
         </Text>
@@ -157,7 +168,7 @@ const NavActionControl = ({
     );
   }
 
-  if (!action.icon) return null;
+  if (!action.icon && !action.customIcon) return null;
 
   return (
     <Pressable
@@ -175,7 +186,7 @@ const NavActionControl = ({
       ]}
     >
       <View style={styles.actionGlyph}>
-        <Ionicons name={action.icon} size={size} color={glyph} />
+        {renderIcon(size)}
         {action.showNotificationDot ? (
           <View
             style={styles.notificationDot}
@@ -210,6 +221,7 @@ const CompactBar = ({
   collapsed,
   overlay,
   preserveCase,
+  compactContent,
 }: {
   title: string;
   onBack?: () => void;
@@ -220,6 +232,7 @@ const CompactBar = ({
   collapsed?: boolean;
   overlay?: boolean;
   preserveCase?: boolean;
+  compactContent?: React.ReactNode;
 }) => {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
@@ -254,29 +267,35 @@ const CompactBar = ({
         ]}
         pointerEvents="none"
       />
-      <View style={[styles.compactEnd, { width: leadingWidth }]}>
-        {onBack ? (
-          <NavActionControl
-            tone={onInk || onBrand ? "onInk" : "outline"}
-            action={{
-              icon: "chevron-back",
-              onPress: onBack,
-              accessibilityLabel: "Back",
-            }}
-          />
-        ) : null}
-      </View>
-      <Text
-        style={[
-          styles.compactTitle,
-          onInk && styles.compactTitleOnInk,
-          onBrand && styles.compactTitleOnBrand,
-          preserveCase && styles.titlePlain,
-        ]}
-        numberOfLines={1}
-      >
-        {title}
-      </Text>
+      {compactContent ? (
+        <View style={styles.compactCustomContent}>{compactContent}</View>
+      ) : (
+        <>
+          <View style={[styles.compactEnd, { width: leadingWidth }]}>
+            {onBack ? (
+              <NavActionControl
+                tone={onInk || onBrand ? "onInk" : "outline"}
+                action={{
+                  icon: "chevron-back",
+                  onPress: onBack,
+                  accessibilityLabel: "Back",
+                }}
+              />
+            ) : null}
+          </View>
+          <Text
+            style={[
+              styles.compactTitle,
+              onInk && styles.compactTitleOnInk,
+              onBrand && styles.compactTitleOnBrand,
+              preserveCase && styles.titlePlain,
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        </>
+      )}
       <View
         style={[
           styles.compactEnd,
@@ -307,12 +326,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   actions,
   onBack,
   below,
+  compactContent,
   preserveCase = false,
   ground,
   progress,
   collapsed = false,
   overlay = false,
   onCancel,
+  cancelLabel = "Cancel",
   action,
   topInset = 0,
   statusBar,
@@ -360,6 +381,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         collapsed={collapsed}
         overlay={overlay}
         preserveCase={preserveCase}
+        compactContent={compactContent}
       />
     );
   }
@@ -380,7 +402,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               accessibilityLabel="Cancel"
               style={styles.modalAction}
             >
-              <Text style={styles.modalCancel}>Cancel</Text>
+              <Text style={styles.modalCancel}>{cancelLabel}</Text>
             </Pressable>
           ) : (
             <View style={styles.modalAction} />
@@ -743,6 +765,10 @@ const useStyles = makeStyles((t) => ({
   },
   compactEndRight: {
     justifyContent: "flex-end" as const,
+  },
+  compactCustomContent: {
+    flex: 1,
+    minWidth: 0,
   },
   compactTitle: {
     ...t.typography.heading,

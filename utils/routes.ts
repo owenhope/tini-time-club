@@ -88,6 +88,9 @@ export const routes = {
       ? ({ pathname: "/discover", params } as const)
       : ("/discover" as const)) satisfies Href,
 
+  /** Martini Index and its preference-aware Pick One tool. */
+  martiniIndex: () => "/martini-index" as const satisfies Href,
+
   /** Own profile tab. */
   profile: () => "/profile" as const satisfies Href,
 

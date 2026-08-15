@@ -49,6 +49,7 @@ jest.mock("react-native-svg", () => ({
   default: () => null,
   Defs: () => null,
   LinearGradient: () => null,
+  Path: () => null,
   Rect: () => null,
   Stop: () => null,
 }));
@@ -157,6 +158,29 @@ describe("AppHeader dark mode", () => {
         );
       })
     ).toBe(true);
+    act(() => tree!.unmount());
+  });
+
+  it("renders custom controls instead of a title in a compact header", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="compact"
+            title="Hidden title"
+            compactContent={<Text>Index filters</Text>}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const text = tree!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children);
+    expect(text).toContain("Index filters");
+    expect(text).not.toContain("Hidden title");
+
     act(() => tree!.unmount());
   });
 });

@@ -179,6 +179,17 @@ const LayoutContent = () => {
         <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
+        name="(index)"
+        accessibilityLabel="Index"
+        contentStyle={{ backgroundColor: colors.background }}
+      >
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "book.closed", selected: "book.closed.fill" }}
+          md="library_books"
+        />
+        <NativeTabs.Trigger.Label>Index</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="(profile)"
         accessibilityLabel="Profile"
         contentStyle={{ backgroundColor: colors.background }}

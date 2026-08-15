@@ -107,7 +107,7 @@ describe("native tab icon configuration", () => {
     ).toBe(false);
   });
 
-  it("shows one Explore tab in the four-item native navigation", async () => {
+  it("shows Explore and Index in the five-item native navigation", async () => {
     await act(async () => {
       renderer = create(<TabsLayout />);
     });
@@ -120,11 +120,15 @@ describe("native tab icon configuration", () => {
       "(home)",
       "(discover)",
       "(review)",
+      "(index)",
       "(profile)",
     ]);
     expect(renderer!.root.findByProps({ name: "(discover)" }).props).toEqual(
       expect.objectContaining({ accessibilityLabel: "Explore" })
     );
     expect(renderer!.root.findAllByProps({ name: "(places)" })).toHaveLength(0);
+    expect(renderer!.root.findByProps({ name: "(index)" }).props).toEqual(
+      expect.objectContaining({ accessibilityLabel: "Index" })
+    );
   });
 });
