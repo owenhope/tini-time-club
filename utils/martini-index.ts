@@ -81,9 +81,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Classic",
     image: require("@/assets/images/index/classic-gin.jpg"),
     description:
-      "Juniper in evening wear. Crisp, botanical, and impossible to slouch around.",
+      "Dry vermouth softens the juniper and botanicals while keeping the drink crisp and spirit-forward; an olive adds a savory finish.",
     ingredients: "Gin · Dry Vermouth · Olive",
-    order: "A classic gin martini, up, with an olive.",
+    order: "A gin martini with an olive.",
     badge: "Bar classic",
   },
   {
@@ -93,9 +93,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Classic",
     image: require("@/assets/images/index/classic-vodka.jpg"),
     description:
-      "Cold, clean, and suspiciously efficient. The minimalist with excellent posture.",
+      "Dry vermouth adds gentle herbal structure to an otherwise clean, neutral pour. Smooth and spirit-forward, with a savory olive finish.",
     ingredients: "Vodka · Dry Vermouth · Olives",
-    order: "A classic vodka martini, up, with olives.",
+    order: "A vodka martini with olives.",
     badge: "Bar classic",
   },
   {
@@ -105,9 +105,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Dry",
     image: require("@/assets/images/index/dry-gin.jpg"),
     description:
-      "Less vermouth, more nerve. The classic after deleting its group chat.",
+      "Less dry vermouth puts juniper and botanicals firmly in front. Crisp, strong, and noticeably drier than the standard build.",
     ingredients: "Gin · A Little Dry Vermouth · Olive",
-    order: "A dry gin martini, up, with an olive.",
+    order: "A dry gin martini with an olive.",
     badge: "IBA official",
   },
   {
@@ -117,9 +117,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Dry",
     image: require("@/assets/images/index/dry-vodka.jpg"),
     description:
-      "A near-arctic pour with no small talk. Chilly in the most flattering way.",
+      "Only a small measure of dry vermouth rounds out the clean, neutral base. Strong, smooth, and especially spirit-forward.",
     ingredients: "Vodka · A Little Dry Vermouth · Olive",
-    order: "A dry vodka martini, up, with an olive.",
+    order: "A dry vodka martini with an olive.",
     badge: "Club pick",
   },
   {
@@ -129,9 +129,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "50/50",
     image: require("@/assets/images/index/fifty-fifty-gin.jpg"),
     description:
-      "Gin and vermouth split custody. Lower-proof, high-functioning, shockingly civilized.",
+      "Equal parts gin and dry vermouth create a lighter, more aromatic pour with herbal depth and a softer finish.",
     ingredients: "Equal Parts Gin And Dry Vermouth · Lemon Twist",
-    order: "A 50/50 gin martini, up, with a lemon twist.",
+    order: "A 50/50 gin martini with a lemon twist.",
     badge: "Bar classic",
   },
   {
@@ -141,9 +141,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Twist",
     image: require("@/assets/images/index/gin-twist.jpg"),
     description:
-      "Botanicals meet lemon oil. Bright enough to pretend this counts as vitamin C.",
+      "Expressed lemon peel replaces the olive, lifting the botanicals with bright citrus aroma without adding juice.",
     ingredients: "Gin · Dry Vermouth · Expressed Lemon Peel",
-    order: "A gin martini, up, with a lemon twist.",
+    order: "A gin martini with a lemon twist.",
     badge: "Bar classic",
   },
   {
@@ -153,9 +153,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Twist",
     image: require("@/assets/images/index/vodka-twist.jpg"),
     description:
-      "Clean vodka with citrus perfume. A tuxedo standing near a lemon tree.",
+      "Expressed lemon peel adds bright citrus aroma to a clean, neutral base while keeping the drink crisp and dry.",
     ingredients: "Vodka · Dry Vermouth · Expressed Lemon Peel",
-    order: "A vodka martini, up, with a lemon twist.",
+    order: "A vodka martini with a lemon twist.",
     badge: "Club pick",
   },
   {
@@ -165,9 +165,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Dirty",
     image: require("@/assets/images/index/dirty-gin.jpg"),
     description:
-      "Juniper and olive brine make eye contact. Savory, saline, and not remotely shy.",
+      "Olive brine balances juniper and dry vermouth with a savory, salty edge. Briny without burying the botanicals.",
     ingredients: "Gin · Dry Vermouth · Olive Brine · Olives",
-    order: "A dirty gin martini, up, with olives.",
+    order: "A dirty gin martini with olives.",
     badge: "Bar classic",
   },
   {
@@ -177,9 +177,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Dirty",
     image: require("@/assets/images/index/dirty-vodka.jpg"),
     description:
-      "Cold vodka takes a swim in the olive jar. Briny, smooth, and emotionally available.",
+      "Olive brine adds a smooth, savory, saline character, while the neutral base keeps the olive flavor front and center.",
     ingredients: "Vodka · Dry Vermouth · Olive Brine · Olives",
-    order: "A dirty vodka martini, up, with olives.",
+    order: "A dirty vodka martini with olives.",
     badge: "Bar classic",
   },
   {
@@ -189,9 +189,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Filthy",
     image: require("@/assets/images/index/filthy-vodka.jpg"),
     description:
-      "A dirty martini with the volume knob missing. For when olives are the whole point.",
+      "Extra olive brine and olives make this saltier and more savory than a standard Dirty. Unapologetically olive-forward.",
     ingredients: "Vodka · Extra Olive Brine · An Unreasonable Olive Count",
-    order: "A filthy vodka martini, up, extra brine, extra olives.",
+    order: "A filthy vodka martini, extra brine, extra olives.",
     badge: "Club pick",
   },
   {
@@ -201,9 +201,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Espresso",
     image: require("@/assets/images/index/espresso-vodka.jpg"),
     description:
-      "Vodka, coffee, and ambition after dark. Dessert with a calendar invite.",
+      "Vodka, espresso, coffee liqueur, and sugar are shaken into a cold, foamy cocktail. Rich, bittersweet, and caffeinated.",
     ingredients: "Vodka · Espresso · Coffee Liqueur · Sugar",
-    order: "An espresso martini with vodka, served up.",
+    order: "An espresso martini with vodka.",
     badge: "IBA official",
   },
   {
@@ -213,9 +213,9 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     type: "Classic",
     image: require("@/assets/images/index/vesper.jpg"),
     description:
-      "Gin, vodka, and Lillet in one committed glass. Bond had plot armor; pace yourself.",
+      "Gin, vodka, and Lillet Blanc combine into a strong, aromatic pour with citrus and floral notes. Traditionally shaken and finished with lemon.",
     ingredients: "Gin · Vodka · Lillet Blanc · Lemon Zest",
-    order: "A Vesper, very cold, up, with a lemon twist.",
+    order: "A Vesper, very cold, with a lemon twist.",
     badge: "IBA official",
   },
 ];

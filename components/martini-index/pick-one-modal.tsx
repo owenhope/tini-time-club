@@ -175,7 +175,11 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
               style={[styles.ice, styles.iceRight, rightIceStyle]}
             />
             <Animated.View style={[styles.shaker, shakerStyle]}>
-              <MartiniShakerIcon size={190} color={colors.onInk} />
+              <MartiniShakerIcon
+                size={190}
+                color={colors.onInk}
+                variant="streamlined"
+              />
             </Animated.View>
             <View style={styles.shakingCopy}>
               <AppText variant="eyebrow" style={styles.shakingEyebrow}>

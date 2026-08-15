@@ -31,6 +31,19 @@ describe("martini index", () => {
     expect(filterMartiniIndex("olive", "Gin").length).toBeGreaterThan(0);
   });
 
+  it("keeps suggested orders natural by omitting implied defaults", () => {
+    for (const item of MARTINI_INDEX) {
+      expect(item.order.toLowerCase()).not.toMatch(/\b(?:served )?up\b/);
+      expect(item.order.toLowerCase()).not.toMatch(/\bclassic\b/);
+    }
+  });
+
+  it("does not repeat the drink title in its description", () => {
+    for (const item of MARTINI_INDEX) {
+      expect(item.description).not.toMatch(/\bmartini\b/i);
+    }
+  });
+
   it("spaces five guide notes through the full index but not spirit filters", () => {
     const fullIndex = getMartiniIndexRows();
     const vodkaIndex = getMartiniIndexRows("Vodka");
