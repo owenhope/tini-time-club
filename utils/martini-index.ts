@@ -131,7 +131,7 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     description:
       "Equal parts gin and dry vermouth create a lighter, more aromatic pour with herbal depth and a softer finish.",
     ingredients: "Equal Parts Gin And Dry Vermouth · Lemon Twist",
-    order: "A 50/50 gin martini with a lemon twist.",
+    order: "A 50/50 gin martini with a twist.",
     badge: "Bar classic",
   },
   {
@@ -143,7 +143,7 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     description:
       "Expressed lemon peel replaces the olive, lifting the botanicals with bright citrus aroma without adding juice.",
     ingredients: "Gin · Dry Vermouth · Expressed Lemon Peel",
-    order: "A gin martini with a lemon twist.",
+    order: "A gin martini with a twist.",
     badge: "Bar classic",
   },
   {
@@ -155,7 +155,7 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     description:
       "Expressed lemon peel adds bright citrus aroma to a clean, neutral base while keeping the drink crisp and dry.",
     ingredients: "Vodka · Dry Vermouth · Expressed Lemon Peel",
-    order: "A vodka martini with a lemon twist.",
+    order: "A vodka martini with a twist.",
     badge: "Club pick",
   },
   {
@@ -215,7 +215,7 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     description:
       "Gin, vodka, and Lillet Blanc combine into a strong, aromatic pour with citrus and floral notes. Traditionally shaken and finished with lemon.",
     ingredients: "Gin · Vodka · Lillet Blanc · Lemon Zest",
-    order: "A Vesper, very cold, with a lemon twist.",
+    order: "A Vesper, very cold, with a twist.",
     badge: "IBA official",
   },
 ];
