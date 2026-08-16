@@ -1,6 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Text, TouchableOpacity } from "react-native";
+import { AppState, Text, TouchableOpacity } from "react-native";
 import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
 
@@ -18,10 +18,13 @@ let mockProfileState: {
 let mockPathname = "/";
 let mockInitialUrl: string | null = null;
 let mockStackScreenOptions: { animation?: string } | undefined;
+let mockAppStateChange:
+  ((nextState: "active" | "background") => void | Promise<void>) | undefined;
 
 const mockReplace = jest.fn();
 const mockHideAsync = jest.fn(async () => undefined);
 const mockGetSession = jest.fn<Promise<unknown>, []>();
+const mockResumeGetSession = jest.fn<Promise<unknown>, []>();
 const mockIsAuthCallbackUrl = jest.fn((_url: string) => false);
 const mockCaptureException = jest.fn();
 const mockSignOut = jest.fn(async () => {
@@ -59,7 +62,7 @@ jest.mock("@/utils/authCache", () => ({
     loadFromStorage: jest.fn(),
     invalidateCache: jest.fn(),
     onAppStateChange: jest.fn(),
-    getSession: jest.fn(),
+    getSession: () => mockResumeGetSession(),
   },
 }));
 jest.mock("@/context/profile-context", () => ({
@@ -184,13 +187,27 @@ describe("root startup routing", () => {
     mockPathname = "/";
     mockInitialUrl = null;
     mockStackScreenOptions = undefined;
+    mockAppStateChange = undefined;
     mockReplace.mockClear();
     mockHideAsync.mockClear();
     mockGetSession.mockReset();
     mockGetSession.mockImplementation(() => new Promise(() => undefined));
+    mockResumeGetSession.mockReset();
+    mockResumeGetSession.mockResolvedValue({ user: { id: "member-1" } });
     mockIsAuthCallbackUrl.mockReset();
     mockIsAuthCallbackUrl.mockReturnValue(false);
     mockSignOut.mockClear();
+    Object.defineProperty(AppState, "currentState", {
+      configurable: true,
+      value: "active",
+    });
+    jest.spyOn(AppState, "addEventListener").mockImplementation(((
+      _event: string,
+      callback: typeof mockAppStateChange
+    ) => {
+      mockAppStateChange = callback;
+      return { remove: jest.fn() };
+    }) as typeof AppState.addEventListener);
   });
 
   afterEach(async () => {
@@ -198,6 +215,7 @@ describe("root startup routing", () => {
       renderer?.unmount();
     });
     renderer = undefined;
+    jest.restoreAllMocks();
   });
 
   it("keeps the router unmounted while an authenticated member's onboarding state is unresolved", async () => {
@@ -407,7 +425,8 @@ describe("root startup routing", () => {
   });
 
   it("keeps the splash over an auth callback until its session resolves", async () => {
-    mockInitialUrl = "tinitime://auth/callback#access_token=AT&refresh_token=RT";
+    mockInitialUrl =
+      "tinitime://auth/callback#access_token=AT&refresh_token=RT";
     mockIsAuthCallbackUrl.mockReturnValue(true);
     mockPathname = "/auth/callback";
 
@@ -470,6 +489,41 @@ describe("root startup routing", () => {
     });
 
     expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
+  });
+
+  it("keeps an authenticated member in place when a resume session read momentarily returns null", async () => {
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+    };
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", {
+        user: { id: "member-1" },
+      });
+    });
+
+    mockPathname = "/home";
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+    mockReplace.mockClear();
+    mockResumeGetSession.mockResolvedValueOnce(null);
+
+    await act(async () => {
+      await mockAppStateChange?.("background");
+      await mockAppStateChange?.("active");
+    });
+
+    expect(mockResumeGetSession).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
   });
 
   it("performs one Welcome navigation when Settings signs out", async () => {
