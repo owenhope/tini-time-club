@@ -48,7 +48,8 @@ export default function DonutChart({
           >
             <span className="block text-sm font-bold">{hovered.label}</span>
             <span className="block text-xs text-stone-300">
-              {hovered.count.toLocaleString()} reviews · {Math.round(hovered.share * 100)}%
+              {hovered.count.toLocaleString()} reviews ·{" "}
+              {Math.round(hovered.share * 100)}%
             </span>
           </div>
         ) : null}
@@ -114,7 +115,7 @@ export default function DonutChart({
         </svg>
       </div>
 
-      <div>
+      <div className="self-start">
         <h3 className="font-semibold">{title}</h3>
         <ul className="mt-3 divide-y divide-stone-100">
           {rows.map((row, index) => (
@@ -137,7 +138,7 @@ export default function DonutChart({
           ))}
           {rows.length === 0 ? (
             <li className="py-2.5 text-sm text-stone-400">
-              No enabled review types are available.
+              No enabled review options are available.
             </li>
           ) : null}
         </ul>
