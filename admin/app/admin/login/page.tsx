@@ -1,4 +1,5 @@
 import { login } from "@/lib/actions";
+import LoginSubmitButton from "@/components/LoginSubmitButton";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default async function LoginPage({
@@ -39,12 +40,7 @@ export default async function LoginPage({
           />
         </label>
 
-        <button
-          type="submit"
-          className="mt-6 w-full rounded-lg bg-emerald-900 px-4 py-2.5 font-semibold text-white transition hover:bg-emerald-800"
-        >
-          Sign in
-        </button>
+        <LoginSubmitButton />
       </form>
     </main>
   );

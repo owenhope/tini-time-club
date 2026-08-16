@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Figtree, DM_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { siteDescription, siteShareImage } from "@/lib/seo";
+import AdminNavigationProgress from "@/components/AdminNavigationProgress";
 import "./globals.css";
 
 // Figtree stands in for the wordmark's geometric grotesque; DM Mono for
@@ -58,6 +60,9 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-stone-50 text-stone-900">
         {children}
+        <Suspense>
+          <AdminNavigationProgress />
+        </Suspense>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-53R4Z4BZ3D"
           strategy="afterInteractive"

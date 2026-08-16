@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
+import { startAdminNavigation } from "@/components/AdminNavigationProgress";
 import { RANGE_PRESETS, type DateRange } from "@/lib/range";
 
 const toInputDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -25,7 +26,9 @@ export default function RangePicker({
     params.set("from", String(formData.get("from") ?? ""));
     params.set("to", String(formData.get("to") ?? ""));
 
-    router.push(`${path}?${params}`, { scroll: false });
+    const href = `${path}?${params}`;
+    startAdminNavigation(href);
+    router.push(href, { scroll: false });
   };
 
   return (
