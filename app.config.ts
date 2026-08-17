@@ -46,7 +46,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription:
-          "Allow Tini Time Club to add a review card to Instagram.",
+          "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.",
         NSPhotoLibraryAddUsageDescription:
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
@@ -89,7 +89,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-image-picker",
         {
           photoPermissions:
-            "Allow Tini Time Club to access your photos to upload photos of your Martinis or your profile picture.",
+            "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.",
         },
       ],
       [
