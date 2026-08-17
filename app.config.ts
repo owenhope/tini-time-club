@@ -13,6 +13,8 @@ const PACKAGE_NAME = "com.ohope.tinitimeclub";
 const ICON = "./assets/images/icon-purple.png";
 const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
+const PHOTO_LIBRARY_USAGE_DESCRIPTION =
+  "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnvironment =
@@ -45,8 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // iOS, so the map uses Apple Maps there (Google remains on Android).
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSPhotoLibraryUsageDescription:
-          "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.",
+        NSPhotoLibraryUsageDescription: PHOTO_LIBRARY_USAGE_DESCRIPTION,
         NSPhotoLibraryAddUsageDescription:
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
@@ -63,7 +64,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       },
       permissions: [
-        "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
@@ -88,17 +88,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-image-picker",
         {
-          photoPermissions:
-            "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.",
+          photosPermission: PHOTO_LIBRARY_USAGE_DESCRIPTION,
+          microphonePermission: false,
         },
       ],
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission:
-            "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+          locationAlwaysAndWhenInUsePermission: false,
+          locationAlwaysPermission: false,
           locationWhenInUsePermission:
             "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+          motionUsagePermission: false,
         },
       ],
       [
@@ -106,6 +107,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           cameraPermission:
             "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture.",
+          microphonePermission: false,
+          recordAudioAndroid: false,
+          barcodeScannerEnabled: false,
         },
       ],
       [
@@ -137,7 +141,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       "@sentry/react-native",
       ["expo-localization"],
-      "expo-secure-store",
+      "expo-image",
+      ["expo-secure-store", { faceIDPermission: false }],
       "expo-build-properties",
       [
         "react-native-share",

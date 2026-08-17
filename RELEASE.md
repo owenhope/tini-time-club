@@ -36,8 +36,8 @@ build. Never hand-edit a build number.
 change:
 
 - **patch** (3.0.1) — bug fixes only
-- **minor** (3.1.0) — new features, no breaking change to stored data or routes
-- **major** (4.0.0) — Expo SDK upgrade, route/deep-link restructure, data model change
+- **minor** (3.1.0) — new features and backward-compatible data additions
+- **major** (4.0.0) — Expo SDK upgrade or a breaking route, deep-link, stored-data, or data-model change
 
 This matters beyond bookkeeping: `runtimeVersion.policy` is `appVersion`, so
 the version string is what pairs an OTA update with a native binary. Two

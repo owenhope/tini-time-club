@@ -77,21 +77,23 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
       }
 
       setStep("shaking");
-      shake.value = 0;
+      shake.set(0);
 
-      shake.value = withSequence(
-        withTiming(-1, { duration: 100 }),
-        withRepeat(
-          withSequence(
-            withTiming(1, { duration: 120 }),
-            withTiming(-1, { duration: 120 })
+      shake.set(
+        withSequence(
+          withTiming(-1, { duration: 100 }),
+          withRepeat(
+            withSequence(
+              withTiming(1, { duration: 120 }),
+              withTiming(-1, { duration: 120 })
+            ),
+            4,
+            false
           ),
-          4,
-          false
-        ),
-        withTiming(0, { duration: 120 }, (finished) => {
-          if (finished) runOnJS(finishOrder)(nextOrder);
-        })
+          withTiming(0, { duration: 120 }, (finished) => {
+            if (finished) runOnJS(finishOrder)(nextOrder);
+          })
+        )
       );
     },
     [finishOrder, reduceMotion, shake]
