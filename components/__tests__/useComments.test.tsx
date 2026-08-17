@@ -6,7 +6,7 @@
  */
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { StyleSheet, Text } from "react-native";
+import { Modal, StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
 import databaseService from "@/services/databaseService";
 import { ThemeProvider, typography } from "@/theme";
@@ -20,9 +20,13 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 // feed row didn't carry one, so `from()` has to survive .select().eq()…
 jest.mock("@/utils/supabase", () => {
   const chain: Record<string, jest.Mock> = {};
-  for (const method of ["select", "eq", "upsert", "delete", "insert"]) {
+  for (const method of ["select", "eq", "insert"]) {
     chain[method] = jest.fn(() => chain);
   }
+  const mockDelete = jest.fn(() => chain);
+  const mockUpsert = jest.fn(() => chain);
+  chain.delete = mockDelete;
+  chain.upsert = mockUpsert;
   chain.maybeSingle = jest.fn(() =>
     Promise.resolve({ data: null, error: null })
   );
@@ -30,8 +34,16 @@ jest.mock("@/utils/supabase", () => {
   return {
     supabase: { from: jest.fn(() => chain) },
     supabaseProjectRef: "testref",
+    __mockDelete: mockDelete,
+    __mockUpsert: mockUpsert,
   };
 });
+
+const { __mockDelete: mockSupabaseDelete, __mockUpsert: mockSupabaseUpsert } =
+  jest.requireMock("@/utils/supabase") as {
+    __mockDelete: jest.Mock;
+    __mockUpsert: jest.Mock;
+  };
 
 jest.mock("@/utils/log", () => ({
   log: jest.fn(),
@@ -203,6 +215,10 @@ beforeEach(() => {
   setCommentLiked.mockResolvedValue(undefined);
 });
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe("ReviewItem comment patches (useComments idempotency)", () => {
   it("shows a patched comment exactly once after the row remounts with the same review object", async () => {
     const review = makeReview({
@@ -366,4 +382,49 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
 
     act(() => tree.unmount());
   });
+
+  it("opens the full-screen image viewer after a single image tap", () => {
+    const tree = renderReview(makeReview());
+    jest.useFakeTimers();
+    const imageButton = tree.root.findByProps({
+      accessibilityLabel: "View review photo",
+    });
+
+    act(() => imageButton.props.onPress());
+    expect(tree.root.findByType(Modal).props.visible).toBe(false);
+
+    act(() => jest.advanceTimersByTime(300));
+    expect(tree.root.findByType(Modal).props.visible).toBe(true);
+
+    act(() => tree.unmount());
+  });
+
+  it.each([
+    { initiallyLiked: false, mutation: "upsert" },
+    { initiallyLiked: true, mutation: "delete" },
+  ])(
+    "uses a double image tap to $mutation the review like",
+    async ({ initiallyLiked, mutation }) => {
+      const tree = renderReview(
+        makeReview({ has_liked: initiallyLiked, likes_count: 1 })
+      );
+      jest.useFakeTimers();
+      const imageButton = tree.root.findByProps({
+        accessibilityLabel: "View review photo",
+      });
+
+      await act(async () => {
+        imageButton.props.onPress();
+        imageButton.props.onPress();
+        await Promise.resolve();
+      });
+
+      expect(
+        mutation === "upsert" ? mockSupabaseUpsert : mockSupabaseDelete
+      ).toHaveBeenCalledTimes(1);
+      expect(tree.root.findByType(Modal).props.visible).toBe(false);
+
+      act(() => tree.unmount());
+    }
+  );
 });

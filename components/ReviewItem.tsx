@@ -724,7 +724,7 @@ const ReviewItemComponent = ({
     reviewId: string;
     overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
   }>({ reviewId: review.id, overrides: {} });
-  const lastTapRef = useRef<number>(0);
+  const imageTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
   const handleShare = useReviewShareMenu(review);
@@ -830,6 +830,16 @@ const ReviewItemComponent = ({
     }
   }, [review._commentPatch, addComment, removeComment]);
 
+  useEffect(
+    () => () => {
+      if (imageTapTimerRef.current) {
+        clearTimeout(imageTapTimerRef.current);
+        imageTapTimerRef.current = null;
+      }
+    },
+    [review.id]
+  );
+
   // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
     if (!profile) return;
@@ -855,14 +865,18 @@ const ReviewItemComponent = ({
   ]);
 
   const handleImagePress = useCallback(() => {
-    const now = Date.now();
-    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      lastTapRef.current = 0;
-      if (!hasLiked) void handleToggleLike();
+    if (imageTapTimerRef.current) {
+      clearTimeout(imageTapTimerRef.current);
+      imageTapTimerRef.current = null;
+      void handleToggleLike();
       return;
     }
-    lastTapRef.current = now;
-  }, [handleToggleLike, hasLiked]);
+
+    imageTapTimerRef.current = setTimeout(() => {
+      imageTapTimerRef.current = null;
+      setImageViewerVisible(true);
+    }, DOUBLE_TAP_DELAY);
+  }, [handleToggleLike]);
 
   const handleReportSubmit = useCallback(
     async (reason: string, customReason?: string) => {
@@ -958,37 +972,25 @@ const ReviewItemComponent = ({
           </View>
         }
 
-        <Pressable
-          style={styles.imageContainer}
-          onPress={handleImagePress}
-          accessible={false}
-          testID="review-photo"
-        >
-          <ExpoImage
-            source={{ uri: review.image_url }}
-            style={styles.reviewImage}
-            contentFit="cover"
-            transition={200}
-            placeholderContentFit="cover"
-            cachePolicy="memory-disk"
-            recyclingKey={review.id}
-          />
-          <TouchableOpacity
-            style={styles.imageViewerButton}
-            onPress={() => setImageViewerVisible(true)}
-            activeOpacity={0.75}
+        <View style={styles.imageContainer} testID="review-photo">
+          <Pressable
+            style={styles.imagePressTarget}
+            onPress={handleImagePress}
             accessibilityRole="button"
             accessibilityLabel="View review photo"
-            hitSlop={HIT_SLOP}
           >
-            <Ionicons
-              name="eye-outline"
-              size={ICON_SIZES.small}
-              color={colors.textOnImage}
+            <ExpoImage
+              source={{ uri: review.image_url }}
+              style={styles.reviewImage}
+              contentFit="cover"
+              transition={200}
+              placeholderContentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={review.id}
             />
-          </TouchableOpacity>
+          </Pressable>
           <PhotoChips review={review} />
-        </Pressable>
+        </View>
 
         <ReviewScores review={review} />
 
@@ -1110,21 +1112,14 @@ const useStyles = makeStyles((t) => ({
     aspectRatio: 16 / 11,
     position: "relative" as const,
   },
+  imagePressTarget: {
+    width: "100%" as const,
+    height: "100%" as const,
+  },
   reviewImage: {
     width: "100%" as const,
     height: "100%" as const,
     backgroundColor: t.colors.imagePlaceholder,
-  },
-  imageViewerButton: {
-    position: "absolute" as const,
-    top: t.spacing.md,
-    left: t.spacing.md,
-    width: 36,
-    height: 36,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.scrimStrong,
   },
   // The only things left on the photo: where it was, how the place is doing,
   // and what was in it. The venue score stays inside the venue chip so it
