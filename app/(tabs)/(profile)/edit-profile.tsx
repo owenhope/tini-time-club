@@ -43,20 +43,7 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const pendingFavoriteLocation = consumePendingFavoriteLocation();
-      if (pendingFavoriteLocation !== undefined) {
-        setFavoriteLocation(pendingFavoriteLocation);
-      }
-    }, [])
-  );
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -128,7 +115,20 @@ const EditProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const pendingFavoriteLocation = consumePendingFavoriteLocation();
+      if (pendingFavoriteLocation !== undefined) {
+        setFavoriteLocation(pendingFavoriteLocation);
+      }
+    }, [])
+  );
 
   const handleSave = async () => {
     if (!profile?.id) return;

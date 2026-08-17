@@ -218,45 +218,48 @@ const UserProfile = () => {
     ]);
   };
 
-  // Fetch the selected profile when usernameParam is provided
+  const fetchSelectedProfile = React.useCallback(
+    async (username: string) => {
+      setProfileError(null);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("username", username)
+          .eq("deleted", false)
+          .single();
+        if (error) {
+          reportError("Error fetching selected profile:", error);
+          // Without this the screen stays blank forever with no way back.
+          setProfileError(
+            error.code === "PGRST116"
+              ? "This profile isn't available."
+              : "We couldn't load this profile."
+          );
+        } else {
+          setSelectedProfile(data);
+          // Track view profile event (only if not viewing own profile)
+          if (profile && data.id !== profile.id) {
+            AnalyticService.capture("view_profile", {
+              targetUserId: data.id,
+              targetUsername: data.username,
+            });
+          }
+        }
+      } catch (err) {
+        reportError("Unexpected error fetching profile:", err);
+        setProfileError("We couldn't load this profile.");
+      }
+    },
+    [profile]
+  );
+
+  // Fetch the selected profile when usernameParam is provided.
   useEffect(() => {
     if (usernameParam) {
-      fetchSelectedProfile(usernameParam);
+      void fetchSelectedProfile(usernameParam);
     }
-  }, [usernameParam]);
-
-  const fetchSelectedProfile = async (username: string) => {
-    setProfileError(null);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .eq("deleted", false)
-        .single();
-      if (error) {
-        reportError("Error fetching selected profile:", error);
-        // Without this the screen stays blank forever with no way back.
-        setProfileError(
-          error.code === "PGRST116"
-            ? "This profile isn't available."
-            : "We couldn't load this profile."
-        );
-      } else {
-        setSelectedProfile(data);
-        // Track view profile event (only if not viewing own profile)
-        if (profile && data.id !== profile.id) {
-          AnalyticService.capture("view_profile", {
-            targetUserId: data.id,
-            targetUsername: data.username,
-          });
-        }
-      }
-    } catch (err) {
-      reportError("Unexpected error fetching profile:", err);
-      setProfileError("We couldn't load this profile.");
-    }
-  };
+  }, [fetchSelectedProfile, usernameParam]);
 
   const handleBlockUser = async () => {
     if (!profile || !displayProfile) return;

@@ -104,6 +104,8 @@ const Location = () => {
     locationAddressParam,
     locationIdParam,
   ]);
+  const reviewLocationId = displayLocation?.id;
+  const viewerId = profile?.id;
 
   const strippedAddress = displayLocation?.address
     ? stripNameFromAddress(displayLocation?.name ?? "", displayLocation.address)
@@ -171,37 +173,6 @@ const Location = () => {
     return actions;
   }, [displayLocation, router, shareLocation]);
 
-  // Fetch the selected location from the "location_ratings" view
-  useEffect(() => {
-    if (locationIdParam) {
-      fetchSelectedLocation(locationIdParam);
-    }
-  }, [locationIdParam]);
-
-  useEffect(() => {
-    if (!displayLocation?.id) return;
-
-    let active = true;
-    setLoadingRegulars(true);
-    getRegularsByLocation([displayLocation.id])
-      .then((grouped) => {
-        if (active) {
-          setRegulars(grouped.get(String(displayLocation.id)) ?? []);
-        }
-      })
-      .catch((error) => {
-        reportError("Error fetching location regulars:", error);
-        if (active) setRegulars([]);
-      })
-      .finally(() => {
-        if (active) setLoadingRegulars(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [displayLocation?.id]);
-
   const fetchSelectedLocation = useCallback(async (locationId: string) => {
     try {
       // The location_ratings view computes the averages and coordinates
@@ -227,7 +198,6 @@ const Location = () => {
 
       setSelectedLocation(formattedLocation);
 
-      // Track view location event
       AnalyticService.capture("view_location", {
         locationId: formattedLocation.id,
         locationName: formattedLocation.name,
@@ -238,6 +208,37 @@ const Location = () => {
       setSelectedLocation(null);
     }
   }, []);
+
+  // Fetch the selected location from the "location_ratings" view
+  useEffect(() => {
+    if (locationIdParam) {
+      void fetchSelectedLocation(locationIdParam);
+    }
+  }, [fetchSelectedLocation, locationIdParam]);
+
+  useEffect(() => {
+    if (!displayLocation?.id) return;
+
+    let active = true;
+    setLoadingRegulars(true);
+    getRegularsByLocation([displayLocation.id])
+      .then((grouped) => {
+        if (active) {
+          setRegulars(grouped.get(String(displayLocation.id)) ?? []);
+        }
+      })
+      .catch((error) => {
+        reportError("Error fetching location regulars:", error);
+        if (active) setRegulars([]);
+      })
+      .finally(() => {
+        if (active) setLoadingRegulars(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [displayLocation?.id]);
 
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
@@ -281,13 +282,13 @@ const Location = () => {
   // Shared function to load location reviews
   const loadLocationReviews = useCallback(
     async (isRefresh = false) => {
-      if (!displayLocation?.id) return;
+      if (!reviewLocationId) return;
 
       setLoadingReviews(true);
       try {
         const reviewsData = await databaseService.getReviews({
-          locationId: displayLocation.id,
-          currentUserId: profile?.id,
+          locationId: reviewLocationId,
+          currentUserId: viewerId,
           excludeBlocked: true,
           forceRefresh: isRefresh,
         });
@@ -300,7 +301,7 @@ const Location = () => {
         setLoadingReviews(false);
       }
     },
-    [displayLocation?.id, profile?.id]
+    [reviewLocationId, viewerId]
   );
 
   const onRefresh = useCallback(() => {
