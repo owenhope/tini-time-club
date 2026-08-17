@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { startAdminNavigation } from "@/components/AdminNavigationProgress";
 
 const INTERACTIVE_SELECTOR =
   'a,button,input,select,textarea,label,[role="button"],[data-row-click-ignore]';
@@ -20,6 +21,7 @@ export default function ClickableRow({
     target instanceof Element && Boolean(target.closest(INTERACTIVE_SELECTOR));
 
   const navigate = () => {
+    startAdminNavigation(href);
     router.push(href);
   };
 

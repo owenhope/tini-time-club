@@ -49,7 +49,6 @@ import {
 } from "@/utils/authDeepLink";
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
-import { withTimeout } from "@/utils/async";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import type { Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
@@ -68,8 +67,6 @@ const isOnboardingExemptPath = (path: string) =>
   path === "/sign-in" ||
   path === "/sign-up" ||
   path.startsWith("/auth");
-
-const RESUME_SESSION_TIMEOUT_MS = 5000;
 
 const isAuthenticationPath = (path: string) =>
   path === "/" ||
@@ -222,8 +219,6 @@ export function RootLayoutNav() {
   })();
   const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
-  const appState = useRef(AppState.currentState);
-  const isCheckingSession = useRef(false);
   const hasHandledInitialSession = useRef(false);
   const authSessionRef = useRef<Session | null>(null);
   const lastHandledAuthUrl = useRef<string | null>(null);
@@ -383,9 +378,7 @@ export function RootLayoutNav() {
       if (isAuthLaunch && !session) return;
 
       const deepLinkRouted =
-        !!launchedViaDeepLink &&
-        !isAuthLaunch &&
-        pathnameRef.current !== "/";
+        !!launchedViaDeepLink && !isAuthLaunch && pathnameRef.current !== "/";
 
       hasHandledInitialSession.current = true;
       authSessionRef.current = session;
@@ -463,42 +456,8 @@ export function RootLayoutNav() {
       });
 
     // Handle app state changes (resume from background)
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      const previousAppState = appState.current;
-      appState.current = nextAppState;
-      authCache.onAppStateChange(nextAppState);
-
-      if (
-        previousAppState.match(/inactive|background/) &&
-        nextAppState === "active" &&
-        !isCheckingSession.current &&
-        isReadyRef.current &&
-        pathnameRef.current !== "/"
-      ) {
-        isCheckingSession.current = true;
-
-        try {
-          const session = await withTimeout(
-            authCache.getSession(),
-            RESUME_SESSION_TIMEOUT_MS,
-            "Resume session check timed out"
-          );
-          if (
-            !session &&
-            appState.current === "active" &&
-            pathnameRef.current !== "/"
-          ) {
-            router.replace(routes.welcome());
-          }
-        } catch (error) {
-          reportError(
-            "[RootLayout] ❌ Error during resume session check:",
-            error
-          );
-        } finally {
-          isCheckingSession.current = false;
-        }
-      }
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      void authCache.onAppStateChange(nextAppState);
 
       if (nextAppState === "active") {
         void retryPendingPushUnregistrationAsync();

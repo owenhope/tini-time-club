@@ -331,6 +331,12 @@ export interface AnalyticsData {
     reviewCount: number;
     share: number;
   }[];
+  spiritPopularity: {
+    id: number;
+    name: string;
+    reviewCount: number;
+    share: number;
+  }[];
   /** Signups inside the range, for the growth section. */
   signupsInRange: number;
   /**
@@ -429,12 +435,13 @@ export const fetchAnalytics = async (
     invites,
     profiles,
     typeCatalog,
+    spiritCatalog,
     martiniIndexEvents,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
           .from("reviews")
-          .select("inserted_at,user_id,location,type")
+          .select("inserted_at,user_id,location,type,spirit")
           .eq("state", 1)
           .in("user_id", activeMemberIds)
           .in("location", activeLocationIds)
@@ -500,6 +507,7 @@ export const fetchAnalytics = async (
       .select("id,review_count,deleted")
       .eq("deleted", false),
     db().from("types").select("id,name").order("name"),
+    db().from("spirits").select("id,name").order("name"),
     activeMemberIds.length > 0
       ? db()
           .from("martini_index_events")
@@ -623,6 +631,11 @@ export const fetchAnalytics = async (
       `Unable to load active review types: ${typeCatalog.error.message}`
     );
   }
+  if (spiritCatalog.error) {
+    throw new Error(
+      `Unable to load active review spirits: ${spiritCatalog.error.message}`
+    );
+  }
 
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -647,7 +660,8 @@ export const fetchAnalytics = async (
   ) => rows.filter((event) => event.kind === kind).length;
   const locationRows = locations.data ?? [];
   const reviewRows = reviews.data ?? [];
-  const catalogRows = typeCatalog.data ?? [];
+  const typeCatalogRows = typeCatalog.data ?? [];
+  const spiritCatalogRows = spiritCatalog.data ?? [];
 
   /** Keep this list aligned with utils/reviewOptions.ts in the app. */
   const enabledTypeOrder = [
@@ -662,7 +676,7 @@ export const fetchAnalytics = async (
   const enabledTypeIndex = new Map(
     enabledTypeOrder.map((name, index) => [name, index])
   );
-  const activeCatalogRows = catalogRows
+  const activeCatalogRows = typeCatalogRows
     .map((type) => ({
       id: Number(type.id),
       name: type.name?.trim() ?? "",
@@ -730,6 +744,79 @@ export const fetchAnalytics = async (
       (a, b) =>
         b.reviewCount - a.reviewCount ||
         typeOrder.get(a.id)! - typeOrder.get(b.id)!
+    );
+
+  /** Keep this list aligned with utils/reviewOptions.ts in the app. */
+  const enabledSpiritOrder = ["vodka", "gin", "vesper"];
+  const enabledSpiritIndex = new Map(
+    enabledSpiritOrder.map((name, index) => [name, index])
+  );
+  const activeSpiritCatalogRows = spiritCatalogRows
+    .map((spirit) => ({
+      id: Number(spirit.id),
+      name: spirit.name?.trim() ?? "",
+    }))
+    .filter(
+      (spirit) =>
+        Number.isFinite(spirit.id) &&
+        spirit.name.length > 0 &&
+        enabledSpiritIndex.has(spirit.name.toLowerCase())
+    )
+    .sort(
+      (a, b) =>
+        enabledSpiritIndex.get(a.name.toLowerCase())! -
+          enabledSpiritIndex.get(b.name.toLowerCase())! || a.id - b.id
+    )
+    .filter((spirit, index, rows) => {
+      const normalizedName = spirit.name.toLowerCase();
+      return (
+        rows.findIndex(
+          (candidate) => candidate.name.toLowerCase() === normalizedName
+        ) === index
+      );
+    })
+    .map((spirit) => ({
+      ...spirit,
+      name: `${spirit.name.charAt(0).toUpperCase()}${spirit.name
+        .slice(1)
+        .toLowerCase()}`,
+    }));
+  const spiritNames = new Map(
+    activeSpiritCatalogRows.map((spirit) => [spirit.id, spirit.name])
+  );
+  const spiritOrder = new Map(
+    activeSpiritCatalogRows.map((spirit, index) => [spirit.id, index])
+  );
+  const spiritStats = new Map<
+    number,
+    { id: number; name: string; reviewCount: number }
+  >();
+  for (const spirit of activeSpiritCatalogRows) {
+    spiritStats.set(spirit.id, { ...spirit, reviewCount: 0 });
+  }
+  for (const review of reviewRows) {
+    const id = review.spirit == null ? null : Number(review.spirit);
+    if (id == null || !Number.isFinite(id) || !spiritNames.has(id)) continue;
+    spiritStats.get(id)!.reviewCount += 1;
+  }
+  const activeSpiritReviewTotal = [...spiritStats.values()].reduce(
+    (total, spirit) => total + spirit.reviewCount,
+    0
+  );
+  const spiritPopularity = [...spiritStats.values()]
+    .map((spirit) => ({
+      id: spirit.id,
+      name: spirit.name,
+      reviewCount: spirit.reviewCount,
+      share:
+        activeSpiritReviewTotal > 0
+          ? spirit.reviewCount / activeSpiritReviewTotal
+          : 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.reviewCount - a.reviewCount ||
+        spiritOrder.get(a.id)! - spiritOrder.get(b.id)!
     );
   const locationsInRange = locationRows.filter((location) => {
     if (!location.inserted_at) return false;
@@ -985,6 +1072,7 @@ export const fetchAnalytics = async (
       })
       .filter(Boolean) as AnalyticsData["topPlaces"],
     typePopularity,
+    spiritPopularity,
     signupsInRange: authRows.filter((user) => {
       if (!user.created_at) return false;
       const at = new Date(user.created_at).getTime();

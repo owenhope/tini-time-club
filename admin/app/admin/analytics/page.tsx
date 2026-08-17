@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const SECTIONS = [
   { id: "membership", label: "Membership" },
   { id: "reviews", label: "Reviews" },
-  { id: "types", label: "Types" },
+  { id: "spirits-types", label: "Spirits & Types" },
   { id: "martini-index", label: "Martini Index" },
   { id: "places", label: "Places" },
   { id: "engagement", label: "Engagement" },
@@ -64,6 +64,10 @@ export default async function AnalyticsPage({
   const totalReviews = a.reviewsByDay.reduce((sum, d) => sum + d.count, 0);
   const activeTypeReviews = a.typePopularity.reduce(
     (sum, type) => sum + type.reviewCount,
+    0
+  );
+  const activeSpiritReviews = a.spiritPopularity.reduce(
+    (sum, spirit) => sum + spirit.reviewCount,
     0
   );
 
@@ -159,20 +163,32 @@ export default async function AnalyticsPage({
           </FeatureSection>
 
           <FeatureSection
-            id="types"
-            title="Types"
-            description="Review volume by type enabled in the review composer."
+            id="spirits-types"
+            title="Spirits & Types"
+            description="Review volume by spirit and type enabled in the review composer."
           >
-            <DonutChart
-              title="Review types"
-              total={activeTypeReviews}
-              rows={a.typePopularity.map((type) => ({
-                key: String(type.id),
-                label: type.name,
-                count: type.reviewCount,
-                share: type.share,
-              }))}
-            />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <DonutChart
+                title="Spirits"
+                total={activeSpiritReviews}
+                rows={a.spiritPopularity.map((spirit) => ({
+                  key: String(spirit.id),
+                  label: spirit.name,
+                  count: spirit.reviewCount,
+                  share: spirit.share,
+                }))}
+              />
+              <DonutChart
+                title="Types"
+                total={activeTypeReviews}
+                rows={a.typePopularity.map((type) => ({
+                  key: String(type.id),
+                  label: type.name,
+                  count: type.reviewCount,
+                  share: type.share,
+                }))}
+              />
+            </div>
           </FeatureSection>
 
           <FeatureSection
