@@ -15,12 +15,39 @@ const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
 const PHOTO_LIBRARY_USAGE_DESCRIPTION =
   "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.";
+const REQUIRED_RELEASE_ENVIRONMENT_VARIABLES = [
+  "EXPO_PUBLIC_SUPABASE_URL",
+  "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+  "EXPO_PUBLIC_META_APP_ID",
+] as const;
+
+const validateReleaseEnvironment = (
+  appEnvironment: "development" | "preview" | "production"
+) => {
+  if (appEnvironment === "development") {
+    return;
+  }
+
+  const missingVariables = REQUIRED_RELEASE_ENVIRONMENT_VARIABLES.filter(
+    (variableName) => !process.env[variableName]?.trim()
+  );
+
+  if (missingVariables.length > 0) {
+    throw new Error(
+      `Missing required ${appEnvironment} environment variables: ${missingVariables.join(
+        ", "
+      )}. Configure them in the matching EAS environment before building.`
+    );
+  }
+};
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnvironment =
     (process.env.APP_ENV as "development" | "preview" | "production") ||
     "development";
   const backendEnvironment = process.env.BACKEND_ENV || appEnvironment;
+
+  validateReleaseEnvironment(appEnvironment);
 
   console.log(
     `Building ${appEnvironment} app against ${backendEnvironment} backend`

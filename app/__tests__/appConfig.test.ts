@@ -48,3 +48,47 @@ describe("native app permissions", () => {
     });
   });
 });
+
+describe("release environment validation", () => {
+  const originalAppEnvironment = process.env.APP_ENV;
+  const originalSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const originalSupabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const originalMetaAppId = process.env.EXPO_PUBLIC_META_APP_ID;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    process.env.APP_ENV = originalAppEnvironment;
+    process.env.EXPO_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = originalSupabaseAnonKey;
+    process.env.EXPO_PUBLIC_META_APP_ID = originalMetaAppId;
+  });
+
+  it.each(["preview", "production"])(
+    "rejects a %s build without a Meta app ID",
+    (appEnvironment) => {
+      jest.spyOn(console, "log").mockImplementation(() => {});
+      process.env.APP_ENV = appEnvironment;
+      process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+      delete process.env.EXPO_PUBLIC_META_APP_ID;
+
+      expect(() =>
+        createAppConfig({ config: {} } as ConfigContext)
+      ).toThrow(
+        `Missing required ${appEnvironment} environment variables: EXPO_PUBLIC_META_APP_ID`
+      );
+    }
+  );
+
+  it("accepts a preview build when every release variable is present", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "preview";
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+
+    expect(
+      createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
+    ).toBe("com.ohope.tinitimeclub.preview");
+  });
+});
