@@ -14,6 +14,8 @@ let mockProfileState: {
     eula_accepted: boolean;
   } | null;
   loading: boolean;
+  profileError?: string | null;
+  refreshProfile?: () => Promise<void>;
 };
 let mockPathname = "/";
 let mockInitialUrl: string | null = null;
@@ -31,6 +33,7 @@ const mockSignOut = jest.fn(async () => {
   await mockAuthStateChange?.("SIGNED_OUT", null);
   return { error: null };
 });
+const mockRefreshProfile = jest.fn(async () => undefined);
 let renderer: ReactTestRenderer | undefined;
 
 jest.mock("@/utils/sentry", () => ({
@@ -189,7 +192,12 @@ jest.mock("expo-router", () => {
 describe("root startup routing", () => {
   beforeEach(() => {
     mockAuthStateChange = undefined;
-    mockProfileState = { profile: null, loading: true };
+    mockProfileState = {
+      profile: null,
+      loading: true,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
     mockPathname = "/";
     mockInitialUrl = null;
     mockStackScreenOptions = undefined;
@@ -203,6 +211,7 @@ describe("root startup routing", () => {
     mockIsAuthCallbackUrl.mockReset();
     mockIsAuthCallbackUrl.mockReturnValue(false);
     mockSignOut.mockClear();
+    mockRefreshProfile.mockClear();
     Object.defineProperty(AppState, "currentState", {
       configurable: true,
       value: "active",
@@ -241,6 +250,59 @@ describe("root startup routing", () => {
       renderer!.root.findAllByType("MountedRoute" as React.ElementType)
     ).toHaveLength(0);
     expect(mockHideAsync).not.toHaveBeenCalled();
+  });
+
+  it("keeps a transient profile failure signed in and offers retry", async () => {
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", {
+        user: { id: "member-1" },
+      });
+    });
+
+    mockProfileState = {
+      profile: null,
+      loading: false,
+      profileError: "We couldn't load your profile.",
+      refreshProfile: mockRefreshProfile,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+    expect(mockHideAsync).toHaveBeenCalledTimes(1);
+    const retryControl = renderer!.root
+      .findAllByProps({
+        accessibilityLabel: "Try loading profile again",
+      })
+      .find((node) => typeof node.props.onPress === "function");
+    expect(retryControl).toBeDefined();
+
+    await act(async () => {
+      retryControl!.props.onPress();
+    });
+
+    expect(mockRefreshProfile).toHaveBeenCalledTimes(1);
+
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/home");
   });
 
   it.each([

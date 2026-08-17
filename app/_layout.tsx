@@ -174,7 +174,12 @@ export default Sentry.wrap(RootLayout);
 
 export function RootLayoutNav() {
   const { colors, isDark } = useTheme();
-  const { profile, loading: profileLoading } = useProfile();
+  const {
+    profile,
+    loading: profileLoading,
+    profileError,
+    refreshProfile,
+  } = useProfile();
   const [fontsLoaded] = useFonts({
     Figtree_400Regular,
     Figtree_600SemiBold,
@@ -194,11 +199,14 @@ export function RootLayoutNav() {
     string | null
   >(null);
   const isStartupResolved = Boolean(
-    fontsLoaded && initialAuth && (!initialAuth.session || !profileLoading)
+    fontsLoaded &&
+    initialAuth &&
+    (!initialAuth.session || !profileLoading || profileError)
   );
   const startupTarget = (() => {
     if (!isStartupResolved || !initialAuth) return null;
     if (!initialAuth.session) return routes.welcome();
+    if (profileError) return null;
 
     const authenticatedTarget = getAuthenticatedDefaultRoute(profile);
     if (authenticatedTarget !== routes.home()) return authenticatedTarget;
@@ -207,6 +215,7 @@ export function RootLayoutNav() {
   const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
   const hasHandledInitialSession = useRef(false);
+  const hadStartupProfileError = useRef(false);
   const authSessionRef = useRef<Session | null>(null);
   const lastHandledAuthUrl = useRef<string | null>(null);
 
@@ -251,6 +260,37 @@ export function RootLayoutNav() {
 
     void requestAppTrackingTransparencyAsync();
   }, [fontsLoaded, isReady]);
+
+  useEffect(() => {
+    if (profileError && !profile) {
+      hadStartupProfileError.current = true;
+    }
+  }, [profile, profileError]);
+
+  useEffect(() => {
+    if (
+      !hadStartupProfileError.current ||
+      profileError ||
+      profileLoading ||
+      !profile ||
+      !initialAuth?.session ||
+      !rootNavigationState?.key
+    ) {
+      return;
+    }
+
+    hadStartupProfileError.current = false;
+    const target = getAuthenticatedDefaultRoute(profile);
+    if (pathname !== target) router.replace(target);
+  }, [
+    initialAuth?.session,
+    pathname,
+    profile,
+    profileError,
+    profileLoading,
+    rootNavigationState?.key,
+    router,
+  ]);
 
   // A fresh sign-in is not a complete routing decision: first wait for the
   // signed-in member's profile so a new account goes straight to Onboarding
@@ -467,6 +507,39 @@ export function RootLayoutNav() {
   // Also wait on the brand fonts so first paint isn't in the system face.
   if (!isReady || !fontsLoaded) {
     return null;
+  }
+
+  if (initialAuth?.session && !profile && profileError) {
+    return (
+      <View
+        style={[
+          errorBoundaryStyles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
+          Unable to load your profile
+        </Text>
+        <Text style={[errorBoundaryStyles.body, { color: colors.textMuted }]}>
+          {profileError} You&apos;re still signed in.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try loading profile again"
+          disabled={profileLoading}
+          onPress={() => void refreshProfile()}
+          style={({ pressed }) => [
+            errorBoundaryStyles.button,
+            (pressed || profileLoading) && errorBoundaryStyles.buttonPressed,
+          ]}
+        >
+          <Text style={errorBoundaryStyles.buttonText}>
+            {profileLoading ? "Trying again…" : "Try again"}
+          </Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (
