@@ -27,44 +27,41 @@ const isValidEmail = (email: string) =>
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
 
-  const continueWithEmail = useCallback(
-    async (email: string) => {
-      if (!isValidEmail(email)) {
-        Alert.alert(
-          AUTH_MESSAGES.magicLink.error,
-          AUTH_MESSAGES.magicLink.invalidEmail
-        );
+  const continueWithEmail = useCallback(async (email: string) => {
+    if (!isValidEmail(email)) {
+      Alert.alert(
+        AUTH_MESSAGES.magicLink.error,
+        AUTH_MESSAGES.magicLink.invalidEmail
+      );
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: Linking.createURL("/auth/callback"),
+        },
+      });
+
+      if (error) {
+        Alert.alert(AUTH_MESSAGES.magicLink.error, error.message);
         return false;
       }
 
-      setLoading(true);
-      try {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email.trim().toLowerCase(),
-          options: {
-            shouldCreateUser: true,
-            emailRedirectTo: Linking.createURL("/auth/callback"),
-          },
-        });
-
-        if (error) {
-          Alert.alert(AUTH_MESSAGES.magicLink.error, error.message);
-          return false;
-        }
-
-        return true;
-      } catch (err: any) {
-        Alert.alert(
-          AUTH_MESSAGES.magicLink.error,
-          err.message || AUTH_MESSAGES.general.unexpectedError
-        );
-        return false;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+      return true;
+    } catch (err: any) {
+      Alert.alert(
+        AUTH_MESSAGES.magicLink.error,
+        err.message || AUTH_MESSAGES.general.unexpectedError
+      );
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Kept temporarily for password-account rollback and the existing recovery
   // route. Password recovery is no longer exposed by the primary login UI.

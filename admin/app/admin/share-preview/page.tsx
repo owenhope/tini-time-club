@@ -66,7 +66,8 @@ export default async function SharePreviewPage({
   const kind: PreviewKind = params.kind === "location" ? "location" : "review";
   const selectedReviewId = params.review ?? reviews[0]?.id ?? "";
   const selectedLocationId = params.location ?? locations[0]?.id ?? "";
-  const selectedId = kind === "location" ? selectedLocationId : selectedReviewId;
+  const selectedId =
+    kind === "location" ? selectedLocationId : selectedReviewId;
   const mode: PreviewMode =
     params.mode === "desktop" || params.mode === "mobile"
       ? params.mode
@@ -80,10 +81,7 @@ export default async function SharePreviewPage({
     ? `${PUBLIC_ORIGIN}/${route}/${encodeURIComponent(selectedId)}`
     : "";
   const selectionParam = kind === "location" ? "location" : "review";
-  const pageHref = (
-    nextKind: PreviewKind,
-    nextMode: PreviewMode = mode
-  ) =>
+  const pageHref = (nextKind: PreviewKind, nextMode: PreviewMode = mode) =>
     `/admin/share-preview?${new URLSearchParams({
       kind: nextKind,
       mode: nextMode,
@@ -145,7 +143,8 @@ export default async function SharePreviewPage({
                   {kind === "location"
                     ? locations.map((location) => (
                         <option key={location.id} value={location.id}>
-                          #{location.id} · {location.name} · {location.total_ratings}{" "}
+                          #{location.id} · {location.name} ·{" "}
+                          {location.total_ratings}{" "}
                           {location.total_ratings === 1 ? "review" : "reviews"}
                           {formatCityRegion(location.address)
                             ? ` · ${formatCityRegion(location.address)}`
@@ -154,8 +153,9 @@ export default async function SharePreviewPage({
                       ))
                     : reviews.map((review) => (
                         <option key={review.id} value={review.id}>
-                          #{review.id} · {review.location?.name ?? "Unknown place"}{" "}
-                          · @{review.profile?.username ?? "unknown"} ·{" "}
+                          #{review.id} ·{" "}
+                          {review.location?.name ?? "Unknown place"} · @
+                          {review.profile?.username ?? "unknown"} ·{" "}
                           {new Date(review.inserted_at).toLocaleDateString()}
                         </option>
                       ))}

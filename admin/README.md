@@ -15,12 +15,12 @@ Opens on http://localhost:3000. Public pages live at `/` and `/r/<review-id>`;
 the operator dashboard lives under `/admin` and `/admin/login`. Requires
 `admin/.env.local`:
 
-| var | what |
-| --- | --- |
-| `SUPABASE_URL` | project URL (currently the dev project) |
+| var                         | what                                         |
+| --------------------------- | -------------------------------------------- |
+| `SUPABASE_URL`              | project URL (currently the dev project)      |
 | `SUPABASE_SERVICE_ROLE_KEY` | service-role key — server-only, bypasses RLS |
-| `ADMIN_PASSWORD` | the sign-in password |
-| `SESSION_SECRET` | HMAC secret for the session cookie |
+| `ADMIN_PASSWORD`            | the sign-in password                         |
+| `SESSION_SECRET`            | HMAC secret for the session cookie           |
 
 Keys can be fetched with `npx supabase projects api-keys --project-ref <ref>`.
 Point at production by swapping `SUPABASE_URL` + service key.

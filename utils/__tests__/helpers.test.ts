@@ -76,7 +76,10 @@ describe("formatCityRegion", () => {
       "Dresher, United States",
     ],
     ["4238 Wilson Blvd #1130, Arlington, VA 22203, USA", "Arlington, USA"],
-    ["Como Taperia, East 7th Avenue, Vancouver, BC, Canada", "Vancouver, Canada"],
+    [
+      "Como Taperia, East 7th Avenue, Vancouver, BC, Canada",
+      "Vancouver, Canada",
+    ],
     [
       "SIDECUT Steakhouse, Blackcomb Way, Whistler, BC, Canada",
       "Whistler, Canada",
@@ -99,9 +102,9 @@ describe("formatCityRegion", () => {
   });
 
   it("keeps Turkish district and city slash pairs without postal clutter", () => {
-    expect(
-      formatCityRegion("34710 Kadikoy/Istanbul, Caferaga Mahallesi")
-    ).toBe("Kadikoy, Istanbul");
+    expect(formatCityRegion("34710 Kadikoy/Istanbul, Caferaga Mahallesi")).toBe(
+      "Kadikoy, Istanbul"
+    );
   });
 
   it("finds Turkish district and city slash pairs after a venue prefix", () => {
@@ -114,9 +117,7 @@ describe("formatCityRegion", () => {
 
   it("uses the city side of a Turkish slash pair when country is present", () => {
     expect(
-      formatCityRegion(
-        "Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Türkiye"
-      )
+      formatCityRegion("Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Türkiye")
     ).toBe("İstanbul, Türkiye");
   });
 

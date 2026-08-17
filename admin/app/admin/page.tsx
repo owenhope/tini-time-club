@@ -26,8 +26,7 @@ const Rank = ({ index }: { index: number }) => (
   </span>
 );
 
-const dashboardRowClass =
-  "flex h-16 items-center justify-between gap-3 px-4";
+const dashboardRowClass = "flex h-16 items-center justify-between gap-3 px-4";
 const dashboardRowLinkClass = `${dashboardRowClass} transition hover:bg-stone-50 focus:bg-stone-50 focus:outline-none`;
 
 export default async function Dashboard() {

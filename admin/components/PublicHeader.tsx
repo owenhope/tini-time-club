@@ -78,9 +78,7 @@ export default function PublicHeader({ tone = "cream" }: PublicHeaderProps) {
             <Link
               key={link.href}
               href={link.href}
-              onClick={
-                link.href === "/#club" ? handleFeaturesClick : undefined
-              }
+              onClick={link.href === "/#club" ? handleFeaturesClick : undefined}
               className={`transition ${styles.nav}`}
             >
               {link.label}

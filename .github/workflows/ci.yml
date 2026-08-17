@@ -23,12 +23,18 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            admin/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
@@ -45,6 +51,27 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
           EXPO_PUBLIC_META_APP_ID: ci-placeholder
+          EXPO_PUBLIC_SENTRY_DSN: https://public@example.ingest.sentry.io/1
           EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ci-placeholder
           GOOGLE_MAPS_API_KEY_IOS: ci-placeholder
           GOOGLE_MAPS_API_KEY_ANDROID: ci-placeholder
+          SENTRY_ORG: ci-placeholder
+          SENTRY_PROJECT: ci-placeholder
+          SENTRY_AUTH_TOKEN: ci-placeholder
+
+      - name: Install admin dependencies
+        run: npm ci --prefix admin
+
+      - name: Typecheck admin
+        run: npm run typecheck --prefix admin
+
+      - name: Lint admin
+        run: npm run lint --prefix admin
+
+      - name: Build admin
+        run: npm run build --prefix admin
+        env:
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+          ADMIN_PASSWORD: ci-placeholder
+          SESSION_SECRET: ci-placeholder-session-secret

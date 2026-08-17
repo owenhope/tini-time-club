@@ -30,7 +30,7 @@ async function getHtmlFiles(directory) {
         return getHtmlFiles(path);
       }
       return entry.isFile() && entry.name.endsWith(".html") ? [path] : [];
-    }),
+    })
   );
 
   return files.flat();
@@ -41,10 +41,7 @@ let updatedCount = 0;
 
 for (const file of htmlFiles) {
   const html = await readFile(file, "utf8");
-  const patched = html.replace(
-    noModuleScriptPattern,
-    "<script defer$1>",
-  );
+  const patched = html.replace(noModuleScriptPattern, "<script defer$1>");
 
   if (patched !== html) {
     await writeFile(file, patched);
@@ -52,4 +49,6 @@ for (const file of htmlFiles) {
   }
 }
 
-console.log(`Deferred nomodule polyfill scripts in ${updatedCount} HTML files.`);
+console.log(
+  `Deferred nomodule polyfill scripts in ${updatedCount} HTML files.`
+);

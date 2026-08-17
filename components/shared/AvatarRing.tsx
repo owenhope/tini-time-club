@@ -26,10 +26,8 @@ const getBorderWidth = (size: number): number => {
 };
 
 /** Extra pixels AvatarRing adds around each edge of an avatar. */
-export const ringInset = (
-  reviewCount?: number | null,
-  size = 40
-): number => (getRankTier(reviewCount) ? getBorderWidth(size) + 1 : 0);
+export const ringInset = (reviewCount?: number | null, size = 40): number =>
+  getRankTier(reviewCount) ? getBorderWidth(size) + 1 : 0;
 
 const ROTATION_DURATION_MS = 6000;
 // SVG strokes are centered on their path. Leave a small inset between the

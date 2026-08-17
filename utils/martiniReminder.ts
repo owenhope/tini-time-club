@@ -82,7 +82,9 @@ export async function ensureFridayMartiniReminder(): Promise<void> {
   }
 }
 
-export async function syncFridayMartiniReminder(enabled: boolean): Promise<void> {
+export async function syncFridayMartiniReminder(
+  enabled: boolean
+): Promise<void> {
   if (enabled) {
     await ensureFridayMartiniReminder();
   } else {

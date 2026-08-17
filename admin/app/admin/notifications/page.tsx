@@ -139,9 +139,7 @@ export default async function NotificationsPage({
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
             <h2 className="border-b border-stone-200 px-5 py-3 font-semibold">
               Push performance{" "}
-              <span className="font-normal text-stone-400">
-                (last 30 days)
-              </span>
+              <span className="font-normal text-stone-400">(last 30 days)</span>
             </h2>
             <table className="w-full text-left text-sm">
               <thead className="border-b border-stone-200 bg-stone-100 text-[11px] uppercase tracking-[0.14em] text-stone-500">
