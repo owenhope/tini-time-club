@@ -220,11 +220,6 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
   },
 ];
 
-export interface MartiniAvoidances {
-  spirits: readonly MartiniSpirit[];
-  types: readonly MartiniType[];
-}
-
 export const filterMartiniIndex = (
   query: string,
   spirit: MartiniSpirit | "All" = "All"
@@ -267,23 +262,14 @@ export const getMartiniIndexRows = (
   });
 };
 
-export const getEligibleMartinis = (avoidances: MartiniAvoidances) =>
-  MARTINI_INDEX.filter(
-    (item) =>
-      !avoidances.spirits.includes(item.spirit) &&
-      !avoidances.types.includes(item.type)
-  );
-
 export const pickMartiniIndexEntry = (
-  avoidances: MartiniAvoidances,
   previousId?: string | null,
   random: () => number = Math.random
-): MartiniIndexEntry | null => {
-  const eligible = getEligibleMartinis(avoidances);
-  if (eligible.length === 0) return null;
-
-  const withoutPrevious = eligible.filter((item) => item.id !== previousId);
-  const pool = withoutPrevious.length > 0 ? withoutPrevious : eligible;
+): MartiniIndexEntry => {
+  const withoutPrevious = MARTINI_INDEX.filter(
+    (item) => item.id !== previousId
+  );
+  const pool = withoutPrevious.length > 0 ? withoutPrevious : MARTINI_INDEX;
   const index = Math.min(Math.floor(random() * pool.length), pool.length - 1);
   return pool[index];
 };

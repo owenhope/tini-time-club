@@ -1,6 +1,5 @@
 import {
   filterMartiniIndex,
-  getEligibleMartinis,
   getMartiniIndexRows,
   MARTINI_GUIDE_NOTES,
   MARTINI_INDEX,
@@ -56,33 +55,15 @@ describe("martini index", () => {
     expect(vodkaIndex.every((entry) => entry.kind === "drink")).toBe(true);
   });
 
-  it("removes every disliked spirit and type", () => {
-    const eligible = getEligibleMartinis({
-      spirits: ["Vodka"],
-      types: ["Dirty", "Classic"],
-    });
-
-    expect(eligible.every((item) => item.spirit !== "Vodka")).toBe(true);
-    expect(eligible.every((item) => item.type !== "Dirty")).toBe(true);
-    expect(eligible.every((item) => item.type !== "Classic")).toBe(true);
-  });
-
   it("picks deterministically and avoids an immediate repeat", () => {
-    const avoidances = { spirits: ["Vodka", "Vesper"] as const, types: [] };
-    const first = pickMartiniIndexEntry(avoidances, null, () => 0);
-    const second = pickMartiniIndexEntry(avoidances, first?.id, () => 0);
+    const first = pickMartiniIndexEntry(null, () => 0);
+    const second = pickMartiniIndexEntry(first.id, () => 0);
 
-    expect(first?.id).toBe("classic-gin");
-    expect(second?.id).not.toBe(first?.id);
+    expect(first.id).toBe("classic-gin");
+    expect(second.id).not.toBe(first.id);
   });
 
-  it("returns null when every spirit is excluded", () => {
-    expect(
-      pickMartiniIndexEntry(
-        { spirits: MARTINI_SPIRITS, types: [] },
-        null,
-        () => 0
-      )
-    ).toBeNull();
+  it("can pick from all twelve martinis", () => {
+    expect(pickMartiniIndexEntry(null, () => 0.999).id).toBe("vesper");
   });
 });
