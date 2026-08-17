@@ -44,6 +44,7 @@ jobs:
           APP_ENV: production
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_META_APP_ID: ci-placeholder
           EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ci-placeholder
           GOOGLE_MAPS_API_KEY_IOS: ci-placeholder
           GOOGLE_MAPS_API_KEY_ANDROID: ci-placeholder
