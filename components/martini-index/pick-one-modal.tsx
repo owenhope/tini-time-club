@@ -19,7 +19,6 @@ import {
   Button,
   MartiniGlassOutlineIcon,
   MartiniShakerIcon,
-  ShotGlassIcon,
 } from "@/components/shared";
 import MartiniIndexCard from "@/components/martini-index/martini-index-card";
 import { makeStyles, useTheme } from "@/theme";
@@ -158,9 +157,6 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
                   variant="streamlined"
                 />
               </Animated.View>
-              <View style={styles.shotGlass}>
-                <ShotGlassIcon size={118} color={colors.onInk} />
-              </View>
             </View>
             <View style={styles.shakingCopy}>
               <AppText variant="eyebrow" style={styles.shakingEyebrow}>
@@ -255,6 +251,7 @@ const useStyles = makeStyles((t) => ({
     height: 190,
   },
   barware: {
+    width: "100%" as const,
     flexDirection: "row" as const,
     alignItems: "flex-end" as const,
     justifyContent: "center" as const,
@@ -263,10 +260,6 @@ const useStyles = makeStyles((t) => ({
   martiniGlass: {
     width: 112,
     height: 148,
-  },
-  shotGlass: {
-    width: 74,
-    height: 118,
   },
   shakingCopy: {
     alignItems: "center" as const,
