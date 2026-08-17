@@ -1,8 +1,21 @@
 import React from "react";
+import { FlatList } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
 const mockGetReviews = jest.fn(() => new Promise(() => undefined));
+const mockGetFollowedUserIds = jest.fn(async () => []);
+const mockGetReviewsForUsers = jest.fn(() => new Promise(() => undefined));
 const mockRefreshUnseenCount = jest.fn(async () => undefined);
+let mockReviewUpdateCallback: (() => void) | null = null;
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
 
 jest.mock("expo-router", () => {
   const React = require("react");
@@ -41,7 +54,8 @@ jest.mock("@/services/databaseService", () => ({
   __esModule: true,
   default: {
     getReviews: () => mockGetReviews(),
-    getFollowedUserIds: jest.fn(async () => []),
+    getFollowedUserIds: () => mockGetFollowedUserIds(),
+    getReviewsForUsers: () => mockGetReviewsForUsers(),
   },
 }));
 
@@ -52,7 +66,10 @@ jest.mock("@/utils/supabase", () => ({
 }));
 
 jest.mock("@/utils/reviewEvents", () => ({
-  subscribeToReviewUpdates: () => () => undefined,
+  subscribeToReviewUpdates: (callback: () => void) => {
+    mockReviewUpdateCallback = callback;
+    return () => undefined;
+  },
 }));
 jest.mock("@/utils/scrollUtils", () => ({ setGlobalScrollToTop: jest.fn() }));
 jest.mock("@/utils/screenshotMode", () => ({
@@ -82,7 +99,13 @@ jest.mock("bad-words", () => ({
     }
   },
 }));
-jest.mock("@/components/ReviewItem", () => () => null);
+jest.mock("@/components/ReviewItem", () => {
+  const React = require("react");
+
+  return function MockReviewItem({ review }: { review: { id: string } }) {
+    return React.createElement("ReviewItemMock", { reviewId: review.id });
+  };
+});
 jest.mock("@/components/LikeSlider", () => () => null);
 jest.mock("@/components/CommentsSlider", () => () => null);
 jest.mock("@/components/nav/AppHeader", () => () => null);
@@ -115,8 +138,7 @@ jest.mock("@/theme", () => {
       regular: "Figtree-Regular",
       semibold: "Figtree-Semibold",
     },
-    makeStyles: () => () =>
-      new Proxy({}, { get: () => ({}) }),
+    makeStyles: () => () => new Proxy({}, { get: () => ({}) }),
     useTheme: () => theme,
   };
 });
@@ -127,8 +149,16 @@ describe("Feed startup loading", () => {
   let renderer: ReactTestRenderer | undefined;
 
   beforeEach(() => {
-    mockGetReviews.mockClear();
+    mockGetReviews.mockReset();
+    mockGetReviews.mockImplementation(() => new Promise(() => undefined));
+    mockGetFollowedUserIds.mockReset();
+    mockGetFollowedUserIds.mockResolvedValue([]);
+    mockGetReviewsForUsers.mockReset();
+    mockGetReviewsForUsers.mockImplementation(
+      () => new Promise(() => undefined)
+    );
     mockRefreshUnseenCount.mockClear();
+    mockReviewUpdateCallback = null;
   });
 
   afterEach(() => {
@@ -141,5 +171,79 @@ describe("Feed startup loading", () => {
     });
 
     expect(mockGetReviews).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the selected people feed when an older club refresh resolves last", async () => {
+    const clubRefresh = deferred<{ id: string; user_id: string }[]>();
+    const peopleRefresh = deferred<{ id: string; user_id: string }[]>();
+
+    mockGetReviews
+      .mockResolvedValueOnce([{ id: "initial-club", user_id: "club-member" }])
+      .mockReturnValueOnce(clubRefresh.promise);
+    mockGetReviewsForUsers.mockReturnValue(peopleRefresh.promise);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    expect(mockReviewUpdateCallback).not.toBeNull();
+
+    await act(async () => {
+      mockReviewUpdateCallback?.();
+    });
+
+    const feedToggle = renderer!.root.findByProps({
+      accessibilityLabel: "Showing From the club. Tap to switch feed source.",
+    });
+
+    await act(async () => {
+      feedToggle.props.onPress();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      peopleRefresh.resolve([
+        { id: "people-review", user_id: "followed-member" },
+      ]);
+      await peopleRefresh.promise;
+    });
+
+    expect(
+      renderer!.root
+        .findByType(FlatList)
+        .props.data.map((review: { id: string }) => review.id)
+    ).toEqual(["people-review"]);
+
+    await act(async () => {
+      clubRefresh.resolve([{ id: "stale-club", user_id: "club-member" }]);
+      await clubRefresh.promise;
+    });
+
+    expect(
+      renderer!.root
+        .findByType(FlatList)
+        .props.data.map((review: { id: string }) => review.id)
+    ).toEqual(["people-review"]);
+  });
+
+  it("keeps the newest reviews when a refresh exceeds the cache limit", async () => {
+    const reviews = Array.from({ length: 120 }, (_, index) => ({
+      id: `review-${index}`,
+      user_id: "club-member",
+    }));
+    mockGetReviews.mockResolvedValueOnce(reviews);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    const cachedReviewIds = renderer!.root
+      .findByType(FlatList)
+      .props.data.map((review: { id: string }) => review.id);
+
+    expect(cachedReviewIds).toHaveLength(100);
+    expect(cachedReviewIds[0]).toBe("review-0");
+    expect(cachedReviewIds[99]).toBe("review-99");
+    expect(cachedReviewIds).not.toContain("review-100");
   });
 });

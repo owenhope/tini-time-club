@@ -45,6 +45,8 @@ const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 type FeedSource = "club" | "people";
+const limitCachedReviews = (items: Review[]) =>
+  items.length > MAX_CACHED_ITEMS ? items.slice(0, MAX_CACHED_ITEMS) : items;
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -75,6 +77,7 @@ function Home() {
   const flatListRef = useRef<FlatList>(null);
   const handledFeedRefreshRef = useRef<string | null>(null);
   const handledScreenshotFeedRef = useRef(false);
+  const latestFeedRequestRef = useRef(0);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -137,6 +140,8 @@ function Home() {
 
       // Set loading states
       if (refresh) {
+        // Any in-flight pagination is superseded by a first-page refresh.
+        setLoadingMore(false);
         if (!silent) {
           if (page === 0) setLoading(true);
           setRefreshing(true);
@@ -145,6 +150,10 @@ function Home() {
         if (!hasMore) return;
         setLoadingMore(true);
       }
+
+      const requestId = latestFeedRequestRef.current + 1;
+      latestFeedRequestRef.current = requestId;
+      const isCurrentRequest = () => requestId === latestFeedRequestRef.current;
 
       setError(null);
 
@@ -193,6 +202,10 @@ function Home() {
           throw new Error("Failed to fetch reviews");
         }
 
+        // A feed-source switch or newer refresh may have started while this
+        // request was in flight. Never let the older response replace it.
+        if (!isCurrentRequest()) return;
+
         log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
 
         // getReviews returns image_url already hydrated to a signed URL.
@@ -200,18 +213,11 @@ function Home() {
 
         // Update state
         if (refresh) {
-          setReviews(
-            reviewsWithUrls.length > MAX_CACHED_ITEMS
-              ? reviewsWithUrls.slice(-MAX_CACHED_ITEMS)
-              : reviewsWithUrls
-          );
+          setReviews(limitCachedReviews(reviewsWithUrls));
         } else {
-          setReviews((prev) => {
-            const newReviews = [...prev, ...reviewsWithUrls];
-            return newReviews.length > MAX_CACHED_ITEMS
-              ? newReviews.slice(-MAX_CACHED_ITEMS)
-              : newReviews;
-          });
+          setReviews((prev) =>
+            limitCachedReviews([...prev, ...reviewsWithUrls])
+          );
         }
 
         setPage(nextPage);
@@ -226,6 +232,8 @@ function Home() {
           setLoadingMore(false);
         }
       } catch (error) {
+        if (!isCurrentRequest()) return;
+
         reportError("Error fetching reviews:", error);
         setError(
           error instanceof Error ? error.message : "Failed to load reviews"
@@ -729,6 +737,7 @@ function Home() {
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
+      latestFeedRequestRef.current += 1;
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
