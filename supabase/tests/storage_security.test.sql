@@ -77,7 +77,8 @@ SELECT ok(
         'Members can read review images',
         'Members can upload their own review images',
         'Members can update their own review images',
-        'Members can delete their own review images'
+        'Members can delete their own review images',
+        'Review images require a member session'
       )
   ),
   'No environment-specific legacy policy references either protected bucket'
@@ -90,6 +91,7 @@ SELECT ok(
     WHERE schemaname = 'storage'
       AND tablename = 'objects'
       AND cmd = 'SELECT'
+      AND permissive = 'PERMISSIVE'
       AND policyname <> 'Public can read avatars'
       AND (
         'public'::name = ANY (roles)

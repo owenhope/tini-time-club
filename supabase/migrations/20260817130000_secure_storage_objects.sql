@@ -2,8 +2,12 @@ BEGIN;
 
 -- Bucket visibility is part of the security boundary. Avatars are intentionally
 -- public; review photos are delivered through short-lived signed URLs.
-UPDATE storage.buckets SET public = true WHERE id = 'avatars';
-UPDATE storage.buckets SET public = false WHERE id = 'review_images';
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('avatars', 'avatars', true),
+  ('review_images', 'review_images', false)
+ON CONFLICT (id) DO UPDATE
+SET public = EXCLUDED.public;
 
 DROP POLICY IF EXISTS "read review images f3q3wf_0" ON storage.objects;
 DROP POLICY IF EXISTS "review images" ON storage.objects;
