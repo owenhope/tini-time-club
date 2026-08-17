@@ -17,7 +17,7 @@ import {
   SectionHeader,
   Skeleton,
 } from "@/components/shared";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";

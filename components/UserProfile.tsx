@@ -18,7 +18,7 @@ import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {

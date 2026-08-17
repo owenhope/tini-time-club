@@ -18,7 +18,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
 import AppHeader from "@/components/nav/AppHeader";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
