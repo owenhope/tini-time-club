@@ -10,7 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
+import { deleteCurrentAccount } from "@/services/accountService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
@@ -43,28 +43,16 @@ const DeleteAccount = () => {
           onPress: async () => {
             setIsDeleting(true);
             try {
-              // Soft delete: Mark profile as deleted instead of actually deleting
-              const { error: profileError } = await supabase
-                .from("profiles")
-                .update({
-                  deleted: true,
-                  deleted_at: new Date().toISOString(),
-                  username: `deleted_user_${Date.now()}`, // Make username unique for deleted users
-                })
-                .eq("id", profile.id);
-
-              if (profileError) {
-                reportError("Error marking profile as deleted:", profileError);
-                throw profileError;
-              }
-
-              await unregisterPushNotificationsAsync();
+              await deleteCurrentAccount();
 
               // Every cache that holds this member's data.
               await clearUserCaches();
 
-              // Sign out the user
-              const { error: signOutError } = await supabase.auth.signOut();
+              // The server has removed the Auth record. Clear the device's
+              // persisted session without making another remote request.
+              const { error: signOutError } = await supabase.auth.signOut({
+                scope: "local",
+              });
 
               if (signOutError) {
                 reportError("Error signing out:", signOutError);
@@ -104,14 +92,11 @@ const DeleteAccount = () => {
     <View style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
         <Text style={styles.description}>
-          Deleting your account will permanently deactivate your profile and
-          make it inaccessible to other users.
+          Deleting your account permanently removes your profile, reviews,
+          comments, reactions, photos, and other account data.
         </Text>
 
-        <Text style={styles.warningText}>
-          This action will permanently deactivate your account and cannot be
-          undone.
-        </Text>
+        <Text style={styles.warningText}>This action cannot be undone.</Text>
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>
