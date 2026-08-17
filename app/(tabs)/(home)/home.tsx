@@ -173,27 +173,15 @@ function Home() {
           screenshotUserId = screenshotProfile.id;
         }
 
-        const reviewsPromise =
-          source === "people"
-            ? databaseService
-                .getFollowedUserIds(profile.id, { forceRefresh: refresh })
-                .then((followedIds) =>
-                  databaseService.getReviewsForUsers(followedIds, {
-                    currentUserId: profile.id,
-                    limit: PAGE_SIZE,
-                    offset: start,
-                    excludeBlocked: true,
-                    forceRefresh: bypassCache,
-                  })
-                )
-            : databaseService.getReviews({
-                userId: screenshotUserId,
-                currentUserId: profile.id,
-                limit: PAGE_SIZE,
-                offset: start,
-                excludeBlocked: true,
-                forceRefresh: bypassCache,
-              });
+        const reviewsPromise = databaseService.getReviews({
+          userId: screenshotUserId,
+          currentUserId: profile.id,
+          followedOnly: source === "people",
+          limit: PAGE_SIZE,
+          offset: start,
+          excludeBlocked: true,
+          forceRefresh: bypassCache,
+        });
 
         // Get reviews using optimized database service
         const reviewsDataFromDB = await withTimeout(reviewsPromise, 25_000);

@@ -2,7 +2,7 @@ import databaseService from "../databaseService";
 import { supabase } from "@/utils/supabase";
 
 jest.mock("@/utils/supabase", () => ({
-  supabase: { from: jest.fn() },
+  supabase: { from: jest.fn(), rpc: jest.fn() },
   supabaseProjectRef: "testref",
 }));
 
@@ -27,10 +27,36 @@ jest.mock("@/utils/reviewOptions", () => ({
 }));
 
 const from = supabase.from as jest.Mock;
+const rpc = supabase.rpc as jest.Mock;
 
 beforeEach(async () => {
   jest.clearAllMocks();
   await databaseService.clearAllCaches();
+});
+
+it("loads a followed-members page with one feed RPC", async () => {
+  rpc.mockResolvedValue({ data: [], error: null });
+
+  await expect(
+    databaseService.getReviews({
+      currentUserId: "viewer-1",
+      followedOnly: true,
+      limit: 20,
+      offset: 40,
+    })
+  ).resolves.toEqual([]);
+
+  expect(rpc).toHaveBeenCalledTimes(1);
+  expect(rpc).toHaveBeenCalledWith("feed_reviews", {
+    p_viewer: "viewer-1",
+    p_limit: 20,
+    p_offset: 40,
+    p_user_id: null,
+    p_location_id: null,
+    p_exclude_blocked: true,
+    p_followed_only: true,
+  });
+  expect(from).not.toHaveBeenCalled();
 });
 
 it("qualifies the profile relationship when creating a comment", async () => {

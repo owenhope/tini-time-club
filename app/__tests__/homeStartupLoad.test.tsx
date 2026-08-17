@@ -2,9 +2,9 @@ import React from "react";
 import { FlatList } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
-const mockGetReviews = jest.fn(() => new Promise(() => undefined));
-const mockGetFollowedUserIds = jest.fn(async () => []);
-const mockGetReviewsForUsers = jest.fn(() => new Promise(() => undefined));
+const mockGetReviews = jest.fn(
+  (_options?: Record<string, unknown>) => new Promise(() => undefined)
+);
 const mockRefreshUnseenCount = jest.fn(async () => undefined);
 let mockReviewUpdateCallback: (() => void) | null = null;
 
@@ -53,9 +53,7 @@ jest.mock("@/context/activity-context", () => ({
 jest.mock("@/services/databaseService", () => ({
   __esModule: true,
   default: {
-    getReviews: () => mockGetReviews(),
-    getFollowedUserIds: () => mockGetFollowedUserIds(),
-    getReviewsForUsers: () => mockGetReviewsForUsers(),
+    getReviews: (options: Record<string, unknown>) => mockGetReviews(options),
   },
 }));
 
@@ -151,12 +149,6 @@ describe("Feed startup loading", () => {
   beforeEach(() => {
     mockGetReviews.mockReset();
     mockGetReviews.mockImplementation(() => new Promise(() => undefined));
-    mockGetFollowedUserIds.mockReset();
-    mockGetFollowedUserIds.mockResolvedValue([]);
-    mockGetReviewsForUsers.mockReset();
-    mockGetReviewsForUsers.mockImplementation(
-      () => new Promise(() => undefined)
-    );
     mockRefreshUnseenCount.mockClear();
     mockReviewUpdateCallback = null;
   });
@@ -177,10 +169,14 @@ describe("Feed startup loading", () => {
     const clubRefresh = deferred<{ id: string; user_id: string }[]>();
     const peopleRefresh = deferred<{ id: string; user_id: string }[]>();
 
-    mockGetReviews
-      .mockResolvedValueOnce([{ id: "initial-club", user_id: "club-member" }])
-      .mockReturnValueOnce(clubRefresh.promise);
-    mockGetReviewsForUsers.mockReturnValue(peopleRefresh.promise);
+    let clubRequestCount = 0;
+    mockGetReviews.mockImplementation((options?: Record<string, unknown>) => {
+      if (options?.followedOnly) return peopleRefresh.promise;
+      clubRequestCount += 1;
+      return clubRequestCount === 1
+        ? Promise.resolve([{ id: "initial-club", user_id: "club-member" }])
+        : clubRefresh.promise;
+    });
 
     await act(async () => {
       renderer = create(<Home />);
@@ -200,6 +196,14 @@ describe("Feed startup loading", () => {
       feedToggle.props.onPress();
       await Promise.resolve();
     });
+
+    expect(mockGetReviews).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        followedOnly: true,
+        limit: 20,
+        offset: 0,
+      })
+    );
 
     await act(async () => {
       peopleRefresh.resolve([

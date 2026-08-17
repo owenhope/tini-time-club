@@ -177,6 +177,8 @@ class DatabaseService {
       offset?: number;
       excludeBlocked?: boolean;
       currentUserId?: string;
+      /** Restrict the page to reviews by members the authenticated viewer follows. */
+      followedOnly?: boolean;
       /** Bypass the cached page (pull-to-refresh); the fresh result still gets cached. */
       forceRefresh?: boolean;
     } = {}
@@ -188,6 +190,7 @@ class DatabaseService {
       offset = 0,
       excludeBlocked = true,
       currentUserId,
+      followedOnly = false,
       forceRefresh = false,
     } = options;
 
@@ -200,6 +203,7 @@ class DatabaseService {
       offset,
       excludeBlocked,
       currentUserId,
+      followedOnly,
     })}`;
 
     const reviews = await this.query<any[]>(
@@ -216,6 +220,7 @@ class DatabaseService {
           p_user_id: userId ?? null,
           p_location_id: locationId ? Number(locationId) : null,
           p_exclude_blocked: excludeBlocked,
+          p_followed_only: followedOnly,
         });
 
         if (error) throw error;
@@ -241,50 +246,6 @@ class DatabaseService {
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     }));
-  }
-
-  async getReviewsForUsers(
-    userIds: string[],
-    options: {
-      limit?: number;
-      offset?: number;
-      excludeBlocked?: boolean;
-      currentUserId?: string;
-      forceRefresh?: boolean;
-    } = {}
-  ): Promise<Review[]> {
-    const {
-      limit = 20,
-      offset = 0,
-      excludeBlocked = true,
-      currentUserId,
-      forceRefresh = false,
-    } = options;
-
-    const uniqueUserIds = [...new Set(userIds.map(String))];
-    if (uniqueUserIds.length === 0) return [];
-
-    const perUserLimit = offset + limit;
-    const pages = await Promise.all(
-      uniqueUserIds.map((userId) =>
-        this.getReviews({
-          userId,
-          currentUserId,
-          limit: perUserLimit,
-          offset: 0,
-          excludeBlocked,
-          forceRefresh,
-        })
-      )
-    );
-
-    return pages
-      .flat()
-      .sort(
-        (a, b) =>
-          new Date(b.inserted_at).getTime() - new Date(a.inserted_at).getTime()
-      )
-      .slice(offset, offset + limit);
   }
 
   /**
@@ -528,31 +489,6 @@ class DatabaseService {
       display_image_url: displayImageUrl || data.image_url,
       location_details: locationDetails,
     } as EditableReview;
-  }
-
-  /**
-   * Get followed user IDs
-   */
-  async getFollowedUserIds(
-    userId: string,
-    options: { forceRefresh?: boolean } = {}
-  ): Promise<string[]> {
-    return this.query(
-      `followed_${userId}`,
-      async () => {
-        const { data, error } = await supabase
-          .from("followers")
-          .select("following_id")
-          .eq("follower_id", userId);
-
-        if (error) throw error;
-        return data.map((row: any) => row.following_id);
-      },
-      {
-        cacheDuration: this.USER_DATA_CACHE_DURATION,
-        forceRefresh: options.forceRefresh ?? false,
-      }
-    );
   }
 
   /**
@@ -963,7 +899,6 @@ class DatabaseService {
       (key) =>
         key.includes(`_${userId}`) ||
         key.includes(`reviews_`) ||
-        key.includes(`followed_`) ||
         key.includes(`blocked_`)
     );
 
@@ -992,15 +927,20 @@ class DatabaseService {
   }
 
   clearFollowCaches(userId?: string): void {
-    const prefix = userId ? `followed_${userId}` : "followed_";
+    const viewerKey = userId ? `"currentUserId":"${userId}"` : null;
+    const isFollowedFeedKey = (key: string) =>
+      key.startsWith("reviews_") &&
+      key.includes('"followedOnly":true') &&
+      (!viewerKey || key.includes(viewerKey));
+
     for (const key of this.queryCache.keys()) {
-      if (key.startsWith(prefix)) {
+      if (isFollowedFeedKey(key)) {
         this.queryCache.delete(key);
       }
     }
 
     for (const key of this.pendingQueries.keys()) {
-      if (key.startsWith(prefix)) {
+      if (isFollowedFeedKey(key)) {
         this.pendingQueries.delete(key);
       }
     }

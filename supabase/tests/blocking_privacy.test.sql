@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(12);
+SELECT plan(14);
 
 INSERT INTO auth.users (
   instance_id,
@@ -105,6 +105,12 @@ VALUES (
   '10000000-0000-0000-0000-000000000002'
 );
 
+INSERT INTO public.followers (follower_id, following_id)
+VALUES (
+  '10000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000003'
+);
+
 SET LOCAL ROLE authenticated;
 SELECT set_config(
   'request.jwt.claims',
@@ -156,6 +162,38 @@ SELECT is(
   ),
   0::bigint,
   'A client cannot disable server-side blocking in the feed RPC'
+);
+SELECT is(
+  (
+    SELECT count(*)
+    FROM public.feed_reviews(
+      '10000000-0000-0000-0000-000000000001',
+      20,
+      0,
+      NULL,
+      NULL,
+      true,
+      true
+    )
+  ),
+  1::bigint,
+  'The followed feed returns reviews from members the viewer follows'
+);
+SELECT is(
+  (
+    SELECT count(*)
+    FROM public.feed_reviews(
+      '10000000-0000-0000-0000-000000000003',
+      20,
+      0,
+      NULL,
+      NULL,
+      true,
+      true
+    )
+  ),
+  0::bigint,
+  'A client cannot request another member followed feed'
 );
 
 SELECT set_config(
