@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { SafeAreaView, Switch, Text, View } from "react-native";
 import { makeStyles, useTheme } from "@/theme";
 import { setFridayMartiniReminderEnabled } from "@/utils/martiniReminder";
@@ -13,24 +13,25 @@ const Notifications = () => {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
-  const [reminderEnabled, setReminderEnabled] = useState(true);
-
-  useEffect(() => {
-    setReminderEnabled(profile?.weekly_push_notifications_enabled ?? true);
-  }, [profile?.weekly_push_notifications_enabled]);
+  const [reminderOverride, setReminderOverride] = useState<boolean | null>(
+    null
+  );
+  const persistedReminderEnabled =
+    profile?.weekly_push_notifications_enabled ?? true;
+  const reminderEnabled = reminderOverride ?? persistedReminderEnabled;
 
   const toggleReminder = async (enabled: boolean) => {
-    const previous = reminderEnabled;
-    setReminderEnabled(enabled);
+    setReminderOverride(enabled);
     const result = await updateProfile({
       weekly_push_notifications_enabled: enabled,
     });
 
     if (result.error) {
-      setReminderEnabled(previous);
+      setReminderOverride(null);
       return;
     }
 
+    setReminderOverride(null);
     await setFridayMartiniReminderEnabled(enabled);
   };
 
