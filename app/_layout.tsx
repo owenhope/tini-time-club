@@ -24,24 +24,18 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
-  Figtree_300Light,
   Figtree_400Regular,
-  Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
-  Figtree_800ExtraBold,
   Figtree_900Black,
 } from "@expo-google-fonts/figtree";
-import {
-  DMMono_400Regular,
-  DMMono_500Medium,
-} from "@expo-google-fonts/dm-mono";
+import { DMMono_400Regular } from "@expo-google-fonts/dm-mono";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 import { ActivityProvider } from "@/context/activity-context";
-import { ThemeProvider, fonts, useTheme } from "@/theme";
+import { ThemeProvider, typography, useTheme } from "@/theme";
 import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
 import {
   createSessionFromAuthUrl,
@@ -132,13 +126,11 @@ const errorBoundaryStyles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   title: {
-    fontSize: 20,
-    fontFamily: fonts.semibold,
+    ...typography.title,
     color: "#1a1a1a",
   },
   body: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...typography.body,
     color: "#555555",
     textAlign: "center",
   },
@@ -153,9 +145,8 @@ const errorBoundaryStyles = StyleSheet.create({
     opacity: 0.8,
   },
   buttonText: {
+    ...typography.bodyStrong,
     color: "#ffffff",
-    fontSize: 15,
-    fontFamily: fonts.semibold,
   },
 });
 
@@ -185,15 +176,11 @@ export function RootLayoutNav() {
   const { colors, isDark } = useTheme();
   const { profile, loading: profileLoading } = useProfile();
   const [fontsLoaded] = useFonts({
-    Figtree_300Light,
     Figtree_400Regular,
-    Figtree_500Medium,
     Figtree_600SemiBold,
     Figtree_700Bold,
-    Figtree_800ExtraBold,
     Figtree_900Black,
     DMMono_400Regular,
-    DMMono_500Medium,
   });
   const router = useRouter();
   const pathname = usePathname();
@@ -494,9 +481,8 @@ export function RootLayoutNav() {
           headerTintColor: colors.accent,
           headerShadowVisible: false,
           headerTitleStyle: {
+            ...typography.heading,
             color: colors.text,
-            fontFamily: fonts.bold,
-            fontSize: 17,
           },
         }}
       >

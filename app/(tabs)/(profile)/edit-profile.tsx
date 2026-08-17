@@ -21,7 +21,7 @@ import {
   type FavoriteLocationValue,
 } from "@/services/favoriteLocationSelection";
 import { supabase } from "@/utils/supabase";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -287,8 +287,7 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.lg,
   },
   input: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     padding: t.spacing.md,
     borderRadius: t.radius.input,
     backgroundColor: t.colors.background,
@@ -302,7 +301,6 @@ const useStyles = makeStyles((t) => ({
   // A count is a measurement — the system puts those in mono.
   characterCount: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
     marginTop: t.spacing.xs,
@@ -324,8 +322,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   cancelButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   saveButton: {
@@ -335,8 +332,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.6,
   },
   saveButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
   },
 }));

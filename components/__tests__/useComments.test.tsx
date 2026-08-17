@@ -9,7 +9,7 @@ import renderer, { act } from "react-test-renderer";
 import { StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
 import databaseService from "@/services/databaseService";
-import { ThemeProvider } from "@/theme";
+import { ThemeProvider, typography } from "@/theme";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -327,7 +327,7 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     );
     expect(
       StyleSheet.flatten(likedButton.props.children[1].props.style)
-    ).toEqual(expect.objectContaining({ fontSize: 10, lineHeight: 12 }));
+    ).toEqual(expect.objectContaining(typography.label));
     expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });

@@ -204,7 +204,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
     <View style={{ alignItems: "center", gap: 8 }}>
       {showValue ? (
         <AppText
-          variant="metricLarge"
+          variant="display"
           tone={onDark ? "onImage" : "muted"}
           style={valueColor ? { color: valueColor } : undefined}
         >

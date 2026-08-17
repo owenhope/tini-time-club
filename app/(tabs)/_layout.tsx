@@ -4,7 +4,7 @@ import { NativeTabs } from "expo-router/unstable-native-tabs";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
-import { fonts, useTheme } from "@/theme";
+import { typography, useTheme } from "@/theme";
 import {
   getNotificationRoute,
   arePushNotificationsEnabled,
@@ -122,13 +122,11 @@ const LayoutContent = () => {
       }}
       labelStyle={{
         default: {
-          fontFamily: fonts.medium,
-          fontSize: 11,
+          ...typography.label,
           color: colors.tabBarInactive,
         },
         selected: {
-          fontFamily: fonts.semibold,
-          fontSize: 11,
+          ...typography.label,
           color: tabBarActiveColor,
         },
       }}

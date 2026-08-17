@@ -18,7 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
 interface CameraComponentProps {
@@ -279,13 +279,12 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.md,
   },
   permissionTitle: {
-    fontSize: 24,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.textOnImage,
   },
   infoText: {
+    ...t.typography.body,
     textAlign: "center" as const,
-    lineHeight: 22,
     marginBottom: t.spacing.sm,
     color: t.colors.textOnImage,
   },

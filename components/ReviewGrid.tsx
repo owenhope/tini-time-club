@@ -316,9 +316,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrimStrong,
   },
   tileScoreText: {
-    ...t.typography.label,
-    fontSize: 15,
-    lineHeight: 19,
+    ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
     fontVariant: ["tabular-nums"] as const,
     textShadowColor: t.colors.overlay,
@@ -336,9 +334,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrimStrong,
   },
   tileLocationText: {
-    ...t.typography.micro,
-    fontSize: 13,
-    lineHeight: 17,
+    ...t.typography.caption,
     color: t.colors.textOnImage,
   },
   sheet: {

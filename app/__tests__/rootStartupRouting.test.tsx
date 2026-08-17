@@ -78,6 +78,12 @@ jest.mock("@/components/share/ShareMenuSheet", () => ({
 jest.mock("@/theme", () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
   fonts: { bold: "bold", semibold: "semibold", regular: "regular" },
+  typography: {
+    title: { fontFamily: "bold", fontSize: 22, lineHeight: 28 },
+    body: { fontFamily: "regular", fontSize: 16, lineHeight: 24 },
+    bodyStrong: { fontFamily: "semibold", fontSize: 16, lineHeight: 24 },
+    heading: { fontFamily: "bold", fontSize: 18, lineHeight: 24 },
+  },
   makeStyles: () => () => ({}),
   useTheme: () => ({
     colors: {

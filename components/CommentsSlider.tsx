@@ -28,7 +28,7 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Comment, Review } from "@/types/types";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
@@ -450,8 +450,7 @@ export default function CommentsSlider({
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingBottom:
-                COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
+              paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
             },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -509,8 +508,7 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.sm,
   },
   emptySubtitle: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textMuted,
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,
@@ -534,16 +532,13 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 2,
     flexWrap: "wrap" as const,
   },
-  username: { fontFamily: fonts.bold, color: t.colors.usernameText },
+  username: { ...t.typography.bodyStrong, color: t.colors.usernameText },
   timestamp: {
+    ...t.typography.caption,
     color: t.colors.textMuted,
-    fontFamily: fonts.regular,
-    fontSize: 12,
   },
   commentBody: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   inputContainer: {
@@ -571,7 +566,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
     justifyContent: "center" as const,
   },
-  sendButton: { color: t.colors.text, fontFamily: fonts.bold },
+  sendButton: { ...t.typography.bodyStrong, color: t.colors.text },
   likeButton: {
     minWidth: 40,
     minHeight: 34,
@@ -582,11 +577,9 @@ const useStyles = makeStyles((t) => ({
     gap: 1,
   },
   likeCount: {
+    ...t.typography.label,
     minWidth: 8,
     color: t.colors.textMuted,
-    fontFamily: fonts.semibold,
-    fontSize: 10,
-    lineHeight: 12,
     textAlign: "center" as const,
   },
   likeCountActive: { color: t.colors.like },

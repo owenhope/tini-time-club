@@ -20,7 +20,7 @@ import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
 import databaseService from "@/services/databaseService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -511,8 +511,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   errorTitle: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },
@@ -523,27 +522,23 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
   },
   errorButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
-    fontFamily: fonts.bold,
-    fontSize: 15,
   },
   errorLink: {
+    ...t.typography.caption,
     color: t.colors.textSecondary,
-    fontFamily: fonts.regular,
-    fontSize: 13,
   },
   emptyContainer: {
     alignItems: "center" as const,
     padding: 20,
   },
   emptyText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
   },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.onInk,
   },
   headerActions: {

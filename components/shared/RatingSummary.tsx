@@ -159,7 +159,7 @@ const useStyles = makeStyles((t) => ({
   // The aggregate is the loudest thing on the block, so it gets the display
   // cut rather than the metric one.
   score: {
-    ...t.typography.displayLarge,
+    ...t.typography.display,
     color: t.colors.text,
     fontVariant: ["tabular-nums"] as const,
   },

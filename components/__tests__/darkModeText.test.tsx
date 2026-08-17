@@ -2,7 +2,7 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
-import { ThemeProvider, darkColors, lightColors } from "@/theme";
+import { ThemeProvider, darkColors, lightColors, typography } from "@/theme";
 
 const mockReact = React;
 const MockText = Text;
@@ -163,6 +163,9 @@ describe("dark mode post text", () => {
     const authorUsername = tree.root
       .findAllByType(Text)
       .find((node) => node.props.children === "bob");
+    const reviewCount = tree.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "0 reviews");
     const captionText = tree.root
       .findAllByType(Text)
       .find((node) =>
@@ -178,6 +181,12 @@ describe("dark mode post text", () => {
       .find((node) => node.props.children === "4.0");
 
     expect(inheritedColor(authorUsername!)).toBe(darkColors.postText);
+    expect(StyleSheet.flatten(authorUsername!.props.style)).toMatchObject(
+      typography.bodyStrong
+    );
+    expect(StyleSheet.flatten(reviewCount!.props.style)).toMatchObject(
+      typography.label
+    );
     expect(inheritedColor(captionText!)).toBe(darkColors.postText);
     expect(inheritedColor(commentText!)).toBe(darkColors.postText);
     expect(inheritedColor(overallScore!)).toBe(darkColors.textSecondary);

@@ -149,14 +149,13 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   title: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     letterSpacing: 0,
     color: t.colors.text,
   },
   instructions: {
     ...t.typography.body,
     color: t.colors.textSecondary,
-    lineHeight: 22,
   },
   form: {
     gap: t.spacing.xs,

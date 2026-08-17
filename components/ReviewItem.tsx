@@ -33,7 +33,7 @@ import ActionSheet from "@/components/ActionSheet";
 import ReviewImageViewer from "@/components/ReviewImageViewer";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
@@ -45,7 +45,7 @@ import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
  * Uploads are stored uncropped and centre-crop here via `contentFit="cover"`.
  */
 const DOUBLE_TAP_DELAY = 300;
-const REVIEW_AUTHOR_AVATAR_SIZE = 40;
+const REVIEW_AUTHOR_AVATAR_SIZE = 34;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
 const MAX_PREVIEW_COMMENTS = 1;
 const ICON_SIZES = {
@@ -1109,10 +1109,9 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   header: {
-    paddingLeft: t.spacing.lg - 1,
-    paddingRight: t.spacing.md,
-    paddingTop: t.spacing.md + 1,
-    paddingBottom: t.spacing.md,
+    paddingLeft: t.spacing.md,
+    paddingRight: t.spacing.sm,
+    paddingVertical: t.spacing.sm,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
@@ -1128,22 +1127,17 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   headerUsername: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontFamily: fonts.extrabold,
-    letterSpacing: -0.15,
+    ...t.typography.bodyStrong,
     color: t.colors.usernameText,
   },
   headerMeta: {
-    ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
+    ...t.typography.label,
     color: t.colors.textMuted,
   },
   headerIdentity: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
+    gap: 0,
   },
   headerProfileTap: {
     flex: 1,
@@ -1156,7 +1150,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     // Gap on the row, not margin on the avatar: the ranking ring wraps the
     // avatar and would swallow an inner margin.
-    gap: t.spacing.md - 1,
+    gap: t.spacing.sm,
   },
   imageContainer: {
     width: "100%" as const,
@@ -1211,8 +1205,6 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipText: {
     ...t.typography.bodyStrong,
-    fontSize: 17,
-    lineHeight: 22,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
@@ -1225,15 +1217,11 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipRatingText: {
     ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   venueChipMeta: {
     ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
@@ -1261,7 +1249,6 @@ const useStyles = makeStyles((t) => ({
   },
   scoreLabel: {
     ...t.typography.eyebrow,
-    fontSize: 12,
     color: t.colors.textMuted,
   },
   scoreOverall: {
@@ -1270,10 +1257,7 @@ const useStyles = makeStyles((t) => ({
     gap: 3,
   },
   scoreOverallValue: {
-    fontSize: 31,
-    lineHeight: 33,
-    fontFamily: fonts.black,
-    letterSpacing: -1,
+    ...t.typography.display,
     // The score belongs to the olives beside it, so it takes their green
     // rather than the primary purple. In dark mode that green is a fill token,
     // not readable text, so the score takes the paper ink used by other key
@@ -1310,9 +1294,7 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   actionCount: {
-    fontSize: 16,
-    lineHeight: 21,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.postText,
     fontVariant: ["tabular-nums"] as const,
   },
@@ -1324,34 +1306,23 @@ const useStyles = makeStyles((t) => ({
   },
   captionText: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   inlineBody: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.body,
     color: t.colors.postText,
     flexShrink: 1,
   },
   captionUsername: {
     ...t.typography.bodyStrong,
-    fontSize: 17,
-    lineHeight: 22,
     color: t.colors.usernameText,
   },
   captionBody: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   addCaptionText: {
-    ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
-    fontFamily: fonts.medium,
+    ...t.typography.bodyStrong,
     color: t.colors.textSecondary,
   },
   commentItem: {
@@ -1379,37 +1350,26 @@ const useStyles = makeStyles((t) => ({
     paddingTop: 1,
   },
   commentMoreText: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 19,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.textMuted,
   },
   commentLikeCount: {
-    fontFamily: fonts.semibold,
-    fontSize: 10,
-    lineHeight: 12,
+    ...t.typography.label,
     textAlign: "center" as const,
     color: t.colors.textMuted,
   },
   commentLikeCountActive: { color: t.colors.like },
   timestamp: {
-    ...t.typography.micro,
-    fontSize: 13,
-    lineHeight: 17,
+    ...t.typography.caption,
     color: t.colors.textMuted,
   },
   viewAllCommentsText: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.body,
     color: t.colors.textMuted,
     marginBottom: t.spacing.xs,
   },
   footerTimestamp: {
     ...t.typography.mono,
-    fontSize: 13,
-    lineHeight: 18,
     color: t.colors.textMuted,
     paddingTop: t.spacing.xs,
     paddingBottom: t.spacing.md,

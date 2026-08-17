@@ -23,7 +23,7 @@ import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -576,14 +576,13 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   rankDebugOptionLabelSelected: {
+    ...t.typography.label,
     color: t.colors.text,
-    fontFamily: fonts.bold,
   },
   // Sits inside ProfileHeader's deep-green block.
   ctaText: {
-    ...t.typography.body,
+    ...t.typography.bodyStrong,
     color: t.colors.highlight,
-    fontFamily: fonts.semibold,
   },
   emptyContainer: {
     alignItems: "center" as const,
@@ -624,7 +623,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
-    lineHeight: 22,
   },
   headerButton: {
     width: 44,
@@ -639,8 +637,7 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitleContainer: { alignItems: "center" as const },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.onInk,
   },
 }));

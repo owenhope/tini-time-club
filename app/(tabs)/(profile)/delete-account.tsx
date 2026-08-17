@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
@@ -163,64 +163,54 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 20,
   },
   warningTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.danger,
     marginTop: t.spacing.md,
     textAlign: "center" as const,
   },
   description: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
-    lineHeight: 22,
     marginBottom: t.spacing.lg,
   },
   listContainer: {
     marginBottom: 20,
   },
   listItem: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.sm,
-    lineHeight: 20,
   },
   warningText: {
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     color: t.colors.danger,
-    fontFamily: fonts.semibold,
     textAlign: "left" as const,
     marginBottom: 30,
-    lineHeight: 22,
   },
   inputContainer: {
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: t.spacing.sm,
-    fontFamily: fonts.medium,
   },
   usernameHint: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.md,
   },
   username: {
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.usernameText,
   },
   input: {
+    ...t.typography.body,
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: t.radius.input,
     paddingHorizontal: 20,
     paddingVertical: t.spacing.md,
-    fontFamily: fonts.regular,
-    fontSize: 15,
     color: t.colors.text,
     backgroundColor: t.colors.background,
   },
@@ -235,9 +225,8 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.borderStrong,
   },
   deleteButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.textOnAccent,
-    fontSize: 15,
-    fontFamily: fonts.semibold,
   },
 }));
 

@@ -30,7 +30,7 @@ import { AppText, Button } from "@/components/shared";
 import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import {
@@ -729,7 +729,7 @@ export default function App() {
   );
   const reviewHeaderActions: HeaderAction[] = [
     ...(isEditMode
-      ? [
+      ? ([
           {
             icon: "camera-outline",
             onPress: () => {
@@ -738,7 +738,7 @@ export default function App() {
             },
             accessibilityLabel: "Change review photo",
           },
-        ] satisfies HeaderAction[]
+        ] satisfies HeaderAction[])
       : []),
     {
       icon: "close-outline",
@@ -1007,7 +1007,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   inlineErrorAction: {
-    fontFamily: fonts.bold,
+    ...t.typography.label,
   },
   progressBar: {
     height: 4,

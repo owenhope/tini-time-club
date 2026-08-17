@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
 import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 /**
  * The app's top bar — four variants, no fifth.
@@ -616,9 +616,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.overlay,
   },
   actionPillText: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 16,
+    ...t.typography.label,
     letterSpacing: 0,
   },
   actionDisabled: {
@@ -654,8 +652,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.surface,
   },
   countBadgeText: {
-    ...t.typography.micro,
-    fontFamily: fonts.bold,
+    ...t.typography.label,
     color: t.colors.textOnAccent,
   },
 
@@ -688,11 +685,7 @@ const useStyles = makeStyles((t) => ({
   },
   // Sentence case, black, tight — the wordmark's own voice.
   largeTitle: {
-    ...t.typography.display,
-    fontSize: 24,
-    // Never below the point size: RN crops the line box rather than letting
-    // the glyphs overhang it.
-    lineHeight: 29,
+    ...t.typography.title,
     color: t.colors.onInk,
     flexShrink: 1,
   },
@@ -815,15 +808,11 @@ const useStyles = makeStyles((t) => ({
     gap: 5,
   },
   mediaTitle: {
-    fontFamily: fonts.black,
-    fontSize: 27,
-    lineHeight: 30,
-    letterSpacing: -0.8,
+    ...t.typography.display,
     color: t.colors.textOnImage,
   },
   mediaMeta: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textOnImage,
     opacity: 0.82,
   },
@@ -861,8 +850,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
   },
   modalCancel: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
+    ...t.typography.label,
     color: t.colors.textMuted,
   },
   modalTitle: {
@@ -872,8 +860,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   modalPrimary: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
+    ...t.typography.label,
     color: t.colors.accent,
   },
   // Greys out until the form is valid.

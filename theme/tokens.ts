@@ -208,7 +208,8 @@ export const lightColors: ThemeColors = {
   postText: palette.ink900,
   usernameText: palette.ink900,
   textSecondary: palette.ink700, // #3F4B46 — 8.6:1
-  textMuted: palette.ink500, // #6E7472 — 4.6:1 on surface
+  // Dark enough to remain AA on every light surface, including paper-200.
+  textMuted: "#606865",
   textOnAccent: palette.paper050,
   textOnImage: palette.paper050,
   accentOnImage: palette.green300, // 7.4:1 on the ink-900 scrim
@@ -282,8 +283,10 @@ export const darkColors: ThemeColors = {
   text: "#EEF3F0", // 14.8:1 on surface
   postText: "#EEF3F0",
   usernameText: "#EEF3F0",
-  textSecondary: palette.paper050,
-  textMuted: "#7F978C", // 4.9:1 on surface
+  // Keep the hierarchy visible in dark mode: secondary must be dimmer than
+  // primary, while muted still clears AA on the lightest raised surface.
+  textSecondary: "#B8C7BF",
+  textMuted: "#879E93",
   textOnAccent: "#0E1712",
   textOnImage: palette.paper050,
   accentOnImage: palette.green300, // 7.4:1 on the ink-900 scrim
@@ -403,57 +406,47 @@ export const easing = {
 export const PRESS_SCALE = 0.97;
 
 /**
- * Font families. Figtree (variable 300–900) stands in for the wordmark's
+ * Font families. Figtree stands in for the wordmark's
  * heavy geometric grotesque; DM Mono for measurements, ABV, prices, coords.
  * On React Native the weight lives in the family name, so styles set
  * `fontFamily` rather than `fontWeight`.
  */
 export const fonts = {
-  light: "Figtree_300Light",
   regular: "Figtree_400Regular",
-  medium: "Figtree_500Medium",
   semibold: "Figtree_600SemiBold",
   bold: "Figtree_700Bold",
-  extrabold: "Figtree_800ExtraBold",
   black: "Figtree_900Black",
   mono: "DMMono_400Regular",
-  monoMedium: "DMMono_500Medium",
 } as const;
 
 export const typography = {
-  // Display — the wordmark's stacked, tight-set energy. Sentence case, heavy,
-  // leading below 1, negative tracking.
+  // Six sizes, five faces, and nine semantic roles. Theme mode never changes
+  // geometry; light/dark hierarchy belongs to the colour tones above.
   display: {
     fontFamily: fonts.black,
-    fontSize: 34,
-    lineHeight: 34,
-    letterSpacing: -1,
-  },
-  displayLarge: {
-    fontFamily: fonts.black,
-    fontSize: 44,
-    lineHeight: 42,
-    letterSpacing: -1.4,
+    fontSize: 32,
+    lineHeight: 36,
+    letterSpacing: -0.8,
   },
   title: {
-    fontFamily: fonts.extrabold,
+    fontFamily: fonts.bold,
     fontSize: 22,
-    lineHeight: 27,
-    letterSpacing: -0.3,
+    lineHeight: 28,
+    letterSpacing: -0.2,
   },
   heading: {
     fontFamily: fonts.bold,
-    fontSize: 17,
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.1,
   },
-  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 23 },
+  body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24 },
   bodyStrong: {
     fontFamily: fonts.semibold,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 24,
   },
-  caption: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
+  caption: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20 },
   label: {
     fontFamily: fonts.bold,
     fontSize: 12,
@@ -463,35 +456,16 @@ export const typography = {
   // Eyebrow — tiny uppercase tracked utility type.
   eyebrow: {
     fontFamily: fonts.bold,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 1.4,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
-  },
-  micro: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0,
-  },
-  // Large numerals in metric rows and rating summaries.
-  metric: {
-    fontFamily: fonts.extrabold,
-    fontSize: 20,
-    lineHeight: 24,
-    letterSpacing: -0.4,
-  },
-  metricLarge: {
-    fontFamily: fonts.black,
-    fontSize: 34,
-    lineHeight: 36,
-    letterSpacing: -0.8,
   },
   // Mono — measurements, ABV, prices, coordinates, timestamps.
   mono: {
     fontFamily: fonts.mono,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: 0,
   },
 } as const;

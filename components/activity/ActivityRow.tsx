@@ -246,7 +246,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.postText,
   },
   time: {
-    ...t.typography.micro,
+    ...t.typography.caption,
     color: t.colors.textMuted,
   },
   thumbnail: {

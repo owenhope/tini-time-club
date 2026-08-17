@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { ProfileRegularPlace } from "@/services/regularsService";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
@@ -72,7 +72,6 @@ const useStyles = makeStyles((t) => ({
   },
   rank: {
     ...t.typography.label,
-    fontFamily: fonts.bold,
     color: t.colors.accent,
   },
   content: {

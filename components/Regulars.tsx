@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 
 interface RegularsProps {
   regulars?: Regular[] | null;
@@ -264,8 +264,7 @@ const useStyles = makeStyles((t) => ({
     gap: 5,
   },
   railUsername: {
-    ...t.typography.micro,
-    fontFamily: fonts.semibold,
+    ...t.typography.label,
     color: t.colors.usernameText,
     maxWidth: 60,
   },
@@ -280,8 +279,7 @@ const useStyles = makeStyles((t) => ({
   },
   rank: {
     width: 22,
-    ...t.typography.caption,
-    fontFamily: fonts.bold,
+    ...t.typography.label,
     color: t.colors.accent,
   },
   identity: {

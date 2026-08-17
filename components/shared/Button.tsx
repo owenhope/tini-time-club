@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { PRESS_SCALE, fonts, makeStyles, useTheme } from "@/theme";
+import { PRESS_SCALE, makeStyles, useTheme } from "@/theme";
 import AppText, { type TypographyVariant } from "./AppText";
 
 export type ButtonSize = "small" | "medium" | "large" | "xlarge";
@@ -343,7 +343,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.9,
   },
   text: {
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     textAlign: "center" as const,
   },
   iconLeft: {

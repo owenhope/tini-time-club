@@ -723,7 +723,7 @@ export default function Onboarding() {
                   <View style={styles.regularsRating}>
                     <RatingPips value={4.8} size={18} accessibilityLabel="" />
                     <View style={styles.regularsRatingMeta}>
-                      <AppText variant="metric" style={styles.regularsScore}>
+                      <AppText variant="title" style={styles.regularsScore}>
                         4.8
                       </AppText>
                       <AppText variant="mono" tone="secondary">
@@ -1125,11 +1125,8 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
-  termsText: {
-    lineHeight: 20,
-  },
+  termsText: {},
   termsAcknowledgement: {
-    lineHeight: 20,
     fontStyle: "italic" as const,
     textAlign: "center" as const,
     marginTop: t.spacing.xl,

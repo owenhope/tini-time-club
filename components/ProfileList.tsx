@@ -12,7 +12,7 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { setFollowing } from "@/services/followService";
 export interface ProfileType {
@@ -288,7 +288,6 @@ const useStyles = makeStyles((t) => ({
   },
   buttonText: {
     ...t.typography.label,
-    fontFamily: fonts.semibold,
     color: t.colors.onAccent,
   },
   followingButtonText: {

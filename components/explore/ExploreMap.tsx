@@ -30,7 +30,7 @@ import LocationDetails from "@/components/map/locationDetails";
 import { withRegulars, type Regular } from "@/services/regularsService";
 import RegularsSlider from "@/components/RegularsSlider";
 import Search from "@/components/map/search";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
@@ -680,9 +680,8 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textOnImage,
   },
   noticeAction: {
-    ...t.typography.caption,
+    ...t.typography.label,
     color: t.colors.accent,
-    fontFamily: fonts.bold,
   },
   markerContainer: {
     flexDirection: "row" as const,
@@ -699,8 +698,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.heading,
     position: "absolute" as const,
     color: t.colors.onAccentTonal,
-    fontFamily: fonts.black,
-    lineHeight: 20,
     textAlign: "center" as const,
     fontVariant: ["tabular-nums"] as const,
   },

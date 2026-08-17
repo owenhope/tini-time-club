@@ -13,11 +13,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "@/components/shared";
-import { fonts, makeStyles } from "@/theme";
-import {
-  logCelebrationEvent,
-  type Achievement,
-} from "@/utils/celebrations";
+import { makeStyles } from "@/theme";
+import { logCelebrationEvent, type Achievement } from "@/utils/celebrations";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
@@ -189,16 +186,12 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
   },
   headline: {
-    fontFamily: fonts.black,
-    fontSize: 22,
-    lineHeight: 27,
+    ...t.typography.title,
     color: t.colors.secondary,
     textAlign: "center" as const,
   },
   subtitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.bodyStrong,
     color: t.colors.accentPressed,
     textAlign: "center" as const,
     maxWidth: 310,
@@ -208,9 +201,7 @@ const useStyles = makeStyles((t) => ({
     gap: 4,
   },
   locationLine: {
-    fontFamily: fonts.black,
-    fontSize: 16,
-    lineHeight: 21,
+    ...t.typography.bodyStrong,
     color: t.colors.secondary,
     textAlign: "center" as const,
     maxWidth: 310,
@@ -233,9 +224,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accentPressed,
   },
   continueText: {
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    lineHeight: 21,
+    ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
     textAlign: "center" as const,
   },

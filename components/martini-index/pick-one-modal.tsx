@@ -185,7 +185,7 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
               <AppText variant="eyebrow" style={styles.shakingEyebrow}>
                 CONSULTING THE OLIVES
               </AppText>
-              <AppText variant="displayLarge" style={styles.shakingTitle}>
+              <AppText variant="display" style={styles.shakingTitle}>
                 Shake. Shake. Shake.
               </AppText>
               <AppText style={styles.shakingBody}>
@@ -273,7 +273,7 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
                   </View>
 
                   <View style={styles.countRow}>
-                    <AppText variant="metric">{eligibleCount}</AppText>
+                    <AppText variant="title">{eligibleCount}</AppText>
                     <AppText tone="secondary">
                       {eligibleCount === 1
                         ? "martini survives"

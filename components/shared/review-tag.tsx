@@ -51,8 +51,6 @@ const useStyles = makeStyles((t) => ({
   },
   text: {
     ...t.typography.eyebrow,
-    fontSize: 12.5,
-    letterSpacing: 1,
     color: t.colors.surfaceInkDeep,
   },
   typeTextFallback: {

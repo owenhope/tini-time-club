@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   },
   metricUnit: {
     color: CARD.paper,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
     letterSpacing: 0,
     opacity: 0.82,
   },

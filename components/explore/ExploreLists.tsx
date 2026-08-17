@@ -583,7 +583,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   resultScore: {
-    ...t.typography.metric,
+    ...t.typography.title,
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
@@ -624,7 +624,6 @@ const useStyles = makeStyles((t) => ({
   },
   profileStats: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textMuted,
   },
 }));

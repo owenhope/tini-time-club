@@ -60,7 +60,7 @@ export default function MartiniIndexCard({
             color={editorialBadgeIconColor}
           />
           <AppText
-            variant="micro"
+            variant="caption"
             style={[styles.badgeText, editorialBadgeTextStyle]}
           >
             {item.badge.toUpperCase()}
@@ -139,7 +139,7 @@ const useStyles = makeStyles((t) => ({
     boxShadow: "0 2px 8px rgba(6, 10, 8, 0.22)",
   },
   badgeText: {
-    fontFamily: t.typography.label.fontFamily,
+    ...t.typography.label,
     letterSpacing: 0.7,
   },
   badgeBarClassic: {

@@ -21,7 +21,7 @@ import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Button, Input, MartiniIcon } from "@/components/shared";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { log, reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
@@ -952,8 +952,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   footerLoaderText: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.accent,
   },
   modalContainer: {
@@ -971,15 +970,13 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   modalTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     marginBottom: t.spacing.md,
     color: t.colors.text,
     textAlign: "center" as const,
   },
   validationMessage: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.danger,
     textAlign: "center" as const,
     marginTop: t.spacing.sm,
@@ -1004,11 +1001,9 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.xl - 4,
   },
   heroSubtitle: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     textAlign: "center" as const,
-    lineHeight: 22,
     maxWidth: 320,
     letterSpacing: 0,
   },
@@ -1040,17 +1035,14 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
     letterSpacing: 0,
   },
   stepDescription: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textMuted,
-    lineHeight: 19,
   },
 }));
 

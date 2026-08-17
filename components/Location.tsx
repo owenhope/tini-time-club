@@ -546,11 +546,10 @@ const useStyles = makeStyles((t) => ({
   },
   venueEyebrow: {
     ...t.typography.eyebrow,
-    fontSize: 10,
     color: t.colors.onHeaderBrand,
   },
   venueScore: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     color: t.colors.onHeaderBrand,
     fontVariant: ["tabular-nums"] as const,
   },

@@ -44,6 +44,9 @@ jest.mock("@/context/profile-context", () => ({
 
 jest.mock("@/theme", () => ({
   fonts: { medium: "medium", semibold: "semibold" },
+  typography: {
+    label: { fontFamily: "bold", fontSize: 12, lineHeight: 16 },
+  },
   useTheme: () => ({
     colors: {
       accent: "purple",

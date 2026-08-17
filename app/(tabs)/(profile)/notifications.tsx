@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, Switch, Text, View } from "react-native";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { setFridayMartiniReminderEnabled } from "@/utils/martiniReminder";
 import { useProfile } from "@/context/profile-context";
 
@@ -80,9 +80,7 @@ const useStyles = makeStyles((t) => ({
     gap: 2,
   },
   rowTitle: {
-    ...t.typography.body,
-    fontSize: 15,
-    fontFamily: fonts.medium,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   rowSubtitle: {

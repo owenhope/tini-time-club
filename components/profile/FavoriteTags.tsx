@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 import type { NamedOption } from "@/types/types";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 
@@ -151,8 +151,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.highlight,
   },
   tagText: {
-    fontFamily: fonts.bold,
-    fontSize: 12,
+    ...t.typography.label,
     color: t.colors.surfaceInkDeep,
     textTransform: "capitalize" as const,
   },

@@ -151,7 +151,6 @@ export const MagicLinkAuthScreen = () => {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-
     </SafeAreaView>
   );
 };
@@ -182,12 +181,12 @@ const useStyles = makeStyles((t) => ({
   },
   intro: { paddingTop: t.spacing.xl, paddingBottom: t.spacing.xl },
   title: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     letterSpacing: 0,
     color: t.colors.text,
   },
   sentTitle: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     letterSpacing: 0,
     color: t.colors.text,
     textAlign: "center" as const,
@@ -227,7 +226,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
-    lineHeight: 24,
     marginBottom: t.spacing.md,
   },
   email: { ...t.typography.bodyStrong, color: t.colors.text },

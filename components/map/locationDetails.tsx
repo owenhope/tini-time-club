@@ -185,7 +185,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textMuted,
   },
   score: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },

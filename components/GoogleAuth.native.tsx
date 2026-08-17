@@ -7,7 +7,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -104,8 +104,7 @@ const useStyles = makeStyles((t) => ({
     height: 20,
   },
   label: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     letterSpacing: 0,
     color: t.isDark ? "#E3E3E3" : "#1F1F1F",
   },

@@ -3,7 +3,7 @@ import { ActionSheetIOS, Alert, StyleSheet, Text } from "react-native";
 import renderer, { act } from "react-test-renderer";
 import CommentsSlider from "../CommentsSlider";
 import databaseService from "@/services/databaseService";
-import { ThemeProvider } from "@/theme";
+import { ThemeProvider, typography } from "@/theme";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -156,7 +156,7 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
     .find((node) => node.props.children === "Perfectly cold.");
 
   expect(StyleSheet.flatten(commentBody?.props.style)).toEqual(
-    expect.objectContaining({ fontSize: 17, lineHeight: 25 })
+    expect.objectContaining(typography.body)
   );
   expect(emptyHeart.props.children[1]).toBeNull();
   expect(emptyHeart.findByProps({ name: "heart-outline" }).props.size).toBe(16);
@@ -173,7 +173,7 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
   expect(filledHeart.props.style.flexDirection).toBe("column");
   expect(filledHeart.findByProps({ name: "heart" }).props.size).toBe(16);
   expect(StyleSheet.flatten(filledHeart.props.children[1].props.style)).toEqual(
-    expect.objectContaining({ fontSize: 10, lineHeight: 12 })
+    expect.objectContaining(typography.label)
   );
   expect(
     tree.root
