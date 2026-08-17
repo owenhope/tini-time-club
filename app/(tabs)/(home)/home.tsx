@@ -45,8 +45,13 @@ const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 type FeedSource = "club" | "people";
-const limitCachedReviews = (items: Review[]) =>
+// A refresh is newest-first, so keep the head; an appended page arrives at the
+// end, so keep the tail or pagination silently dead-ends once the cache is
+// full (pagination offsets track `page`, not the retained window).
+const limitRefreshedReviews = (items: Review[]) =>
   items.length > MAX_CACHED_ITEMS ? items.slice(0, MAX_CACHED_ITEMS) : items;
+const limitAppendedReviews = (items: Review[]) =>
+  items.length > MAX_CACHED_ITEMS ? items.slice(-MAX_CACHED_ITEMS) : items;
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -201,10 +206,10 @@ function Home() {
 
         // Update state
         if (refresh) {
-          setReviews(limitCachedReviews(reviewsWithUrls));
+          setReviews(limitRefreshedReviews(reviewsWithUrls));
         } else {
           setReviews((prev) =>
-            limitCachedReviews([...prev, ...reviewsWithUrls])
+            limitAppendedReviews([...prev, ...reviewsWithUrls])
           );
         }
 

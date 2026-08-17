@@ -343,7 +343,8 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.9,
   },
   text: {
-    ...t.typography.bodyStrong,
+    // No typography here: family/size/line height come from the per-size
+    // AppText variant, which any style spread in this slot would clobber.
     textAlign: "center" as const,
   },
   iconLeft: {
