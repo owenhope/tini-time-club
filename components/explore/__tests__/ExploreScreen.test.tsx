@@ -3,7 +3,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import ExploreScreen from "@/components/explore/ExploreScreen";
 
 jest.mock("@/components/nav/AppHeader", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   return function MockAppHeader({
     below,
     ...props
@@ -15,7 +15,7 @@ jest.mock("@/components/nav/AppHeader", () => {
 });
 
 jest.mock("@/components/shared", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   return {
     SegmentedControl: (props: object) =>
       React.createElement("SegmentedControl", props),
@@ -23,14 +23,14 @@ jest.mock("@/components/shared", () => {
 });
 
 jest.mock("@/components/explore/ExploreMap", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   return function MockExploreMap(props: object) {
     return React.createElement("ExploreMap", props);
   };
 });
 
 jest.mock("@/components/explore/ExploreLists", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   return function MockExploreLists(props: object) {
     return React.createElement("ExploreLists", props);
   };

@@ -4,6 +4,7 @@ import renderer, { act } from "react-test-renderer";
 import CommentsSlider from "../CommentsSlider";
 import databaseService from "@/services/databaseService";
 import { ThemeProvider, typography } from "@/theme";
+import ReportModal from "@/components/ReportModal";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -11,8 +12,9 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 jest.mock("@gorhom/bottom-sheet", () => {
-  const ReactActual = require("react");
-  const { TextInput, View: RNView } = require("react-native");
+  const ReactActual = jest.requireActual<typeof import("react")>("react");
+  const { TextInput, View: RNView } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   const Sheet = ({ children }: any) =>
     ReactActual.createElement(RNView, null, children);
   const SheetList = ReactActual.forwardRef(
@@ -80,19 +82,21 @@ jest.mock("expo-haptics", () => ({
 }));
 
 jest.mock("@expo/vector-icons", () => {
-  const ReactActual = require("react");
-  const { Text: RNText } = require("react-native");
+  const ReactActual = jest.requireActual<typeof import("react")>("react");
+  const { Text: RNText } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   return {
     Ionicons: (props: { name: string; size?: number }) =>
-      ReactActual.createElement(RNText, props, props.name),
+      ReactActual.createElement(RNText as React.ElementType, props, props.name),
   };
 });
 
 jest.mock("@/components/shared", () => ({
   Avatar: () => null,
   VerifiedName: ({ name }: { name: string }) => {
-    const ReactActual = require("react");
-    const { Text: RNText } = require("react-native");
+    const ReactActual = jest.requireActual<typeof import("react")>("react");
+    const { Text: RNText } =
+      jest.requireActual<typeof import("react-native")>("react-native");
     return ReactActual.createElement(RNText, null, name);
   },
 }));
@@ -198,8 +202,7 @@ it("reports someone else's comment from its long-press menu", async () => {
     expect.objectContaining({ options: ["Cancel", "Report Comment"] }),
     expect.any(Function)
   );
-  const ReportModal = require("@/components/ReportModal").default as jest.Mock;
-  const modalProps = ReportModal.mock.calls.at(-1)?.[0];
+  const modalProps = (ReportModal as jest.Mock).mock.calls.at(-1)?.[0];
   expect(modalProps).toEqual(
     expect.objectContaining({ visible: true, title: "Report Comment" })
   );

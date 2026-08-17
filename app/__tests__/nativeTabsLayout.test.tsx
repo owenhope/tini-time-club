@@ -1,5 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import TabsLayout from "@/app/(tabs)/_layout";
 
 const mockGlobalScrollToTop = jest.fn();
 let mockPathname = "/home";
@@ -10,7 +11,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("expo-router/unstable-native-tabs", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   const NativeTabs = ({ children }: { children: React.ReactNode }) =>
     React.createElement("NativeTabs", null, children);
   const Trigger = ({
@@ -89,8 +90,6 @@ jest.mock("@/utils/scrollUtils", () => ({
   getGlobalScrollToTop: () => mockGlobalScrollToTop,
 }));
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
-
-import TabsLayout from "@/app/(tabs)/_layout";
 
 describe("native tab icon configuration", () => {
   let renderer: ReactTestRenderer | undefined;
