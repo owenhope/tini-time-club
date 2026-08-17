@@ -90,9 +90,6 @@ type InitialAuthResolution = {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
     reportError("[ErrorBoundary] Render error:", error);
-    Sentry.captureException(error, {
-      tags: { surface: "root-error-boundary" },
-    });
   }, [error]);
 
   return (

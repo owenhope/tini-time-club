@@ -20,9 +20,10 @@ import {
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
+import type { ReviewImageSource } from "@/utils/reviewImage";
 
 interface CameraComponentProps {
-  onCapture: (photo: string) => void;
+  onCapture: (photo: ReviewImageSource) => void;
   /** Leave the composer. The camera is the first step of a presented flow. */
   onClose?: () => void;
   /** Matches the step metadata rendered under the other review-flow headers. */
@@ -96,14 +97,14 @@ export default function CameraComponent({
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const photo = await cameraRef.current?.takePictureAsync({
-        quality: 1,
+        quality: 0.9,
         // base64 is not read anywhere; requesting it doubles peak memory and
         // adds noticeable shutter lag. The uri is all the review flow needs.
         base64: false,
         exif: false,
       });
       if (photo && photo.uri) {
-        onCapture(photo.uri);
+        onCapture({ uri: photo.uri, width: photo.width, height: photo.height });
         setCapturedUri(photo.uri); // For preview purposes
       }
     } catch (error) {
@@ -137,11 +138,15 @@ export default function CameraComponent({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         base64: false,
-        quality: 1,
+        quality: 0.9,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         if (result.assets[0].uri) {
-          onCapture(result.assets[0].uri);
+          onCapture({
+            uri: result.assets[0].uri,
+            width: result.assets[0].width,
+            height: result.assets[0].height,
+          });
           setCapturedUri(result.assets[0].uri);
         }
       }

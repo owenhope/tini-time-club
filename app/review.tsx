@@ -24,7 +24,6 @@ import ReviewItem from "@/components/ReviewItem";
 import CelebrationModal from "@/components/CelebrationModal";
 import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
-import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
 import { AppText, Button } from "@/components/shared";
 import { supabase } from "@/utils/supabase";
@@ -46,6 +45,10 @@ import {
   ReviewSubmissionError,
   submitNewReview,
 } from "@/utils/reviewSubmission";
+import {
+  prepareReviewImageForUpload,
+  type ReviewImageSource,
+} from "@/utils/reviewImage";
 
 interface ReviewFormLocation {
   name: string;
@@ -202,6 +205,10 @@ export default function App() {
   const styles = useStyles();
   const { colors } = useTheme();
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoDimensions, setPhotoDimensions] = useState<Pick<
+    ReviewImageSource,
+    "width" | "height"
+  > | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -310,6 +317,7 @@ export default function App() {
           comment: review.comment || "",
         });
         setPhoto(review.display_image_url);
+        setPhotoDimensions(null);
         setOriginalImagePath(review.image_url);
         setPhotoChanged(false);
         setIsReviewing(true);
@@ -360,6 +368,7 @@ export default function App() {
   const discardReview = () => {
     setStep(0);
     setPhoto(null);
+    setPhotoDimensions(null);
     setIsReviewing(false);
     setIsSubmitting(false);
     setSubmissionMessage("");
@@ -479,9 +488,9 @@ export default function App() {
         return null;
       }
 
-      const manipResult = await ImageManipulator.manipulateAsync(photo, [], {
-        compress: 0.5,
-        format: ImageManipulator.SaveFormat.JPEG,
+      const manipResult = await prepareReviewImageForUpload({
+        uri: photo,
+        ...photoDimensions,
       });
       const compressedUri = manipResult.uri;
 
@@ -819,7 +828,11 @@ export default function App() {
               ) : undefined
             }
             onCapture={(captured) => {
-              setPhoto(captured);
+              setPhoto(captured.uri);
+              setPhotoDimensions({
+                width: captured.width,
+                height: captured.height,
+              });
               setPhotoChanged(isEditMode);
               setIsChangingPhoto(false);
               setIsReviewing(true);

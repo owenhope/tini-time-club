@@ -29,6 +29,7 @@ const mockGetSession = jest.fn<Promise<unknown>, []>();
 const mockResumeGetSession = jest.fn<Promise<unknown>, []>();
 const mockIsAuthCallbackUrl = jest.fn((_url: string) => false);
 const mockCaptureException = jest.fn();
+const mockReportError = jest.fn();
 const mockSignOut = jest.fn(async () => {
   await mockAuthStateChange?.("SIGNED_OUT", null);
   return { error: null };
@@ -42,7 +43,10 @@ jest.mock("@/utils/sentry", () => ({
     wrap: (component: unknown) => component,
   },
 }));
-jest.mock("@/utils/log", () => ({ log: jest.fn(), reportError: jest.fn() }));
+jest.mock("@/utils/log", () => ({
+  log: jest.fn(),
+  reportError: (...args: unknown[]) => mockReportError(...args),
+}));
 jest.mock("@/utils/supabase", () => ({
   supabase: {
     auth: {
@@ -644,7 +648,7 @@ describe("root startup routing", () => {
 });
 
 describe("root error reporting", () => {
-  it("forwards caught render errors to Sentry", async () => {
+  it("forwards caught render errors through the app reporter", async () => {
     const error = new Error("startup render failed");
     let errorRenderer: ReactTestRenderer | undefined;
 
@@ -652,9 +656,10 @@ describe("root error reporting", () => {
       errorRenderer = create(<ErrorBoundary error={error} retry={jest.fn()} />);
     });
 
-    expect(mockCaptureException).toHaveBeenCalledWith(error, {
-      tags: { surface: "root-error-boundary" },
-    });
+    expect(mockReportError).toHaveBeenCalledWith(
+      "[ErrorBoundary] Render error:",
+      error
+    );
 
     await act(async () => errorRenderer?.unmount());
   });

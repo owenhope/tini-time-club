@@ -37,6 +37,10 @@ import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
+import {
+  areReviewItemPropsEqual,
+  type ReviewItemMemoProps,
+} from "@/utils/reviewItemMemo";
 
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
@@ -101,22 +105,7 @@ const InlineIdentityText = ({
   );
 };
 
-interface ReviewItemProps {
-  review: Review & { _commentPatch?: any };
-  canDelete: boolean;
-  onDelete?: () => void;
-  onEdit?: () => void;
-  onShowLikes: (reviewId: string) => void;
-  onShowComments: (
-    reviewId: string,
-    onCommentAdded: (reviewId: string, newComment: any) => void,
-    onCommentDeleted: (reviewId: string, commentId: number) => void
-  ) => void;
-  onCommentAdded: (reviewId: string, newComment: any) => void;
-  onCommentDeleted: (reviewId: string, commentId: number) => void;
-  /** The composer's live preview: no header, no actions, no interaction. */
-  previewMode?: boolean;
-}
+type ReviewItemProps = ReviewItemMemoProps;
 
 /**
  * Likes state for one review.
@@ -714,42 +703,6 @@ const ReviewFooter = memo(
 );
 ReviewFooter.displayName = "ReviewFooter";
 
-const getRecentCommentsKey = (review: Review) =>
-  (review.recent_comments ?? [])
-    .map(
-      (comment) =>
-        `${comment.id}:${comment.likes_count ?? 0}:${Boolean(comment.has_liked)}`
-    )
-    .join("|");
-
-// Comparison function for memo to prevent unnecessary re-renders
-const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
-  // Only re-render if review data actually changed
-  const prev = prevProps.review as any;
-  const next = nextProps.review as any;
-
-  return (
-    prevProps.review.id === nextProps.review.id &&
-    prevProps.review.comment === nextProps.review.comment &&
-    prevProps.review.image_url === nextProps.review.image_url &&
-    prevProps.review.taste === nextProps.review.taste &&
-    prevProps.review.presentation === nextProps.review.presentation &&
-    prevProps.review._commentPatch === nextProps.review._commentPatch &&
-    // Aggregates now arrive with the row; without these a refreshed feed
-    // would keep rendering stale like/comment counts.
-    prev.likes_count === next.likes_count &&
-    prev.comments_count === next.comments_count &&
-    prev.has_liked === next.has_liked &&
-    getRecentCommentsKey(prevProps.review) ===
-      getRecentCommentsKey(nextProps.review) &&
-    prev.location?.rating === next.location?.rating &&
-    prev.location?.total_ratings === next.location?.total_ratings &&
-    prev.profile?.is_verified === next.profile?.is_verified &&
-    prevProps.canDelete === nextProps.canDelete &&
-    prevProps.previewMode === nextProps.previewMode
-  );
-};
-
 const ReviewItemComponent = ({
   review,
   canDelete,
@@ -1088,7 +1041,7 @@ const ReviewItemComponent = ({
   );
 };
 
-const ReviewItem = memo(ReviewItemComponent, areEqual);
+const ReviewItem = memo(ReviewItemComponent, areReviewItemPropsEqual);
 
 export default ReviewItem;
 

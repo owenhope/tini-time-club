@@ -20,8 +20,7 @@ offline.
 ## Non-goals
 
 - Do not add threaded comments or a reply composer.
-- Do not show `comment_liked`, `review_created`, `regular_joined`, or
-  `regular_left` rows.
+- Do not show `review_created`, `regular_joined`, or `regular_left` rows.
 - Do not merge the Activity center with the existing `/notifications` push
   preferences screen.
 - Do not let Activity preferences suppress event creation. Push preferences

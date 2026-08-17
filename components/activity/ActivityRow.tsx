@@ -75,9 +75,11 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
         ? "started following you"
         : row.kind === "review_liked"
           ? row.summary.slice(row.summary.indexOf(" ") + 1)
-          : row.kind === "comment_replied"
-            ? "replied to your comment"
-            : "commented on your review";
+          : row.kind === "comment_liked"
+            ? "liked your comment"
+            : row.kind === "comment_replied"
+              ? "replied to your comment"
+              : "commented on your review";
     return (
       <View style={styles.copyBlock}>
         <View style={styles.metaLine}>

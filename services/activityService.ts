@@ -49,6 +49,7 @@ const decodeEvent = (value: unknown): ActivityEvent | null => {
     ![
       "user_followed",
       "review_liked",
+      "comment_liked",
       "review_commented",
       "comment_replied",
       "admin_message",

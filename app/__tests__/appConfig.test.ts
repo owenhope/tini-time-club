@@ -54,6 +54,17 @@ describe("release environment validation", () => {
   const originalSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const originalSupabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   const originalMetaAppId = process.env.EXPO_PUBLIC_META_APP_ID;
+  const originalSentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  const originalSentryOrg = process.env.SENTRY_ORG;
+  const originalSentryProject = process.env.SENTRY_PROJECT;
+  const originalSentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+  const setSentryReleaseEnvironment = () => {
+    process.env.EXPO_PUBLIC_SENTRY_DSN = "https://public@sentry.example/1";
+    process.env.SENTRY_ORG = "tini-time-club";
+    process.env.SENTRY_PROJECT = "mobile";
+    process.env.SENTRY_AUTH_TOKEN = "test-token";
+  };
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -61,6 +72,10 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = originalSupabaseAnonKey;
     process.env.EXPO_PUBLIC_META_APP_ID = originalMetaAppId;
+    process.env.EXPO_PUBLIC_SENTRY_DSN = originalSentryDsn;
+    process.env.SENTRY_ORG = originalSentryOrg;
+    process.env.SENTRY_PROJECT = originalSentryProject;
+    process.env.SENTRY_AUTH_TOKEN = originalSentryAuthToken;
   });
 
   it.each(["preview", "production"])(
@@ -70,11 +85,10 @@ describe("release environment validation", () => {
       process.env.APP_ENV = appEnvironment;
       process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
       process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+      setSentryReleaseEnvironment();
       delete process.env.EXPO_PUBLIC_META_APP_ID;
 
-      expect(() =>
-        createAppConfig({ config: {} } as ConfigContext)
-      ).toThrow(
+      expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
         `Missing required ${appEnvironment} environment variables: EXPO_PUBLIC_META_APP_ID`
       );
     }
@@ -86,9 +100,24 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    setSentryReleaseEnvironment();
 
     expect(
       createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
     ).toBe("com.ohope.tinitimeclub.preview");
+  });
+
+  it("rejects a release build without the Sentry upload token", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "production";
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    setSentryReleaseEnvironment();
+    delete process.env.SENTRY_AUTH_TOKEN;
+
+    expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
+      "Missing required production environment variables: SENTRY_AUTH_TOKEN"
+    );
   });
 });
