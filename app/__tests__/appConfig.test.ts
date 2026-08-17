@@ -58,6 +58,7 @@ describe("release environment validation", () => {
   const originalSentryOrg = process.env.SENTRY_ORG;
   const originalSentryProject = process.env.SENTRY_PROJECT;
   const originalSentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+  const originalEasBuild = process.env.EAS_BUILD;
 
   const setSentryReleaseEnvironment = () => {
     process.env.EXPO_PUBLIC_SENTRY_DSN = "https://public@sentry.example/1";
@@ -76,6 +77,11 @@ describe("release environment validation", () => {
     process.env.SENTRY_ORG = originalSentryOrg;
     process.env.SENTRY_PROJECT = originalSentryProject;
     process.env.SENTRY_AUTH_TOKEN = originalSentryAuthToken;
+    if (originalEasBuild === undefined) {
+      delete process.env.EAS_BUILD;
+    } else {
+      process.env.EAS_BUILD = originalEasBuild;
+    }
   });
 
   it.each(["preview", "production"])(
@@ -107,9 +113,10 @@ describe("release environment validation", () => {
     ).toBe("com.ohope.tinitimeclub.preview");
   });
 
-  it("rejects a release build without the Sentry upload token", () => {
+  it("rejects a release build on the EAS builder without the Sentry upload token", () => {
     jest.spyOn(console, "log").mockImplementation(() => {});
     process.env.APP_ENV = "production";
+    process.env.EAS_BUILD = "true";
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
@@ -119,5 +126,20 @@ describe("release environment validation", () => {
     expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
       "Missing required production environment variables: SENTRY_AUTH_TOKEN"
     );
+  });
+
+  it("allows local release config resolution without the secret Sentry token", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "production";
+    delete process.env.EAS_BUILD;
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    setSentryReleaseEnvironment();
+    delete process.env.SENTRY_AUTH_TOKEN;
+
+    expect(
+      createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
+    ).toBe("com.ohope.tinitimeclub");
   });
 });

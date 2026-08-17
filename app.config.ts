@@ -22,6 +22,12 @@ const REQUIRED_RELEASE_ENVIRONMENT_VARIABLES = [
   "EXPO_PUBLIC_SENTRY_DSN",
   "SENTRY_ORG",
   "SENTRY_PROJECT",
+] as const;
+
+// Secret-visibility EAS variables exist only on the EAS builder (EAS_BUILD=1);
+// the local `eas build` CLI evaluates this config without them, so requiring
+// them locally would block every release build from starting.
+const REQUIRED_BUILDER_ONLY_ENVIRONMENT_VARIABLES = [
   "SENTRY_AUTH_TOKEN",
 ] as const;
 
@@ -32,7 +38,15 @@ const validateReleaseEnvironment = (
     return;
   }
 
-  const missingVariables = REQUIRED_RELEASE_ENVIRONMENT_VARIABLES.filter(
+  const requiredVariables: readonly string[] =
+    process.env.EAS_BUILD === "true"
+      ? [
+          ...REQUIRED_RELEASE_ENVIRONMENT_VARIABLES,
+          ...REQUIRED_BUILDER_ONLY_ENVIRONMENT_VARIABLES,
+        ]
+      : REQUIRED_RELEASE_ENVIRONMENT_VARIABLES;
+
+  const missingVariables = requiredVariables.filter(
     (variableName) => !process.env[variableName]?.trim()
   );
 
