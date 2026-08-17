@@ -85,14 +85,24 @@ const revokeAppleAuthorizationIfNeeded = async (
     body.appleAuthorization !== null
       ? body.appleAuthorization
       : null;
+
+  // Builds released before 3.2 do not send Apple authorization. Keep their
+  // existing deletion path working during the client rollout; every 3.2+
+  // client sends this object and therefore takes the enforced revocation path
+  // below. Remove this compatibility branch once pre-3.2 builds are retired.
+  if (!appleAuthorization) {
+    console.warn(
+      "Apple authorization revocation skipped for a legacy app build"
+    );
+    return;
+  }
+
   const authorizationCode =
-    appleAuthorization &&
     "authorizationCode" in appleAuthorization &&
     typeof appleAuthorization.authorizationCode === "string"
       ? appleAuthorization.authorizationCode.trim()
       : "";
   const clientId =
-    appleAuthorization &&
     "clientId" in appleAuthorization &&
     typeof appleAuthorization.clientId === "string"
       ? appleAuthorization.clientId.trim()

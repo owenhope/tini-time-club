@@ -135,7 +135,10 @@ These values are server-only and must never use an `EXPO_PUBLIC_` prefix or be
 committed to the repository. Do not deploy the updated deletion function until
 all three are configured in both the development and production Supabase
 projects. The function creates a five-minute client secret for each deletion;
-the private key itself does not leave Supabase.
+the private key itself does not leave Supabase. Builds before 3.2 do not send
+the fresh Apple authorization payload, so the Edge Function temporarily keeps
+their previous deletion path working during rollout. Remove that compatibility
+branch after pre-3.2 builds are retired.
 
 ## Release checklist
 
