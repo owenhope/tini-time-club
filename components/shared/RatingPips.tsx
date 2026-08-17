@@ -83,6 +83,47 @@ const Olive: React.FC<{
   );
 };
 
+interface RatingDragEvent {
+  locationX: number;
+  pageX?: number;
+}
+
+const InteractiveOlive: React.FC<{
+  value: number;
+  size: number;
+  fillAmount: number;
+  bodyColor?: string;
+  emptyColor?: string;
+  onPressIn: (value: number) => void;
+  onTouchMove: (nativeEvent: RatingDragEvent) => void;
+  onPressOut: () => void;
+}> = ({
+  value,
+  size,
+  fillAmount,
+  bodyColor,
+  emptyColor,
+  onPressIn,
+  onTouchMove,
+  onPressOut,
+}) => (
+  <Pressable
+    testID={`rating-pip-touch-${value}`}
+    accessible={false}
+    onPressIn={() => onPressIn(value)}
+    onTouchMove={({ nativeEvent }) => onTouchMove(nativeEvent)}
+    onPressOut={onPressOut}
+  >
+    <Olive
+      size={size}
+      fillAmount={fillAmount}
+      bodyColor={bodyColor}
+      emptyColor={emptyColor}
+      faintWhenEmpty
+    />
+  </Pressable>
+);
+
 const RatingPips: React.FC<RatingPipsProps> = ({
   value = 0,
   max = PIPS_MAX,
@@ -149,12 +190,18 @@ const RatingPips: React.FC<RatingPipsProps> = ({
     });
   };
 
-  const handleDrag = (nativeEvent: { locationX: number; pageX?: number }) => {
+  const handleDrag = (nativeEvent: RatingDragEvent) => {
     const locationX =
       Number.isFinite(nativeEvent.pageX) && interactiveRowPageX.current != null
         ? (nativeEvent.pageX as number) - interactiveRowPageX.current
         : nativeEvent.locationX;
     reportRating(rateFromPosition(locationX));
+  };
+
+  const handlePipPressIn = (next: number) => {
+    finishInteraction();
+    measureInteractiveRow();
+    reportRating(next);
   };
 
   const pipRow = pips.map((n) => (
@@ -169,26 +216,17 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   ));
 
   const interactivePipRow = pips.map((n) => (
-    <Pressable
+    <InteractiveOlive
       key={n}
-      testID={`rating-pip-touch-${n}`}
-      accessible={false}
-      onPressIn={() => {
-        finishInteraction();
-        measureInteractiveRow();
-        reportRating(n);
-      }}
-      onTouchMove={({ nativeEvent }) => handleDrag(nativeEvent)}
+      value={n}
+      size={size}
+      fillAmount={fillAmountFor(n)}
+      bodyColor={bodyColor}
+      emptyColor={emptyColor}
+      onPressIn={handlePipPressIn}
+      onTouchMove={handleDrag}
       onPressOut={finishInteraction}
-    >
-      <Olive
-        size={size}
-        fillAmount={fillAmountFor(n)}
-        bodyColor={bodyColor}
-        emptyColor={emptyColor}
-        faintWhenEmpty
-      />
-    </Pressable>
+    />
   ));
 
   const rowStyle = [
