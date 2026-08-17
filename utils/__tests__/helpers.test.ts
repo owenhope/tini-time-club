@@ -3,6 +3,7 @@ import {
   formatRelativeDate,
   formatCityRegion,
 } from "../helpers";
+import { formatCityRegion as formatAdminCityRegion } from "../../admin/lib/format";
 
 describe("stripNameFromAddress", () => {
   it("removes a leading venue name and separator", () => {
@@ -66,7 +67,7 @@ describe("formatRelativeDate", () => {
 
 // Cases taken from real rows in the locations table.
 describe("formatCityRegion", () => {
-  it.each([
+  const cityRegionCases: ReadonlyArray<readonly [string, string]> = [
     [
       "855 Main St, West Vancouver, BC V7T 0A5, Canada",
       "West Vancouver, Canada",
@@ -89,8 +90,31 @@ describe("formatCityRegion", () => {
       "Palm Desert, USA",
     ],
     ["1038 Canada Pl, Vancouver, BC V6C 0E2, Canada", "Vancouver, Canada"],
-  ])("reduces %s to city and country", (input, expected) => {
-    expect(formatCityRegion(input)).toBe(expected);
+    [
+      "76/8-9 Soi Si Bamphen, Thung Maha Mek, Sathon, Bangkok 10120, Thailand",
+      "Bangkok, Thailand",
+    ],
+    [
+      "Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Caferağa Mahallesi",
+      "Kadiköy, İstanbul",
+    ],
+    [
+      "Elephant Pub Kadikoy, 34710 Kadiköy/İstanbul, Türkiye",
+      "İstanbul, Türkiye",
+    ],
+    ["401 Main Street, Columbia", "Columbia"],
+    ["Vancouver, BC", "Vancouver, BC"],
+  ];
+
+  it.each(cityRegionCases)(
+    "reduces %s to city and country",
+    (input, expected) => {
+      expect(formatCityRegion(input)).toBe(expected);
+    }
+  );
+
+  it.each(cityRegionCases)("matches the admin formatter for %s", (input) => {
+    expect(formatAdminCityRegion(input)).toBe(formatCityRegion(input));
   });
 
   it("handles an address whose city carries no region code", () => {
