@@ -16,6 +16,7 @@ import {
 import { syncFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
+import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 
 Notifications.setNotificationHandler({
@@ -135,6 +136,13 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(home)"
         accessibilityLabel="Feed"
+        listeners={{
+          tabPress: () => {
+            if (pathname === routes.home()) {
+              getGlobalScrollToTop()?.();
+            }
+          },
+        }}
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
