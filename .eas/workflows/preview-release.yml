@@ -16,6 +16,10 @@ jobs:
     name: Submit to TestFlight
     needs: [build]
     type: submit
+    env:
+      # The first workflow run died in prepare_asc_api_key with "failed to
+      # resolve submission config"; this makes the next failure legible.
+      EXPO_DEBUG: "1"
     params:
       build_id: ${{ needs.build.outputs.build_id }}
       profile: preview

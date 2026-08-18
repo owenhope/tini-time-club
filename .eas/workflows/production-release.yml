@@ -16,6 +16,8 @@ jobs:
     name: Submit to TestFlight
     needs: [build]
     type: submit
+    env:
+      EXPO_DEBUG: "1"
     params:
       build_id: ${{ needs.build.outputs.build_id }}
       profile: production
