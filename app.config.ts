@@ -95,6 +95,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSPhotoLibraryUsageDescription: PHOTO_LIBRARY_USAGE_DESCRIPTION,
         NSPhotoLibraryAddUsageDescription:
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
+        // expo-location's binary references CoreMotion APIs even with its
+        // motion permission disabled; App Store Connect rejects uploads
+        // without this string (ITMS-90683).
+        NSMotionUsageDescription:
+          "Tini Time Club uses motion activity to improve location accuracy while finding bars near you.",
       },
     },
     android: {
