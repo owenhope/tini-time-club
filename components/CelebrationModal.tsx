@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
@@ -105,14 +104,6 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           { paddingTop: insets.top + 52, paddingBottom: insets.bottom + 44 },
         ]}
       >
-        <Image
-          source={require("@/assets/images/tini-time-logo-2x.png")}
-          style={styles.logo}
-          contentFit="contain"
-          accessibilityRole="image"
-          accessibilityLabel="Tini Time Club"
-        />
-
         <View style={styles.centerContent}>
           <Animated.View style={[styles.avatarWell, avatarStyle]}>
             <Avatar
@@ -161,14 +152,10 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "flex-start" as const,
     paddingHorizontal: t.spacing.xxl,
   },
-  logo: {
-    width: 118,
-    height: 84,
-  },
   centerContent: {
     alignItems: "center" as const,
     gap: t.spacing.lg,
-    marginTop: 92,
+    marginTop: 148,
     width: "100%" as const,
   },
   avatarWell: {
@@ -186,8 +173,8 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
   },
   headline: {
-    ...t.typography.title,
-    color: t.colors.secondary,
+    ...t.typography.display,
+    color: t.colors.textOnImage,
     textAlign: "center" as const,
   },
   subtitle: {
@@ -202,7 +189,7 @@ const useStyles = makeStyles((t) => ({
   },
   locationLine: {
     ...t.typography.bodyStrong,
-    color: t.colors.secondary,
+    color: t.colors.textOnImage,
     textAlign: "center" as const,
     maxWidth: 310,
   },
