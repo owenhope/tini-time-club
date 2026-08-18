@@ -440,15 +440,23 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
     >
       <View style={styles.scoreAxis}>
         <Text style={styles.scoreLabel}>Taste</Text>
-        <RatingPips value={review.taste ?? 0} size={15} accessibilityLabel="" />
+        <View style={styles.scorePips}>
+          <RatingPips
+            value={review.taste ?? 0}
+            size={15}
+            accessibilityLabel=""
+          />
+        </View>
       </View>
       <View style={styles.scoreAxis}>
         <Text style={styles.scoreLabel}>Presentation</Text>
-        <RatingPips
-          value={review.presentation ?? 0}
-          size={15}
-          accessibilityLabel=""
-        />
+        <View style={styles.scorePips}>
+          <RatingPips
+            value={review.presentation ?? 0}
+            size={15}
+            accessibilityLabel=""
+          />
+        </View>
       </View>
       <View style={styles.scoreOverall}>
         <Text style={styles.scoreLabel}>Overall</Text>
@@ -1194,6 +1202,14 @@ const useStyles = makeStyles((t) => ({
   scoreAxis: {
     alignItems: "flex-start" as const,
     gap: 7,
+  },
+  // The same sunken well places put around their olives (see the map peek
+  // sheet and the venue header), so ratings read as one system everywhere.
+  scorePips: {
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.surfaceSunken,
   },
   scoreLabel: {
     ...t.typography.eyebrow,
