@@ -2084,6 +2084,18 @@ export interface AdminLocation {
 
 export type LocationSort = "place" | "area" | "rating" | "reviews";
 
+export interface MapPlace {
+  id: number;
+  name: string | null;
+  address: string | null;
+  lat: number;
+  lon: number;
+  rating: number | null;
+  taste_avg: number | null;
+  presentation_avg: number | null;
+  total_ratings: number;
+}
+
 export interface AdminLocationDetail extends AdminLocation {
   place_id: string | null;
   inserted_at: string;
@@ -2494,6 +2506,53 @@ export const fetchLocations = async (
     locations: sorted.slice(offset, offset + perPage),
     total: sorted.length,
   };
+};
+
+export interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
+/**
+ * Places with coordinates for the Places map, from the location_ratings view
+ * (coordinates joined to rating aggregates). Without bounds it returns
+ * everything — the initial render fits the viewport to the whole club. With
+ * bounds it serves the map's viewport fetches as the operator pans, the same
+ * shape as the app's locations_in_view RPC.
+ */
+export const fetchMapPlaces = async (
+  bounds?: MapBounds
+): Promise<MapPlace[]> => {
+  let query = db()
+    .from("location_ratings")
+    .select(
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+    );
+  if (bounds) {
+    query = query
+      .gte("lat", bounds.minLat)
+      .lte("lat", bounds.maxLat)
+      .gte("lon", bounds.minLon)
+      .lte("lon", bounds.maxLon);
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .filter((row) => row.lat != null && row.lon != null)
+    .map((row) => ({
+      id: row.id,
+      name: row.name ?? null,
+      address: row.address ?? null,
+      lat: Number(row.lat),
+      lon: Number(row.lon),
+      rating: row.rating ?? null,
+      taste_avg: row.taste_avg ?? null,
+      presentation_avg: row.presentation_avg ?? null,
+      total_ratings: row.total_ratings ?? 0,
+    }));
 };
 
 export const fetchAdminLocation = async (
