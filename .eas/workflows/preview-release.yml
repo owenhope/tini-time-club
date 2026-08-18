@@ -1,0 +1,21 @@
+name: Preview release (build + TestFlight)
+
+on:
+  # Manual: npx eas-cli workflow:run .eas/workflows/preview-release.yml
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build iOS (preview)
+    type: build
+    params:
+      platform: ios
+      profile: preview
+
+  submit:
+    name: Submit to TestFlight
+    needs: [build]
+    type: submit
+    params:
+      build_id: ${{ needs.build.outputs.build_id }}
+      profile: preview
