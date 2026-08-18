@@ -20,6 +20,10 @@ let mockProfileState: {
 let mockPathname = "/";
 let mockInitialUrl: string | null = null;
 let mockStackScreenOptions: { animation?: string } | undefined;
+let mockScreenOptionsByName: Record<
+  string,
+  { animation?: string } | undefined
+> = {};
 let mockAppStateChange:
   ((nextState: "active" | "background") => void | Promise<void>) | undefined;
 
@@ -181,7 +185,14 @@ jest.mock("expo-router", () => {
       children
     );
   };
-  Stack.Screen = function MockStackScreen() {
+  Stack.Screen = function MockStackScreen({
+    name,
+    options,
+  }: {
+    name: string;
+    options?: { animation?: string };
+  }) {
+    mockScreenOptionsByName[name] = options;
     return null;
   };
 
@@ -205,6 +216,7 @@ describe("root startup routing", () => {
     mockPathname = "/";
     mockInitialUrl = null;
     mockStackScreenOptions = undefined;
+    mockScreenOptionsByName = {};
     mockAppStateChange = undefined;
     mockReplace.mockClear();
     mockHideAsync.mockClear();
@@ -407,7 +419,13 @@ describe("root startup routing", () => {
     });
 
     expect(mockReplace).toHaveBeenLastCalledWith("/home");
-    expect(mockStackScreenOptions?.animation).toBe("none");
+    // Startup destinations are statically non-animated: a stack-wide flag
+    // that flips after startup can race the in-flight native transition,
+    // so the guarantee lives on the screens themselves.
+    expect(mockScreenOptionsByName["(tabs)"]?.animation).toBe("none");
+    expect(mockScreenOptionsByName["welcome"]?.animation).toBe("none");
+    expect(mockScreenOptionsByName["onboarding"]?.animation).toBe("none");
+    expect(mockStackScreenOptions?.animation).toBeUndefined();
   });
 
   it("routes incomplete onboarding before revealing an authenticated deep link", async () => {

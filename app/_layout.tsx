@@ -545,7 +545,6 @@ export function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: hasCompletedStartupNavigation ? "default" : "none",
           contentStyle: { backgroundColor: colors.background },
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.accent,
@@ -556,6 +555,16 @@ export function RootLayoutNav() {
           },
         }}
       >
+        {/* Startup destinations never animate in. Arriving at one of these is
+            always a replace (cold start, sign-in/out, onboarding completion),
+            and the previous gate — flipping a stack-wide animation flag once
+            startup navigation settled — raced the native transition: the flag
+            flipped to "default" while the cold-start replace was still
+            pending, so the feed slid in from under the splash. A static
+            per-screen "none" cannot race anything. */}
+        <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
+        <Stack.Screen name="welcome" options={{ animation: "none" }} />
+        <Stack.Screen name="onboarding" options={{ animation: "none" }} />
         {/* Composing is a task, not a place: presented over whatever you
             were looking at, so cancelling returns you there instead of
             leaving a half-written draft parked in a tab. */}
