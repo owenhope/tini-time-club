@@ -41,7 +41,10 @@ describe("native app permissions", () => {
     expect(pluginOptions(config.plugins, "expo-location")).toMatchObject({
       locationAlwaysAndWhenInUsePermission: false,
       locationAlwaysPermission: false,
-      motionUsagePermission: false,
+      // A purpose string, not false: App Store Connect requires
+      // NSMotionUsageDescription because expo-location references
+      // CoreMotion APIs (ITMS-90683), and false strips the key at prebuild.
+      motionUsagePermission: expect.stringContaining("motion activity"),
     });
     expect(pluginOptions(config.plugins, "expo-secure-store")).toMatchObject({
       faceIDPermission: false,
