@@ -95,11 +95,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSPhotoLibraryUsageDescription: PHOTO_LIBRARY_USAGE_DESCRIPTION,
         NSPhotoLibraryAddUsageDescription:
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
-        // expo-location's binary references CoreMotion APIs even with its
-        // motion permission disabled; App Store Connect rejects uploads
-        // without this string (ITMS-90683).
-        NSMotionUsageDescription:
-          "Tini Time Club uses motion activity to improve location accuracy while finding bars near you.",
       },
     },
     android: {
@@ -149,7 +144,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           locationAlwaysPermission: false,
           locationWhenInUsePermission:
             "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
-          motionUsagePermission: false,
+          // Must be a string, not false: expo-location's binary references
+          // CoreMotion APIs regardless, and App Store Connect rejects uploads
+          // missing NSMotionUsageDescription (ITMS-90683). `false` would also
+          // strip any key set in ios.infoPlist above.
+          motionUsagePermission:
+            "Tini Time Club uses motion activity to improve location accuracy while finding bars near you.",
         },
       ],
       [
