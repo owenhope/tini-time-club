@@ -1,8 +1,10 @@
 import React from "react";
 import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
+import { AuthProviderButton } from "@/components/AuthProviderButton";
 import { useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -31,15 +33,21 @@ export function AppleAuth() {
 
   if (Platform.OS === "ios" && isAvailable)
     return (
-      <AppleAuthentication.AppleAuthenticationButton
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-        buttonStyle={
-          isDark
-            ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-            : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+      // Custom per Apple's HIG (Apple mark + "Continue with Apple", solid
+      // black or white) instead of the native AppleAuthenticationButton,
+      // whose system-font label can't be matched to the Google button —
+      // the two must render identically.
+      <AuthProviderButton
+        title="Continue with Apple"
+        backgroundColor={isDark ? "#FFFFFF" : "#000000"}
+        textColor={isDark ? "#000000" : "#FFFFFF"}
+        icon={
+          <Ionicons
+            name="logo-apple"
+            size={20}
+            color={isDark ? "#000000" : "#FFFFFF"}
+          />
         }
-        cornerRadius={24}
-        style={{ width: "100%", height: 48 }}
         onPress={async () => {
           try {
             const credential = await AppleAuthentication.signInAsync({

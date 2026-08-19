@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text } from "react-native";
+import { Alert } from "react-native";
 import { Image } from "expo-image";
 import {
   GoogleSignin,
@@ -7,7 +7,8 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
-import { makeStyles, useTheme } from "@/theme";
+import { AuthProviderButton } from "@/components/AuthProviderButton";
+import { useTheme } from "@/theme";
 
 export function GoogleAuth() {
   GoogleSignin.configure({
@@ -16,8 +17,7 @@ export function GoogleAuth() {
     iosClientId:
       "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
   });
-  const styles = useStyles();
-  const { colors } = useTheme();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const onPress = useCallback(async () => {
@@ -60,55 +60,20 @@ export function GoogleAuth() {
   const title = "Continue with Google";
 
   return (
-    <Pressable
+    <AuthProviderButton
+      title={title}
       onPress={onPress}
-      disabled={loading}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityState={{ busy: loading, disabled: loading }}
-      style={({ pressed }) => [
-        styles.button,
-        pressed && !loading && styles.pressed,
-      ]}
-    >
-      <Image
-        source={require("@/assets/images/auth/google-g.png")}
-        style={styles.logo}
-        contentFit="contain"
-      />
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.text} />
-      ) : (
-        <Text style={styles.label}>{title}</Text>
-      )}
-    </Pressable>
+      loading={loading}
+      backgroundColor={isDark ? "#131314" : "#FFFFFF"}
+      borderColor={isDark ? "#8E918F" : "#747775"}
+      textColor={isDark ? "#E3E3E3" : "#1F1F1F"}
+      icon={
+        <Image
+          source={require("@/assets/images/auth/google-g.png")}
+          style={{ width: 20, height: 20 }}
+          contentFit="contain"
+        />
+      }
+    />
   );
 }
-
-const useStyles = makeStyles((t) => ({
-  button: {
-    width: "100%" as const,
-    height: 48,
-    borderRadius: t.radius.pill,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.isDark ? "#131314" : "#FFFFFF",
-    borderWidth: 1,
-    borderColor: t.isDark ? "#8E918F" : "#747775",
-  },
-  logo: {
-    position: "absolute" as const,
-    left: t.spacing.lg,
-    width: 20,
-    height: 20,
-  },
-  label: {
-    ...t.typography.bodyStrong,
-    letterSpacing: 0,
-    color: t.isDark ? "#E3E3E3" : "#1F1F1F",
-  },
-  pressed: {
-    opacity: 0.82,
-  },
-}));
