@@ -55,9 +55,6 @@ const isOnboardingExemptPath = (path: string) =>
   path === "/" ||
   path === "/welcome" ||
   path === "/onboarding" ||
-  path === "/favorite-location" ||
-  path === "/forgot-password" ||
-  path === "/reset-password" ||
   path === "/sign-in" ||
   path === "/sign-up" ||
   path.startsWith("/auth");
@@ -418,16 +415,6 @@ export function RootLayoutNav() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       log("[RootLayout] Auth state changed:", event, !!session);
 
-      if (event === "PASSWORD_RECOVERY") {
-        // Recovery deep link: let the user set a new password instead of
-        // dropping them on the feed.
-        authSessionRef.current = session;
-        setIsReady(true);
-        router.replace(routes.resetPassword());
-        await SplashScreen.hideAsync();
-        return;
-      }
-
       if (event === "INITIAL_SESSION") {
         await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
@@ -437,15 +424,10 @@ export function RootLayoutNav() {
           const wasSignedOut = !authSessionRef.current;
           authSessionRef.current = session;
 
-          // Recovery links also emit SIGNED_IN; staying put keeps the reset
-          // screen visible. Existing sessions can also re-emit SIGNED_IN when
-          // refreshed, so only a real signed-out -> signed-in transition from
-          // an auth screen starts destination selection.
-          if (
-            wasSignedOut &&
-            pathnameRef.current !== "/reset-password" &&
-            isAuthenticationPath(pathnameRef.current)
-          ) {
+          // Existing sessions can re-emit SIGNED_IN when refreshed, so only
+          // a real signed-out -> signed-in transition from an auth screen
+          // starts destination selection.
+          if (wasSignedOut && isAuthenticationPath(pathnameRef.current)) {
             setPendingSignedInUserId(session.user.id);
           }
         }

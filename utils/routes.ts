@@ -76,11 +76,13 @@ export const routes = {
   /** Auth (email sign-in/sign-up) screen. */
   auth: () => "/auth" as const satisfies Href,
 
+  /** Magic-link fallback behind the landing screen's "Use Email Instead". */
+  authEmail: () => "/auth/email" as const satisfies Href,
+
   /** One-time new-member setup and EULA flow. */
   onboarding: () => "/onboarding" as const satisfies Href,
 
   /** Password reset screen (recovery deep links land here). */
-  resetPassword: () => "/reset-password" as const satisfies Href,
 
   /** Explore tab, optionally selecting or focusing one of its three views. */
   discover: (params?: DiscoverParams) =>

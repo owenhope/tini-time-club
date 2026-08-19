@@ -17,7 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { File } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { decode } from "base64-arraybuffer";
 import { Filter } from "bad-words";
@@ -30,21 +30,9 @@ import {
   RatingPips,
 } from "@/components/shared";
 import AppHeader from "@/components/nav/AppHeader";
-import MultiSelectInput from "@/components/MultiSelectInput";
-import FavoriteLocationPicker from "@/components/FavoriteLocationPicker";
 import Regulars from "@/components/Regulars";
-import { parseFavoriteIds } from "@/components/profile/FavoriteTags";
 import { useProfile } from "@/context/profile-context";
-import databaseService from "@/services/databaseService";
-import {
-  consumePendingFavoriteLocation,
-  type FavoriteLocationValue,
-} from "@/services/favoriteLocationSelection";
-import {
-  clearOnboardingDraft,
-  getOnboardingDraft,
-  saveOnboardingDraft,
-} from "@/services/onboardingDraftService";
+import { deleteCurrentAccount } from "@/services/accountService";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { clearUserCaches } from "@/utils/signOut";
 import { supabase } from "@/utils/supabase";
@@ -52,14 +40,10 @@ import { routes } from "@/utils/routes";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { RANK_TIERS } from "@/utils/ranking";
-import type { NamedOption } from "@/types/types";
 
 type OnboardingStep = 1 | 2 | 3;
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
-
-const fetchFavoriteOptions = () =>
-  Promise.all([databaseService.getSpirits(), databaseService.getTypes()]);
 
 const usernameFilter = new Filter();
 
@@ -89,16 +73,6 @@ export default function Onboarding() {
   );
   const [username, setUsername] = useState("");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
-    []
-  );
-  const [selectedTypes, setSelectedTypes] = useState<(number | string)[]>([]);
-  const [spirits, setSpirits] = useState<NamedOption[]>([]);
-  const [types, setTypes] = useState<NamedOption[]>([]);
-  const [optionsLoading, setOptionsLoading] = useState(true);
-  const [optionsError, setOptionsError] = useState<string | null>(null);
-  const [favoriteLocation, setFavoriteLocation] =
-    useState<FavoriteLocationValue | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const [saving, setSaving] = useState(false);
@@ -109,72 +83,9 @@ export default function Onboarding() {
   useEffect(() => {
     if (!profile || initializedProfileId.current === profile.id) return;
     initializedProfileId.current = profile.id;
-    const draft = getOnboardingDraft(profile.id);
-    setUsername(draft?.username ?? profile.username ?? "");
-    setAvatarUri(draft?.avatarUri ?? null);
-    setSelectedSpirits(
-      draft?.selectedSpirits ?? parseFavoriteIds(profile.favorite_spirits)
-    );
-    setSelectedTypes(
-      draft?.selectedTypes ?? parseFavoriteIds(profile.favorite_types)
-    );
-    setFavoriteLocation(draft?.favoriteLocation ?? null);
+    setUsername(profile.username ?? "");
+    setAvatarUri(null);
   }, [profile]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const pendingFavoriteLocation = consumePendingFavoriteLocation();
-      if (pendingFavoriteLocation !== undefined) {
-        setFavoriteLocation(pendingFavoriteLocation);
-        if (profile) {
-          const draft = getOnboardingDraft(profile.id);
-          if (draft) {
-            saveOnboardingDraft({
-              ...draft,
-              favoriteLocation: pendingFavoriteLocation,
-            });
-          }
-        }
-      }
-    }, [profile])
-  );
-
-  const loadFavoriteOptions = useCallback(async () => {
-    setOptionsLoading(true);
-    setOptionsError(null);
-    try {
-      const [spiritOptions, typeOptions] = await fetchFavoriteOptions();
-      setSpirits(spiritOptions);
-      setTypes(typeOptions);
-    } catch (error) {
-      reportError("Error loading onboarding favorites:", error);
-      setOptionsError("We couldn't load the favorites yet.");
-    } finally {
-      setOptionsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    fetchFavoriteOptions()
-      .then(([spiritOptions, typeOptions]) => {
-        if (!active) return;
-        setSpirits(spiritOptions);
-        setTypes(typeOptions);
-      })
-      .catch((error) => {
-        if (!active) return;
-        reportError("Error loading onboarding favorites:", error);
-        setOptionsError("We couldn't load the favorites yet.");
-      })
-      .finally(() => {
-        if (active) setOptionsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!isDevelopmentPreview && profile?.username && profile.eula_accepted) {
@@ -305,16 +216,11 @@ export default function Onboarding() {
       uploadedAvatarPath = await uploadAvatar();
       const result = await updateProfile({
         username: username.trim(),
-        favorite_spirits: selectedSpirits,
-        favorite_types: selectedTypes,
-        favorite_location_id:
-          favoriteLocation?.id ?? profile.favorite_location_id ?? null,
         ...(uploadedAvatarPath
           ? { avatar_url: uploadedAvatarPath }
           : undefined),
       });
       if (result.error) throw result.error;
-      clearOnboardingDraft(profile.id);
 
       if (
         uploadedAvatarPath &&
@@ -355,12 +261,9 @@ export default function Onboarding() {
       setSaving(false);
     }
   }, [
-    favoriteLocation,
     profile,
     router,
     saving,
-    selectedSpirits,
-    selectedTypes,
     uploadAvatar,
     updateProfile,
     username,
@@ -374,7 +277,6 @@ export default function Onboarding() {
     try {
       const result = await acceptEULA();
       if (result.error) throw result.error;
-      if (profile) clearOnboardingDraft(profile.id);
       router.replace(routes.home());
     } catch (error) {
       reportError("Error accepting onboarding EULA:", error);
@@ -382,14 +284,57 @@ export default function Onboarding() {
     } finally {
       setSaving(false);
     }
-  }, [acceptEULA, profile, router, saving]);
+  }, [acceptEULA, router, saving]);
 
   const declineTerms = useCallback(async () => {
-    if (profile) clearOnboardingDraft(profile.id);
     await unregisterPushNotificationsAsync();
     await clearUserCaches();
     await supabase.auth.signOut();
-  }, [profile]);
+  }, []);
+
+  // The header's X: abandoning sign-up deletes the half-made account (same
+  // edge function as Settings → Delete Account, including Apple token
+  // revocation) so the email or Apple/Google identity is free to sign up
+  // fresh later. Signing out alone would strand the identity.
+  const quitSignup = useCallback(async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await deleteCurrentAccount();
+      await clearUserCaches();
+      const { error: signOutError } = await supabase.auth.signOut({
+        scope: "local",
+      });
+      if (signOutError) {
+        reportError("Error signing out after quitting sign-up:", signOutError);
+      }
+      router.replace(routes.welcome());
+    } catch (error) {
+      reportError("Error quitting sign-up:", error);
+      Alert.alert(
+        "Couldn't quit sign-up",
+        "Please check your connection and try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [router, saving]);
+
+  const confirmQuitSignup = useCallback(() => {
+    if (saving) return;
+    Alert.alert(
+      "Quit sign-up?",
+      "This deletes your unfinished account and releases your email or Apple/Google ID, so you can join again anytime.",
+      [
+        { text: "Keep going", style: "cancel" },
+        {
+          text: "Quit & delete",
+          style: "destructive",
+          onPress: () => void quitSignup(),
+        },
+      ]
+    );
+  }, [quitSignup, saving]);
 
   const confirmDeclineTerms = useCallback(() => {
     if (saving) return;
@@ -447,31 +392,6 @@ export default function Onboarding() {
     []
   );
 
-  const openFavoriteLocation = useCallback(() => {
-    if (!profile) return;
-    saveOnboardingDraft({
-      profileId: profile.id,
-      username,
-      avatarUri,
-      selectedSpirits,
-      selectedTypes,
-      favoriteLocation,
-    });
-    router.push(
-      routes.favoriteLocation({
-        hasFavoriteLocation: favoriteLocation ? "1" : "0",
-      })
-    );
-  }, [
-    avatarUri,
-    favoriteLocation,
-    profile,
-    router,
-    selectedSpirits,
-    selectedTypes,
-    username,
-  ]);
-
   if (loading || !profile) {
     return (
       <View style={styles.loading}>
@@ -495,7 +415,17 @@ export default function Onboarding() {
       >
         {step === 1 ? (
           <View style={styles.profileFlow}>
-            <AppHeader variant="large" title="Create your profile" />
+            <AppHeader
+              variant="large"
+              title="Create your profile"
+              meta="How you'll show up in the club"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
 
             <View style={styles.profileContent}>
               <ScrollView
@@ -527,7 +457,7 @@ export default function Onboarding() {
                       <Avatar
                         username={username.trim()}
                         fallbackText="TT"
-                        size={104}
+                        size={112}
                         showRing={false}
                       />
                     )}
@@ -539,9 +469,9 @@ export default function Onboarding() {
                       />
                     </View>
                   </Pressable>
-                  <View style={styles.avatarActions}>
-                    <AppText variant="bodyStrong">Profile photo</AppText>
-                  </View>
+                  <AppText variant="caption" tone="secondary">
+                    Add a photo (optional)
+                  </AppText>
                 </View>
 
                 <Input
@@ -552,7 +482,7 @@ export default function Onboarding() {
                     setUsernameError(null);
                     setUsernameStatus("idle");
                   }}
-                  placeholder="Unique username"
+                  placeholder="e.g. martini_mike"
                   autoCapitalize="none"
                   autoCorrect={false}
                   maxLength={20}
@@ -578,48 +508,6 @@ export default function Onboarding() {
                   containerStyle={styles.usernameInputContainer}
                 />
 
-                {optionsLoading ? (
-                  <View style={styles.optionsLoading}>
-                    <ActivityIndicator color={colors.accent} />
-                  </View>
-                ) : optionsError ? (
-                  <View style={styles.optionsError}>
-                    <AppText variant="caption" tone="danger">
-                      {optionsError}
-                    </AppText>
-                    <Button
-                      title="Retry"
-                      onPress={loadFavoriteOptions}
-                      variant="outline"
-                      size="small"
-                    />
-                  </View>
-                ) : (
-                  <>
-                    <MultiSelectInput
-                      label="Favorite Type"
-                      options={types}
-                      selectedIds={selectedTypes}
-                      onSelectionChange={setSelectedTypes}
-                      maxSelections={1}
-                    />
-                    <MultiSelectInput
-                      label="Favorite Spirit"
-                      options={spirits}
-                      selectedIds={selectedSpirits}
-                      onSelectionChange={setSelectedSpirits}
-                      maxSelections={1}
-                    />
-                  </>
-                )}
-
-                <AppText variant="eyebrow" tone="secondary">
-                  Favorite location
-                </AppText>
-                <FavoriteLocationPicker
-                  value={favoriteLocation}
-                  onPress={openFavoriteLocation}
-                />
               </ScrollView>
             </View>
 
@@ -639,6 +527,7 @@ export default function Onboarding() {
                   icon="chevron-forward"
                   iconPosition="right"
                   size="medium"
+                  fullWidth
                   loading={saving}
                   disabled={saving || !usernameReady}
                 />
@@ -649,7 +538,16 @@ export default function Onboarding() {
 
         {step === 2 ? (
           <View style={styles.profileFlow}>
-            <AppHeader variant="large" title="Rings & regulars" />
+            <AppHeader
+              variant="large"
+              title="Rings & regulars"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
 
             <ScrollView
               contentContainerStyle={styles.educationContent}
@@ -793,7 +691,16 @@ export default function Onboarding() {
 
         {step === 3 ? (
           <View style={styles.profileFlow}>
-            <AppHeader variant="large" title="Terms & Guidelines" />
+            <AppHeader
+              variant="large"
+              title="Terms & Guidelines"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
 
             <ScrollView
               style={styles.termsScroll}
@@ -1045,12 +952,15 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     overflow: "hidden" as const,
   },
+  // One decision per screen: the avatar-and-name block floats in the upper
+  // third rather than hugging the header, so the page reads as an invitation
+  // instead of a form.
   questionContent: {
     flexGrow: 1,
     paddingHorizontal: t.spacing.xl - 4,
-    paddingTop: t.spacing.xl - 4,
+    paddingTop: t.spacing.xxl,
     paddingBottom: t.spacing.xl,
-    gap: t.spacing.md,
+    gap: t.spacing.lg,
   },
   educationContent: {
     flexGrow: 1,
@@ -1138,25 +1048,25 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   avatarStep: {
-    flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.md,
     paddingVertical: t.spacing.sm,
   },
+  // The brand-purple ring previews the ring system members earn later.
   avatarPicker: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.surfaceSunken,
     borderWidth: 2,
-    borderColor: t.colors.border,
+    borderColor: t.colors.accent,
   },
   avatarPreview: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
   },
   avatarBadge: {
     position: "absolute" as const,
@@ -1171,10 +1081,6 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 3,
     borderColor: t.colors.background,
   },
-  avatarActions: {
-    flex: 1,
-    gap: t.spacing.xs,
-  },
   pressed: {
     opacity: 0.65,
   },
@@ -1184,17 +1090,6 @@ const useStyles = makeStyles((t) => ({
   },
   usernameInputContainer: {
     marginBottom: 0,
-  },
-  optionsLoading: {
-    minHeight: 180,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  optionsError: {
-    minHeight: 180,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    gap: t.spacing.md,
   },
   footer: {
     paddingHorizontal: t.spacing.xl - 4,

@@ -34,7 +34,6 @@ const LayoutContent = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
-  const isOnboardingLocationPicker = pathname === "/favorite-location";
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;
@@ -93,22 +92,12 @@ const LayoutContent = () => {
   ]);
 
   useEffect(() => {
-    if (
-      !loading &&
-      profile &&
-      (!profile.username || !profile.eula_accepted) &&
-      !isOnboardingLocationPicker
-    ) {
+    if (!loading && profile && (!profile.username || !profile.eula_accepted)) {
       router.replace(routes.onboarding());
     }
-  }, [isOnboardingLocationPicker, loading, profile, router]);
+  }, [loading, profile, router]);
 
-  if (
-    loading ||
-    !profile ||
-    ((!profile.username || !profile.eula_accepted) &&
-      !isOnboardingLocationPicker)
-  ) {
+  if (loading || !profile || !profile.username || !profile.eula_accepted) {
     return null;
   }
 
