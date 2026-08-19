@@ -458,7 +458,7 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 15,
   },
   searchInput: {
-    ...t.typography.body,
+    ...t.typography.input,
     backgroundColor: t.colors.surfaceSunken,
     height: 50,
     borderRadius: t.radius.pill,
@@ -467,7 +467,7 @@ const useStyles = makeStyles((t) => ({
     paddingRight: 50,
     textAlignVertical: "center" as const,
     includeFontPadding: false,
-    color: t.colors.text,
+    color: t.colors.inputText,
     borderWidth: 1,
     borderColor: t.colors.border,
   },

@@ -287,13 +287,13 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.lg,
   },
   input: {
-    ...t.typography.body,
+    ...t.typography.input,
     padding: t.spacing.md,
     borderRadius: t.radius.input,
     backgroundColor: t.colors.background,
     borderWidth: 1,
     borderColor: t.colors.border,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   bioInput: {
     minHeight: 100,

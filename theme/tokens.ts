@@ -98,6 +98,10 @@ export interface ThemeColors {
 
   // Text
   text: string;
+  /** What the member types into any TextInput: pure black on light, pure
+   *  white on dark — maximum contrast against the field, distinct from the
+   *  brand-green ink that body copy uses. */
+  inputText: string;
   postText: string;
   usernameText: string;
   textSecondary: string;
@@ -205,6 +209,7 @@ export const lightColors: ThemeColors = {
   scrimStrong: "rgba(20,26,23,0.65)", // 5.2:1 for white text over a white photo
 
   text: palette.green900,
+  inputText: "#000000",
   postText: palette.ink900,
   usernameText: palette.ink900,
   textSecondary: palette.ink700, // #3F4B46 — 8.6:1
@@ -281,6 +286,7 @@ export const darkColors: ThemeColors = {
   scrimStrong: "rgba(6,10,8,0.66)",
 
   text: "#EEF3F0", // 14.8:1 on surface
+  inputText: "#FFFFFF",
   postText: "#EEF3F0",
   usernameText: "#EEF3F0",
   // Keep the hierarchy visible in dark mode: secondary must be dimmer than
@@ -441,6 +447,11 @@ export const typography = {
     letterSpacing: -0.1,
   },
   body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24 },
+  /** TextInput text. Body's font WITHOUT a lineHeight: iOS TextInputs render
+   *  typed text lower than the placeholder when lineHeight exceeds the
+   *  font's natural height, so the text visibly drops on the first
+   *  keystroke. Pair with colors.inputText. */
+  input: { fontFamily: fonts.regular, fontSize: 16 },
   bodyStrong: {
     fontFamily: fonts.semibold,
     fontSize: 16,

@@ -190,13 +190,13 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.usernameText,
   },
   input: {
-    ...t.typography.body,
+    ...t.typography.input,
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: t.radius.input,
     paddingHorizontal: 20,
     paddingVertical: t.spacing.md,
-    color: t.colors.text,
+    color: t.colors.inputText,
     backgroundColor: t.colors.background,
   },
   deleteButton: {

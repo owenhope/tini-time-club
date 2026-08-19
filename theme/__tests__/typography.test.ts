@@ -7,6 +7,9 @@ describe("typography interface", () => {
       "title",
       "heading",
       "body",
+      // TextInput text: body without a lineHeight, because iOS TextInputs
+      // misalign typed text against the placeholder when one is set.
+      "input",
       "bodyStrong",
       "caption",
       "label",

@@ -558,7 +558,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.lg,
     marginRight: t.spacing.sm,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   sendButtonHit: {
     minHeight: 44,

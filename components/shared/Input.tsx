@@ -176,7 +176,7 @@ const Input: React.FC<InputProps> = ({
   const getTextColor = (): string => {
     if (disabled) return colors.textMuted;
     if (variant === "transparent") return colors.textOnImage;
-    return colors.text;
+    return colors.inputText;
   };
 
   const getPlaceholderColor = (): string => {
@@ -314,10 +314,12 @@ const useStyles = makeStyles((t) => ({
     position: "relative" as const,
   },
   input: {
-    ...t.typography.body,
+    // typography.input, not body: an explicit lineHeight makes iOS render
+    // typed text lower than the placeholder — text drops on first keystroke.
+    ...t.typography.input,
     flex: 1,
     paddingHorizontal: 0,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   leftIcon: {
     marginLeft: t.spacing.lg,

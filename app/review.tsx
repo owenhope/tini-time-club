@@ -1116,7 +1116,7 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.md,
   },
   captionInput: {
-    ...t.typography.body,
+    ...t.typography.input,
     minHeight: 100,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
@@ -1124,7 +1124,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
     borderColor: t.colors.border,
-    color: t.colors.text,
+    color: t.colors.inputText,
     textAlignVertical: "top" as const,
   },
   characterCount: {

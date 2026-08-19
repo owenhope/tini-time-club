@@ -228,8 +228,8 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1,
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.gutter,
-    ...t.typography.body,
-    color: t.colors.text,
+    ...t.typography.input,
+    color: t.colors.inputText,
     ...t.elevation.card,
   },
   listContent: {
