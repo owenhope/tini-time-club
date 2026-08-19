@@ -31,7 +31,7 @@ const FEATURES = [
 const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const featureColors = {
     brand: {
       background: colors.tabBarActive,
@@ -62,7 +62,13 @@ const Welcome = () => {
         <View style={styles.content}>
           <View style={styles.hero}>
             <Image
-              source={require("@/assets/images/tini-time-logo-2x.png")}
+              // The dark theme's heavier scrim swallows the green wordmark,
+              // so it swaps to the paper variant (olive dot stays orange).
+              source={
+                isDark
+                  ? require("@/assets/images/tini-time-logo-light-2x.png")
+                  : require("@/assets/images/tini-time-logo-2x.png")
+              }
               style={styles.logo}
               contentFit="contain"
               accessibilityRole="image"
