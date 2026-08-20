@@ -121,6 +121,62 @@ export interface DashboardKpis {
   locations: KpiMetric;
 }
 
+export interface AudienceUsage {
+  visitorActiveNow: number;
+  memberActiveNow: number;
+  visitorInRange: number;
+  memberInRange: number;
+  convertedInRange: number;
+  visitorByDay: { day: string; count: number }[];
+  memberByDay: { day: string; count: number }[];
+}
+
+type AudienceUsageRpc = {
+  visitorActiveNow?: number;
+  memberActiveNow?: number;
+  visitorInRange?: number;
+  memberInRange?: number;
+  convertedInRange?: number;
+  byDay?: Array<{ day: string; visitors: number; members: number }>;
+};
+
+/**
+ * Anonymous figures are distinct random installations, not inferred people.
+ * Authenticated figures can safely deduplicate by member account. "Active now"
+ * means a heartbeat was received in the last 15 minutes.
+ */
+export const fetchAudienceUsage = async (
+  range: DateRange
+): Promise<AudienceUsage> => {
+  const activeSince = new Date(Date.now() - 15 * 60 * 1000);
+  const { data, error } = await db().rpc("get_app_usage_summary", {
+    p_since: range.since.toISOString().slice(0, 10),
+    p_until: range.until.toISOString().slice(0, 10),
+    p_active_since: activeSince.toISOString(),
+  });
+  if (error) {
+    throw new Error(`Unable to load app audience: ${error.message}`);
+  }
+
+  const summary = (data ?? {}) as AudienceUsageRpc;
+  const byDay = summary.byDay ?? [];
+  return {
+    visitorActiveNow: Number(summary.visitorActiveNow ?? 0),
+    memberActiveNow: Number(summary.memberActiveNow ?? 0),
+    visitorInRange: Number(summary.visitorInRange ?? 0),
+    memberInRange: Number(summary.memberInRange ?? 0),
+    convertedInRange: Number(summary.convertedInRange ?? 0),
+    visitorByDay: byDay.map((row) => ({
+      day: row.day,
+      count: Number(row.visitors ?? 0),
+    })),
+    memberByDay: byDay.map((row) => ({
+      day: row.day,
+      count: Number(row.members ?? 0),
+    })),
+  };
+};
+
 /** The equal-length window immediately preceding `range`. */
 const previousWindow = (range: DateRange) => {
   const until = new Date(range.since.getTime() - 1);

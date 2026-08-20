@@ -147,6 +147,9 @@ jest.mock("@/utils/inviteShare", () => ({
 jest.mock("@/services/appTrackingTransparencyService", () => ({
   requestAppTrackingTransparencyAsync: jest.fn(),
 }));
+jest.mock("@/services/appUsageService", () => ({
+  trackAppUsage: jest.fn(async () => true),
+}));
 jest.mock("@/services/visitor-session", () => ({
   acceptVisitorPreview: jest.fn(async () => {
     mockVisitorPreviewAccepted = true;

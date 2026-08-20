@@ -1,10 +1,12 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import KpiCard from "@/components/KpiCard";
+import MetricTile from "@/components/MetricTile";
 import UserBadge from "@/components/UserBadge";
 import { PageHeader, Panel, StatusPill } from "@/components/AdminPrimitives";
 import {
   fetchDashboardKpis,
+  fetchAudienceUsage,
   fetchLatestActivity,
   fetchTopActivity,
 } from "@/lib/data";
@@ -31,8 +33,9 @@ const dashboardRowLinkClass = `${dashboardRowClass} transition hover:bg-stone-50
 
 export default async function Dashboard() {
   const range = parseRange({});
-  const [kpis, latest, top] = await Promise.all([
+  const [kpis, audience, latest, top] = await Promise.all([
     fetchDashboardKpis(range),
+    fetchAudienceUsage(range),
     fetchLatestActivity(LATEST_COUNT),
     fetchTopActivity(LATEST_COUNT),
   ]);
@@ -58,6 +61,44 @@ export default async function Dashboard() {
       />
 
       <div className="space-y-5 px-8 pb-6 pt-2">
+        <Panel
+          title="App audience"
+          href="/admin/analytics#audience"
+          linkLabel="Audience analytics"
+        >
+          <div className="border-b border-stone-100 px-4 py-3 text-xs text-stone-500">
+            Active now means seen in the last 15 minutes. Anonymous counts are
+            installations because no personal identity is collected before
+            sign-in.
+          </div>
+          <div className="grid grid-cols-12 gap-3 p-4">
+            <MetricTile
+              label="Anonymous active now"
+              value={audience.visitorActiveNow}
+              hint="unauthenticated installations"
+              className="col-span-12 md:col-span-6 xl:col-span-3"
+            />
+            <MetricTile
+              label="Members active now"
+              value={audience.memberActiveNow}
+              hint="authenticated accounts"
+              className="col-span-12 md:col-span-6 xl:col-span-3"
+            />
+            <MetricTile
+              label="Anonymous in range"
+              value={audience.visitorInRange}
+              hint={`${range.label.toLowerCase()}, distinct installations`}
+              className="col-span-12 md:col-span-6 xl:col-span-3"
+            />
+            <MetricTile
+              label="Visitor → member"
+              value={audience.convertedInRange}
+              hint="installations seen before and after sign-in"
+              className="col-span-12 md:col-span-6 xl:col-span-3"
+            />
+          </div>
+        </Panel>
+
         <section className="grid grid-cols-12 gap-4">
           <KpiCard
             label="New members"

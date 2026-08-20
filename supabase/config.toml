@@ -290,6 +290,14 @@ verify_jwt = false
 import_map = "./functions/public-content/deno.json"
 entrypoint = "./functions/public-content/index.ts"
 
+[functions.app-usage]
+enabled = true
+# The endpoint accepts visitors. It resolves a member only after independently
+# verifying a supplied user access token with Supabase Auth.
+verify_jwt = false
+import_map = "./functions/app-usage/deno.json"
+entrypoint = "./functions/app-usage/index.ts"
+
 [analytics]
 enabled = true
 port = 54327

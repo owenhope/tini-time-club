@@ -45,6 +45,7 @@ import {
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
+import { trackAppUsage } from "@/services/appUsageService";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
 import {
@@ -54,6 +55,8 @@ import {
   getPendingMembershipReturn,
   hasAcceptedVisitorPreview,
 } from "@/services/visitor-session";
+
+const APP_USAGE_HEARTBEAT_MS = 5 * 60 * 1000;
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -272,6 +275,20 @@ export function RootLayoutNav() {
     void requestAppTrackingTransparencyAsync();
   }, [fontsLoaded, isReady]);
 
+  // A heartbeat on startup and every five foreground minutes powers the
+  // visitor/member audience snapshot in the operator dashboard. The server
+  // derives the audience from auth, so this effect sends no profile data.
+  useEffect(() => {
+    if (!isReady || !fontsLoaded || !initialAuth) return;
+
+    void trackAppUsage();
+    const interval = setInterval(() => {
+      if (AppState.currentState === "active") void trackAppUsage();
+    }, APP_USAGE_HEARTBEAT_MS);
+
+    return () => clearInterval(interval);
+  }, [fontsLoaded, initialAuth, isReady, profile?.id]);
+
   useEffect(() => {
     if (profileError && !profile) {
       hadStartupProfileError.current = true;
@@ -455,6 +472,7 @@ export function RootLayoutNav() {
       if (event === "INITIAL_SESSION") {
         await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
+        void trackAppUsage();
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(session);
         } else {
@@ -471,6 +489,7 @@ export function RootLayoutNav() {
       } else if (event === "SIGNED_OUT") {
         // User signed out
         authSessionRef.current = null;
+        void trackAppUsage();
         setPendingSignedInUserId(null);
         await authCache.invalidateCache();
         if (!hasHandledInitialSession.current) {
@@ -512,6 +531,7 @@ export function RootLayoutNav() {
 
       if (nextAppState === "active") {
         void retryPendingPushUnregistrationAsync();
+        void trackAppUsage();
       }
     };
 

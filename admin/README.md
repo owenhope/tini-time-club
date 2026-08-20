@@ -35,8 +35,10 @@ the server (`server-only` imports make client-side use a build error).
 
 ## What exists
 
-- **Dashboard** — member/review/location totals, reviews-per-day (30d),
-  top locations, newest signups (email + join date from `auth.users`).
+- **Dashboard** — member/review/location totals, live anonymous/member app
+  audience, visitor-to-member installations, top locations, and newest
+  signups (email + join date from `auth.users`). Anonymous audience figures
+  are distinct random installations, not inferred people.
 - **Users** — searchable list (rank tier, review count, email, join/last
   sign-in), detail view with the member's reviews, verify/unverify, and
   soft-delete/restore (`profiles.deleted` — same flag the app respects).

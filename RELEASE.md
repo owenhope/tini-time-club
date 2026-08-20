@@ -77,20 +77,27 @@ device without going through TestFlight review.
 
 ### 4.0 visitor-preview backend
 
-Version 4.0 depends on the `is_public` profile migration and the sanitized
-`public-content` Edge Function. Apply both to development and production
+Version 4.0 depends on the `is_public` profile migration, the sanitized
+`public-content` Edge Function, and privacy-safe app-usage tables plus the
+`app-usage` heartbeat function. Apply them to development and production
 before distributing the app; otherwise signed-out Feed, Explore, profiles,
-locations, and private review media will fail to load.
+locations, private review media, and dashboard audience reporting will fail.
 
 ```bash
 supabase db push
 supabase functions deploy public-content --no-verify-jwt
+supabase functions deploy app-usage --no-verify-jwt
 ```
 
 The function deliberately accepts an anon-key request, then exposes only its
 explicit public projection. Raw profile/review/comment tables and the private
 review image bucket remain unavailable to anonymous clients. Existing and new
 profiles default to visitor-visible; members can opt out in Edit Profile.
+The usage endpoint stores a random per-installation UUID and app metadata, but
+no IP address, advertising identifier, or device fingerprint. It derives
+visitor/member status from Supabase Auth on the server. The admin dashboard
+labels anonymous totals as installations rather than people and treats a
+heartbeat within 15 minutes as active now.
 
 ## OTA updates
 
@@ -181,9 +188,11 @@ branch after pre-3.2 builds are retired.
 ## App privacy answers
 
 Tini Time Club collects account, profile, review, comment, photo, favorite
-place, notification, and nearby-discovery data to operate the app and measure
-product usage. Public profiles and their published reviews may also be shown
-to signed-out visitors unless the member disables visitor visibility. If App
+place, notification, nearby-discovery, and first-party app-usage data to
+operate the app and measure product usage. Anonymous app usage is represented
+by a random installation UUID rather than contact details or a device
+fingerprint. Public profiles and their published reviews may also be shown to
+signed-out visitors unless the member disables visitor visibility. If App
 Store Connect marks any collected data type as being used to track users, the
 iOS app must include App Tracking Transparency and must request permission
 before that tracking use.
