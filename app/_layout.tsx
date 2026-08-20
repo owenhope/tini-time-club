@@ -8,7 +8,7 @@ import {
   useRootNavigationState,
   type ErrorBoundaryProps,
 } from "expo-router";
-import { log, reportError } from "@/utils/log";
+import { log, reportError, warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
@@ -44,7 +44,7 @@ import {
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
-import type { Session } from "@supabase/supabase-js";
+import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
 
 // Keep the splash screen visible while we fetch resources
@@ -452,7 +452,14 @@ export function RootLayoutNav() {
       .getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          reportError("[RootLayout] Failed to restore the session:", error);
+          // A rejected refresh token just means the persisted session lapsed
+          // (idle device, revoked token) — the user is signed out, nothing
+          // broke. Keep reportError for failures that aren't auth-API answers.
+          if (isAuthApiError(error)) {
+            warn("[RootLayout] Stored session is no longer valid:", error);
+          } else {
+            reportError("[RootLayout] Failed to restore the session:", error);
+          }
         }
         return resolveInitialSession(error ? null : session);
       })
