@@ -9,9 +9,9 @@ import {
 } from "@/utils/martini-index";
 
 describe("martini index", () => {
-  it("contains twelve unique, supported spirit and type combinations", () => {
-    expect(MARTINI_INDEX).toHaveLength(12);
-    expect(new Set(MARTINI_INDEX.map((item) => item.id)).size).toBe(12);
+  it("contains fourteen unique, supported spirit and type combinations", () => {
+    expect(MARTINI_INDEX).toHaveLength(14);
+    expect(new Set(MARTINI_INDEX.map((item) => item.id)).size).toBe(14);
 
     for (const item of MARTINI_INDEX) {
       expect(MARTINI_SPIRITS).toContain(item.spirit);
@@ -47,7 +47,7 @@ describe("martini index", () => {
     const fullIndex = getMartiniIndexRows();
     const vodkaIndex = getMartiniIndexRows("Vodka");
 
-    expect(fullIndex).toHaveLength(17);
+    expect(fullIndex).toHaveLength(19);
     expect(fullIndex.filter((entry) => entry.kind === "guide")).toHaveLength(5);
     expect(MARTINI_GUIDE_NOTES.map((note) => note.id)).toEqual(
       expect.arrayContaining(["neat-vs-up", "twist-or-olive"])

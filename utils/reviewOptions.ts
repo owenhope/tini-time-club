@@ -4,8 +4,10 @@ const SPIRIT_ORDER = ["vodka", "gin", "vesper"] as const;
 const TYPE_ORDER = [
   "classic",
   "dry",
+  "wet",
   "50/50",
   "twist",
+  "gibson",
   "dirty",
   "filthy",
   "espresso",

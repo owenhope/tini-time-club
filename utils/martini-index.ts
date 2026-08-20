@@ -2,8 +2,10 @@ export const MARTINI_SPIRITS = ["Gin", "Vodka", "Vesper"] as const;
 export const MARTINI_TYPES = [
   "Classic",
   "Dry",
+  "Wet",
   "50/50",
   "Twist",
+  "Gibson",
   "Dirty",
   "Filthy",
   "Espresso",
@@ -123,6 +125,19 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     badge: "Club pick",
   },
   {
+    id: "wet-gin",
+    title: "Wet Gin Martini",
+    spirit: "Gin",
+    type: "Wet",
+    // TODO(photo): shot reused from the 50/50 until Wet gets its own.
+    image: require("@/assets/images/index/fifty-fifty-gin.jpg"),
+    description:
+      "A heavier pour of dry vermouth softens the botanicals into something gentler and more aromatic than the standard build.",
+    ingredients: "Gin · Generous Dry Vermouth · Olive",
+    order: "A wet gin martini with an olive.",
+    badge: "Bar classic",
+  },
+  {
     id: "fifty-fifty-gin",
     title: "50/50 Martini",
     spirit: "Gin",
@@ -157,6 +172,20 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     ingredients: "Vodka · Dry Vermouth · Expressed Lemon Peel",
     order: "A vodka martini with a twist.",
     badge: "Club pick",
+  },
+  {
+    id: "gibson-gin",
+    title: "Gibson",
+    spirit: "Gin",
+    type: "Gibson",
+    // TODO(photo): shot reused from the classic gin until the Gibson gets
+    // its own (the garnish should be cocktail onions, not olives).
+    image: require("@/assets/images/index/classic-gin.jpg"),
+    description:
+      "A dry gin build finished with pickled cocktail onions instead of olives, trading brine for a savory, faintly sweet bite.",
+    ingredients: "Gin · Dry Vermouth · Cocktail Onions",
+    order: "A Gibson, extra onions.",
+    badge: "Bar classic",
   },
   {
     id: "dirty-gin",
@@ -238,11 +267,11 @@ export const filterMartiniIndex = (
 };
 
 const GUIDE_AFTER_DRINK_INDEX = new Map([
-  [1, MARTINI_GUIDE_NOTES[0]],
-  [4, MARTINI_GUIDE_NOTES[1]],
-  [6, MARTINI_GUIDE_NOTES[4]],
-  [7, MARTINI_GUIDE_NOTES[2]],
-  [9, MARTINI_GUIDE_NOTES[3]],
+  [1, MARTINI_GUIDE_NOTES[0]], // shaken-or-stirred, after the classics
+  [4, MARTINI_GUIDE_NOTES[2]], // dry-wet-fifty-fifty, right after Wet
+  [6, MARTINI_GUIDE_NOTES[1]], // neat-vs-up
+  [8, MARTINI_GUIDE_NOTES[4]], // twist-or-olive, after the Gibson's onions
+  [11, MARTINI_GUIDE_NOTES[3]], // dirty-to-filthy, after Filthy
 ]);
 
 export const getMartiniIndexRows = (
