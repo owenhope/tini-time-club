@@ -37,6 +37,7 @@ import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { RANK_TIERS, getRankTier } from "@/utils/ranking";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
+import VisitorProfile from "@/components/profile/visitor-profile";
 
 interface RankPreviewOption {
   label: string;
@@ -55,7 +56,7 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
   })),
 ];
 
-const Profile = () => {
+const MemberProfile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile, refreshProfile } = useProfile();
@@ -641,5 +642,11 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.onInk,
   },
 }));
+
+const Profile = () => {
+  const { profile, loading } = useProfile();
+  if (loading) return null;
+  return profile ? <MemberProfile /> : <VisitorProfile />;
+};
 
 export default Profile;

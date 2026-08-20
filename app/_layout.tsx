@@ -34,6 +34,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
+import { MembershipProvider } from "@/context/membership-context";
 import { ActivityProvider } from "@/context/activity-context";
 import { ThemeProvider, typography, useTheme } from "@/theme";
 import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
@@ -46,6 +47,13 @@ import { retryPendingPushUnregistrationAsync } from "@/services/pushNotification
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
+import {
+  acceptVisitorPreview,
+  clearPendingMembershipReturn,
+  consumePendingMembershipReturn,
+  getPendingMembershipReturn,
+  hasAcceptedVisitorPreview,
+} from "@/services/visitor-session";
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -55,6 +63,7 @@ const isOnboardingExemptPath = (path: string) =>
   path === "/" ||
   path === "/welcome" ||
   path === "/onboarding" ||
+  path === "/membership" ||
   path === "/sign-in" ||
   path === "/sign-up" ||
   path.startsWith("/auth");
@@ -76,6 +85,8 @@ const getAuthenticatedDefaultRoute = (profile: Profile | null) => {
 type InitialAuthResolution = {
   session: Session | null;
   shouldChooseDefaultRoute: boolean;
+  visitorPreviewAccepted: boolean;
+  membershipReturnPath: string | null;
 };
 
 /**
@@ -153,11 +164,13 @@ function RootLayout() {
             editor are presented over the tabs from the root stack, and they
             need the same signed-in member the tabs do. */}
         <ProfileProvider>
-          <ActivityProvider>
-            <ShareMenuProvider>
-              <RootLayoutNav />
-            </ShareMenuProvider>
-          </ActivityProvider>
+          <MembershipProvider>
+            <ActivityProvider>
+              <ShareMenuProvider>
+                <RootLayoutNav />
+              </ShareMenuProvider>
+            </ActivityProvider>
+          </MembershipProvider>
         </ProfileProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
@@ -193,18 +206,22 @@ export function RootLayoutNav() {
     string | null
   >(null);
   const isStartupResolved = Boolean(
-    fontsLoaded &&
-    initialAuth &&
-    (!initialAuth.session || !profileLoading || profileError)
+    fontsLoaded && initialAuth && (!profileLoading || profileError)
   );
   const startupTarget = (() => {
     if (!isStartupResolved || !initialAuth) return null;
-    if (!initialAuth.session) return routes.welcome();
+    if (!initialAuth.session) {
+      if (!initialAuth.shouldChooseDefaultRoute) return null;
+      return initialAuth.visitorPreviewAccepted
+        ? routes.home()
+        : routes.welcome();
+    }
     if (profileError) return null;
 
     const authenticatedTarget = getAuthenticatedDefaultRoute(profile);
     if (authenticatedTarget !== routes.home()) return authenticatedTarget;
-    return initialAuth.shouldChooseDefaultRoute ? authenticatedTarget : null;
+    if (!initialAuth.shouldChooseDefaultRoute) return null;
+    return initialAuth.membershipReturnPath ?? authenticatedTarget;
   })();
   const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
@@ -301,9 +318,16 @@ export function RootLayoutNav() {
       return;
     }
 
-    const target = getAuthenticatedDefaultRoute(profile);
     setPendingSignedInUserId(null);
-    if (pathname !== target) router.replace(target);
+    void (async () => {
+      const defaultTarget = getAuthenticatedDefaultRoute(profile);
+      const pending =
+        defaultTarget === routes.home()
+          ? await consumePendingMembershipReturn().catch(() => null)
+          : null;
+      const target = pending?.returnTo ?? defaultTarget;
+      if (pathname !== target) router.replace(target as never);
+    })();
   }, [
     isReady,
     pathname,
@@ -314,8 +338,9 @@ export function RootLayoutNav() {
     router,
   ]);
 
-  // Startup is resolved only after both the persisted session and, for a
-  // signed-in member, the profile fields that determine onboarding are known.
+  // Startup is resolved only after both persisted auth and profile state are
+  // known. Visitor tabs also depend on profile=null, so revealing Home before
+  // that read finishes would create a blank frame beneath the native splash.
   // Until this point RootLayoutNav returns null, leaving the native splash in
   // place and keeping every route screen unmounted. Once the navigator exists,
   // keep that splash up until the selected route is the current route.
@@ -329,8 +354,12 @@ export function RootLayoutNav() {
     }
 
     if (startupTarget && pathname !== startupTarget) {
-      router.replace(startupTarget);
+      router.replace(startupTarget as never);
       return;
+    }
+
+    if (startupTarget && startupTarget === initialAuth?.membershipReturnPath) {
+      void clearPendingMembershipReturn().catch(() => {});
     }
 
     void SplashScreen.hideAsync().finally(() => {
@@ -343,6 +372,7 @@ export function RootLayoutNav() {
     rootNavigationState?.key,
     router,
     startupTarget,
+    initialAuth?.membershipReturnPath,
   ]);
 
   useEffect(() => {
@@ -403,9 +433,16 @@ export function RootLayoutNav() {
 
       hasHandledInitialSession.current = true;
       authSessionRef.current = session;
+      const pendingMembership = session
+        ? await getPendingMembershipReturn().catch(() => null)
+        : null;
       setInitialAuth({
         session,
         shouldChooseDefaultRoute: !deepLinkRouted,
+        visitorPreviewAccepted: session
+          ? true
+          : await hasAcceptedVisitorPreview().catch(() => false),
+        membershipReturnPath: pendingMembership?.returnTo ?? null,
       });
     };
 
@@ -439,7 +476,8 @@ export function RootLayoutNav() {
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(null);
         } else {
-          router.replace(routes.welcome());
+          await acceptVisitorPreview().catch(() => {});
+          router.replace(routes.home());
         }
       }
     });
@@ -554,6 +592,16 @@ export function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
         <Stack.Screen name="welcome" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "none" }} />
+        <Stack.Screen
+          name="membership"
+          options={{
+            presentation: "formSheet",
+            gestureEnabled: false,
+            sheetGrabberVisible: false,
+            sheetAllowedDetents: [0.72, 1],
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
         {/* Composing is a task, not a place: presented over whatever you
             were looking at, so cancelling returns you there instead of
             leaving a half-written draft parked in a tab. */}

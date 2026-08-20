@@ -30,7 +30,11 @@ type AnalyticEventType =
   | "activity_notification_open"
   | "activity_follow_back"
   | "activity_page_load"
-  | "activity_load_error";
+  | "activity_load_error"
+  | "visitor_preview_started"
+  | "membership_gate_opened"
+  | "membership_gate_dismissed"
+  | "membership_auth_started";
 
 const AnalyticService = {
   capture: (event: AnalyticEventType, properties?: Record<string, any>) => {

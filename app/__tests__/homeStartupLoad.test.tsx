@@ -43,6 +43,14 @@ jest.mock("@/context/profile-context", () => ({
   }),
 }));
 
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
+}));
+
 jest.mock("@/context/activity-context", () => ({
   useActivity: () => ({
     unseenCount: 0,

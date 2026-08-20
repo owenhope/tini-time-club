@@ -25,6 +25,7 @@ import CelebrationModal from "@/components/CelebrationModal";
 import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
 import { AppText, Button } from "@/components/shared";
 import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
@@ -70,12 +71,7 @@ interface ReviewFormValues {
 type Option = { id: number; name: string };
 
 type ReviewQuestionKey =
-  | "location"
-  | "spirit"
-  | "type"
-  | "taste"
-  | "presentation"
-  | "comment";
+  "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
 
 const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Where was this served?", key: "location" },
@@ -190,7 +186,7 @@ const ReviewPreview = ({
   );
 };
 
-export default function App() {
+function ReviewComposer() {
   const styles = useStyles();
   const { colors } = useTheme();
   const [photo, setPhoto] = useState<string | null>(null);
@@ -1025,6 +1021,22 @@ export default function App() {
       )}
     </>
   );
+}
+
+export default function ReviewScreen() {
+  const { profile, loading } = useProfile();
+  const { openMembership } = useMembership();
+  const hasPrompted = React.useRef(false);
+
+  useEffect(() => {
+    if (!loading && !profile && !hasPrompted.current) {
+      hasPrompted.current = true;
+      openMembership("review");
+    }
+  }, [loading, openMembership, profile]);
+
+  if (loading || !profile) return null;
+  return <ReviewComposer />;
 }
 
 const useStyles = makeStyles((t) => ({

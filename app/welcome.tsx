@@ -9,6 +9,9 @@ import { StatusBar } from "expo-status-bar";
 import { Button, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
+import { acceptVisitorPreview } from "@/services/visitor-session";
+import { reportError } from "@/utils/log";
+import AnalyticService from "@/services/analyticsService";
 
 const FEATURES = [
   {
@@ -45,6 +48,17 @@ const Welcome = () => {
       background: colors.like,
       icon: "#FFFFFF",
     },
+  };
+
+  const exploreAsVisitor = async () => {
+    AnalyticService.capture("visitor_preview_started", { source: "welcome" });
+    try {
+      await acceptVisitorPreview();
+    } catch (error) {
+      // Persistence improves the next launch, but it must never block this one.
+      reportError("Unable to remember visitor preview choice:", error);
+    }
+    router.replace(routes.home());
   };
 
   return (
@@ -110,14 +124,25 @@ const Welcome = () => {
 
         <View style={styles.footer}>
           <Button
-            title="Continue"
-            onPress={() => router.push(routes.auth())}
+            title="EXPLORE THE CLUB"
+            onPress={() => void exploreAsVisitor()}
             variant="primary"
             size="large"
             fullWidth
             icon="chevron-forward"
             iconPosition="right"
           />
+          <Button
+            title="JOIN OR SIGN IN"
+            onPress={() => router.push(routes.auth())}
+            variant="onInk"
+            size="large"
+            fullWidth
+          />
+          <Text style={styles.legalCopy}>
+            By continuing, you confirm you are of legal drinking age and agree
+            to the Terms and Privacy Policy.
+          </Text>
         </View>
       </SafeAreaView>
     </View>
@@ -190,7 +215,13 @@ const useStyles = makeStyles((t) => ({
     textShadowRadius: 4,
   },
   footer: {
+    gap: t.spacing.sm,
     paddingBottom: t.spacing.lg,
+  },
+  legalCopy: {
+    ...t.typography.caption,
+    color: t.colors.textOnImage,
+    textAlign: "center" as const,
   },
 }));
 

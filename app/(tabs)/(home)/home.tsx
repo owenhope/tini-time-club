@@ -30,6 +30,7 @@ import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 import { useActivity } from "@/context/activity-context";
+import { useMembership } from "@/context/membership-context";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -60,6 +61,7 @@ function Home() {
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
   const { unseenCount, refreshUnseenCount } = useActivity();
+  const { requireMembership } = useMembership();
   const showActivityDot = unseenCount > 0;
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -132,7 +134,6 @@ function Home() {
       sourceOverride: FeedSource = feedSource,
       bypassCache = refresh
     ) => {
-      if (!profile) return;
       const source = isScreenshotFeed ? "club" : sourceOverride;
 
       // Prevent rapid successive calls
@@ -180,7 +181,7 @@ function Home() {
 
         const reviewsPromise = databaseService.getReviews({
           userId: screenshotUserId,
-          currentUserId: profile.id,
+          currentUserId: profile?.id,
           followedOnly: source === "people",
           limit: PAGE_SIZE,
           offset: start,
@@ -293,7 +294,7 @@ function Home() {
       // unconditionally cleared the caches and reset scroll position every
       // time the user tabbed away and back, even seconds later.
       const isStale = Date.now() - lastRefreshTime > FOCUS_REFRESH_AFTER;
-      if (profile?.id && (reviews.length === 0 || isStale)) {
+      if (reviews.length === 0 || isStale) {
         // Silent: the stale content is already visible; swap it in place
         // instead of flashing a spinner on every return to the feed.
         loadReviews(true, reviews.length > 0);
@@ -327,6 +328,7 @@ function Home() {
   }, [loadingMore, hasMore, refreshing, loadReviews]);
 
   const toggleFeedSource = useCallback(() => {
+    if (!requireMembership("people-feed")) return;
     const nextSource: FeedSource = feedSource === "club" ? "people" : "club";
     setFeedSource(nextSource);
     setReviews([]);
@@ -335,7 +337,7 @@ function Home() {
     setLoading(true);
     void loadReviews(true, true, nextSource, false);
     requestAnimationFrame(scrollToTop);
-  }, [feedSource, loadReviews, scrollToTop]);
+  }, [feedSource, loadReviews, requireMembership, scrollToTop]);
 
   // Check if username is unique
   const checkUsernameUnique = async (username: string) => {
@@ -470,8 +472,8 @@ function Home() {
   }, [router]);
 
   const navigateToReview = useCallback(() => {
-    router.navigate(routes.review());
-  }, [router]);
+    if (requireMembership("review")) router.navigate(routes.review());
+  }, [requireMembership, router]);
 
   const navigateToDiscover = useCallback(() => {
     router.navigate(routes.discover({ view: "members" }));
@@ -760,7 +762,11 @@ function Home() {
             icon: "heart-outline",
             iconColor: colors.onInk,
             showNotificationDot: showActivityDot,
-            onPress: () => router.push(routes.activity()),
+            onPress: () => {
+              if (requireMembership("activity")) {
+                router.push(routes.activity());
+              }
+            },
             accessibilityLabel: showActivityDot
               ? "Activity, new notifications"
               : "Activity",

@@ -37,6 +37,7 @@ import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
+import { useMembership } from "@/context/membership-context";
 import {
   areReviewItemPropsEqual,
   type ReviewItemMemoProps,
@@ -167,7 +168,11 @@ const useLikes = (
 };
 
 // Custom hook for comments management - lazy loaded
-const useComments = (reviewId: string, lazyLoad: boolean = true) => {
+const useComments = (
+  reviewId: string,
+  lazyLoad: boolean = true,
+  currentUserId?: string
+) => {
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -176,7 +181,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
     if (hasLoaded) return; // Don't refetch if already loaded
     try {
       setLoading(true);
-      const data = await databaseService.getComments(reviewId);
+      const data = await databaseService.getComments(reviewId, currentUserId);
       setComments(data || []);
       setHasLoaded(true);
     } catch (error) {
@@ -184,7 +189,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
     } finally {
       setLoading(false);
     }
-  }, [reviewId, hasLoaded]);
+  }, [reviewId, currentUserId, hasLoaded]);
 
   const addComment = useCallback((newComment: any) => {
     // Idempotent: the parent's _commentPatch is re-applied whenever a
@@ -722,6 +727,7 @@ const ReviewItemComponent = ({
   previewMode = false,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
+  const { requireMembership } = useMembership();
   const styles = useStyles();
   const { colors } = useTheme();
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -733,7 +739,7 @@ const ReviewItemComponent = ({
   }>({ reviewId: review.id, overrides: {} });
   const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
-  const handleShare = useReviewShareMenu(review);
+  const shareReview = useReviewShareMenu(review);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -744,7 +750,15 @@ const ReviewItemComponent = ({
   );
 
   const { comments, addComment, removeComment, fetchComments, hasLoaded } =
-    useComments(review.id, true);
+    useComments(review.id, true, profile?.id);
+
+  const handleShare = useCallback(() => {
+    if (requireMembership("share-review")) shareReview();
+  }, [requireMembership, shareReview]);
+
+  const handleShowLikes = useCallback(() => {
+    if (requireMembership("social-list")) onShowLikes(review.id);
+  }, [onShowLikes, requireMembership, review.id]);
 
   // Comment bodies are only needed once the user actually looks at them. The
   // count shown in the footer comes with the feed row, so the previous
@@ -769,7 +783,11 @@ const ReviewItemComponent = ({
 
   const handleToggleCommentLike = useCallback(
     async (comment: Comment) => {
-      if (!profile || pendingCommentLikes.current.has(comment.id)) return;
+      if (!profile) {
+        requireMembership("like-comment");
+        return;
+      }
+      if (pendingCommentLikes.current.has(comment.id)) return;
 
       const wasLiked = Boolean(comment.has_liked);
       const previousCount = comment.likes_count ?? 0;
@@ -818,7 +836,13 @@ const ReviewItemComponent = ({
         pendingCommentLikes.current.delete(comment.id);
       }
     },
-    [profile, review.id, review.location?.id, review.location?.name]
+    [
+      profile,
+      requireMembership,
+      review.id,
+      review.location?.id,
+      review.location?.name,
+    ]
   );
 
   const loadCommentsIfNeeded = useCallback(() => {
@@ -838,7 +862,10 @@ const ReviewItemComponent = ({
 
   // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
-    if (!profile) return;
+    if (!profile) {
+      requireMembership("like-review");
+      return;
+    }
 
     const wasLiked = hasLiked;
     await toggleLike();
@@ -853,6 +880,7 @@ const ReviewItemComponent = ({
     }
   }, [
     profile,
+    requireMembership,
     hasLiked,
     toggleLike,
     review.id,
@@ -993,7 +1021,7 @@ const ReviewItemComponent = ({
               void handleToggleCommentLike(comment)
             }
             onToggleLike={handleToggleLike}
-            onShowLikes={onShowLikes}
+            onShowLikes={() => handleShowLikes()}
             onShowComments={onShowComments}
             onShare={handleShare}
             onCommentAdded={onCommentAdded}
@@ -1011,7 +1039,9 @@ const ReviewItemComponent = ({
         onDelete={onDelete}
         onEdit={onEdit}
         onShare={handleShare}
-        onReport={() => setReportModalVisible(true)}
+        onReport={() => {
+          if (requireMembership("report")) setReportModalVisible(true);
+        }}
         isOwnReview={isOwnReview}
       />
 

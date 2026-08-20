@@ -43,6 +43,8 @@ import {
   type ExploreLocationState,
 } from "@/components/explore/useExploreLocation";
 import { ExploreSearchArea } from "@/components/explore/ExploreSearchField";
+import { useProfile } from "@/context/profile-context";
+import { publicContentService } from "@/services/public-content-service";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -158,6 +160,7 @@ function ExploreMap({
 }: ExploreMapProps) {
   const styles = useStyles();
   const { isDark } = useTheme();
+  const { profile } = useProfile();
   const tabBarContentInset = useNativeTabBarContentInset();
   const screenshotSeed = getScreenshotSeed(focus.screenshotSeed);
   const isScreenshotMap =
@@ -485,12 +488,22 @@ function ExploreMap({
     const requestId = ++fetchRequestRef.current;
 
     const fetchTimer = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("locations_in_view", {
-        min_lat: queryBounds.minLat,
-        min_long: queryBounds.minLong,
-        max_lat: queryBounds.maxLat,
-        max_long: queryBounds.maxLong,
-      });
+      const { data, error } = profile
+        ? await supabase.rpc("locations_in_view", {
+            min_lat: queryBounds.minLat,
+            min_long: queryBounds.minLong,
+            max_lat: queryBounds.maxLat,
+            max_long: queryBounds.maxLong,
+          })
+        : await publicContentService
+            .getLocationsInView({
+              minLat: queryBounds.minLat,
+              minLong: queryBounds.minLong,
+              maxLat: queryBounds.maxLat,
+              maxLong: queryBounds.maxLong,
+            })
+            .then((data) => ({ data, error: null }))
+            .catch((error) => ({ data: null, error }));
 
       if (requestId !== fetchRequestRef.current) return;
 
@@ -520,7 +533,7 @@ function ExploreMap({
         fetchRequestRef.current += 1;
       }
     };
-  }, [enabled, locationResolved, region]);
+  }, [enabled, locationResolved, profile, region]);
 
   return (
     <View style={styles.screen}>

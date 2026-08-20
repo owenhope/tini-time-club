@@ -49,6 +49,14 @@ jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({ profile: { id: "viewer-1" } }),
 }));
 
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
+}));
+
 jest.mock("@/services/databaseService", () => ({
   __esModule: true,
   default: { getComments: jest.fn() },

@@ -46,6 +46,14 @@ jest.mock("@/context/profile-context", () => ({
   }),
 }));
 
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
+}));
+
 jest.mock("@/theme", () => ({
   fonts: { medium: "medium", semibold: "semibold" },
   typography: {

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
@@ -42,6 +43,7 @@ const EditProfile = () => {
     useState<FavoriteLocationValue | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
@@ -60,6 +62,7 @@ const EditProfile = () => {
       if (profile) {
         setName(profile.name || "");
         setBio(profile.bio || "");
+        setIsPublic(profile.is_public ?? true);
 
         // Handle favorite_spirits (could be array or JSON string)
         let favoriteSpirits = [];
@@ -141,6 +144,7 @@ const EditProfile = () => {
         favorite_spirits: selectedSpirits,
         favorite_types: selectedTypes,
         favorite_location_id: favoriteLocation?.id ?? null,
+        is_public: isPublic,
       });
 
       // Refresh profile context
@@ -233,6 +237,26 @@ const EditProfile = () => {
             }
           />
 
+          <View style={styles.privacyRow}>
+            <View style={styles.privacyCopy}>
+              <Text style={styles.privacyTitle}>Visible to visitors</Text>
+              <Text style={styles.privacyBody}>
+                Let signed-out visitors discover your profile and published
+                reviews. Turning this off keeps them visible to members only.
+              </Text>
+            </View>
+            <Switch
+              value={isPublic}
+              onValueChange={setIsPublic}
+              trackColor={{
+                false: colors.disabledSurface,
+                true: colors.accentSubtle,
+              }}
+              thumbColor={isPublic ? colors.accent : colors.textMuted}
+              accessibilityLabel="Visible to signed-out visitors"
+            />
+          </View>
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
@@ -280,6 +304,28 @@ const useStyles = makeStyles((t) => ({
   content: {
     flex: 1,
     padding: 20,
+  },
+  privacyRow: {
+    minHeight: 72,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.lg,
+    marginTop: t.spacing.xl,
+    padding: t.spacing.lg,
+    borderRadius: t.radius.card,
+    backgroundColor: t.colors.background,
+  },
+  privacyCopy: {
+    flex: 1,
+    gap: t.spacing.xs,
+  },
+  privacyTitle: {
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
+  },
+  privacyBody: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
   },
   // Field labels are utility type: the system reserves uppercase tracking
   // for exactly this and keeps sentence case for content.

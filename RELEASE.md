@@ -75,6 +75,23 @@ npm run release:testflight
 `preview-adhoc` exists for the occasional ad-hoc install on a registered
 device without going through TestFlight review.
 
+### 4.0 visitor-preview backend
+
+Version 4.0 depends on the `is_public` profile migration and the sanitized
+`public-content` Edge Function. Apply both to development and production
+before distributing the app; otherwise signed-out Feed, Explore, profiles,
+locations, and private review media will fail to load.
+
+```bash
+supabase db push
+supabase functions deploy public-content --no-verify-jwt
+```
+
+The function deliberately accepts an anon-key request, then exposes only its
+explicit public projection. Raw profile/review/comment tables and the private
+review image bucket remain unavailable to anonymous clients. Existing and new
+profiles default to visitor-visible; members can opt out in Edit Profile.
+
 ## OTA updates
 
 Channels map 1:1 to environments. An update only reaches builds whose
@@ -165,9 +182,11 @@ branch after pre-3.2 builds are retired.
 
 Tini Time Club collects account, profile, review, comment, photo, favorite
 place, notification, and nearby-discovery data to operate the app and measure
-product usage. If App Store Connect marks any collected data type as being
-used to track users, the iOS app must include App Tracking Transparency and
-must request permission before that tracking use.
+product usage. Public profiles and their published reviews may also be shown
+to signed-out visitors unless the member disables visitor visibility. If App
+Store Connect marks any collected data type as being used to track users, the
+iOS app must include App Tracking Transparency and must request permission
+before that tracking use.
 
 The ATT prompt is configured through `expo-tracking-transparency` in
 `app.config.ts` and requested once from the root layout. If App Review rejects

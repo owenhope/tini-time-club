@@ -28,6 +28,8 @@ import {
 import { reportError } from "@/utils/log";
 import { logReviewShare, publicReviewUrl } from "@/utils/reviewShare";
 import { routes, type ReviewShareFormat } from "@/utils/routes";
+import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
 
 const DEFAULT_POSITION: ReviewSharePhotoPosition = { x: 0, y: 0 };
 const INSTAGRAM_EXPORT_WIDTH = 1080;
@@ -37,7 +39,7 @@ const INSTAGRAM_EXPORT_HEIGHT: Record<ReviewShareFormat, number> = {
 };
 const STORY_ARTWORK_SCALE = 0.96;
 
-export default function ReviewSharePreviewScreen() {
+function MemberReviewSharePreviewScreen() {
   const params = useLocalSearchParams<{
     reviewId?: string;
   }>();
@@ -64,6 +66,7 @@ export default function ReviewSharePreviewScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { colors } = useTheme();
   const styles = useStyles();
+  const { profile } = useProfile();
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +79,7 @@ export default function ReviewSharePreviewScreen() {
       }
 
       try {
-        const data = await databaseService.getReview(reviewId);
+        const data = await databaseService.getReview(reviewId, profile?.id);
         if (!cancelled) {
           setReview(data);
           setError(null);
@@ -93,7 +96,7 @@ export default function ReviewSharePreviewScreen() {
     return () => {
       cancelled = true;
     };
-  }, [reviewId]);
+  }, [profile?.id, reviewId]);
 
   useEffect(() => {
     if (!review || trackedFormats.current.has(format)) return;
@@ -321,6 +324,22 @@ export default function ReviewSharePreviewScreen() {
       </View>
     </View>
   );
+}
+
+export default function ReviewSharePreviewScreen() {
+  const { profile, loading } = useProfile();
+  const { openMembership } = useMembership();
+  const hasPrompted = useRef(false);
+
+  useEffect(() => {
+    if (!loading && !profile && !hasPrompted.current) {
+      hasPrompted.current = true;
+      openMembership("share-review");
+    }
+  }, [loading, openMembership, profile]);
+
+  if (loading || !profile) return null;
+  return <MemberReviewSharePreviewScreen />;
 }
 
 const useStyles = makeStyles((t) => ({

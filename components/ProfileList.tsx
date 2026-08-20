@@ -15,6 +15,7 @@ import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { setFollowing } from "@/services/followService";
+import { useMembership } from "@/context/membership-context";
 export interface ProfileType {
   id: string;
   username: string;
@@ -40,6 +41,7 @@ export default function ProfileList({
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, loading: profileLoading } = useProfile();
+  const { requireMembership } = useMembership();
   const profileId = profile?.id;
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [followStateReady, setFollowStateReady] = useState(false);
@@ -87,7 +89,10 @@ export default function ProfileList({
 
   // Toggle follow/unfollow action.
   const toggleFollow = async (targetProfileId: string) => {
-    if (!profile) return;
+    if (!profile) {
+      requireMembership("follow");
+      return;
+    }
     // Prevent duplicate requests.
     if (updatingFollowIds.includes(targetProfileId)) return;
 

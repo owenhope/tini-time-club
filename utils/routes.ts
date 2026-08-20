@@ -63,6 +63,11 @@ export type DiscoverParams = {
 
 export type ReviewShareFormat = "story" | "post";
 
+export type MembershipParams = {
+  intent: string;
+  returnTo?: string;
+};
+
 export const routes = {
   /** Welcome / sign-in landing screen. */
   welcome: () => "/welcome" as const satisfies Href,
@@ -81,6 +86,10 @@ export const routes = {
 
   /** One-time new-member setup and EULA flow. */
   onboarding: () => "/onboarding" as const satisfies Href,
+
+  /** Contextual visitor-to-member prompt. */
+  membership: (params: MembershipParams) =>
+    ({ pathname: "/membership", params }) as unknown as Href,
 
   /** Password reset screen (recovery deep links land here). */
 

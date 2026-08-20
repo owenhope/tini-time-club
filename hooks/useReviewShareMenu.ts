@@ -12,14 +12,17 @@ import {
   getReviewShareMenuActions,
   type ReviewShareMenuAction,
 } from "@/utils/reviewShareMenu";
+import { useMembership } from "@/context/membership-context";
 
 /** Presents the review's complete share menu from every existing share icon. */
 export const useReviewShareMenu = (review: Review | null) => {
   const router = useRouter();
   const showShareMenu = useShareMenuSheet();
+  const { requireMembership } = useMembership();
 
   return useCallback(() => {
     if (!review) return;
+    if (!requireMembership("share-review")) return;
 
     const actions = getReviewShareMenuActions();
 
@@ -56,5 +59,5 @@ export const useReviewShareMenu = (review: Review | null) => {
         onPress: () => runAction(action),
       })),
     });
-  }, [review, router, showShareMenu]);
+  }, [requireMembership, review, router, showShareMenu]);
 };

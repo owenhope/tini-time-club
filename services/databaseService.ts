@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase";
+import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
 import type {
   Comment,
@@ -209,6 +210,16 @@ class DatabaseService {
     const reviews = await this.query<any[]>(
       cacheKey,
       async () => {
+        if (!currentUserId) {
+          if (followedOnly) return [];
+          return publicContentService.getFeed({
+            userId,
+            locationId,
+            limit,
+            offset,
+          });
+        }
+
         // One round trip: the feed_reviews function joins locations/spirits/
         // types/profiles and computes likes_count, comments_count and
         // has_liked server-side, and does the blocked/deleted filtering in
@@ -228,6 +239,11 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION, forceRefresh }
     );
+
+    // Visitor rows already carry short-lived, transformed signed URLs from
+    // the public-content gateway. Attempting to sign them again would treat a
+    // URL as a storage path and fail under the intentionally locked anon role.
+    if (!currentUserId) return reviews ?? [];
 
     // Hydrate image paths into signed URLs on the way out — after the cache,
     // because signed URLs expire on their own schedule. Every review surface
@@ -349,7 +365,13 @@ class DatabaseService {
    * Get one public review by id. Used by shared web/deep links, so it does not
    * require an authenticated viewer; engagement fields are still populated.
    */
-  async getReview(reviewId: string | number): Promise<Review> {
+  async getReview(
+    reviewId: string | number,
+    currentUserId?: string
+  ): Promise<Review> {
+    if (!currentUserId) {
+      return publicContentService.getReview(reviewId);
+    }
     const review = await this.query<any>(
       `review_${reviewId}`,
       async () => {
@@ -585,7 +607,13 @@ class DatabaseService {
   /**
    * Get comments for a review
    */
-  async getComments(reviewId: string): Promise<Comment[]> {
+  async getComments(
+    reviewId: string,
+    currentUserId?: string
+  ): Promise<Comment[]> {
+    if (!currentUserId) {
+      return publicContentService.getComments(reviewId);
+    }
     const { data, error } = await supabase.rpc("get_review_comments", {
       p_review_id: Number(reviewId),
     });
@@ -758,7 +786,13 @@ class DatabaseService {
   /**
    * Get location by ID
    */
-  async getLocation(locationId: string): Promise<LocationRating> {
+  async getLocation(
+    locationId: string,
+    currentUserId?: string
+  ): Promise<LocationRating> {
+    if (!currentUserId) {
+      return publicContentService.getLocation(locationId);
+    }
     return this.query(
       `location_${locationId}`,
       async () => {
@@ -773,6 +807,11 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
+  }
+
+  /** Public profile projection used only while no member session exists. */
+  async getPublicProfileByUsername(username: string) {
+    return publicContentService.getProfile(username);
   }
 
   /**

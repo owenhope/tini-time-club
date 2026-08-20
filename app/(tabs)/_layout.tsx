@@ -18,6 +18,7 @@ import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
+import { useMembership } from "@/context/membership-context";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -33,6 +34,7 @@ const LayoutContent = () => {
   const { profile, loading } = useProfile();
   const { colors } = useTheme();
   const router = useRouter();
+  const { requireMembership } = useMembership();
   const pathname = usePathname();
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
@@ -97,7 +99,7 @@ const LayoutContent = () => {
     }
   }, [loading, profile, router]);
 
-  if (loading || !profile || !profile.username || !profile.eula_accepted) {
+  if (loading || (profile && (!profile.username || !profile.eula_accepted))) {
     return null;
   }
 
@@ -162,7 +164,7 @@ const LayoutContent = () => {
         accessibilityLabel="Log a martini"
         listeners={{
           tabPress: () => {
-            router.push(routes.review());
+            if (requireMembership("review")) router.push(routes.review());
           },
         }}
         contentStyle={{ backgroundColor: colors.background }}

@@ -11,13 +11,16 @@ import {
   getShareDestinationActions,
   type ShareDestinationAction,
 } from "@/utils/shareDestinations";
+import { useMembership } from "@/context/membership-context";
 
 /** Presents the venue share menu from location header actions. */
 export const useLocationShareMenu = (location: ShareableLocation | null) => {
   const showShareMenu = useShareMenuSheet();
+  const { requireMembership } = useMembership();
 
   return useCallback(() => {
     if (!location) return;
+    if (!requireMembership("share-location")) return;
 
     const actions = getShareDestinationActions();
 
@@ -56,5 +59,5 @@ export const useLocationShareMenu = (location: ShareableLocation | null) => {
         onPress: () => runAction(action),
       })),
     });
-  }, [location, showShareMenu]);
+  }, [location, requireMembership, showShareMenu]);
 };

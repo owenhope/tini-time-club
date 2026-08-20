@@ -24,6 +24,8 @@ import {
   ExploreSearchArea,
   ExploreSearchField,
 } from "@/components/explore/ExploreSearchField";
+import { useProfile } from "@/context/profile-context";
+import { publicContentService } from "@/services/public-content-service";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -71,6 +73,7 @@ export default function ExploreLists({
 }: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const { profile } = useProfile();
   const activeTab = activeView === "members" ? "profiles" : "locations";
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -115,36 +118,84 @@ export default function ExploreLists({
     return R * c; // Distance in kilometers
   };
 
-  const fetchProfiles = async (searchQuery: string) => {
-    setLoading(true);
-    try {
-      // Ranked and filtered in SQL. This previously downloaded every profile,
-      // every published review and every follower row to count them locally.
-      const { data, error } = await supabase.rpc("top_profiles", {
-        p_limit: 50,
-        p_search: searchQuery || null,
-      });
+  const fetchProfiles = React.useCallback(
+    async (searchQuery: string) => {
+      setLoading(true);
+      try {
+        // Ranked and filtered in SQL. This previously downloaded every profile,
+        // every published review and every follower row to count them locally.
+        if (!profile) {
+          setProfiles(await publicContentService.getProfiles(searchQuery, 50));
+          return;
+        }
 
-      if (error) {
+        const { data, error } = await supabase.rpc("top_profiles", {
+          p_limit: 50,
+          p_search: searchQuery || null,
+        });
+
+        if (error) {
+          reportError("Error fetching profiles:", error);
+          setProfiles([]);
+          return;
+        }
+
+        setProfiles(data ?? []);
+      } catch (error) {
         reportError("Error fetching profiles:", error);
         setProfiles([]);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      setProfiles(data ?? []);
-    } catch (error) {
-      reportError("Error fetching profiles:", error);
-      setProfiles([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [profile]
+  );
 
   const fetchLocations = React.useCallback(
     async (searchQuery: string) => {
       setLoading(true);
       try {
         if (!searchQuery) {
+          if (!profile) {
+            const data = await publicContentService.getLocations(undefined, 50);
+            let processedLocations = data.map((location) => ({
+              id: location.id,
+              name: location.name,
+              address: location.address,
+              latitude: location.lat,
+              longitude: location.lon,
+              rating: location.rating,
+              taste_avg: location.taste_avg,
+              presentation_avg: location.presentation_avg,
+              total_ratings: location.total_ratings,
+            }));
+
+            if (nearbyEnabled && userLocation) {
+              processedLocations = processedLocations.filter((location) =>
+                location.latitude && location.longitude
+                  ? calculateDistance(
+                      userLocation.latitude,
+                      userLocation.longitude,
+                      location.latitude,
+                      location.longitude
+                    ) <= 50
+                  : false
+              );
+            }
+
+            const visibleLocations = processedLocations
+              .filter((location) => (location.total_ratings || 0) >= 2)
+              .sort((a, b) => {
+                const ratingDiff = (b.rating || 0) - (a.rating || 0);
+                return ratingDiff !== 0
+                  ? ratingDiff
+                  : (b.total_ratings || 0) - (a.total_ratings || 0);
+              })
+              .slice(0, 20);
+            setLocations(await withRegulars(visibleLocations));
+            return;
+          }
+
           // Use the location_ratings view which already includes coordinates
           const { data, error } = await supabase
             .from("location_ratings")
@@ -227,6 +278,33 @@ export default function ExploreLists({
 
           setLocations(await withRegulars(sortedLocations));
         } else {
+          if (!profile) {
+            const data = await publicContentService.getLocations(
+              searchQuery,
+              20
+            );
+            setLocations(
+              await withRegulars(
+                data.map((location) => ({
+                  id: location.id,
+                  name: location.name,
+                  address: location.address,
+                  latitude: location.lat,
+                  longitude: location.lon,
+                  rating: location.total_ratings > 0 ? location.rating : null,
+                  taste_avg:
+                    location.total_ratings > 0 ? location.taste_avg : null,
+                  presentation_avg:
+                    location.total_ratings > 0
+                      ? location.presentation_avg
+                      : null,
+                  total_ratings: location.total_ratings,
+                }))
+              )
+            );
+            return;
+          }
+
           // Server-side fuzzy search: matches name or address, tolerates
           // typos via trigram similarity, and ranks name hits first.
           const { data: locationsData, error: locationsError } =
@@ -269,7 +347,7 @@ export default function ExploreLists({
         setLoading(false);
       }
     },
-    [nearbyEnabled, userLocation]
+    [nearbyEnabled, profile, userLocation]
   );
 
   React.useEffect(() => {
@@ -293,7 +371,15 @@ export default function ExploreLists({
     );
 
     return () => clearTimeout(handle);
-  }, [activeTab, enabled, fetchLocations, query, nearbyEnabled, userLocation]);
+  }, [
+    activeTab,
+    enabled,
+    fetchLocations,
+    fetchProfiles,
+    query,
+    nearbyEnabled,
+    userLocation,
+  ]);
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = item.review_count || 0;

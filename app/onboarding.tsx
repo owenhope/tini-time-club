@@ -37,6 +37,7 @@ import { unregisterPushNotificationsAsync } from "@/services/pushNotificationSer
 import { clearUserCaches } from "@/utils/signOut";
 import { supabase } from "@/utils/supabase";
 import { routes } from "@/utils/routes";
+import { consumePendingMembershipReturn } from "@/services/visitor-session";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { RANK_TIERS } from "@/utils/ranking";
@@ -239,7 +240,10 @@ export default function Onboarding() {
       }
 
       if (profile.eula_accepted) {
-        router.replace(routes.home());
+        const pending = await consumePendingMembershipReturn().catch(
+          () => null
+        );
+        router.replace((pending?.returnTo ?? routes.home()) as never);
       } else {
         setStep(2);
       }
@@ -277,7 +281,8 @@ export default function Onboarding() {
     try {
       const result = await acceptEULA();
       if (result.error) throw result.error;
-      router.replace(routes.home());
+      const pending = await consumePendingMembershipReturn().catch(() => null);
+      router.replace((pending?.returnTo ?? routes.home()) as never);
     } catch (error) {
       reportError("Error accepting onboarding EULA:", error);
       Alert.alert("Terms unavailable", "Please try accepting the terms again.");
@@ -507,7 +512,6 @@ export default function Onboarding() {
                   style={styles.profileInput}
                   containerStyle={styles.usernameInputContainer}
                 />
-
               </ScrollView>
             </View>
 
