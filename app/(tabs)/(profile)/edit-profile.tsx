@@ -273,6 +273,9 @@ const useStyles = makeStyles((t) => ({
   },
   scrollContent: {
     flexGrow: 1,
+    // The floating native tab bar overlays content; without this the
+    // Cancel/Save row ends up underneath it.
+    paddingBottom: 96,
   },
   content: {
     flex: 1,

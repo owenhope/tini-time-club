@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { makeStyles } from "@/theme";
 
 type Option = {
@@ -38,11 +38,9 @@ const MultiSelectInput = ({
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      {/* Wrapping rows keep every option visible at once — a horizontal
+          scroller hid the tail of the list behind a swipe. */}
+      <View style={styles.optionsWrap}>
         {options.map(({ id, name: optionName }) => {
           const isSelected = selectedIds.includes(id);
 
@@ -65,7 +63,7 @@ const MultiSelectInput = ({
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -80,13 +78,14 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.md,
     color: t.colors.textSecondary,
   },
-  scrollContent: {
-    paddingRight: t.spacing.xl - 4,
+  optionsWrap: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: t.spacing.sm,
   },
   optionButton: {
     paddingVertical: 10,
     paddingHorizontal: t.spacing.lg,
-    marginRight: t.spacing.sm,
     borderRadius: t.radius.pill,
     borderWidth: 1,
     borderColor: t.colors.border,
