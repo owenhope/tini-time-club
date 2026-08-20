@@ -616,7 +616,12 @@ const ReviewFooter = memo(
     // Shared route: resolves inside whichever tab stack is rendering.
     const openProfile = useOpenProfile();
 
+    const { requireMembership } = useMembership();
+
     const handleShowComments = useCallback(() => {
+      // Visitors get the membership CTA straight from the comment button,
+      // not the slider (which only gates posting).
+      if (!requireMembership("comment")) return;
       loadCommentsIfNeeded(); // Ensure comments are loaded before showing
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
     }, [
@@ -625,6 +630,7 @@ const ReviewFooter = memo(
       onCommentAdded,
       onCommentDeleted,
       loadCommentsIfNeeded,
+      requireMembership,
     ]);
 
     const handleShowLikes = useCallback(() => {

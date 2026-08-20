@@ -616,7 +616,9 @@ export function RootLayoutNav() {
           name="membership"
           options={{
             presentation: "formSheet",
-            gestureEnabled: false,
+            // Closable by swiping down or tapping the grabber; the screen's
+            // unmount hook runs the dismissal side-effects for the gesture.
+            gestureEnabled: true,
             sheetGrabberVisible: false,
             sheetAllowedDetents: [0.52, 0.72],
             contentStyle: { backgroundColor: "transparent" },

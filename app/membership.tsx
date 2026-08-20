@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "@/components/nav/AppHeader";
 import { AppText, Button } from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import { makeStyles } from "@/theme";
 import {
   getMembershipPromptCopy,
   getVisitorGatedRouteIntent,
@@ -18,7 +17,6 @@ import AnalyticService from "@/services/analyticsService";
 
 export default function MembershipScreen() {
   const styles = useStyles();
-  const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{
     intent?: string;
@@ -36,8 +34,13 @@ export default function MembershipScreen() {
     ? params.returnTo[0]
     : params.returnTo;
 
+  // Set once a close is handled (tap or auth) so the unmount hook doesn't
+  // double-fire for those paths — it only covers the swipe-down gesture.
+  const closeHandled = useRef(false);
+
   const continueToAuth = async () => {
     if (continuing) return;
+    closeHandled.current = true;
     AnalyticService.capture("membership_auth_started", { intent, returnTo });
     setContinuing(true);
     try {
@@ -52,6 +55,7 @@ export default function MembershipScreen() {
   };
 
   const dismiss = () => {
+    closeHandled.current = true;
     AnalyticService.capture("membership_gate_dismissed", { intent });
     if (returnTo && getVisitorGatedRouteIntent(returnTo)) {
       router.replace(routes.home());
@@ -62,23 +66,27 @@ export default function MembershipScreen() {
     }
   };
 
+  // The sheet can also be swiped away natively; run the same dismissal
+  // side-effects then, or a gated returnTo would re-open the gate.
+  useEffect(() => {
+    return () => {
+      if (closeHandled.current) return;
+      AnalyticService.capture("membership_gate_dismissed", { intent });
+      if (returnTo && getVisitorGatedRouteIntent(returnTo)) {
+        router.replace(routes.home());
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <View style={styles.screen}>
-      <AppHeader
-        variant="modal"
-        title="Membership"
-        cancelLabel="Close"
-        onCancel={dismiss}
-      />
+      <AppHeader variant="modal" onGrabberPress={dismiss} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
         <View style={styles.message}>
-          <View style={styles.iconPlate}>
-            <Ionicons name="wine" size={26} color={colors.onInk} />
-          </View>
-
           <View style={styles.copy}>
             <AppText variant="eyebrow" tone="accent">
               {copy.eyebrow}
@@ -113,21 +121,13 @@ const useStyles = makeStyles((t) => ({
     flexGrow: 1,
     paddingHorizontal: t.spacing.xl,
     // react-native-screens lays a form-sheet ScrollView underneath its custom
-    // header. Reserve the modal header's grabber + action row explicitly so
-    // the first content can never collide with Close or the centred title.
-    paddingTop: t.spacing.giant + t.spacing.lg,
+    // header. Reserve the grabber row explicitly so the first content can
+    // never collide with it (the title/action row is gone).
+    paddingTop: t.spacing.xxl,
     paddingBottom: t.spacing.xl,
   },
   message: {
     gap: t.spacing.lg,
-  },
-  iconPlate: {
-    width: 52,
-    height: 52,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.surfaceInk,
   },
   copy: {
     gap: t.spacing.sm,

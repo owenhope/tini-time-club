@@ -50,7 +50,8 @@ export interface HeaderAction {
 
 export interface AppHeaderProps {
   variant: AppHeaderVariant;
-  title: string;
+  /** Optional for the modal variant — an untitled sheet renders just the grabber. */
+  title?: string;
   /** Tracked uppercase line above a large title. */
   eyebrow?: string;
   /** The line under a large or media title — a subline, or `city · distance`. */
@@ -82,6 +83,8 @@ export interface AppHeaderProps {
   overlay?: boolean;
   /** Variant D only: the left-hand text action. */
   onCancel?: () => void;
+  /** Variant D only: makes the grabber row a tap target (e.g. tap-to-close). */
+  onGrabberPress?: () => void;
   /** Variant D only: overrides the default left-hand “Cancel” label. */
   cancelLabel?: string;
   /** Variant D only: the right-hand primary. Greys out until the form is valid. */
@@ -334,6 +337,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   overlay = false,
   onCancel,
   cancelLabel = "Cancel",
+  onGrabberPress,
   action,
   topInset = 0,
   statusBar,
@@ -372,7 +376,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   if (variant === "compact") {
     return (
       <CompactBar
-        title={title}
+        title={title ?? ""}
         onBack={onBack}
         actions={actions}
         trailing={trailing}
@@ -393,42 +397,59 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         collapsable={false}
         style={[styles.modal, { paddingTop: topInset }]}
       >
-        <View style={styles.grabberRow}>
-          <View style={styles.grabber} />
-        </View>
-        <View style={styles.modalRow}>
-          {onCancel ? (
-            <Pressable
-              onPress={onCancel}
-              hitSlop={TAP_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel={cancelLabel}
-              style={styles.modalAction}
-            >
-              <Text style={styles.modalCancel}>{cancelLabel}</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.modalAction} />
-          )}
-          <Text style={styles.modalTitle} numberOfLines={1}>
-            {title}
-          </Text>
+        {onGrabberPress ? (
           <Pressable
-            onPress={action?.onPress}
-            disabled={disabled || !action}
+            onPress={onGrabberPress}
             hitSlop={TAP_SLOP}
             accessibilityRole="button"
-            accessibilityLabel={action?.label ?? ""}
-            accessibilityState={{ disabled }}
-            style={[styles.modalAction, styles.modalActionRight]}
+            accessibilityLabel="Close"
+            style={styles.grabberRow}
           >
-            <Text
-              style={[styles.modalPrimary, disabled && styles.modalPrimaryOff]}
-            >
-              {action?.label}
-            </Text>
+            <View style={styles.grabber} />
           </Pressable>
-        </View>
+        ) : (
+          <View style={styles.grabberRow}>
+            <View style={styles.grabber} />
+          </View>
+        )}
+        {!title && !onCancel && !action ? null : (
+          <View style={styles.modalRow}>
+            {onCancel ? (
+              <Pressable
+                onPress={onCancel}
+                hitSlop={TAP_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel={cancelLabel}
+                style={styles.modalAction}
+              >
+                <Text style={styles.modalCancel}>{cancelLabel}</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.modalAction} />
+            )}
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              {title}
+            </Text>
+            <Pressable
+              onPress={action?.onPress}
+              disabled={disabled || !action}
+              hitSlop={TAP_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={action?.label ?? ""}
+              accessibilityState={{ disabled }}
+              style={[styles.modalAction, styles.modalActionRight]}
+            >
+              <Text
+                style={[
+                  styles.modalPrimary,
+                  disabled && styles.modalPrimaryOff,
+                ]}
+              >
+                {action?.label}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     );
   }
