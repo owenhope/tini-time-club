@@ -48,7 +48,6 @@ import {
  * sitting below the image as well, the photo has to give that height back.
  * Uploads are stored uncropped and centre-crop here via `contentFit="cover"`.
  */
-const DOUBLE_TAP_DELAY = 300;
 const REVIEW_AUTHOR_AVATAR_SIZE = 34;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
 const MAX_PREVIEW_COMMENTS = 1;
@@ -732,7 +731,6 @@ const ReviewItemComponent = ({
     reviewId: string;
     overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
   }>({ reviewId: review.id, overrides: {} });
-  const imageTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
   const handleShare = useReviewShareMenu(review);
@@ -838,16 +836,6 @@ const ReviewItemComponent = ({
     }
   }, [review._commentPatch, addComment, removeComment]);
 
-  useEffect(
-    () => () => {
-      if (imageTapTimerRef.current) {
-        clearTimeout(imageTapTimerRef.current);
-        imageTapTimerRef.current = null;
-      }
-    },
-    [review.id]
-  );
-
   // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
     if (!profile) return;
@@ -872,19 +860,11 @@ const ReviewItemComponent = ({
     review.location?.name,
   ]);
 
+  // No double-tap-to-like: liking lives on the heart button, so a tap on the
+  // photo opens the viewer immediately instead of waiting out a second tap.
   const handleImagePress = useCallback(() => {
-    if (imageTapTimerRef.current) {
-      clearTimeout(imageTapTimerRef.current);
-      imageTapTimerRef.current = null;
-      void handleToggleLike();
-      return;
-    }
-
-    imageTapTimerRef.current = setTimeout(() => {
-      imageTapTimerRef.current = null;
-      setImageViewerVisible(true);
-    }, DOUBLE_TAP_DELAY);
-  }, [handleToggleLike]);
+    setImageViewerVisible(true);
+  }, []);
 
   const handleReportSubmit = useCallback(
     async (reason: string, customReason?: string) => {

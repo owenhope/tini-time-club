@@ -383,48 +383,17 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     act(() => tree.unmount());
   });
 
-  it("opens the full-screen image viewer after a single image tap", () => {
+  // Liking lives on the heart button alone — a tap on the photo opens the
+  // viewer immediately, with no double-tap window to wait out.
+  it("opens the full-screen image viewer on a single image tap", () => {
     const tree = renderReview(makeReview());
-    jest.useFakeTimers();
     const imageButton = tree.root.findByProps({
       accessibilityLabel: "View review photo",
     });
 
     act(() => imageButton.props.onPress());
-    expect(tree.root.findByType(Modal).props.visible).toBe(false);
-
-    act(() => jest.advanceTimersByTime(300));
     expect(tree.root.findByType(Modal).props.visible).toBe(true);
 
     act(() => tree.unmount());
   });
-
-  it.each([
-    { initiallyLiked: false, mutation: "upsert" },
-    { initiallyLiked: true, mutation: "delete" },
-  ])(
-    "uses a double image tap to $mutation the review like",
-    async ({ initiallyLiked, mutation }) => {
-      const tree = renderReview(
-        makeReview({ has_liked: initiallyLiked, likes_count: 1 })
-      );
-      jest.useFakeTimers();
-      const imageButton = tree.root.findByProps({
-        accessibilityLabel: "View review photo",
-      });
-
-      await act(async () => {
-        imageButton.props.onPress();
-        imageButton.props.onPress();
-        await Promise.resolve();
-      });
-
-      expect(
-        mutation === "upsert" ? mockSupabaseUpsert : mockSupabaseDelete
-      ).toHaveBeenCalledTimes(1);
-      expect(tree.root.findByType(Modal).props.visible).toBe(false);
-
-      act(() => tree.unmount());
-    }
-  );
 });
