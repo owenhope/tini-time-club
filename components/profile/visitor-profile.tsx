@@ -40,10 +40,6 @@ export default function VisitorProfile() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
-        <View style={styles.heroIcon}>
-          <Ionicons name="person-add" size={36} color={colors.onInk} />
-        </View>
-
         <View style={styles.benefits}>
           {BENEFITS.map((benefit) => (
             <View key={benefit.title} style={styles.benefit}>
@@ -59,9 +55,9 @@ export default function VisitorProfile() {
         </View>
 
         <Button
-          title="JOIN THE CLUB"
+          title="Join the club"
           onPress={() => openMembership("profile")}
-          size="large"
+          size="medium"
           fullWidth
           icon="chevron-forward"
           iconPosition="right"
@@ -81,14 +77,6 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.gutter,
     paddingTop: t.spacing.xl,
     paddingBottom: t.spacing.giant,
-  },
-  heroIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.surfaceInk,
   },
   benefits: {
     gap: t.spacing.md,
