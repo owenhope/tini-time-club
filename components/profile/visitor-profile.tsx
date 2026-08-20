@@ -1,10 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { usePathname, useRouter } from "expo-router";
 import AppHeader from "@/components/nav/AppHeader";
 import { AppText, Button } from "@/components/shared";
-import { useMembership } from "@/context/membership-context";
 import { makeStyles, useTheme } from "@/theme";
+import AnalyticService from "@/services/analyticsService";
+import { savePendingMembershipReturn } from "@/services/visitor-session";
+import { reportError } from "@/utils/log";
+import { routes } from "@/utils/routes";
 
 const BENEFITS = [
   {
@@ -27,7 +31,25 @@ const BENEFITS = [
 export default function VisitorProfile() {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { openMembership } = useMembership();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [joining, setJoining] = useState(false);
+
+  const joinClub = async () => {
+    if (joining) return;
+    setJoining(true);
+    AnalyticService.capture("membership_auth_started", {
+      intent: "profile",
+      returnTo: pathname,
+    });
+    try {
+      await savePendingMembershipReturn("profile", pathname);
+    } catch (error) {
+      reportError("Unable to save profile membership destination:", error);
+    }
+    setJoining(false);
+    router.push(routes.auth());
+  };
 
   return (
     <View style={styles.screen}>
@@ -56,7 +78,8 @@ export default function VisitorProfile() {
 
         <Button
           title="Join the club"
-          onPress={() => openMembership("profile")}
+          onPress={() => void joinClub()}
+          loading={joining}
           size="medium"
           fullWidth
           icon="chevron-forward"
