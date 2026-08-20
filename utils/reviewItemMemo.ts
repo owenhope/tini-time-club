@@ -31,8 +31,12 @@ const recentCommentsKey = (comments: Comment[] | undefined) =>
     reviewCount: comment.profile?.review_count,
   }));
 
-const optionId = (option: Review["spirit"] | Review["type"]) =>
-  "id" in option ? option.id : undefined;
+const optionId = (
+  option: Review["spirit"] | Review["type"] | null | undefined
+) => {
+  if (!option || typeof option !== "object") return undefined;
+  return "id" in option ? option.id : undefined;
+};
 
 export const areReviewItemPropsEqual = (
   prevProps: ReviewItemMemoProps,

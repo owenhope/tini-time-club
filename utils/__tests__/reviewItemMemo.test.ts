@@ -65,6 +65,18 @@ describe("ReviewItem memo comparison", () => {
     expect(areReviewItemPropsEqual(props(), props())).toBe(true);
   });
 
+  it("compares public reviews that omit spirit and type metadata", () => {
+    const previous = props();
+    const next = props();
+    previous.review.spirit = undefined as never;
+    previous.review.type = undefined as never;
+    next.review.spirit = undefined as never;
+    next.review.type = undefined as never;
+
+    expect(() => areReviewItemPropsEqual(previous, next)).not.toThrow();
+    expect(areReviewItemPropsEqual(previous, next)).toBe(true);
+  });
+
   it.each([
     ["timestamp", (next: Review) => (next.inserted_at = "2026-08-18")],
     ["username", (next: Review) => (next.profile.username = "new-name")],
