@@ -70,7 +70,12 @@ interface ReviewFormValues {
 type Option = { id: number; name: string };
 
 type ReviewQuestionKey =
-  "location" | "spirit" | "type" | "taste" | "presentation";
+  | "location"
+  | "spirit"
+  | "type"
+  | "taste"
+  | "presentation"
+  | "comment";
 
 const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Where was this served?", key: "location" },
@@ -78,6 +83,7 @@ const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Which Type?", key: "type" },
   { title: "Presentation Rating", key: "presentation" },
   { title: "Taste Rating", key: "taste" },
+  { title: "Add a Caption", key: "comment" },
   { title: "Preview" },
 ];
 
@@ -90,7 +96,6 @@ const ReviewPreview = ({
   types,
   photo,
   profile,
-  onCaptionChange,
   isSubmitting,
   submissionMessage,
 }: {
@@ -99,7 +104,6 @@ const ReviewPreview = ({
   types: { id: number; name: string }[];
   photo: string | null;
   profile: any;
-  onCaptionChange: (caption: string) => void;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
@@ -181,21 +185,6 @@ const ReviewPreview = ({
             {...mockHandlers}
           />
         </View>
-      </View>
-      <View style={styles.captionInputContainer}>
-        <TextInput
-          style={styles.captionInput}
-          multiline
-          placeholder="Add a caption..."
-          placeholderTextColor={colors.textMuted}
-          onChangeText={onCaptionChange}
-          value={values.comment || ""}
-          maxLength={500}
-          accessibilityLabel="Review caption"
-        />
-        <AppText variant="label" tone="secondary" style={styles.characterCount}>
-          {(values.comment || "").length}/500
-        </AppText>
       </View>
     </ScrollView>
   );
@@ -426,12 +415,12 @@ export default function App() {
   const nextStep = async () => {
     if (isTransitioning) return;
 
-    if (step === questions.length - 1) {
-      const commentValue = watchedValues.comment?.trim();
-      if (!commentValue || commentValue.length === 0) return;
-      const isValid = await trigger("comment");
-      if (!isValid) return;
-    } else if (questions[step].key) {
+    if (questions[step].key === "comment") {
+      // The caption is required before the preview; form rules don't cover
+      // whitespace-only input, so check the trimmed value directly.
+      if (!watchedValues.comment?.trim()) return;
+    }
+    if (questions[step].key) {
       const isValid = await trigger(questions[step].key as any);
       if (!isValid) return;
     }
@@ -476,6 +465,39 @@ export default function App() {
         return <PresentationInput control={control} />;
       case "taste":
         return <TasteInput control={control} />;
+      case "comment":
+        return (
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.captionInputContainer}>
+              <TextInput
+                style={styles.captionInput}
+                multiline
+                autoFocus
+                placeholder="Add a caption..."
+                placeholderTextColor={colors.textMuted}
+                onChangeText={(caption) =>
+                  setValue("comment", caption, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                value={watchedValues.comment || ""}
+                maxLength={500}
+                accessibilityLabel="Review caption"
+              />
+              <AppText
+                variant="label"
+                tone="secondary"
+                style={styles.characterCount}
+              >
+                {(watchedValues.comment || "").length}/500
+              </AppText>
+            </View>
+          </ScrollView>
+        );
       default:
         return null;
     }
@@ -916,12 +938,6 @@ export default function App() {
                   types={types}
                   photo={photo}
                   profile={profile}
-                  onCaptionChange={(caption) =>
-                    setValue("comment", caption, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
                   isSubmitting={isSubmitting}
                   submissionMessage={submissionMessage}
                 />

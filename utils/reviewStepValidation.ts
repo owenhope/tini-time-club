@@ -1,7 +1,12 @@
 import { isSelectableRating } from "./ratingUtils";
 
 export type ReviewStepKey =
-  "location" | "spirit" | "type" | "taste" | "presentation";
+  | "location"
+  | "spirit"
+  | "type"
+  | "taste"
+  | "presentation"
+  | "comment";
 
 interface ReviewStepValues {
   location?: unknown;
@@ -9,6 +14,7 @@ interface ReviewStepValues {
   type?: string | number | null;
   taste?: number;
   presentation?: number;
+  comment?: string | null;
 }
 
 type RatingTouches = Partial<Record<"taste" | "presentation", boolean>>;
@@ -29,6 +35,8 @@ export const isReviewStepComplete = (
       return (
         Boolean(ratingTouches[key]) && isSelectableRating(values[key] ?? 0)
       );
+    case "comment":
+      return Boolean(values.comment?.trim());
     default:
       return true;
   }
