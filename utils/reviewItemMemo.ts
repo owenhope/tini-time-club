@@ -35,7 +35,7 @@ const optionId = (
   option: Review["spirit"] | Review["type"] | null | undefined
 ) => {
   if (!option || typeof option !== "object") return undefined;
-  return "id" in option ? option.id : undefined;
+  return (option as { id?: number }).id;
 };
 
 export const areReviewItemPropsEqual = (

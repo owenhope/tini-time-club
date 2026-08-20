@@ -77,6 +77,24 @@ describe("ReviewItem memo comparison", () => {
     expect(areReviewItemPropsEqual(previous, next)).toBe(true);
   });
 
+  it("compares public option objects without using an in-operator membership check", () => {
+    const previous = props();
+    const next = props();
+    const publicSpirit = new Proxy(
+      { name: "Gin" },
+      {
+        has: () => {
+          throw new TypeError("right operand of 'in' is not an object");
+        },
+      }
+    );
+    previous.review.spirit = publicSpirit as Review["spirit"];
+    next.review.spirit = publicSpirit as Review["spirit"];
+
+    expect(() => areReviewItemPropsEqual(previous, next)).not.toThrow();
+    expect(areReviewItemPropsEqual(previous, next)).toBe(true);
+  });
+
   it.each([
     ["timestamp", (next: Review) => (next.inserted_at = "2026-08-18")],
     ["username", (next: Review) => (next.profile.username = "new-name")],
