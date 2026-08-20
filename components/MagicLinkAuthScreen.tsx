@@ -50,12 +50,27 @@ export const MagicLinkAuthScreen = () => {
   // the buttons again rather than stranding the member on a spinner.
   const isCompletingSignIn = hasSession && !profileError;
 
+  // The membership gate replaces into this screen, so there is often no
+  // back stack — the X always has somewhere to land.
+  const closeToApp = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(routes.home());
+    }
+  };
+
   return (
     <View style={styles.container}>
       <AppHeader
         variant="large"
         title="Welcome To The Club"
         meta="One tap and you're in"
+        trailing={{
+          icon: "close",
+          onPress: closeToApp,
+          accessibilityLabel: "Close and return to the app",
+        }}
       />
 
       <SafeAreaView style={styles.body} edges={["bottom"]}>

@@ -116,7 +116,7 @@ export const EVERGREEN_REMINDERS: readonly ReminderMessage[] = [
   { title: "Dirty martini", body: "Clean conscience." },
   { title: "Dim lights, cold gin", body: "You know the place. Go." },
   {
-    title: "Membership has perks",
+    title: "The club has perks",
     body: "Like an excellent excuse for a Friday martini.",
   },
   { title: "Don't make us ask twice", body: "It's tini time 🍸" },

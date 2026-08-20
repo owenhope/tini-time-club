@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView from "@/components/map/ClusteredMap";
 import {
   Region,
@@ -45,6 +46,7 @@ import {
 import { ExploreSearchArea } from "@/components/explore/ExploreSearchField";
 import { useProfile } from "@/context/profile-context";
 import { publicContentService } from "@/services/public-content-service";
+import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -52,8 +54,7 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 0.12,
 };
 
-const SHEET_HEIGHT = 240;
-const SHEET_CONTENT_BOTTOM_PADDING = 16;
+const ESTIMATED_LOCATION_SHEET_CONTENT_HEIGHT = 176;
 const FETCH_DEBOUNCE_MS = 250;
 const FETCH_PADDING = 0.35;
 const CLUSTER_FIT_PADDING = 1.8;
@@ -159,9 +160,14 @@ function ExploreMap({
   requestLocation,
 }: ExploreMapProps) {
   const styles = useStyles();
-  const { isDark } = useTheme();
+  const { isDark, spacing } = useTheme();
   const { profile } = useProfile();
+  const safeAreaInsets = useSafeAreaInsets();
   const tabBarContentInset = useNativeTabBarContentInset();
+  const sheetBottomInset = Math.max(
+    0,
+    tabBarContentInset - safeAreaInsets.bottom - spacing.xl
+  );
   const screenshotSeed = getScreenshotSeed(focus.screenshotSeed);
   const isScreenshotMap =
     screenshotSeed === "map" || screenshotSeed === "place";
@@ -193,11 +199,7 @@ function ExploreMap({
   >(null);
   const [regularsSheetOpen, setRegularsSheetOpen] = useState(false);
   const sheetRef = useRef<BottomSheet>(null);
-  const sheetCoveredHeight = SHEET_HEIGHT + tabBarContentInset;
-  const sheetSnapPoints = useMemo(
-    () => [sheetCoveredHeight],
-    [sheetCoveredHeight]
-  );
+  const measuredSheetHeightRef = useRef<number | null>(null);
 
   const selectedLocation = useMemo(
     () =>
@@ -215,6 +217,9 @@ function ExploreMap({
       }, MARKER_PRESS_GUARD_MS);
 
       const mapHeight = mapHeightRef.current;
+      const sheetCoveredHeight =
+        measuredSheetHeightRef.current ??
+        ESTIMATED_LOCATION_SHEET_CONTENT_HEIGHT + sheetBottomInset;
       const baseRegion = focusDelta
         ? {
             latitude: location.lat,
@@ -223,29 +228,36 @@ function ExploreMap({
             longitudeDelta: focusDelta,
           }
         : regionRef.current;
-      const sheetLatitudeOffset =
-        mapHeight > 0
-          ? baseRegion.latitudeDelta * (sheetCoveredHeight / (2 * mapHeight))
-          : 0;
-      const centeredRegion = {
-        ...baseRegion,
-        latitude: location.lat - sheetLatitudeOffset,
-        longitude: location.long,
-      };
+      const centeredRegion = getMarkerFocusRegion({
+        location: { latitude: location.lat, longitude: location.long },
+        region: baseRegion,
+        mapHeight,
+        coveredHeight: sheetCoveredHeight,
+      });
 
       regionRef.current = centeredRegion;
       mapRef.current?.animateToRegion(centeredRegion, 350);
       setRegularsSheetOpen(false);
       setSelectedLocationId(location.id);
     },
-    [sheetCoveredHeight]
+    [sheetBottomInset]
   );
 
-  useEffect(() => {
-    if (selectedLocation) {
-      sheetRef.current?.snapToIndex(0);
-    }
+  const handleSheetContentLayout = useCallback(() => {
+    if (!selectedLocation) return;
+
+    // Dynamic sizing receives the content measurement in BottomSheetView's
+    // own layout handler. Open on the following frame so that detent exists.
+    requestAnimationFrame(() => sheetRef.current?.expand());
   }, [selectedLocation]);
+
+  const handleSheetChange = useCallback((index: number, position: number) => {
+    if (index < 0 || mapHeightRef.current <= 0) return;
+    measuredSheetHeightRef.current = Math.max(
+      0,
+      mapHeightRef.current - position
+    );
+  }, []);
 
   useEffect(
     () => () => {
@@ -614,12 +626,19 @@ function ExploreMap({
             <ActivityIndicator size="small" />
           </View>
         )}
+        {selectedLocation ? (
+          <View
+            pointerEvents="none"
+            style={[styles.sheetTabBarUnderlay, { height: sheetBottomInset }]}
+          />
+        ) : null}
         <BottomSheet
           ref={sheetRef}
           index={-1}
-          snapPoints={sheetSnapPoints}
-          enableDynamicSizing={false}
+          enableDynamicSizing
           enablePanDownToClose
+          bottomInset={sheetBottomInset}
+          onChange={handleSheetChange}
           onClose={() => {
             setRegularsSheetOpen(false);
             setSelectedLocationId(null);
@@ -629,13 +648,8 @@ function ExploreMap({
           handleIndicatorStyle={styles.sheetHandle}
         >
           <BottomSheetView
-            style={[
-              styles.sheetContent,
-              {
-                paddingBottom:
-                  SHEET_CONTENT_BOTTOM_PADDING + tabBarContentInset,
-              },
-            ]}
+            onLayout={handleSheetContentLayout}
+            style={styles.sheetContent}
           >
             {selectedLocation && (
               <LocationDetails
@@ -744,10 +758,16 @@ const useStyles = makeStyles((t) => ({
     height: 4,
     backgroundColor: t.colors.borderStrong,
   },
+  sheetTabBarUnderlay: {
+    position: "absolute" as const,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: t.colors.surface,
+  },
   sheetContent: {
-    flex: 1,
     paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: SHEET_CONTENT_BOTTOM_PADDING,
+    paddingBottom: t.spacing.xxl,
   },
 }));
 

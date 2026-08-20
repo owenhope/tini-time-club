@@ -32,7 +32,7 @@ const DEFAULT_COPY: MembershipPromptCopy = {
 const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
   profile: {
     eyebrow: "YOUR PROFILE",
-    title: "Make your membership official",
+    title: "Join the club",
     body: "Create a profile, keep your reviews together, earn rings, and become a Regular.",
   },
   review: {
@@ -42,7 +42,7 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
   },
   "like-review": {
     eyebrow: "LIKE A REVIEW",
-    title: "A little love requires a membership",
+    title: "A little love is a club perk",
     body: "Join the club to like this review and support its author.",
   },
   "like-comment": {

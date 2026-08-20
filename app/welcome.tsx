@@ -1,6 +1,6 @@
 import "react-native-get-random-values";
 import React from "react";
-import { View, Text } from "react-native";
+import { Pressable, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -34,7 +34,7 @@ const FEATURES = [
 const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const featureColors = {
     brand: {
       background: colors.tabBarActive,
@@ -76,13 +76,7 @@ const Welcome = () => {
         <View style={styles.content}>
           <View style={styles.hero}>
             <Image
-              // The dark theme's heavier scrim swallows the green wordmark,
-              // so it swaps to the paper variant (olive dot stays orange).
-              source={
-                isDark
-                  ? require("@/assets/images/tini-time-logo-light-2x.png")
-                  : require("@/assets/images/tini-time-logo-2x.png")
-              }
+              source={require("@/assets/images/tini-time-logo-light-2x.png")}
               style={styles.logo}
               contentFit="contain"
               accessibilityRole="image"
@@ -124,25 +118,28 @@ const Welcome = () => {
 
         <View style={styles.footer}>
           <Button
-            title="EXPLORE THE CLUB"
+            title="Explore the Club"
             onPress={() => void exploreAsVisitor()}
             variant="primary"
-            size="large"
-            fullWidth
-            icon="chevron-forward"
-            iconPosition="right"
-          />
-          <Button
-            title="JOIN OR SIGN IN"
-            onPress={() => router.push(routes.auth())}
-            variant="onInk"
-            size="large"
+            size="medium"
             fullWidth
           />
           <Text style={styles.legalCopy}>
             By continuing, you confirm you are of legal drinking age and agree
             to the Terms and Privacy Policy.
           </Text>
+          <Pressable
+            onPress={() => router.push(routes.auth())}
+            style={({ pressed }) => [
+              styles.signInLink,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="link"
+            accessibilityLabel="Sign in"
+            hitSlop={{ top: 8, bottom: 8, left: 24, right: 24 }}
+          >
+            <Text style={styles.signInText}>Sign In</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -222,6 +219,20 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     color: t.colors.textOnImage,
     textAlign: "center" as const,
+  },
+  signInLink: {
+    minHeight: 44,
+    alignSelf: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.md,
+  },
+  signInText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.textOnImage,
+    textDecorationLine: "underline" as const,
+  },
+  pressed: {
+    opacity: 0.6,
   },
 }));
 

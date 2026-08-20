@@ -189,6 +189,16 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(profile)"
         accessibilityLabel="Profile"
+        // Same gate as the Review tab: the press never navigates on its own —
+        // visitors get the membership sheet in place, members are routed in.
+        disabled
+        listeners={{
+          tabPress: () => {
+            if (requireMembership("profile")) {
+              router.navigate(routes.profile());
+            }
+          },
+        }}
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon

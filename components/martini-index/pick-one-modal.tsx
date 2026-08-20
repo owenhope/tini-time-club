@@ -175,11 +175,15 @@ export default function PickOneModal({ visible, onClose }: PickOneModalProps) {
         ) : (
           <>
             <AppHeader
-              variant="modal"
+              variant="compact"
               title="Your order"
-              onCancel={handleClose}
-              cancelLabel="Close"
-              topInset={insets.top}
+              actions={[
+                {
+                  icon: "close",
+                  onPress: handleClose,
+                  accessibilityLabel: "Close your order",
+                },
+              ]}
             />
 
             {order ? (

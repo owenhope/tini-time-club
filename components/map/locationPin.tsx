@@ -47,7 +47,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
             size={selected ? 23 : 17}
             color={
               selected
-                ? colors.textOnImage
+                ? colors.onHighlight
                 : reviewed
                   ? colors.textOnImage
                   : colors.textMuted
@@ -101,7 +101,7 @@ const useStyles = makeStyles((t) => ({
   pinSelected: {
     width: 52,
     height: 52,
-    backgroundColor: t.colors.tabBarActive,
+    backgroundColor: t.colors.highlight,
   },
   pinRating: {
     ...t.typography.label,
@@ -109,7 +109,9 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textOnImage,
     fontVariant: ["tabular-nums"] as const,
   },
-  pinRatingSelected: {},
+  pinRatingSelected: {
+    color: t.colors.onHighlight,
+  },
   pointerFrame: {
     width: 18,
     height: 13,
@@ -141,7 +143,7 @@ const useStyles = makeStyles((t) => ({
     borderLeftWidth: 8,
     borderRightWidth: 8,
     borderTopWidth: 15,
-    borderTopColor: t.colors.tabBarActive,
+    borderTopColor: t.colors.highlight,
   },
 }));
 

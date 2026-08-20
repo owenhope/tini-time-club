@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { routes } from "@/utils/routes";
 import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "@/components/nav/AppHeader";
 import { Button, Input } from "@/components/shared";
@@ -55,11 +56,17 @@ export default function EmailAuth() {
   return (
     <View style={styles.container}>
       {/* Variant A like every other screen; the way back to the landing is
-          the footer link (and the iOS swipe-back gesture). */}
+          the footer link (and the iOS swipe-back gesture). The X exits the
+          whole sign-up flow back to the app, same as on the landing. */}
       <AppHeader
         variant="large"
         title="Sign in with email"
         meta="We'll send you a one-time sign-in link"
+        trailing={{
+          icon: "close",
+          onPress: () => router.dismissTo(routes.home()),
+          accessibilityLabel: "Close and return to the app",
+        }}
       />
       {/* Same bottom safe-area wrapper as the landing screen, so the footer
           link sits at the identical height on both. */}
@@ -72,67 +79,69 @@ export default function EmailAuth() {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.content}
           >
-          {sentTo ? (
-            <View style={styles.sentContent}>
-              <View style={styles.sentIcon}>
-                <Ionicons
-                  name="mail-open-outline"
-                  size={30}
-                  color={colors.textOnImage}
-                />
-              </View>
-              <Text style={styles.sentTitle}>Check your email</Text>
-              <Text style={styles.sentText}>
-                We sent a one-time sign-in link to{"\n"}
-                <Text style={styles.email}>{sentTo}</Text>
-              </Text>
-              <Button
-                title={resendIn > 0 ? `Resend in ${resendIn}s` : "Resend link"}
-                onPress={sendLink}
-                variant="tonal"
-                size="large"
-                fullWidth
-                disabled={loading || resendIn > 0}
-                loading={loading}
-              />
-              <Button
-                title="Use a different email"
-                onPress={changeEmail}
-                variant="ghost"
-                size="medium"
-                fullWidth
-                disabled={loading}
-              />
-            </View>
-          ) : (
-            <>
-              <Input
-                label="Email address"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                type="email"
-                size="medium"
-                variant="default"
-                style={styles.input}
-                containerStyle={styles.inputOuter}
-              />
-
-              <View style={styles.actions}>
+            {sentTo ? (
+              <View style={styles.sentContent}>
+                <View style={styles.sentIcon}>
+                  <Ionicons
+                    name="mail-open-outline"
+                    size={30}
+                    color={colors.textOnImage}
+                  />
+                </View>
+                <Text style={styles.sentTitle}>Check your email</Text>
+                <Text style={styles.sentText}>
+                  We sent a one-time sign-in link to{"\n"}
+                  <Text style={styles.email}>{sentTo}</Text>
+                </Text>
                 <Button
-                  title="Continue with Email"
+                  title={
+                    resendIn > 0 ? `Resend in ${resendIn}s` : "Resend link"
+                  }
                   onPress={sendLink}
-                  variant="primary"
+                  variant="tonal"
+                  size="large"
+                  fullWidth
+                  disabled={loading || resendIn > 0}
+                  loading={loading}
+                />
+                <Button
+                  title="Use a different email"
+                  onPress={changeEmail}
+                  variant="ghost"
                   size="medium"
                   fullWidth
                   disabled={loading}
-                  loading={loading}
-                  icon="arrow-forward"
-                  iconPosition="right"
                 />
               </View>
-            </>
-          )}
+            ) : (
+              <>
+                <Input
+                  label="Email address"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  type="email"
+                  size="medium"
+                  variant="default"
+                  style={styles.input}
+                  containerStyle={styles.inputOuter}
+                />
+
+                <View style={styles.actions}>
+                  <Button
+                    title="Continue with Email"
+                    onPress={sendLink}
+                    variant="primary"
+                    size="medium"
+                    fullWidth
+                    disabled={loading}
+                    loading={loading}
+                    icon="arrow-forward"
+                    iconPosition="right"
+                  />
+                </View>
+              </>
+            )}
 
             <View style={styles.footer}>
               <Pressable

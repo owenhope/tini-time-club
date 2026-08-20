@@ -44,7 +44,13 @@ export default function MembershipScreen() {
     AnalyticService.capture("membership_auth_started", { intent, returnTo });
     setContinuing(true);
     try {
-      await savePendingMembershipReturn(intent, returnTo);
+      // Joining from the profile gate lands on the feed: returning to the
+      // profile route made the member profile flash before the default-route
+      // redirect. Every other intent still returns where the gate opened.
+      await savePendingMembershipReturn(
+        intent,
+        intent === "profile" ? null : returnTo
+      );
       router.replace(routes.auth());
     } catch (error) {
       reportError("Unable to save membership return destination:", error);
@@ -80,12 +86,13 @@ export default function MembershipScreen() {
   }, []);
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      style={styles.screen}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.sheetContent}
+    >
       <AppHeader variant="modal" onGrabberPress={dismiss} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.content}
-      >
+      <View style={styles.content}>
         <View style={styles.message}>
           <View style={styles.copy}>
             <AppText variant="eyebrow" tone="accent">
@@ -98,33 +105,31 @@ export default function MembershipScreen() {
           </View>
         </View>
 
-        <View style={styles.actions}>
+        <View>
           <Button
-            title="JOIN OR SIGN IN"
+            title="Join the Club"
             onPress={() => void continueToAuth()}
             loading={continuing}
             size="medium"
             fullWidth
           />
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const useStyles = makeStyles((t) => ({
   screen: {
-    flex: 1,
     backgroundColor: t.colors.background,
   },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: t.spacing.xl,
-    // react-native-screens lays a form-sheet ScrollView underneath its custom
-    // header. Reserve the grabber row explicitly so the first content can
-    // never collide with it (the title/action row is gone).
-    paddingTop: t.spacing.xxl,
+  sheetContent: {
     paddingBottom: t.spacing.xl,
+  },
+  content: {
+    paddingHorizontal: t.spacing.xl,
+    paddingTop: t.spacing.lg,
+    gap: t.spacing.xl,
   },
   message: {
     gap: t.spacing.lg,
@@ -134,9 +139,5 @@ const useStyles = makeStyles((t) => ({
   },
   body: {
     maxWidth: 520,
-  },
-  actions: {
-    marginTop: "auto" as const,
-    paddingTop: t.spacing.xl,
   },
 }));

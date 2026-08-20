@@ -257,7 +257,7 @@ describe("Feed startup loading", () => {
     });
 
     const feedToggle = renderer!.root.findByProps({
-      accessibilityLabel: "Showing From the club. Tap to switch feed source.",
+      accessibilityLabel: "Showing From the Club. Tap to switch feed source.",
     });
 
     await act(async () => {

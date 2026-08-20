@@ -656,20 +656,16 @@ function Home() {
           activeOpacity={0.78}
           accessibilityRole="button"
           accessibilityLabel={`Showing ${
-            feedSource === "club" ? "From the club" : "Your people"
+            feedSource === "club" ? "From the Club" : "Your people"
           }. Tap to switch feed source.`}
         >
           <View style={styles.feedSourceText}>
             <Text style={styles.feedSourceEyebrow}>Feed</Text>
             <View style={styles.feedSourceTitleRow}>
               <Text style={styles.feedSourceTitle}>
-                {feedSource === "club" ? "From the club" : "Your people"}
+                {feedSource === "club" ? "From the Club" : "Your people"}
               </Text>
-              <Ionicons
-                name="swap-horizontal"
-                size={13}
-                color={colors.accent}
-              />
+              <Ionicons name="repeat" size={14} color={colors.accent} />
             </View>
           </View>
         </TouchableOpacity>

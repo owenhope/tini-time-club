@@ -10,6 +10,7 @@ import { useProfile } from "@/context/profile-context";
 import { Ionicons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
 import {
+  Redirect,
   useRouter,
   useNavigation,
   useFocusEffect,
@@ -37,7 +38,6 @@ import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { RANK_TIERS, getRankTier } from "@/utils/ranking";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
-import VisitorProfile from "@/components/profile/visitor-profile";
 
 interface RankPreviewOption {
   label: string;
@@ -646,7 +646,9 @@ const useStyles = makeStyles((t) => ({
 const Profile = () => {
   const { profile, loading } = useProfile();
   if (loading) return null;
-  return profile ? <MemberProfile /> : <VisitorProfile />;
+  // Visitors never navigate here — the tab trigger gates them in place, like
+  // Review. A signed-out render (deep link, sign-out transition) goes home.
+  return profile ? <MemberProfile /> : <Redirect href={routes.home()} />;
 };
 
 export default Profile;
