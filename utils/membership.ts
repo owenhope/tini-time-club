@@ -11,6 +11,7 @@ export type MembershipIntent =
   | "people-feed"
   | "top-places"
   | "members-directory"
+  | "location-details"
   | "social-list"
   | "share-review"
   | "share-location"
@@ -88,6 +89,11 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
     eyebrow: "THE MEMBERS",
     title: "Meet the club",
     body: "Join or sign in to browse members and find people to follow.",
+  },
+  "location-details": {
+    eyebrow: "PLACE DETAILS",
+    title: "Go beyond the map",
+    body: "Join or sign in to open the full location and meet its Regulars.",
   },
   "social-list": {
     eyebrow: "THE SOCIAL GRAPH",

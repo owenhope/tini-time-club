@@ -11,6 +11,7 @@ describe("membership prompt contract", () => {
     expect(getMembershipPromptCopy("share-review").title).toMatch(/sharing/i);
     expect(getMembershipPromptCopy("top-places").title).toMatch(/recommends/i);
     expect(getMembershipPromptCopy("members-directory").title).toMatch(/club/i);
+    expect(getMembershipPromptCopy("location-details").title).toMatch(/map/i);
   });
 
   it("falls back safely for an unknown intent", () => {

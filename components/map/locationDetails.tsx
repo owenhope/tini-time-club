@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -7,6 +7,7 @@ import { Avatar, RatingPips } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
+import { useMembership } from "@/context/membership-context";
 
 interface LocationDetailsProps {
   loc: any;
@@ -19,6 +20,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  const router = useRouter();
+  const { requireMembership } = useMembership();
 
   const cityCountry = loc.address
     ? formatCityRegion(stripNameFromAddress(loc.name, loc.address))
@@ -30,32 +33,41 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   const regulars = loc.regulars?.slice(0, 3) ?? [];
   const hasRating = loc.rating != null && reviewCount > 0;
 
+  const openLocation = () => {
+    if (requireMembership("location-details")) {
+      router.push(routes.place(loc.id));
+    }
+  };
+
+  const openRegulars = () => {
+    if (requireMembership("location-details")) onRegularsPress?.();
+  };
+
   return (
     <View style={styles.content}>
-      <Link href={routes.place(loc.id)} asChild>
-        <Pressable
-          style={({ pressed }) => [
-            styles.titlePressable,
-            pressed && styles.pressed,
-          ]}
-          accessibilityRole="link"
-          accessibilityLabel={`View ${loc.name}`}
-          accessibilityHint="Opens the location page"
-          hitSlop={6}
-        >
-          <View style={styles.titleRow}>
-            <Text style={styles.name} numberOfLines={2}>
-              {loc.name || "No name available"}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.accent}
-              pointerEvents="none"
-            />
-          </View>
-        </Pressable>
-      </Link>
+      <Pressable
+        style={({ pressed }) => [
+          styles.titlePressable,
+          pressed && styles.pressed,
+        ]}
+        onPress={openLocation}
+        accessibilityRole="link"
+        accessibilityLabel={`View ${loc.name}`}
+        accessibilityHint="Opens the location page"
+        hitSlop={6}
+      >
+        <View style={styles.titleRow}>
+          <Text style={styles.name} numberOfLines={2}>
+            {loc.name || "No name available"}
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.accent}
+            pointerEvents="none"
+          />
+        </View>
+      </Pressable>
 
       {cityCountry ? (
         <Text style={styles.meta} numberOfLines={1}>
@@ -100,7 +112,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               styles.regularsBlock,
               pressed && styles.pressed,
             ]}
-            onPress={onRegularsPress}
+            onPress={openRegulars}
             accessibilityRole="button"
             accessibilityLabel={`Show regulars at ${loc.name}`}
           >
