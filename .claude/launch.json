@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev"],
+      "port": 8081
+    },
+    {
       "name": "admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "admin", "run", "dev"],
