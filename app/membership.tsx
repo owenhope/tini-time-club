@@ -95,10 +95,8 @@ export default function MembershipScreen() {
             title="JOIN OR SIGN IN"
             onPress={() => void continueToAuth()}
             loading={continuing}
-            size="large"
+            size="medium"
             fullWidth
-            icon="chevron-forward"
-            iconPosition="right"
           />
         </View>
       </ScrollView>
