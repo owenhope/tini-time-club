@@ -22,7 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Button, Input, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
-import { log, reportError } from "@/utils/log";
+import { log, reportError, warn } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
@@ -45,6 +45,7 @@ const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
+const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
 // A refresh is newest-first, so keep the head; an appended page arrives at the
 // end, so keep the tail or pagination silently dead-ends once the cache is
@@ -228,10 +229,15 @@ function Home() {
       } catch (error) {
         if (!isCurrentRequest()) return;
 
-        reportError("Error fetching reviews:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to load reviews"
-        );
+        // A feed dependency being unavailable is a recoverable product state,
+        // not a crash. reportError intentionally opens React Native's red
+        // developer overlay, which made a routine 404 impossible to dismiss.
+        warn("[Feed] Unable to load reviews:", error);
+        setError(FEED_LOAD_ERROR_MESSAGE);
+        // An empty FlatList calls onEndReached while it is measuring itself.
+        // Stop pagination until an explicit refresh succeeds, or one failed
+        // first page becomes an unbounded request/error loop.
+        setHasMore(false);
 
         if (refresh) {
           setRefreshing(false);
@@ -322,10 +328,10 @@ function Home() {
 
   // Optimized end reached handler
   const onEndReached = useCallback(() => {
-    if (!loadingMore && hasMore && !refreshing) {
+    if (!loading && !loadingMore && hasMore && !refreshing && !error) {
       loadReviews(false);
     }
-  }, [loadingMore, hasMore, refreshing, loadReviews]);
+  }, [error, hasMore, loadReviews, loading, loadingMore, refreshing]);
 
   const toggleFeedSource = useCallback(() => {
     if (!requireMembership("people-feed")) return;
@@ -486,11 +492,31 @@ function Home() {
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.errorText}>Error: {error}</Text>
+          <Text style={styles.emptyTitle}>{error}</Text>
+          <Text style={styles.emptyText}>
+            Check your connection and try again.
+          </Text>
           <Button
-            title="Retry"
+            title="TRY AGAIN"
             onPress={() => loadReviews(true)}
             variant="primary"
+            size="medium"
+          />
+        </View>
+      );
+    }
+
+    if (!profile) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Nothing from the club yet</Text>
+          <Text style={styles.emptyText}>
+            Explore the map while we look for the next pour.
+          </Text>
+          <Button
+            title="EXPLORE LOCATIONS"
+            onPress={navigateToLocations}
+            variant="secondary"
             size="medium"
           />
         </View>
@@ -608,6 +634,11 @@ function Home() {
     feedSource,
     loadReviews,
     navigateToDiscover,
+    navigateToLocations,
+    navigateToReview,
+    profile,
+    colors.onAccent,
+    styles,
   ]);
 
   // Memoized footer component for loading more

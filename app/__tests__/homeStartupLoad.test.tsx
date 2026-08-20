@@ -1,11 +1,21 @@
 import React from "react";
-import { FlatList } from "react-native";
+import { FlatList, Text } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
 const mockGetReviews = jest.fn(
   (_options?: Record<string, unknown>) => new Promise(() => undefined)
 );
 const mockRefreshUnseenCount = jest.fn(async () => undefined);
+const mockReportError = jest.fn();
+let mockProfile: {
+  id: string;
+  username: string;
+  eula_accepted: boolean;
+} | null = {
+  id: "member-1",
+  username: "olive",
+  eula_accepted: true,
+};
 let mockReviewUpdateCallback: (() => void) | null = null;
 
 const deferred = <T,>() => {
@@ -34,11 +44,7 @@ jest.mock("expo-router", () => {
 
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
-    profile: {
-      id: "member-1",
-      username: "olive",
-      eula_accepted: true,
-    },
+    profile: mockProfile,
     updateProfile: jest.fn(),
   }),
 }));
@@ -89,7 +95,8 @@ jest.mock("@/utils/async", () => ({
 }));
 jest.mock("@/utils/log", () => ({
   log: jest.fn(),
-  reportError: jest.fn(),
+  reportError: (...args: unknown[]) => mockReportError(...args),
+  warn: jest.fn(),
 }));
 
 jest.mock("expo-image", () => ({
@@ -158,6 +165,12 @@ describe("Feed startup loading", () => {
     mockGetReviews.mockReset();
     mockGetReviews.mockImplementation(() => new Promise(() => undefined));
     mockRefreshUnseenCount.mockClear();
+    mockReportError.mockClear();
+    mockProfile = {
+      id: "member-1",
+      username: "olive",
+      eula_accepted: true,
+    };
     mockReviewUpdateCallback = null;
   });
 
@@ -171,6 +184,53 @@ describe("Feed startup loading", () => {
     });
 
     expect(mockGetReviews).toHaveBeenCalledTimes(1);
+  });
+
+  it("contains a visitor feed outage without a raw error overlay or pagination loop", async () => {
+    mockProfile = null;
+    mockGetReviews.mockRejectedValue(
+      new Error("Edge Function returned a non-2xx status code")
+    );
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    expect(mockReportError).not.toHaveBeenCalled();
+    expect(mockGetReviews).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      renderer!.root.findByType(FlatList).props.onEndReached();
+      await Promise.resolve();
+    });
+
+    expect(mockGetReviews).toHaveBeenCalledTimes(1);
+    const copy = renderer!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children)
+      .flat(Infinity)
+      .join(" ");
+    expect(copy).toContain("We couldn't load the club right now.");
+    expect(copy).not.toContain("Edge Function returned");
+    expect(copy).not.toContain("sharing your own experiences");
+  });
+
+  it("uses a browse-oriented empty state when the public club has no reviews", async () => {
+    mockProfile = null;
+    mockGetReviews.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    const copy = renderer!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children)
+      .flat(Infinity)
+      .join(" ");
+    expect(copy).toContain("Nothing from the club yet");
+    expect(copy).not.toContain("sharing your own experiences");
+    expect(copy).not.toContain("Share Your Review");
   });
 
   it("keeps the selected people feed when an older club refresh resolves last", async () => {

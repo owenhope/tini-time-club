@@ -3,6 +3,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { AppState, Text, TouchableOpacity } from "react-native";
 import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
+import SharedTabLayout from "../(tabs)/(home,discover,profile)/_layout";
 
 let mockAuthStateChange:
   | ((event: string, session: { user: { id: string } } | null) => Promise<void>)
@@ -44,6 +45,7 @@ const mockSignOut = jest.fn(async () => {
   return { error: null };
 });
 const mockRefreshProfile = jest.fn(async () => undefined);
+const mockOpenMembership = jest.fn();
 let renderer: ReactTestRenderer | undefined;
 
 jest.mock("@/utils/sentry", () => ({
@@ -90,7 +92,7 @@ jest.mock("@/context/membership-context", () => ({
   useMembership: () => ({
     isMember: Boolean(mockProfileState?.profile),
     requireMembership: jest.fn(() => Boolean(mockProfileState?.profile)),
-    openMembership: jest.fn(),
+    openMembership: mockOpenMembership,
   }),
 }));
 jest.mock("@/context/activity-context", () => ({
@@ -261,6 +263,7 @@ describe("root startup routing", () => {
     mockIsAuthCallbackUrl.mockReturnValue(false);
     mockSignOut.mockClear();
     mockRefreshProfile.mockClear();
+    mockOpenMembership.mockClear();
     Object.defineProperty(AppState, "currentState", {
       configurable: true,
       value: "active",
@@ -742,6 +745,32 @@ describe("root startup routing", () => {
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith("/home");
+  });
+
+  it("does not open a membership sheet while a signed-in member is signing out of Settings", async () => {
+    mockPathname = "/settings";
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+    };
+
+    await act(async () => {
+      renderer = create(<SharedTabLayout />);
+    });
+
+    mockProfileState = {
+      profile: null,
+      loading: false,
+    };
+    await act(async () => {
+      renderer!.update(<SharedTabLayout />);
+    });
+
+    expect(mockOpenMembership).not.toHaveBeenCalled();
   });
 });
 

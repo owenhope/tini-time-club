@@ -55,13 +55,24 @@ export default function SharedTabLayout() {
   const pathname = usePathname();
   const visitorIntent = getVisitorGatedRouteIntent(pathname);
   const promptedPath = useRef<string | null>(null);
+  const memberWasOnProtectedPath = useRef(false);
 
   useEffect(() => {
     if (!visitorIntent) {
       promptedPath.current = null;
+      memberWasOnProtectedPath.current = false;
+      return;
+    }
+    if (profile) {
+      memberWasOnProtectedPath.current = true;
       return;
     }
     if (!loading && !profile && promptedPath.current !== pathname) {
+      // SIGNED_OUT clears ProfileContext before the root navigator replaces a
+      // member-only Settings route with Home. That one transition is not a
+      // visitor asking to enter Settings, so do not put a membership sheet on
+      // top of the destination. The ref resets once Home becomes current.
+      if (memberWasOnProtectedPath.current) return;
       promptedPath.current = pathname;
       openMembership(visitorIntent);
     }
