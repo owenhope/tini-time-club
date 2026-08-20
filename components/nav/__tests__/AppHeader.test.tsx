@@ -183,4 +183,28 @@ describe("AppHeader dark mode", () => {
 
     act(() => tree!.unmount());
   });
+
+  it("keeps a modal header as one native child inside a form sheet", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="modal"
+            title="Membership"
+            cancelLabel="Close"
+            onCancel={jest.fn()}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const header = tree!.root.findAllByType(View)[0];
+    expect(header.props.collapsable).toBe(false);
+    expect(
+      tree!.root.findAllByType(Text).map((node) => node.props.children)
+    ).toContain("Close");
+
+    act(() => tree!.unmount());
+  });
 });

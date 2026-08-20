@@ -67,60 +67,40 @@ export default function MembershipScreen() {
       <AppHeader
         variant="modal"
         title="Membership"
-        cancelLabel="Not now"
+        cancelLabel="Close"
         onCancel={dismiss}
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
-        <View style={styles.iconPlate}>
-          <Ionicons name="wine" size={38} color={colors.onInk} />
+        <View style={styles.message}>
+          <View style={styles.iconPlate}>
+            <Ionicons name="wine" size={26} color={colors.onInk} />
+          </View>
+
+          <View style={styles.copy}>
+            <AppText variant="eyebrow" tone="accent">
+              {copy.eyebrow}
+            </AppText>
+            <AppText variant="display">{copy.title}</AppText>
+            <AppText tone="secondary" style={styles.body}>
+              {copy.body}
+            </AppText>
+          </View>
         </View>
 
-        <View style={styles.copy}>
-          <AppText variant="eyebrow" tone="accent">
-            {copy.eyebrow}
-          </AppText>
-          <AppText variant="display">{copy.title}</AppText>
-          <AppText tone="secondary" style={styles.body}>
-            {copy.body}
-          </AppText>
+        <View style={styles.actions}>
+          <Button
+            title="JOIN OR SIGN IN"
+            onPress={() => void continueToAuth()}
+            loading={continuing}
+            size="large"
+            fullWidth
+            icon="chevron-forward"
+            iconPosition="right"
+          />
         </View>
-
-        <View style={styles.benefits}>
-          {[
-            "Post and collect your Martini reviews",
-            "Earn rank rings and Regular status",
-            "Like, comment, follow, and share",
-          ].map((benefit) => (
-            <View key={benefit} style={styles.benefitRow}>
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={colors.accent}
-              />
-              <AppText style={styles.benefitText}>{benefit}</AppText>
-            </View>
-          ))}
-        </View>
-
-        <Button
-          title="JOIN OR SIGN IN"
-          onPress={() => void continueToAuth()}
-          loading={continuing}
-          size="large"
-          fullWidth
-          icon="chevron-forward"
-          iconPosition="right"
-        />
-        <Button
-          title="KEEP EXPLORING"
-          onPress={dismiss}
-          variant="ghost"
-          size="large"
-          fullWidth
-        />
       </ScrollView>
     </View>
   );
@@ -133,15 +113,19 @@ const useStyles = makeStyles((t) => ({
   },
   content: {
     flexGrow: 1,
-    justifyContent: "center" as const,
-    gap: t.spacing.xl,
     paddingHorizontal: t.spacing.xl,
-    paddingTop: t.spacing.xxl,
-    paddingBottom: t.spacing.giant,
+    // react-native-screens lays a form-sheet ScrollView underneath its custom
+    // header. Reserve the modal header's grabber + action row explicitly so
+    // the first content can never collide with Close or the centred title.
+    paddingTop: t.spacing.giant + t.spacing.lg,
+    paddingBottom: t.spacing.xl,
+  },
+  message: {
+    gap: t.spacing.lg,
   },
   iconPlate: {
-    width: 72,
-    height: 72,
+    width: 52,
+    height: 52,
     borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
@@ -153,20 +137,8 @@ const useStyles = makeStyles((t) => ({
   body: {
     maxWidth: 520,
   },
-  benefits: {
-    gap: t.spacing.md,
-    padding: t.spacing.lg,
-    borderRadius: t.radius.card,
-    borderCurve: "continuous" as const,
-    backgroundColor: t.colors.surface,
-  },
-  benefitRow: {
-    minHeight: 32,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.sm,
-  },
-  benefitText: {
-    flex: 1,
+  actions: {
+    marginTop: "auto" as const,
+    paddingTop: t.spacing.xl,
   },
 }));

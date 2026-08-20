@@ -618,7 +618,7 @@ export function RootLayoutNav() {
             presentation: "formSheet",
             gestureEnabled: false,
             sheetGrabberVisible: false,
-            sheetAllowedDetents: [0.72, 1],
+            sheetAllowedDetents: [0.52, 0.72],
             contentStyle: { backgroundColor: "transparent" },
           }}
         />

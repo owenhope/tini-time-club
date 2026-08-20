@@ -389,7 +389,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   if (variant === "modal") {
     const disabled = action?.disabled ?? false;
     return (
-      <View style={[styles.modal, { paddingTop: topInset }]}>
+      <View
+        collapsable={false}
+        style={[styles.modal, { paddingTop: topInset }]}
+      >
         <View style={styles.grabberRow}>
           <View style={styles.grabber} />
         </View>
@@ -399,7 +402,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               onPress={onCancel}
               hitSlop={TAP_SLOP}
               accessibilityRole="button"
-              accessibilityLabel="Cancel"
+              accessibilityLabel={cancelLabel}
               style={styles.modalAction}
             >
               <Text style={styles.modalCancel}>{cancelLabel}</Text>
