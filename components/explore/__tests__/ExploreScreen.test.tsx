@@ -37,6 +37,8 @@ jest.mock("@/components/explore/ExploreLists", () => {
 });
 
 const mockRequestLocation = jest.fn(async () => undefined);
+const mockRequireMembership = jest.fn();
+let mockIsMember = true;
 jest.mock("@/components/explore/useExploreLocation", () => ({
   useExploreLocation: () => ({
     state: {
@@ -45,6 +47,13 @@ jest.mock("@/components/explore/useExploreLocation", () => ({
       canOpenSettings: false,
     },
     request: mockRequestLocation,
+  }),
+}));
+
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: mockIsMember,
+    requireMembership: (intent: string) => mockRequireMembership(intent),
   }),
 }));
 
@@ -57,6 +66,12 @@ jest.mock("@/theme", () => ({
 
 describe("ExploreScreen", () => {
   let renderer: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    mockIsMember = true;
+    mockRequireMembership.mockReset();
+    mockRequireMembership.mockReturnValue(true);
+  });
 
   afterEach(() => {
     act(() => renderer?.unmount());
@@ -106,5 +121,67 @@ describe("ExploreScreen", () => {
     ).toEqual(["Map", "Top Places", "Members"]);
     act(() => toggle.props.onChange("places"));
     expect(onViewChange).toHaveBeenCalledWith("places");
+  });
+
+  it("keeps visitors on Map and gates the Top Places and Members views", () => {
+    mockIsMember = false;
+    mockRequireMembership.mockReturnValue(false);
+    const onViewChange = jest.fn();
+
+    act(() => {
+      renderer = create(
+        <ExploreScreen view="map" onViewChange={onViewChange} mapFocus={{}} />
+      );
+    });
+
+    const toggle = renderer!.root.findByType(
+      "SegmentedControl" as React.ElementType
+    );
+
+    act(() => toggle.props.onChange("places"));
+    expect(mockRequireMembership).toHaveBeenLastCalledWith("top-places");
+    expect(onViewChange).not.toHaveBeenCalled();
+
+    act(() => toggle.props.onChange("members"));
+    expect(mockRequireMembership).toHaveBeenLastCalledWith("members-directory");
+    expect(onViewChange).not.toHaveBeenCalled();
+    expect(
+      renderer!.root.findByType("ExploreMap" as React.ElementType).props.enabled
+    ).toBe(true);
+    expect(
+      renderer!.root.findByType("ExploreLists" as React.ElementType).props
+        .enabled
+    ).toBe(false);
+  });
+
+  it("intercepts a visitor deep link before a discovery list is enabled", () => {
+    mockIsMember = false;
+    mockRequireMembership.mockReturnValue(false);
+
+    act(() => {
+      renderer = create(
+        <ExploreScreen view="members" onViewChange={jest.fn()} mapFocus={{}} />
+      );
+    });
+
+    expect(mockRequireMembership).toHaveBeenCalledWith("members-directory");
+    expect(
+      renderer!.root.findByType("SegmentedControl" as React.ElementType).props
+        .value
+    ).toBe("map");
+    expect(
+      renderer!.root.findByType("ExploreMap" as React.ElementType).props.enabled
+    ).toBe(true);
+    expect(
+      renderer!.root.findByType("ExploreLists" as React.ElementType).props
+        .enabled
+    ).toBe(false);
+
+    act(() => {
+      renderer!.update(
+        <ExploreScreen view="members" onViewChange={jest.fn()} mapFocus={{}} />
+      );
+    });
+    expect(mockRequireMembership).toHaveBeenCalledTimes(1);
   });
 });

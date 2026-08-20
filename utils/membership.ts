@@ -9,6 +9,8 @@ export type MembershipIntent =
   | "pick-one"
   | "activity"
   | "people-feed"
+  | "top-places"
+  | "members-directory"
   | "social-list"
   | "share-review"
   | "share-location"
@@ -76,6 +78,16 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
     eyebrow: "YOUR PEOPLE",
     title: "Build a feed around your crowd",
     body: "Join the club and follow members to see their latest reviews here.",
+  },
+  "top-places": {
+    eyebrow: "TOP PLACES",
+    title: "See what the club recommends",
+    body: "Join or sign in to explore the places members rate highest.",
+  },
+  "members-directory": {
+    eyebrow: "THE MEMBERS",
+    title: "Meet the club",
+    body: "Join or sign in to browse members and find people to follow.",
   },
   "social-list": {
     eyebrow: "THE SOCIAL GRAPH",
