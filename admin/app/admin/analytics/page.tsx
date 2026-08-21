@@ -99,52 +99,61 @@ export default async function AnalyticsPage({
             title="App audience"
             description="Who is actively experiencing the app before and after sign-in. Anonymous totals are distinct installations, not inferred people."
           >
-            <div className="grid grid-cols-12 gap-4">
-              <MetricTile
-                label="Anonymous active now"
-                value={audience.visitorActiveNow}
-                hint="seen in the last 15 minutes"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Members active now"
-                value={audience.memberActiveNow}
-                hint="seen in the last 15 minutes"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Anonymous in range"
-                value={audience.visitorInRange}
-                hint="distinct installations"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Members in range"
-                value={audience.memberInRange}
-                hint="distinct authenticated accounts"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-              <MetricTile
-                label="Visitor → member"
-                value={audience.convertedInRange}
-                hint="installations seen in both states during the range"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
-            </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              <LineChart
-                title="Anonymous installations"
-                data={audience.visitorByDay}
-                color="#6B53A8"
-                unit="installations"
-              />
-              <LineChart
-                title="Authenticated members"
-                data={audience.memberByDay}
-                color="#336654"
-                unit="members"
-              />
-            </div>
+            {audience.available ? (
+              <>
+                <div className="grid grid-cols-12 gap-4">
+                  <MetricTile
+                    label="Anonymous active now"
+                    value={audience.visitorActiveNow}
+                    hint="seen in the last 15 minutes"
+                    className="col-span-12 md:col-span-6 xl:col-span-3"
+                  />
+                  <MetricTile
+                    label="Members active now"
+                    value={audience.memberActiveNow}
+                    hint="seen in the last 15 minutes"
+                    className="col-span-12 md:col-span-6 xl:col-span-3"
+                  />
+                  <MetricTile
+                    label="Anonymous in range"
+                    value={audience.visitorInRange}
+                    hint="distinct installations"
+                    className="col-span-12 md:col-span-6 xl:col-span-3"
+                  />
+                  <MetricTile
+                    label="Members in range"
+                    value={audience.memberInRange}
+                    hint="distinct authenticated accounts"
+                    className="col-span-12 md:col-span-6 xl:col-span-3"
+                  />
+                  <MetricTile
+                    label="Visitor → member"
+                    value={audience.convertedInRange}
+                    hint="installations seen in both states during the range"
+                    className="col-span-12 md:col-span-6 xl:col-span-3"
+                  />
+                </div>
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <LineChart
+                    title="Anonymous installations"
+                    data={audience.visitorByDay}
+                    color="#6B53A8"
+                    unit="installations"
+                  />
+                  <LineChart
+                    title="Authenticated members"
+                    data={audience.memberByDay}
+                    color="#336654"
+                    unit="members"
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                App audience tracking is not enabled in this environment. The
+                production analytics below remain available.
+              </p>
+            )}
           </FeatureSection>
 
           <FeatureSection

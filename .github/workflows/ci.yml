@@ -65,6 +65,9 @@ jobs:
       - name: Typecheck admin
         run: npm run typecheck --prefix admin
 
+      - name: Test admin
+        run: npm test --prefix admin
+
       - name: Lint admin
         run: npm run lint --prefix admin
 
