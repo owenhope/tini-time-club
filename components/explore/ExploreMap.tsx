@@ -115,21 +115,13 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
   outer.minLong <= inner.minLong &&
   outer.maxLong >= inner.maxLong;
 
-const ClusterPin = ({
-  count,
-  onPress,
-}: {
-  count: number;
-  onPress: () => void;
-}) => {
+const ClusterPin = ({ count }: { count: number }) => {
   const styles = useStyles();
   const size = count >= 25 ? 66 : count >= 10 ? 58 : 48;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
-      hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-      onPress={onPress}
+    <View
+      pointerEvents="none"
       style={[
         styles.clusterPin,
         {
@@ -140,7 +132,7 @@ const ClusterPin = ({
       ]}
     >
       <Text style={styles.clusterCount}>{count}</Text>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -174,6 +166,7 @@ function ExploreMap({
   const searchRef = useRef<any>(null);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
+  const [locationsReady, setLocationsReady] = useState(false);
   const [locations, setLocations] = useState<MapLocation[]>([]);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [userCoordinate, setUserCoordinate] = useState<{
@@ -318,7 +311,7 @@ function ExploreMap({
 
         return (
           <Marker
-            key={`${location.id}-${isSelected ? "selected" : "idle"}`}
+            key={String(location.id)}
             coordinate={{ latitude: location.lat, longitude: location.long }}
             anchor={{ x: 0.5, y: 1 }}
             tracksViewChanges={false}
@@ -351,7 +344,7 @@ function ExploreMap({
         stopPropagation
         zIndex={5}
       >
-        <ClusterPin count={count} onPress={handlePress} />
+        <ClusterPin count={count} />
       </Marker>
     );
   }, []);
@@ -521,21 +514,27 @@ function ExploreMap({
 
       if (error) {
         reportError("Error fetching locations in view:", error);
+        setLocationsReady(true);
       } else {
         const nextLocations: MapLocation[] = (data ?? []).filter(
           (location: MapLocation) =>
             Number.isFinite(location.lat) && Number.isFinite(location.long)
         );
         fetchedBoundsRef.current = queryBounds;
-        setLocations(nextLocations);
-
+        let committedLocations = nextLocations;
         try {
           const withTheirRegulars = await withRegulars(nextLocations);
           if (requestId !== fetchRequestRef.current) return;
-          setLocations(withTheirRegulars);
+          committedLocations = withTheirRegulars;
         } catch (regularsError) {
           reportError("Error fetching map regulars:", regularsError);
         }
+
+        if (requestId !== fetchRequestRef.current) return;
+        // Publish one complete marker batch. Mounting an empty clustered map
+        // and then replacing it during Fabric reconciliation can crash iOS.
+        setLocations(committedLocations);
+        setLocationsReady(true);
       }
     }, FETCH_DEBOUNCE_MS);
 
@@ -575,7 +574,7 @@ function ExploreMap({
             )}
           </View>
         )}
-        {locationResolved ? (
+        {locationResolved && locationsReady ? (
           <MapView
             ref={mapRef}
             provider={
@@ -584,6 +583,7 @@ function ExploreMap({
             mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
             userInterfaceStyle={isDark ? "dark" : "light"}
             clusteringEnabled={true}
+            animationEnabled={false}
             preserveClusterPressBehavior
             onClusterPress={handleClusterPress}
             renderCluster={renderCluster}
