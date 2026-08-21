@@ -54,6 +54,7 @@ describe("native app permissions", () => {
 
 describe("release environment validation", () => {
   const originalAppEnvironment = process.env.APP_ENV;
+  const originalBackendEnvironment = process.env.BACKEND_ENV;
   const originalSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const originalSupabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   const originalMetaAppId = process.env.EXPO_PUBLIC_META_APP_ID;
@@ -73,6 +74,7 @@ describe("release environment validation", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     process.env.APP_ENV = originalAppEnvironment;
+    process.env.BACKEND_ENV = originalBackendEnvironment;
     process.env.EXPO_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = originalSupabaseAnonKey;
     process.env.EXPO_PUBLIC_META_APP_ID = originalMetaAppId;
@@ -144,5 +146,19 @@ describe("release environment validation", () => {
     expect(
       createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
     ).toBe("com.ohope.tinitimeclub");
+  });
+
+  it("points the audited production app at the production backend", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "production";
+    process.env.BACKEND_ENV = "production";
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    setSentryReleaseEnvironment();
+
+    expect(
+      createAppConfig({ config: {} } as ConfigContext).extra?.backendEnvironment
+    ).toBe("production");
   });
 });
