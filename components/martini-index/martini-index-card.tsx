@@ -1,11 +1,12 @@
-import React from "react";
-import { View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/shared";
 import ReviewTag from "@/components/shared/review-tag";
 import { makeStyles, useTheme } from "@/theme";
 import type { MartiniIndexEntry } from "@/utils/martini-index";
+import MartiniImagePreview from "@/components/martini-index/martini-image-preview";
 
 interface MartiniIndexCardProps {
   item: MartiniIndexEntry;
@@ -18,6 +19,7 @@ export default function MartiniIndexCard({
 }: MartiniIndexCardProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const [previewVisible, setPreviewVisible] = useState(false);
   const editorialBadgeStyle =
     item.badge === "Bar classic"
       ? styles.badgeBarClassic
@@ -46,14 +48,21 @@ export default function MartiniIndexCard({
   return (
     <View style={[styles.card, compact && styles.cardCompact]}>
       <View style={[styles.imageFrame, compact && styles.imageFrameCompact]}>
-        <Image
-          source={item.image}
-          style={styles.image}
-          contentFit="cover"
-          transition={180}
-          accessibilityLabel={`${item.title} in a martini glass`}
-        />
-        <View style={[styles.badge, editorialBadgeStyle]}>
+        <Pressable
+          onPress={() => setPreviewVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${item.title} enlarged`}
+          style={styles.imagePressable}
+        >
+          <Image
+            source={item.image}
+            style={styles.image}
+            contentFit="cover"
+            transition={180}
+            accessibilityLabel={`${item.title} in a martini glass`}
+          />
+        </Pressable>
+        <View pointerEvents="none" style={[styles.badge, editorialBadgeStyle]}>
           <Ionicons
             name={editorialBadgeIcon}
             size={15}
@@ -66,7 +75,7 @@ export default function MartiniIndexCard({
             {item.badge.toUpperCase()}
           </AppText>
         </View>
-        <View style={styles.imageMetaBadges}>
+        <View pointerEvents="none" style={styles.imageMetaBadges}>
           <ReviewTag name={item.spirit} fallback="spirit" />
           <ReviewTag name={item.type} fallback="type" />
         </View>
@@ -95,6 +104,12 @@ export default function MartiniIndexCard({
           “{item.order}”
         </AppText>
       </View>
+      <MartiniImagePreview
+        visible={previewVisible}
+        source={item.image}
+        title={item.title}
+        onClose={() => setPreviewVisible(false)}
+      />
     </View>
   );
 }
@@ -119,6 +134,10 @@ const useStyles = makeStyles((t) => ({
     height: 190,
   },
   image: {
+    width: "100%" as const,
+    height: "100%" as const,
+  },
+  imagePressable: {
     width: "100%" as const,
     height: "100%" as const,
   },
