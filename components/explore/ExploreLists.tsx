@@ -26,6 +26,7 @@ import {
 } from "@/components/explore/ExploreSearchField";
 import { useProfile } from "@/context/profile-context";
 import { publicContentService } from "@/services/public-content-service";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -62,6 +63,7 @@ interface ExploreListsProps {
 }
 
 const DISCOVER_PROFILE_AVATAR_SIZE = 40;
+const DISCOVERY_PAGE_SIZE = 25;
 
 export default function ExploreLists({
   enabled,
@@ -78,6 +80,9 @@ export default function ExploreLists({
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreProfiles, setHasMoreProfiles] = useState(true);
+  const [hasMoreLocations, setHasMoreLocations] = useState(true);
   const [nearby, setNearby] = useState(true); // Default enabled
   const nearbyEnabled =
     nearby && location.status !== "denied" && location.status !== "unavailable";
@@ -89,6 +94,23 @@ export default function ExploreLists({
         : null;
   const router = useRouter();
   const openProfile = useOpenProfile();
+  // The native tab bar floats over content, so the lists pad their own tails.
+  const tabBarInset = useNativeTabBarContentInset();
+
+  const commitLocations = React.useCallback(
+    (nextLocations: any[], offset: number) => {
+      setLocations((current) => {
+        if (offset === 0) return nextLocations;
+        const seen = new Set(current.map((location) => String(location.id)));
+        return [
+          ...current,
+          ...nextLocations.filter((location) => !seen.has(String(location.id))),
+        ];
+      });
+      setHasMoreLocations(nextLocations.length === DISCOVERY_PAGE_SIZE);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!enabled || activeView !== "places" || !nearbyEnabled) return;
@@ -119,45 +141,78 @@ export default function ExploreLists({
   };
 
   const fetchProfiles = React.useCallback(
-    async (searchQuery: string) => {
-      setLoading(true);
+    async (searchQuery: string, offset = 0) => {
+      if (offset === 0) setLoading(true);
+      else setLoadingMore(true);
       try {
         // Ranked and filtered in SQL. This previously downloaded every profile,
         // every published review and every follower row to count them locally.
         if (!profile) {
-          setProfiles(await publicContentService.getProfiles(searchQuery, 50));
+          const nextProfiles = await publicContentService.getProfiles(
+            searchQuery,
+            DISCOVERY_PAGE_SIZE,
+            offset
+          );
+          setProfiles((current) =>
+            offset === 0 ? nextProfiles : [...current, ...nextProfiles]
+          );
+          setHasMoreProfiles(nextProfiles.length === DISCOVERY_PAGE_SIZE);
           return;
         }
 
-        const { data, error } = await supabase.rpc("top_profiles", {
-          p_limit: 50,
+        let { data, error } = await supabase.rpc("top_profiles", {
+          p_limit: DISCOVERY_PAGE_SIZE,
           p_search: searchQuery || null,
+          p_offset: offset,
         });
+
+        // Keep the first page usable while an environment is still on the
+        // pre-pagination RPC. Later pages stop cleanly instead of retrying an
+        // incompatible function signature and showing an error to the member.
+        if (error && offset === 0) {
+          const legacyResult = await supabase.rpc("top_profiles", {
+            p_limit: DISCOVERY_PAGE_SIZE,
+            p_search: searchQuery || null,
+          });
+          data = legacyResult.data;
+          error = legacyResult.error;
+        }
 
         if (error) {
           reportError("Error fetching profiles:", error);
-          setProfiles([]);
+          if (offset > 0) setHasMoreProfiles(false);
+          if (offset === 0) setProfiles([]);
           return;
         }
 
-        setProfiles(data ?? []);
+        const nextProfiles = data ?? [];
+        setProfiles((current) =>
+          offset === 0 ? nextProfiles : [...current, ...nextProfiles]
+        );
+        setHasMoreProfiles(nextProfiles.length === DISCOVERY_PAGE_SIZE);
       } catch (error) {
         reportError("Error fetching profiles:", error);
-        setProfiles([]);
+        if (offset === 0) setProfiles([]);
       } finally {
-        setLoading(false);
+        if (offset === 0) setLoading(false);
+        else setLoadingMore(false);
       }
     },
     [profile]
   );
 
   const fetchLocations = React.useCallback(
-    async (searchQuery: string) => {
-      setLoading(true);
+    async (searchQuery: string, offset = 0) => {
+      if (offset === 0) setLoading(true);
+      else setLoadingMore(true);
       try {
         if (!searchQuery) {
           if (!profile) {
-            const data = await publicContentService.getLocations(undefined, 50);
+            const data = await publicContentService.getLocations(
+              undefined,
+              DISCOVERY_PAGE_SIZE,
+              offset
+            );
             let processedLocations = data.map((location) => ({
               id: location.id,
               name: location.name,
@@ -190,9 +245,8 @@ export default function ExploreLists({
                 return ratingDiff !== 0
                   ? ratingDiff
                   : (b.total_ratings || 0) - (a.total_ratings || 0);
-              })
-              .slice(0, 20);
-            setLocations(await withRegulars(visibleLocations));
+              });
+            commitLocations(await withRegulars(visibleLocations), offset);
             return;
           }
 
@@ -200,12 +254,14 @@ export default function ExploreLists({
           const { data, error } = await supabase
             .from("location_ratings")
             .select("*")
+            .gte("total_ratings", 2)
+            .order("rating", { ascending: false, nullsFirst: false })
             .order("total_ratings", { ascending: false })
-            .limit(50);
+            .range(offset, offset + DISCOVERY_PAGE_SIZE - 1);
 
           if (error) {
             reportError("Error fetching location ratings:", error);
-            setLocations([]);
+            if (offset === 0) setLocations([]);
             return;
           }
 
@@ -273,17 +329,17 @@ export default function ExploreLists({
 
               // If ratings are equal, sort by review count (highest first) - more reviews = more reliable
               return (b.total_ratings || 0) - (a.total_ratings || 0);
-            })
-            .slice(0, 20);
+            });
 
-          setLocations(await withRegulars(sortedLocations));
+          commitLocations(await withRegulars(sortedLocations), offset);
         } else {
           if (!profile) {
             const data = await publicContentService.getLocations(
               searchQuery,
-              20
+              DISCOVERY_PAGE_SIZE,
+              offset
             );
-            setLocations(
+            commitLocations(
               await withRegulars(
                 data.map((location) => ({
                   id: location.id,
@@ -300,7 +356,8 @@ export default function ExploreLists({
                       : null,
                   total_ratings: location.total_ratings,
                 }))
-              )
+              ),
+              offset
             );
             return;
           }
@@ -310,12 +367,13 @@ export default function ExploreLists({
           const { data: locationsData, error: locationsError } =
             await supabase.rpc("search_locations", {
               p_query: searchQuery,
-              p_limit: 20,
+              p_limit: DISCOVERY_PAGE_SIZE,
+              p_offset: offset,
             });
 
           if (locationsError) {
             reportError("Error fetching locations:", locationsError);
-            setLocations([]);
+            if (offset === 0) setLocations([]);
             return;
           }
 
@@ -339,19 +397,28 @@ export default function ExploreLists({
             }
           );
 
-          setLocations(await withRegulars(processedLocations));
+          commitLocations(await withRegulars(processedLocations), offset);
         }
       } catch (error) {
         reportError("Error fetching locations:", error);
       } finally {
-        setLoading(false);
+        if (offset === 0) setLoading(false);
+        else setLoadingMore(false);
       }
     },
-    [nearbyEnabled, profile, userLocation]
+    [commitLocations, nearbyEnabled, profile, userLocation]
   );
 
   React.useEffect(() => {
     if (!enabled) return;
+
+    if (activeTab === "profiles") {
+      setProfiles([]);
+      setHasMoreProfiles(true);
+    } else {
+      setLocations([]);
+      setHasMoreLocations(true);
+    }
 
     // Debounce: without this every keystroke fires its own Supabase request.
     const handle = setTimeout(
@@ -379,6 +446,26 @@ export default function ExploreLists({
     query,
     nearbyEnabled,
     userLocation,
+  ]);
+
+  const handleEndReached = React.useCallback(() => {
+    if (loading || loadingMore) return;
+    if (activeTab === "profiles") {
+      if (hasMoreProfiles) void fetchProfiles(query, profiles.length);
+    } else if (hasMoreLocations) {
+      void fetchLocations(query, locations.length);
+    }
+  }, [
+    activeTab,
+    fetchLocations,
+    fetchProfiles,
+    hasMoreLocations,
+    hasMoreProfiles,
+    loading,
+    loadingMore,
+    locations.length,
+    profiles.length,
+    query,
   ]);
 
   const renderProfile = ({ item }: { item: any }) => {
@@ -556,7 +643,12 @@ export default function ExploreLists({
             renderItem={renderProfile}
             keyExtractor={(item) => `profile-${item.id}`}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            contentContainerStyle={[
+              styles.listContainer,
+              { paddingBottom: tabBarInset },
+            ]}
             ListEmptyComponent={
               <ListState
                 loading={loading}
@@ -574,7 +666,12 @@ export default function ExploreLists({
             renderItem={renderLocation}
             keyExtractor={(item) => `location-${item.id}`}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            contentContainerStyle={[
+              styles.listContainer,
+              { paddingBottom: tabBarInset },
+            ]}
             ListEmptyComponent={
               <ListState
                 loading={loading}

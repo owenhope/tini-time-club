@@ -1,6 +1,3 @@
-import { Redirect } from "expo-router";
-import { routes } from "@/utils/routes";
+import ReviewScreen from "@/app/review";
 
-export default function ReviewTabPlaceholder() {
-  return <Redirect href={routes.home()} />;
-}
+export default ReviewScreen;

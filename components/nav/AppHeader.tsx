@@ -60,6 +60,8 @@ export interface AppHeaderProps {
   imageUri?: string | null;
   /** Variant A's single control, or variant B's trailing one. */
   trailing?: HeaderAction;
+  /** Optional leading control for large headers. */
+  leading?: HeaderAction;
   /** Variant B and C: the controls on the right, in drawn order. */
   actions?: HeaderAction[];
   /** Omit and no leading control is drawn — the tab roots have nowhere back. */
@@ -332,6 +334,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   meta,
   imageUri,
   trailing,
+  leading,
   actions,
   onBack,
   below,
@@ -579,6 +582,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       <Animated.View style={fade}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <View style={styles.largeRow}>
+          {leading ? (
+            <NavActionControl tone="onInk" action={leading} />
+          ) : onBack ? (
+            <NavActionControl
+              tone="onInk"
+              action={{
+                icon: "chevron-back",
+                onPress: onBack,
+                accessibilityLabel: "Back",
+              }}
+            />
+          ) : null}
           <View style={styles.largeIdentity}>
             <Text
               style={[styles.largeTitle, preserveCase && styles.titlePlain]}
@@ -707,8 +722,11 @@ const useStyles = makeStyles((t) => ({
   },
   largeIdentity: {
     flex: 1,
+    minWidth: 0,
   },
   largeActions: {
+    minWidth: CIRCLE,
+    flexShrink: 0,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: ACTION_GAP,

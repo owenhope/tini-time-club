@@ -19,7 +19,7 @@ describe("ClusteredMap", () => {
     act(() => renderer?.unmount());
   });
 
-  it("keeps cluster layout animation disabled for Fabric marker updates", () => {
+  it("enables cluster layout animation while the map stays mounted", () => {
     let mapRenderer: ReactTestRenderer;
     act(() => {
       mapRenderer = create(<ClusteredMap />);
@@ -29,6 +29,6 @@ describe("ClusteredMap", () => {
     expect(
       mapRenderer!.root.findByType("ClusteredMapView" as React.ElementType)
         .props.animationEnabled
-    ).toBe(false);
+    ).toBe(true);
   });
 });

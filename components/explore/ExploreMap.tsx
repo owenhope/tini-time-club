@@ -58,7 +58,7 @@ const ESTIMATED_LOCATION_SHEET_CONTENT_HEIGHT = 176;
 const FETCH_DEBOUNCE_MS = 250;
 const FETCH_PADDING = 0.35;
 const CLUSTER_FIT_PADDING = 1.8;
-const CLUSTER_MIN_DELTA = 0.008;
+const CLUSTER_MIN_DELTA = 0.002;
 const CLUSTER_FALLBACK_ZOOM = 0.4;
 const MARKER_PRESS_GUARD_MS = 250;
 const ROUTE_LOCATION_FOCUS_DELTA = 0.001;
@@ -168,6 +168,7 @@ function ExploreMap({
   const [locationResolved, setLocationResolved] = useState(false);
   const [locationsReady, setLocationsReady] = useState(false);
   const [locations, setLocations] = useState<MapLocation[]>([]);
+  const [mapRevision, setMapRevision] = useState(0);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [userCoordinate, setUserCoordinate] = useState<{
     latitude: number;
@@ -193,6 +194,17 @@ function ExploreMap({
   const [regularsSheetOpen, setRegularsSheetOpen] = useState(false);
   const sheetRef = useRef<BottomSheet>(null);
   const measuredSheetHeightRef = useRef<number | null>(null);
+  const wasEnabledRef = useRef(enabled);
+
+  useEffect(() => {
+    if (enabled && !wasEnabledRef.current) {
+      // react-native-map-clustering derives its native marker list from the
+      // children array. Re-key the marker batch when returning from a list so
+      // the native map refreshes immediately instead of waiting for a gesture.
+      setMapRevision((revision) => revision + 1);
+    }
+    wasEnabledRef.current = enabled;
+  }, [enabled]);
 
   const selectedLocation = useMemo(
     () =>
@@ -311,7 +323,7 @@ function ExploreMap({
 
         return (
           <Marker
-            key={String(location.id)}
+            key={`${String(location.id)}-${mapRevision}`}
             coordinate={{ latitude: location.lat, longitude: location.long }}
             anchor={{ x: 0.5, y: 1 }}
             tracksViewChanges={false}
@@ -323,7 +335,7 @@ function ExploreMap({
           </Marker>
         );
       }),
-    [handleMarkerPress, locations, selectedLocationId]
+    [handleMarkerPress, locations, mapRevision, selectedLocationId]
   );
 
   const renderCluster = useCallback((cluster: any) => {
@@ -583,7 +595,7 @@ function ExploreMap({
             mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
             userInterfaceStyle={isDark ? "dark" : "light"}
             clusteringEnabled={true}
-            animationEnabled={false}
+            animationEnabled
             preserveClusterPressBehavior
             onClusterPress={handleClusterPress}
             renderCluster={renderCluster}

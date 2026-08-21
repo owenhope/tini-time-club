@@ -34,22 +34,27 @@ jest.mock("expo-router/unstable-native-tabs", () => {
   return { NativeTabs };
 });
 
+const memberProfile = {
+  id: "member-1",
+  username: "olive",
+  eula_accepted: true,
+  weekly_push_notifications_enabled: true,
+};
+let mockProfile: typeof memberProfile | null = memberProfile;
+
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
     loading: false,
-    profile: {
-      id: "member-1",
-      username: "olive",
-      eula_accepted: true,
-      weekly_push_notifications_enabled: true,
-    },
+    profile: mockProfile,
   }),
 }));
 
+const mockRequireMembership = jest.fn(() => true);
+
 jest.mock("@/context/membership-context", () => ({
   useMembership: () => ({
-    isMember: true,
-    requireMembership: jest.fn(() => true),
+    isMember: Boolean(mockProfile),
+    requireMembership: mockRequireMembership,
     openMembership: jest.fn(),
   }),
 }));
@@ -104,11 +109,14 @@ describe("native tab icon configuration", () => {
 
   beforeEach(() => {
     mockGlobalScrollToTop.mockClear();
+    mockRequireMembership.mockClear();
     mockPathname = "/home";
+    mockProfile = memberProfile;
   });
 
   afterEach(() => {
     act(() => renderer?.unmount());
+    jest.useRealTimers();
   });
 
   it("does not give the Feed tab independently loading default and selected vector icons", async () => {
@@ -181,5 +189,71 @@ describe("native tab icon configuration", () => {
     });
 
     expect(mockGlobalScrollToTop).not.toHaveBeenCalled();
+  });
+
+  it("lets signed-in members select Profile through native tabs", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const profileTrigger = renderer!.root.findByProps({ name: "(profile)" });
+
+    expect(profileTrigger.props.disabled).toBe(false);
+    expect(profileTrigger.props.listeners).toBeUndefined();
+  });
+
+  it("keeps the Review composer inside the native tab navigator for members", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const reviewTrigger = renderer!.root.findByProps({ name: "(review)" });
+
+    expect(reviewTrigger.props.disabled).toBe(false);
+    expect(reviewTrigger.props.listeners).toBeUndefined();
+  });
+
+  it("ignores the ghost tap that falls through from Welcome onto gated tabs", async () => {
+    // Welcome's full-width CTA sits where the tab bar mounts; the tail of that
+    // tap lands on the Review trigger right after this layout appears.
+    mockProfile = null;
+    jest.useFakeTimers();
+
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const reviewTrigger = renderer!.root.findByProps({ name: "(review)" });
+
+    act(() => {
+      reviewTrigger.props.listeners.tabPress();
+    });
+
+    expect(mockRequireMembership).not.toHaveBeenCalled();
+  });
+
+  it("still opens the membership gate for deliberate visitor tab presses", async () => {
+    mockProfile = null;
+    jest.useFakeTimers();
+
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(701);
+    });
+
+    const reviewTrigger = renderer!.root.findByProps({ name: "(review)" });
+    act(() => {
+      reviewTrigger.props.listeners.tabPress();
+    });
+    expect(mockRequireMembership).toHaveBeenCalledWith("review");
+
+    const profileTrigger = renderer!.root.findByProps({ name: "(profile)" });
+    act(() => {
+      profileTrigger.props.listeners.tabPress();
+    });
+    expect(mockRequireMembership).toHaveBeenCalledWith("profile");
   });
 });

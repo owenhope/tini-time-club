@@ -43,6 +43,7 @@ import {
   isAuthCallbackUrl,
 } from "@/utils/authDeepLink";
 import { routes } from "@/utils/routes";
+import { consumeExplicitSignOutNavigation } from "@/utils/signOutNavigation";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import { trackAppUsage } from "@/services/appUsageService";
@@ -486,7 +487,9 @@ export function RootLayoutNav() {
         await authCache.invalidateCache();
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(null);
-        } else {
+        } else if (!consumeExplicitSignOutNavigation()) {
+          // The screen that started this sign-out may have navigated to
+          // Welcome already; replacing Welcome with itself would flash.
           router.replace(routes.welcome());
         }
       }
@@ -521,7 +524,11 @@ export function RootLayoutNav() {
       void authCache.onAppStateChange(nextAppState);
 
       if (nextAppState === "active") {
-        void retryPendingPushUnregistrationAsync();
+        void Promise.resolve(retryPendingPushUnregistrationAsync()).catch(
+          (error) => {
+            warn("[RootLayout] Push cleanup retry skipped:", error);
+          }
+        );
         void trackAppUsage();
       }
     };
@@ -605,6 +612,14 @@ export function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
         <Stack.Screen name="welcome" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "none" }} />
+        {/* Auth screens fade. The default lateral slide meant the sign-in
+            replace revealed the near-black Welcome screen still beneath the
+            stack for a few frames — the "black flash" on sign-in. A fade
+            composites the outgoing auth card over the incoming feed, so the
+            arrival reads as one transition. */}
+        <Stack.Screen name="auth/index" options={{ animation: "fade" }} />
+        <Stack.Screen name="auth/email" options={{ animation: "fade" }} />
+        <Stack.Screen name="auth/callback" options={{ animation: "fade" }} />
         <Stack.Screen
           name="membership"
           options={{

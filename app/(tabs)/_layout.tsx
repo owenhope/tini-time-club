@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -19,6 +19,13 @@ import { routes } from "@/utils/routes";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 import { useMembership } from "@/context/membership-context";
+import type { MembershipIntent } from "@/utils/membership";
+
+// Welcome's full-width "Discover Martinis" CTA occupies the strip of screen
+// where the native tab bar mounts, so the tail of that tap can be delivered to
+// the gated Review/Profile triggers the moment this layout appears under the
+// finger. A press that arrives this soon after mount cannot be intentional.
+const GHOST_TAP_GRACE_MS = 700;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -36,9 +43,27 @@ const LayoutContent = () => {
   const router = useRouter();
   const { requireMembership } = useMembership();
   const pathname = usePathname();
+  const hasResolvedProfileOnce = useRef(false);
+  const mountedAtRef = useRef<number | null>(null);
+  const gateTabPress = useCallback(
+    (intent: MembershipIntent) => {
+      if (
+        mountedAtRef.current === null ||
+        Date.now() - mountedAtRef.current < GHOST_TAP_GRACE_MS
+      ) {
+        return;
+      }
+      requireMembership(intent);
+    },
+    [requireMembership]
+  );
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;
+
+  useEffect(() => {
+    mountedAtRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (!profile?.eula_accepted || !profile.username) return;
@@ -99,7 +124,19 @@ const LayoutContent = () => {
     }
   }, [loading, profile, router]);
 
-  if (loading || (profile && (!profile.username || !profile.eula_accepted))) {
+  // Blank the tabs only before the first profile resolution (so a cold start
+  // cannot flash the wrong tree) and for accounts still in onboarding. Every
+  // later `loading` flip — most visibly the SIGNED_IN profile fetch — must
+  // keep the tree mounted: unmounting NativeTabs mid sign-in blacked out the
+  // screen behind the auth card and remounted the tabs as a second visible
+  // transition once the profile arrived.
+  if (!loading) {
+    hasResolvedProfileOnce.current = true;
+  }
+  if (
+    (loading && !hasResolvedProfileOnce.current) ||
+    (profile && (!profile.username || !profile.eula_accepted))
+  ) {
     return null;
   }
 
@@ -160,13 +197,19 @@ const LayoutContent = () => {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="(review)"
-        disabled
         accessibilityLabel="Log a martini"
-        listeners={{
-          tabPress: () => {
-            if (requireMembership("review")) router.push(routes.review());
-          },
-        }}
+        // Members open the composer inside the tab navigator so the native tab
+        // bar remains visible. Visitors stay gated without selecting the tab.
+        disabled={!profile}
+        listeners={
+          profile
+            ? undefined
+            : {
+                tabPress: () => {
+                  gateTabPress("review");
+                },
+              }
+        }
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
@@ -189,16 +232,18 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(profile)"
         accessibilityLabel="Profile"
-        // Same gate as the Review tab: the press never navigates on its own —
-        // visitors get the membership sheet in place, members are routed in.
-        disabled
-        listeners={{
-          tabPress: () => {
-            if (requireMembership("profile")) {
-              router.navigate(routes.profile());
-            }
-          },
-        }}
+        // Members use the native tab selection directly. Visitors keep the
+        // tab disabled so the membership sheet can open without a focus jump.
+        disabled={!profile}
+        listeners={
+          profile
+            ? undefined
+            : {
+                tabPress: () => {
+                  gateTabPress("profile");
+                },
+              }
+        }
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon

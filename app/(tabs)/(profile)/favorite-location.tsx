@@ -39,8 +39,8 @@ const FavoriteLocation = () => {
   });
 
   const handleSelect = useCallback(
-    async (location: LocationInputValue) => {
-      if (!profileId || saving) return;
+    async (location: LocationInputValue | null) => {
+      if (!location || !profileId || saving) return;
 
       try {
         setSaving(true);

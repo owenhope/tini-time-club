@@ -50,6 +50,8 @@ interface ProfileHeaderProps {
   action?: React.ReactNode;
   /** Variant A's single trailing control — settings, on your own profile. */
   titleAction?: HeaderAction;
+  /** Optional segmented control rendered inside the purple header ground. */
+  below?: React.ReactNode;
   /**
    * Which header the block wears. Your own profile is a tab root, so it takes
    * variant A; someone else's is a pushed detail screen, so it takes C.
@@ -100,6 +102,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   children,
   action,
   titleAction,
+  below,
   variant = "large",
   onBack,
   actions,
@@ -286,6 +289,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
         {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
       </View>
+      {below ? <View style={styles.below}>{below}</View> : null}
     </View>
   );
 };
@@ -299,6 +303,9 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.xl,
     paddingHorizontal: t.spacing.gutter,
     gap: t.spacing.lg,
+  },
+  below: {
+    paddingBottom: t.spacing.xs,
   },
   topRow: {
     flexDirection: "row" as const,

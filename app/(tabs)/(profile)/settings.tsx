@@ -15,6 +15,7 @@ import { unregisterPushNotificationsAsync } from "@/services/pushNotificationSer
 import { makeStyles, type ThemePreference, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
+import { markExplicitSignOutNavigation } from "@/utils/signOutNavigation";
 import { routes } from "@/utils/routes";
 import { useProfile } from "@/context/profile-context";
 import { shareInviteViaSheet } from "@/utils/inviteShare";
@@ -29,11 +30,25 @@ const Settings = () => {
   const router = useRouter();
   const styles = useStyles();
   const { colors, preference, setPreference } = useTheme();
-  const { profile } = useProfile();
+  const { profile, beginSignOut } = useProfile();
 
   const handleLogout = async () => {
     try {
       AnalyticService.capture("logout", {});
+
+      // Clear the member immediately. Supabase emits SIGNED_OUT after the
+      // sign-out request completes, but the tabs can render during that
+      // request. Keeping the old profile for that frame makes the feed show
+      // member-only actions (including “Post a review”) on the welcome route.
+      beginSignOut?.();
+
+      // Leave the member shell before its tabs re-render for a visitor.
+      // Waiting for SIGNED_OUT to navigate let the visitor feed flash (and
+      // background screens react to the cleared profile) while the sign-out
+      // request was still in flight. The mark tells the root auth listener
+      // this transition already happened, so it stays the only one.
+      markExplicitSignOutNavigation();
+      router.replace(routes.welcome());
 
       await unregisterPushNotificationsAsync();
 
@@ -45,10 +60,6 @@ const Settings = () => {
 
       if (error) {
         reportError("Error signing out:", error);
-        // A failed sign-out does not emit SIGNED_OUT, so use the screen-level
-        // fallback only in this error path. Successful logout navigation is
-        // owned by the root auth listener to avoid two page transitions.
-        router.replace(routes.welcome());
       }
     } catch (error) {
       reportError("Error signing out:", error);

@@ -143,6 +143,8 @@ jest.mock("@/services/analyticsService", () => ({
 jest.mock("@/utils/signOut", () => ({
   clearUserCaches: jest.fn(async () => undefined),
 }));
+// @/utils/signOutNavigation stays real: these tests exercise the actual
+// handoff between the screen that navigates on logout and the root listener.
 jest.mock("@/utils/inviteShare", () => ({
   shareInviteViaSheet: jest.fn(),
 }));

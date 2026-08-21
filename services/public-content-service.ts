@@ -12,8 +12,13 @@ type PublicContentRequest =
   | { operation: "review"; reviewId: string | number }
   | { operation: "comments"; reviewId: string | number }
   | { operation: "profile"; username: string }
-  | { operation: "profiles"; search?: string; limit?: number }
-  | { operation: "locations"; search?: string; limit?: number }
+  | { operation: "profiles"; search?: string; limit?: number; offset?: number }
+  | {
+      operation: "locations";
+      search?: string;
+      limit?: number;
+      offset?: number;
+    }
   | { operation: "location"; locationId: string | number }
   | {
       operation: "locations-in-view";
@@ -67,11 +72,11 @@ export const publicContentService = {
   getProfile: (username: string) =>
     invoke<PublicProfileResponse>({ operation: "profile", username }),
 
-  getProfiles: (search?: string, limit = 50) =>
-    invoke<Profile[]>({ operation: "profiles", search, limit }),
+  getProfiles: (search?: string, limit = 25, offset = 0) =>
+    invoke<Profile[]>({ operation: "profiles", search, limit, offset }),
 
-  getLocations: (search?: string, limit = 50) =>
-    invoke<LocationRating[]>({ operation: "locations", search, limit }),
+  getLocations: (search?: string, limit = 25, offset = 0) =>
+    invoke<LocationRating[]>({ operation: "locations", search, limit, offset }),
 
   getLocation: (locationId: string | number) =>
     invoke<LocationRating>({ operation: "location", locationId }),
