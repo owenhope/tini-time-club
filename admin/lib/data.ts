@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
 import { bucketByDay } from "@/lib/bucket";
 import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { formatCityRegion } from "@/lib/format";
@@ -122,6 +123,7 @@ export interface DashboardKpis {
 }
 
 export interface AudienceUsage {
+  available: boolean;
   visitorActiveNow: number;
   memberActiveNow: number;
   visitorInRange: number;
@@ -130,15 +132,6 @@ export interface AudienceUsage {
   visitorByDay: { day: string; count: number }[];
   memberByDay: { day: string; count: number }[];
 }
-
-type AudienceUsageRpc = {
-  visitorActiveNow?: number;
-  memberActiveNow?: number;
-  visitorInRange?: number;
-  memberInRange?: number;
-  convertedInRange?: number;
-  byDay?: Array<{ day: string; visitors: number; members: number }>;
-};
 
 /**
  * Anonymous figures are distinct random installations, not inferred people.
@@ -154,27 +147,7 @@ export const fetchAudienceUsage = async (
     p_until: range.until.toISOString().slice(0, 10),
     p_active_since: activeSince.toISOString(),
   });
-  if (error) {
-    throw new Error(`Unable to load app audience: ${error.message}`);
-  }
-
-  const summary = (data ?? {}) as AudienceUsageRpc;
-  const byDay = summary.byDay ?? [];
-  return {
-    visitorActiveNow: Number(summary.visitorActiveNow ?? 0),
-    memberActiveNow: Number(summary.memberActiveNow ?? 0),
-    visitorInRange: Number(summary.visitorInRange ?? 0),
-    memberInRange: Number(summary.memberInRange ?? 0),
-    convertedInRange: Number(summary.convertedInRange ?? 0),
-    visitorByDay: byDay.map((row) => ({
-      day: row.day,
-      count: Number(row.visitors ?? 0),
-    })),
-    memberByDay: byDay.map((row) => ({
-      day: row.day,
-      count: Number(row.members ?? 0),
-    })),
-  };
+  return resolveAudienceUsageResponse(data, error);
 };
 
 /** The equal-length window immediately preceding `range`. */
