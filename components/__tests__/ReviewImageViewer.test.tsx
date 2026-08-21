@@ -29,7 +29,6 @@ jest.mock("react-native-gesture-handler", () => {
 
 describe("ReviewImageViewer", () => {
   it("shows the review image and closes on any tap", () => {
-    jest.useFakeTimers();
     const onClose = jest.fn();
     let tree: renderer.ReactTestRenderer;
 
@@ -59,11 +58,7 @@ describe("ReviewImageViewer", () => {
         node.props.accessibilityLabel === "Close review photo" &&
         typeof node.props.onPress === "function"
     );
-    act(() => {
-      backdrop.props.onPress();
-      jest.runAllTimers();
-    });
+    act(() => backdrop.props.onPress());
     expect(onClose).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
   });
 });

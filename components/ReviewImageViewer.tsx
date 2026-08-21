@@ -32,10 +32,10 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   const styles = useStyles();
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(1);
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [pinchScale] = useState(() => new Animated.Value(1));
   const [panY] = useState(() => new Animated.Value(0));
-  const [dismissScale] = useState(() => new Animated.Value(1));
-  const dismissingRef = useRef(false);
   const [pinchEvent] = useState(() =>
     Animated.event([{ nativeEvent: { scale: pinchScale } }], {
       useNativeDriver: true,
@@ -56,20 +56,9 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   };
 
   const closeViewer = () => {
-    if (dismissingRef.current) return;
-    dismissingRef.current = true;
     resetZoom();
-    Animated.timing(dismissScale, {
-      toValue: 0.82,
-      duration: 80,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      panY.setValue(0);
-      dismissScale.setValue(1);
-      dismissingRef.current = false;
-      onClose();
-    });
+    panY.setValue(0);
+    onClose();
   };
 
   const handlePinchStateChange = ({ nativeEvent }: any) => {
@@ -99,6 +88,23 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
     }).start();
   };
 
+  const imageAspectRatio =
+    imageSize.width > 0 && imageSize.height > 0
+      ? imageSize.width / imageSize.height
+      : 0;
+  const imageFrameStyle =
+    imageAspectRatio > 0 && stageSize.width > 0 && stageSize.height > 0
+      ? imageAspectRatio >= stageSize.width / stageSize.height
+        ? {
+            width: stageSize.width,
+            height: stageSize.width / imageAspectRatio,
+          }
+        : {
+            width: stageSize.height * imageAspectRatio,
+            height: stageSize.height,
+          }
+      : undefined;
+
   return (
     <Modal
       visible={visible}
@@ -114,23 +120,19 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
           accessibilityRole="button"
           accessibilityLabel="Close review photo"
         />
-        <Pressable
-          style={styles.imageHitbox}
-          onPress={(event) => event.stopPropagation()}
+        <Animated.View
+          style={[styles.imageStage, { transform: [{ translateY: panY }] }]}
+          onLayout={({ nativeEvent }) => setStageSize(nativeEvent.layout)}
         >
-          <PanGestureHandler
-            ref={panRef}
-            simultaneousHandlers={pinchRef}
-            onGestureEvent={panEvent}
-            onHandlerStateChange={handlePanStateChange}
+          <Pressable
+            style={[styles.imageHitbox, imageFrameStyle]}
+            onPress={(event) => event.stopPropagation()}
           >
-            <Animated.View
-              style={[
-                styles.imageStage,
-                {
-                  transform: [{ translateY: panY }, { scale: dismissScale }],
-                },
-              ]}
+            <PanGestureHandler
+              ref={panRef}
+              simultaneousHandlers={pinchRef}
+              onGestureEvent={panEvent}
+              onHandlerStateChange={handlePanStateChange}
             >
               <PinchGestureHandler
                 ref={pinchRef}
@@ -147,6 +149,7 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
                   <ExpoImage
                     source={{ uri: imageUrl }}
                     style={styles.image}
+                    onLoad={({ source }) => setImageSize(source)}
                     contentFit="contain"
                     transition={0}
                     cachePolicy="memory-disk"
@@ -156,9 +159,9 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
                   />
                 </Animated.View>
               </PinchGestureHandler>
-            </Animated.View>
-          </PanGestureHandler>
-        </Pressable>
+            </PanGestureHandler>
+          </Pressable>
+        </Animated.View>
       </Animated.View>
     </Modal>
   );
@@ -181,8 +184,6 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   imageHitbox: {
-    width: "100%" as const,
-    height: "78%" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
