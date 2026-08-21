@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
-import { Animated, Modal, Pressable, StyleSheet } from "react-native";
-import { Image as ExpoImage } from "expo-image";
 import {
-  PanGestureHandler,
-  PinchGestureHandler,
-  State,
-} from "react-native-gesture-handler";
+  Animated,
+  Modal,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+} from "react-native";
+import { Image as ExpoImage } from "expo-image";
+import { PinchGestureHandler, State } from "react-native-gesture-handler";
 import { makeStyles } from "@/theme";
 
 interface ReviewImageViewerProps {
@@ -41,13 +43,7 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
       useNativeDriver: true,
     })
   );
-  const [panEvent] = useState(() =>
-    Animated.event([{ nativeEvent: { translationY: panY } }], {
-      useNativeDriver: true,
-    })
-  );
   const pinchRef = useRef(null);
-  const panRef = useRef(null);
 
   const resetZoom = () => {
     zoomRef.current = 1;
@@ -72,11 +68,9 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
     pinchScale.setValue(1);
   };
 
-  const handlePanStateChange = ({ nativeEvent }: any) => {
-    if (nativeEvent.oldState !== State.ACTIVE) return;
+  const finishPan = (translationY: number, translationX: number) => {
     const isDownwardSwipe =
-      nativeEvent.translationY > 120 &&
-      Math.abs(nativeEvent.translationY) > Math.abs(nativeEvent.translationX);
+      translationY > 120 && Math.abs(translationY) > Math.abs(translationX);
     if (isDownwardSwipe) {
       closeViewer();
       return;
@@ -87,6 +81,23 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
       bounciness: 6,
     }).start();
   };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.numberActiveTouches === 1 &&
+        Math.abs(gestureState.dy) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        panY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        finishPan(gestureState.dy, gestureState.dx);
+      },
+      onPanResponderTerminate: (_, gestureState) => {
+        finishPan(gestureState.dy, gestureState.dx);
+      },
+    })
+  ).current;
 
   const imageAspectRatio =
     imageSize.width > 0 && imageSize.height > 0
@@ -116,58 +127,51 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
       <Animated.View style={styles.backdrop}>
         <Pressable
           style={styles.dismissArea}
-          onPress={closeViewer}
+          onPressIn={closeViewer}
           accessibilityRole="button"
           accessibilityLabel="Close review photo"
         />
         <Animated.View
           style={[styles.imageStage, { transform: [{ translateY: panY }] }]}
+          pointerEvents="box-none"
           onLayout={({ nativeEvent }) => setStageSize(nativeEvent.layout)}
         >
-          <Pressable
+          <Animated.View
             style={[styles.imageHitbox, imageFrameStyle]}
-            onPress={(event) => event.stopPropagation()}
+            {...panResponder.panHandlers}
           >
-            <PanGestureHandler
-              ref={panRef}
-              simultaneousHandlers={pinchRef}
-              onGestureEvent={panEvent}
-              onHandlerStateChange={handlePanStateChange}
+            <PinchGestureHandler
+              ref={pinchRef}
+              onGestureEvent={pinchEvent}
+              onHandlerStateChange={handlePinchStateChange}
             >
-              <PinchGestureHandler
-                ref={pinchRef}
-                simultaneousHandlers={panRef}
-                onGestureEvent={pinchEvent}
-                onHandlerStateChange={handlePinchStateChange}
+              <Animated.View
+                style={[
+                  styles.imageTransform,
+                  { transform: [{ scale: zoom }, { scale: pinchScale }] },
+                ]}
               >
-                <Animated.View
-                  style={[
-                    styles.imageTransform,
-                    { transform: [{ scale: zoom }, { scale: pinchScale }] },
-                  ]}
-                >
-                  <ExpoImage
-                    source={{ uri: imageUrl }}
-                    style={styles.image}
-                    onLoad={({ source }) => {
-                      if (source?.width && source?.height) {
-                        setImageSize({
-                          width: source.width,
-                          height: source.height,
-                        });
-                      }
-                    }}
-                    contentFit="contain"
-                    transition={0}
-                    cachePolicy="memory-disk"
-                    accessible
-                    accessibilityRole="image"
-                    accessibilityLabel="Expanded review photo"
-                  />
-                </Animated.View>
-              </PinchGestureHandler>
-            </PanGestureHandler>
-          </Pressable>
+                <ExpoImage
+                  source={{ uri: imageUrl }}
+                  style={styles.image}
+                  onLoad={({ source }) => {
+                    if (source?.width && source?.height) {
+                      setImageSize({
+                        width: source.width,
+                        height: source.height,
+                      });
+                    }
+                  }}
+                  contentFit="contain"
+                  transition={0}
+                  cachePolicy="memory-disk"
+                  accessible
+                  accessibilityRole="image"
+                  accessibilityLabel="Expanded review photo"
+                />
+              </Animated.View>
+            </PinchGestureHandler>
+          </Animated.View>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -177,7 +181,7 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
 const useStyles = makeStyles((t) => ({
   backdrop: {
     flex: 1,
-    backgroundColor: t.colors.scrimStrong,
+    backgroundColor: "rgba(0, 0, 0, 0.82)",
     padding: t.spacing.lg,
     justifyContent: "center" as const,
   },

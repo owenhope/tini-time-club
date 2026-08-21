@@ -19,8 +19,6 @@ jest.mock("expo-image", () => {
 jest.mock("react-native-gesture-handler", () => {
   const React = jest.requireActual("react");
   return {
-    PanGestureHandler: ({ children }: { children: React.ReactNode }) =>
-      React.createElement("PanGestureHandler", null, children),
     PinchGestureHandler: ({ children }: { children: React.ReactNode }) =>
       React.createElement("PinchGestureHandler", null, children),
     State: { ACTIVE: 4 },
@@ -56,9 +54,9 @@ describe("ReviewImageViewer", () => {
     const backdrop = tree!.root.find(
       (node) =>
         node.props.accessibilityLabel === "Close review photo" &&
-        typeof node.props.onPress === "function"
+        typeof node.props.onPressIn === "function"
     );
-    act(() => backdrop.props.onPress());
+    act(() => backdrop.props.onPressIn());
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
