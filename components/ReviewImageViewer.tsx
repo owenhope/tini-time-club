@@ -151,6 +151,7 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     backgroundColor: t.colors.scrimStrong,
     padding: t.spacing.lg,
+    justifyContent: "center" as const,
   },
   image: {
     flex: 1,
