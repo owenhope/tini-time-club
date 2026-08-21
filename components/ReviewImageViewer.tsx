@@ -34,6 +34,8 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   const zoomRef = useRef(1);
   const [pinchScale] = useState(() => new Animated.Value(1));
   const [panY] = useState(() => new Animated.Value(0));
+  const [dismissScale] = useState(() => new Animated.Value(1));
+  const dismissingRef = useRef(false);
   const [pinchEvent] = useState(() =>
     Animated.event([{ nativeEvent: { scale: pinchScale } }], {
       useNativeDriver: true,
@@ -54,9 +56,20 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   };
 
   const closeViewer = () => {
+    if (dismissingRef.current) return;
+    dismissingRef.current = true;
     resetZoom();
-    panY.setValue(0);
-    onClose();
+    Animated.timing(dismissScale, {
+      toValue: 0.82,
+      duration: 80,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      panY.setValue(0);
+      dismissScale.setValue(1);
+      dismissingRef.current = false;
+      onClose();
+    });
   };
 
   const handlePinchStateChange = ({ nativeEvent }: any) => {
@@ -112,7 +125,12 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
             onHandlerStateChange={handlePanStateChange}
           >
             <Animated.View
-              style={[styles.imageStage, { transform: [{ translateY: panY }] }]}
+              style={[
+                styles.imageStage,
+                {
+                  transform: [{ translateY: panY }, { scale: dismissScale }],
+                },
+              ]}
             >
               <PinchGestureHandler
                 ref={pinchRef}
