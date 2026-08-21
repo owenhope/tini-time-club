@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Modal, Pressable } from "react-native";
 import { Image } from "expo-image";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -66,7 +70,7 @@ export default function MartiniImagePreview({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={styles.screen}>
+      <GestureHandlerRootView style={styles.screen}>
         <StatusBar style="light" />
         <GestureDetector gesture={pinchGesture}>
           <Animated.View style={[styles.imageCanvas, imageStyle]}>
@@ -89,7 +93,7 @@ export default function MartiniImagePreview({
         >
           <Ionicons name="close" size={25} color="#FFFFFF" />
         </Pressable>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
