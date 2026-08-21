@@ -1133,8 +1133,9 @@ const useStyles = makeStyles((t) => ({
   },
   imageContainer: {
     width: "100%" as const,
-    aspectRatio: 16 / 11,
+    aspectRatio: 4 / 5,
     position: "relative" as const,
+    overflow: "hidden" as const,
   },
   imagePressTarget: {
     width: "100%" as const,

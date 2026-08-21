@@ -29,11 +29,17 @@ const Settings = () => {
   const router = useRouter();
   const styles = useStyles();
   const { colors, preference, setPreference } = useTheme();
-  const { profile } = useProfile();
+  const { profile, beginSignOut } = useProfile();
 
   const handleLogout = async () => {
     try {
       AnalyticService.capture("logout", {});
+
+      // Clear the member immediately. Supabase emits SIGNED_OUT after the
+      // sign-out request completes, but the tabs can render during that
+      // request. Keeping the old profile for that frame makes the feed show
+      // member-only actions (including “Post a review”) on the welcome route.
+      beginSignOut?.();
 
       await unregisterPushNotificationsAsync();
 

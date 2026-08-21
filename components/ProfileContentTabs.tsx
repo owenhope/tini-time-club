@@ -38,7 +38,7 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
 const useStyles = makeStyles((t) => ({
   tabs: {
     marginHorizontal: t.spacing.gutter,
-    marginTop: t.spacing.lg,
+    marginTop: 0,
     marginBottom: t.spacing.md,
   },
 }));

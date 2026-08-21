@@ -60,9 +60,9 @@ const limitAppendedReviews = (items: Review[]) =>
 function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { profile, updateProfile } = useProfile();
+  const { profile, authenticated, updateProfile } = useProfile();
   const { unseenCount, refreshUnseenCount } = useActivity();
-  const { openMembership, requireMembership } = useMembership();
+  const { requireMembership } = useMembership();
   const showActivityDot = unseenCount > 0;
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -568,41 +568,45 @@ function Home() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.stepCard}
-            onPress={navigateToReview}
-            activeOpacity={0.7}
-          >
-            <View style={styles.stepIconContainer}>
-              <MartiniIcon size={24} color={colors.onAccent} />
-            </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Try A Martini</Text>
-              <Text style={styles.stepDescription}>
-                Order something new and take a photo
-              </Text>
-            </View>
-          </TouchableOpacity>
+          {profile && authenticated ? (
+            <>
+              <TouchableOpacity
+                style={styles.stepCard}
+                onPress={navigateToReview}
+                activeOpacity={0.7}
+              >
+                <View style={styles.stepIconContainer}>
+                  <MartiniIcon size={24} color={colors.onAccent} />
+                </View>
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>Try A Martini</Text>
+                  <Text style={styles.stepDescription}>
+                    Order something new and take a photo
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.stepCard}
-            onPress={navigateToReview}
-            activeOpacity={0.7}
-          >
-            <View style={styles.stepIconContainer}>
-              <Ionicons
-                name="camera-outline"
-                size={24}
-                color={colors.onAccent}
-              />
-            </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Share Your Review</Text>
-              <Text style={styles.stepDescription}>
-                Rate the taste, presentation, and share your thoughts
-              </Text>
-            </View>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.stepCard}
+                onPress={navigateToReview}
+                activeOpacity={0.7}
+              >
+                <View style={styles.stepIconContainer}>
+                  <Ionicons
+                    name="camera-outline"
+                    size={24}
+                    color={colors.onAccent}
+                  />
+                </View>
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>Share Your Review</Text>
+                  <Text style={styles.stepDescription}>
+                    Rate the taste, presentation, and share your thoughts
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </>
+          ) : null}
 
           <TouchableOpacity
             style={styles.stepCard}
@@ -800,7 +804,7 @@ function Home() {
             : [
                 {
                   label: "Join",
-                  onPress: () => openMembership("profile"),
+                  onPress: () => router.push(routes.auth()),
                   accessibilityLabel: "Join the club",
                 },
               ]

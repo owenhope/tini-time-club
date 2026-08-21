@@ -391,6 +391,9 @@ const MemberProfile = () => {
         avatarLoading={avatarLoading}
         avatarError={avatarError}
         titleAction={settingsAction}
+        below={
+          <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
+        }
         progress={progress}
         collapsed={isCollapsed}
         onAvatarLongPress={
@@ -459,7 +462,6 @@ const MemberProfile = () => {
           </ScrollView>
         </View>
       ) : null}
-      <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
     </>
   );
 

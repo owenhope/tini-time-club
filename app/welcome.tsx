@@ -12,6 +12,7 @@ import { routes } from "@/utils/routes";
 import { acceptVisitorPreview } from "@/services/visitor-session";
 import { reportError } from "@/utils/log";
 import AnalyticService from "@/services/analyticsService";
+import { useProfile } from "@/context/profile-context";
 
 const FEATURES = [
   {
@@ -34,6 +35,7 @@ const FEATURES = [
 const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
+  const { beginSignOut } = useProfile();
   const { colors } = useTheme();
   const featureColors = {
     brand: {
@@ -52,6 +54,10 @@ const Welcome = () => {
 
   const exploreAsVisitor = async () => {
     AnalyticService.capture("visitor_preview_started", { source: "welcome" });
+    // Welcome's browse action is explicitly unauthenticated. Clear any
+    // lingering member state before mounting Feed so stale profile data cannot
+    // reveal the review CTA during the transition.
+    beginSignOut?.();
     try {
       await acceptVisitorPreview();
     } catch (error) {

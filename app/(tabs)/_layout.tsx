@@ -160,13 +160,19 @@ const LayoutContent = () => {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="(review)"
-        disabled
         accessibilityLabel="Log a martini"
-        listeners={{
-          tabPress: () => {
-            if (requireMembership("review")) router.push(routes.review());
-          },
-        }}
+        // Members open the composer inside the tab navigator so the native tab
+        // bar remains visible. Visitors stay gated without selecting the tab.
+        disabled={!profile}
+        listeners={
+          profile
+            ? undefined
+            : {
+                tabPress: () => {
+                  requireMembership("review");
+                },
+              }
+        }
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
@@ -189,16 +195,18 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(profile)"
         accessibilityLabel="Profile"
-        // Same gate as the Review tab: the press never navigates on its own —
-        // visitors get the membership sheet in place, members are routed in.
-        disabled
-        listeners={{
-          tabPress: () => {
-            if (requireMembership("profile")) {
-              router.navigate(routes.profile());
-            }
-          },
-        }}
+        // Members use the native tab selection directly. Visitors keep the
+        // tab disabled so the membership sheet can open without a focus jump.
+        disabled={!profile}
+        listeners={
+          profile
+            ? undefined
+            : {
+                tabPress: () => {
+                  requireMembership("profile");
+                },
+              }
+        }
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon

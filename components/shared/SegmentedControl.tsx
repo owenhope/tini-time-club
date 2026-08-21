@@ -34,7 +34,14 @@ const SegmentedControl = <Value extends string>({
   const onBrand = tone === "brand";
 
   return (
-    <View style={[styles.container, onInk && styles.containerInk, style]}>
+    <View
+      style={[
+        styles.container,
+        onInk && styles.containerInk,
+        onBrand && styles.containerBrand,
+        style,
+      ]}
+    >
       {options.map((option) => {
         const selected = value === option.value;
         return (
@@ -57,6 +64,7 @@ const SegmentedControl = <Value extends string>({
                 styles.label,
                 onInk && styles.labelInk,
                 onInk && !selected && styles.labelInkIdle,
+                onBrand && styles.labelBrand,
                 selected && styles.labelSelected,
                 selected && onInk && styles.labelSelectedInk,
                 selected && onBrand && styles.labelSelectedBrand,
@@ -84,6 +92,12 @@ const useStyles = makeStyles((t) => ({
   containerInk: {
     borderColor: t.colors.ratingTrackOnInk,
     backgroundColor: t.colors.ratingTrackOnInk,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  containerBrand: {
+    borderColor: "transparent",
+    backgroundColor: "rgba(250, 249, 246, 0.16)",
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -122,6 +136,10 @@ const useStyles = makeStyles((t) => ({
   },
   labelInkIdle: {
     opacity: 0.78,
+  },
+  labelBrand: {
+    color: t.colors.onHeaderBrand,
+    opacity: 0.84,
   },
   labelSelectedInk: {
     color: t.colors.onInk,

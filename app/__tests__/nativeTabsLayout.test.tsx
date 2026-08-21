@@ -182,4 +182,26 @@ describe("native tab icon configuration", () => {
 
     expect(mockGlobalScrollToTop).not.toHaveBeenCalled();
   });
+
+  it("lets signed-in members select Profile through native tabs", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const profileTrigger = renderer!.root.findByProps({ name: "(profile)" });
+
+    expect(profileTrigger.props.disabled).toBe(false);
+    expect(profileTrigger.props.listeners).toBeUndefined();
+  });
+
+  it("keeps the Review composer inside the native tab navigator for members", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const reviewTrigger = renderer!.root.findByProps({ name: "(review)" });
+
+    expect(reviewTrigger.props.disabled).toBe(false);
+    expect(reviewTrigger.props.listeners).toBeUndefined();
+  });
 });

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
+  Pressable,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -10,9 +11,11 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useForm, useWatch } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { Image as ExpoImage } from "expo-image";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import CameraComponent from "@/components/CameraComponent";
@@ -83,8 +86,8 @@ const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Preview" },
 ];
 
-const STEP_FADE_OUT_MS = 120;
-const STEP_FADE_IN_MS = 160;
+const STEP_FADE_OUT_MS = 150;
+const STEP_FADE_IN_MS = 220;
 
 const ReviewPreview = ({
   values,
@@ -169,6 +172,7 @@ const ReviewPreview = ({
   return (
     <ScrollView
       style={styles.previewContainer}
+      contentContainerStyle={styles.previewScrollContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
@@ -195,6 +199,9 @@ function ReviewComposer() {
     "width" | "height"
   > | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [isPhotoPreviewing, setIsPhotoPreviewing] = useState(false);
+  const [selectedLocation, setSelectedLocation] =
+    useState<ReviewFormLocation | null>(null);
   const [step, setStep] = useState(0);
 
   const [types, setTypes] = useState<Option[]>([]);
@@ -364,7 +371,8 @@ function ReviewComposer() {
     if (isEditMode) {
       goBack();
     } else {
-      router.dismissTo(routes.home());
+      setIsPhotoPreviewing(false);
+      setIsReviewing(false);
     }
   };
 
@@ -392,7 +400,7 @@ function ReviewComposer() {
     Animated.timing(opacity, {
       toValue: 0,
       duration: STEP_FADE_OUT_MS,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start(({ finished }) => {
       if (!finished) {
         setIsTransitioning(false);
@@ -400,11 +408,13 @@ function ReviewComposer() {
       }
 
       setStep(next);
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: STEP_FADE_IN_MS,
-        useNativeDriver: true,
-      }).start(() => setIsTransitioning(false));
+      requestAnimationFrame(() => {
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: STEP_FADE_IN_MS,
+          useNativeDriver: false,
+        }).start(() => setIsTransitioning(false));
+      });
     });
   };
 
@@ -433,7 +443,33 @@ function ReviewComposer() {
   const renderCurrentQuestion = () => {
     switch (questions[step].key) {
       case "location":
-        return <LocationInput control={control} />;
+        return (
+          <LocationInput
+            control={control}
+            onLocationSelected={(location) => {
+              if (!location) {
+                setSelectedLocation(null);
+                return;
+              }
+              setSelectedLocation({
+                ...location,
+                address: location.address ?? "",
+              });
+              setValue(
+                "location",
+                {
+                  ...location,
+                  address: location.address ?? "",
+                },
+                {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                }
+              );
+            }}
+          />
+        );
       case "spirit":
         return (
           <SelectableOptionsInput
@@ -484,13 +520,6 @@ function ReviewComposer() {
                 maxLength={500}
                 accessibilityLabel="Review caption"
               />
-              <AppText
-                variant="caption"
-                tone="muted"
-                style={styles.keyboardHint}
-              >
-                Touch the screen to dismiss the keyboard
-              </AppText>
               <AppText
                 variant="label"
                 tone="secondary"
@@ -775,17 +804,27 @@ function ReviewComposer() {
     });
   };
 
-  const reviewStepTotal = questions.length;
+  const reviewStepTotal = questions.length + 2;
   const currentQuestionTitle = questions[step].title;
   const currentQuestionKey = questions[step].key;
   const currentStepIncomplete = !isReviewStepComplete(
     currentQuestionKey,
-    watchedValues,
+    {
+      ...watchedValues,
+      location: watchedValues.location || selectedLocation,
+    },
     {
       taste: isEditMode || Boolean(formState.touchedFields.taste),
       presentation: isEditMode || Boolean(formState.touchedFields.presentation),
     }
   );
+  const submitReview = () => {
+    const commentValue = watchedValues.comment?.trim();
+    if (!isEditMode && (!commentValue || commentValue.length === 0)) return;
+    handleSubmit(
+      isEditMode ? handleUpdateReview : handleUploadAndCreateReview
+    )();
+  };
   const reviewHeaderActions: HeaderAction[] = [
     ...(isEditMode
       ? ([
@@ -799,12 +838,52 @@ function ReviewComposer() {
           },
         ] satisfies HeaderAction[])
       : []),
-    {
-      icon: "close-outline",
-      onPress: confirmDiscardReview,
-      accessibilityLabel: isEditMode ? "Cancel editing review" : "Quit review",
-    },
+    ...(step < questions.length - 1
+      ? [
+          {
+            icon: "chevron-forward",
+            onPress: nextStep,
+            accessibilityLabel: "Next step",
+            disabled: isTransitioning || currentStepIncomplete,
+          } satisfies HeaderAction,
+        ]
+      : [
+          {
+            icon: "close-outline",
+            onPress: confirmDiscardReview,
+            accessibilityLabel: isEditMode
+              ? "Cancel editing review"
+              : "Quit review",
+          } satisfies HeaderAction,
+          {
+            label: isEditMode ? "Save" : "Post",
+            onPress: submitReview,
+            accessibilityLabel: isEditMode ? "Save review" : "Post review",
+            disabled:
+              !isEditMode &&
+              (!watchedValues.comment ||
+                watchedValues.comment.trim().length === 0),
+          } satisfies HeaderAction,
+        ]),
   ];
+
+  const returnToPhotoPreview = () => {
+    setIsPhotoPreviewing(true);
+    setIsReviewing(false);
+  };
+
+  const continueFromPhotoPreview = () => {
+    setIsPhotoPreviewing(false);
+    setIsReviewing(true);
+    setStep(0);
+  };
+
+  const returnToCamera = () => {
+    setPhoto(null);
+    setPhotoDimensions(null);
+    setIsPhotoPreviewing(false);
+    setIsReviewing(false);
+  };
 
   return (
     <>
@@ -816,7 +895,7 @@ function ReviewComposer() {
               Loading review...
             </AppText>
           </View>
-        ) : !isReviewing ? (
+        ) : !isReviewing && !isPhotoPreviewing ? (
           <CameraComponent
             title={isChangingPhoto ? "Change Photo" : "Capture"}
             closeAccessibilityLabel={
@@ -860,11 +939,85 @@ function ReviewComposer() {
               });
               setPhotoChanged(isEditMode);
               setIsChangingPhoto(false);
-              setIsReviewing(true);
+              setIsPhotoPreviewing(true);
+              setIsReviewing(false);
               setIsSubmitting(false);
               setSubmissionMessage("");
             }}
           />
+        ) : isPhotoPreviewing ? (
+          <View style={styles.photoPreviewScreen}>
+            <AppHeader
+              variant="large"
+              title="Preview"
+              onBack={returnToCamera}
+              below={
+                <View style={styles.stepHeaderMeta}>
+                  <AppText
+                    variant="eyebrow"
+                    tone="onImage"
+                    style={styles.subtitle}
+                  >
+                    Step 2 of {reviewStepTotal}
+                  </AppText>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${(2 / reviewStepTotal) * 100}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+              }
+              actions={[
+                {
+                  icon: "chevron-forward",
+                  onPress: continueFromPhotoPreview,
+                  accessibilityLabel: "Continue with photo",
+                },
+              ]}
+            />
+            <View style={styles.photoPreviewContent}>
+              {photo ? (
+                <View style={styles.photoPreviewFrame}>
+                  <ExpoImage
+                    source={{ uri: photo }}
+                    style={styles.photoPreviewImage}
+                    contentFit="contain"
+                  />
+                </View>
+              ) : null}
+            </View>
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <View style={styles.navLeft} />
+                <Pressable
+                  onPress={confirmDiscardReview}
+                  style={styles.footerClose}
+                  accessibilityLabel={
+                    isEditMode ? "Cancel editing review" : "Quit review"
+                  }
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name="close-outline"
+                    size={22}
+                    color={colors.text}
+                  />
+                </Pressable>
+                <View style={styles.navRight} />
+              </View>
+            </View>
+          </View>
         ) : (
           <View style={styles.container}>
             {!isSubmitting && (
@@ -872,28 +1025,65 @@ function ReviewComposer() {
                 variant="large"
                 title={currentQuestionTitle}
                 actions={reviewHeaderActions}
+                leading={
+                  currentQuestionTitle === "Preview"
+                    ? {
+                        icon: "chevron-back",
+                        onPress: prevStep,
+                        accessibilityLabel: "Back",
+                        disabled: isTransitioning,
+                      }
+                    : undefined
+                }
+                onBack={
+                  currentQuestionTitle === "Preview"
+                    ? undefined
+                    : step > 0
+                      ? prevStep
+                      : returnToPhotoPreview
+                }
                 below={
-                  currentQuestionTitle !== "Preview" ? (
+                  currentQuestionTitle === "Preview" ? (
                     <View style={styles.stepHeaderMeta}>
                       <AppText
                         variant="eyebrow"
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {step + 2} of {reviewStepTotal}
+                        Step {step + 3} of {reviewStepTotal}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
                             {
-                              width: `${((step + 2) / reviewStepTotal) * 100}%`,
+                              width: `${((step + 3) / reviewStepTotal) * 100}%`,
                             },
                           ]}
                         />
                       </View>
                     </View>
-                  ) : null
+                  ) : (
+                    <View style={styles.stepHeaderMeta}>
+                      <AppText
+                        variant="eyebrow"
+                        tone="onImage"
+                        style={styles.subtitle}
+                      >
+                        Step {step + 3} of {reviewStepTotal}
+                      </AppText>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${((step + 3) / reviewStepTotal) * 100}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  )
                 }
               />
             )}
@@ -949,7 +1139,7 @@ function ReviewComposer() {
               )}
             </Animated.View>
 
-            {!isSubmitting && (
+            {!isSubmitting && currentQuestionTitle !== "Preview" && (
               <View
                 style={[
                   styles.footer,
@@ -960,57 +1150,25 @@ function ReviewComposer() {
                 ]}
               >
                 <Animated.View style={styles.navigation}>
-                  <View style={styles.navLeft}>
-                    {step > 0 && (
-                      <Button
-                        title="Back"
-                        onPress={prevStep}
-                        variant="ghost"
-                        size="medium"
-                        icon="chevron-back"
-                        iconPosition="left"
-                        disabled={isTransitioning}
-                      />
-                    )}
-                  </View>
+                  <View style={styles.navLeft} />
+                  <Pressable
+                    onPress={confirmDiscardReview}
+                    style={styles.footerClose}
+                    accessibilityLabel={
+                      isEditMode ? "Cancel editing review" : "Quit review"
+                    }
+                    accessibilityRole="button"
+                    disabled={isTransitioning}
+                  >
+                    <Ionicons
+                      name="close-outline"
+                      size={22}
+                      color={colors.text}
+                    />
+                  </Pressable>
 
                   <View style={styles.navRight}>
-                    {step < questions.length - 1 ? (
-                      <Button
-                        title="Next"
-                        onPress={nextStep}
-                        variant="primary"
-                        size="medium"
-                        icon="chevron-forward"
-                        iconPosition="right"
-                        disabled={isTransitioning || currentStepIncomplete}
-                      />
-                    ) : (
-                      <Button
-                        title={isEditMode ? "Save" : "Post"}
-                        onPress={() => {
-                          const commentValue = watchedValues.comment?.trim();
-                          if (
-                            !isEditMode &&
-                            (!commentValue || commentValue.length === 0)
-                          ) {
-                            return;
-                          }
-                          handleSubmit(
-                            isEditMode
-                              ? handleUpdateReview
-                              : handleUploadAndCreateReview
-                          )();
-                        }}
-                        variant="primary"
-                        size="medium"
-                        disabled={
-                          !isEditMode &&
-                          (!watchedValues.comment ||
-                            watchedValues.comment.trim().length === 0)
-                        }
-                      />
-                    )}
+                    <View />
                   </View>
                 </Animated.View>
               </View>
@@ -1117,8 +1275,6 @@ const useStyles = makeStyles((t) => ({
   footer: {
     paddingHorizontal: t.spacing.xl - 4,
     paddingTop: t.spacing.sm + 2,
-    borderTopWidth: 1,
-    borderTopColor: t.colors.border,
     justifyContent: "center" as const,
   },
   navigation: {
@@ -1134,15 +1290,54 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     alignItems: "flex-end" as const,
   },
+  footerClose: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+  },
   previewContainer: {
     flex: 1,
     width: "100%" as const,
   },
-  previewWrapper: {
+  photoPreviewScreen: {
     flex: 1,
+    backgroundColor: t.colors.background,
+  },
+  photoPreviewContent: {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    padding: t.spacing.xl,
+  },
+  photoPreviewFrame: {
+    width: "100%" as const,
+    height: "100%" as const,
     overflow: "hidden" as const,
+    borderRadius: t.radius.card,
+  },
+  photoPreviewImage: {
+    width: "100%" as const,
+    height: "100%" as const,
+    borderRadius: t.radius.card,
+  },
+  previewWrapper: {
+    overflow: "hidden" as const,
+    paddingHorizontal: t.spacing.md,
+    alignItems: "center" as const,
+  },
+  previewScrollContent: {
+    paddingBottom: t.spacing.xl,
   },
   scaledReviewContainer: {
+    width: "115%" as const,
+    alignSelf: "center" as const,
+    marginLeft: "-7.5%" as const,
+    transform: [{ scale: 0.82 }],
     transformOrigin: "top center",
   },
   captionInputContainer: {
@@ -1164,9 +1359,6 @@ const useStyles = makeStyles((t) => ({
   },
   characterCount: {
     textAlign: "right" as const,
-    marginTop: t.spacing.xs,
-  },
-  keyboardHint: {
     marginTop: t.spacing.xs,
   },
   submitLoadingContainer: {

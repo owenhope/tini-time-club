@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Alert } from "react-native";
@@ -26,6 +27,10 @@ interface ProfileResult {
 export interface ProfileContextValue {
   /** The signed-in member, or null until the first fetch resolves. */
   profile: Profile | null;
+  /** Whether Supabase currently has an authenticated session. */
+  authenticated: boolean;
+  /** Immediately invalidate member state while the sign-out request runs. */
+  beginSignOut: () => void;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   updateProfile: (updates: Partial<Profile>) => Promise<ProfileResult>;
   acceptEULA: () => Promise<ProfileResult>;
@@ -56,8 +61,14 @@ export const ProfileProvider = ({
   children: React.ReactNode;
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  // A profile request can outlive the auth session that started it. In
+  // particular, logout may finish while the initial cached/database read is
+  // still resolving. Ignore results from that older auth generation so a
+  // signed-out user cannot be put back into the member feed.
+  const authGenerationRef = useRef(0);
   const router = useRouter();
 
   /**
@@ -77,10 +88,23 @@ export const ProfileProvider = ({
     Alert.alert("Signed out", ACCOUNT_GONE_MESSAGE);
   }, [router]);
 
+  const beginSignOut = useCallback(() => {
+    authGenerationRef.current += 1;
+    setAuthenticated(false);
+    setProfile(null);
+    setProfileError(null);
+  }, []);
+
   const fetchProfile = useCallback(async () => {
+    const requestGeneration = authGenerationRef.current;
+    const isCurrentRequest = () =>
+      requestGeneration === authGenerationRef.current;
+
     try {
       const cachedProfile = await authCache.getProfile();
       if (cachedProfile) {
+        if (!isCurrentRequest()) return;
+        setAuthenticated(true);
         setProfile(cachedProfile);
         setProfileError(null);
         setLoading(false);
@@ -91,6 +115,8 @@ export const ProfileProvider = ({
       // signed-out is a normal state here rather than a failure.
       const user = await authCache.getUser();
       if (!user) {
+        if (!isCurrentRequest()) return;
+        setAuthenticated(false);
         setProfileError(null);
         setLoading(false);
         return;
@@ -106,6 +132,8 @@ export const ProfileProvider = ({
       if (error) {
         reportError("Error fetching profile:", error);
 
+        if (!isCurrentRequest()) return;
+
         if (isAccountGoneError(error)) {
           await handleAccountGone();
           return;
@@ -115,10 +143,14 @@ export const ProfileProvider = ({
         return;
       }
 
+      if (!isCurrentRequest()) return;
+      setAuthenticated(true);
       setProfile(data);
       setProfileError(null);
     } catch (error) {
       reportError("Error in fetchProfile:", error);
+
+      if (!isCurrentRequest()) return;
 
       if (isAccountGoneError(error)) {
         await handleAccountGone();
@@ -127,7 +159,7 @@ export const ProfileProvider = ({
 
       setProfileError(PROFILE_LOAD_ERROR_MESSAGE);
     } finally {
-      setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
     }
   }, [handleAccountGone]);
 
@@ -140,13 +172,14 @@ export const ProfileProvider = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        setProfile(null);
-        setProfileError(null);
+        beginSignOut();
         setLoading(false);
         return;
       }
 
       if (event === "SIGNED_IN" && session) {
+        authGenerationRef.current += 1;
+        setAuthenticated(true);
         setLoading(true);
         setProfileError(null);
         void (async () => {
@@ -157,7 +190,7 @@ export const ProfileProvider = ({
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [beginSignOut, fetchProfile]);
 
   const updateProfile = useCallback(
     async (updates: Partial<Profile>): Promise<ProfileResult> => {
@@ -222,6 +255,8 @@ export const ProfileProvider = ({
     <ProfileContext.Provider
       value={{
         profile,
+        authenticated,
+        beginSignOut,
         setProfile,
         updateProfile,
         acceptEULA,

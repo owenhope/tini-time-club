@@ -42,7 +42,7 @@ export interface LocationInputValue {
 interface LocationInputProps {
   control: any;
   disabled?: boolean;
-  onLocationSelected?: (location: LocationInputValue) => void;
+  onLocationSelected?: (location: LocationInputValue | null) => void;
 }
 
 let cachedUserLocation: Location.LocationObject | null = null;
@@ -82,6 +82,7 @@ const LocationInput = ({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchQueryRef = useRef("");
   const searchRequestRef = useRef(0);
@@ -209,6 +210,7 @@ const LocationInput = ({
   // Debounced search handler
   const handleSearch = useCallback(
     (query: string) => {
+      setSelectionError(null);
       setSearchQuery(query);
       searchQueryRef.current = query;
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -256,19 +258,39 @@ const LocationInput = ({
       setIsResolvingId(place.place_id);
       const sessionToken = sessionTokenRef.current ?? undefined;
       sessionTokenRef.current = null;
-      const details = await fetchVenue(place.place_id, sessionToken);
+      let details: PlaceResult | null;
+      try {
+        details = await fetchVenue(place.place_id, sessionToken);
+      } catch (error) {
+        reportError("Error resolving selected location:", error);
+        setIsResolvingId(null);
+        setSelectionError("We couldn't load that location. Try again.");
+        return;
+      }
       if (requestId !== selectionRequestRef.current) return;
       setIsResolvingId(null);
       if (!details?.geometry?.location) return;
       resolved = { ...place, ...details };
     }
 
+    const coordinates = resolved.geometry?.location;
+    if (
+      !coordinates ||
+      !Number.isFinite(coordinates.lat) ||
+      !Number.isFinite(coordinates.lng)
+    ) {
+      reportError("Selected location has no usable coordinates", {
+        placeId: resolved.place_id,
+      });
+      return;
+    }
+
     const nextLocation: LocationInputValue = {
       name: resolved.name,
       address: resolved.vicinity || resolved.formatted_address,
       coordinates: {
-        latitude: resolved.geometry!.location.lat,
-        longitude: resolved.geometry!.location.lng,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
       },
       place_id: resolved.place_id,
     };
@@ -284,6 +306,7 @@ const LocationInput = ({
   ) => (
     <ScrollView
       style={styles.placesContainer}
+      contentContainerStyle={styles.placesContent}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
@@ -406,6 +429,9 @@ const LocationInput = ({
               </TouchableOpacity>
             )}
           </View>
+          {selectionError ? (
+            <Text style={styles.selectionError}>{selectionError}</Text>
+          ) : null}
 
           {value ? (
             <View style={styles.currentLocation}>
@@ -418,7 +444,10 @@ const LocationInput = ({
                 ) : null}
               </View>
               <TouchableOpacity
-                onPress={() => onChange(null)}
+                onPress={() => {
+                  onChange(null);
+                  onLocationSelected?.(null);
+                }}
                 disabled={disabled}
                 accessibilityRole="button"
                 accessibilityLabel="Clear selected location"
@@ -456,6 +485,11 @@ const useStyles = makeStyles((t) => ({
   searchInputContainer: {
     position: "relative" as const,
     marginBottom: 15,
+  },
+  selectionError: {
+    color: t.colors.danger,
+    ...t.typography.caption,
+    marginBottom: t.spacing.sm,
   },
   searchInput: {
     ...t.typography.input,
@@ -499,6 +533,9 @@ const useStyles = makeStyles((t) => ({
   },
   placesContainer: {
     maxHeight: 450,
+  },
+  placesContent: {
+    paddingBottom: 80,
   },
   placeButton: {
     backgroundColor: t.colors.surface,

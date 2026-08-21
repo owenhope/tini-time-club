@@ -6,6 +6,7 @@ const mockGetReviews = jest.fn(
   (_options?: Record<string, unknown>) => new Promise(() => undefined)
 );
 const mockOpenMembership = jest.fn();
+const mockPush = jest.fn();
 const mockRefreshUnseenCount = jest.fn(async () => undefined);
 const mockReportError = jest.fn();
 let mockProfile: {
@@ -17,6 +18,7 @@ let mockProfile: {
   username: "olive",
   eula_accepted: true,
 };
+let mockAuthenticated = true;
 let mockReviewUpdateCallback: (() => void) | null = null;
 
 const deferred = <T,>() => {
@@ -37,7 +39,7 @@ jest.mock("expo-router", () => {
     useLocalSearchParams: () => ({}),
     useRouter: () => ({
       navigate: jest.fn(),
-      push: jest.fn(),
+      push: mockPush,
       replace: jest.fn(),
     }),
   };
@@ -46,6 +48,7 @@ jest.mock("expo-router", () => {
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
     profile: mockProfile,
+    authenticated: mockAuthenticated,
     updateProfile: jest.fn(),
   }),
 }));
@@ -178,6 +181,7 @@ describe("Feed startup loading", () => {
       username: "olive",
       eula_accepted: true,
     };
+    mockAuthenticated = true;
     mockReviewUpdateCallback = null;
   });
 
@@ -240,7 +244,29 @@ describe("Feed startup loading", () => {
     expect(copy).not.toContain("Share Your Review");
   });
 
-  it("shows a Join action for visitors and opens the membership prompt", async () => {
+  it("does not show member review actions when auth is signed out", async () => {
+    mockProfile = {
+      id: "stale-member",
+      username: "olive",
+      eula_accepted: true,
+    };
+    mockAuthenticated = false;
+    mockGetReviews.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    const copy = renderer!.root
+      .findAllByType(Text)
+      .map((node) => node.props.children)
+      .flat(Infinity)
+      .join(" ");
+    expect(copy).not.toContain("Share Your Review");
+    expect(copy).not.toContain("Try A Martini");
+  });
+
+  it("shows a Join action for visitors and opens sign in", async () => {
     mockProfile = null;
     mockGetReviews.mockResolvedValue([]);
 
@@ -256,7 +282,7 @@ describe("Feed startup loading", () => {
     expect(action.accessibilityLabel).toBe("Join the club");
 
     act(() => action.onPress());
-    expect(mockOpenMembership).toHaveBeenCalledWith("profile");
+    expect(mockPush).toHaveBeenCalledWith("/auth");
   });
 
   it("shows the Activity center action to signed-in members", async () => {

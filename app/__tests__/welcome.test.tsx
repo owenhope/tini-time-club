@@ -6,6 +6,7 @@ const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockAcceptVisitorPreview = jest.fn(async () => undefined);
 const mockCapture = jest.fn();
+const mockBeginSignOut = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace, push: mockPush }),
@@ -18,6 +19,10 @@ jest.mock("@/services/visitor-session", () => ({
 jest.mock("@/services/analyticsService", () => ({
   __esModule: true,
   default: { capture: (...args: unknown[]) => mockCapture(...args) },
+}));
+
+jest.mock("@/context/profile-context", () => ({
+  useProfile: () => ({ beginSignOut: mockBeginSignOut }),
 }));
 
 jest.mock("@/components/shared", () => {
@@ -70,6 +75,7 @@ describe("Welcome", () => {
     mockPush.mockClear();
     mockAcceptVisitorPreview.mockClear();
     mockCapture.mockClear();
+    mockBeginSignOut.mockClear();
   });
 
   afterEach(() => {
@@ -94,6 +100,7 @@ describe("Welcome", () => {
       source: "welcome",
     });
     expect(mockAcceptVisitorPreview).toHaveBeenCalledTimes(1);
+    expect(mockBeginSignOut).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith("/home");
     expect(mockPush).not.toHaveBeenCalled();
   });

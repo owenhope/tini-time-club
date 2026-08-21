@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 
 const mockReplace = jest.fn();
+const mockRouter = { replace: mockReplace };
 const mockGetProfile = jest.fn();
 const mockGetUser = jest.fn();
 const mockInvalidateCache = jest.fn();
@@ -12,6 +13,9 @@ const mockSignOut = jest.fn();
 const mockSingle = jest.fn();
 const mockUnsubscribe = jest.fn();
 const mockUnregisterPushNotificationsAsync = jest.fn();
+let mockAuthStateChange:
+  | ((event: string, session: unknown) => void)
+  | undefined;
 
 const mockProfileQuery = {
   select: jest.fn(),
@@ -23,7 +27,7 @@ mockProfileQuery.select.mockReturnValue(mockProfileQuery);
 mockProfileQuery.eq.mockReturnValue(mockProfileQuery);
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: mockReplace }),
+  useRouter: () => mockRouter,
 }));
 
 jest.mock("@/utils/authCache", () => ({
@@ -41,9 +45,12 @@ jest.mock("@/utils/supabase", () => ({
     from: () => mockProfileQuery,
     auth: {
       signOut: (...args: unknown[]) => mockSignOut(...args),
-      onAuthStateChange: jest.fn(() => ({
-        data: { subscription: { unsubscribe: mockUnsubscribe } },
-      })),
+      onAuthStateChange: jest.fn((callback) => {
+        mockAuthStateChange = callback;
+        return {
+          data: { subscription: { unsubscribe: mockUnsubscribe } },
+        };
+      }),
     },
   },
 }));
@@ -77,6 +84,7 @@ describe("ProfileProvider profile failures", () => {
     mockClearProfileCache.mockResolvedValue(undefined);
     mockSignOut.mockResolvedValue({ error: null });
     mockUnregisterPushNotificationsAsync.mockResolvedValue(undefined);
+    mockAuthStateChange = undefined;
   });
 
   afterEach(() => {
@@ -154,5 +162,34 @@ describe("ProfileProvider profile failures", () => {
       "Signed out",
       "This account is no longer available. Please sign in again."
     );
+  });
+
+  it("ignores an in-flight profile result after logout", async () => {
+    let resolveProfile!: (profile: typeof signedInUser) => void;
+    mockGetProfile.mockReturnValue(
+      new Promise((resolve) => {
+        resolveProfile = resolve;
+      })
+    );
+
+    await act(async () => {
+      renderer = create(
+        <ProfileProvider>
+          <ProfileProbe />
+        </ProfileProvider>
+      );
+      await Promise.resolve();
+    });
+
+    expect(mockAuthStateChange).toBeDefined();
+
+    await act(async () => {
+      mockAuthStateChange?.("SIGNED_OUT", null);
+      expect(latestContext?.profile).toBeNull();
+      resolveProfile(signedInUser);
+      await Promise.resolve();
+    });
+
+    expect(latestContext?.profile).toBeNull();
   });
 });
