@@ -159,7 +159,7 @@ const ChatOutline = ({ size }: { size: number }) => (
 );
 
 const PaperPlaneOutline = ({ size }: { size: number }) => (
-  <Icon size={size} color={ACTION_ICON} label="Share">
+  <Icon size={size} color={ACTION_ICON}>
     <path
       d="M53.12 199.94l400-151.39a8 8 0 0 1 10.33 10.33l-151.39 400a8 8 0 0 1-15-.34l-67.4-166.09a16 16 0 0 0-10.11-10.11L53.46 215a8 8 0 0 1-.34-15.06Z"
       stroke="currentColor"
@@ -191,7 +191,7 @@ const ChevronForward = ({ size, color }: { size: number; color: string }) => (
 );
 
 const EllipsisIcon = ({ size }: { size: number }) => (
-  <Icon size={size} color={TEXT} label="More options">
+  <Icon size={size} color={TEXT}>
     <circle cx="256" cy="256" r="32" fill="currentColor" />
     <circle cx="416" cy="256" r="32" fill="currentColor" />
     <circle cx="96" cy="256" r="32" fill="currentColor" />
@@ -364,10 +364,8 @@ const InlineIdentityText = ({
 
 export default function ReviewShareCard({
   review,
-  shareUrl,
 }: {
   review: ShareCardReview;
-  shareUrl: string;
 }) {
   const overall =
     review.taste == null || review.presentation == null
@@ -391,33 +389,21 @@ export default function ReviewShareCard({
   const spiritTagColors = tagColors(review.spirit?.name);
   const typeTagColors = tagColors(review.type?.name);
 
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({ url: shareUrl });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-      }
-    } catch {
-      // Share sheet dismissed — nothing to do.
-    }
-  };
-
   return (
-    <article className="overflow-hidden rounded-[8px] border border-[rgba(51,102,84,0.18)] bg-white shadow-[0_4px_14px_rgba(28,58,46,0.08)]">
+    <article className="overflow-hidden rounded-[22px] border border-[rgba(51,102,84,0.18)] bg-white shadow-[0_4px_14px_rgba(28,58,46,0.08)]">
       <style>{`@keyframes ttc-ring-spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div className="flex items-center justify-between bg-white py-3 pl-[15px] pr-3">
-        <span className="flex min-w-0 items-center gap-[11px]">
+      <div className="flex items-center justify-between bg-white py-2 pl-3 pr-2">
+        <span className="flex min-w-0 items-center gap-2">
           <AvatarWithRing
             avatarUrl={review.profile?.avatar_public_url ?? null}
             username={review.profile?.username ?? null}
             reviewCount={review.profile?.review_count ?? null}
-            size={46}
+            size={34}
           />
           <span className="min-w-0">
             <p
-              className="truncate text-[15px] font-extrabold leading-[18px]"
+              className="truncate text-base font-semibold leading-6"
               style={{ color: TEXT }}
             >
               {username}
@@ -429,10 +415,12 @@ export default function ReviewShareCard({
               ) : null}
             </p>
             <p
-              className="mt-[3px] font-mono text-xs leading-4"
+              className="text-xs font-bold leading-4"
               style={{ color: TEXT_MUTED }}
             >
-              {formatRelativeDate(review.inserted_at)}
+              {review.profile?.review_count === 1
+                ? "1 review"
+                : `${review.profile?.review_count ?? 0} reviews`}
             </p>
           </span>
         </span>
@@ -539,6 +527,30 @@ export default function ReviewShareCard({
       </div>
 
       <div className="bg-white px-4 pt-[11px]">
+        <div className="mb-[11px] flex items-center gap-[18px] border-y border-[rgba(51,102,84,0.16)] pb-[13px] pt-[11px]">
+          <span className="flex min-h-7 items-center gap-1.5">
+            <HeartOutline size={24} />
+            <span
+              className="text-[13.5px] font-semibold tabular-nums"
+              style={{ color: TEXT_SECONDARY }}
+            >
+              {review.likes_count}
+            </span>
+          </span>
+          <span className="flex min-h-7 items-center gap-1.5">
+            <ChatOutline size={24} />
+            <span
+              className="text-[13.5px] font-semibold tabular-nums"
+              style={{ color: TEXT_SECONDARY }}
+            >
+              {review.comments_count}
+            </span>
+          </span>
+          <span className="ml-auto" aria-hidden>
+            <PaperPlaneOutline size={24} />
+          </span>
+        </div>
+
         {review.comment ? (
           <div className="mb-1">
             <InlineIdentityText
@@ -568,34 +580,12 @@ export default function ReviewShareCard({
           </p>
         ) : null}
 
-        <div className="mt-[11px] flex items-center gap-[18px] border-t border-[rgba(51,102,84,0.16)] pb-[13px] pt-[11px]">
-          <span className="flex min-h-7 items-center gap-1.5">
-            <HeartOutline size={24} />
-            <span
-              className="text-[13.5px] font-semibold tabular-nums"
-              style={{ color: TEXT_SECONDARY }}
-            >
-              {review.likes_count}
-            </span>
-          </span>
-          <span className="flex min-h-7 items-center gap-1.5">
-            <ChatOutline size={24} />
-            <span
-              className="text-[13.5px] font-semibold tabular-nums"
-              style={{ color: TEXT_SECONDARY }}
-            >
-              {review.comments_count}
-            </span>
-          </span>
-          <button
-            type="button"
-            onClick={handleShare}
-            aria-label="Share this review"
-            className="ml-auto cursor-pointer"
-          >
-            <PaperPlaneOutline size={24} />
-          </button>
-        </div>
+        <p
+          className="pb-3 pt-2 font-mono text-sm leading-5"
+          style={{ color: TEXT_MUTED }}
+        >
+          {formatRelativeDate(review.inserted_at)}
+        </p>
       </div>
     </article>
   );

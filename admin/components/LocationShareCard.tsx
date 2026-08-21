@@ -1,5 +1,3 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
 import {
   formatCityRegion,
   formatRating,
@@ -20,7 +18,6 @@ const OLIVE = "#336654";
 const PIP_EMPTY = "#8FB8A8";
 const BORDER = "rgba(51,102,84,0.18)";
 const INK_PLATE = "rgba(20,26,23,0.72)";
-const ACTION_PLATE = "rgba(250,249,246,0.14)";
 
 const reviewOverall = (taste: number | null, presentation: number | null) =>
   taste == null || presentation == null
@@ -29,97 +26,6 @@ const reviewOverall = (taste: number | null, presentation: number | null) =>
 
 const reviewLabel = (count: number) =>
   `${count} ${count === 1 ? "review" : "reviews"}`;
-
-const Icon = ({ size, children }: { size: number; children: ReactNode }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 512 512"
-    fill="none"
-    aria-hidden
-    style={{ color: "#FAF9F6", display: "block" }}
-  >
-    {children}
-  </svg>
-);
-
-const ChevronBack = () => (
-  <Icon size={20}>
-    <path
-      d="M328 112 184 256l144 144"
-      stroke="currentColor"
-      strokeWidth="48"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Icon>
-);
-
-const PaperPlane = () => (
-  <Icon size={19}>
-    <path
-      d="M53.12 199.94l400-151.39a8 8 0 0 1 10.33 10.33l-151.39 400a8 8 0 0 1-15-.34l-67.4-166.09a16 16 0 0 0-10.11-10.11L53.46 215a8 8 0 0 1-.34-15.06Z"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M460 52 227 285"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Icon>
-);
-
-const InfoCircle = () => (
-  <Icon size={20}>
-    <path
-      d="M256 56C145.54 56 56 145.54 56 256s89.54 200 200 200 200-89.54 200-200S366.46 56 256 56Z"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeMiterlimit="10"
-    />
-    <path
-      d="M256 224v144"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M256 160h.01" stroke="currentColor" strokeWidth="48" />
-  </Icon>
-);
-
-const MapOutline = () => (
-  <Icon size={20}>
-    <path
-      d="M313.27 48 198.73 96 56 48v368l142.73 48 114.54-48L456 464V96L313.27 48Z"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M313.27 48v368M198.73 96v368"
-      stroke="currentColor"
-      strokeWidth="32"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Icon>
-);
-
-const HeaderControl = ({ children }: { children: ReactNode }) => (
-  <span
-    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-    style={{ background: ACTION_PLATE }}
-  >
-    {children}
-  </span>
-);
 
 const OlivePip = ({ size = 13 }: { size?: number }) => (
   <span
@@ -201,34 +107,13 @@ export default function LocationShareCard({
     ? formatCityRegion(stripNameFromAddress(location.name, location.address))
     : null;
   const hasRating = location.rating != null && location.total_ratings > 0;
-  const hasCoordinates = location.lat != null && location.lon != null;
-
   return (
     <article
-      className="overflow-hidden rounded-[8px] border shadow-[0_4px_14px_rgba(28,58,46,0.08)]"
+      className="overflow-hidden rounded-[22px] border shadow-[0_4px_14px_rgba(28,58,46,0.08)]"
       style={{ borderColor: BORDER, background: SURFACE, color: TEXT }}
     >
       <section className="text-white" style={{ background: HEADER_BRAND }}>
-        <div className="flex items-center justify-between gap-3 px-[10px] pb-4 pt-3">
-          <HeaderControl>
-            <ChevronBack />
-          </HeaderControl>
-          <div className="flex items-center gap-[9px]">
-            <HeaderControl>
-              <PaperPlane />
-            </HeaderControl>
-            <HeaderControl>
-              <InfoCircle />
-            </HeaderControl>
-            {hasCoordinates ? (
-              <HeaderControl>
-                <MapOutline />
-              </HeaderControl>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="px-[10px] pb-[18px]">
+        <div className="px-[10px] pb-[18px] pt-5">
           <h1 className="text-[27px] leading-[30px] font-black">
             {location.name}
           </h1>
@@ -299,9 +184,9 @@ export default function LocationShareCard({
           {location.reviews.map((review) => {
             const overall = reviewOverall(review.taste, review.presentation);
             return (
-              <Link
+              <div
                 key={review.id}
-                href={`/r/${encodeURIComponent(review.id)}`}
+                role="img"
                 aria-label={`Review by ${review.profile?.username ?? "a member"}${
                   overall == null ? "" : `, overall ${formatRating(overall)}`
                 }`}
@@ -335,7 +220,7 @@ export default function LocationShareCard({
                     {review.profile.username}
                   </span>
                 ) : null}
-              </Link>
+              </div>
             );
           })}
         </div>

@@ -76,7 +76,6 @@ export default async function PublicReviewPage({
   const { review: reviewId } = await params;
   const review = await fetchPublicReview(reviewId);
   const appUrl = nativeReviewUrl(review.id);
-  const canonicalUrl = `${PUBLIC_ORIGIN}/r/${encodeURIComponent(review.id)}`;
 
   return (
     <main className="min-h-screen bg-[#FAF9F6] text-[#1C3A2E]">
@@ -85,8 +84,8 @@ export default async function PublicReviewPage({
       <div className="mx-auto flex min-h-screen max-w-[430px] flex-col sm:px-4 sm:py-5">
         <PublicShareHeader appUrl={appUrl} />
 
-        <div className="px-5 sm:px-0">
-          <ReviewShareCard review={review} shareUrl={canonicalUrl} />
+        <div className="px-5 pt-3 sm:px-0 sm:pt-0">
+          <ReviewShareCard review={review} />
         </div>
       </div>
     </main>

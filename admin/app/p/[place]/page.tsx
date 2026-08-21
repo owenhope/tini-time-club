@@ -76,7 +76,7 @@ export default async function PublicLocationPage({
       <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col sm:px-4 sm:py-5">
         <PublicShareHeader appUrl={appUrl} />
 
-        <div className="px-[10px] pb-8 sm:px-0">
+        <div className="px-[10px] pb-8 pt-3 sm:px-0 sm:pt-0">
           <LocationShareCard location={location} />
         </div>
       </div>

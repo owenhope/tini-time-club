@@ -23,7 +23,7 @@ export default function PublicShareHeader({ appUrl }: { appUrl: string }) {
       </header>
 
       <p className="bg-[#B6A3E2] px-3 py-1.5 text-center text-xs font-bold text-[#1C3A2E] sm:mb-3">
-        Sip, snap, review, repeat. Welcome to the club.
+        Sip, snap, review, repeat.
       </p>
     </>
   );
