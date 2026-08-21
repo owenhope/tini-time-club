@@ -224,7 +224,7 @@ class DatabaseService {
         // types/profiles and computes likes_count, comments_count and
         // has_liked server-side, and does the blocked/deleted filtering in
         // SQL so pages are never short.
-        const { data, error } = await supabase.rpc("feed_reviews", {
+        const { data, error } = await supabase.rpc("feed_reviews_followed", {
           p_viewer: currentUserId ?? null,
           p_limit: limit,
           p_offset: offset,

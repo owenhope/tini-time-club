@@ -57,7 +57,7 @@ it("loads a followed-members page with one feed RPC", async () => {
   ).resolves.toEqual([]);
 
   expect(rpc).toHaveBeenCalledTimes(1);
-  expect(rpc).toHaveBeenCalledWith("feed_reviews", {
+  expect(rpc).toHaveBeenCalledWith("feed_reviews_followed", {
     p_viewer: "viewer-1",
     p_limit: 20,
     p_offset: 40,

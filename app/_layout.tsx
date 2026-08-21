@@ -49,11 +49,9 @@ import { trackAppUsage } from "@/services/appUsageService";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
 import {
-  acceptVisitorPreview,
   clearPendingMembershipReturn,
   consumePendingMembershipReturn,
   getPendingMembershipReturn,
-  hasAcceptedVisitorPreview,
 } from "@/services/visitor-session";
 
 const APP_USAGE_HEARTBEAT_MS = 5 * 60 * 1000;
@@ -88,7 +86,6 @@ const getAuthenticatedDefaultRoute = (profile: Profile | null) => {
 type InitialAuthResolution = {
   session: Session | null;
   shouldChooseDefaultRoute: boolean;
-  visitorPreviewAccepted: boolean;
   membershipReturnPath: string | null;
 };
 
@@ -215,9 +212,7 @@ export function RootLayoutNav() {
     if (!isStartupResolved || !initialAuth) return null;
     if (!initialAuth.session) {
       if (!initialAuth.shouldChooseDefaultRoute) return null;
-      return initialAuth.visitorPreviewAccepted
-        ? routes.home()
-        : routes.welcome();
+      return routes.welcome();
     }
     if (profileError) return null;
 
@@ -456,9 +451,6 @@ export function RootLayoutNav() {
       setInitialAuth({
         session,
         shouldChooseDefaultRoute: !deepLinkRouted,
-        visitorPreviewAccepted: session
-          ? true
-          : await hasAcceptedVisitorPreview().catch(() => false),
         membershipReturnPath: pendingMembership?.returnTo ?? null,
       });
     };
@@ -495,8 +487,7 @@ export function RootLayoutNav() {
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(null);
         } else {
-          await acceptVisitorPreview().catch(() => {});
-          router.replace(routes.home());
+          router.replace(routes.welcome());
         }
       }
     });

@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 const mockGetReviews = jest.fn(
   (_options?: Record<string, unknown>) => new Promise(() => undefined)
 );
-const mockRefreshUnseenCount = jest.fn(async () => undefined);
+const mockOpenMembership = jest.fn();
 const mockReportError = jest.fn();
 let mockProfile: {
   id: string;
@@ -51,16 +51,9 @@ jest.mock("@/context/profile-context", () => ({
 
 jest.mock("@/context/membership-context", () => ({
   useMembership: () => ({
-    isMember: true,
+    isMember: Boolean(mockProfile),
     requireMembership: jest.fn(() => true),
-    openMembership: jest.fn(),
-  }),
-}));
-
-jest.mock("@/context/activity-context", () => ({
-  useActivity: () => ({
-    unseenCount: 0,
-    refreshUnseenCount: mockRefreshUnseenCount,
+    openMembership: mockOpenMembership,
   }),
 }));
 
@@ -121,7 +114,12 @@ jest.mock("@/components/ReviewItem", () => {
 });
 jest.mock("@/components/LikeSlider", () => () => null);
 jest.mock("@/components/CommentsSlider", () => () => null);
-jest.mock("@/components/nav/AppHeader", () => () => null);
+jest.mock("@/components/nav/AppHeader", () => {
+  const React = jest.requireActual<typeof import("react")>("react");
+  return function MockAppHeader(props: object) {
+    return React.createElement("AppHeader", props);
+  };
+});
 jest.mock("@/components/shared", () => ({
   Button: () => null,
   Input: () => null,
@@ -164,7 +162,7 @@ describe("Feed startup loading", () => {
   beforeEach(() => {
     mockGetReviews.mockReset();
     mockGetReviews.mockImplementation(() => new Promise(() => undefined));
-    mockRefreshUnseenCount.mockClear();
+    mockOpenMembership.mockClear();
     mockReportError.mockClear();
     mockProfile = {
       id: "member-1",
@@ -231,6 +229,37 @@ describe("Feed startup loading", () => {
     expect(copy).toContain("Nothing from the club yet");
     expect(copy).not.toContain("sharing your own experiences");
     expect(copy).not.toContain("Share Your Review");
+  });
+
+  it("shows a Join action for visitors and opens the membership prompt", async () => {
+    mockProfile = null;
+    mockGetReviews.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
+      .props.actions[0];
+
+    expect(action.label).toBe("Join");
+    expect(action.icon).toBeUndefined();
+    expect(action.accessibilityLabel).toBe("Join the club");
+
+    act(() => action.onPress());
+    expect(mockOpenMembership).toHaveBeenCalledWith("profile");
+  });
+
+  it("does not show the visitor Join action to signed-in members", async () => {
+    mockGetReviews.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    expect(
+      renderer!.root.findByType("AppHeader" as React.ElementType).props.actions
+    ).toEqual([]);
   });
 
   it("keeps the selected people feed when an older club refresh resolves last", async () => {

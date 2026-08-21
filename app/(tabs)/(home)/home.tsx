@@ -29,7 +29,6 @@ import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
-import { useActivity } from "@/context/activity-context";
 import { useMembership } from "@/context/membership-context";
 
 // Built once: constructing the profanity list is expensive and the filter is
@@ -61,9 +60,7 @@ function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
-  const { unseenCount, refreshUnseenCount } = useActivity();
-  const { requireMembership } = useMembership();
-  const showActivityDot = unseenCount > 0;
+  const { openMembership, requireMembership } = useMembership();
   const router = useRouter();
   const params = useLocalSearchParams<{
     postedReviewId?: string;
@@ -295,7 +292,6 @@ function Home() {
 
   useFocusEffect(
     useCallback(() => {
-      void refreshUnseenCount();
       // Refresh on focus only when the feed has actually gone stale. Doing it
       // unconditionally cleared the caches and reset scroll position every
       // time the user tabbed away and back, even seconds later.
@@ -313,7 +309,7 @@ function Home() {
       // loadReviews/lastRefreshTime intentionally excluded: including them
       // would re-run this on every fetch, defeating the staleness check.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile?.id, refreshUnseenCount, scrollToTop, reviews.length])
+    }, [profile?.id, scrollToTop, reviews.length])
   );
 
   // Optimized refresh handler
@@ -784,21 +780,17 @@ function Home() {
         variant="large"
         title={greeting.headline}
         meta={greeting.subline}
-        actions={[
-          {
-            icon: "heart-outline",
-            iconColor: colors.onInk,
-            showNotificationDot: showActivityDot,
-            onPress: () => {
-              if (requireMembership("activity")) {
-                router.push(routes.activity());
-              }
-            },
-            accessibilityLabel: showActivityDot
-              ? "Activity, new notifications"
-              : "Activity",
-          },
-        ]}
+        actions={
+          profile
+            ? []
+            : [
+                {
+                  label: "Join",
+                  onPress: () => openMembership("profile"),
+                  accessibilityLabel: "Join the club",
+                },
+              ]
+        }
       />
 
       <FlatList

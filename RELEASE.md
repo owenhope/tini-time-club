@@ -75,19 +75,30 @@ npm run release:testflight
 `preview-adhoc` exists for the occasional ad-hoc install on a registered
 device without going through TestFlight review.
 
-### 4.0 visitor-preview backend
+### 4.0 development-only visitor preview
 
-Version 4.0 depends on the `is_public` profile migration, the sanitized
-`public-content` Edge Function, and privacy-safe app-usage tables plus the
-`app-usage` heartbeat function. Apply them to development and production
-before distributing the app; otherwise signed-out Feed, Explore, profiles,
-locations, private review media, and dashboard audience reporting will fail.
+The `is_public` profile migration, sanitized `public-content` Edge Function,
+privacy-safe app-usage tables, and `app-usage` heartbeat are development-only.
+Do not apply or deploy them to production. Production keeps signed-out users
+on Welcome and routes its primary action to membership; it never calls either
+development-only Edge Function.
 
 ```bash
 supabase db push
 supabase functions deploy public-content --no-verify-jwt
 supabase functions deploy app-usage --no-verify-jwt
 ```
+
+The shared migration directory contains these development-only versions:
+
+- `20260820120000_public_profile_visibility.sql`
+- `20260820143000_app_usage_presence.sql`
+
+Never run an unreviewed bare `supabase db push` against production while those
+versions are pending. Stage only reviewed production migrations in an isolated
+workdir, run `supabase db push --dry-run` there, and confirm the exact allowlist
+before applying it. Production Edge Functions are also deployed by explicit
+name; never deploy `public-content` or `app-usage` there.
 
 The function deliberately accepts an anon-key request, then exposes only its
 explicit public projection. Raw profile/review/comment tables and the private
@@ -179,11 +190,13 @@ branch after pre-3.2 builds are retired.
 2. Confirm the required variables above exist in the target EAS environment.
 3. Run `npm run verify` and test against development Supabase.
 4. Merge `development` into `main`; let CI pass.
-5. Run `npm run start:prod` and test the same dev client against production.
-6. Bump `version` in `app.config.ts` (and `package.json`) when the release has
+5. Stage the reviewed Supabase production allowlist in an isolated workdir;
+   dry-run it, apply it, and verify the live app remains compatible.
+6. Run `npm run start:prod` and test the same dev client against production.
+7. Bump `version` in `app.config.ts` (and `package.json`) when the release has
    native changes.
-7. Run `npm run release:testflight` to build and submit the production app.
-8. Verify the TestFlight build, then tag the release.
+8. Run `npm run release:testflight` to build and submit the production app.
+9. Verify the TestFlight build, then tag the release.
 
 ## App privacy answers
 

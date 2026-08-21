@@ -419,7 +419,7 @@ describe("root startup routing", () => {
     }
   );
 
-  it("returns an opted-in visitor directly to the club", async () => {
+  it("returns an opted-in visitor to Welcome on a cold launch", async () => {
     mockVisitorPreviewAccepted = true;
 
     await act(async () => {
@@ -433,7 +433,7 @@ describe("root startup routing", () => {
       renderer!.update(<RootLayoutNav />);
     });
 
-    expect(mockReplace).toHaveBeenLastCalledWith("/home");
+    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
   });
 
   it("restores the destination that prompted an existing member to sign in", async () => {
@@ -634,7 +634,7 @@ describe("root startup routing", () => {
     expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
   });
 
-  it("continues in visitor preview after logout", async () => {
+  it("returns to Welcome after logout", async () => {
     mockProfileState = {
       profile: {
         id: "member-1",
@@ -661,7 +661,7 @@ describe("root startup routing", () => {
       await mockAuthStateChange?.("SIGNED_OUT", null);
     });
 
-    expect(mockReplace).toHaveBeenLastCalledWith("/home");
+    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
   });
 
   it("keeps an authenticated member in place when a resume session read momentarily returns null", async () => {
@@ -699,7 +699,7 @@ describe("root startup routing", () => {
     expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
   });
 
-  it("performs one visitor-preview navigation when Settings signs out", async () => {
+  it("performs one Welcome navigation when Settings signs out", async () => {
     mockProfileState = {
       profile: {
         id: "member-1",
@@ -744,7 +744,7 @@ describe("root startup routing", () => {
     });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
-    expect(mockReplace).toHaveBeenCalledWith("/home");
+    expect(mockReplace).toHaveBeenCalledWith("/welcome");
   });
 
   it("does not open a membership sheet while a signed-in member is signing out of Settings", async () => {

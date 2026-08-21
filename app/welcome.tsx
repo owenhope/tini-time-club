@@ -9,6 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import { Button, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
+import { isDevelopmentBackend } from "@/utils/screenshotMode";
 import { acceptVisitorPreview } from "@/services/visitor-session";
 import { reportError } from "@/utils/log";
 import AnalyticService from "@/services/analyticsService";
@@ -35,6 +36,7 @@ const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
   const { colors } = useTheme();
+  const visitorPreviewEnabled = isDevelopmentBackend();
   const featureColors = {
     brand: {
       background: colors.tabBarActive,
@@ -118,8 +120,12 @@ const Welcome = () => {
 
         <View style={styles.footer}>
           <Button
-            title="Explore the Club"
-            onPress={() => void exploreAsVisitor()}
+            title={visitorPreviewEnabled ? "Explore the Club" : "Join the Club"}
+            onPress={() =>
+              visitorPreviewEnabled
+                ? void exploreAsVisitor()
+                : router.push(routes.auth())
+            }
             variant="primary"
             size="medium"
             fullWidth

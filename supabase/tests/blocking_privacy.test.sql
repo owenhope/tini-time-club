@@ -166,7 +166,7 @@ SELECT is(
 SELECT is(
   (
     SELECT count(*)
-    FROM public.feed_reviews(
+    FROM public.feed_reviews_followed(
       '10000000-0000-0000-0000-000000000001',
       20,
       0,
@@ -182,7 +182,7 @@ SELECT is(
 SELECT is(
   (
     SELECT count(*)
-    FROM public.feed_reviews(
+    FROM public.feed_reviews_followed(
       '10000000-0000-0000-0000-000000000003',
       20,
       0,
