@@ -14,8 +14,7 @@ const mockSingle = jest.fn();
 const mockUnsubscribe = jest.fn();
 const mockUnregisterPushNotificationsAsync = jest.fn();
 let mockAuthStateChange:
-  | ((event: string, session: unknown) => void)
-  | undefined;
+  ((event: string, session: unknown) => void) | undefined;
 
 const mockProfileQuery = {
   select: jest.fn(),

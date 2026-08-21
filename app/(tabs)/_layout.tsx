@@ -44,10 +44,15 @@ const LayoutContent = () => {
   const { requireMembership } = useMembership();
   const pathname = usePathname();
   const hasResolvedProfileOnce = useRef(false);
-  const mountedAtRef = useRef(Date.now());
+  const mountedAtRef = useRef<number | null>(null);
   const gateTabPress = useCallback(
     (intent: MembershipIntent) => {
-      if (Date.now() - mountedAtRef.current < GHOST_TAP_GRACE_MS) return;
+      if (
+        mountedAtRef.current === null ||
+        Date.now() - mountedAtRef.current < GHOST_TAP_GRACE_MS
+      ) {
+        return;
+      }
       requireMembership(intent);
     },
     [requireMembership]
@@ -55,6 +60,10 @@ const LayoutContent = () => {
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;
+
+  useEffect(() => {
+    mountedAtRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (!profile?.eula_accepted || !profile.username) return;

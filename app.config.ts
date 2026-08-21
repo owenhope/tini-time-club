@@ -79,7 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "4.0.1",
+    version: "4.0.2",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",

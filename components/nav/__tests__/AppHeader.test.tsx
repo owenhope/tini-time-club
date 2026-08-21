@@ -149,18 +149,12 @@ describe("AppHeader", () => {
     act(() => {
       tree = renderer.create(
         <ThemeProvider>
-          <AppHeader
-            variant="compact"
-            title="Settings"
-            onBack={jest.fn()}
-          />
+          <AppHeader variant="compact" title="Settings" onBack={jest.fn()} />
         </ThemeProvider>
       );
     });
 
-    const backIcon = tree!.root.findByType(
-      "Ionicons" as React.ElementType
-    );
+    const backIcon = tree!.root.findByType("Ionicons" as React.ElementType);
     expect(backIcon.props.name).toBe("chevron-back");
     expect(backIcon.props.color).toBe(darkColors.text);
 

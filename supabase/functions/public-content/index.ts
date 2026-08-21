@@ -310,7 +310,10 @@ async function getProfiles(client: ReturnType<typeof createClient>, body: any) {
     .eq("deleted", false)
     .not("username", "is", null)
     .order("review_count", { ascending: false })
-    .range(Number(body.offset) || 0, (Number(body.offset) || 0) + clampLimit(body.limit, 50) - 1)
+    .range(
+      Number(body.offset) || 0,
+      (Number(body.offset) || 0) + clampLimit(body.limit, 50) - 1
+    )
     .limit(clampLimit(body.limit, 50));
   const search = String(body.search ?? "")
     .replace(/[^\p{L}\p{N}\s'&.-]/gu, "")
@@ -333,7 +336,10 @@ async function getLocations(
     .gte("total_ratings", 2)
     .order("rating", { ascending: false, nullsFirst: false })
     .order("total_ratings", { ascending: false })
-    .range(Number(body.offset) || 0, (Number(body.offset) || 0) + clampLimit(body.limit, 50) - 1)
+    .range(
+      Number(body.offset) || 0,
+      (Number(body.offset) || 0) + clampLimit(body.limit, 50) - 1
+    )
     .limit(clampLimit(body.limit, 50));
   const search = String(body.search ?? "")
     .replace(/[^\p{L}\p{N}\s'&.-]/gu, "")
