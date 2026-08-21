@@ -227,9 +227,9 @@ export default function PlacesMap({
   places: MapPlace[];
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [placesById, setPlacesById] = useState<globalThis.Map<number, MapPlace>>(
-    () => new globalThis.Map(initialPlaces.map((place) => [place.id, place]))
-  );
+  const [placesById, setPlacesById] = useState<
+    globalThis.Map<number, MapPlace>
+  >(() => new globalThis.Map(initialPlaces.map((place) => [place.id, place])));
   const fetchedBoundsRef = useRef<MapBounds | null>(null);
   const fetchRequestRef = useRef(0);
 

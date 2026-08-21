@@ -1,12 +1,7 @@
 import { isSelectableRating } from "./ratingUtils";
 
 export type ReviewStepKey =
-  | "location"
-  | "spirit"
-  | "type"
-  | "taste"
-  | "presentation"
-  | "comment";
+  "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
 
 interface ReviewStepValues {
   location?: unknown;
