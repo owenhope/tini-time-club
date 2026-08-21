@@ -485,6 +485,13 @@ function ReviewComposer() {
                 accessibilityLabel="Review caption"
               />
               <AppText
+                variant="caption"
+                tone="muted"
+                style={styles.keyboardHint}
+              >
+                Touch the screen to dismiss the keyboard
+              </AppText>
+              <AppText
                 variant="label"
                 tone="secondary"
                 style={styles.characterCount}
@@ -1157,6 +1164,9 @@ const useStyles = makeStyles((t) => ({
   },
   characterCount: {
     textAlign: "right" as const,
+    marginTop: t.spacing.xs,
+  },
+  keyboardHint: {
     marginTop: t.spacing.xs,
   },
   submitLoadingContainer: {

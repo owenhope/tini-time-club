@@ -1,7 +1,7 @@
 {
   "name": "tini-time-club",
   "main": "expo-router/entry",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "scripts": {
     "start": "npm run start:dev",
     "start:dev": "npx eas-cli env:exec development \"env -u EXPO_ACCESS_TOKEN EXPO_NO_DOTENV=1 APP_ENV=development BACKEND_ENV=development npx expo start --dev-client --clear\"",
