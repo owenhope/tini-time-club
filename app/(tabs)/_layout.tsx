@@ -43,6 +43,7 @@ const LayoutContent = () => {
   const router = useRouter();
   const { requireMembership } = useMembership();
   const pathname = usePathname();
+  const hasResolvedProfileOnce = useRef(false);
   const mountedAtRef = useRef(Date.now());
   const gateTabPress = useCallback(
     (intent: MembershipIntent) => {
@@ -114,7 +115,19 @@ const LayoutContent = () => {
     }
   }, [loading, profile, router]);
 
-  if (loading || (profile && (!profile.username || !profile.eula_accepted))) {
+  // Blank the tabs only before the first profile resolution (so a cold start
+  // cannot flash the wrong tree) and for accounts still in onboarding. Every
+  // later `loading` flip — most visibly the SIGNED_IN profile fetch — must
+  // keep the tree mounted: unmounting NativeTabs mid sign-in blacked out the
+  // screen behind the auth card and remounted the tabs as a second visible
+  // transition once the profile arrived.
+  if (!loading) {
+    hasResolvedProfileOnce.current = true;
+  }
+  if (
+    (loading && !hasResolvedProfileOnce.current) ||
+    (profile && (!profile.username || !profile.eula_accepted))
+  ) {
     return null;
   }
 

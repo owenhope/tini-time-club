@@ -774,10 +774,21 @@ function Home() {
   }, []);
 
   if (!firstLoadDone) {
+    // Wear the feed's own chrome while the first page loads. A bare centered
+    // spinner read as one more screen in the arrival sequence (auth dismiss →
+    // blank loader → feed); with the real header up immediately, the feed
+    // only fills in below it.
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={styles.loadingText}>Loading reviews...</Text>
+      <View style={styles.container}>
+        <AppHeader
+          variant="large"
+          title={greeting.headline}
+          meta={greeting.subline}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.loadingText}>Loading reviews...</Text>
+        </View>
       </View>
     );
   }

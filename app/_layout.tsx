@@ -612,6 +612,14 @@ export function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
         <Stack.Screen name="welcome" options={{ animation: "none" }} />
         <Stack.Screen name="onboarding" options={{ animation: "none" }} />
+        {/* Auth screens fade. The default lateral slide meant the sign-in
+            replace revealed the near-black Welcome screen still beneath the
+            stack for a few frames — the "black flash" on sign-in. A fade
+            composites the outgoing auth card over the incoming feed, so the
+            arrival reads as one transition. */}
+        <Stack.Screen name="auth/index" options={{ animation: "fade" }} />
+        <Stack.Screen name="auth/email" options={{ animation: "fade" }} />
+        <Stack.Screen name="auth/callback" options={{ animation: "fade" }} />
         <Stack.Screen
           name="membership"
           options={{

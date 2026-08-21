@@ -10,7 +10,7 @@ import {
 
 /**
  * Web replica of the mobile app's ReviewItem (components/ReviewItem.tsx).
- * Layout and colors mirror the native card: ranked identity, a 16:11 photo,
+ * Layout and colors mirror the native card: ranked identity, a 4:5 photo,
  * photo pills and venue plate, olive ratings, the large overall numeral,
  * caption, comments, and actions. Values come from the app's
  * theme tokens (spacing, typography, palette) — keep them in sync by eye.
@@ -441,7 +441,7 @@ export default function ReviewShareCard({
         </span>
       </div>
 
-      <div className="relative aspect-[16/11] bg-[#E5E6E8]">
+      <div className="relative aspect-[4/5] bg-[#E5E6E8]">
         {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
         <img
           src={review.image_public_url ?? "/nightlife-martini-table.png"}
