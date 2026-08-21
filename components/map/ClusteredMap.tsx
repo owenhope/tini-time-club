@@ -14,8 +14,9 @@ import ClusteredMapView from "react-native-map-clustering";
 const CLUSTERING_DEFAULTS = {
   clusteringEnabled: true,
   spiralEnabled: true,
-  // Fabric can race LayoutAnimation with marker reconciliation on iOS.
-  animationEnabled: false,
+  // The map remains mounted while Explore switches between map and lists, so
+  // cluster transitions no longer race a native map teardown.
+  animationEnabled: true,
   preserveClusterPressBehavior: false,
   layoutAnimationConf: LayoutAnimation.Presets.spring,
   tracksViewChanges: false,

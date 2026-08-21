@@ -16,6 +16,13 @@ jest.mock("expo-image", () => {
   };
 });
 
+jest.mock("@expo/vector-icons", () => {
+  const React = jest.requireActual("react");
+  return {
+    Ionicons: (props: object) => React.createElement("Ionicons", props),
+  };
+});
+
 jest.mock("react-native-gesture-handler", () => {
   const React = jest.requireActual("react");
   return {

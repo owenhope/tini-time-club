@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import AppHeader from "@/components/nav/AppHeader";
 import { SegmentedControl } from "@/components/shared";
 import ExploreLists from "@/components/explore/ExploreLists";
@@ -99,7 +99,10 @@ export default function ExploreScreen({
       />
 
       <View style={styles.content}>
-        <View style={[styles.panel, displayedView !== "map" && styles.hidden]}>
+        <View
+          style={[styles.panel, displayedView !== "map" && styles.hidden]}
+          pointerEvents={displayedView === "map" ? "auto" : "none"}
+        >
           <ExploreMap
             enabled={displayedView === "map"}
             focus={mapFocus}
@@ -108,7 +111,10 @@ export default function ExploreScreen({
           />
         </View>
 
-        <View style={[styles.panel, displayedView === "map" && styles.hidden]}>
+        <View
+          style={[styles.panel, displayedView === "map" && styles.hidden]}
+          pointerEvents={displayedView === "map" ? "none" : "auto"}
+        >
           <ExploreLists
             enabled={displayedView !== "map"}
             activeView={activeListView}
@@ -136,11 +142,12 @@ const useStyles = makeStyles((t) => ({
   content: {
     flex: 1,
     backgroundColor: t.colors.background,
+    position: "relative" as const,
   },
   panel: {
-    flex: 1,
+    ...StyleSheet.absoluteFill,
   },
   hidden: {
-    display: "none" as const,
+    opacity: 0,
   },
 }));

@@ -134,10 +134,10 @@ export async function unregisterPushNotificationsAsync(): Promise<boolean> {
   if (!Device.isDevice) return true;
   if (unregistrationPromise) return unregistrationPromise;
 
-  await SecureStore.setItemAsync(UNREGISTRATION_PENDING_KEY, "true");
-
   unregistrationPromise = (async () => {
     try {
+      await SecureStore.setItemAsync(UNREGISTRATION_PENDING_KEY, "true");
+
       const { error } = await supabase.rpc("unregister_push_token", {
         p_installation_id: await getInstallationId(),
       });
@@ -160,8 +160,17 @@ export async function unregisterPushNotificationsAsync(): Promise<boolean> {
 export async function retryPendingPushUnregistrationAsync(): Promise<void> {
   if (!Device.isDevice) return;
 
-  const isPending = await SecureStore.getItemAsync(UNREGISTRATION_PENDING_KEY);
-  if (isPending) await unregisterPushNotificationsAsync();
+  try {
+    const isPending = await SecureStore.getItemAsync(
+      UNREGISTRATION_PENDING_KEY
+    );
+    if (isPending) await unregisterPushNotificationsAsync();
+  } catch (error) {
+    // iOS can temporarily reject Keychain reads while the device is locked or
+    // transitioning back to the foreground. This retry is best-effort and
+    // must never become an unhandled rejection during app resume.
+    warn("[Push] Pending unregistration retry deferred:", error);
+  }
 }
 
 export function getNotificationRoute(

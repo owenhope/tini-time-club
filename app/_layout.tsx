@@ -521,7 +521,11 @@ export function RootLayoutNav() {
       void authCache.onAppStateChange(nextAppState);
 
       if (nextAppState === "active") {
-        void retryPendingPushUnregistrationAsync();
+        void Promise.resolve(retryPendingPushUnregistrationAsync()).catch(
+          (error) => {
+            warn("[RootLayout] Push cleanup retry skipped:", error);
+          }
+        );
         void trackAppUsage();
       }
     };

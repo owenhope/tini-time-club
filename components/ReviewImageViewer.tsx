@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Image as ExpoImage } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
 import { makeStyles } from "@/theme";
 
@@ -171,6 +172,14 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
                 />
               </Animated.View>
             </PinchGestureHandler>
+            <Pressable
+              style={styles.closeButton}
+              onPress={closeViewer}
+              accessibilityRole="button"
+              accessibilityLabel="Close review photo"
+            >
+              <Ionicons name="close" size={20} color="#FFFFFF" />
+            </Pressable>
           </Animated.View>
         </Animated.View>
       </Animated.View>
@@ -206,6 +215,18 @@ const useStyles = makeStyles((t) => ({
   },
   dismissArea: {
     ...StyleSheet.absoluteFill,
+  },
+  closeButton: {
+    position: "absolute" as const,
+    top: t.spacing.sm,
+    right: t.spacing.sm,
+    width: 40,
+    height: 40,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.overlay,
+    zIndex: 3,
   },
 }));
 
