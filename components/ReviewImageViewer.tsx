@@ -149,7 +149,14 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
                   <ExpoImage
                     source={{ uri: imageUrl }}
                     style={styles.image}
-                    onLoad={({ source }) => setImageSize(source)}
+                    onLoad={({ source }) => {
+                      if (source?.width && source?.height) {
+                        setImageSize({
+                          width: source.width,
+                          height: source.height,
+                        });
+                      }
+                    }}
                     contentFit="contain"
                     transition={0}
                     cachePolicy="memory-disk"
