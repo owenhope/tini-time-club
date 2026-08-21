@@ -1,8 +1,7 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { StyleSheet, Text } from "react-native";
 import LocationDetails from "../locationDetails";
-import { darkColors, ThemeProvider } from "@/theme";
+import { ThemeProvider } from "@/theme";
 
 jest.mock("react-native", () => {
   const actual = jest.requireActual("react-native");
@@ -46,35 +45,6 @@ describe("location details", () => {
     mockPush.mockClear();
     mockRequireMembership.mockReset();
     mockRequireMembership.mockReturnValue(true);
-  });
-
-  it("uses white for the overall score in dark mode", () => {
-    let tree: renderer.ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(
-        <ThemeProvider>
-          <LocationDetails
-            loc={{
-              id: 1,
-              name: "The Martini Room",
-              address: "123 Main Street, Vancouver, BC",
-              rating: 4.2,
-              total_ratings: 12,
-            }}
-          />
-        </ThemeProvider>
-      );
-    });
-
-    const score = tree!.root
-      .findAllByType(Text)
-      .find((node) => node.props.children === "4.2");
-
-    expect(StyleSheet.flatten(score!.props.style).color).toBe(
-      darkColors.textSecondary
-    );
-
-    act(() => tree!.unmount());
   });
 
   it("shows the membership CTA instead of opening deeper visitor actions", () => {

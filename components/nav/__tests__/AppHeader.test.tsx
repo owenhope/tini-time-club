@@ -1,10 +1,7 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { StyleSheet, Text, View } from "react-native";
-import AppHeader, {
-  type AppHeaderProps,
-  type AppHeaderVariant,
-} from "../AppHeader";
+import AppHeader from "../AppHeader";
 import { darkColors, ThemeProvider } from "@/theme";
 
 jest.mock("react-native", () => {
@@ -54,50 +51,7 @@ jest.mock("react-native-svg", () => ({
   Stop: () => null,
 }));
 
-describe("AppHeader dark mode", () => {
-  it.each([
-    ["large", undefined],
-    ["large", "inkDeep"],
-    ["media", undefined],
-  ] as const)(
-    "uses the dark-green ground for the %s %s header universally",
-    (variant: AppHeaderVariant, ground: AppHeaderProps["ground"]) => {
-      let tree: renderer.ReactTestRenderer;
-      act(() => {
-        tree = renderer.create(
-          <ThemeProvider>
-            <AppHeader variant={variant} title="Header" ground={ground} />
-          </ThemeProvider>
-        );
-      });
-
-      const header = tree!.root.findAllByType(View)[0];
-      expect(StyleSheet.flatten(header.props.style).backgroundColor).toBe(
-        darkColors.tabBar
-      );
-
-      act(() => tree!.unmount());
-    }
-  );
-
-  it("keeps purple brand headers purple", () => {
-    let tree: renderer.ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(
-        <ThemeProvider>
-          <AppHeader variant="large" title="Header" ground="brand" />
-        </ThemeProvider>
-      );
-    });
-
-    const header = tree!.root.findAllByType(View)[0];
-    expect(StyleSheet.flatten(header.props.style).backgroundColor).toBe(
-      darkColors.headerBrand
-    );
-
-    act(() => tree!.unmount());
-  });
-
+describe("AppHeader", () => {
   it("renders a capped activity count badge", () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {

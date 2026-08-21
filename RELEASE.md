@@ -4,23 +4,38 @@ Three environments, each with its own bundle identifier, URL scheme, icon,
 Supabase project, EAS environment and EAS update channel. They install
 side-by-side on one device.
 
-| Environment | Bundle id                        | Scheme                | EAS env / channel | Branch        |
-| ----------- | -------------------------------- | --------------------- | ----------------- | ------------- |
-| development | `com.ohope.tinitimeclub.dev`     | `tini-time-club-dev`  | `development`     | feature works |
-| preview     | `com.ohope.tinitimeclub.preview` | `tini-time-club-prev` | `preview`         | `development` |
-| production  | `com.ohope.tinitimeclub`         | `tini-time-club`      | `production`      | `main`        |
+| Environment | Bundle id                        | Scheme                | EAS env / channel | Branch         |
+| ----------- | -------------------------------- | --------------------- | ----------------- | -------------- |
+| development | `com.ohope.tinitimeclub.dev`     | `tini-time-club-dev`  | `development`     | working branch |
+| preview     | `com.ohope.tinitimeclub.preview` | `tini-time-club-prev` | `preview`         | release branch |
+| production  | `com.ohope.tinitimeclub`         | `tini-time-club`      | `production`      | `main`         |
 
 ## Branch flow
 
 ```
-feature branch  ──PR──▶  development  ──PR──▶  main
-                          │                     │
-                     preview build          production build
-                     (TestFlight)          (TestFlight → App Store)
+working branch ──manual development/preview testing──▶ merge to main
+                                                        │
+                                                   main audit
+                                                        │
+                                          production build or OTA
 ```
 
-CI (`.github/workflows/ci.yml`) runs on every pull request and on pushes to
-`main` and `development`, so both merges are gated by typecheck, lint and tests.
+There is no shared `development` release branch and there are no automated EAS
+release integrations. Development happens on working branches and preview
+builds are created directly from the branch under test. `main` is always the
+latest live source, including production OTA fixes.
+
+GitHub Actions runs the repository audit only after a push reaches `main`.
+Branch and preview validation is manual: run `npm run verify` before building.
+
+## Test policy
+
+Automated tests protect behavior that can break accounts, releases, or stored
+data: authentication and startup routing, Supabase boundaries, upload/write
+orchestration, permissions, deep links, membership gates, calculations, and
+accessibility contracts. Pure presentation belongs in simulator and preview
+build review. Do not add mock-heavy renderer tests whose only assertion is an
+exact color, spacing value, font token, or other implementation detail.
 
 ## Versioning
 
@@ -60,7 +75,7 @@ npm run start:dev
 # Use that same dev client against production Supabase
 npm run start:prod
 
-# Preview → TestFlight, points at the dev Supabase project
+# Branch preview → TestFlight, points at the dev Supabase project
 npx eas build --profile preview --platform ios
 npx eas submit --profile preview --platform ios --latest
 
@@ -75,35 +90,41 @@ npm run release:testflight
 `preview-adhoc` exists for the occasional ad-hoc install on a registered
 device without going through TestFlight review.
 
-### 4.0 development-only visitor preview
+### 4.0 visitor preview backend
 
-The `is_public` profile migration, sanitized `public-content` Edge Function,
-privacy-safe app-usage tables, and `app-usage` heartbeat are development-only.
-Do not apply or deploy them to production. Production keeps signed-out users
-on Welcome and routes its primary action to membership; it never calls either
-development-only Edge Function.
+The signed-out **Discover Martinis** path requires the `is_public` profile
+migration and sanitized `public-content` Edge Function in every backend serving
+a 4.0 build. Their production rollout is additive: the migration leaves the
+legacy six-argument `feed_reviews` RPC in place for the currently live app, and
+the new Edge Function is read-only.
+
+The privacy-safe app-usage tables and `app-usage` heartbeat remain
+development-only. The production client deliberately does not call that
+endpoint.
 
 ```bash
 supabase db push
-supabase functions deploy public-content --no-verify-jwt
+supabase functions deploy public-content
 supabase functions deploy app-usage --no-verify-jwt
 ```
 
-The shared migration directory contains these development-only versions:
+The shared migration directory contains two independently deployed versions:
 
-- `20260820120000_public_profile_visibility.sql`
-- `20260820143000_app_usage_presence.sql`
+- `20260820120000_public_profile_visibility.sql` — required in development and
+  production before distributing 4.0.
+- `20260820143000_app_usage_presence.sql` — development-only.
 
 Never run an unreviewed bare `supabase db push` against production while those
 versions are pending. Stage only reviewed production migrations in an isolated
 workdir, run `supabase db push --dry-run` there, and confirm the exact allowlist
-before applying it. Production Edge Functions are also deployed by explicit
-name; never deploy `public-content` or `app-usage` there.
+before applying it. Production Edge Functions are deployed by explicit name:
+deploy `public-content` for 4.0, but never deploy `app-usage` there.
 
-The function deliberately accepts an anon-key request, then exposes only its
-explicit public projection. Raw profile/review/comment tables and the private
-review image bucket remain unavailable to anonymous clients. Existing and new
-profiles default to visitor-visible; members can opt out in Edit Profile.
+The function accepts the app's project-scoped anonymous JWT, then exposes only
+its explicit public projection. The Edge gateway rejects requests without a
+valid project JWT. Raw profile/review/comment tables and the private review
+image bucket remain unavailable to anonymous clients. Existing and new profiles
+default to visitor-visible; members can opt out in Edit Profile.
 The usage endpoint stores a random per-installation UUID and app metadata, but
 no IP address, advertising identifier, or device fingerprint. It derives
 visitor/member status from Supabase Auth on the server. The admin dashboard
@@ -186,17 +207,19 @@ branch after pre-3.2 builds are retired.
 
 ## Release checklist
 
-1. Develop with `npm run start:dev`.
+1. Develop on a working branch with `npm run start:dev`.
 2. Confirm the required variables above exist in the target EAS environment.
 3. Run `npm run verify` and test against development Supabase.
-4. Merge `development` into `main`; let CI pass.
-5. Stage the reviewed Supabase production allowlist in an isolated workdir;
+4. Create and test a preview build directly from the working branch when needed.
+5. Merge the tested branch into `main`; the main-only audit runs after the push.
+6. Stage the reviewed Supabase production allowlist in an isolated workdir;
    dry-run it, apply it, and verify the live app remains compatible.
-6. Run `npm run start:prod` and test the same dev client against production.
-7. Bump `version` in `app.config.ts` (and `package.json`) when the release has
+7. Run `npm run start:prod` and test the same dev client against production.
+8. Bump `version` in `app.config.ts` (and `package.json`) when the release has
    native changes.
-8. Run `npm run release:testflight` to build and submit the production app.
-9. Verify the TestFlight build, then tag the release.
+9. From `main`, run `npm run release:testflight` for a native production build,
+   or publish an OTA update for a compatible JS-only fix.
+10. Verify the TestFlight build or OTA update, then tag the release.
 
 ## App privacy answers
 

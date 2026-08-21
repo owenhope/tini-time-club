@@ -283,10 +283,10 @@ entrypoint = "./functions/delete-account/index.ts"
 
 [functions.public-content]
 enabled = true
-# Visitors still send the project's anon key, but the function deliberately
-# accepts requests without a member session and applies its own public-only
-# projection before using the service role for signed review media.
-verify_jwt = false
+# Signed-out visitors send the project's anon JWT. Reject requests without a
+# valid project credential before applying the public-only projection and
+# using the service role for signed review media.
+verify_jwt = true
 import_map = "./functions/public-content/deno.json"
 entrypoint = "./functions/public-content/index.ts"
 

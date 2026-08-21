@@ -17,7 +17,7 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run typecheck && npm run lint && npm test",
+    "verify": "npm run typecheck && npm run format:check && npm run lint && npm test",
     "release:testflight": "npx eas-cli build --profile production --platform ios --auto-submit"
   },
   "dependencies": {

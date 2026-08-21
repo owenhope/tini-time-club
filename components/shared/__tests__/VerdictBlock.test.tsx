@@ -2,7 +2,7 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { Text } from "react-native";
 import VerdictBlock from "../VerdictBlock";
-import { ThemeProvider, lightColors, typography } from "@/theme";
+import { ThemeProvider, typography } from "@/theme";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -79,15 +79,5 @@ describe("VerdictBlock", () => {
       thirdOlive.props.onPressIn();
     });
     expect(onChange).toHaveBeenCalledWith(3);
-  });
-
-  it("inks the block with onBrand, since green on purple fails as text", () => {
-    const tree = build(3);
-    const inked = tree.root
-      .findAllByType(Text)
-      .filter((n) =>
-        [n.props.style].flat(3).some((s) => s?.color === lightColors.onBrand)
-      );
-    expect(inked.length).toBeGreaterThan(0);
   });
 });
