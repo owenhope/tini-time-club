@@ -585,7 +585,9 @@ export function RootLayoutNav() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
           headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.accent,
+          // Keep every native fallback back chevron aligned with AppHeader:
+          // purple on light surfaces, primary white on dark surfaces.
+          headerTintColor: isDark ? colors.text : colors.accent,
           headerShadowVisible: false,
           headerTitleStyle: {
             ...typography.heading,

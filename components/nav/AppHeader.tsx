@@ -238,6 +238,7 @@ const CompactBar = ({
   compactContent?: React.ReactNode;
 }) => {
   const styles = useStyles();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const onInk = ground === "ink" || ground === "inkDeep";
   const onBrand = ground === "brand";
@@ -280,6 +281,11 @@ const CompactBar = ({
                 tone={onInk || onBrand ? "onInk" : "outline"}
                 action={{
                   icon: "chevron-back",
+                  // Purple is the light-surface navigation accent. Against a
+                  // dark header, back navigation uses the primary foreground
+                  // so the chevron stays white and immediately legible.
+                  iconColor:
+                    isDark && !onInk && !onBrand ? colors.text : undefined,
                   onPress: onBack,
                   accessibilityLabel: "Back",
                 }}
