@@ -1,8 +1,11 @@
 import React, { useRef, useState } from "react";
-import { Animated, Modal, Pressable } from "react-native";
+import { Animated, Modal, Pressable, StyleSheet } from "react-native";
 import { Image as ExpoImage } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import { PinchGestureHandler, State } from "react-native-gesture-handler";
+import {
+  PanGestureHandler,
+  PinchGestureHandler,
+  State,
+} from "react-native-gesture-handler";
 import { makeStyles } from "@/theme";
 
 interface ReviewImageViewerProps {
@@ -18,8 +21,8 @@ interface ReviewImageViewerProps {
  * an aspect ratio and then resized the stage when onLoad reported the real
  * one, a visible jump mid-open. The photo is already in expo-image's cache
  * from the feed card, so it paints immediately without its own fade (the
- * Modal supplies the only animation). Pinch to zoom; use the close control to
- * dismiss so a second finger never gets mistaken for a backdrop tap.
+ * Modal supplies the only animation). Pinch to zoom; tapping outside the image
+ * or dragging it down dismisses the viewer.
  */
 const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   visible,
@@ -30,16 +33,30 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(1);
   const [pinchScale] = useState(() => new Animated.Value(1));
+  const [panY] = useState(() => new Animated.Value(0));
   const [pinchEvent] = useState(() =>
     Animated.event([{ nativeEvent: { scale: pinchScale } }], {
       useNativeDriver: true,
     })
   );
+  const [panEvent] = useState(() =>
+    Animated.event([{ nativeEvent: { translationY: panY } }], {
+      useNativeDriver: true,
+    })
+  );
+  const pinchRef = useRef(null);
+  const panRef = useRef(null);
 
   const resetZoom = () => {
     zoomRef.current = 1;
     setZoom(1);
     pinchScale.setValue(1);
+  };
+
+  const closeViewer = () => {
+    resetZoom();
+    panY.setValue(0);
+    onClose();
   };
 
   const handlePinchStateChange = ({ nativeEvent }: any) => {
@@ -53,6 +70,22 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
     pinchScale.setValue(1);
   };
 
+  const handlePanStateChange = ({ nativeEvent }: any) => {
+    if (nativeEvent.oldState !== State.ACTIVE) return;
+    const isDownwardSwipe =
+      nativeEvent.translationY > 120 &&
+      Math.abs(nativeEvent.translationY) > Math.abs(nativeEvent.translationX);
+    if (isDownwardSwipe) {
+      closeViewer();
+      return;
+    }
+    Animated.spring(panY, {
+      toValue: 0,
+      useNativeDriver: true,
+      bounciness: 6,
+    }).start();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -61,41 +94,54 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <PinchGestureHandler
-        onGestureEvent={pinchEvent}
-        onHandlerStateChange={handlePinchStateChange}
-      >
-        <Animated.View style={styles.backdrop}>
-          <Animated.View
-            style={[
-              styles.imageStage,
-              { transform: [{ scale: zoom }, { scale: pinchScale }] },
-            ]}
+      <Animated.View style={styles.backdrop}>
+        <Pressable
+          style={styles.dismissArea}
+          onPress={closeViewer}
+          accessibilityRole="button"
+          accessibilityLabel="Close review photo"
+        />
+        <Pressable
+          style={styles.imageHitbox}
+          onPress={(event) => event.stopPropagation()}
+        >
+          <PanGestureHandler
+            ref={panRef}
+            simultaneousHandlers={pinchRef}
+            onGestureEvent={panEvent}
+            onHandlerStateChange={handlePanStateChange}
           >
-            <ExpoImage
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              contentFit="contain"
-              transition={0}
-              cachePolicy="memory-disk"
-              accessible
-              accessibilityRole="image"
-              accessibilityLabel="Expanded review photo"
-            />
-          </Animated.View>
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => {
-              resetZoom();
-              onClose();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Close review photo"
-          >
-            <Ionicons name="close" size={25} color="#FFFFFF" />
-          </Pressable>
-        </Animated.View>
-      </PinchGestureHandler>
+            <Animated.View
+              style={[styles.imageStage, { transform: [{ translateY: panY }] }]}
+            >
+              <PinchGestureHandler
+                ref={pinchRef}
+                simultaneousHandlers={panRef}
+                onGestureEvent={pinchEvent}
+                onHandlerStateChange={handlePinchStateChange}
+              >
+                <Animated.View
+                  style={[
+                    styles.imageTransform,
+                    { transform: [{ scale: zoom }, { scale: pinchScale }] },
+                  ]}
+                >
+                  <ExpoImage
+                    source={{ uri: imageUrl }}
+                    style={styles.image}
+                    contentFit="contain"
+                    transition={0}
+                    cachePolicy="memory-disk"
+                    accessible
+                    accessibilityRole="image"
+                    accessibilityLabel="Expanded review photo"
+                  />
+                </Animated.View>
+              </PinchGestureHandler>
+            </Animated.View>
+          </PanGestureHandler>
+        </Pressable>
+      </Animated.View>
     </Modal>
   );
 };
@@ -111,19 +157,24 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
   },
   imageStage: {
-    flex: 1,
     width: "100%" as const,
+    height: "78%" as const,
+    justifyContent: "center" as const,
   },
-  closeButton: {
-    position: "absolute" as const,
-    top: t.spacing.xxl,
-    right: t.spacing.lg,
-    width: 44,
-    height: 44,
+  imageHitbox: {
+    width: "100%" as const,
+    height: "78%" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderRadius: 22,
-    backgroundColor: "rgba(0, 0, 0, 0.42)",
+  },
+  imageTransform: {
+    width: "100%" as const,
+    height: "100%" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  dismissArea: {
+    ...StyleSheet.absoluteFill,
   },
 }));
 
