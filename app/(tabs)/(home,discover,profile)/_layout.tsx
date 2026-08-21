@@ -1,6 +1,10 @@
-import { Stack } from "expo-router";
+import { useEffect, useRef } from "react";
+import { Stack, usePathname } from "expo-router";
 import AppHeader from "@/components/nav/AppHeader";
 import { useTheme } from "@/theme";
+import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
+import { getVisitorGatedRouteIntent } from "@/utils/membership";
 
 /**
  * One layout serving every tab's stack via expo-router's array syntax, so the
@@ -46,6 +50,38 @@ const TITLES: Record<string, string> = {
 
 export default function SharedTabLayout() {
   const { colors } = useTheme();
+  const { profile, loading } = useProfile();
+  const { openMembership } = useMembership();
+  const pathname = usePathname();
+  const visitorIntent = getVisitorGatedRouteIntent(pathname);
+  const promptedPath = useRef<string | null>(null);
+  const memberWasOnProtectedPath = useRef(false);
+
+  useEffect(() => {
+    if (!visitorIntent) {
+      promptedPath.current = null;
+      memberWasOnProtectedPath.current = false;
+      return;
+    }
+    if (profile) {
+      memberWasOnProtectedPath.current = true;
+      return;
+    }
+    if (!loading && !profile && promptedPath.current !== pathname) {
+      // SIGNED_OUT clears ProfileContext before the root navigator replaces a
+      // member-only Settings route with Home. That one transition is not a
+      // visitor asking to enter Settings, so do not put a membership sheet on
+      // top of the destination. The ref resets once Home becomes current.
+      if (memberWasOnProtectedPath.current) return;
+      promptedPath.current = pathname;
+      openMembership(visitorIntent);
+    }
+  }, [loading, openMembership, pathname, profile, visitorIntent]);
+
+  // Keep member-only children from mounting before the contextual CTA. This
+  // prevents activity/profile queries and settings writes from firing during
+  // the navigation frame in which a visitor reaches a protected deep link.
+  if (loading || (!profile && visitorIntent)) return null;
 
   return (
     <Stack

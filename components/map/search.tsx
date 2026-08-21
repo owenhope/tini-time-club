@@ -13,7 +13,7 @@ import {
   newSessionToken,
   type PlaceResult,
 } from "@/services/placesService";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 import { reportError } from "@/utils/log";
 import { ExploreSearchField } from "@/components/explore/ExploreSearchField";
 
@@ -208,7 +208,6 @@ const useStyles = makeStyles((t) => ({
   },
   resultName: {
     ...t.typography.bodyStrong,
-    fontFamily: fonts.medium,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },

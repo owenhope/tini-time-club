@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Animated,
   Easing,
@@ -33,7 +33,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   style,
 }) => {
   const styles = useStyles();
-  const pulse = useRef(new Animated.Value(1)).current;
+  const [pulse] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     const loop = Animated.loop(

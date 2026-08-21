@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import * as Sentry from "@sentry/react-native";
+import { registerErrorReporter } from "@/utils/log";
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 const enableOutsideProduction =
@@ -20,6 +21,42 @@ Sentry.init({
   environment: String(appEnvironment),
   sendDefaultPii: false,
   tracesSampleRate: isProduction ? 0.1 : 0,
+});
+
+const safeErrorDetails = (value: unknown) => {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  return Object.fromEntries(
+    ["name", "message", "code", "status"].flatMap((key) => {
+      const detail = record[key];
+      return typeof detail === "string" || typeof detail === "number"
+        ? [[key, detail]]
+        : [];
+    })
+  );
+};
+
+registerErrorReporter((...args: unknown[]) => {
+  const context = args
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .trim();
+  const exception = args.find((value) => value instanceof Error);
+  const errorLike = args.find(
+    (value) => value && typeof value === "object" && !(value instanceof Error)
+  );
+
+  if (exception) {
+    Sentry.captureException(exception, {
+      extra: context ? { context } : undefined,
+    });
+    return;
+  }
+
+  Sentry.captureMessage(context || "Application error reported", {
+    level: "error",
+    extra: errorLike ? { error: safeErrorDetails(errorLike) } : undefined,
+  });
 });
 
 const manifest = Updates.manifest;

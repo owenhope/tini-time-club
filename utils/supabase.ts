@@ -9,8 +9,7 @@ import { AppState } from "react-native";
 import { log, reportError } from "./log";
 
 const expoExtra = Constants.expoConfig?.extra as
-  | Record<string, unknown>
-  | undefined;
+  Record<string, unknown> | undefined;
 const manifestExtra = Constants.manifest2?.extra as
   | {
       expoClient?: {

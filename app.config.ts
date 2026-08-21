@@ -13,12 +13,59 @@ const PACKAGE_NAME = "com.ohope.tinitimeclub";
 const ICON = "./assets/images/icon-purple.png";
 const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
+const PHOTO_LIBRARY_USAGE_DESCRIPTION =
+  "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.";
+const REQUIRED_RELEASE_ENVIRONMENT_VARIABLES = [
+  "EXPO_PUBLIC_SUPABASE_URL",
+  "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+  "EXPO_PUBLIC_META_APP_ID",
+  "EXPO_PUBLIC_SENTRY_DSN",
+  "SENTRY_ORG",
+  "SENTRY_PROJECT",
+] as const;
+
+// Secret-visibility EAS variables exist only on the EAS builder (EAS_BUILD=1);
+// the local `eas build` CLI evaluates this config without them, so requiring
+// them locally would block every release build from starting.
+const REQUIRED_BUILDER_ONLY_ENVIRONMENT_VARIABLES = [
+  "SENTRY_AUTH_TOKEN",
+] as const;
+
+const validateReleaseEnvironment = (
+  appEnvironment: "development" | "preview" | "production"
+) => {
+  if (appEnvironment === "development") {
+    return;
+  }
+
+  const requiredVariables: readonly string[] =
+    process.env.EAS_BUILD === "true"
+      ? [
+          ...REQUIRED_RELEASE_ENVIRONMENT_VARIABLES,
+          ...REQUIRED_BUILDER_ONLY_ENVIRONMENT_VARIABLES,
+        ]
+      : REQUIRED_RELEASE_ENVIRONMENT_VARIABLES;
+
+  const missingVariables = requiredVariables.filter(
+    (variableName) => !process.env[variableName]?.trim()
+  );
+
+  if (missingVariables.length > 0) {
+    throw new Error(
+      `Missing required ${appEnvironment} environment variables: ${missingVariables.join(
+        ", "
+      )}. Configure them in the matching EAS environment before building.`
+    );
+  }
+};
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnvironment =
     (process.env.APP_ENV as "development" | "preview" | "production") ||
     "development";
   const backendEnvironment = process.env.BACKEND_ENV || appEnvironment;
+
+  validateReleaseEnvironment(appEnvironment);
 
   console.log(
     `Building ${appEnvironment} app against ${backendEnvironment} backend`
@@ -32,7 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "3.1.0",
+    version: "4.0.0",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
@@ -45,6 +92,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // iOS, so the map uses Apple Maps there (Google remains on Android).
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription: PHOTO_LIBRARY_USAGE_DESCRIPTION,
+        NSPhotoLibraryAddUsageDescription:
+          "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
     },
     android: {
@@ -59,7 +109,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       },
       permissions: [
-        "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
@@ -84,17 +133,23 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-image-picker",
         {
-          photoPermissions:
-            "Allow Tini Time Club to access your photos to upload photos of your Martinis or your profile picture.",
+          photosPermission: PHOTO_LIBRARY_USAGE_DESCRIPTION,
+          microphonePermission: false,
         },
       ],
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission:
-            "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+          locationAlwaysAndWhenInUsePermission: false,
+          locationAlwaysPermission: false,
           locationWhenInUsePermission:
             "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+          // Must be a string, not false: expo-location's binary references
+          // CoreMotion APIs regardless, and App Store Connect rejects uploads
+          // missing NSMotionUsageDescription (ITMS-90683). `false` would also
+          // strip any key set in ios.infoPlist above.
+          motionUsagePermission:
+            "Tini Time Club uses motion activity to improve location accuracy while finding bars near you.",
         },
       ],
       [
@@ -102,6 +157,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           cameraPermission:
             "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture.",
+          microphonePermission: false,
+          recordAudioAndroid: false,
+          barcodeScannerEnabled: false,
         },
       ],
       [
@@ -133,7 +191,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       "@sentry/react-native",
       ["expo-localization"],
-      "expo-secure-store",
+      "expo-image",
+      ["expo-secure-store", { faceIDPermission: false }],
+      "expo-build-properties",
+      [
+        "react-native-share",
+        {
+          ios: ["instagram", "instagram-stories"],
+          android: ["com.instagram.android"],
+        },
+      ],
     ],
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

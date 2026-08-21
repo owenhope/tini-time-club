@@ -1,21 +1,7 @@
 import React from "react";
-import { Modal, Pressable, useWindowDimensions } from "react-native";
+import { Modal, Pressable } from "react-native";
 import { Image as ExpoImage } from "expo-image";
 import { makeStyles } from "@/theme";
-
-const DEFAULT_REVIEW_ASPECT_RATIO = 16 / 11;
-
-const fitContainedSize = (
-  maxWidth: number,
-  maxHeight: number,
-  aspectRatio: number
-) => {
-  if (maxWidth / maxHeight > aspectRatio) {
-    return { width: maxHeight * aspectRatio, height: maxHeight };
-  }
-
-  return { width: maxWidth, height: maxWidth / aspectRatio };
-};
 
 interface ReviewImageViewerProps {
   visible: boolean;
@@ -23,26 +9,21 @@ interface ReviewImageViewerProps {
   onClose: () => void;
 }
 
+/**
+ * Full-screen lightbox for a review photo. The stage is always the full
+ * window and the photo letterboxes itself via contentFit="contain", so no
+ * layout depends on the image's dimensions — the previous approach guessed
+ * an aspect ratio and then resized the stage when onLoad reported the real
+ * one, a visible jump mid-open. The photo is already in expo-image's cache
+ * from the feed card, so it paints immediately without its own fade (the
+ * Modal supplies the only animation). Tap anywhere to close.
+ */
 const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
   visible,
   imageUrl,
   onClose,
 }) => {
   const styles = useStyles();
-  const { width, height } = useWindowDimensions();
-  const [loadedImage, setLoadedImage] = React.useState<{
-    url: string;
-    aspectRatio: number;
-  } | null>(null);
-  const aspectRatio =
-    loadedImage?.url === imageUrl
-      ? loadedImage.aspectRatio
-      : DEFAULT_REVIEW_ASPECT_RATIO;
-  const imageSize = fitContainedSize(
-    Math.max(1, width - 32),
-    Math.max(1, height - 120),
-    aspectRatio
-  );
 
   return (
     <Modal
@@ -58,30 +39,16 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Close review photo"
       >
-        <Pressable
-          testID="review-image-stage"
-          style={[styles.stage, imageSize]}
-          onPress={() => {}}
-        >
-          <ExpoImage
-            source={{ uri: imageUrl }}
-            style={styles.image}
-            contentFit="contain"
-            transition={150}
-            cachePolicy="memory-disk"
-            onLoad={({ source }) => {
-              if (source.width > 0 && source.height > 0) {
-                setLoadedImage({
-                  url: imageUrl,
-                  aspectRatio: source.width / source.height,
-                });
-              }
-            }}
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel="Expanded review photo"
-          />
-        </Pressable>
+        <ExpoImage
+          source={{ uri: imageUrl }}
+          style={styles.image}
+          contentFit="contain"
+          transition={0}
+          cachePolicy="memory-disk"
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Expanded review photo"
+        />
       </Pressable>
     </Modal>
   );
@@ -90,18 +57,12 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
 const useStyles = makeStyles((t) => ({
   backdrop: {
     flex: 1,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
     backgroundColor: t.colors.scrimStrong,
     padding: t.spacing.lg,
   },
-  stage: {
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
   image: {
+    flex: 1,
     width: "100%" as const,
-    height: "100%" as const,
   },
 }));
 

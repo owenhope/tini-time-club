@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Pressable, View, useWindowDimensions } from "react-native";
+import { Modal, Pressable, useWindowDimensions } from "react-native";
 import { Avatar } from "@/components/shared";
 import { makeStyles } from "@/theme";
 

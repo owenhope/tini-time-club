@@ -28,9 +28,10 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Comment, Review } from "@/types/types";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
+import { useMembership } from "@/context/membership-context";
 
 const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
 const COMMENT_SHEET_RESTING_HEIGHT = 430;
@@ -102,6 +103,7 @@ export default function CommentsSlider({
   onCommentAdded,
 }: CommentsSliderProps) {
   const { profile } = useProfile();
+  const { requireMembership } = useMembership();
   const openProfile = useOpenProfile();
   const styles = useStyles();
   const { colors, isDark } = useTheme();
@@ -120,7 +122,7 @@ export default function CommentsSlider({
     let cancelled = false;
     const loadComments = async () => {
       try {
-        const data = await databaseService.getComments(review.id);
+        const data = await databaseService.getComments(review.id, profile?.id);
         if (cancelled) return;
         setComments(data || []);
         setTimeout(() => {
@@ -134,11 +136,14 @@ export default function CommentsSlider({
     return () => {
       cancelled = true;
     };
-  }, [review.id]);
+  }, [profile?.id, review.id]);
 
   const handleAddComment = useCallback(
     async (comment: string) => {
-      if (!profile) return false;
+      if (!profile) {
+        requireMembership("comment");
+        return false;
+      }
 
       try {
         const data = await databaseService.createComment({
@@ -165,7 +170,7 @@ export default function CommentsSlider({
         return false;
       }
     },
-    [onCommentAdded, profile, review]
+    [onCommentAdded, profile, requireMembership, review]
   );
 
   const deleteComment = useCallback(
@@ -197,7 +202,11 @@ export default function CommentsSlider({
 
   const toggleCommentLike = useCallback(
     async (comment: Comment) => {
-      if (!profile || pendingLikes.current.has(comment.id)) return;
+      if (!profile) {
+        requireMembership("like-comment");
+        return;
+      }
+      if (pendingLikes.current.has(comment.id)) return;
 
       const wasLiked = Boolean(comment.has_liked);
       const previousCount = comment.likes_count ?? 0;
@@ -248,7 +257,7 @@ export default function CommentsSlider({
         pendingLikes.current.delete(comment.id);
       }
     },
-    [profile, review]
+    [profile, requireMembership, review]
   );
 
   const openReport = useCallback((comment: Comment) => {
@@ -258,6 +267,10 @@ export default function CommentsSlider({
 
   const showCommentActions = useCallback(
     (comment: Comment) => {
+      if (!profile) {
+        requireMembership("report");
+        return;
+      }
       const isOwnComment = profile?.id === comment.user_id;
       const actionLabel = isOwnComment ? "Delete Comment" : "Report Comment";
       const runAction = () =>
@@ -288,7 +301,7 @@ export default function CommentsSlider({
         },
       ]);
     },
-    [confirmDeleteComment, isDark, openReport, profile?.id]
+    [confirmDeleteComment, isDark, openReport, profile, requireMembership]
   );
 
   const handleReportSubmit = useCallback(
@@ -450,8 +463,7 @@ export default function CommentsSlider({
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingBottom:
-                COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
+              paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
             },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -509,8 +521,7 @@ const useStyles = makeStyles((t) => ({
     marginBottom: t.spacing.sm,
   },
   emptySubtitle: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textMuted,
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,
@@ -534,16 +545,13 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 2,
     flexWrap: "wrap" as const,
   },
-  username: { fontFamily: fonts.bold, color: t.colors.usernameText },
+  username: { ...t.typography.bodyStrong, color: t.colors.usernameText },
   timestamp: {
+    ...t.typography.caption,
     color: t.colors.textMuted,
-    fontFamily: fonts.regular,
-    fontSize: 12,
   },
   commentBody: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   inputContainer: {
@@ -563,7 +571,7 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.lg,
     marginRight: t.spacing.sm,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   sendButtonHit: {
     minHeight: 44,
@@ -571,7 +579,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
     justifyContent: "center" as const,
   },
-  sendButton: { color: t.colors.text, fontFamily: fonts.bold },
+  sendButton: { ...t.typography.bodyStrong, color: t.colors.text },
   likeButton: {
     minWidth: 40,
     minHeight: 34,
@@ -582,11 +590,9 @@ const useStyles = makeStyles((t) => ({
     gap: 1,
   },
   likeCount: {
+    ...t.typography.label,
     minWidth: 8,
     color: t.colors.textMuted,
-    fontFamily: fonts.semibold,
-    fontSize: 10,
-    lineHeight: 12,
     textAlign: "center" as const,
   },
   likeCountActive: { color: t.colors.like },

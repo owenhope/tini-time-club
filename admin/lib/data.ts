@@ -121,6 +121,62 @@ export interface DashboardKpis {
   locations: KpiMetric;
 }
 
+export interface AudienceUsage {
+  visitorActiveNow: number;
+  memberActiveNow: number;
+  visitorInRange: number;
+  memberInRange: number;
+  convertedInRange: number;
+  visitorByDay: { day: string; count: number }[];
+  memberByDay: { day: string; count: number }[];
+}
+
+type AudienceUsageRpc = {
+  visitorActiveNow?: number;
+  memberActiveNow?: number;
+  visitorInRange?: number;
+  memberInRange?: number;
+  convertedInRange?: number;
+  byDay?: Array<{ day: string; visitors: number; members: number }>;
+};
+
+/**
+ * Anonymous figures are distinct random installations, not inferred people.
+ * Authenticated figures can safely deduplicate by member account. "Active now"
+ * means a heartbeat was received in the last 15 minutes.
+ */
+export const fetchAudienceUsage = async (
+  range: DateRange
+): Promise<AudienceUsage> => {
+  const activeSince = new Date(Date.now() - 15 * 60 * 1000);
+  const { data, error } = await db().rpc("get_app_usage_summary", {
+    p_since: range.since.toISOString().slice(0, 10),
+    p_until: range.until.toISOString().slice(0, 10),
+    p_active_since: activeSince.toISOString(),
+  });
+  if (error) {
+    throw new Error(`Unable to load app audience: ${error.message}`);
+  }
+
+  const summary = (data ?? {}) as AudienceUsageRpc;
+  const byDay = summary.byDay ?? [];
+  return {
+    visitorActiveNow: Number(summary.visitorActiveNow ?? 0),
+    memberActiveNow: Number(summary.memberActiveNow ?? 0),
+    visitorInRange: Number(summary.visitorInRange ?? 0),
+    memberInRange: Number(summary.memberInRange ?? 0),
+    convertedInRange: Number(summary.convertedInRange ?? 0),
+    visitorByDay: byDay.map((row) => ({
+      day: row.day,
+      count: Number(row.visitors ?? 0),
+    })),
+    memberByDay: byDay.map((row) => ({
+      day: row.day,
+      count: Number(row.members ?? 0),
+    })),
+  };
+};
+
 /** The equal-length window immediately preceding `range`. */
 const previousWindow = (range: DateRange) => {
   const until = new Date(range.since.getTime() - 1);
@@ -2084,6 +2140,18 @@ export interface AdminLocation {
 
 export type LocationSort = "place" | "area" | "rating" | "reviews";
 
+export interface MapPlace {
+  id: number;
+  name: string | null;
+  address: string | null;
+  lat: number;
+  lon: number;
+  rating: number | null;
+  taste_avg: number | null;
+  presentation_avg: number | null;
+  total_ratings: number;
+}
+
 export interface AdminLocationDetail extends AdminLocation {
   place_id: string | null;
   inserted_at: string;
@@ -2494,6 +2562,53 @@ export const fetchLocations = async (
     locations: sorted.slice(offset, offset + perPage),
     total: sorted.length,
   };
+};
+
+export interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
+/**
+ * Places with coordinates for the Places map, from the location_ratings view
+ * (coordinates joined to rating aggregates). Without bounds it returns
+ * everything — the initial render fits the viewport to the whole club. With
+ * bounds it serves the map's viewport fetches as the operator pans, the same
+ * shape as the app's locations_in_view RPC.
+ */
+export const fetchMapPlaces = async (
+  bounds?: MapBounds
+): Promise<MapPlace[]> => {
+  let query = db()
+    .from("location_ratings")
+    .select(
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+    );
+  if (bounds) {
+    query = query
+      .gte("lat", bounds.minLat)
+      .lte("lat", bounds.maxLat)
+      .gte("lon", bounds.minLon)
+      .lte("lon", bounds.maxLon);
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .filter((row) => row.lat != null && row.lon != null)
+    .map((row) => ({
+      id: row.id,
+      name: row.name ?? null,
+      address: row.address ?? null,
+      lat: Number(row.lat),
+      lon: Number(row.lon),
+      rating: row.rating ?? null,
+      taste_avg: row.taste_avg ?? null,
+      presentation_avg: row.presentation_avg ?? null,
+      total_ratings: row.total_ratings ?? 0,
+    }));
 };
 
 export const fetchAdminLocation = async (

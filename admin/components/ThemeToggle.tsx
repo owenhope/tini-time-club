@@ -42,7 +42,11 @@ const subscribeToTheme = (onChange: () => void) => {
   };
 };
 
-export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
+export default function ThemeToggle({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const isDark = useSyncExternalStore(
     subscribeToTheme,
     getThemeSnapshot,

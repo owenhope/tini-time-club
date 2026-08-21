@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
+  PixelRatio,
+  Platform,
   Pressable,
   Text,
   View,
@@ -9,45 +13,47 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { captureRef } from "react-native-view-shot";
 import ReviewShareCard, {
   type ReviewSharePhotoPosition,
 } from "@/components/review-share/ReviewShareCard";
-import { AppText, SegmentedControl } from "@/components/shared";
+import { AppText, Button } from "@/components/shared";
 import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
 import type { Review } from "@/types/types";
+import {
+  InstagramReviewShareError,
+  shareReviewImageToInstagram,
+} from "@/utils/instagramReviewShare";
 import { reportError } from "@/utils/log";
-import { logReviewShare } from "@/utils/reviewShare";
+import { logReviewShare, publicReviewUrl } from "@/utils/reviewShare";
 import { routes, type ReviewShareFormat } from "@/utils/routes";
-
-const FORMATS = [
-  { value: "story", label: "Story" },
-  { value: "post", label: "Post" },
-] as const;
+import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
 
 const DEFAULT_POSITION: ReviewSharePhotoPosition = { x: 0, y: 0 };
+const INSTAGRAM_EXPORT_WIDTH = 1080;
+const INSTAGRAM_EXPORT_HEIGHT: Record<ReviewShareFormat, number> = {
+  story: 1920,
+  post: 1350,
+};
+const STORY_ARTWORK_SCALE = 0.96;
 
-const isShareFormat = (value?: string): value is ReviewShareFormat =>
-  value === "story" || value === "post";
-
-export default function ReviewSharePreviewScreen() {
+function MemberReviewSharePreviewScreen() {
   const params = useLocalSearchParams<{
     reviewId?: string;
-    format?: string;
   }>();
   const reviewId = Array.isArray(params.reviewId)
     ? params.reviewId[0]
     : params.reviewId;
-  const initialFormat = Array.isArray(params.format)
-    ? params.format[0]
-    : params.format;
-  const [format, setFormat] = useState<ReviewShareFormat>(
-    isShareFormat(initialFormat) ? initialFormat : "story"
-  );
+  const [format] = useState<ReviewShareFormat>("story");
   const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const cardRef = useRef<View>(null);
   const trackedFormats = useRef(new Set<ReviewShareFormat>());
   const [positions, setPositions] = useState<
     Record<ReviewShareFormat, ReviewSharePhotoPosition>
@@ -60,6 +66,7 @@ export default function ReviewSharePreviewScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { colors } = useTheme();
   const styles = useStyles();
+  const { profile } = useProfile();
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +79,7 @@ export default function ReviewSharePreviewScreen() {
       }
 
       try {
-        const data = await databaseService.getReview(reviewId);
+        const data = await databaseService.getReview(reviewId, profile?.id);
         if (!cancelled) {
           setReview(data);
           setError(null);
@@ -89,7 +96,7 @@ export default function ReviewSharePreviewScreen() {
     return () => {
       cancelled = true;
     };
-  }, [reviewId]);
+  }, [profile?.id, reviewId]);
 
   useEffect(() => {
     if (!review || trackedFormats.current.has(format)) return;
@@ -105,7 +112,7 @@ export default function ReviewSharePreviewScreen() {
   const canvasSize = useMemo(() => {
     const targetAspect = format === "story" ? 9 / 16 : 4 / 5;
     const horizontalGutter = 32;
-    const editorChrome = 136;
+    const editorChrome = 200;
     const maxWidth = Math.max(220, windowWidth - horizontalGutter);
     const maxHeight = Math.max(
       320,
@@ -115,6 +122,14 @@ export default function ReviewSharePreviewScreen() {
 
     return { width, height: width / targetAspect };
   }, [format, insets.bottom, insets.top, windowHeight, windowWidth]);
+
+  const artworkSize = useMemo(() => {
+    const scale = format === "story" ? STORY_ARTWORK_SCALE : 1;
+    return {
+      width: canvasSize.width * scale,
+      height: canvasSize.height * scale,
+    };
+  }, [canvasSize.height, canvasSize.width, format]);
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -130,6 +145,80 @@ export default function ReviewSharePreviewScreen() {
     },
     [format]
   );
+
+  const openInInstagram = useCallback(async () => {
+    if (!review || !cardRef.current || !imageReady || sharing) return;
+
+    const destination =
+      format === "story" ? "instagram_story" : "instagram_post";
+    setSharing(true);
+
+    try {
+      // iOS interprets capture dimensions as points and renders at the device
+      // scale; Android interprets them as final pixels.
+      const captureScale = Platform.OS === "ios" ? PixelRatio.get() : 1;
+      const imageUri = await captureRef(cardRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+        width: INSTAGRAM_EXPORT_WIDTH / captureScale,
+        height: INSTAGRAM_EXPORT_HEIGHT[format] / captureScale,
+      });
+
+      await shareReviewImageToInstagram({
+        imageUri,
+        format,
+        attributionUrl: publicReviewUrl(review.id),
+      });
+      await logReviewShare(review.id, destination, "opened");
+    } catch (shareError) {
+      if (shareError instanceof InstagramReviewShareError) {
+        await logReviewShare(review.id, destination, "unavailable");
+
+        if (shareError.code === "not_installed") {
+          Alert.alert(
+            "Instagram unavailable",
+            "Install Instagram to finish sharing this review."
+          );
+          return;
+        }
+
+        if (shareError.code === "story_not_configured") {
+          Alert.alert(
+            "Instagram Stories unavailable",
+            "Story sharing still needs the Meta app ID configured for this build."
+          );
+          return;
+        }
+      }
+
+      reportError("Instagram review handoff failed:", shareError);
+
+      const message =
+        shareError instanceof Error ? shareError.message.toLowerCase() : "";
+      if (message.includes("photo library")) {
+        Alert.alert(
+          "Photos access needed",
+          "Allow All Photos access so Tini Time Club can add the review card to an Instagram post.",
+          [
+            { text: "Not now", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => void Linking.openSettings(),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Couldn't open Instagram",
+          "The review card could not be handed off. Please try again."
+        );
+      }
+      await logReviewShare(review.id, destination, "failed");
+    } finally {
+      setSharing(false);
+    }
+  }, [format, imageReady, review, sharing]);
 
   const isReady = !loading;
   const unavailable =
@@ -174,32 +263,83 @@ export default function ReviewSharePreviewScreen() {
             </AppText>
           </View>
         ) : review ? (
-          <View style={styles.canvasFrame}>
-            <ReviewShareCard
-              review={review}
-              format={format}
-              width={canvasSize.width}
-              height={canvasSize.height}
-              photoPosition={positions[format]}
-              onPhotoPositionChange={updatePhotoPosition}
-              onImageError={() => setImageError(true)}
-            />
+          <View
+            style={[
+              styles.canvasFrame,
+              {
+                width: canvasSize.width,
+                height: canvasSize.height,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.captureCanvas,
+                {
+                  width: canvasSize.width,
+                  height: canvasSize.height,
+                  backgroundColor: "transparent",
+                },
+              ]}
+            >
+              <View
+                ref={cardRef}
+                collapsable={false}
+                style={[
+                  styles.artworkFrame,
+                  { width: artworkSize.width, height: artworkSize.height },
+                ]}
+              >
+                <ReviewShareCard
+                  key={format}
+                  review={review}
+                  format={format}
+                  width={artworkSize.width}
+                  height={artworkSize.height}
+                  photoPosition={positions[format]}
+                  onPhotoPositionChange={updatePhotoPosition}
+                  onImageLoad={() => setImageReady(true)}
+                  onImageError={() => {
+                    setImageReady(false);
+                    setImageError(true);
+                  }}
+                />
+              </View>
+            </View>
           </View>
         ) : null}
       </View>
 
       <View style={styles.controls}>
-        <SegmentedControl
-          value={format}
-          options={FORMATS}
-          onChange={(nextFormat) => {
-            setImageError(false);
-            setFormat(nextFormat);
-          }}
+        <Button
+          title="Open Story in Instagram"
+          onPress={() => void openInInstagram()}
+          loading={sharing}
+          disabled={unavailable || !imageReady}
+          icon="logo-instagram"
+          iconPosition="left"
+          fullWidth
+          accessibilityHint="Renders this preview as an image and opens Instagram to finish publishing"
         />
       </View>
     </View>
   );
+}
+
+export default function ReviewSharePreviewScreen() {
+  const { profile, loading } = useProfile();
+  const { openMembership } = useMembership();
+  const hasPrompted = useRef(false);
+
+  useEffect(() => {
+    if (!loading && !profile && !hasPrompted.current) {
+      hasPrompted.current = true;
+      openMembership("share-review");
+    }
+  }, [loading, openMembership, profile]);
+
+  if (loading || !profile) return null;
+  return <MemberReviewSharePreviewScreen />;
 }
 
 const useStyles = makeStyles((t) => ({
@@ -242,12 +382,23 @@ const useStyles = makeStyles((t) => ({
   },
   canvasFrame: {
     overflow: "hidden" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     borderRadius: t.radius.xs,
     borderCurve: "continuous" as const,
-    backgroundColor: t.colors.surfaceInkDeep,
-    boxShadow: t.isDark
-      ? "0 14px 34px rgba(0,0,0,0.3)"
-      : "0 14px 34px rgba(20,26,23,0.18)",
+    backgroundColor: "transparent",
+  },
+  captureCanvas: {
+    overflow: "hidden" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderRadius: t.radius.xs,
+    borderCurve: "continuous" as const,
+  },
+  artworkFrame: {
+    overflow: "hidden" as const,
+    borderRadius: t.radius.xs,
+    borderCurve: "continuous" as const,
   },
   unavailable: {
     maxWidth: 290,
@@ -262,5 +413,6 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.xl,
     paddingTop: t.spacing.sm,
     paddingBottom: t.spacing.md,
+    gap: t.spacing.sm,
   },
 }));

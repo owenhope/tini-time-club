@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 interface ReportModalProps {
   visible: boolean;
@@ -138,8 +138,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   modalTitle: {
-    fontSize: 17,
-    fontFamily: fonts.bold,
+    ...t.typography.heading,
     color: t.colors.text,
     marginBottom: 10,
   },
@@ -148,32 +147,29 @@ const useStyles = makeStyles((t) => ({
     alignSelf: "stretch" as const,
   },
   optionText: {
+    ...t.typography.body,
     textAlign: "center" as const,
-    fontFamily: fonts.regular,
-    fontSize: 15,
     color: t.colors.text,
   },
   cancelButton: { marginTop: 10 },
-  cancelText: { color: t.colors.accent, fontSize: 15 },
+  cancelText: { ...t.typography.bodyStrong, color: t.colors.accent },
   customInputContainer: {
     width: "100%" as const,
   },
   customInputLabel: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: 10,
     textAlign: "center" as const,
   },
   customInput: {
+    ...t.typography.input,
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: t.radius.input,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 15,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: t.colors.text,
+    color: t.colors.inputText,
     minHeight: 100,
     textAlignVertical: "top" as const,
     marginBottom: t.spacing.xl - 4,
@@ -191,9 +187,8 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   submitButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
-    fontSize: 15,
-    fontFamily: fonts.semibold,
     textAlign: "center" as const,
   },
   backButton: {
@@ -204,9 +199,8 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   backButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.text,
-    fontSize: 15,
-    fontFamily: fonts.semibold,
     textAlign: "center" as const,
   },
 }));

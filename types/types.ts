@@ -24,6 +24,8 @@ export interface Profile {
   eula_accepted?: boolean | null;
   deleted?: boolean;
   weekly_push_notifications_enabled?: boolean;
+  /** Whether signed-out visitors may discover this profile and its reviews. */
+  is_public?: boolean;
   /** Active review count (trigger-maintained); drives the ranking ring. */
   review_count?: number;
 }

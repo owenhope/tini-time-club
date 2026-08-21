@@ -60,18 +60,31 @@ const PIMENTO = "#E8763D";
 const PIP_EMPTY = "#8FB8A8";
 const SCRIM_STRONG = "rgba(20,26,23,0.65)";
 const HIGHLIGHT = "#F2FF71";
+// Mirrors utils/reviewTagColors.ts in the app — keep the two in sync.
 const tagColors = (name: string | null | undefined) => {
   switch (name?.trim().toLowerCase()) {
     case "vesper":
       return { background: "#426B8A", color: "#FAF9F6" };
+    case "classic":
+      return { background: "#2F5D50", color: "#FAF9F6" };
     case "twist":
-      return { background: HIGHLIGHT, color: TEXT };
+      return { background: HIGHLIGHT, color: SECONDARY };
     case "vodka":
       return { background: "#EA6360", color: "#FFFFFF" };
     case "gin":
       return { background: "#E8763D", color: "#FAF9F6" };
     case "dirty":
       return { background: "#667A3E", color: "#FAF9F6" };
+    case "dry":
+      return { background: "#D7E7E2", color: "#24473D" };
+    case "wet":
+      return { background: "#5E8C7F", color: "#FAF9F6" };
+    case "gibson":
+      return { background: "#DCE0C8", color: "#3A4423" };
+    case "filthy":
+      return { background: "#394623", color: "#FAF9F6" };
+    case "50/50":
+      return { background: "#B8A4D8", color: "#2F2548" };
     case "espresso":
       return { background: "#6F4518", color: "#FAF9F6" };
     default:

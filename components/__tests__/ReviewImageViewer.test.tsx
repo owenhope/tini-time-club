@@ -1,6 +1,5 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { StyleSheet } from "react-native";
 import ReviewImageViewer from "../ReviewImageViewer";
 import { ThemeProvider } from "@/theme";
 
@@ -18,7 +17,7 @@ jest.mock("expo-image", () => {
 });
 
 describe("ReviewImageViewer", () => {
-  it("shows the review image and closes from the backdrop", () => {
+  it("shows the review image and closes on any tap", () => {
     const onClose = jest.fn();
     let tree: renderer.ReactTestRenderer;
 
@@ -40,18 +39,8 @@ describe("ReviewImageViewer", () => {
     expect(image.props.source).toEqual({
       uri: "https://example.com/review.jpg",
     });
-
-    act(() => image.props.onLoad({ source: { width: 1200, height: 600 } }));
-    const stage = tree!.root.find(
-      (node) =>
-        node.props.testID === "review-image-stage" &&
-        typeof node.props.onPress === "function"
-    );
-    const stageStyle = StyleSheet.flatten(stage.props.style);
-    expect(stageStyle.width / stageStyle.height).toBeCloseTo(2);
-
-    act(() => stage.props.onPress());
-    expect(onClose).not.toHaveBeenCalled();
+    // Contain, not a measured stage: layout must not depend on image size.
+    expect(image.props.contentFit).toBe("contain");
 
     const backdrop = tree!.root.find(
       (node) =>

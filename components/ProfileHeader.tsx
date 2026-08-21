@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Avatar, StatCard } from "@/components/shared";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
 
 interface ProfileHeaderProps {
@@ -220,11 +220,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             >
               {profile.name || profile.username}
             </Text>
-            {action ? (
-              <View style={styles.identityFoot}>
-                {action}
-              </View>
-            ) : null}
+            {action ? <View style={styles.identityFoot}>{action}</View> : null}
             <View style={styles.compactMetrics}>
               {metrics.map((m) => (
                 <StatCard
@@ -345,7 +341,6 @@ const useStyles = makeStyles((t) => ({
   },
   tierBadgeText: {
     ...t.typography.eyebrow,
-    fontSize: 10,
     color: t.colors.textOnImage,
   },
   // Full width, and labelled at both ends: a bare 4px sliver under the
@@ -361,12 +356,10 @@ const useStyles = makeStyles((t) => ({
   },
   rankCount: {
     ...t.typography.label,
-    fontFamily: fonts.semibold,
     color: t.colors.onHeaderBrand,
   },
   rankRemaining: {
     ...t.typography.label,
-    fontFamily: fonts.semibold,
     color: t.colors.onHeaderBrand,
   },
   rankTrack: {
@@ -400,9 +393,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
   },
   name: {
-    fontSize: 24,
-    lineHeight: 28,
-    fontFamily: fonts.black,
+    ...t.typography.title,
     letterSpacing: 0,
     color: t.colors.onHeaderBrand,
   },
@@ -415,7 +406,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     width: "100%" as const,
     color: t.colors.onHeaderBrand,
-    lineHeight: 20,
     opacity: 0.85,
   },
   error: {

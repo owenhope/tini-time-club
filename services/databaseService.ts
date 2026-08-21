@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase";
+import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
 import type {
   Comment,
@@ -177,6 +178,8 @@ class DatabaseService {
       offset?: number;
       excludeBlocked?: boolean;
       currentUserId?: string;
+      /** Restrict the page to reviews by members the authenticated viewer follows. */
+      followedOnly?: boolean;
       /** Bypass the cached page (pull-to-refresh); the fresh result still gets cached. */
       forceRefresh?: boolean;
     } = {}
@@ -188,6 +191,7 @@ class DatabaseService {
       offset = 0,
       excludeBlocked = true,
       currentUserId,
+      followedOnly = false,
       forceRefresh = false,
     } = options;
 
@@ -200,22 +204,34 @@ class DatabaseService {
       offset,
       excludeBlocked,
       currentUserId,
+      followedOnly,
     })}`;
 
     const reviews = await this.query<any[]>(
       cacheKey,
       async () => {
+        if (!currentUserId) {
+          if (followedOnly) return [];
+          return publicContentService.getFeed({
+            userId,
+            locationId,
+            limit,
+            offset,
+          });
+        }
+
         // One round trip: the feed_reviews function joins locations/spirits/
         // types/profiles and computes likes_count, comments_count and
         // has_liked server-side, and does the blocked/deleted filtering in
         // SQL so pages are never short.
-        const { data, error } = await supabase.rpc("feed_reviews", {
+        const { data, error } = await supabase.rpc("feed_reviews_followed", {
           p_viewer: currentUserId ?? null,
           p_limit: limit,
           p_offset: offset,
           p_user_id: userId ?? null,
           p_location_id: locationId ? Number(locationId) : null,
           p_exclude_blocked: excludeBlocked,
+          p_followed_only: followedOnly,
         });
 
         if (error) throw error;
@@ -223,6 +239,11 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION, forceRefresh }
     );
+
+    // Visitor rows already carry short-lived, transformed signed URLs from
+    // the public-content gateway. Attempting to sign them again would treat a
+    // URL as a storage path and fail under the intentionally locked anon role.
+    if (!currentUserId) return reviews ?? [];
 
     // Hydrate image paths into signed URLs on the way out — after the cache,
     // because signed URLs expire on their own schedule. Every review surface
@@ -241,50 +262,6 @@ class DatabaseService {
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     }));
-  }
-
-  async getReviewsForUsers(
-    userIds: string[],
-    options: {
-      limit?: number;
-      offset?: number;
-      excludeBlocked?: boolean;
-      currentUserId?: string;
-      forceRefresh?: boolean;
-    } = {}
-  ): Promise<Review[]> {
-    const {
-      limit = 20,
-      offset = 0,
-      excludeBlocked = true,
-      currentUserId,
-      forceRefresh = false,
-    } = options;
-
-    const uniqueUserIds = [...new Set(userIds.map(String))];
-    if (uniqueUserIds.length === 0) return [];
-
-    const perUserLimit = offset + limit;
-    const pages = await Promise.all(
-      uniqueUserIds.map((userId) =>
-        this.getReviews({
-          userId,
-          currentUserId,
-          limit: perUserLimit,
-          offset: 0,
-          excludeBlocked,
-          forceRefresh,
-        })
-      )
-    );
-
-    return pages
-      .flat()
-      .sort(
-        (a, b) =>
-          new Date(b.inserted_at).getTime() - new Date(a.inserted_at).getTime()
-      )
-      .slice(offset, offset + limit);
   }
 
   /**
@@ -388,7 +365,13 @@ class DatabaseService {
    * Get one public review by id. Used by shared web/deep links, so it does not
    * require an authenticated viewer; engagement fields are still populated.
    */
-  async getReview(reviewId: string | number): Promise<Review> {
+  async getReview(
+    reviewId: string | number,
+    currentUserId?: string
+  ): Promise<Review> {
+    if (!currentUserId) {
+      return publicContentService.getReview(reviewId);
+    }
     const review = await this.query<any>(
       `review_${reviewId}`,
       async () => {
@@ -531,31 +514,6 @@ class DatabaseService {
   }
 
   /**
-   * Get followed user IDs
-   */
-  async getFollowedUserIds(
-    userId: string,
-    options: { forceRefresh?: boolean } = {}
-  ): Promise<string[]> {
-    return this.query(
-      `followed_${userId}`,
-      async () => {
-        const { data, error } = await supabase
-          .from("followers")
-          .select("following_id")
-          .eq("follower_id", userId);
-
-        if (error) throw error;
-        return data.map((row: any) => row.following_id);
-      },
-      {
-        cacheDuration: this.USER_DATA_CACHE_DURATION,
-        forceRefresh: options.forceRefresh ?? false,
-      }
-    );
-  }
-
-  /**
    * Get blocked user IDs
    */
   async getBlockedUserIds(userId: string): Promise<string[]> {
@@ -649,7 +607,13 @@ class DatabaseService {
   /**
    * Get comments for a review
    */
-  async getComments(reviewId: string): Promise<Comment[]> {
+  async getComments(
+    reviewId: string,
+    currentUserId?: string
+  ): Promise<Comment[]> {
+    if (!currentUserId) {
+      return publicContentService.getComments(reviewId);
+    }
     const { data, error } = await supabase.rpc("get_review_comments", {
       p_review_id: Number(reviewId),
     });
@@ -822,7 +786,13 @@ class DatabaseService {
   /**
    * Get location by ID
    */
-  async getLocation(locationId: string): Promise<LocationRating> {
+  async getLocation(
+    locationId: string,
+    currentUserId?: string
+  ): Promise<LocationRating> {
+    if (!currentUserId) {
+      return publicContentService.getLocation(locationId);
+    }
     return this.query(
       `location_${locationId}`,
       async () => {
@@ -837,6 +807,11 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
+  }
+
+  /** Public profile projection used only while no member session exists. */
+  async getPublicProfileByUsername(username: string) {
+    return publicContentService.getProfile(username);
   }
 
   /**
@@ -963,7 +938,6 @@ class DatabaseService {
       (key) =>
         key.includes(`_${userId}`) ||
         key.includes(`reviews_`) ||
-        key.includes(`followed_`) ||
         key.includes(`blocked_`)
     );
 
@@ -992,15 +966,20 @@ class DatabaseService {
   }
 
   clearFollowCaches(userId?: string): void {
-    const prefix = userId ? `followed_${userId}` : "followed_";
+    const viewerKey = userId ? `"currentUserId":"${userId}"` : null;
+    const isFollowedFeedKey = (key: string) =>
+      key.startsWith("reviews_") &&
+      key.includes('"followedOnly":true') &&
+      (!viewerKey || key.includes(viewerKey));
+
     for (const key of this.queryCache.keys()) {
-      if (key.startsWith(prefix)) {
+      if (isFollowedFeedKey(key)) {
         this.queryCache.delete(key);
       }
     }
 
     for (const key of this.pendingQueries.keys()) {
-      if (key.startsWith(prefix)) {
+      if (isFollowedFeedKey(key)) {
         this.pendingQueries.delete(key);
       }
     }

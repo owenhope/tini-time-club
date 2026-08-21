@@ -101,4 +101,23 @@ describe("Activity grouping", () => {
       body: "Club update",
     });
   });
+
+  it("keeps comment likes as actionable comment rows", () => {
+    const rows = groupActivityEvents([
+      event({
+        id: "comment-like",
+        kind: "comment_liked",
+        comment: { id: "comment-1", body: "Perfectly cold." },
+      }),
+    ]);
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        id: "comment-like",
+        kind: "comment_liked",
+        preview: "Perfectly cold.",
+        route: "/r/42?comments=1",
+      }),
+    ]);
+  });
 });

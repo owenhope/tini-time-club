@@ -198,6 +198,7 @@ export function useProfileScreenData({
     followersCount,
     followingCount,
     setFollowersCount,
+    setFollowingCount,
     loadFollowCounts,
   };
 }

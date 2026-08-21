@@ -17,7 +17,7 @@ import {
   SectionHeader,
   Skeleton,
 } from "@/components/shared";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AnalyticService from "@/services/analyticsService";
@@ -104,6 +104,8 @@ const Location = () => {
     locationAddressParam,
     locationIdParam,
   ]);
+  const reviewLocationId = displayLocation?.id;
+  const viewerId = profile?.id;
 
   const strippedAddress = displayLocation?.address
     ? stripNameFromAddress(displayLocation?.name ?? "", displayLocation.address)
@@ -171,12 +173,51 @@ const Location = () => {
     return actions;
   }, [displayLocation, router, shareLocation]);
 
+  const fetchSelectedLocation = useCallback(
+    async (locationId: string) => {
+      try {
+        // The location_ratings view computes the averages and coordinates
+        // server-side — the previous hand-rolled query downloaded every review
+        // row for the location just to average two columns in JS.
+        const data = await databaseService.getLocation(locationId, viewerId);
+
+        const totalRatings = Number(data.total_ratings) || 0;
+        const formattedLocation: LocationType = {
+          id: String(data.id),
+          name: data.name,
+          address: data.address || undefined,
+          lat: data.lat ?? undefined,
+          lon: data.lon ?? undefined,
+          // The view reports 0 for review-less locations; the UI wants
+          // "not yet rated", which is the undefined case.
+          rating: totalRatings > 0 ? Number(data.rating) : undefined,
+          taste_avg: totalRatings > 0 ? Number(data.taste_avg) : undefined,
+          presentation_avg:
+            totalRatings > 0 ? Number(data.presentation_avg) : undefined,
+          total_ratings: totalRatings,
+        };
+
+        setSelectedLocation(formattedLocation);
+
+        AnalyticService.capture("view_location", {
+          locationId: formattedLocation.id,
+          locationName: formattedLocation.name,
+        });
+      } catch {
+        // .single() rejects when the location isn't in the DB yet — fall back
+        // to the params-built minimal location via displayLocation.
+        setSelectedLocation(null);
+      }
+    },
+    [viewerId]
+  );
+
   // Fetch the selected location from the "location_ratings" view
   useEffect(() => {
     if (locationIdParam) {
-      fetchSelectedLocation(locationIdParam);
+      void fetchSelectedLocation(locationIdParam);
     }
-  }, [locationIdParam]);
+  }, [fetchSelectedLocation, locationIdParam]);
 
   useEffect(() => {
     if (!displayLocation?.id) return;
@@ -201,43 +242,6 @@ const Location = () => {
       active = false;
     };
   }, [displayLocation?.id]);
-
-  const fetchSelectedLocation = useCallback(async (locationId: string) => {
-    try {
-      // The location_ratings view computes the averages and coordinates
-      // server-side — the previous hand-rolled query downloaded every review
-      // row for the location just to average two columns in JS.
-      const data = await databaseService.getLocation(locationId);
-
-      const totalRatings = Number(data.total_ratings) || 0;
-      const formattedLocation: LocationType = {
-        id: String(data.id),
-        name: data.name,
-        address: data.address || undefined,
-        lat: data.lat ?? undefined,
-        lon: data.lon ?? undefined,
-        // The view reports 0 for review-less locations; the UI wants
-        // "not yet rated", which is the undefined case.
-        rating: totalRatings > 0 ? Number(data.rating) : undefined,
-        taste_avg: totalRatings > 0 ? Number(data.taste_avg) : undefined,
-        presentation_avg:
-          totalRatings > 0 ? Number(data.presentation_avg) : undefined,
-        total_ratings: totalRatings,
-      };
-
-      setSelectedLocation(formattedLocation);
-
-      // Track view location event
-      AnalyticService.capture("view_location", {
-        locationId: formattedLocation.id,
-        locationName: formattedLocation.name,
-      });
-    } catch {
-      // .single() rejects when the location isn't in the DB yet — fall back
-      // to the params-built minimal location via displayLocation.
-      setSelectedLocation(null);
-    }
-  }, []);
 
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
@@ -281,13 +285,13 @@ const Location = () => {
   // Shared function to load location reviews
   const loadLocationReviews = useCallback(
     async (isRefresh = false) => {
-      if (!displayLocation?.id) return;
+      if (!reviewLocationId) return;
 
       setLoadingReviews(true);
       try {
         const reviewsData = await databaseService.getReviews({
-          locationId: displayLocation.id,
-          currentUserId: profile?.id,
+          locationId: reviewLocationId,
+          currentUserId: viewerId,
           excludeBlocked: true,
           forceRefresh: isRefresh,
         });
@@ -300,7 +304,7 @@ const Location = () => {
         setLoadingReviews(false);
       }
     },
-    [displayLocation?.id, profile?.id]
+    [reviewLocationId, viewerId]
   );
 
   const onRefresh = useCallback(() => {
@@ -546,11 +550,10 @@ const useStyles = makeStyles((t) => ({
   },
   venueEyebrow: {
     ...t.typography.eyebrow,
-    fontSize: 10,
     color: t.colors.onHeaderBrand,
   },
   venueScore: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     color: t.colors.onHeaderBrand,
     fontVariant: ["tabular-nums"] as const,
   },

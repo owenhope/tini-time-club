@@ -67,7 +67,9 @@ const toRow = (
   }
 
   if (
-    (event.kind === "review_commented" || event.kind === "comment_replied") &&
+    (event.kind === "comment_liked" ||
+      event.kind === "review_commented" ||
+      event.kind === "comment_replied") &&
     event.actor &&
     event.review
   ) {
@@ -165,6 +167,8 @@ export const formatActivityKind = (kind: ActivityDisplayRow["kind"]) => {
       return "New follower";
     case "review_liked":
       return "Review like";
+    case "comment_liked":
+      return "Comment like";
     case "review_commented":
       return "Review comment";
     case "comment_replied":

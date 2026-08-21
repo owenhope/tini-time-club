@@ -25,18 +25,30 @@ module.exports = defineConfig([
     },
   },
   {
-    // Guardrail for the theme-token refactor: new styles should pull type
-    // from t.typography.* rather than hardcoding fontSize. Warn (not error)
-    // because a tail of literals without a matching token remains.
+    // Typography is a deep module: callers choose a semantic role and do not
+    // rebuild font geometry locally. Avatar/Input own intentional responsive
+    // calculations; review-share owns a private scale for exported artwork.
     files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    ignores: [
+      "**/__tests__/**",
+      "components/review-share/**/*.{ts,tsx}",
+      "components/shared/Avatar.tsx",
+      "components/shared/Input.tsx",
+    ],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
-          selector:
-            "Property[key.name='fontSize'][value.type='Literal'][value.raw=/^[0-9]/]",
-          message:
-            "Prefer theme typography tokens (t.typography.*) over raw fontSize",
+          selector: "Property[key.name='fontSize']",
+          message: "Use a semantic theme typography role instead of fontSize",
+        },
+        {
+          selector: "Property[key.name='lineHeight']",
+          message: "Use a semantic theme typography role instead of lineHeight",
+        },
+        {
+          selector: "Property[key.name='fontFamily']",
+          message: "Use a semantic theme typography role instead of fontFamily",
         },
       ],
     },

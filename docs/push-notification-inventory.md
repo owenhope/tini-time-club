@@ -25,7 +25,7 @@ repeated writes idempotent. `push_tickets` stores Expo ticket/receipt state and
 is delivery bookkeeping, not another notification type.
 
 The Activity Center currently displays `user_followed`, `review_liked`,
-`review_commented`, and `admin_message`. `comment_liked`, `review_created`,
+`comment_liked`, `review_commented`, and `admin_message`. `review_created`,
 `regular_joined`, and `regular_left` still use the notification/push ledger but
 are not Activity Center rows.
 

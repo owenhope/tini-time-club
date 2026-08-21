@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 
 const Terms = () => {
   const styles = useStyles();
@@ -121,29 +121,24 @@ const useStyles = makeStyles((t) => ({
     padding: 20,
   },
   title: {
-    fontSize: 24,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.text,
     textAlign: "center" as const,
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontFamily: fonts.bold,
+    ...t.typography.heading,
     color: t.colors.text,
     marginTop: t.spacing.lg,
     marginBottom: t.spacing.sm,
   },
   text: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
-    lineHeight: 20,
     marginBottom: t.spacing.md,
   },
   footerText: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
     fontStyle: "italic" as const,
     textAlign: "center" as const,

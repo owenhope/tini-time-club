@@ -73,7 +73,9 @@ export function PageHeader({
             ) : null}
           </div>
           {actions ? (
-            <div className="w-full lg:w-auto lg:justify-self-end">{actions}</div>
+            <div className="w-full lg:w-auto lg:justify-self-end">
+              {actions}
+            </div>
           ) : null}
         </div>
 
@@ -124,10 +126,7 @@ export function FilterBar({
       : "flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2";
 
   return (
-    <form
-      action={action}
-      className={formClass}
-    >
+    <form action={action} className={formClass}>
       <input
         type="search"
         name={searchName}

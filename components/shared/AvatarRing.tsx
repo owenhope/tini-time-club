@@ -26,12 +26,13 @@ const getBorderWidth = (size: number): number => {
 };
 
 /** Extra pixels AvatarRing adds around each edge of an avatar. */
-export const ringInset = (
-  reviewCount?: number | null,
-  size = 40
-): number => (getRankTier(reviewCount) ? getBorderWidth(size) + 1 : 0);
+export const ringInset = (reviewCount?: number | null, size = 40): number =>
+  getRankTier(reviewCount) ? getBorderWidth(size) + 1 : 0;
 
 const ROTATION_DURATION_MS = 6000;
+// SVG strokes are centered on their path. Leave a small inset between the
+// stroke and the viewport so its antialiased outer edge is not clipped.
+const STROKE_VIEWPORT_INSET = 1;
 
 /**
  * The rank ring: a gradient of the tier color, slowly rotating on the UI
@@ -132,7 +133,7 @@ const AvatarRing: React.FC<AvatarRingProps> = ({
           <Circle
             cx={center}
             cy={center}
-            r={center - borderWidth / 2}
+            r={center - borderWidth / 2 - STROKE_VIEWPORT_INSET}
             stroke={`url(#${gradientId})`}
             strokeWidth={borderWidth}
             fill="none"

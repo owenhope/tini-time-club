@@ -2,5 +2,8 @@ node_modules
 ios
 android
 dist
+admin/.next
+admin/.vercel
 supabase/migrations
+supabase/.temp
 package-lock.json

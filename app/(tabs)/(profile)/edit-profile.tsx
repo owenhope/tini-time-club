@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
@@ -21,7 +22,7 @@ import {
   type FavoriteLocationValue,
 } from "@/services/favoriteLocationSelection";
 import { supabase } from "@/utils/supabase";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 
@@ -42,21 +43,9 @@ const EditProfile = () => {
     useState<FavoriteLocationValue | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const pendingFavoriteLocation = consumePendingFavoriteLocation();
-      if (pendingFavoriteLocation !== undefined) {
-        setFavoriteLocation(pendingFavoriteLocation);
-      }
-    }, [])
-  );
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -73,6 +62,7 @@ const EditProfile = () => {
       if (profile) {
         setName(profile.name || "");
         setBio(profile.bio || "");
+        setIsPublic(profile.is_public ?? true);
 
         // Handle favorite_spirits (could be array or JSON string)
         let favoriteSpirits = [];
@@ -128,7 +118,20 @@ const EditProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const pendingFavoriteLocation = consumePendingFavoriteLocation();
+      if (pendingFavoriteLocation !== undefined) {
+        setFavoriteLocation(pendingFavoriteLocation);
+      }
+    }, [])
+  );
 
   const handleSave = async () => {
     if (!profile?.id) return;
@@ -141,6 +144,7 @@ const EditProfile = () => {
         favorite_spirits: selectedSpirits,
         favorite_types: selectedTypes,
         favorite_location_id: favoriteLocation?.id ?? null,
+        is_public: isPublic,
       });
 
       // Refresh profile context
@@ -233,6 +237,26 @@ const EditProfile = () => {
             }
           />
 
+          <View style={styles.privacyRow}>
+            <View style={styles.privacyCopy}>
+              <Text style={styles.privacyTitle}>Visible to visitors</Text>
+              <Text style={styles.privacyBody}>
+                Let signed-out visitors discover your profile and published
+                reviews. Turning this off keeps them visible to members only.
+              </Text>
+            </View>
+            <Switch
+              value={isPublic}
+              onValueChange={setIsPublic}
+              trackColor={{
+                false: colors.disabledSurface,
+                true: colors.accentSubtle,
+              }}
+              thumbColor={isPublic ? colors.accent : colors.textMuted}
+              accessibilityLabel="Visible to signed-out visitors"
+            />
+          </View>
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
@@ -273,10 +297,35 @@ const useStyles = makeStyles((t) => ({
   },
   scrollContent: {
     flexGrow: 1,
+    // The floating native tab bar overlays content; without this the
+    // Cancel/Save row ends up underneath it.
+    paddingBottom: 96,
   },
   content: {
     flex: 1,
     padding: 20,
+  },
+  privacyRow: {
+    minHeight: 72,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.lg,
+    marginTop: t.spacing.xl,
+    padding: t.spacing.lg,
+    borderRadius: t.radius.card,
+    backgroundColor: t.colors.background,
+  },
+  privacyCopy: {
+    flex: 1,
+    gap: t.spacing.xs,
+  },
+  privacyTitle: {
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
+  },
+  privacyBody: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
   },
   // Field labels are utility type: the system reserves uppercase tracking
   // for exactly this and keeps sentence case for content.
@@ -287,14 +336,13 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.lg,
   },
   input: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.input,
     padding: t.spacing.md,
     borderRadius: t.radius.input,
     backgroundColor: t.colors.background,
     borderWidth: 1,
     borderColor: t.colors.border,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   bioInput: {
     minHeight: 100,
@@ -302,7 +350,6 @@ const useStyles = makeStyles((t) => ({
   // A count is a measurement — the system puts those in mono.
   characterCount: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
     marginTop: t.spacing.xs,
@@ -324,8 +371,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   cancelButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
   },
   saveButton: {
@@ -335,8 +381,7 @@ const useStyles = makeStyles((t) => ({
     opacity: 0.6,
   },
   saveButtonText: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
   },
 }));

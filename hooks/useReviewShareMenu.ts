@@ -12,22 +12,24 @@ import {
   getReviewShareMenuActions,
   type ReviewShareMenuAction,
 } from "@/utils/reviewShareMenu";
+import { useMembership } from "@/context/membership-context";
 
 /** Presents the review's complete share menu from every existing share icon. */
 export const useReviewShareMenu = (review: Review | null) => {
   const router = useRouter();
   const showShareMenu = useShareMenuSheet();
+  const { requireMembership } = useMembership();
 
   return useCallback(() => {
     if (!review) return;
+    if (!requireMembership("share-review")) return;
 
     const actions = getReviewShareMenuActions();
 
     const runAction = (action: ReviewShareMenuAction) => {
       switch (action.destination) {
         case "instagram_story":
-        case "instagram_post":
-          router.push(routes.reviewSharePreview(review.id, action.format));
+          router.push(routes.reviewSharePreview(review.id));
           return;
         case "whatsapp":
           void shareReviewViaWhatsApp(review);
@@ -47,8 +49,7 @@ export const useReviewShareMenu = (review: Review | null) => {
         label: action.label,
         destination: action.destination,
         icon:
-          action.destination === "instagram_story" ||
-          action.destination === "instagram_post"
+          action.destination === "instagram_story"
             ? "logo-instagram"
             : action.destination === "whatsapp"
               ? "logo-whatsapp"
@@ -58,5 +59,5 @@ export const useReviewShareMenu = (review: Review | null) => {
         onPress: () => runAction(action),
       })),
     });
-  }, [review, router, showShareMenu]);
+  }, [requireMembership, review, router, showShareMenu]);
 };

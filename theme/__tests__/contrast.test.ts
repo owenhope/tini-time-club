@@ -64,8 +64,12 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   ["usernameText on background", c.usernameText, c.background],
   ["textSecondary on surface", c.textSecondary, c.surface],
   ["textSecondary on background", c.textSecondary, c.background],
+  ["textSecondary on surfaceRaised", c.textSecondary, c.surfaceRaised],
+  ["textSecondary on surfaceSunken", c.textSecondary, c.surfaceSunken],
   ["textMuted on surface", c.textMuted, c.surface],
   ["textMuted on background", c.textMuted, c.background],
+  ["textMuted on surfaceRaised", c.textMuted, c.surfaceRaised],
+  ["textMuted on surfaceSunken", c.textMuted, c.surfaceSunken],
   ["accent on surface", c.accent, c.surface],
   ["accent on background", c.accent, c.background],
   ["onAccent on accent", c.onAccent, c.accent],
@@ -176,5 +180,11 @@ describe("semantic text colors", () => {
     ["dark", darkColors],
   ])("keeps %s mode usernames consistent with captions", (_name, colors) => {
     expect(colors.usernameText).toBe(colors.postText);
+  });
+
+  it("keeps dark secondary text quieter than primary text", () => {
+    expect(contrast(darkColors.text, darkColors.surface)).toBeGreaterThan(
+      contrast(darkColors.textSecondary, darkColors.surface)
+    );
   });
 });

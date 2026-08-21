@@ -6,10 +6,10 @@
  */
 import React from "react";
 import renderer, { act } from "react-test-renderer";
-import { StyleSheet, Text } from "react-native";
+import { Modal, StyleSheet, Text } from "react-native";
 import ReviewItem from "../ReviewItem";
 import databaseService from "@/services/databaseService";
-import { ThemeProvider } from "@/theme";
+import { ThemeProvider, typography } from "@/theme";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -20,9 +20,13 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 // feed row didn't carry one, so `from()` has to survive .select().eq()…
 jest.mock("@/utils/supabase", () => {
   const chain: Record<string, jest.Mock> = {};
-  for (const method of ["select", "eq", "upsert", "delete", "insert"]) {
+  for (const method of ["select", "eq", "insert"]) {
     chain[method] = jest.fn(() => chain);
   }
+  const mockDelete = jest.fn(() => chain);
+  const mockUpsert = jest.fn(() => chain);
+  chain.delete = mockDelete;
+  chain.upsert = mockUpsert;
   chain.maybeSingle = jest.fn(() =>
     Promise.resolve({ data: null, error: null })
   );
@@ -30,8 +34,16 @@ jest.mock("@/utils/supabase", () => {
   return {
     supabase: { from: jest.fn(() => chain) },
     supabaseProjectRef: "testref",
+    __mockDelete: mockDelete,
+    __mockUpsert: mockUpsert,
   };
 });
+
+const { __mockDelete: mockSupabaseDelete, __mockUpsert: mockSupabaseUpsert } =
+  jest.requireMock("@/utils/supabase") as {
+    __mockDelete: jest.Mock;
+    __mockUpsert: jest.Mock;
+  };
 
 jest.mock("@/utils/log", () => ({
   log: jest.fn(),
@@ -40,6 +52,14 @@ jest.mock("@/utils/log", () => ({
 
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({ profile: { id: "viewer-1" } }),
+}));
+
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
 }));
 
 jest.mock("@/services/databaseService", () => ({
@@ -203,6 +223,10 @@ beforeEach(() => {
   setCommentLiked.mockResolvedValue(undefined);
 });
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe("ReviewItem comment patches (useComments idempotency)", () => {
   it("shows a patched comment exactly once after the row remounts with the same review object", async () => {
     const review = makeReview({
@@ -327,7 +351,7 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     );
     expect(
       StyleSheet.flatten(likedButton.props.children[1].props.style)
-    ).toEqual(expect.objectContaining({ fontSize: 10, lineHeight: 12 }));
+    ).toEqual(expect.objectContaining(typography.label));
     expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });
@@ -363,6 +387,20 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     expect(countOccurrences(tree, "view more comments")).toBe(1);
     expect(countOccurrences(tree, "more comments")).toBe(1);
     expect(countOccurrences(tree, "View all 3 comments")).toBe(0);
+
+    act(() => tree.unmount());
+  });
+
+  // Liking lives on the heart button alone — a tap on the photo opens the
+  // viewer immediately, with no double-tap window to wait out.
+  it("opens the full-screen image viewer on a single image tap", () => {
+    const tree = renderReview(makeReview());
+    const imageButton = tree.root.findByProps({
+      accessibilityLabel: "View review photo",
+    });
+
+    act(() => imageButton.props.onPress());
+    expect(tree.root.findByType(Modal).props.visible).toBe(true);
 
     act(() => tree.unmount());
   });

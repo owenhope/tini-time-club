@@ -21,15 +21,15 @@ import databaseService from "@/services/databaseService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Button, Input, MartiniIcon } from "@/components/shared";
-import { fonts, makeStyles, useTheme } from "@/theme";
-import { log, reportError } from "@/utils/log";
+import { makeStyles, useTheme } from "@/theme";
+import { log, reportError, warn } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
 import AppHeader from "@/components/nav/AppHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
-import { useActivity } from "@/context/activity-context";
+import { useMembership } from "@/context/membership-context";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -44,7 +44,15 @@ const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
+const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
+// A refresh is newest-first, so keep the head; an appended page arrives at the
+// end, so keep the tail or pagination silently dead-ends once the cache is
+// full (pagination offsets track `page`, not the retained window).
+const limitRefreshedReviews = (items: Review[]) =>
+  items.length > MAX_CACHED_ITEMS ? items.slice(0, MAX_CACHED_ITEMS) : items;
+const limitAppendedReviews = (items: Review[]) =>
+  items.length > MAX_CACHED_ITEMS ? items.slice(-MAX_CACHED_ITEMS) : items;
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -52,8 +60,7 @@ function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile } = useProfile();
-  const { unseenCount, refreshUnseenCount } = useActivity();
-  const showActivityDot = unseenCount > 0;
+  const { openMembership, requireMembership } = useMembership();
   const router = useRouter();
   const params = useLocalSearchParams<{
     postedReviewId?: string;
@@ -75,6 +82,7 @@ function Home() {
   const flatListRef = useRef<FlatList>(null);
   const handledFeedRefreshRef = useRef<string | null>(null);
   const handledScreenshotFeedRef = useRef(false);
+  const latestFeedRequestRef = useRef(0);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -124,7 +132,6 @@ function Home() {
       sourceOverride: FeedSource = feedSource,
       bypassCache = refresh
     ) => {
-      if (!profile) return;
       const source = isScreenshotFeed ? "club" : sourceOverride;
 
       // Prevent rapid successive calls
@@ -137,6 +144,8 @@ function Home() {
 
       // Set loading states
       if (refresh) {
+        // Any in-flight pagination is superseded by a first-page refresh.
+        setLoadingMore(false);
         if (!silent) {
           if (page === 0) setLoading(true);
           setRefreshing(true);
@@ -145,6 +154,10 @@ function Home() {
         if (!hasMore) return;
         setLoadingMore(true);
       }
+
+      const requestId = latestFeedRequestRef.current + 1;
+      latestFeedRequestRef.current = requestId;
+      const isCurrentRequest = () => requestId === latestFeedRequestRef.current;
 
       setError(null);
 
@@ -164,27 +177,15 @@ function Home() {
           screenshotUserId = screenshotProfile.id;
         }
 
-        const reviewsPromise =
-          source === "people"
-            ? databaseService
-                .getFollowedUserIds(profile.id, { forceRefresh: refresh })
-                .then((followedIds) =>
-                  databaseService.getReviewsForUsers(followedIds, {
-                    currentUserId: profile.id,
-                    limit: PAGE_SIZE,
-                    offset: start,
-                    excludeBlocked: true,
-                    forceRefresh: bypassCache,
-                  })
-                )
-            : databaseService.getReviews({
-                userId: screenshotUserId,
-                currentUserId: profile.id,
-                limit: PAGE_SIZE,
-                offset: start,
-                excludeBlocked: true,
-                forceRefresh: bypassCache,
-              });
+        const reviewsPromise = databaseService.getReviews({
+          userId: screenshotUserId,
+          currentUserId: profile?.id,
+          followedOnly: source === "people",
+          limit: PAGE_SIZE,
+          offset: start,
+          excludeBlocked: true,
+          forceRefresh: bypassCache,
+        });
 
         // Get reviews using optimized database service
         const reviewsDataFromDB = await withTimeout(reviewsPromise, 25_000);
@@ -193,6 +194,10 @@ function Home() {
           throw new Error("Failed to fetch reviews");
         }
 
+        // A feed-source switch or newer refresh may have started while this
+        // request was in flight. Never let the older response replace it.
+        if (!isCurrentRequest()) return;
+
         log(`[Feed] Loaded ${reviewsDataFromDB.length} reviews`);
 
         // getReviews returns image_url already hydrated to a signed URL.
@@ -200,18 +205,11 @@ function Home() {
 
         // Update state
         if (refresh) {
-          setReviews(
-            reviewsWithUrls.length > MAX_CACHED_ITEMS
-              ? reviewsWithUrls.slice(-MAX_CACHED_ITEMS)
-              : reviewsWithUrls
-          );
+          setReviews(limitRefreshedReviews(reviewsWithUrls));
         } else {
-          setReviews((prev) => {
-            const newReviews = [...prev, ...reviewsWithUrls];
-            return newReviews.length > MAX_CACHED_ITEMS
-              ? newReviews.slice(-MAX_CACHED_ITEMS)
-              : newReviews;
-          });
+          setReviews((prev) =>
+            limitAppendedReviews([...prev, ...reviewsWithUrls])
+          );
         }
 
         setPage(nextPage);
@@ -226,10 +224,17 @@ function Home() {
           setLoadingMore(false);
         }
       } catch (error) {
-        reportError("Error fetching reviews:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to load reviews"
-        );
+        if (!isCurrentRequest()) return;
+
+        // A feed dependency being unavailable is a recoverable product state,
+        // not a crash. reportError intentionally opens React Native's red
+        // developer overlay, which made a routine 404 impossible to dismiss.
+        warn("[Feed] Unable to load reviews:", error);
+        setError(FEED_LOAD_ERROR_MESSAGE);
+        // An empty FlatList calls onEndReached while it is measuring itself.
+        // Stop pagination until an explicit refresh succeeds, or one failed
+        // first page becomes an unbounded request/error loop.
+        setHasMore(false);
 
         if (refresh) {
           setRefreshing(false);
@@ -287,12 +292,11 @@ function Home() {
 
   useFocusEffect(
     useCallback(() => {
-      void refreshUnseenCount();
       // Refresh on focus only when the feed has actually gone stale. Doing it
       // unconditionally cleared the caches and reset scroll position every
       // time the user tabbed away and back, even seconds later.
       const isStale = Date.now() - lastRefreshTime > FOCUS_REFRESH_AFTER;
-      if (profile?.id && (reviews.length === 0 || isStale)) {
+      if (reviews.length === 0 || isStale) {
         // Silent: the stale content is already visible; swap it in place
         // instead of flashing a spinner on every return to the feed.
         loadReviews(true, reviews.length > 0);
@@ -305,7 +309,7 @@ function Home() {
       // loadReviews/lastRefreshTime intentionally excluded: including them
       // would re-run this on every fetch, defeating the staleness check.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile?.id, refreshUnseenCount, scrollToTop, reviews.length])
+    }, [profile?.id, scrollToTop, reviews.length])
   );
 
   // Optimized refresh handler
@@ -320,12 +324,13 @@ function Home() {
 
   // Optimized end reached handler
   const onEndReached = useCallback(() => {
-    if (!loadingMore && hasMore && !refreshing) {
+    if (!loading && !loadingMore && hasMore && !refreshing && !error) {
       loadReviews(false);
     }
-  }, [loadingMore, hasMore, refreshing, loadReviews]);
+  }, [error, hasMore, loadReviews, loading, loadingMore, refreshing]);
 
   const toggleFeedSource = useCallback(() => {
+    if (!requireMembership("people-feed")) return;
     const nextSource: FeedSource = feedSource === "club" ? "people" : "club";
     setFeedSource(nextSource);
     setReviews([]);
@@ -334,7 +339,7 @@ function Home() {
     setLoading(true);
     void loadReviews(true, true, nextSource, false);
     requestAnimationFrame(scrollToTop);
-  }, [feedSource, loadReviews, scrollToTop]);
+  }, [feedSource, loadReviews, requireMembership, scrollToTop]);
 
   // Check if username is unique
   const checkUsernameUnique = async (username: string) => {
@@ -469,8 +474,8 @@ function Home() {
   }, [router]);
 
   const navigateToReview = useCallback(() => {
-    router.navigate(routes.review());
-  }, [router]);
+    if (requireMembership("review")) router.navigate(routes.review());
+  }, [requireMembership, router]);
 
   const navigateToDiscover = useCallback(() => {
     router.navigate(routes.discover({ view: "members" }));
@@ -483,11 +488,31 @@ function Home() {
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.errorText}>Error: {error}</Text>
+          <Text style={styles.emptyTitle}>{error}</Text>
+          <Text style={styles.emptyText}>
+            Check your connection and try again.
+          </Text>
           <Button
-            title="Retry"
+            title="TRY AGAIN"
             onPress={() => loadReviews(true)}
             variant="primary"
+            size="medium"
+          />
+        </View>
+      );
+    }
+
+    if (!profile) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Nothing from the club yet</Text>
+          <Text style={styles.emptyText}>
+            Explore the map while we look for the next pour.
+          </Text>
+          <Button
+            title="EXPLORE LOCATIONS"
+            onPress={navigateToLocations}
+            variant="secondary"
             size="medium"
           />
         </View>
@@ -605,6 +630,11 @@ function Home() {
     feedSource,
     loadReviews,
     navigateToDiscover,
+    navigateToLocations,
+    navigateToReview,
+    profile,
+    colors.onAccent,
+    styles,
   ]);
 
   // Memoized footer component for loading more
@@ -622,20 +652,16 @@ function Home() {
           activeOpacity={0.78}
           accessibilityRole="button"
           accessibilityLabel={`Showing ${
-            feedSource === "club" ? "From the club" : "Your people"
+            feedSource === "club" ? "From the Club" : "Your people"
           }. Tap to switch feed source.`}
         >
           <View style={styles.feedSourceText}>
             <Text style={styles.feedSourceEyebrow}>Feed</Text>
             <View style={styles.feedSourceTitleRow}>
               <Text style={styles.feedSourceTitle}>
-                {feedSource === "club" ? "From the club" : "Your people"}
+                {feedSource === "club" ? "From the Club" : "Your people"}
               </Text>
-              <Ionicons
-                name="swap-horizontal"
-                size={13}
-                color={colors.accent}
-              />
+              <Ionicons name="repeat" size={14} color={colors.accent} />
             </View>
           </View>
         </TouchableOpacity>
@@ -729,6 +755,7 @@ function Home() {
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
+      latestFeedRequestRef.current += 1;
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
@@ -753,17 +780,17 @@ function Home() {
         variant="large"
         title={greeting.headline}
         meta={greeting.subline}
-        actions={[
-          {
-            icon: "heart-outline",
-            iconColor: colors.onInk,
-            showNotificationDot: showActivityDot,
-            onPress: () => router.push(routes.activity()),
-            accessibilityLabel: showActivityDot
-              ? "Activity, new notifications"
-              : "Activity",
-          },
-        ]}
+        actions={
+          profile
+            ? []
+            : [
+                {
+                  label: "Join",
+                  onPress: () => openMembership("profile"),
+                  accessibilityLabel: "Join the club",
+                },
+              ]
+        }
       />
 
       <FlatList
@@ -952,8 +979,7 @@ const useStyles = makeStyles((t) => ({
     gap: 10,
   },
   footerLoaderText: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.accent,
   },
   modalContainer: {
@@ -971,15 +997,13 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   modalTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     marginBottom: t.spacing.md,
     color: t.colors.text,
     textAlign: "center" as const,
   },
   validationMessage: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.danger,
     textAlign: "center" as const,
     marginTop: t.spacing.sm,
@@ -1004,11 +1028,9 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.xl - 4,
   },
   heroSubtitle: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     textAlign: "center" as const,
-    lineHeight: 22,
     maxWidth: 320,
     letterSpacing: 0,
   },
@@ -1040,17 +1062,14 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
     letterSpacing: 0,
   },
   stepDescription: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textMuted,
-    lineHeight: 19,
   },
 }));
 

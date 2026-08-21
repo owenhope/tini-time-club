@@ -12,6 +12,7 @@ import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
+import { useProfile } from "@/context/profile-context";
 
 export default function SharedReviewScreen() {
   const {
@@ -27,6 +28,8 @@ export default function SharedReviewScreen() {
   const router = useRouter();
   const styles = useStyles();
   const { colors } = useTheme();
+  const { profile } = useProfile();
+  const viewerId = profile?.id;
   const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export default function SharedReviewScreen() {
 
     try {
       setLoading(true);
-      const data = await databaseService.getReview(reviewId);
+      const data = await databaseService.getReview(reviewId, viewerId);
       setReview(data);
       setError(null);
     } catch (err) {
@@ -52,7 +55,7 @@ export default function SharedReviewScreen() {
     } finally {
       setLoading(false);
     }
-  }, [reviewId]);
+  }, [reviewId, viewerId]);
 
   useEffect(() => {
     void loadReview();

@@ -7,7 +7,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { supabase } from "@/utils/supabase";
 import ProfileList from "@/components/ProfileList";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
@@ -106,11 +106,7 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
             </Text>
           </View>
         ) : (
-          <ProfileList
-            profiles={likesUsers}
-            enableSearch={false}
-            embedded
-          />
+          <ProfileList profiles={likesUsers} enableSearch={false} embedded />
         )}
       </BottomSheetView>
     </BottomSheet>
@@ -147,8 +143,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   emptySubtitle: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textMuted,
     textAlign: "center" as const,
     paddingHorizontal: t.spacing.xxl,

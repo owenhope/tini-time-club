@@ -63,6 +63,11 @@ export type DiscoverParams = {
 
 export type ReviewShareFormat = "story" | "post";
 
+export type MembershipParams = {
+  intent: string;
+  returnTo?: string;
+};
+
 export const routes = {
   /** Welcome / sign-in landing screen. */
   welcome: () => "/welcome" as const satisfies Href,
@@ -76,11 +81,17 @@ export const routes = {
   /** Auth (email sign-in/sign-up) screen. */
   auth: () => "/auth" as const satisfies Href,
 
+  /** Magic-link fallback behind the landing screen's "Use Email Instead". */
+  authEmail: () => "/auth/email" as const satisfies Href,
+
   /** One-time new-member setup and EULA flow. */
   onboarding: () => "/onboarding" as const satisfies Href,
 
+  /** Contextual visitor-to-member prompt. */
+  membership: (params: MembershipParams) =>
+    ({ pathname: "/membership", params }) as unknown as Href,
+
   /** Password reset screen (recovery deep links land here). */
-  resetPassword: () => "/reset-password" as const satisfies Href,
 
   /** Explore tab, optionally selecting or focusing one of its three views. */
   discover: (params?: DiscoverParams) =>
@@ -88,7 +99,7 @@ export const routes = {
       ? ({ pathname: "/discover", params } as const)
       : ("/discover" as const)) satisfies Href,
 
-  /** Martini Index and its preference-aware Pick One tool. */
+  /** Martini Index and its instant Pick One tool. */
   martiniIndex: () => "/martini-index" as const satisfies Href,
 
   /** Own profile tab. */
@@ -137,10 +148,10 @@ export const routes = {
     }) as const satisfies Href,
 
   /** Compose a social image from any review with a usable photo. */
-  reviewSharePreview: (reviewId: string | number, format: ReviewShareFormat) =>
+  reviewSharePreview: (reviewId: string | number) =>
     ({
       pathname: "/review-share-preview",
-      params: { reviewId: String(reviewId), format },
+      params: { reviewId: String(reviewId) },
     }) as const satisfies Href,
 
   /**

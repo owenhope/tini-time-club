@@ -14,11 +14,13 @@ import {
   MARTINI_SPIRITS,
   type MartiniSpirit,
 } from "@/utils/martini-index";
+import { useMembership } from "@/context/membership-context";
 
 const SPIRIT_FILTERS = ["All", ...MARTINI_SPIRITS] as const;
 
 export default function MartiniIndexScreen() {
   const styles = useStyles();
+  const { isMember, requireMembership } = useMembership();
   const [spirit, setSpirit] = useState<MartiniSpirit | "All">("All");
   const [pickOneVisible, setPickOneVisible] = useState(false);
   const indexEntries = getMartiniIndexRows(spirit);
@@ -31,19 +33,21 @@ export default function MartiniIndexScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void logMartiniIndexEvent("view");
-    }, [])
+      if (isMember) void logMartiniIndexEvent("view");
+    }, [isMember])
   );
 
   const selectSpirit = (nextSpirit: MartiniSpirit | "All") => {
     if (nextSpirit === spirit) return;
     setSpirit(nextSpirit);
-    void logMartiniIndexEvent("filter", nextSpirit);
+    if (isMember) void logMartiniIndexEvent("filter", nextSpirit);
   };
 
   const shakerAction = {
     customIcon: "martini-shaker" as const,
-    onPress: () => setPickOneVisible(true),
+    onPress: () => {
+      if (requireMembership("pick-one")) setPickOneVisible(true);
+    },
     accessibilityLabel: "Pick a martini for me",
   };
 

@@ -24,13 +24,13 @@ import ReviewItem from "@/components/ReviewItem";
 import CelebrationModal from "@/components/CelebrationModal";
 import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
-import * as ImageManipulator from "expo-image-manipulator";
 import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
 import { AppText, Button } from "@/components/shared";
 import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import {
@@ -42,6 +42,14 @@ import {
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
+import {
+  ReviewSubmissionError,
+  submitNewReview,
+} from "@/utils/reviewSubmission";
+import {
+  prepareReviewImageForUpload,
+  type ReviewImageSource,
+} from "@/utils/reviewImage";
 
 interface ReviewFormLocation {
   name: string;
@@ -63,7 +71,7 @@ interface ReviewFormValues {
 type Option = { id: number; name: string };
 
 type ReviewQuestionKey =
-  "location" | "spirit" | "type" | "taste" | "presentation";
+  "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
 
 const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Where was this served?", key: "location" },
@@ -71,6 +79,7 @@ const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
   { title: "Which Type?", key: "type" },
   { title: "Presentation Rating", key: "presentation" },
   { title: "Taste Rating", key: "taste" },
+  { title: "Add a Caption", key: "comment" },
   { title: "Preview" },
 ];
 
@@ -83,7 +92,6 @@ const ReviewPreview = ({
   types,
   photo,
   profile,
-  onCaptionChange,
   isSubmitting,
   submissionMessage,
 }: {
@@ -92,7 +100,6 @@ const ReviewPreview = ({
   types: { id: number; name: string }[];
   photo: string | null;
   profile: any;
-  onCaptionChange: (caption: string) => void;
   isSubmitting?: boolean;
   submissionMessage?: string;
 }) => {
@@ -175,29 +182,18 @@ const ReviewPreview = ({
           />
         </View>
       </View>
-      <View style={styles.captionInputContainer}>
-        <TextInput
-          style={styles.captionInput}
-          multiline
-          placeholder="Add a caption..."
-          placeholderTextColor={colors.textMuted}
-          onChangeText={onCaptionChange}
-          value={values.comment || ""}
-          maxLength={500}
-          accessibilityLabel="Review caption"
-        />
-        <AppText variant="label" tone="secondary" style={styles.characterCount}>
-          {(values.comment || "").length}/500
-        </AppText>
-      </View>
     </ScrollView>
   );
 };
 
-export default function App() {
+function ReviewComposer() {
   const styles = useStyles();
   const { colors } = useTheme();
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoDimensions, setPhotoDimensions] = useState<Pick<
+    ReviewImageSource,
+    "width" | "height"
+  > | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -306,6 +302,7 @@ export default function App() {
           comment: review.comment || "",
         });
         setPhoto(review.display_image_url);
+        setPhotoDimensions(null);
         setOriginalImagePath(review.image_url);
         setPhotoChanged(false);
         setIsReviewing(true);
@@ -356,6 +353,7 @@ export default function App() {
   const discardReview = () => {
     setStep(0);
     setPhoto(null);
+    setPhotoDimensions(null);
     setIsReviewing(false);
     setIsSubmitting(false);
     setSubmissionMessage("");
@@ -413,12 +411,12 @@ export default function App() {
   const nextStep = async () => {
     if (isTransitioning) return;
 
-    if (step === questions.length - 1) {
-      const commentValue = watchedValues.comment?.trim();
-      if (!commentValue || commentValue.length === 0) return;
-      const isValid = await trigger("comment");
-      if (!isValid) return;
-    } else if (questions[step].key) {
+    if (questions[step].key === "comment") {
+      // The caption is required before the preview; form rules don't cover
+      // whitespace-only input, so check the trimmed value directly.
+      if (!watchedValues.comment?.trim()) return;
+    }
+    if (questions[step].key) {
       const isValid = await trigger(questions[step].key as any);
       if (!isValid) return;
     }
@@ -463,6 +461,39 @@ export default function App() {
         return <PresentationInput control={control} />;
       case "taste":
         return <TasteInput control={control} />;
+      case "comment":
+        return (
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.captionInputContainer}>
+              <TextInput
+                style={styles.captionInput}
+                multiline
+                autoFocus
+                placeholder="Add a caption..."
+                placeholderTextColor={colors.textMuted}
+                onChangeText={(caption) =>
+                  setValue("comment", caption, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                value={watchedValues.comment || ""}
+                maxLength={500}
+                accessibilityLabel="Review caption"
+              />
+              <AppText
+                variant="label"
+                tone="secondary"
+                style={styles.characterCount}
+              >
+                {(watchedValues.comment || "").length}/500
+              </AppText>
+            </View>
+          </ScrollView>
+        );
       default:
         return null;
     }
@@ -475,9 +506,9 @@ export default function App() {
         return null;
       }
 
-      const manipResult = await ImageManipulator.manipulateAsync(photo, [], {
-        compress: 0.5,
-        format: ImageManipulator.SaveFormat.JPEG,
+      const manipResult = await prepareReviewImageForUpload({
+        uri: photo,
+        ...photoDimensions,
       });
       const compressedUri = manipResult.uri;
 
@@ -573,7 +604,7 @@ export default function App() {
     const { error } = await supabase.storage
       .from("review_images")
       .remove([imagePath]);
-    if (error) reportError("Error removing replaced review image:", error);
+    if (error) reportError("Error removing review image:", error);
   };
 
   const handleUpdateReview = async () => {
@@ -631,46 +662,70 @@ export default function App() {
   const handleUploadAndCreateReview = async () => {
     if (!profile) return;
 
+    let reviewId: string;
+    let locationId: string;
+    let numericLocationId: number | null = null;
+    let wasRegular = false;
+
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      setSubmissionMessage("Uploading image...");
-      const imageUrl = await uploadImage(profile.id);
-      if (!imageUrl) {
-        setSubmitError("We couldn't upload your photo. Please try again.");
-        setIsSubmitting(false);
-        return;
-      }
+      const submission = await submitNewReview({
+        uploadImage: () => uploadImage(profile.id),
+        resolveLocationId: () => resolveLocationId(profile.id),
+        createReview: (imagePath, resolvedLocationId) =>
+          createReview(profile.id, imagePath, resolvedLocationId),
+        removeImage: removeReviewImage,
+        afterLocationResolved: async (resolvedLocationId) => {
+          const parsedLocationId = Number(resolvedLocationId);
+          numericLocationId = Number.isFinite(parsedLocationId)
+            ? parsedLocationId
+            : null;
+          try {
+            wasRegular = numericLocationId
+              ? (await isRegularAt(numericLocationId, profile.id)) === true
+              : false;
+          } catch (error) {
+            reportError("Error checking existing Regular status:", error);
+            wasRegular = false;
+          }
+        },
+        onStage: (stage) => {
+          if (stage === "location")
+            setSubmissionMessage("Confirming location...");
+          if (stage === "upload") setSubmissionMessage("Uploading image...");
+          if (stage === "review") setSubmissionMessage("Creating review...");
+        },
+        onLocationResolutionError: (error) =>
+          reportError("Error resolving location:", error),
+        onCleanupError: (error) =>
+          reportError("Error cleaning up review image:", error),
+      });
+      reviewId = submission.reviewId;
+      locationId = submission.locationId;
+    } catch (error) {
+      reportError("Error submitting review:", error);
+      setSubmitError(
+        error instanceof ReviewSubmissionError && error.stage === "upload"
+          ? "We couldn't upload your photo. Please try again."
+          : error instanceof ReviewSubmissionError && error.stage === "location"
+            ? "We couldn't confirm this location. Please try again."
+            : error instanceof ReviewSubmissionError && error.stage === "review"
+              ? "We couldn't save your review. Please try again."
+              : "Something went wrong. Please try again."
+      );
+      setIsSubmitting(false);
+      return;
+    }
 
-      setSubmissionMessage("Creating review...");
-      let locationId: string | null = null;
-      try {
-        locationId = await resolveLocationId(profile.id);
-      } catch (error) {
-        reportError("Error resolving location:", error);
-      }
+    const locationName = (watchedValues.location as any)?.name ?? null;
+    setSubmissionMessage("Review created successfully!");
+    setPostedReviewId(String(reviewId));
 
-      const locationName = (watchedValues.location as any)?.name ?? null;
-      const numericLocationId =
-        locationId != null && Number.isFinite(Number(locationId))
-          ? Number(locationId)
-          : null;
-      const wasRegular = numericLocationId
-        ? await isRegularAt(numericLocationId, profile.id)
-        : false;
-
-      const reviewId = await createReview(profile.id, imageUrl, locationId);
-      if (!reviewId) {
-        setSubmitError("We couldn't save your review. Please try again.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      setSubmissionMessage("Review created successfully!");
-
+    try {
       AnalyticService.capture("new_review", {
         reviewId,
-        locationId: (watchedValues.location as any)?.id,
+        locationId,
         locationName,
       });
 
@@ -691,8 +746,6 @@ export default function App() {
 
       await refreshProfile();
 
-      setPostedReviewId(String(reviewId));
-
       if (earnedAchievements.length > 0) {
         setCelebrationReviewCount(rankCheck.newCount);
         setAchievements(earnedAchievements);
@@ -700,9 +753,8 @@ export default function App() {
         router.dismissTo(feedRouteAfterPost(String(reviewId)));
       }
     } catch (error) {
-      reportError("Error submitting review:", error);
-      setSubmitError("Something went wrong. Please try again.");
-      setIsSubmitting(false);
+      reportError("Review created but post-submit processing failed:", error);
+      router.dismissTo(feedRouteAfterPost(String(reviewId)));
     }
   };
 
@@ -729,7 +781,7 @@ export default function App() {
   );
   const reviewHeaderActions: HeaderAction[] = [
     ...(isEditMode
-      ? [
+      ? ([
           {
             icon: "camera-outline",
             onPress: () => {
@@ -738,7 +790,7 @@ export default function App() {
             },
             accessibilityLabel: "Change review photo",
           },
-        ] satisfies HeaderAction[]
+        ] satisfies HeaderAction[])
       : []),
     {
       icon: "close-outline",
@@ -794,7 +846,11 @@ export default function App() {
               ) : undefined
             }
             onCapture={(captured) => {
-              setPhoto(captured);
+              setPhoto(captured.uri);
+              setPhotoDimensions({
+                width: captured.width,
+                height: captured.height,
+              });
               setPhotoChanged(isEditMode);
               setIsChangingPhoto(false);
               setIsReviewing(true);
@@ -878,12 +934,6 @@ export default function App() {
                   types={types}
                   photo={photo}
                   profile={profile}
-                  onCaptionChange={(caption) =>
-                    setValue("comment", caption, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
                   isSubmitting={isSubmitting}
                   submissionMessage={submissionMessage}
                 />
@@ -973,6 +1023,22 @@ export default function App() {
   );
 }
 
+export default function ReviewScreen() {
+  const { profile, loading } = useProfile();
+  const { openMembership } = useMembership();
+  const hasPrompted = React.useRef(false);
+
+  useEffect(() => {
+    if (!loading && !profile && !hasPrompted.current) {
+      hasPrompted.current = true;
+      openMembership("review");
+    }
+  }, [loading, openMembership, profile]);
+
+  if (loading || !profile) return null;
+  return <ReviewComposer />;
+}
+
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
@@ -1007,7 +1073,7 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   inlineErrorAction: {
-    fontFamily: fonts.bold,
+    ...t.typography.label,
   },
   progressBar: {
     height: 4,
@@ -1078,7 +1144,7 @@ const useStyles = makeStyles((t) => ({
     marginTop: t.spacing.md,
   },
   captionInput: {
-    ...t.typography.body,
+    ...t.typography.input,
     minHeight: 100,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
@@ -1086,7 +1152,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
     borderWidth: 1,
     borderColor: t.colors.border,
-    color: t.colors.text,
+    color: t.colors.inputText,
     textAlignVertical: "top" as const,
   },
   characterCount: {

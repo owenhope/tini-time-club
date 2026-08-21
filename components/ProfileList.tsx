@@ -12,9 +12,10 @@ import { Avatar, VerifiedName } from "@/components/shared";
 import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { setFollowing } from "@/services/followService";
+import { useMembership } from "@/context/membership-context";
 export interface ProfileType {
   id: string;
   username: string;
@@ -40,6 +41,7 @@ export default function ProfileList({
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, loading: profileLoading } = useProfile();
+  const { requireMembership } = useMembership();
   const profileId = profile?.id;
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [followStateReady, setFollowStateReady] = useState(false);
@@ -87,7 +89,10 @@ export default function ProfileList({
 
   // Toggle follow/unfollow action.
   const toggleFollow = async (targetProfileId: string) => {
-    if (!profile) return;
+    if (!profile) {
+      requireMembership("follow");
+      return;
+    }
     // Prevent duplicate requests.
     if (updatingFollowIds.includes(targetProfileId)) return;
 
@@ -228,8 +233,8 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1,
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.gutter,
-    ...t.typography.body,
-    color: t.colors.text,
+    ...t.typography.input,
+    color: t.colors.inputText,
     ...t.elevation.card,
   },
   listContent: {
@@ -288,7 +293,6 @@ const useStyles = makeStyles((t) => ({
   },
   buttonText: {
     ...t.typography.label,
-    fontFamily: fonts.semibold,
     color: t.colors.onAccent,
   },
   followingButtonText: {

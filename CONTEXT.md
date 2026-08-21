@@ -31,5 +31,5 @@ A strip of citrus peel expressed over a drink to add aromatic oils and brightnes
 An olive added to a martini for a savory, salty finish.
 
 **Pick One**:
-The preference-aware tool that selects a Martini Index Entry for a member after excluding spirits or styles they dislike.
+The Martini Index tool that immediately selects an entry and offers another different choice whenever a member shakes again.
 _Avoid_: Order for me, randomizer

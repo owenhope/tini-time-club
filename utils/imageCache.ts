@@ -23,6 +23,36 @@ class ImageCache {
   private readonly REVIEW_IMAGE_CACHE_DURATION = 90 * 60 * 1000; // 90 minutes (less than signed URL expiry of 2 hours)
   private readonly LOCATION_IMAGE_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
 
+  // Uploads are stored at up to 2048px / ~2MB+, far more than any screen in
+  // the app shows. Every review URL is served through Storage's image
+  // transformation instead, as ONE shared variant: the feed card and the
+  // full-screen viewer request the same URL, so the viewer opens straight
+  // from expo-image's cache. 1080px covers a 3x phone edge-to-edge.
+  private readonly REVIEW_IMAGE_TRANSFORM = { width: 1080, quality: 70 };
+
+  // Versions the cache keys, so changing the transform invalidates cached
+  // untransformed/older-variant URLs instead of serving them for another 90m.
+  private readonly REVIEW_IMAGE_VARIANT = "w1080q70";
+
+  private reviewCacheKey(imagePath: string): string {
+    return `review_${this.REVIEW_IMAGE_VARIANT}_${imagePath}`;
+  }
+
+  /**
+   * createSignedUrls (the one-round-trip bulk call) cannot request
+   * transforms, but its token signs only the path and expiry — the render
+   * endpoint accepts that same token with transform params in the query
+   * string. Rewrite the returned URL onto it.
+   */
+  private toRenderSignedUrl(signedUrl: string): string {
+    if (!signedUrl.includes("/object/sign/")) return signedUrl;
+    const { width, quality } = this.REVIEW_IMAGE_TRANSFORM;
+    return `${signedUrl.replace(
+      "/object/sign/",
+      "/render/image/sign/"
+    )}&width=${width}&quality=${quality}`;
+  }
+
   private constructor() {}
 
   static getInstance(): ImageCache {
@@ -54,7 +84,7 @@ class ImageCache {
    * Optimized: Removed slow URL validation check for better performance
    */
   async getReviewImageUrl(imagePath: string): Promise<string | null> {
-    const cacheKey = `review_${imagePath}`;
+    const cacheKey = this.reviewCacheKey(imagePath);
 
     // Check memory cache first
     const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
@@ -93,7 +123,9 @@ class ImageCache {
     try {
       const { data, error } = await supabase.storage
         .from("review_images")
-        .createSignedUrl(imagePath, 7200); // 2 hours server-side cache (longer = fewer API calls)
+        .createSignedUrl(imagePath, 7200, {
+          transform: this.REVIEW_IMAGE_TRANSFORM,
+        }); // 2 hours server-side cache (longer = fewer API calls)
 
       if (error) {
         // Only log non-"not found" errors to reduce noise
@@ -230,7 +262,7 @@ class ImageCache {
 
     // Check cache for all images first
     for (const path of imagePaths) {
-      const cacheKey = `review_${path}`;
+      const cacheKey = this.reviewCacheKey(path);
       const cached = this.memoryCache.get(cacheKey) as CachedSignedUrl;
 
       if (cached && Date.now() < cached.expiresAt) {
@@ -265,19 +297,22 @@ class ImageCache {
 
           // Missing objects get the same empty sentinel as before, so a
           // deleted image doesn't trigger a re-fetch on every page load.
+          const renderUrl = item.error
+            ? ""
+            : this.toRenderSignedUrl(item.signedUrl);
           const cached: CachedSignedUrl = {
-            signedUrl: item.error ? "" : item.signedUrl,
+            signedUrl: renderUrl,
             timestamp: now,
             expiresAt: now + this.REVIEW_IMAGE_CACHE_DURATION,
           };
-          this.memoryCache.set(`review_${path}`, cached);
+          this.memoryCache.set(this.reviewCacheKey(path), cached);
           toPersist.push([
-            `image_cache_review_${path}`,
+            `image_cache_${this.reviewCacheKey(path)}`,
             JSON.stringify(cached),
           ]);
 
-          if (!item.error) {
-            results[path] = item.signedUrl;
+          if (renderUrl) {
+            results[path] = renderUrl;
           }
         }
 

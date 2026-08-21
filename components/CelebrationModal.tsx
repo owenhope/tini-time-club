@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
@@ -13,11 +12,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "@/components/shared";
-import { fonts, makeStyles } from "@/theme";
-import {
-  logCelebrationEvent,
-  type Achievement,
-} from "@/utils/celebrations";
+import { makeStyles } from "@/theme";
+import { logCelebrationEvent, type Achievement } from "@/utils/celebrations";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
@@ -108,14 +104,6 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           { paddingTop: insets.top + 52, paddingBottom: insets.bottom + 44 },
         ]}
       >
-        <Image
-          source={require("@/assets/images/tini-time-logo-2x.png")}
-          style={styles.logo}
-          contentFit="contain"
-          accessibilityRole="image"
-          accessibilityLabel="Tini Time Club"
-        />
-
         <View style={styles.centerContent}>
           <Animated.View style={[styles.avatarWell, avatarStyle]}>
             <Avatar
@@ -164,14 +152,10 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "flex-start" as const,
     paddingHorizontal: t.spacing.xxl,
   },
-  logo: {
-    width: 118,
-    height: 84,
-  },
   centerContent: {
     alignItems: "center" as const,
     gap: t.spacing.lg,
-    marginTop: 92,
+    marginTop: 148,
     width: "100%" as const,
   },
   avatarWell: {
@@ -189,16 +173,12 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
   },
   headline: {
-    fontFamily: fonts.black,
-    fontSize: 22,
-    lineHeight: 27,
-    color: t.colors.secondary,
+    ...t.typography.display,
+    color: t.colors.textOnImage,
     textAlign: "center" as const,
   },
   subtitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.bodyStrong,
     color: t.colors.accentPressed,
     textAlign: "center" as const,
     maxWidth: 310,
@@ -208,10 +188,8 @@ const useStyles = makeStyles((t) => ({
     gap: 4,
   },
   locationLine: {
-    fontFamily: fonts.black,
-    fontSize: 16,
-    lineHeight: 21,
-    color: t.colors.secondary,
+    ...t.typography.bodyStrong,
+    color: t.colors.textOnImage,
     textAlign: "center" as const,
     maxWidth: 310,
   },
@@ -233,9 +211,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accentPressed,
   },
   continueText: {
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    lineHeight: 21,
+    ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
     textAlign: "center" as const,
   },

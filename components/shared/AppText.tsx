@@ -40,7 +40,6 @@ const AppText: React.FC<AppTextProps> = ({
     onImage: colors.textOnImage,
     accentOnImage: colors.accentOnImage,
   } as const;
-
   return (
     <Text
       style={[type[variant], { color: toneColors[tone] }, style]}

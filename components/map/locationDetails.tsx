@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -7,6 +7,7 @@ import { Avatar, RatingPips } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
+import { useMembership } from "@/context/membership-context";
 
 interface LocationDetailsProps {
   loc: any;
@@ -19,6 +20,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  const router = useRouter();
+  const { requireMembership } = useMembership();
 
   const cityCountry = loc.address
     ? formatCityRegion(stripNameFromAddress(loc.name, loc.address))
@@ -30,14 +33,25 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   const regulars = loc.regulars?.slice(0, 3) ?? [];
   const hasRating = loc.rating != null && reviewCount > 0;
 
+  const openLocation = () => {
+    if (requireMembership("location-details")) {
+      router.push(routes.place(loc.id));
+    }
+  };
+
+  const openRegulars = () => {
+    if (requireMembership("location-details")) onRegularsPress?.();
+  };
+
   return (
     <View style={styles.content}>
-      <Link href={routes.place(loc.id)} asChild>
+      <View style={styles.identity}>
         <Pressable
           style={({ pressed }) => [
             styles.titlePressable,
             pressed && styles.pressed,
           ]}
+          onPress={openLocation}
           accessibilityRole="link"
           accessibilityLabel={`View ${loc.name}`}
           accessibilityHint="Opens the location page"
@@ -49,19 +63,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             </Text>
             <Ionicons
               name="chevron-forward"
-              size={20}
+              size={18}
               color={colors.accent}
               pointerEvents="none"
             />
           </View>
         </Pressable>
-      </Link>
 
-      {cityCountry ? (
-        <Text style={styles.meta} numberOfLines={1}>
-          {cityCountry}
-        </Text>
-      ) : null}
+        {cityCountry ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {cityCountry}
+          </Text>
+        ) : null}
+      </View>
 
       <View style={styles.detailRow}>
         <View
@@ -83,7 +97,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               <View style={styles.ratingPips}>
                 <RatingPips
                   value={loc.rating}
-                  size={16}
+                  size={15}
                   accessibilityLabel=""
                 />
               </View>
@@ -100,7 +114,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               styles.regularsBlock,
               pressed && styles.pressed,
             ]}
-            onPress={onRegularsPress}
+            onPress={openRegulars}
             accessibilityRole="button"
             accessibilityLabel={`Show regulars at ${loc.name}`}
           >
@@ -135,12 +149,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
 
 const useStyles = makeStyles((t) => ({
   content: {
-    gap: t.spacing.xs,
-    paddingTop: t.spacing.sm,
+    gap: t.spacing.sm,
+    paddingTop: t.spacing.xs,
+  },
+  identity: {
+    gap: 0,
   },
   titlePressable: {
     alignSelf: "stretch" as const,
-    minHeight: 32,
   },
   titleRow: {
     flexDirection: "row" as const,
@@ -151,12 +167,12 @@ const useStyles = makeStyles((t) => ({
     maxWidth: "100%" as const,
   },
   name: {
-    ...t.typography.title,
+    ...t.typography.heading,
     color: t.colors.usernameText,
     flexShrink: 1,
   },
   meta: {
-    ...t.typography.body,
+    ...t.typography.mono,
     color: t.colors.textSecondary,
   },
   detailRow: {
@@ -164,7 +180,6 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-start" as const,
     justifyContent: "space-between" as const,
     gap: t.spacing.lg,
-    paddingTop: t.spacing.md,
   },
   metricBlock: {
     gap: t.spacing.xs,
@@ -172,7 +187,7 @@ const useStyles = makeStyles((t) => ({
   ratingRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: t.spacing.md,
+    gap: t.spacing.sm,
   },
   ratingPips: {
     paddingHorizontal: t.spacing.sm,
@@ -181,21 +196,21 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   eyebrow: {
-    ...t.typography.label,
+    ...t.typography.eyebrow,
     color: t.colors.textMuted,
   },
   score: {
-    ...t.typography.metricLarge,
+    ...t.typography.display,
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
   reviewCount: {
-    ...t.typography.body,
+    ...t.typography.mono,
     color: t.colors.textMuted,
   },
   regularsBlock: {
     alignItems: "flex-end" as const,
-    gap: t.spacing.sm,
+    gap: t.spacing.xs,
     paddingTop: 1,
   },
   pressed: {
