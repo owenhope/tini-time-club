@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Figtree, DM_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Suspense } from "react";
 import { siteDescription, siteShareImage } from "@/lib/seo";
 import AdminNavigationProgress from "@/components/AdminNavigationProgress";
@@ -9,15 +9,46 @@ import "./globals.css";
 // Figtree stands in for the wordmark's geometric grotesque; DM Mono for
 // measurements, counts and timestamps. Exposed as CSS vars consumed in
 // globals.css (--font-sans / --font-mono).
-const figtree = Figtree({
-  subsets: ["latin"],
+const figtree = localFont({
+  src: [
+    {
+      path: "../node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@expo-google-fonts/figtree/600SemiBold/Figtree_600SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@expo-google-fonts/figtree/700Bold/Figtree_700Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@expo-google-fonts/figtree/900Black/Figtree_900Black.ttf",
+      weight: "900",
+      style: "normal",
+    },
+  ],
   variable: "--font-figtree",
   display: "swap",
 });
 
-const dmMono = DM_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
+const dmMono = localFont({
+  src: [
+    {
+      path: "../node_modules/@expo-google-fonts/dm-mono/400Regular/DMMono_400Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@expo-google-fonts/dm-mono/500Medium/DMMono_500Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+  ],
   variable: "--font-dm-mono",
   display: "swap",
 });

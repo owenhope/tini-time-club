@@ -1,6 +1,6 @@
 import "react-native-get-random-values";
 import React from "react";
-import { View, Text } from "react-native";
+import { Pressable, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -9,6 +9,10 @@ import { StatusBar } from "expo-status-bar";
 import { Button, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
+import { isDevelopmentBackend } from "@/utils/screenshotMode";
+import { acceptVisitorPreview } from "@/services/visitor-session";
+import { reportError } from "@/utils/log";
+import AnalyticService from "@/services/analyticsService";
 
 const FEATURES = [
   {
@@ -32,6 +36,7 @@ const Welcome = () => {
   const styles = useStyles();
   const router = useRouter();
   const { colors } = useTheme();
+  const visitorPreviewEnabled = isDevelopmentBackend();
   const featureColors = {
     brand: {
       background: colors.tabBarActive,
@@ -45,6 +50,17 @@ const Welcome = () => {
       background: colors.like,
       icon: "#FFFFFF",
     },
+  };
+
+  const exploreAsVisitor = async () => {
+    AnalyticService.capture("visitor_preview_started", { source: "welcome" });
+    try {
+      await acceptVisitorPreview();
+    } catch (error) {
+      // Persistence improves the next launch, but it must never block this one.
+      reportError("Unable to remember visitor preview choice:", error);
+    }
+    router.replace(routes.home());
   };
 
   return (
@@ -62,7 +78,7 @@ const Welcome = () => {
         <View style={styles.content}>
           <View style={styles.hero}>
             <Image
-              source={require("@/assets/images/tini-time-logo-2x.png")}
+              source={require("@/assets/images/tini-time-logo-light-2x.png")}
               style={styles.logo}
               contentFit="contain"
               accessibilityRole="image"
@@ -104,14 +120,32 @@ const Welcome = () => {
 
         <View style={styles.footer}>
           <Button
-            title="Continue"
-            onPress={() => router.push(routes.auth())}
+            title={visitorPreviewEnabled ? "Explore the Club" : "Join the Club"}
+            onPress={() =>
+              visitorPreviewEnabled
+                ? void exploreAsVisitor()
+                : router.push(routes.auth())
+            }
             variant="primary"
-            size="large"
+            size="medium"
             fullWidth
-            icon="chevron-forward"
-            iconPosition="right"
           />
+          <Text style={styles.legalCopy}>
+            By continuing, you confirm you are of legal drinking age and agree
+            to the Terms and Privacy Policy.
+          </Text>
+          <Pressable
+            onPress={() => router.push(routes.auth())}
+            style={({ pressed }) => [
+              styles.signInLink,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="link"
+            accessibilityLabel="Sign in"
+            hitSlop={{ top: 8, bottom: 8, left: 24, right: 24 }}
+          >
+            <Text style={styles.signInText}>Sign In</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -184,7 +218,27 @@ const useStyles = makeStyles((t) => ({
     textShadowRadius: 4,
   },
   footer: {
+    gap: t.spacing.sm,
     paddingBottom: t.spacing.lg,
+  },
+  legalCopy: {
+    ...t.typography.caption,
+    color: t.colors.textOnImage,
+    textAlign: "center" as const,
+  },
+  signInLink: {
+    minHeight: 44,
+    alignSelf: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: t.spacing.md,
+  },
+  signInText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.textOnImage,
+    textDecorationLine: "underline" as const,
+  },
+  pressed: {
+    opacity: 0.6,
   },
 }));
 

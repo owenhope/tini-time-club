@@ -26,7 +26,7 @@ import {
   searchNearbyVenues,
   type PlaceResult,
 } from "@/services/placesService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import { reportError, warn } from "@/utils/log";
 
 export interface LocationInputValue {
@@ -458,18 +458,16 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 15,
   },
   searchInput: {
+    ...t.typography.input,
     backgroundColor: t.colors.surfaceSunken,
     height: 50,
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.xl - 4,
     paddingVertical: 0,
     paddingRight: 50,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 20,
     textAlignVertical: "center" as const,
     includeFontPadding: false,
-    color: t.colors.text,
+    color: t.colors.inputText,
     borderWidth: 1,
     borderColor: t.colors.border,
   },
@@ -524,22 +522,19 @@ const useStyles = makeStyles((t) => ({
     marginRight: t.spacing.md,
   },
   placeName: {
-    fontSize: 15,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   placeAddress: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
   },
   rightContainer: {
     alignItems: "flex-end" as const,
   },
   distanceText: {
-    fontSize: 12,
-    fontFamily: fonts.medium,
+    ...t.typography.label,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.xs,
   },
@@ -557,8 +552,7 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   ratingText: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
+    ...t.typography.label,
     color: t.colors.onAccent,
   },
   selectedPlaceText: {
@@ -569,8 +563,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   loadingText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
   },
 }));

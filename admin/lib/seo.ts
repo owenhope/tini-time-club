@@ -32,7 +32,7 @@ export const siteShareImage = {
 };
 
 export function createBreadcrumbList(
-  items: Array<{ name: string; url: string }>,
+  items: Array<{ name: string; url: string }>
 ) {
   return {
     "@type": "BreadcrumbList",

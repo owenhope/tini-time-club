@@ -3,7 +3,8 @@ import { ActionSheetIOS, Alert, StyleSheet, Text } from "react-native";
 import renderer, { act } from "react-test-renderer";
 import CommentsSlider from "../CommentsSlider";
 import databaseService from "@/services/databaseService";
-import { ThemeProvider } from "@/theme";
+import { ThemeProvider, typography } from "@/theme";
+import ReportModal from "@/components/ReportModal";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -11,8 +12,9 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 jest.mock("@gorhom/bottom-sheet", () => {
-  const ReactActual = require("react");
-  const { TextInput, View: RNView } = require("react-native");
+  const ReactActual = jest.requireActual<typeof import("react")>("react");
+  const { TextInput, View: RNView } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   const Sheet = ({ children }: any) =>
     ReactActual.createElement(RNView, null, children);
   const SheetList = ReactActual.forwardRef(
@@ -54,6 +56,14 @@ jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({ profile: { id: "viewer-1" } }),
 }));
 
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
+}));
+
 jest.mock("@/hooks/useAppNavigation", () => ({
   useOpenProfile: () => jest.fn(),
 }));
@@ -80,19 +90,21 @@ jest.mock("expo-haptics", () => ({
 }));
 
 jest.mock("@expo/vector-icons", () => {
-  const ReactActual = require("react");
-  const { Text: RNText } = require("react-native");
+  const ReactActual = jest.requireActual<typeof import("react")>("react");
+  const { Text: RNText } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   return {
     Ionicons: (props: { name: string; size?: number }) =>
-      ReactActual.createElement(RNText, props, props.name),
+      ReactActual.createElement(RNText as React.ElementType, props, props.name),
   };
 });
 
 jest.mock("@/components/shared", () => ({
   Avatar: () => null,
   VerifiedName: ({ name }: { name: string }) => {
-    const ReactActual = require("react");
-    const { Text: RNText } = require("react-native");
+    const ReactActual = jest.requireActual<typeof import("react")>("react");
+    const { Text: RNText } =
+      jest.requireActual<typeof import("react-native")>("react-native");
     return ReactActual.createElement(RNText, null, name);
   },
 }));
@@ -156,7 +168,7 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
     .find((node) => node.props.children === "Perfectly cold.");
 
   expect(StyleSheet.flatten(commentBody?.props.style)).toEqual(
-    expect.objectContaining({ fontSize: 17, lineHeight: 25 })
+    expect.objectContaining(typography.body)
   );
   expect(emptyHeart.props.children[1]).toBeNull();
   expect(emptyHeart.findByProps({ name: "heart-outline" }).props.size).toBe(16);
@@ -173,7 +185,7 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
   expect(filledHeart.props.style.flexDirection).toBe("column");
   expect(filledHeart.findByProps({ name: "heart" }).props.size).toBe(16);
   expect(StyleSheet.flatten(filledHeart.props.children[1].props.style)).toEqual(
-    expect.objectContaining({ fontSize: 10, lineHeight: 12 })
+    expect.objectContaining(typography.label)
   );
   expect(
     tree.root
@@ -198,8 +210,7 @@ it("reports someone else's comment from its long-press menu", async () => {
     expect.objectContaining({ options: ["Cancel", "Report Comment"] }),
     expect.any(Function)
   );
-  const ReportModal = require("@/components/ReportModal").default as jest.Mock;
-  const modalProps = ReportModal.mock.calls.at(-1)?.[0];
+  const modalProps = (ReportModal as jest.Mock).mock.calls.at(-1)?.[0];
   expect(modalProps).toEqual(
     expect.objectContaining({ visible: true, title: "Report Comment" })
   );

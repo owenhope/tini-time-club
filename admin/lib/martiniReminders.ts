@@ -14,51 +14,111 @@ export interface ReminderMessage {
 
 /** Rotated by week-of-year; order is shuffled across moods on purpose. */
 export const EVERGREEN_REMINDERS: readonly ReminderMessage[] = [
-  { title: "It's tini time 🍸", body: "Friday night and the shaker's calling." },
+  {
+    title: "It's tini time 🍸",
+    body: "Friday night and the shaker's calling.",
+  },
   { title: "Rate your pour 🍸", body: "Tonight's tini deserves a verdict." },
-  { title: "Olive you a lot 🫒", body: "Treat yourself to a proper pour tonight." },
-  { title: "Defend your spot 👀", body: "Someone's coming for your Regular status tonight." },
+  {
+    title: "Olive you a lot 🫒",
+    body: "Treat yourself to a proper pour tonight.",
+  },
+  {
+    title: "Defend your spot 👀",
+    body: "Someone's coming for your Regular status tonight.",
+  },
   { title: "Shaken or stirred?", body: "It's Friday. You know what to do." },
-  { title: "Bring backup 🍸", body: "Martinis taste better in pairs — drag a friend out." },
-  { title: "The weekend starts wet", body: "Find a coupe with your name on it." },
-  { title: "Rank up tonight 📈", body: "Drink it, rate it — your next ring is waiting." },
+  {
+    title: "Bring backup 🍸",
+    body: "Martinis taste better in pairs — drag a friend out.",
+  },
+  {
+    title: "The weekend starts wet",
+    body: "Find a coupe with your name on it.",
+  },
+  {
+    title: "Rank up tonight 📈",
+    body: "Drink it, rate it — your next ring is waiting.",
+  },
   { title: "Dry martini, wet weekend", body: "Get out there." },
-  { title: "This is your sign", body: "It's cold, it's clear, it has an olive in it." },
+  {
+    title: "This is your sign",
+    body: "It's cold, it's clear, it has an olive in it.",
+  },
   { title: "Ice cold, dead classy", body: "Friday deserves a martini." },
   { title: "Be a critic tonight", body: "A fancy one. With an olive." },
-  { title: "A coupe awaits", body: "Somewhere a bartender is polishing a glass just for you." },
+  {
+    title: "A coupe awaits",
+    body: "Somewhere a bartender is polishing a glass just for you.",
+  },
   { title: "Regulars don't ghost", body: "Your favorite bar misses you." },
-  { title: "Friday's forecast 🍸", body: "100% chance of gin. Or vodka. Dealer's choice." },
-  { title: "One quick tini", body: "Be the friend who says it. Be the legend who stays for two." },
+  {
+    title: "Friday's forecast 🍸",
+    body: "100% chance of gin. Or vodka. Dealer's choice.",
+  },
+  {
+    title: "One quick tini",
+    body: "Be the friend who says it. Be the legend who stays for two.",
+  },
   { title: "Life's too short", body: "For warm drinks, anyway. Tini time." },
   { title: "The club runs on reviews", body: "Do your part, agent 🍸" },
   { title: "That olive 🫒", body: "It isn't going to eat itself." },
   { title: "Stool. Nod. The usual.", body: "Go be a Regular tonight." },
   { title: "Two sips in", body: "That's where weekends actually begin." },
-  { title: "5.0 or an honest 3?", body: "Either way, that bartender deserves a review." },
+  {
+    title: "5.0 or an honest 3?",
+    body: "Either way, that bartender deserves a review.",
+  },
   { title: "Clock out, coupe up 🍸", body: "The weekend is officially open." },
   { title: "Recruit for the club", body: "First round's their initiation 🍸" },
-  { title: "You survived the week", body: "That's a martini-worthy achievement." },
+  {
+    title: "You survived the week",
+    body: "That's a martini-worthy achievement.",
+  },
   { title: "One more to rank up?", body: "Only one way to find out." },
   { title: "The shaker hears all", body: "The shaker judges nothing. Go." },
-  { title: "Someone out-reviewed you", body: "Your bar. Your spot. Take it back." },
+  {
+    title: "Someone out-reviewed you",
+    body: "Your bar. Your spot. Take it back.",
+  },
   { title: "A martini a week", body: "Keeps the mediocrity away." },
   { title: "Taste. Presentation.", body: "Judgment. You know the drill." },
   { title: "It's 5 o'clock", body: "Somewhere = here. Now." },
   { title: "Found a new spot?", body: "The club wants to know about it." },
   { title: "Chin up, pinky out", body: "It's tini time." },
-  { title: "Your contacts list", body: "Someone in there needs a martini tonight. You know who." },
+  {
+    title: "Your contacts list",
+    body: "Someone in there needs a martini tonight. You know who.",
+  },
   { title: "Your coupe runneth over", body: "Or it should. Fix that." },
-  { title: "Top Shelf material", body: "Members are made on nights like this." },
-  { title: "Friday called 📞", body: "It wants you somewhere dim with something cold." },
+  {
+    title: "Top Shelf material",
+    body: "Members are made on nights like this.",
+  },
+  {
+    title: "Friday called 📞",
+    body: "It wants you somewhere dim with something cold.",
+  },
   { title: "Your palate has opinions", body: "Publish them." },
-  { title: "Nothing good ever came", body: "From staying in on martini night." },
-  { title: "Gin is botanical 🌿", body: "We're not saying skip dinner. But it's basically a salad." },
-  { title: "Your couch can wait", body: "It'll still be there at midnight. Happy hour won't." },
+  {
+    title: "Nothing good ever came",
+    body: "From staying in on martini night.",
+  },
+  {
+    title: "Gin is botanical 🌿",
+    body: "We're not saying skip dinner. But it's basically a salad.",
+  },
+  {
+    title: "Your couch can wait",
+    body: "It'll still be there at midnight. Happy hour won't.",
+  },
   { title: "Espresso martini counts", body: "We checked. It's Friday." },
   { title: "Dirty martini", body: "Clean conscience." },
   { title: "Dim lights, cold gin", body: "You know the place. Go." },
-  { title: "Membership has perks", body: "Like an excellent excuse for a Friday martini." },
+  {
+    title: "The club has perks",
+    body: "Like an excellent excuse for a Friday martini.",
+  },
   { title: "Don't make us ask twice", body: "It's tini time 🍸" },
 ] as const;
 

@@ -33,10 +33,15 @@ import ActionSheet from "@/components/ActionSheet";
 import ReviewImageViewer from "@/components/ReviewImageViewer";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
+import { useMembership } from "@/context/membership-context";
+import {
+  areReviewItemPropsEqual,
+  type ReviewItemMemoProps,
+} from "@/utils/reviewItemMemo";
 
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
@@ -44,8 +49,7 @@ import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
  * sitting below the image as well, the photo has to give that height back.
  * Uploads are stored uncropped and centre-crop here via `contentFit="cover"`.
  */
-const DOUBLE_TAP_DELAY = 300;
-const REVIEW_AUTHOR_AVATAR_SIZE = 40;
+const REVIEW_AUTHOR_AVATAR_SIZE = 34;
 const COMMENT_PREVIEW_COLLAPSED_LINES = 2;
 const MAX_PREVIEW_COMMENTS = 1;
 const ICON_SIZES = {
@@ -101,22 +105,7 @@ const InlineIdentityText = ({
   );
 };
 
-interface ReviewItemProps {
-  review: Review & { _commentPatch?: any };
-  canDelete: boolean;
-  onDelete?: () => void;
-  onEdit?: () => void;
-  onShowLikes: (reviewId: string) => void;
-  onShowComments: (
-    reviewId: string,
-    onCommentAdded: (reviewId: string, newComment: any) => void,
-    onCommentDeleted: (reviewId: string, commentId: number) => void
-  ) => void;
-  onCommentAdded: (reviewId: string, newComment: any) => void;
-  onCommentDeleted: (reviewId: string, commentId: number) => void;
-  /** The composer's live preview: no header, no actions, no interaction. */
-  previewMode?: boolean;
-}
+type ReviewItemProps = ReviewItemMemoProps;
 
 /**
  * Likes state for one review.
@@ -179,7 +168,11 @@ const useLikes = (
 };
 
 // Custom hook for comments management - lazy loaded
-const useComments = (reviewId: string, lazyLoad: boolean = true) => {
+const useComments = (
+  reviewId: string,
+  lazyLoad: boolean = true,
+  currentUserId?: string
+) => {
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -188,7 +181,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
     if (hasLoaded) return; // Don't refetch if already loaded
     try {
       setLoading(true);
-      const data = await databaseService.getComments(reviewId);
+      const data = await databaseService.getComments(reviewId, currentUserId);
       setComments(data || []);
       setHasLoaded(true);
     } catch (error) {
@@ -196,7 +189,7 @@ const useComments = (reviewId: string, lazyLoad: boolean = true) => {
     } finally {
       setLoading(false);
     }
-  }, [reviewId, hasLoaded]);
+  }, [reviewId, currentUserId, hasLoaded]);
 
   const addComment = useCallback((newComment: any) => {
     // Idempotent: the parent's _commentPatch is re-applied whenever a
@@ -451,15 +444,23 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
     >
       <View style={styles.scoreAxis}>
         <Text style={styles.scoreLabel}>Taste</Text>
-        <RatingPips value={review.taste ?? 0} size={15} accessibilityLabel="" />
+        <View style={styles.scorePips}>
+          <RatingPips
+            value={review.taste ?? 0}
+            size={15}
+            accessibilityLabel=""
+          />
+        </View>
       </View>
       <View style={styles.scoreAxis}>
         <Text style={styles.scoreLabel}>Presentation</Text>
-        <RatingPips
-          value={review.presentation ?? 0}
-          size={15}
-          accessibilityLabel=""
-        />
+        <View style={styles.scorePips}>
+          <RatingPips
+            value={review.presentation ?? 0}
+            size={15}
+            accessibilityLabel=""
+          />
+        </View>
       </View>
       <View style={styles.scoreOverall}>
         <Text style={styles.scoreLabel}>Overall</Text>
@@ -615,7 +616,12 @@ const ReviewFooter = memo(
     // Shared route: resolves inside whichever tab stack is rendering.
     const openProfile = useOpenProfile();
 
+    const { requireMembership } = useMembership();
+
     const handleShowComments = useCallback(() => {
+      // Visitors get the membership CTA straight from the comment button,
+      // not the slider (which only gates posting).
+      if (!requireMembership("comment")) return;
       loadCommentsIfNeeded(); // Ensure comments are loaded before showing
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
     }, [
@@ -624,6 +630,7 @@ const ReviewFooter = memo(
       onCommentAdded,
       onCommentDeleted,
       loadCommentsIfNeeded,
+      requireMembership,
     ]);
 
     const handleShowLikes = useCallback(() => {
@@ -714,42 +721,6 @@ const ReviewFooter = memo(
 );
 ReviewFooter.displayName = "ReviewFooter";
 
-const getRecentCommentsKey = (review: Review) =>
-  (review.recent_comments ?? [])
-    .map(
-      (comment) =>
-        `${comment.id}:${comment.likes_count ?? 0}:${Boolean(comment.has_liked)}`
-    )
-    .join("|");
-
-// Comparison function for memo to prevent unnecessary re-renders
-const areEqual = (prevProps: ReviewItemProps, nextProps: ReviewItemProps) => {
-  // Only re-render if review data actually changed
-  const prev = prevProps.review as any;
-  const next = nextProps.review as any;
-
-  return (
-    prevProps.review.id === nextProps.review.id &&
-    prevProps.review.comment === nextProps.review.comment &&
-    prevProps.review.image_url === nextProps.review.image_url &&
-    prevProps.review.taste === nextProps.review.taste &&
-    prevProps.review.presentation === nextProps.review.presentation &&
-    prevProps.review._commentPatch === nextProps.review._commentPatch &&
-    // Aggregates now arrive with the row; without these a refreshed feed
-    // would keep rendering stale like/comment counts.
-    prev.likes_count === next.likes_count &&
-    prev.comments_count === next.comments_count &&
-    prev.has_liked === next.has_liked &&
-    getRecentCommentsKey(prevProps.review) ===
-      getRecentCommentsKey(nextProps.review) &&
-    prev.location?.rating === next.location?.rating &&
-    prev.location?.total_ratings === next.location?.total_ratings &&
-    prev.profile?.is_verified === next.profile?.is_verified &&
-    prevProps.canDelete === nextProps.canDelete &&
-    prevProps.previewMode === nextProps.previewMode
-  );
-};
-
 const ReviewItemComponent = ({
   review,
   canDelete,
@@ -762,6 +733,7 @@ const ReviewItemComponent = ({
   previewMode = false,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
+  const { requireMembership } = useMembership();
   const styles = useStyles();
   const { colors } = useTheme();
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -771,10 +743,9 @@ const ReviewItemComponent = ({
     reviewId: string;
     overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
   }>({ reviewId: review.id, overrides: {} });
-  const lastTapRef = useRef<number>(0);
   const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
-  const handleShare = useReviewShareMenu(review);
+  const shareReview = useReviewShareMenu(review);
 
   // Use custom hooks for data management
   const { hasLiked, likesCount, toggleLike } = useLikes(
@@ -785,7 +756,15 @@ const ReviewItemComponent = ({
   );
 
   const { comments, addComment, removeComment, fetchComments, hasLoaded } =
-    useComments(review.id, true);
+    useComments(review.id, true, profile?.id);
+
+  const handleShare = useCallback(() => {
+    if (requireMembership("share-review")) shareReview();
+  }, [requireMembership, shareReview]);
+
+  const handleShowLikes = useCallback(() => {
+    if (requireMembership("social-list")) onShowLikes(review.id);
+  }, [onShowLikes, requireMembership, review.id]);
 
   // Comment bodies are only needed once the user actually looks at them. The
   // count shown in the footer comes with the feed row, so the previous
@@ -810,7 +789,11 @@ const ReviewItemComponent = ({
 
   const handleToggleCommentLike = useCallback(
     async (comment: Comment) => {
-      if (!profile || pendingCommentLikes.current.has(comment.id)) return;
+      if (!profile) {
+        requireMembership("like-comment");
+        return;
+      }
+      if (pendingCommentLikes.current.has(comment.id)) return;
 
       const wasLiked = Boolean(comment.has_liked);
       const previousCount = comment.likes_count ?? 0;
@@ -859,7 +842,13 @@ const ReviewItemComponent = ({
         pendingCommentLikes.current.delete(comment.id);
       }
     },
-    [profile, review.id, review.location?.id, review.location?.name]
+    [
+      profile,
+      requireMembership,
+      review.id,
+      review.location?.id,
+      review.location?.name,
+    ]
   );
 
   const loadCommentsIfNeeded = useCallback(() => {
@@ -879,7 +868,10 @@ const ReviewItemComponent = ({
 
   // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
-    if (!profile) return;
+    if (!profile) {
+      requireMembership("like-review");
+      return;
+    }
 
     const wasLiked = hasLiked;
     await toggleLike();
@@ -894,6 +886,7 @@ const ReviewItemComponent = ({
     }
   }, [
     profile,
+    requireMembership,
     hasLiked,
     toggleLike,
     review.id,
@@ -901,15 +894,11 @@ const ReviewItemComponent = ({
     review.location?.name,
   ]);
 
+  // No double-tap-to-like: liking lives on the heart button, so a tap on the
+  // photo opens the viewer immediately instead of waiting out a second tap.
   const handleImagePress = useCallback(() => {
-    const now = Date.now();
-    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      lastTapRef.current = 0;
-      if (!hasLiked) void handleToggleLike();
-      return;
-    }
-    lastTapRef.current = now;
-  }, [handleToggleLike, hasLiked]);
+    setImageViewerVisible(true);
+  }, []);
 
   const handleReportSubmit = useCallback(
     async (reason: string, customReason?: string) => {
@@ -1005,37 +994,25 @@ const ReviewItemComponent = ({
           </View>
         }
 
-        <Pressable
-          style={styles.imageContainer}
-          onPress={handleImagePress}
-          accessible={false}
-          testID="review-photo"
-        >
-          <ExpoImage
-            source={{ uri: review.image_url }}
-            style={styles.reviewImage}
-            contentFit="cover"
-            transition={200}
-            placeholderContentFit="cover"
-            cachePolicy="memory-disk"
-            recyclingKey={review.id}
-          />
-          <TouchableOpacity
-            style={styles.imageViewerButton}
-            onPress={() => setImageViewerVisible(true)}
-            activeOpacity={0.75}
+        <View style={styles.imageContainer} testID="review-photo">
+          <Pressable
+            style={styles.imagePressTarget}
+            onPress={handleImagePress}
             accessibilityRole="button"
             accessibilityLabel="View review photo"
-            hitSlop={HIT_SLOP}
           >
-            <Ionicons
-              name="eye-outline"
-              size={ICON_SIZES.small}
-              color={colors.textOnImage}
+            <ExpoImage
+              source={{ uri: review.image_url }}
+              style={styles.reviewImage}
+              contentFit="cover"
+              transition={200}
+              placeholderContentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={review.id}
             />
-          </TouchableOpacity>
+          </Pressable>
           <PhotoChips review={review} />
-        </Pressable>
+        </View>
 
         <ReviewScores review={review} />
 
@@ -1050,7 +1027,7 @@ const ReviewItemComponent = ({
               void handleToggleCommentLike(comment)
             }
             onToggleLike={handleToggleLike}
-            onShowLikes={onShowLikes}
+            onShowLikes={() => handleShowLikes()}
             onShowComments={onShowComments}
             onShare={handleShare}
             onCommentAdded={onCommentAdded}
@@ -1068,7 +1045,9 @@ const ReviewItemComponent = ({
         onDelete={onDelete}
         onEdit={onEdit}
         onShare={handleShare}
-        onReport={() => setReportModalVisible(true)}
+        onReport={() => {
+          if (requireMembership("report")) setReportModalVisible(true);
+        }}
         isOwnReview={isOwnReview}
       />
 
@@ -1088,7 +1067,7 @@ const ReviewItemComponent = ({
   );
 };
 
-const ReviewItem = memo(ReviewItemComponent, areEqual);
+const ReviewItem = memo(ReviewItemComponent, areReviewItemPropsEqual);
 
 export default ReviewItem;
 
@@ -1109,10 +1088,9 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   header: {
-    paddingLeft: t.spacing.lg - 1,
-    paddingRight: t.spacing.md,
-    paddingTop: t.spacing.md + 1,
-    paddingBottom: t.spacing.md,
+    paddingLeft: t.spacing.md,
+    paddingRight: t.spacing.sm,
+    paddingVertical: t.spacing.sm,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
@@ -1128,22 +1106,17 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xs,
   },
   headerUsername: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontFamily: fonts.extrabold,
-    letterSpacing: -0.15,
+    ...t.typography.bodyStrong,
     color: t.colors.usernameText,
   },
   headerMeta: {
-    ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
+    ...t.typography.label,
     color: t.colors.textMuted,
   },
   headerIdentity: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
+    gap: 0,
   },
   headerProfileTap: {
     flex: 1,
@@ -1156,28 +1129,21 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     // Gap on the row, not margin on the avatar: the ranking ring wraps the
     // avatar and would swallow an inner margin.
-    gap: t.spacing.md - 1,
+    gap: t.spacing.sm,
   },
   imageContainer: {
     width: "100%" as const,
     aspectRatio: 16 / 11,
     position: "relative" as const,
   },
+  imagePressTarget: {
+    width: "100%" as const,
+    height: "100%" as const,
+  },
   reviewImage: {
     width: "100%" as const,
     height: "100%" as const,
     backgroundColor: t.colors.imagePlaceholder,
-  },
-  imageViewerButton: {
-    position: "absolute" as const,
-    top: t.spacing.md,
-    left: t.spacing.md,
-    width: 36,
-    height: 36,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.scrimStrong,
   },
   // The only things left on the photo: where it was, how the place is doing,
   // and what was in it. The venue score stays inside the venue chip so it
@@ -1211,8 +1177,6 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipText: {
     ...t.typography.bodyStrong,
-    fontSize: 17,
-    lineHeight: 22,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
@@ -1225,15 +1189,11 @@ const useStyles = makeStyles((t) => ({
   },
   venueChipRatingText: {
     ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
   venueChipMeta: {
     ...t.typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
@@ -1259,9 +1219,16 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-start" as const,
     gap: 7,
   },
+  // The same sunken well places put around their olives (see the map peek
+  // sheet and the venue header), so ratings read as one system everywhere.
+  scorePips: {
+    paddingHorizontal: t.spacing.sm,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radius.sm,
+    backgroundColor: t.colors.surfaceSunken,
+  },
   scoreLabel: {
     ...t.typography.eyebrow,
-    fontSize: 12,
     color: t.colors.textMuted,
   },
   scoreOverall: {
@@ -1270,10 +1237,7 @@ const useStyles = makeStyles((t) => ({
     gap: 3,
   },
   scoreOverallValue: {
-    fontSize: 31,
-    lineHeight: 33,
-    fontFamily: fonts.black,
-    letterSpacing: -1,
+    ...t.typography.display,
     // The score belongs to the olives beside it, so it takes their green
     // rather than the primary purple. In dark mode that green is a fill token,
     // not readable text, so the score takes the paper ink used by other key
@@ -1310,9 +1274,7 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
   },
   actionCount: {
-    fontSize: 16,
-    lineHeight: 21,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.postText,
     fontVariant: ["tabular-nums"] as const,
   },
@@ -1324,34 +1286,23 @@ const useStyles = makeStyles((t) => ({
   },
   captionText: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   inlineBody: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.body,
     color: t.colors.postText,
     flexShrink: 1,
   },
   captionUsername: {
     ...t.typography.bodyStrong,
-    fontSize: 17,
-    lineHeight: 22,
     color: t.colors.usernameText,
   },
   captionBody: {
     ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
     color: t.colors.postText,
   },
   addCaptionText: {
-    ...t.typography.body,
-    fontSize: 17,
-    lineHeight: 25,
-    fontFamily: fonts.medium,
+    ...t.typography.bodyStrong,
     color: t.colors.textSecondary,
   },
   commentItem: {
@@ -1379,37 +1330,26 @@ const useStyles = makeStyles((t) => ({
     paddingTop: 1,
   },
   commentMoreText: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 19,
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.textMuted,
   },
   commentLikeCount: {
-    fontFamily: fonts.semibold,
-    fontSize: 10,
-    lineHeight: 12,
+    ...t.typography.label,
     textAlign: "center" as const,
     color: t.colors.textMuted,
   },
   commentLikeCountActive: { color: t.colors.like },
   timestamp: {
-    ...t.typography.micro,
-    fontSize: 13,
-    lineHeight: 17,
+    ...t.typography.caption,
     color: t.colors.textMuted,
   },
   viewAllCommentsText: {
-    ...t.typography.caption,
-    fontSize: 15,
-    lineHeight: 21,
+    ...t.typography.body,
     color: t.colors.textMuted,
     marginBottom: t.spacing.xs,
   },
   footerTimestamp: {
     ...t.typography.mono,
-    fontSize: 13,
-    lineHeight: 18,
     color: t.colors.textMuted,
     paddingTop: t.spacing.xs,
     paddingBottom: t.spacing.md,

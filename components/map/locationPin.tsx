@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Text, View } from "react-native";
 import { MartiniIcon } from "@/components/shared";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 interface LocationPinProps {
   loc: {
@@ -37,7 +37,9 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
         ]}
       >
         {showRating ? (
-          <Text style={[styles.pinRating, selected && styles.pinRatingSelected]}>
+          <Text
+            style={[styles.pinRating, selected && styles.pinRatingSelected]}
+          >
             {loc.rating?.toFixed(1)}
           </Text>
         ) : (
@@ -45,7 +47,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
             size={selected ? 23 : 17}
             color={
               selected
-                ? colors.textOnImage
+                ? colors.onHighlight
                 : reviewed
                   ? colors.textOnImage
                   : colors.textMuted
@@ -53,7 +55,9 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
           />
         )}
       </View>
-      <View style={[styles.pointerFrame, selected && styles.pointerFrameSelected]}>
+      <View
+        style={[styles.pointerFrame, selected && styles.pointerFrameSelected]}
+      >
         <View
           style={[
             styles.pointer,
@@ -97,19 +101,16 @@ const useStyles = makeStyles((t) => ({
   pinSelected: {
     width: 52,
     height: 52,
-    backgroundColor: t.colors.tabBarActive,
+    backgroundColor: t.colors.highlight,
   },
   pinRating: {
     ...t.typography.label,
     position: "absolute" as const,
     color: t.colors.textOnImage,
-    fontFamily: fonts.black,
-    lineHeight: 16,
     fontVariant: ["tabular-nums"] as const,
   },
   pinRatingSelected: {
-    fontSize: 14,
-    lineHeight: 18,
+    color: t.colors.onHighlight,
   },
   pointerFrame: {
     width: 18,
@@ -142,7 +143,7 @@ const useStyles = makeStyles((t) => ({
     borderLeftWidth: 8,
     borderRightWidth: 8,
     borderTopWidth: 15,
-    borderTopColor: t.colors.tabBarActive,
+    borderTopColor: t.colors.highlight,
   },
 }));
 

@@ -1,13 +1,17 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import TabsLayout from "@/app/(tabs)/_layout";
+
+const mockGlobalScrollToTop = jest.fn();
+let mockPathname = "/home";
 
 jest.mock("expo-router", () => ({
-  usePathname: () => "/home",
+  usePathname: () => mockPathname,
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
 jest.mock("expo-router/unstable-native-tabs", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   const NativeTabs = ({ children }: { children: React.ReactNode }) =>
     React.createElement("NativeTabs", null, children);
   const Trigger = ({
@@ -42,8 +46,19 @@ jest.mock("@/context/profile-context", () => ({
   }),
 }));
 
+jest.mock("@/context/membership-context", () => ({
+  useMembership: () => ({
+    isMember: true,
+    requireMembership: jest.fn(() => true),
+    openMembership: jest.fn(),
+  }),
+}));
+
 jest.mock("@/theme", () => ({
   fonts: { medium: "medium", semibold: "semibold" },
+  typography: {
+    label: { fontFamily: "bold", fontSize: 12, lineHeight: 16 },
+  },
   useTheme: () => ({
     colors: {
       accent: "purple",
@@ -79,12 +94,18 @@ jest.mock("@/utils/martiniReminder", () => ({
 jest.mock("@/utils/notificationOpens", () => ({
   logNotificationOpen: jest.fn(),
 }));
+jest.mock("@/utils/scrollUtils", () => ({
+  getGlobalScrollToTop: () => mockGlobalScrollToTop,
+}));
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
-
-import TabsLayout from "@/app/(tabs)/_layout";
 
 describe("native tab icon configuration", () => {
   let renderer: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    mockGlobalScrollToTop.mockClear();
+    mockPathname = "/home";
+  });
 
   afterEach(() => {
     act(() => renderer?.unmount());
@@ -130,5 +151,35 @@ describe("native tab icon configuration", () => {
     expect(renderer!.root.findByProps({ name: "(index)" }).props).toEqual(
       expect.objectContaining({ accessibilityLabel: "Index" })
     );
+  });
+
+  it("scrolls the Feed to the top when its active tab is pressed", async () => {
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const feedTrigger = renderer!.root.findByProps({ name: "(home)" });
+
+    act(() => {
+      feedTrigger.props.listeners.tabPress();
+    });
+
+    expect(mockGlobalScrollToTop).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not request a Feed scroll while navigating from another tab", async () => {
+    mockPathname = "/discover";
+
+    await act(async () => {
+      renderer = create(<TabsLayout />);
+    });
+
+    const feedTrigger = renderer!.root.findByProps({ name: "(home)" });
+
+    act(() => {
+      feedTrigger.props.listeners.tabPress();
+    });
+
+    expect(mockGlobalScrollToTop).not.toHaveBeenCalled();
   });
 });

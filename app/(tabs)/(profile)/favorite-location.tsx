@@ -32,6 +32,7 @@ const FavoriteLocation = () => {
     saveImmediately?: string;
   }>();
   const { profile, refreshProfile } = useProfile();
+  const profileId = profile?.id;
   const [saving, setSaving] = useState(false);
   const { control } = useForm<FavoriteLocationForm>({
     defaultValues: { location: null },
@@ -39,7 +40,7 @@ const FavoriteLocation = () => {
 
   const handleSelect = useCallback(
     async (location: LocationInputValue) => {
-      if (!profile?.id || saving) return;
+      if (!profileId || saving) return;
 
       try {
         setSaving(true);
@@ -50,7 +51,7 @@ const FavoriteLocation = () => {
             place_id: location.place_id,
             location: `POINT(${location.coordinates.longitude} ${location.coordinates.latitude})`,
           },
-          profile.id
+          profileId
         );
         const numericLocationId = Number(locationId);
         if (!Number.isFinite(numericLocationId)) {
@@ -64,7 +65,7 @@ const FavoriteLocation = () => {
         };
 
         if (params.saveImmediately === "1") {
-          await databaseService.updateUserProfile(profile.id, {
+          await databaseService.updateUserProfile(profileId, {
             favorite_location_id: numericLocationId,
           });
           await refreshProfile();
@@ -81,16 +82,16 @@ const FavoriteLocation = () => {
         setSaving(false);
       }
     },
-    [params.saveImmediately, profile?.id, refreshProfile, router, saving]
+    [params.saveImmediately, profileId, refreshProfile, router, saving]
   );
 
   const handleRemove = async () => {
-    if (!profile?.id || saving) return;
+    if (!profileId || saving) return;
 
     try {
       setSaving(true);
       if (params.saveImmediately === "1") {
-        await databaseService.updateUserProfile(profile.id, {
+        await databaseService.updateUserProfile(profileId, {
           favorite_location_id: null,
         });
         await refreshProfile();

@@ -48,6 +48,7 @@
    convenient (it was only ever in gitignored/EAS config, so lower urgency), then
    `supabase secrets set EXPO_ACCESS_TOKEN=<new>` and update the EAS env var, and
    `supabase secrets unset EXPO_PUBLIC_ACCESS_TOKEN`.
+
 ## Known follow-ups (Phase 2)
 
 - **Push notification hardening deployed (2026-07-30):** migration

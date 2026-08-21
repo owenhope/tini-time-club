@@ -15,8 +15,12 @@ export { default as MartiniIcon } from "./MartiniIcon";
 export type { MartiniIconProps } from "./MartiniIcon";
 
 export { default as MartiniShakerIcon } from "./martini-shaker-icon";
+export { default as MartiniGlassOutlineIcon } from "./martini-glass-outline-icon";
+export { default as ShotGlassIcon } from "./shot-glass-icon";
 export { default as ReviewTag } from "./review-tag";
 export type { MartiniShakerIconProps } from "./martini-shaker-icon";
+export type { MartiniGlassOutlineIconProps } from "./martini-glass-outline-icon";
+export type { ShotGlassIconProps } from "./shot-glass-icon";
 
 export { default as OliveIcon, OLIVE_ICON_COLOR } from "./OliveIcon";
 export type { OliveIconProps } from "./OliveIcon";

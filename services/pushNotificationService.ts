@@ -3,13 +3,12 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
-import { v4 as uuidv4 } from "uuid";
+import { getInstallationId } from "@/services/installationIdentity";
 import { supabase } from "@/utils/supabase";
 import { getNotificationRouteFromData } from "@/utils/notificationRoutes";
 import { warn, reportError } from "@/utils/log";
 
 const DEFAULT_CHANNEL_ID = "default";
-const INSTALLATION_ID_KEY = "push-installation-id";
 const UNREGISTRATION_PENDING_KEY = "push-unregistration-pending";
 const REGISTRATION_RETRY_DELAY_MS = 60_000;
 
@@ -17,15 +16,6 @@ let clearedDeniedRegistration = false;
 let registrationPromise: Promise<string | null> | null = null;
 let registrationRetryAfter = 0;
 let unregistrationPromise: Promise<boolean> | null = null;
-
-async function getInstallationId(): Promise<string> {
-  const storedId = await SecureStore.getItemAsync(INSTALLATION_ID_KEY);
-  if (storedId) return storedId;
-
-  const installationId = uuidv4();
-  await SecureStore.setItemAsync(INSTALLATION_ID_KEY, installationId);
-  return installationId;
-}
 
 const getProjectId = (): string | null =>
   Constants.expoConfig?.extra?.eas?.projectId ??

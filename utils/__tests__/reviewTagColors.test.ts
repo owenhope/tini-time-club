@@ -9,6 +9,8 @@ describe("review tag colors", () => {
     [" gin ", "#E8763D"],
     ["Dirty", "#667A3E"],
     ["Dry", "#D7E7E2"],
+    ["Wet", "#5E8C7F"],
+    ["Gibson", "#DCE0C8"],
     ["Filthy", "#394623"],
     ["50/50", "#B8A4D8"],
     ["Espresso", "#6F4518"],

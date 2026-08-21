@@ -1,7 +1,7 @@
 import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import AvatarRing from "./AvatarRing";
 import OliveIcon from "./OliveIcon";
 
@@ -82,7 +82,7 @@ const Avatar: React.FC<AvatarProps> = ({
           style={[
             styles.initials,
             onInk && styles.initialsOnInk,
-            { fontSize: size * 0.4 },
+            { fontSize: size * 0.4, lineHeight: size * 0.48 },
           ]}
         >
           {username?.charAt(0).toUpperCase() || fallbackText}
@@ -134,7 +134,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accentTonal,
   },
   initials: {
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     color: t.colors.onAccentTonal,
   },
   initialsOnInk: {

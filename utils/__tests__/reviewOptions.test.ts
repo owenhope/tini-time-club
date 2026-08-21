@@ -31,13 +31,17 @@ describe("review options", () => {
       { id: 9, name: "Filthy" },
       { id: 11, name: "Classic" },
       { id: 7, name: "Lemon Twist" },
+      { id: 12, name: "Wet" },
+      { id: 13, name: "Gibson" },
     ];
 
     expect(getSupportedTypes(types)).toEqual([
       { id: 11, name: "Classic" },
       { id: 5, name: "Dry" },
+      { id: 12, name: "Wet" },
       { id: 8, name: "50/50" },
       { id: 1, name: "Twist" },
+      { id: 13, name: "Gibson" },
       { id: 2, name: "Dirty" },
       { id: 9, name: "Filthy" },
       { id: 3, name: "Espresso" },

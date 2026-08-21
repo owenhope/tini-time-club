@@ -6,7 +6,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { Appearance, StyleSheet, useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   darkColors,
@@ -58,6 +58,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       cancelled = true;
     };
   }, []);
+
+  // Native views (the map, keyboards, alerts, menus) are created with the
+  // window's appearance, not our JS theme. Without this, a member whose
+  // system is light but whose app preference is dark gets native surfaces
+  // born light and re-styled dark a beat later — most visibly the Explore
+  // map's first tile load.
+  useEffect(() => {
+    Appearance.setColorScheme(
+      preference === "system" ? "unspecified" : preference
+    );
+  }, [preference]);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);

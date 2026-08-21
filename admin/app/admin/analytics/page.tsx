@@ -12,13 +12,14 @@ import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
-import { fetchAnalytics } from "@/lib/data";
+import { fetchAnalytics, fetchAudienceUsage } from "@/lib/data";
 import { formatCityRegion } from "@/lib/format";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
 const SECTIONS = [
+  { id: "audience", label: "App audience" },
   { id: "membership", label: "Membership" },
   { id: "reviews", label: "Reviews" },
   { id: "spirits-types", label: "Spirits & Types" },
@@ -51,7 +52,10 @@ export default async function AnalyticsPage({
   searchParams: Promise<{ days?: string; from?: string; to?: string }>;
 }) {
   const range = parseRange(await searchParams);
-  const a = await fetchAnalytics(range);
+  const [a, audience] = await Promise.all([
+    fetchAnalytics(range),
+    fetchAudienceUsage(range),
+  ]);
 
   const pct = (n: number, of: number) =>
     of > 0 ? `${Math.round((n / of) * 100)}%` : "—";
@@ -89,6 +93,59 @@ export default async function AnalyticsPage({
               <RangePicker path="/admin/analytics" range={range} />
             </div>
           </div>
+
+          <FeatureSection
+            id="audience"
+            title="App audience"
+            description="Who is actively experiencing the app before and after sign-in. Anonymous totals are distinct installations, not inferred people."
+          >
+            <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="Anonymous active now"
+                value={audience.visitorActiveNow}
+                hint="seen in the last 15 minutes"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Members active now"
+                value={audience.memberActiveNow}
+                hint="seen in the last 15 minutes"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Anonymous in range"
+                value={audience.visitorInRange}
+                hint="distinct installations"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Members in range"
+                value={audience.memberInRange}
+                hint="distinct authenticated accounts"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Visitor → member"
+                value={audience.convertedInRange}
+                hint="installations seen in both states during the range"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <LineChart
+                title="Anonymous installations"
+                data={audience.visitorByDay}
+                color="#6B53A8"
+                unit="installations"
+              />
+              <LineChart
+                title="Authenticated members"
+                data={audience.memberByDay}
+                color="#336654"
+                unit="members"
+              />
+            </div>
+          </FeatureSection>
 
           <FeatureSection
             id="membership"

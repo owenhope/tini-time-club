@@ -4,7 +4,7 @@ import { NativeTabs } from "expo-router/unstable-native-tabs";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
-import { fonts, useTheme } from "@/theme";
+import { typography, useTheme } from "@/theme";
 import {
   getNotificationRoute,
   arePushNotificationsEnabled,
@@ -16,7 +16,9 @@ import {
 import { syncFridayMartiniReminder } from "@/utils/martiniReminder";
 import { logNotificationOpen } from "@/utils/notificationOpens";
 import { routes } from "@/utils/routes";
+import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
+import { useMembership } from "@/context/membership-context";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,8 +34,8 @@ const LayoutContent = () => {
   const { profile, loading } = useProfile();
   const { colors } = useTheme();
   const router = useRouter();
+  const { requireMembership } = useMembership();
   const pathname = usePathname();
-  const isOnboardingLocationPicker = pathname === "/favorite-location";
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;
@@ -92,22 +94,12 @@ const LayoutContent = () => {
   ]);
 
   useEffect(() => {
-    if (
-      !loading &&
-      profile &&
-      (!profile.username || !profile.eula_accepted) &&
-      !isOnboardingLocationPicker
-    ) {
+    if (!loading && profile && (!profile.username || !profile.eula_accepted)) {
       router.replace(routes.onboarding());
     }
-  }, [isOnboardingLocationPicker, loading, profile, router]);
+  }, [loading, profile, router]);
 
-  if (
-    loading ||
-    !profile ||
-    ((!profile.username || !profile.eula_accepted) &&
-      !isOnboardingLocationPicker)
-  ) {
+  if (loading || (profile && (!profile.username || !profile.eula_accepted))) {
     return null;
   }
 
@@ -122,13 +114,11 @@ const LayoutContent = () => {
       }}
       labelStyle={{
         default: {
-          fontFamily: fonts.medium,
-          fontSize: 11,
+          ...typography.label,
           color: colors.tabBarInactive,
         },
         selected: {
-          fontFamily: fonts.semibold,
-          fontSize: 11,
+          ...typography.label,
           color: tabBarActiveColor,
         },
       }}
@@ -137,6 +127,13 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(home)"
         accessibilityLabel="Feed"
+        listeners={{
+          tabPress: () => {
+            if (pathname === routes.home()) {
+              getGlobalScrollToTop()?.();
+            }
+          },
+        }}
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon
@@ -167,7 +164,7 @@ const LayoutContent = () => {
         accessibilityLabel="Log a martini"
         listeners={{
           tabPress: () => {
-            router.push(routes.review());
+            if (requireMembership("review")) router.push(routes.review());
           },
         }}
         contentStyle={{ backgroundColor: colors.background }}
@@ -192,6 +189,16 @@ const LayoutContent = () => {
       <NativeTabs.Trigger
         name="(profile)"
         accessibilityLabel="Profile"
+        // Same gate as the Review tab: the press never navigates on its own —
+        // visitors get the membership sheet in place, members are routed in.
+        disabled
+        listeners={{
+          tabPress: () => {
+            if (requireMembership("profile")) {
+              router.navigate(routes.profile());
+            }
+          },
+        }}
         contentStyle={{ backgroundColor: colors.background }}
       >
         <NativeTabs.Trigger.Icon

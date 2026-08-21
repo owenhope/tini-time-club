@@ -74,14 +74,14 @@ The long game: TTC membership as identity.
 
 ## Sequencing
 
-| Phase | Ship | Serves | Why now |
-|---|---|---|---|
-| 1 | Rank-up/Regular celebration moments + share cards | P2, P3 | Cheapest multiplier on features that just shipped |
-| 2 | Public web share pages + invite flow | P1, P3 | Makes every share an acquisition channel |
-| 3 | Business claiming (manual verify) + free dashboard | P4 | No revenue yet, but builds relationships and cleans map data |
-| 4 | Offers with dumb redemption, incl. status-gated offers | P5, P2 | The feature bars actually want; gives rings real-world value |
-| 5 | Paid featured locations on the map | P4 ($) | Sell once redemption data proves value |
-| 6 | Referral rewards, swag tiers, club perks | P1, P6 | Needs P5's offer plumbing + analytics platform |
+| Phase | Ship                                                   | Serves | Why now                                                      |
+| ----- | ------------------------------------------------------ | ------ | ------------------------------------------------------------ |
+| 1     | Rank-up/Regular celebration moments + share cards      | P2, P3 | Cheapest multiplier on features that just shipped            |
+| 2     | Public web share pages + invite flow                   | P1, P3 | Makes every share an acquisition channel                     |
+| 3     | Business claiming (manual verify) + free dashboard     | P4     | No revenue yet, but builds relationships and cleans map data |
+| 4     | Offers with dumb redemption, incl. status-gated offers | P5, P2 | The feature bars actually want; gives rings real-world value |
+| 5     | Paid featured locations on the map                     | P4 ($) | Sell once redemption data proves value                       |
+| 6     | Referral rewards, swag tiers, club perks               | P1, P6 | Needs P5's offer plumbing + analytics platform               |
 
 ## Status notes
 

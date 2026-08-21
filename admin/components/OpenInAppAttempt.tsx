@@ -4,7 +4,9 @@ import { useEffect } from "react";
 
 export default function OpenInAppAttempt({ url }: { url: string }) {
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("preview") === "admin") {
+    if (
+      new URLSearchParams(window.location.search).get("preview") === "admin"
+    ) {
       return;
     }
 

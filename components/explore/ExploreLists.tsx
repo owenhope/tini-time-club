@@ -24,6 +24,8 @@ import {
   ExploreSearchArea,
   ExploreSearchField,
 } from "@/components/explore/ExploreSearchField";
+import { useProfile } from "@/context/profile-context";
+import { publicContentService } from "@/services/public-content-service";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -71,6 +73,7 @@ export default function ExploreLists({
 }: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const { profile } = useProfile();
   const activeTab = activeView === "members" ? "profiles" : "locations";
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -115,155 +118,237 @@ export default function ExploreLists({
     return R * c; // Distance in kilometers
   };
 
-  const fetchProfiles = async (searchQuery: string) => {
-    setLoading(true);
-    try {
-      // Ranked and filtered in SQL. This previously downloaded every profile,
-      // every published review and every follower row to count them locally.
-      const { data, error } = await supabase.rpc("top_profiles", {
-        p_limit: 50,
-        p_search: searchQuery || null,
-      });
+  const fetchProfiles = React.useCallback(
+    async (searchQuery: string) => {
+      setLoading(true);
+      try {
+        // Ranked and filtered in SQL. This previously downloaded every profile,
+        // every published review and every follower row to count them locally.
+        if (!profile) {
+          setProfiles(await publicContentService.getProfiles(searchQuery, 50));
+          return;
+        }
 
-      if (error) {
-        reportError("Error fetching profiles:", error);
-        setProfiles([]);
-        return;
-      }
-
-      setProfiles(data ?? []);
-    } catch (error) {
-      reportError("Error fetching profiles:", error);
-      setProfiles([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchLocations = async (searchQuery: string) => {
-    setLoading(true);
-    try {
-      if (!searchQuery) {
-        // Use the location_ratings view which already includes coordinates
-        const { data, error } = await supabase
-          .from("location_ratings")
-          .select("*")
-          .order("total_ratings", { ascending: false })
-          .limit(50);
+        const { data, error } = await supabase.rpc("top_profiles", {
+          p_limit: 50,
+          p_search: searchQuery || null,
+        });
 
         if (error) {
-          reportError("Error fetching location ratings:", error);
-          setLocations([]);
+          reportError("Error fetching profiles:", error);
+          setProfiles([]);
           return;
         }
 
-        // Process the data to calculate averages and format for display
-        let processedLocations =
-          data?.map((location: any) => {
-            const totalRatings = location.total_ratings || 0;
+        setProfiles(data ?? []);
+      } catch (error) {
+        reportError("Error fetching profiles:", error);
+        setProfiles([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [profile]
+  );
 
-            // Use pre-extracted coordinates from the view
-            const latitude = location.lat;
-            const longitude = location.lon;
-
-            return {
-              id: location.id,
-              name: location.name,
-              address: location.address,
-              latitude,
-              longitude,
-              rating: location.rating,
-              taste_avg: location.taste_avg,
-              presentation_avg: location.presentation_avg,
-              total_ratings: totalRatings,
-            };
-          }) || [];
-
-        // Filter by distance if nearby is enabled and we have user location
-        if (nearbyEnabled && userLocation) {
-          // Temporary: show all locations with coordinates for debugging
-          const locationsWithCoords = processedLocations.filter((location) => {
-            if (!location.latitude || !location.longitude) {
-              return false;
-            }
-            return true;
-          });
-
-          // If we have locations with coordinates, apply distance filtering
-          if (locationsWithCoords.length > 0) {
-            processedLocations = locationsWithCoords.filter((location) => {
-              const distance = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                location.latitude,
-                location.longitude
-              );
-              return distance <= 50; // 50km radius for Vancouver area
-            });
-          } else {
-            // If no locations have coordinates, show all locations
-            processedLocations = processedLocations;
-          }
-        }
-
-        // Filter out locations with less than 2 reviews or null ratings (minimum sample size)
-        // Sort by rating first, then by review count as tiebreaker
-        const sortedLocations = processedLocations
-          .filter((loc) => loc.rating !== null && (loc.total_ratings || 0) >= 2)
-          .sort((a, b) => {
-            // First sort by rating (highest first)
-            const ratingDiff = (b.rating || 0) - (a.rating || 0);
-            if (ratingDiff !== 0) return ratingDiff;
-
-            // If ratings are equal, sort by review count (highest first) - more reviews = more reliable
-            return (b.total_ratings || 0) - (a.total_ratings || 0);
-          })
-          .slice(0, 20);
-
-        setLocations(await withRegulars(sortedLocations));
-      } else {
-        // Server-side fuzzy search: matches name or address, tolerates
-        // typos via trigram similarity, and ranks name hits first.
-        const { data: locationsData, error: locationsError } =
-          await supabase.rpc("search_locations", {
-            p_query: searchQuery,
-            p_limit: 20,
-          });
-
-        if (locationsError) {
-          reportError("Error fetching locations:", locationsError);
-          setLocations([]);
-          return;
-        }
-
-        const processedLocations = ((locationsData ?? []) as any[]).map(
-          (location: any) => {
-            const totalRatings = location.total_ratings || 0;
-            return {
+  const fetchLocations = React.useCallback(
+    async (searchQuery: string) => {
+      setLoading(true);
+      try {
+        if (!searchQuery) {
+          if (!profile) {
+            const data = await publicContentService.getLocations(undefined, 50);
+            let processedLocations = data.map((location) => ({
               id: location.id,
               name: location.name,
               address: location.address,
               latitude: location.lat,
               longitude: location.lon,
-              // The view reports 0 averages for review-less locations; the
-              // UI treats null as "not yet rated".
-              rating: totalRatings > 0 ? location.rating : null,
-              taste_avg: totalRatings > 0 ? location.taste_avg : null,
-              presentation_avg:
-                totalRatings > 0 ? location.presentation_avg : null,
-              total_ratings: totalRatings,
-            };
-          }
-        );
+              rating: location.rating,
+              taste_avg: location.taste_avg,
+              presentation_avg: location.presentation_avg,
+              total_ratings: location.total_ratings,
+            }));
 
-        setLocations(await withRegulars(processedLocations));
+            if (nearbyEnabled && userLocation) {
+              processedLocations = processedLocations.filter((location) =>
+                location.latitude && location.longitude
+                  ? calculateDistance(
+                      userLocation.latitude,
+                      userLocation.longitude,
+                      location.latitude,
+                      location.longitude
+                    ) <= 50
+                  : false
+              );
+            }
+
+            const visibleLocations = processedLocations
+              .filter((location) => (location.total_ratings || 0) >= 2)
+              .sort((a, b) => {
+                const ratingDiff = (b.rating || 0) - (a.rating || 0);
+                return ratingDiff !== 0
+                  ? ratingDiff
+                  : (b.total_ratings || 0) - (a.total_ratings || 0);
+              })
+              .slice(0, 20);
+            setLocations(await withRegulars(visibleLocations));
+            return;
+          }
+
+          // Use the location_ratings view which already includes coordinates
+          const { data, error } = await supabase
+            .from("location_ratings")
+            .select("*")
+            .order("total_ratings", { ascending: false })
+            .limit(50);
+
+          if (error) {
+            reportError("Error fetching location ratings:", error);
+            setLocations([]);
+            return;
+          }
+
+          // Process the data to calculate averages and format for display
+          let processedLocations =
+            data?.map((location: any) => {
+              const totalRatings = location.total_ratings || 0;
+
+              // Use pre-extracted coordinates from the view
+              const latitude = location.lat;
+              const longitude = location.lon;
+
+              return {
+                id: location.id,
+                name: location.name,
+                address: location.address,
+                latitude,
+                longitude,
+                rating: location.rating,
+                taste_avg: location.taste_avg,
+                presentation_avg: location.presentation_avg,
+                total_ratings: totalRatings,
+              };
+            }) || [];
+
+          // Filter by distance if nearby is enabled and we have user location
+          if (nearbyEnabled && userLocation) {
+            // Temporary: show all locations with coordinates for debugging
+            const locationsWithCoords = processedLocations.filter(
+              (location) => {
+                if (!location.latitude || !location.longitude) {
+                  return false;
+                }
+                return true;
+              }
+            );
+
+            // If we have locations with coordinates, apply distance filtering
+            if (locationsWithCoords.length > 0) {
+              processedLocations = locationsWithCoords.filter((location) => {
+                const distance = calculateDistance(
+                  userLocation.latitude,
+                  userLocation.longitude,
+                  location.latitude,
+                  location.longitude
+                );
+                return distance <= 50; // 50km radius for Vancouver area
+              });
+            } else {
+              // If no locations have coordinates, show all locations
+              processedLocations = processedLocations;
+            }
+          }
+
+          // Filter out locations with less than 2 reviews or null ratings (minimum sample size)
+          // Sort by rating first, then by review count as tiebreaker
+          const sortedLocations = processedLocations
+            .filter(
+              (loc) => loc.rating !== null && (loc.total_ratings || 0) >= 2
+            )
+            .sort((a, b) => {
+              // First sort by rating (highest first)
+              const ratingDiff = (b.rating || 0) - (a.rating || 0);
+              if (ratingDiff !== 0) return ratingDiff;
+
+              // If ratings are equal, sort by review count (highest first) - more reviews = more reliable
+              return (b.total_ratings || 0) - (a.total_ratings || 0);
+            })
+            .slice(0, 20);
+
+          setLocations(await withRegulars(sortedLocations));
+        } else {
+          if (!profile) {
+            const data = await publicContentService.getLocations(
+              searchQuery,
+              20
+            );
+            setLocations(
+              await withRegulars(
+                data.map((location) => ({
+                  id: location.id,
+                  name: location.name,
+                  address: location.address,
+                  latitude: location.lat,
+                  longitude: location.lon,
+                  rating: location.total_ratings > 0 ? location.rating : null,
+                  taste_avg:
+                    location.total_ratings > 0 ? location.taste_avg : null,
+                  presentation_avg:
+                    location.total_ratings > 0
+                      ? location.presentation_avg
+                      : null,
+                  total_ratings: location.total_ratings,
+                }))
+              )
+            );
+            return;
+          }
+
+          // Server-side fuzzy search: matches name or address, tolerates
+          // typos via trigram similarity, and ranks name hits first.
+          const { data: locationsData, error: locationsError } =
+            await supabase.rpc("search_locations", {
+              p_query: searchQuery,
+              p_limit: 20,
+            });
+
+          if (locationsError) {
+            reportError("Error fetching locations:", locationsError);
+            setLocations([]);
+            return;
+          }
+
+          const processedLocations = ((locationsData ?? []) as any[]).map(
+            (location: any) => {
+              const totalRatings = location.total_ratings || 0;
+              return {
+                id: location.id,
+                name: location.name,
+                address: location.address,
+                latitude: location.lat,
+                longitude: location.lon,
+                // The view reports 0 averages for review-less locations; the
+                // UI treats null as "not yet rated".
+                rating: totalRatings > 0 ? location.rating : null,
+                taste_avg: totalRatings > 0 ? location.taste_avg : null,
+                presentation_avg:
+                  totalRatings > 0 ? location.presentation_avg : null,
+                total_ratings: totalRatings,
+              };
+            }
+          );
+
+          setLocations(await withRegulars(processedLocations));
+        }
+      } catch (error) {
+        reportError("Error fetching locations:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      reportError("Error fetching locations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [nearbyEnabled, profile, userLocation]
+  );
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -286,7 +371,15 @@ export default function ExploreLists({
     );
 
     return () => clearTimeout(handle);
-  }, [activeTab, enabled, query, nearbyEnabled, userLocation]);
+  }, [
+    activeTab,
+    enabled,
+    fetchLocations,
+    fetchProfiles,
+    query,
+    nearbyEnabled,
+    userLocation,
+  ]);
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = item.review_count || 0;
@@ -583,7 +676,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceSunken,
   },
   resultScore: {
-    ...t.typography.metric,
+    ...t.typography.title,
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
   },
@@ -624,7 +717,6 @@ const useStyles = makeStyles((t) => ({
   },
   profileStats: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textMuted,
   },
 }));

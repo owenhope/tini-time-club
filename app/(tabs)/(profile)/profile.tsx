@@ -10,6 +10,7 @@ import { useProfile } from "@/context/profile-context";
 import { Ionicons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
 import {
+  Redirect,
   useRouter,
   useNavigation,
   useFocusEffect,
@@ -18,12 +19,12 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
 import AppHeader from "@/components/nav/AppHeader";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import ProfileBody from "@/components/profile/ProfileBody";
 import authCache from "@/utils/authCache";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
-import { HIT_SLOP, fonts, makeStyles, useTheme } from "@/theme";
+import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -55,7 +56,7 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
   })),
 ];
 
-const Profile = () => {
+const MemberProfile = () => {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, updateProfile, refreshProfile } = useProfile();
@@ -576,14 +577,13 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   rankDebugOptionLabelSelected: {
+    ...t.typography.label,
     color: t.colors.text,
-    fontFamily: fonts.bold,
   },
   // Sits inside ProfileHeader's deep-green block.
   ctaText: {
-    ...t.typography.body,
+    ...t.typography.bodyStrong,
     color: t.colors.highlight,
-    fontFamily: fonts.semibold,
   },
   emptyContainer: {
     alignItems: "center" as const,
@@ -624,7 +624,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
-    lineHeight: 22,
   },
   headerButton: {
     width: 44,
@@ -639,10 +638,17 @@ const useStyles = makeStyles((t) => ({
   },
   headerTitleContainer: { alignItems: "center" as const },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.onInk,
   },
 }));
+
+const Profile = () => {
+  const { profile, loading } = useProfile();
+  if (loading) return null;
+  // Visitors never navigate here — the tab trigger gates them in place, like
+  // Review. A signed-out render (deep link, sign-out transition) goes home.
+  return profile ? <MemberProfile /> : <Redirect href={routes.home()} />;
+};
 
 export default Profile;

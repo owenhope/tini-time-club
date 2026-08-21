@@ -3,7 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 interface FavoriteLocationPickerProps {
   value: FavoriteLocationValue | null;
@@ -99,8 +99,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   action: {
-    ...t.typography.caption,
-    fontFamily: fonts.semibold,
+    ...t.typography.label,
     color: t.colors.accent,
   },
   textSelected: {

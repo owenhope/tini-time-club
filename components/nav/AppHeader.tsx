@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
 import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 /**
  * The app's top bar — four variants, no fifth.
@@ -50,7 +50,8 @@ export interface HeaderAction {
 
 export interface AppHeaderProps {
   variant: AppHeaderVariant;
-  title: string;
+  /** Optional for the modal variant — an untitled sheet renders just the grabber. */
+  title?: string;
   /** Tracked uppercase line above a large title. */
   eyebrow?: string;
   /** The line under a large or media title — a subline, or `city · distance`. */
@@ -82,6 +83,8 @@ export interface AppHeaderProps {
   overlay?: boolean;
   /** Variant D only: the left-hand text action. */
   onCancel?: () => void;
+  /** Variant D only: makes the grabber row a tap target (e.g. tap-to-close). */
+  onGrabberPress?: () => void;
   /** Variant D only: overrides the default left-hand “Cancel” label. */
   cancelLabel?: string;
   /** Variant D only: the right-hand primary. Greys out until the form is valid. */
@@ -334,6 +337,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   overlay = false,
   onCancel,
   cancelLabel = "Cancel",
+  onGrabberPress,
   action,
   topInset = 0,
   statusBar,
@@ -372,7 +376,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   if (variant === "compact") {
     return (
       <CompactBar
-        title={title}
+        title={title ?? ""}
         onBack={onBack}
         actions={actions}
         trailing={trailing}
@@ -389,43 +393,63 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   if (variant === "modal") {
     const disabled = action?.disabled ?? false;
     return (
-      <View style={[styles.modal, { paddingTop: topInset }]}>
-        <View style={styles.grabberRow}>
-          <View style={styles.grabber} />
-        </View>
-        <View style={styles.modalRow}>
-          {onCancel ? (
-            <Pressable
-              onPress={onCancel}
-              hitSlop={TAP_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel"
-              style={styles.modalAction}
-            >
-              <Text style={styles.modalCancel}>{cancelLabel}</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.modalAction} />
-          )}
-          <Text style={styles.modalTitle} numberOfLines={1}>
-            {title}
-          </Text>
+      <View
+        collapsable={false}
+        style={[styles.modal, { paddingTop: topInset }]}
+      >
+        {onGrabberPress ? (
           <Pressable
-            onPress={action?.onPress}
-            disabled={disabled || !action}
+            onPress={onGrabberPress}
             hitSlop={TAP_SLOP}
             accessibilityRole="button"
-            accessibilityLabel={action?.label ?? ""}
-            accessibilityState={{ disabled }}
-            style={[styles.modalAction, styles.modalActionRight]}
+            accessibilityLabel="Close"
+            style={styles.grabberRow}
           >
-            <Text
-              style={[styles.modalPrimary, disabled && styles.modalPrimaryOff]}
-            >
-              {action?.label}
-            </Text>
+            <View style={styles.grabber} />
           </Pressable>
-        </View>
+        ) : (
+          <View style={styles.grabberRow}>
+            <View style={styles.grabber} />
+          </View>
+        )}
+        {!title && !onCancel && !action ? null : (
+          <View style={styles.modalRow}>
+            {onCancel ? (
+              <Pressable
+                onPress={onCancel}
+                hitSlop={TAP_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel={cancelLabel}
+                style={styles.modalAction}
+              >
+                <Text style={styles.modalCancel}>{cancelLabel}</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.modalAction} />
+            )}
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              {title}
+            </Text>
+            <Pressable
+              onPress={action?.onPress}
+              disabled={disabled || !action}
+              hitSlop={TAP_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={action?.label ?? ""}
+              accessibilityState={{ disabled }}
+              style={[styles.modalAction, styles.modalActionRight]}
+            >
+              <Text
+                style={[
+                  styles.modalPrimary,
+                  disabled && styles.modalPrimaryOff,
+                ]}
+              >
+                {action?.label}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     );
   }
@@ -616,9 +640,7 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.overlay,
   },
   actionPillText: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    lineHeight: 16,
+    ...t.typography.label,
     letterSpacing: 0,
   },
   actionDisabled: {
@@ -654,8 +676,7 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.surface,
   },
   countBadgeText: {
-    ...t.typography.micro,
-    fontFamily: fonts.bold,
+    ...t.typography.label,
     color: t.colors.textOnAccent,
   },
 
@@ -688,11 +709,7 @@ const useStyles = makeStyles((t) => ({
   },
   // Sentence case, black, tight — the wordmark's own voice.
   largeTitle: {
-    ...t.typography.display,
-    fontSize: 24,
-    // Never below the point size: RN crops the line box rather than letting
-    // the glyphs overhang it.
-    lineHeight: 29,
+    ...t.typography.title,
     color: t.colors.onInk,
     flexShrink: 1,
   },
@@ -815,15 +832,11 @@ const useStyles = makeStyles((t) => ({
     gap: 5,
   },
   mediaTitle: {
-    fontFamily: fonts.black,
-    fontSize: 27,
-    lineHeight: 30,
-    letterSpacing: -0.8,
+    ...t.typography.display,
     color: t.colors.textOnImage,
   },
   mediaMeta: {
     ...t.typography.mono,
-    fontSize: 12,
     color: t.colors.textOnImage,
     opacity: 0.82,
   },
@@ -861,8 +874,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-end" as const,
   },
   modalCancel: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
+    ...t.typography.label,
     color: t.colors.textMuted,
   },
   modalTitle: {
@@ -872,8 +884,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.text,
   },
   modalPrimary: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
+    ...t.typography.label,
     color: t.colors.accent,
   },
   // Greys out until the form is valid.

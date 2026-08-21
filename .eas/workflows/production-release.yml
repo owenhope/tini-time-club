@@ -1,0 +1,23 @@
+name: Production release (build + TestFlight)
+
+on:
+  # Manual: npx eas-cli workflow:run .eas/workflows/production-release.yml
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build iOS (production)
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  submit:
+    name: Submit to TestFlight
+    needs: [build]
+    type: submit
+    env:
+      EXPO_DEBUG: "1"
+    params:
+      build_id: ${{ needs.build.outputs.build_id }}
+      profile: production

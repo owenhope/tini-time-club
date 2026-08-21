@@ -1,7 +1,8 @@
 /**
  * Address/date formatting vendored from the app's utils/helpers.ts so the
  * public share page renders addresses exactly like the mobile ReviewItem.
- * (Vercel uploads only admin/, so admin cannot import files outside it.)
+ * Vercel uploads only admin/, so admin cannot import files outside it. Keep
+ * this implementation aligned with the app; helpers.test.ts enforces parity.
  */
 
 export const stripNameFromAddress = (
@@ -25,6 +26,43 @@ const stripPostalCode = (part: string): string =>
     .replace(/\s+\d{4,6}(-\d{4})?\s*$/, "")
     .trim();
 
+const STREET_PATTERN =
+  /\b(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|pl|place|ln|lane|mews|concourse|soi|cad|caddesi|sokak|sk\.?|mahallesi)\b/i;
+
+const hasLetter = (part: string): boolean => /[^\W\d_]/u.test(part);
+
+const cityPairFromSlashPart = (part: string): string | null => {
+  const slashParts = part
+    .split("/")
+    .map((item) => stripPostalCode(item.trim()))
+    .filter(Boolean);
+
+  if (slashParts.length < 2) return null;
+
+  const cityPair = slashParts
+    .slice(-2)
+    .map((item) => item.replace(/^\d{4,6}\s+/, "").trim())
+    .filter(Boolean);
+
+  if (
+    cityPair.length === 2 &&
+    cityPair.every(hasLetter) &&
+    cityPair.every((item) => !STREET_PATTERN.test(item))
+  ) {
+    return cityPair.join(", ");
+  }
+
+  return null;
+};
+
+const cityFromSlashPart = (part: string): string | null => {
+  const cityPair = cityPairFromSlashPart(part);
+  if (!cityPair) return null;
+
+  const pairParts = cityPair.split(",").map((item) => item.trim());
+  return pairParts[pairParts.length - 1] ?? null;
+};
+
 const COUNTRY_ABBREVIATIONS = new Set(["USA", "UK", "UAE", "CAN", "AUS"]);
 
 const isRegionCode = (part: string): boolean =>
@@ -41,23 +79,35 @@ export const formatCityRegion = (address?: string | null): string => {
   if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0];
 
-  const working = [...parts];
+  const last = stripPostalCode(parts[parts.length - 1]);
+  const hasCountry =
+    !isRegionCode(last) && !STREET_PATTERN.test(last) && parts.length >= 3;
+  const country = hasCountry ? last : "";
 
-  if (
-    working.length >= 3 &&
-    !isRegionCode(stripPostalCode(working[working.length - 1]))
-  ) {
-    working.pop();
+  const beforeCountry = hasCountry ? parts.slice(0, -1) : parts;
+  const tail = beforeCountry[beforeCountry.length - 1]
+    ? stripPostalCode(beforeCountry[beforeCountry.length - 1])
+    : "";
+  const rawCity =
+    isRegionCode(tail) && beforeCountry.length >= 2
+      ? beforeCountry[beforeCountry.length - 2]
+      : tail;
+  const city = cityFromSlashPart(rawCity) ?? rawCity;
+
+  if (!country) {
+    const slashCityPair = parts.map(cityPairFromSlashPart).find(Boolean);
+    if (slashCityPair) return slashCityPair;
+
+    if (parts.length >= 2 && STREET_PATTERN.test(parts[0])) {
+      return stripPostalCode(parts[1]);
+    }
+
+    return isRegionCode(last) && parts.length >= 2
+      ? [parts[parts.length - 2], last].filter(Boolean).join(", ")
+      : last;
   }
 
-  const region = stripPostalCode(working[working.length - 1]);
-  const city = working.length >= 2 ? working[working.length - 2] : "";
-
-  if (working.length === 2 && !isRegionCode(region)) {
-    return region;
-  }
-
-  return [city, region].filter(Boolean).join(", ");
+  return [city, country].filter(Boolean).join(", ");
 };
 
 export const formatRelativeDate = (dateString: string): string => {

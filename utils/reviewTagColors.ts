@@ -11,6 +11,8 @@ const REVIEW_TAG_COLORS: Record<string, ReviewTagColors> = {
   gin: { backgroundColor: "#E8763D", textColor: "#FAF9F6" },
   dirty: { backgroundColor: "#667A3E", textColor: "#FAF9F6" },
   dry: { backgroundColor: "#D7E7E2", textColor: "#24473D" },
+  wet: { backgroundColor: "#5E8C7F", textColor: "#FAF9F6" },
+  gibson: { backgroundColor: "#DCE0C8", textColor: "#3A4423" },
   filthy: { backgroundColor: "#394623", textColor: "#FAF9F6" },
   "50/50": { backgroundColor: "#B8A4D8", textColor: "#2F2548" },
   espresso: { backgroundColor: "#6F4518", textColor: "#FAF9F6" },

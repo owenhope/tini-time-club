@@ -31,7 +31,12 @@ export interface ProfileContextValue {
   acceptEULA: () => Promise<ProfileResult>;
   refreshProfile: () => Promise<void>;
   loading: boolean;
+  /** A recoverable profile-read failure; the authenticated session is intact. */
+  profileError: string | null;
 }
+
+export const PROFILE_LOAD_ERROR_MESSAGE =
+  "We couldn't load your profile. Check your connection and try again.";
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(
   undefined
@@ -52,6 +57,7 @@ export const ProfileProvider = ({
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const router = useRouter();
 
   /**
@@ -60,6 +66,7 @@ export const ProfileProvider = ({
    */
   const handleAccountGone = useCallback(async () => {
     setProfile(null);
+    setProfileError(null);
     await unregisterPushNotificationsAsync();
     await authCache.invalidateCache();
     const { error } = await supabase.auth.signOut();
@@ -70,27 +77,12 @@ export const ProfileProvider = ({
     Alert.alert("Signed out", ACCOUNT_GONE_MESSAGE);
   }, [router]);
 
-  /**
-   * A session whose profile cannot be resolved is not safe to leave active:
-   * the router cannot distinguish onboarding from a deleted/corrupt account.
-   * Clear the local session so the root auth listener owns one clean
-   * transition to Welcome. The direct replace is only an error fallback.
-   */
-  const handleProfileUnavailable = useCallback(async () => {
-    setProfile(null);
-    await authCache.invalidateCache();
-    const { error } = await supabase.auth.signOut({ scope: "local" });
-    if (error) {
-      reportError("Error clearing session after profile failure:", error);
-      router.replace(routes.welcome());
-    }
-  }, [router]);
-
   const fetchProfile = useCallback(async () => {
     try {
       const cachedProfile = await authCache.getProfile();
       if (cachedProfile) {
         setProfile(cachedProfile);
+        setProfileError(null);
         setLoading(false);
         return;
       }
@@ -99,6 +91,7 @@ export const ProfileProvider = ({
       // signed-out is a normal state here rather than a failure.
       const user = await authCache.getUser();
       if (!user) {
+        setProfileError(null);
         setLoading(false);
         return;
       }
@@ -118,11 +111,12 @@ export const ProfileProvider = ({
           return;
         }
 
-        await handleProfileUnavailable();
+        setProfileError(PROFILE_LOAD_ERROR_MESSAGE);
         return;
       }
 
       setProfile(data);
+      setProfileError(null);
     } catch (error) {
       reportError("Error in fetchProfile:", error);
 
@@ -131,11 +125,11 @@ export const ProfileProvider = ({
         return;
       }
 
-      await handleProfileUnavailable();
+      setProfileError(PROFILE_LOAD_ERROR_MESSAGE);
     } finally {
       setLoading(false);
     }
-  }, [handleAccountGone, handleProfileUnavailable]);
+  }, [handleAccountGone]);
 
   useEffect(() => {
     fetchProfile();
@@ -147,12 +141,14 @@ export const ProfileProvider = ({
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setProfile(null);
+        setProfileError(null);
         setLoading(false);
         return;
       }
 
       if (event === "SIGNED_IN" && session) {
         setLoading(true);
+        setProfileError(null);
         void (async () => {
           await authCache.clearProfileCache();
           await fetchProfile();
@@ -185,10 +181,13 @@ export const ProfileProvider = ({
 
   const refreshProfile = useCallback(async () => {
     try {
+      setLoading(true);
       await authCache.clearProfileCache();
       await fetchProfile();
     } catch (error) {
       reportError("Error refreshing profile:", error);
+      setProfileError(PROFILE_LOAD_ERROR_MESSAGE);
+      setLoading(false);
     }
   }, [fetchProfile]);
 
@@ -228,6 +227,7 @@ export const ProfileProvider = ({
         acceptEULA,
         refreshProfile,
         loading,
+        profileError,
       }}
     >
       {children}

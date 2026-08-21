@@ -6,7 +6,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { fonts, makeStyles } from "@/theme";
+import { makeStyles } from "@/theme";
 
 export interface SegmentedControlOption<Value extends string> {
   value: Value;
@@ -115,7 +115,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   labelSelected: {
-    fontFamily: fonts.bold,
     color: t.colors.onAccent,
   },
   labelInk: {

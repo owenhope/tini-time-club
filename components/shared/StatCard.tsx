@@ -33,22 +33,20 @@ const StatCard: React.FC<StatCardProps> = ({
   const content = (
     <>
       <AppText
-        variant={onInk ? "eyebrow" : "micro"}
+        variant={compact ? "label" : onInk ? "eyebrow" : "caption"}
         tone={onInk ? "onImage" : "muted"}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.7}
-        style={compact && styles.compactLabel}
       >
         {label}
       </AppText>
       <AppText
-        variant="metric"
+        variant={compact ? "heading" : "title"}
         tone={onInk ? "onImage" : "default"}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.75}
-        style={compact && styles.compactValue}
       >
         {value}
       </AppText>
@@ -104,16 +102,6 @@ const useStyles = makeStyles((t) => ({
     gap: 1,
     paddingVertical: 7,
     paddingHorizontal: 8,
-  },
-  compactValue: {
-    fontSize: 18,
-    lineHeight: 20,
-    letterSpacing: 0,
-  },
-  compactLabel: {
-    fontSize: 8,
-    lineHeight: 11,
-    letterSpacing: 0,
   },
   ink: {
     // A lift off the green ground rather than a second colour.

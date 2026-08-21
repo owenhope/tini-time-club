@@ -1,8 +1,11 @@
 import databaseService from "../databaseService";
 import { supabase } from "@/utils/supabase";
 
+const mockGetPublicFeed = jest.fn();
+const mockGetPublicReview = jest.fn();
+
 jest.mock("@/utils/supabase", () => ({
-  supabase: { from: jest.fn() },
+  supabase: { from: jest.fn(), rpc: jest.fn() },
   supabaseProjectRef: "testref",
 }));
 
@@ -13,6 +16,13 @@ jest.mock("@/utils/imageCache", () => ({
       Object.fromEntries(urls.map((url) => [url, url]))
     ),
     getReviewImageUrl: jest.fn(async (url: string) => url),
+  },
+}));
+
+jest.mock("@/services/public-content-service", () => ({
+  publicContentService: {
+    getFeed: (...args: unknown[]) => mockGetPublicFeed(...args),
+    getReview: (...args: unknown[]) => mockGetPublicReview(...args),
   },
 }));
 
@@ -27,10 +37,63 @@ jest.mock("@/utils/reviewOptions", () => ({
 }));
 
 const from = supabase.from as jest.Mock;
+const rpc = supabase.rpc as jest.Mock;
 
 beforeEach(async () => {
   jest.clearAllMocks();
   await databaseService.clearAllCaches();
+});
+
+it("loads a followed-members page with one feed RPC", async () => {
+  rpc.mockResolvedValue({ data: [], error: null });
+
+  await expect(
+    databaseService.getReviews({
+      currentUserId: "viewer-1",
+      followedOnly: true,
+      limit: 20,
+      offset: 40,
+    })
+  ).resolves.toEqual([]);
+
+  expect(rpc).toHaveBeenCalledTimes(1);
+  expect(rpc).toHaveBeenCalledWith("feed_reviews_followed", {
+    p_viewer: "viewer-1",
+    p_limit: 20,
+    p_offset: 40,
+    p_user_id: null,
+    p_location_id: null,
+    p_exclude_blocked: true,
+    p_followed_only: true,
+  });
+  expect(from).not.toHaveBeenCalled();
+});
+
+it("loads the club feed through the sanitized gateway for a visitor", async () => {
+  const publicReviews = [{ id: "42", comment: "Cold and bright." }];
+  mockGetPublicFeed.mockResolvedValue(publicReviews);
+
+  await expect(
+    databaseService.getReviews({ limit: 12, offset: 24 })
+  ).resolves.toEqual(publicReviews);
+
+  expect(mockGetPublicFeed).toHaveBeenCalledWith({
+    userId: undefined,
+    locationId: undefined,
+    limit: 12,
+    offset: 24,
+  });
+  expect(rpc).not.toHaveBeenCalled();
+  expect(from).not.toHaveBeenCalled();
+});
+
+it("does not expose a personalized people feed to a visitor", async () => {
+  await expect(
+    databaseService.getReviews({ followedOnly: true })
+  ).resolves.toEqual([]);
+
+  expect(mockGetPublicFeed).not.toHaveBeenCalled();
+  expect(rpc).not.toHaveBeenCalled();
 });
 
 it("qualifies the profile relationship when creating a comment", async () => {

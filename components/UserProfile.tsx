@@ -18,9 +18,9 @@ import * as Haptics from "expo-haptics";
 import AnalyticService from "@/services/analyticsService";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
-import useCollapsibleHeader from "@/hooks/useCollapsibleHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import databaseService from "@/services/databaseService";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import ProfileContentTabs, {
   type ProfileContentTab,
 } from "@/components/ProfileContentTabs";
@@ -32,6 +32,7 @@ import { useProfileScreenData } from "@/hooks/useProfileScreenData";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
+import { useMembership } from "@/context/membership-context";
 
 const UserProfile = () => {
   const styles = useStyles();
@@ -45,6 +46,7 @@ const UserProfile = () => {
   const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
 
   const { profile } = useProfile(); // logged-in user data
+  const { requireMembership } = useMembership();
   const router = useRouter();
   const goBack = useGoBack();
   // One value for both halves of the crossfade: header C fades out on it as
@@ -75,6 +77,7 @@ const UserProfile = () => {
     followersCount,
     followingCount,
     setFollowersCount,
+    setFollowingCount,
     loadFollowCounts,
   } = useProfileScreenData({
     profileId: displayProfile?.id,
@@ -127,7 +130,11 @@ const UserProfile = () => {
   const toggleFollow = async () => {
     // followPending guards against double-taps, which would otherwise send two
     // writes and adjust the local count twice.
-    if (!profile || !displayProfile || followPending) return;
+    if (!profile) {
+      requireMembership("follow");
+      return;
+    }
+    if (!displayProfile || followPending) return;
 
     const wasFollowing = doesFollow;
     setFollowPending(true);
@@ -180,16 +187,20 @@ const UserProfile = () => {
 
   // Fetch follower and following counts from the database
   useEffect(() => {
-    if (displayProfile) {
+    if (displayProfile && profile) {
       loadFollowCounts();
     }
-  }, [displayProfile, loadFollowCounts]);
+  }, [displayProfile, loadFollowCounts, profile]);
 
   /**
    * Block lives behind the overflow menu rather than beside Follow: it is rare
    * and semi-destructive, and giving it equal billing invited mis-taps.
    */
   const showProfileMenu = () => {
+    if (!profile) {
+      requireMembership("report");
+      return;
+    }
     const blockLabel = isBlocked ? "Unblock" : "Block";
     const act = () => (isBlocked ? handleUnblockUser() : handleBlockUser());
 
@@ -218,45 +229,57 @@ const UserProfile = () => {
     ]);
   };
 
-  // Fetch the selected profile when usernameParam is provided
+  const fetchSelectedProfile = React.useCallback(
+    async (username: string) => {
+      setProfileError(null);
+      try {
+        if (!profile) {
+          const result =
+            await databaseService.getPublicProfileByUsername(username);
+          setSelectedProfile(result.profile);
+          setFollowersCount(result.followersCount);
+          setFollowingCount(result.followingCount);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("username", username)
+          .eq("deleted", false)
+          .single();
+        if (error) {
+          reportError("Error fetching selected profile:", error);
+          // Without this the screen stays blank forever with no way back.
+          setProfileError(
+            error.code === "PGRST116"
+              ? "This profile isn't available."
+              : "We couldn't load this profile."
+          );
+        } else {
+          setSelectedProfile(data);
+          // Track view profile event (only if not viewing own profile)
+          if (profile && data.id !== profile.id) {
+            AnalyticService.capture("view_profile", {
+              targetUserId: data.id,
+              targetUsername: data.username,
+            });
+          }
+        }
+      } catch (err) {
+        reportError("Unexpected error fetching profile:", err);
+        setProfileError("We couldn't load this profile.");
+      }
+    },
+    [profile, setFollowersCount, setFollowingCount]
+  );
+
+  // Fetch the selected profile when usernameParam is provided.
   useEffect(() => {
     if (usernameParam) {
-      fetchSelectedProfile(usernameParam);
+      void fetchSelectedProfile(usernameParam);
     }
-  }, [usernameParam]);
-
-  const fetchSelectedProfile = async (username: string) => {
-    setProfileError(null);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .eq("deleted", false)
-        .single();
-      if (error) {
-        reportError("Error fetching selected profile:", error);
-        // Without this the screen stays blank forever with no way back.
-        setProfileError(
-          error.code === "PGRST116"
-            ? "This profile isn't available."
-            : "We couldn't load this profile."
-        );
-      } else {
-        setSelectedProfile(data);
-        // Track view profile event (only if not viewing own profile)
-        if (profile && data.id !== profile.id) {
-          AnalyticService.capture("view_profile", {
-            targetUserId: data.id,
-            targetUsername: data.username,
-          });
-        }
-      }
-    } catch (err) {
-      reportError("Unexpected error fetching profile:", err);
-      setProfileError("We couldn't load this profile.");
-    }
-  };
+  }, [fetchSelectedProfile, usernameParam]);
 
   const handleBlockUser = async () => {
     if (!profile || !displayProfile) return;
@@ -412,7 +435,9 @@ const UserProfile = () => {
   };
   const headerActions = isViewingOwnProfile
     ? menuActions
-    : [followHeaderAction, ...menuActions];
+    : profile
+      ? [followHeaderAction, ...menuActions]
+      : [followHeaderAction];
 
   const header = (
     <>
@@ -432,10 +457,12 @@ const UserProfile = () => {
         }
         onFollowersPress={() =>
           displayProfile?.username &&
+          requireMembership("social-list") &&
           router.push(routes.followers(displayProfile.username))
         }
         onFollowingPress={() =>
           displayProfile?.username &&
+          requireMembership("social-list") &&
           router.push(routes.following(displayProfile.username))
         }
         tags={favoriteTags}
@@ -511,8 +538,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg,
   },
   errorTitle: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },
@@ -523,27 +549,23 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.pill,
   },
   errorButtonText: {
+    ...t.typography.bodyStrong,
     color: t.colors.onAccent,
-    fontFamily: fonts.bold,
-    fontSize: 15,
   },
   errorLink: {
+    ...t.typography.caption,
     color: t.colors.textSecondary,
-    fontFamily: fonts.regular,
-    fontSize: 13,
   },
   emptyContainer: {
     alignItems: "center" as const,
     padding: 20,
   },
   emptyText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...t.typography.body,
     color: t.colors.textSecondary,
   },
   headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
+    ...t.typography.title,
     color: t.colors.onInk,
   },
   headerActions: {

@@ -82,13 +82,13 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   input: {
-    ...t.typography.body,
+    ...t.typography.input,
     flex: 1,
     height: "100%",
     marginLeft: t.spacing.md,
     paddingVertical: 0,
     textAlignVertical: "center" as const,
-    color: t.colors.text,
+    color: t.colors.inputText,
   },
   clearButton: {
     marginLeft: t.spacing.sm,

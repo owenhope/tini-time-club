@@ -3,11 +3,7 @@ import Image from "next/image";
 import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
-import {
-  createBreadcrumbList,
-  siteAuthor,
-  siteDescription,
-} from "@/lib/seo";
+import { createBreadcrumbList, siteAuthor, siteDescription } from "@/lib/seo";
 
 export const metadata: Metadata = {
   alternates: {

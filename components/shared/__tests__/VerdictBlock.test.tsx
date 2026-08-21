@@ -58,7 +58,7 @@ describe("VerdictBlock", () => {
 
     expect(
       ratingStyles.some(
-        (style) => style?.fontSize === typography.metricLarge.fontSize
+        (style) => style?.fontSize === typography.display.fontSize
       )
     ).toBe(true);
     expect(ratingStyles.findLast((style) => style?.color)?.color).toBe(

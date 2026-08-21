@@ -8,7 +8,7 @@ import {
   useRootNavigationState,
   type ErrorBoundaryProps,
 } from "expo-router";
-import { log, reportError } from "@/utils/log";
+import { log, reportError, warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 import imageCache from "@/utils/imageCache";
 import authCache from "@/utils/authCache";
@@ -24,24 +24,19 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
-  Figtree_300Light,
   Figtree_400Regular,
-  Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
-  Figtree_800ExtraBold,
   Figtree_900Black,
 } from "@expo-google-fonts/figtree";
-import {
-  DMMono_400Regular,
-  DMMono_500Medium,
-} from "@expo-google-fonts/dm-mono";
+import { DMMono_400Regular } from "@expo-google-fonts/dm-mono";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
+import { MembershipProvider } from "@/context/membership-context";
 import { ActivityProvider } from "@/context/activity-context";
-import { ThemeProvider, fonts, useTheme } from "@/theme";
+import { ThemeProvider, typography, useTheme } from "@/theme";
 import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
 import {
   createSessionFromAuthUrl,
@@ -50,8 +45,16 @@ import {
 import { routes } from "@/utils/routes";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
-import type { Session } from "@supabase/supabase-js";
+import { trackAppUsage } from "@/services/appUsageService";
+import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
+import {
+  clearPendingMembershipReturn,
+  consumePendingMembershipReturn,
+  getPendingMembershipReturn,
+} from "@/services/visitor-session";
+
+const APP_USAGE_HEARTBEAT_MS = 5 * 60 * 1000;
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -61,9 +64,7 @@ const isOnboardingExemptPath = (path: string) =>
   path === "/" ||
   path === "/welcome" ||
   path === "/onboarding" ||
-  path === "/favorite-location" ||
-  path === "/forgot-password" ||
-  path === "/reset-password" ||
+  path === "/membership" ||
   path === "/sign-in" ||
   path === "/sign-up" ||
   path.startsWith("/auth");
@@ -85,6 +86,7 @@ const getAuthenticatedDefaultRoute = (profile: Profile | null) => {
 type InitialAuthResolution = {
   session: Session | null;
   shouldChooseDefaultRoute: boolean;
+  membershipReturnPath: string | null;
 };
 
 /**
@@ -96,9 +98,6 @@ type InitialAuthResolution = {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
     reportError("[ErrorBoundary] Render error:", error);
-    Sentry.captureException(error, {
-      tags: { surface: "root-error-boundary" },
-    });
   }, [error]);
 
   return (
@@ -132,13 +131,11 @@ const errorBoundaryStyles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   title: {
-    fontSize: 20,
-    fontFamily: fonts.semibold,
+    ...typography.title,
     color: "#1a1a1a",
   },
   body: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
+    ...typography.body,
     color: "#555555",
     textAlign: "center",
   },
@@ -153,9 +150,8 @@ const errorBoundaryStyles = StyleSheet.create({
     opacity: 0.8,
   },
   buttonText: {
+    ...typography.bodyStrong,
     color: "#ffffff",
-    fontSize: 15,
-    fontFamily: fonts.semibold,
   },
 });
 
@@ -168,11 +164,13 @@ function RootLayout() {
             editor are presented over the tabs from the root stack, and they
             need the same signed-in member the tabs do. */}
         <ProfileProvider>
-          <ActivityProvider>
-            <ShareMenuProvider>
-              <RootLayoutNav />
-            </ShareMenuProvider>
-          </ActivityProvider>
+          <MembershipProvider>
+            <ActivityProvider>
+              <ShareMenuProvider>
+                <RootLayoutNav />
+              </ShareMenuProvider>
+            </ActivityProvider>
+          </MembershipProvider>
         </ProfileProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
@@ -183,17 +181,18 @@ export default Sentry.wrap(RootLayout);
 
 export function RootLayoutNav() {
   const { colors, isDark } = useTheme();
-  const { profile, loading: profileLoading } = useProfile();
+  const {
+    profile,
+    loading: profileLoading,
+    profileError,
+    refreshProfile,
+  } = useProfile();
   const [fontsLoaded] = useFonts({
-    Figtree_300Light,
     Figtree_400Regular,
-    Figtree_500Medium,
     Figtree_600SemiBold,
     Figtree_700Bold,
-    Figtree_800ExtraBold,
     Figtree_900Black,
     DMMono_400Regular,
-    DMMono_500Medium,
   });
   const router = useRouter();
   const pathname = usePathname();
@@ -207,19 +206,25 @@ export function RootLayoutNav() {
     string | null
   >(null);
   const isStartupResolved = Boolean(
-    fontsLoaded && initialAuth && (!initialAuth.session || !profileLoading)
+    fontsLoaded && initialAuth && (!profileLoading || profileError)
   );
   const startupTarget = (() => {
     if (!isStartupResolved || !initialAuth) return null;
-    if (!initialAuth.session) return routes.welcome();
+    if (!initialAuth.session) {
+      if (!initialAuth.shouldChooseDefaultRoute) return null;
+      return routes.welcome();
+    }
+    if (profileError) return null;
 
     const authenticatedTarget = getAuthenticatedDefaultRoute(profile);
     if (authenticatedTarget !== routes.home()) return authenticatedTarget;
-    return initialAuth.shouldChooseDefaultRoute ? authenticatedTarget : null;
+    if (!initialAuth.shouldChooseDefaultRoute) return null;
+    return initialAuth.membershipReturnPath ?? authenticatedTarget;
   })();
   const isReady = isReadyOverride || isStartupResolved;
   const rootNavigationState = useRootNavigationState();
   const hasHandledInitialSession = useRef(false);
+  const hadStartupProfileError = useRef(false);
   const authSessionRef = useRef<Session | null>(null);
   const lastHandledAuthUrl = useRef<string | null>(null);
 
@@ -265,6 +270,51 @@ export function RootLayoutNav() {
     void requestAppTrackingTransparencyAsync();
   }, [fontsLoaded, isReady]);
 
+  // A heartbeat on startup and every five foreground minutes powers the
+  // visitor/member audience snapshot in the operator dashboard. The server
+  // derives the audience from auth, so this effect sends no profile data.
+  useEffect(() => {
+    if (!isReady || !fontsLoaded || !initialAuth) return;
+
+    void trackAppUsage();
+    const interval = setInterval(() => {
+      if (AppState.currentState === "active") void trackAppUsage();
+    }, APP_USAGE_HEARTBEAT_MS);
+
+    return () => clearInterval(interval);
+  }, [fontsLoaded, initialAuth, isReady, profile?.id]);
+
+  useEffect(() => {
+    if (profileError && !profile) {
+      hadStartupProfileError.current = true;
+    }
+  }, [profile, profileError]);
+
+  useEffect(() => {
+    if (
+      !hadStartupProfileError.current ||
+      profileError ||
+      profileLoading ||
+      !profile ||
+      !initialAuth?.session ||
+      !rootNavigationState?.key
+    ) {
+      return;
+    }
+
+    hadStartupProfileError.current = false;
+    const target = getAuthenticatedDefaultRoute(profile);
+    if (pathname !== target) router.replace(target);
+  }, [
+    initialAuth?.session,
+    pathname,
+    profile,
+    profileError,
+    profileLoading,
+    rootNavigationState?.key,
+    router,
+  ]);
+
   // A fresh sign-in is not a complete routing decision: first wait for the
   // signed-in member's profile so a new account goes straight to Onboarding
   // and an existing account goes straight to Home. Keeping the auth screen
@@ -280,9 +330,16 @@ export function RootLayoutNav() {
       return;
     }
 
-    const target = getAuthenticatedDefaultRoute(profile);
     setPendingSignedInUserId(null);
-    if (pathname !== target) router.replace(target);
+    void (async () => {
+      const defaultTarget = getAuthenticatedDefaultRoute(profile);
+      const pending =
+        defaultTarget === routes.home()
+          ? await consumePendingMembershipReturn().catch(() => null)
+          : null;
+      const target = pending?.returnTo ?? defaultTarget;
+      if (pathname !== target) router.replace(target as never);
+    })();
   }, [
     isReady,
     pathname,
@@ -293,8 +350,9 @@ export function RootLayoutNav() {
     router,
   ]);
 
-  // Startup is resolved only after both the persisted session and, for a
-  // signed-in member, the profile fields that determine onboarding are known.
+  // Startup is resolved only after both persisted auth and profile state are
+  // known. Visitor tabs also depend on profile=null, so revealing Home before
+  // that read finishes would create a blank frame beneath the native splash.
   // Until this point RootLayoutNav returns null, leaving the native splash in
   // place and keeping every route screen unmounted. Once the navigator exists,
   // keep that splash up until the selected route is the current route.
@@ -308,8 +366,12 @@ export function RootLayoutNav() {
     }
 
     if (startupTarget && pathname !== startupTarget) {
-      router.replace(startupTarget);
+      router.replace(startupTarget as never);
       return;
+    }
+
+    if (startupTarget && startupTarget === initialAuth?.membershipReturnPath) {
+      void clearPendingMembershipReturn().catch(() => {});
     }
 
     void SplashScreen.hideAsync().finally(() => {
@@ -322,6 +384,7 @@ export function RootLayoutNav() {
     rootNavigationState?.key,
     router,
     startupTarget,
+    initialAuth?.membershipReturnPath,
   ]);
 
   useEffect(() => {
@@ -382,9 +445,13 @@ export function RootLayoutNav() {
 
       hasHandledInitialSession.current = true;
       authSessionRef.current = session;
+      const pendingMembership = session
+        ? await getPendingMembershipReturn().catch(() => null)
+        : null;
       setInitialAuth({
         session,
         shouldChooseDefaultRoute: !deepLinkRouted,
+        membershipReturnPath: pendingMembership?.returnTo ?? null,
       });
     };
 
@@ -394,40 +461,27 @@ export function RootLayoutNav() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       log("[RootLayout] Auth state changed:", event, !!session);
 
-      if (event === "PASSWORD_RECOVERY") {
-        // Recovery deep link: let the user set a new password instead of
-        // dropping them on the feed.
-        authSessionRef.current = session;
-        setIsReady(true);
-        router.replace(routes.resetPassword());
-        await SplashScreen.hideAsync();
-        return;
-      }
-
       if (event === "INITIAL_SESSION") {
         await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
+        void trackAppUsage();
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(session);
         } else {
           const wasSignedOut = !authSessionRef.current;
           authSessionRef.current = session;
 
-          // Recovery links also emit SIGNED_IN; staying put keeps the reset
-          // screen visible. Existing sessions can also re-emit SIGNED_IN when
-          // refreshed, so only a real signed-out -> signed-in transition from
-          // an auth screen starts destination selection.
-          if (
-            wasSignedOut &&
-            pathnameRef.current !== "/reset-password" &&
-            isAuthenticationPath(pathnameRef.current)
-          ) {
+          // Existing sessions can re-emit SIGNED_IN when refreshed, so only
+          // a real signed-out -> signed-in transition from an auth screen
+          // starts destination selection.
+          if (wasSignedOut && isAuthenticationPath(pathnameRef.current)) {
             setPendingSignedInUserId(session.user.id);
           }
         }
       } else if (event === "SIGNED_OUT") {
         // User signed out
         authSessionRef.current = null;
+        void trackAppUsage();
         setPendingSignedInUserId(null);
         await authCache.invalidateCache();
         if (!hasHandledInitialSession.current) {
@@ -446,7 +500,14 @@ export function RootLayoutNav() {
       .getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          reportError("[RootLayout] Failed to restore the session:", error);
+          // A rejected refresh token just means the persisted session lapsed
+          // (idle device, revoked token) — the user is signed out, nothing
+          // broke. Keep reportError for failures that aren't auth-API answers.
+          if (isAuthApiError(error)) {
+            warn("[RootLayout] Stored session is no longer valid:", error);
+          } else {
+            reportError("[RootLayout] Failed to restore the session:", error);
+          }
         }
         return resolveInitialSession(error ? null : session);
       })
@@ -461,6 +522,7 @@ export function RootLayoutNav() {
 
       if (nextAppState === "active") {
         void retryPendingPushUnregistrationAsync();
+        void trackAppUsage();
       }
     };
 
@@ -482,24 +544,77 @@ export function RootLayoutNav() {
     return null;
   }
 
+  if (initialAuth?.session && !profile && profileError) {
+    return (
+      <View
+        style={[
+          errorBoundaryStyles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
+          Unable to load your profile
+        </Text>
+        <Text style={[errorBoundaryStyles.body, { color: colors.textMuted }]}>
+          {profileError} You&apos;re still signed in.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try loading profile again"
+          disabled={profileLoading}
+          onPress={() => void refreshProfile()}
+          style={({ pressed }) => [
+            errorBoundaryStyles.button,
+            (pressed || profileLoading) && errorBoundaryStyles.buttonPressed,
+          ]}
+        >
+          <Text style={errorBoundaryStyles.buttonText}>
+            {profileLoading ? "Trying again…" : "Try again"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <>
       <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: hasCompletedStartupNavigation ? "default" : "none",
           contentStyle: { backgroundColor: colors.background },
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.accent,
           headerShadowVisible: false,
           headerTitleStyle: {
+            ...typography.heading,
             color: colors.text,
-            fontFamily: fonts.bold,
-            fontSize: 17,
           },
         }}
       >
+        {/* Startup destinations never animate in. Arriving at one of these is
+            always a replace (cold start, sign-in/out, onboarding completion),
+            and the previous gate — flipping a stack-wide animation flag once
+            startup navigation settled — raced the native transition: the flag
+            flipped to "default" while the cold-start replace was still
+            pending, so the feed slid in from under the splash. A static
+            per-screen "none" cannot race anything. */}
+        <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
+        <Stack.Screen name="welcome" options={{ animation: "none" }} />
+        <Stack.Screen name="onboarding" options={{ animation: "none" }} />
+        <Stack.Screen
+          name="membership"
+          options={{
+            presentation: "formSheet",
+            // Closable by swiping down or tapping the grabber; the screen's
+            // unmount hook runs the dismissal side-effects for the gesture.
+            gestureEnabled: true,
+            sheetGrabberVisible: false,
+            sheetAllowedDetents: "fitToContents",
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
         {/* Composing is a task, not a place: presented over whatever you
             were looking at, so cancelling returns you there instead of
             leaving a half-written draft parked in a tab. */}

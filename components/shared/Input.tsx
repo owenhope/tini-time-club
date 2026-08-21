@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import AppText from "./AppText";
 
 export type InputSize = "small" | "medium" | "large";
@@ -176,7 +176,7 @@ const Input: React.FC<InputProps> = ({
   const getTextColor = (): string => {
     if (disabled) return colors.textMuted;
     if (variant === "transparent") return colors.textOnImage;
-    return colors.text;
+    return colors.inputText;
   };
 
   const getPlaceholderColor = (): string => {
@@ -303,7 +303,7 @@ const useStyles = makeStyles((t) => ({
     marginVertical: t.spacing.sm,
   },
   label: {
-    fontFamily: fonts.semibold,
+    ...t.typography.bodyStrong,
     marginBottom: 6,
     color: t.colors.textSecondary,
   },
@@ -314,10 +314,12 @@ const useStyles = makeStyles((t) => ({
     position: "relative" as const,
   },
   input: {
+    // typography.input, not body: an explicit lineHeight makes iOS render
+    // typed text lower than the placeholder — text drops on first keystroke.
+    ...t.typography.input,
     flex: 1,
     paddingHorizontal: 0,
-    color: t.colors.text,
-    fontFamily: fonts.regular,
+    color: t.colors.inputText,
   },
   leftIcon: {
     marginLeft: t.spacing.lg,
@@ -337,7 +339,7 @@ const useStyles = makeStyles((t) => ({
     marginLeft: t.spacing.xs,
   },
   supportingText: {
-    fontFamily: fonts.regular,
+    ...t.typography.caption,
     letterSpacing: 0,
   },
   errorSpace: {

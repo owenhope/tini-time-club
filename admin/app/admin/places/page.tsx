@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import ClickableRow from "@/components/ClickableRow";
 import {
@@ -143,6 +144,14 @@ export default async function PlacesPage({
         statColumns={3}
         surface="transparent"
         density="compact"
+        actions={
+          <Link
+            href="/admin/places/map"
+            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+          >
+            Map view
+          </Link>
+        }
       />
 
       <div className="px-8 py-6">

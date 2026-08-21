@@ -22,7 +22,10 @@ export default function Sparkline({
   const y = (count: number) => H - 2 - (count / max) * (H - 4);
 
   const line = data
-    .map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.count).toFixed(1)}`)
+    .map(
+      (d, i) =>
+        `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.count).toFixed(1)}`
+    )
     .join(" ");
   const area = `${line} L${x(data.length - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
   const gradientId = `spark-${color.replace("#", "")}`;

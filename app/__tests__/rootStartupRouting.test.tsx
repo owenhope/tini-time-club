@@ -3,6 +3,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { AppState, Text, TouchableOpacity } from "react-native";
 import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
+import SharedTabLayout from "../(tabs)/(home,discover,profile)/_layout";
 
 let mockAuthStateChange:
   | ((event: string, session: { user: { id: string } } | null) => Promise<void>)
@@ -14,12 +15,23 @@ let mockProfileState: {
     eula_accepted: boolean;
   } | null;
   loading: boolean;
+  profileError?: string | null;
+  refreshProfile?: () => Promise<void>;
 };
 let mockPathname = "/";
 let mockInitialUrl: string | null = null;
 let mockStackScreenOptions: { animation?: string } | undefined;
+let mockScreenOptionsByName: Record<
+  string,
+  { animation?: string } | undefined
+> = {};
 let mockAppStateChange:
   ((nextState: "active" | "background") => void | Promise<void>) | undefined;
+let mockVisitorPreviewAccepted = false;
+let mockPendingMembershipReturn: {
+  intent: "profile";
+  returnTo: string | null;
+} | null = null;
 
 const mockReplace = jest.fn();
 const mockHideAsync = jest.fn(async () => undefined);
@@ -27,10 +39,13 @@ const mockGetSession = jest.fn<Promise<unknown>, []>();
 const mockResumeGetSession = jest.fn<Promise<unknown>, []>();
 const mockIsAuthCallbackUrl = jest.fn((_url: string) => false);
 const mockCaptureException = jest.fn();
+const mockReportError = jest.fn();
 const mockSignOut = jest.fn(async () => {
   await mockAuthStateChange?.("SIGNED_OUT", null);
   return { error: null };
 });
+const mockRefreshProfile = jest.fn(async () => undefined);
+const mockOpenMembership = jest.fn();
 let renderer: ReactTestRenderer | undefined;
 
 jest.mock("@/utils/sentry", () => ({
@@ -39,7 +54,10 @@ jest.mock("@/utils/sentry", () => ({
     wrap: (component: unknown) => component,
   },
 }));
-jest.mock("@/utils/log", () => ({ log: jest.fn(), reportError: jest.fn() }));
+jest.mock("@/utils/log", () => ({
+  log: jest.fn(),
+  reportError: (...args: unknown[]) => mockReportError(...args),
+}));
 jest.mock("@/utils/supabase", () => ({
   supabase: {
     auth: {
@@ -69,6 +87,14 @@ jest.mock("@/context/profile-context", () => ({
   ProfileProvider: ({ children }: { children: React.ReactNode }) => children,
   useProfile: () => mockProfileState,
 }));
+jest.mock("@/context/membership-context", () => ({
+  MembershipProvider: ({ children }: { children: React.ReactNode }) => children,
+  useMembership: () => ({
+    isMember: Boolean(mockProfileState?.profile),
+    requireMembership: jest.fn(() => Boolean(mockProfileState?.profile)),
+    openMembership: mockOpenMembership,
+  }),
+}));
 jest.mock("@/context/activity-context", () => ({
   ActivityProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -78,6 +104,12 @@ jest.mock("@/components/share/ShareMenuSheet", () => ({
 jest.mock("@/theme", () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
   fonts: { bold: "bold", semibold: "semibold", regular: "regular" },
+  typography: {
+    title: { fontFamily: "bold", fontSize: 22, lineHeight: 28 },
+    body: { fontFamily: "regular", fontSize: 16, lineHeight: 24 },
+    bodyStrong: { fontFamily: "semibold", fontSize: 16, lineHeight: 24 },
+    heading: { fontFamily: "bold", fontSize: 18, lineHeight: 24 },
+  },
   makeStyles: () => () => ({}),
   useTheme: () => ({
     colors: {
@@ -116,6 +148,24 @@ jest.mock("@/utils/inviteShare", () => ({
 }));
 jest.mock("@/services/appTrackingTransparencyService", () => ({
   requestAppTrackingTransparencyAsync: jest.fn(),
+}));
+jest.mock("@/services/appUsageService", () => ({
+  trackAppUsage: jest.fn(async () => true),
+}));
+jest.mock("@/services/visitor-session", () => ({
+  acceptVisitorPreview: jest.fn(async () => {
+    mockVisitorPreviewAccepted = true;
+  }),
+  hasAcceptedVisitorPreview: jest.fn(async () => mockVisitorPreviewAccepted),
+  getPendingMembershipReturn: jest.fn(async () => mockPendingMembershipReturn),
+  clearPendingMembershipReturn: jest.fn(async () => {
+    mockPendingMembershipReturn = null;
+  }),
+  consumePendingMembershipReturn: jest.fn(async () => {
+    const pending = mockPendingMembershipReturn;
+    mockPendingMembershipReturn = null;
+    return pending;
+  }),
 }));
 jest.mock("@/utils/async", () => ({
   withTimeout: jest.fn((promise) => promise),
@@ -168,7 +218,14 @@ jest.mock("expo-router", () => {
       children
     );
   };
-  Stack.Screen = function MockStackScreen() {
+  Stack.Screen = function MockStackScreen({
+    name,
+    options,
+  }: {
+    name: string;
+    options?: { animation?: string };
+  }) {
+    mockScreenOptionsByName[name] = options;
     return null;
   };
 
@@ -183,10 +240,18 @@ jest.mock("expo-router", () => {
 describe("root startup routing", () => {
   beforeEach(() => {
     mockAuthStateChange = undefined;
-    mockProfileState = { profile: null, loading: true };
+    mockProfileState = {
+      profile: null,
+      loading: true,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
     mockPathname = "/";
     mockInitialUrl = null;
+    mockVisitorPreviewAccepted = false;
+    mockPendingMembershipReturn = null;
     mockStackScreenOptions = undefined;
+    mockScreenOptionsByName = {};
     mockAppStateChange = undefined;
     mockReplace.mockClear();
     mockHideAsync.mockClear();
@@ -197,6 +262,8 @@ describe("root startup routing", () => {
     mockIsAuthCallbackUrl.mockReset();
     mockIsAuthCallbackUrl.mockReturnValue(false);
     mockSignOut.mockClear();
+    mockRefreshProfile.mockClear();
+    mockOpenMembership.mockClear();
     Object.defineProperty(AppState, "currentState", {
       configurable: true,
       value: "active",
@@ -235,6 +302,59 @@ describe("root startup routing", () => {
       renderer!.root.findAllByType("MountedRoute" as React.ElementType)
     ).toHaveLength(0);
     expect(mockHideAsync).not.toHaveBeenCalled();
+  });
+
+  it("keeps a transient profile failure signed in and offers retry", async () => {
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", {
+        user: { id: "member-1" },
+      });
+    });
+
+    mockProfileState = {
+      profile: null,
+      loading: false,
+      profileError: "We couldn't load your profile.",
+      refreshProfile: mockRefreshProfile,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+    expect(mockHideAsync).toHaveBeenCalledTimes(1);
+    const retryControl = renderer!.root
+      .findAllByProps({
+        accessibilityLabel: "Try loading profile again",
+      })
+      .find((node) => typeof node.props.onPress === "function");
+    expect(retryControl).toBeDefined();
+
+    await act(async () => {
+      retryControl!.props.onPress();
+    });
+
+    expect(mockRefreshProfile).toHaveBeenCalledTimes(1);
+
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/home");
   });
 
   it.each([
@@ -281,13 +401,11 @@ describe("root startup routing", () => {
         await mockAuthStateChange?.("INITIAL_SESSION", scenario.session);
       });
 
-      if (scenario.session) {
-        expect(mockReplace).not.toHaveBeenCalled();
-        mockProfileState = scenario.resolvedProfile;
-        await act(async () => {
-          renderer!.update(<RootLayoutNav />);
-        });
-      }
+      expect(mockReplace).not.toHaveBeenCalled();
+      mockProfileState = scenario.resolvedProfile;
+      await act(async () => {
+        renderer!.update(<RootLayoutNav />);
+      });
 
       expect(mockReplace).toHaveBeenLastCalledWith(scenario.route);
       expect(mockHideAsync).not.toHaveBeenCalled();
@@ -301,7 +419,52 @@ describe("root startup routing", () => {
     }
   );
 
+  it("returns an opted-in visitor to Welcome on a cold launch", async () => {
+    mockVisitorPreviewAccepted = true;
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", null);
+    });
+    mockProfileState = { profile: null, loading: false };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
+  });
+
+  it("restores the destination that prompted an existing member to sign in", async () => {
+    mockPendingMembershipReturn = { intent: "profile", returnTo: "/profile" };
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", {
+        user: { id: "member-1" },
+      });
+    });
+
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+    };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(mockReplace).toHaveBeenLastCalledWith("/profile");
+  });
+
   it("resolves a failed persisted-session read to Welcome", async () => {
+    mockProfileState = { profile: null, loading: false };
     mockGetSession.mockResolvedValueOnce({
       data: { session: null },
       error: new Error("session storage unavailable"),
@@ -335,7 +498,13 @@ describe("root startup routing", () => {
     });
 
     expect(mockReplace).toHaveBeenLastCalledWith("/home");
-    expect(mockStackScreenOptions?.animation).toBe("none");
+    // Startup destinations are statically non-animated: a stack-wide flag
+    // that flips after startup can race the in-flight native transition,
+    // so the guarantee lives on the screens themselves.
+    expect(mockScreenOptionsByName["(tabs)"]?.animation).toBe("none");
+    expect(mockScreenOptionsByName["welcome"]?.animation).toBe("none");
+    expect(mockScreenOptionsByName["onboarding"]?.animation).toBe("none");
+    expect(mockStackScreenOptions?.animation).toBeUndefined();
   });
 
   it("routes incomplete onboarding before revealing an authenticated deep link", async () => {
@@ -367,7 +536,7 @@ describe("root startup routing", () => {
     expect(mockHideAsync).not.toHaveBeenCalled();
   });
 
-  it("routes an unauthenticated deep link to Welcome", async () => {
+  it("keeps an unauthenticated public deep link in visitor preview", async () => {
     mockInitialUrl = "tinitime://r/review-1";
     mockPathname = "/r/review-1";
 
@@ -377,9 +546,13 @@ describe("root startup routing", () => {
     await act(async () => {
       await mockAuthStateChange?.("INITIAL_SESSION", null);
     });
+    mockProfileState = { profile: null, loading: false };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
 
-    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
-    expect(mockHideAsync).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+    expect(mockHideAsync).toHaveBeenCalled();
   });
 
   it("waits for onboarding state after a fresh sign-in before routing", async () => {
@@ -461,7 +634,7 @@ describe("root startup routing", () => {
     expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
   });
 
-  it("routes an initialized app to Welcome after logout", async () => {
+  it("returns to Welcome after logout", async () => {
     mockProfileState = {
       profile: {
         id: "member-1",
@@ -573,10 +746,36 @@ describe("root startup routing", () => {
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith("/welcome");
   });
+
+  it("does not open a membership sheet while a signed-in member is signing out of Settings", async () => {
+    mockPathname = "/settings";
+    mockProfileState = {
+      profile: {
+        id: "member-1",
+        username: "olive",
+        eula_accepted: true,
+      },
+      loading: false,
+    };
+
+    await act(async () => {
+      renderer = create(<SharedTabLayout />);
+    });
+
+    mockProfileState = {
+      profile: null,
+      loading: false,
+    };
+    await act(async () => {
+      renderer!.update(<SharedTabLayout />);
+    });
+
+    expect(mockOpenMembership).not.toHaveBeenCalled();
+  });
 });
 
 describe("root error reporting", () => {
-  it("forwards caught render errors to Sentry", async () => {
+  it("forwards caught render errors through the app reporter", async () => {
     const error = new Error("startup render failed");
     let errorRenderer: ReactTestRenderer | undefined;
 
@@ -584,9 +783,10 @@ describe("root error reporting", () => {
       errorRenderer = create(<ErrorBoundary error={error} retry={jest.fn()} />);
     });
 
-    expect(mockCaptureException).toHaveBeenCalledWith(error, {
-      tags: { surface: "root-error-boundary" },
-    });
+    expect(mockReportError).toHaveBeenCalledWith(
+      "[ErrorBoundary] Render error:",
+      error
+    );
 
     await act(async () => errorRenderer?.unmount());
   });

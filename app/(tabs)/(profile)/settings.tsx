@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
-import { fonts, makeStyles, type ThemePreference, useTheme } from "@/theme";
+import { makeStyles, type ThemePreference, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
 import { routes } from "@/utils/routes";
@@ -152,9 +152,7 @@ const Settings = () => {
                 <Ionicons
                   name={item.icon as any}
                   size={24}
-                  color={
-                    item.id === "delete" ? colors.danger : colors.postText
-                  }
+                  color={item.id === "delete" ? colors.danger : colors.postText}
                 />
                 <Text
                   style={[
@@ -219,8 +217,8 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   segmentTextSelected: {
+    ...t.typography.bodyStrong,
     color: t.colors.text,
-    fontFamily: fonts.semibold,
   },
   menuItem: {
     backgroundColor: t.colors.surface,
@@ -242,11 +240,9 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
   },
   menuItemText: {
-    ...t.typography.body,
-    fontSize: 15,
+    ...t.typography.bodyStrong,
     color: t.colors.postText,
     marginLeft: t.spacing.lg,
-    fontFamily: fonts.medium,
   },
   deleteText: {
     color: t.colors.danger,
