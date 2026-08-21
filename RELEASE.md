@@ -104,7 +104,7 @@ endpoint.
 
 ```bash
 supabase db push
-supabase functions deploy public-content --no-verify-jwt
+supabase functions deploy public-content
 supabase functions deploy app-usage --no-verify-jwt
 ```
 
@@ -120,10 +120,11 @@ workdir, run `supabase db push --dry-run` there, and confirm the exact allowlist
 before applying it. Production Edge Functions are deployed by explicit name:
 deploy `public-content` for 4.0, but never deploy `app-usage` there.
 
-The function deliberately accepts an anon-key request, then exposes only its
-explicit public projection. Raw profile/review/comment tables and the private
-review image bucket remain unavailable to anonymous clients. Existing and new
-profiles default to visitor-visible; members can opt out in Edit Profile.
+The function accepts the app's project-scoped anonymous JWT, then exposes only
+its explicit public projection. The Edge gateway rejects requests without a
+valid project JWT. Raw profile/review/comment tables and the private review
+image bucket remain unavailable to anonymous clients. Existing and new profiles
+default to visitor-visible; members can opt out in Edit Profile.
 The usage endpoint stores a random per-installation UUID and app metadata, but
 no IP address, advertising identifier, or device fingerprint. It derives
 visitor/member status from Supabase Auth on the server. The admin dashboard
