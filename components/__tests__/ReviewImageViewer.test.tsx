@@ -16,6 +16,15 @@ jest.mock("expo-image", () => {
   };
 });
 
+jest.mock("react-native-gesture-handler", () => {
+  const React = jest.requireActual("react");
+  return {
+    PinchGestureHandler: ({ children }: { children: React.ReactNode }) =>
+      React.createElement("PinchGestureHandler", null, children),
+    State: { ACTIVE: 4 },
+  };
+});
+
 describe("ReviewImageViewer", () => {
   it("shows the review image and closes on any tap", () => {
     const onClose = jest.fn();
