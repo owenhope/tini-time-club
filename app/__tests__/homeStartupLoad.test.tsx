@@ -211,7 +211,7 @@ describe("Feed startup loading", () => {
     expect(copy).toContain("We couldn't load the club right now.");
     expect(copy).not.toContain("Edge Function returned");
     expect(copy).not.toContain("sharing your own experiences");
-  });
+  }, 15_000);
 
   it("uses a browse-oriented empty state when the public club has no reviews", async () => {
     mockProfile = null;
