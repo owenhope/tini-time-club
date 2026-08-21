@@ -6,6 +6,7 @@ const mockGetReviews = jest.fn(
   (_options?: Record<string, unknown>) => new Promise(() => undefined)
 );
 const mockOpenMembership = jest.fn();
+const mockRefreshUnseenCount = jest.fn(async () => undefined);
 const mockReportError = jest.fn();
 let mockProfile: {
   id: string;
@@ -46,6 +47,13 @@ jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
     profile: mockProfile,
     updateProfile: jest.fn(),
+  }),
+}));
+
+jest.mock("@/context/activity-context", () => ({
+  useActivity: () => ({
+    unseenCount: 0,
+    refreshUnseenCount: mockRefreshUnseenCount,
   }),
 }));
 
@@ -163,6 +171,7 @@ describe("Feed startup loading", () => {
     mockGetReviews.mockReset();
     mockGetReviews.mockImplementation(() => new Promise(() => undefined));
     mockOpenMembership.mockClear();
+    mockRefreshUnseenCount.mockClear();
     mockReportError.mockClear();
     mockProfile = {
       id: "member-1",
@@ -250,16 +259,18 @@ describe("Feed startup loading", () => {
     expect(mockOpenMembership).toHaveBeenCalledWith("profile");
   });
 
-  it("does not show the visitor Join action to signed-in members", async () => {
+  it("shows the Activity center action to signed-in members", async () => {
     mockGetReviews.mockResolvedValue([]);
 
     await act(async () => {
       renderer = create(<Home />);
     });
 
-    expect(
-      renderer!.root.findByType("AppHeader" as React.ElementType).props.actions
-    ).toEqual([]);
+    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
+      .props.actions[0];
+
+    expect(action.icon).toBe("heart-outline");
+    expect(action.accessibilityLabel).toBe("Activity");
   });
 
   it("keeps the selected people feed when an older club refresh resolves last", async () => {

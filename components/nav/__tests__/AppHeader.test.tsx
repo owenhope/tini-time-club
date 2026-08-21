@@ -33,9 +33,15 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: Object.assign(() => null, { glyphMap: {} }),
-}));
+jest.mock("@expo/vector-icons", () => {
+  const ReactActual = jest.requireActual("react");
+  return {
+    Ionicons: Object.assign(
+      (props: object) => ReactActual.createElement("Ionicons", props),
+      { glyphMap: {} }
+    ),
+  };
+});
 
 jest.mock("expo-image", () => ({
   Image: () => null,
@@ -134,6 +140,29 @@ describe("AppHeader", () => {
       .map((node) => node.props.children);
     expect(text).toContain("Index filters");
     expect(text).not.toContain("Hidden title");
+
+    act(() => tree!.unmount());
+  });
+
+  it("renders compact back chevrons in the dark theme foreground", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="compact"
+            title="Settings"
+            onBack={jest.fn()}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const backIcon = tree!.root.findByType(
+      "Ionicons" as React.ElementType
+    );
+    expect(backIcon.props.name).toBe("chevron-back");
+    expect(backIcon.props.color).toBe(darkColors.text);
 
     act(() => tree!.unmount());
   });

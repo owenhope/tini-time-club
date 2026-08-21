@@ -178,9 +178,7 @@ export const MARTINI_INDEX: MartiniIndexEntry[] = [
     title: "Gibson",
     spirit: "Gin",
     type: "Gibson",
-    // TODO(photo): shot reused from the classic gin until the Gibson gets
-    // its own (the garnish should be cocktail onions, not olives).
-    image: require("@/assets/images/index/classic-gin.jpg"),
+    image: require("@/assets/images/index/gibson-gin.jpg"),
     description:
       "A dry gin build finished with pickled cocktail onions instead of olives, trading brine for a savory, faintly sweet bite.",
     ingredients: "Gin · Dry Vermouth · Cocktail Onions",
