@@ -14,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, useWatch } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Image as ExpoImage } from "expo-image";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
@@ -1193,12 +1193,20 @@ export default function ReviewScreen() {
   const { openMembership } = useMembership();
   const hasPrompted = React.useRef(false);
 
-  useEffect(() => {
-    if (!loading && !profile && !hasPrompted.current) {
-      hasPrompted.current = true;
-      openMembership("review");
-    }
-  }, [loading, openMembership, profile]);
+  // Focus-gated on purpose: once a member has opened the Review tab this
+  // screen stays mounted in the background, so logout nulls `profile` while
+  // it is not the screen the user is looking at. Only a visitor actually
+  // focused on the Review tab (e.g. via deep link) should be offered
+  // membership; the background case would push the sheet on top of the
+  // logout navigation.
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading && !profile && !hasPrompted.current) {
+        hasPrompted.current = true;
+        openMembership("review");
+      }
+    }, [loading, openMembership, profile])
+  );
 
   if (loading || !profile) return null;
   return <ReviewComposer />;

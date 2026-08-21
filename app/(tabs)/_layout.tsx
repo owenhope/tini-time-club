@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -19,6 +19,13 @@ import { routes } from "@/utils/routes";
 import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 import { useMembership } from "@/context/membership-context";
+import type { MembershipIntent } from "@/utils/membership";
+
+// Welcome's full-width "Discover Martinis" CTA occupies the strip of screen
+// where the native tab bar mounts, so the tail of that tap can be delivered to
+// the gated Review/Profile triggers the moment this layout appears under the
+// finger. A press that arrives this soon after mount cannot be intentional.
+const GHOST_TAP_GRACE_MS = 700;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -36,6 +43,14 @@ const LayoutContent = () => {
   const router = useRouter();
   const { requireMembership } = useMembership();
   const pathname = usePathname();
+  const mountedAtRef = useRef(Date.now());
+  const gateTabPress = useCallback(
+    (intent: MembershipIntent) => {
+      if (Date.now() - mountedAtRef.current < GHOST_TAP_GRACE_MS) return;
+      requireMembership(intent);
+    },
+    [requireMembership]
+  );
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;
@@ -169,7 +184,7 @@ const LayoutContent = () => {
             ? undefined
             : {
                 tabPress: () => {
-                  requireMembership("review");
+                  gateTabPress("review");
                 },
               }
         }
@@ -203,7 +218,7 @@ const LayoutContent = () => {
             ? undefined
             : {
                 tabPress: () => {
-                  requireMembership("profile");
+                  gateTabPress("profile");
                 },
               }
         }

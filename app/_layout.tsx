@@ -43,6 +43,7 @@ import {
   isAuthCallbackUrl,
 } from "@/utils/authDeepLink";
 import { routes } from "@/utils/routes";
+import { consumeExplicitSignOutNavigation } from "@/utils/signOutNavigation";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import { trackAppUsage } from "@/services/appUsageService";
@@ -486,7 +487,9 @@ export function RootLayoutNav() {
         await authCache.invalidateCache();
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(null);
-        } else {
+        } else if (!consumeExplicitSignOutNavigation()) {
+          // The screen that started this sign-out may have navigated to
+          // Welcome already; replacing Welcome with itself would flash.
           router.replace(routes.welcome());
         }
       }
