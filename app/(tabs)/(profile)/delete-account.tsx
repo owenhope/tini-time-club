@@ -14,6 +14,7 @@ import { deleteCurrentAccount } from "@/services/accountService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
+import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { routes } from "@/utils/routes";
 
 const DeleteAccount = () => {
@@ -50,9 +51,10 @@ const DeleteAccount = () => {
 
               // The server has removed the Auth record. Clear the device's
               // persisted session without making another remote request.
-              const { error: signOutError } = await supabase.auth.signOut({
-                scope: "local",
-              });
+              const { error: signOutError } = await runExpectedSignOut(
+                "account-deleted",
+                () => supabase.auth.signOut({ scope: "local" })
+              );
 
               if (signOutError) {
                 reportError("Error signing out:", signOutError);

@@ -3,6 +3,12 @@ import { Alert } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { ProfileProvider, useProfile } from "@/context/profile-context";
 
+jest.mock("@react-native-async-storage/async-storage", () =>
+  jest.requireActual(
+    "@react-native-async-storage/async-storage/jest/async-storage-mock"
+  )
+);
+
 const mockReplace = jest.fn();
 const mockRouter = { replace: mockReplace };
 const mockGetProfile = jest.fn();

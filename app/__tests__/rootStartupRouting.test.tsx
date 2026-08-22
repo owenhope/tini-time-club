@@ -5,6 +5,12 @@ import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
 import SharedTabLayout from "../(tabs)/(home,discover,profile)/_layout";
 
+jest.mock("@react-native-async-storage/async-storage", () =>
+  jest.requireActual(
+    "@react-native-async-storage/async-storage/jest/async-storage-mock"
+  )
+);
+
 let mockAuthStateChange:
   | ((event: string, session: { user: { id: string } } | null) => Promise<void>)
   | undefined;
@@ -395,6 +401,12 @@ describe("root startup routing", () => {
   ])(
     "selects the $name startup route before hiding splash",
     async (scenario) => {
+      if (!scenario.session) {
+        mockGetSession.mockResolvedValueOnce({
+          data: { session: null },
+          error: null,
+        });
+      }
       await act(async () => {
         renderer = create(<RootLayoutNav />);
       });
@@ -423,6 +435,10 @@ describe("root startup routing", () => {
 
   it("returns an opted-in visitor to Welcome on a cold launch", async () => {
     mockVisitorPreviewAccepted = true;
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
 
     await act(async () => {
       renderer = create(<RootLayoutNav />);
@@ -465,7 +481,7 @@ describe("root startup routing", () => {
     expect(mockReplace).toHaveBeenLastCalledWith("/profile");
   });
 
-  it("resolves a failed persisted-session read to Welcome", async () => {
+  it("offers retry without signing out when persisted-session storage is unavailable", async () => {
     mockProfileState = { profile: null, loading: false };
     mockGetSession.mockResolvedValueOnce({
       data: { session: null },
@@ -476,8 +492,13 @@ describe("root startup routing", () => {
       renderer = create(<RootLayoutNav />);
     });
 
-    expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
-    expect(mockHideAsync).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+    expect(mockHideAsync).toHaveBeenCalled();
+    expect(
+      renderer!.root.findByProps({
+        accessibilityLabel: "Try restoring session again",
+      })
+    ).toBeDefined();
   });
 
   it("does not animate from the empty startup gate to the resolved route", async () => {
@@ -541,6 +562,10 @@ describe("root startup routing", () => {
   it("keeps an unauthenticated public deep link in visitor preview", async () => {
     mockInitialUrl = "tinitime://r/review-1";
     mockPathname = "/r/review-1";
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
 
     await act(async () => {
       renderer = create(<RootLayoutNav />);
@@ -559,6 +584,10 @@ describe("root startup routing", () => {
 
   it("waits for onboarding state after a fresh sign-in before routing", async () => {
     mockProfileState = { profile: null, loading: false };
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
 
     await act(async () => {
       renderer = create(<RootLayoutNav />);
@@ -604,6 +633,10 @@ describe("root startup routing", () => {
       "tinitime://auth/callback#access_token=AT&refresh_token=RT";
     mockIsAuthCallbackUrl.mockReturnValue(true);
     mockPathname = "/auth/callback";
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
 
     await act(async () => {
       renderer = create(<RootLayoutNav />);

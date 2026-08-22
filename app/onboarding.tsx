@@ -35,6 +35,7 @@ import { useProfile } from "@/context/profile-context";
 import { deleteCurrentAccount } from "@/services/accountService";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { clearUserCaches } from "@/utils/signOut";
+import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { supabase } from "@/utils/supabase";
 import { routes } from "@/utils/routes";
 import { consumePendingMembershipReturn } from "@/services/visitor-session";
@@ -294,7 +295,7 @@ export default function Onboarding() {
   const declineTerms = useCallback(async () => {
     await unregisterPushNotificationsAsync();
     await clearUserCaches();
-    await supabase.auth.signOut();
+    await runExpectedSignOut("declined-terms", () => supabase.auth.signOut());
   }, []);
 
   // The header's X: abandoning sign-up deletes the half-made account (same
@@ -307,9 +308,10 @@ export default function Onboarding() {
     try {
       await deleteCurrentAccount();
       await clearUserCaches();
-      const { error: signOutError } = await supabase.auth.signOut({
-        scope: "local",
-      });
+      const { error: signOutError } = await runExpectedSignOut(
+        "quit-signup",
+        () => supabase.auth.signOut({ scope: "local" })
+      );
       if (signOutError) {
         reportError("Error signing out after quitting sign-up:", signOutError);
       }
