@@ -68,6 +68,11 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Too many requests" }, 429);
   }
 
+  const token = bearerToken(request);
+  if (!token) {
+    return jsonResponse({ error: "Missing project credential" }, 401);
+  }
+
   try {
     const body = await request.json();
     const installationId = boundedText(body?.installationId, 36);
@@ -82,10 +87,7 @@ Deno.serve(async (request) => {
     }
 
     const admin = getAdminClient();
-    const token = bearerToken(request);
-    const { data: authData } = token
-      ? await admin.auth.getUser(token)
-      : { data: { user: null } };
+    const { data: authData } = await admin.auth.getUser(token);
     const userId = authData.user?.id ?? null;
     const audience = userId ? "member" : "visitor";
     const requestedPlatform = boundedText(body?.platform, 16);

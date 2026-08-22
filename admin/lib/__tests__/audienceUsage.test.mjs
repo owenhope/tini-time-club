@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { resolveAudienceUsageResponse } from "../audienceUsage.mjs";
 
-test("marks app audience unavailable when its development-only RPC is absent", () => {
+test("marks app audience unavailable while its RPC is not deployed", () => {
   const result = resolveAudienceUsageResponse(null, {
     code: "PGRST202",
     message:

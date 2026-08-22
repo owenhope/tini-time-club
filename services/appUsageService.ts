@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 import { getInstallationId } from "@/services/installationIdentity";
 import { supabase } from "@/utils/supabase";
 import { warn } from "@/utils/log";
-import { isDevelopmentBackend } from "@/utils/screenshotMode";
 
 const SESSION_ID = uuidv4();
 const RETRY_DELAY_MS = 1_000;
@@ -35,7 +34,6 @@ const heartbeat = async (): Promise<void> => {
  * heartbeat will provide another recovery opportunity.
  */
 export const trackAppUsage = async (): Promise<boolean> => {
-  if (!isDevelopmentBackend()) return false;
   if (requestInFlight) return requestInFlight;
 
   requestInFlight = (async () => {

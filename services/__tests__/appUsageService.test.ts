@@ -1,5 +1,5 @@
 type InvokeOptions = { body: Record<string, unknown> };
-let mockDevelopmentBackend = true;
+let mockAppEnvironment = "development";
 const mockInvoke = jest.fn<Promise<{ error: null }>, [string, InvokeOptions]>(
   async () => ({ error: null })
 );
@@ -10,7 +10,9 @@ jest.mock("expo-constants", () => ({
     expoConfig: {
       version: "4.0.0",
       extra: {
-        environment: "development",
+        get environment() {
+          return mockAppEnvironment;
+        },
         backendEnvironment: "development",
       },
     },
@@ -34,15 +36,12 @@ jest.mock("@/utils/supabase", () => ({
   },
 }));
 jest.mock("@/utils/log", () => ({ warn: jest.fn() }));
-jest.mock("@/utils/screenshotMode", () => ({
-  isDevelopmentBackend: () => mockDevelopmentBackend,
-}));
 
 import { trackAppUsage } from "@/services/appUsageService";
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockDevelopmentBackend = true;
+  mockAppEnvironment = "development";
 });
 
 it("sends installation metadata without asserting visitor or member identity", async () => {
@@ -61,10 +60,16 @@ it("sends installation metadata without asserting visitor or member identity", a
   expect(mockInvoke.mock.calls[0]?.[1]?.body).not.toHaveProperty("userId");
 });
 
-it("does not call the development-only endpoint in production", async () => {
-  mockDevelopmentBackend = false;
+it("records production usage without changing the request contract", async () => {
+  mockAppEnvironment = "production";
 
-  await expect(trackAppUsage()).resolves.toBe(false);
+  await expect(trackAppUsage()).resolves.toBe(true);
 
-  expect(mockInvoke).not.toHaveBeenCalled();
+  expect(mockInvoke).toHaveBeenCalledWith("app-usage", {
+    body: expect.objectContaining({
+      appEnvironment: "production",
+      appVersion: "4.0.0",
+      platform: "ios",
+    }),
+  });
 });
