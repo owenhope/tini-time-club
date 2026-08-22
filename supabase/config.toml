@@ -292,9 +292,10 @@ entrypoint = "./functions/public-content/index.ts"
 
 [functions.app-usage]
 enabled = true
-# The endpoint accepts visitors. It resolves a member only after independently
-# verifying a supplied user access token with Supabase Auth.
-verify_jwt = false
+# Signed-out visitors send the project's anon JWT. The gateway rejects requests
+# without a project credential, and the function independently resolves member
+# access tokens with Supabase Auth before recording an authenticated audience.
+verify_jwt = true
 import_map = "./functions/app-usage/deno.json"
 entrypoint = "./functions/app-usage/index.ts"
 

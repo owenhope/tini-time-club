@@ -23,8 +23,8 @@ const unavailableAudienceUsage = () => ({
 });
 
 /**
- * Keep the production admin usable when the intentionally development-only
- * app-usage schema is absent. Other database failures must still surface.
+ * Keep the admin usable while the additive app-usage schema is being rolled
+ * out to an environment. Other database failures must still surface.
  *
  * @param {Record<string, any> | null} data
  * @param {{code?: string, message: string} | null} error

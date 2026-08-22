@@ -98,38 +98,38 @@ a 4.0 build. Their production rollout is additive: the migration leaves the
 legacy six-argument `feed_reviews` RPC in place for the currently live app, and
 the new Edge Function is read-only.
 
-The privacy-safe app-usage tables and `app-usage` heartbeat remain
-development-only. The production client deliberately does not call that
-endpoint.
+The privacy-safe app-usage tables and `app-usage` heartbeat are deployed in
+development and production. Their rollout is additive: older clients do not
+call the endpoint, and heartbeat failures never block startup or navigation.
 
 ```bash
 supabase db push
 supabase functions deploy public-content
-supabase functions deploy app-usage --no-verify-jwt
+supabase functions deploy app-usage
 ```
 
 The shared migration directory contains two independently deployed versions:
 
 - `20260820120000_public_profile_visibility.sql` — required in development and
   production before distributing 4.0.
-- `20260820143000_app_usage_presence.sql` — development-only.
+- `20260820143000_app_usage_presence.sql` — additive usage tables and the
+  service-role-only admin summary RPC.
 
 Never run an unreviewed bare `supabase db push` against production while those
 versions are pending. Stage only reviewed production migrations in an isolated
 workdir, run `supabase db push --dry-run` there, and confirm the exact allowlist
-before applying it. Production Edge Functions are deployed by explicit name:
-deploy `public-content` for 4.0, but never deploy `app-usage` there.
+before applying it. Production Edge Functions are deployed by explicit name.
 
 The function accepts the app's project-scoped anonymous JWT, then exposes only
 its explicit public projection. The Edge gateway rejects requests without a
 valid project JWT. Raw profile/review/comment tables and the private review
 image bucket remain unavailable to anonymous clients. Existing and new profiles
 default to visitor-visible; members can opt out in Edit Profile.
-The usage endpoint stores a random per-installation UUID and app metadata, but
-no IP address, advertising identifier, or device fingerprint. It derives
-visitor/member status from Supabase Auth on the server. The admin dashboard
-labels anonymous totals as installations rather than people and treats a
-heartbeat within 15 minutes as active now.
+The usage endpoint requires the project's JWT, stores a random per-installation
+UUID and app metadata, but no IP address, advertising identifier, or device
+fingerprint. It derives visitor/member status from Supabase Auth on the server.
+The admin dashboard labels anonymous totals as installations rather than people
+and treats a heartbeat within 15 minutes as active now.
 
 ## OTA updates
 
