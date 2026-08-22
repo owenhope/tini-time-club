@@ -16,6 +16,7 @@ import { makeStyles, type ThemePreference, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { clearUserCaches } from "@/utils/signOut";
 import { markExplicitSignOutNavigation } from "@/utils/signOutNavigation";
+import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { routes } from "@/utils/routes";
 import { useProfile } from "@/context/profile-context";
 import { shareInviteViaSheet } from "@/utils/inviteShare";
@@ -56,7 +57,9 @@ const Settings = () => {
       await clearUserCaches();
 
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
+      const { error } = await runExpectedSignOut("settings-sign-out", () =>
+        supabase.auth.signOut()
+      );
 
       if (error) {
         reportError("Error signing out:", error);

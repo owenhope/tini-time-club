@@ -16,6 +16,7 @@ import {
   ACCOUNT_GONE_MESSAGE,
 } from "@/utils/accountErrors";
 import { reportError } from "@/utils/log";
+import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { routes } from "@/utils/routes";
 import type { Profile } from "@/types/types";
 
@@ -80,7 +81,10 @@ export const ProfileProvider = ({
     setProfileError(null);
     await unregisterPushNotificationsAsync();
     await authCache.invalidateCache();
-    const { error } = await supabase.auth.signOut();
+    // Explained to the member via the alert below; not an "unexpected" sign-out.
+    const { error } = await runExpectedSignOut("account-gone", () =>
+      supabase.auth.signOut()
+    );
     if (error) {
       reportError("Error signing out unavailable account:", error);
       router.replace(routes.welcome());

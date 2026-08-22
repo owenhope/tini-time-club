@@ -44,6 +44,11 @@ import {
 } from "@/utils/authDeepLink";
 import { routes } from "@/utils/routes";
 import { consumeExplicitSignOutNavigation } from "@/utils/signOutNavigation";
+import {
+  recordSignedIn,
+  trackInitialSession,
+  trackSignedOut,
+} from "@/utils/authTelemetry";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import { trackAppUsage } from "@/services/appUsageService";
@@ -206,6 +211,9 @@ export function RootLayoutNav() {
   const [pendingSignedInUserId, setPendingSignedInUserId] = useState<
     string | null
   >(null);
+  const [authStartupError, setAuthStartupError] = useState<string | null>(null);
+  const [authStartupAttempt, setAuthStartupAttempt] = useState(0);
+  const [isRetryingAuth, setIsRetryingAuth] = useState(false);
   const isStartupResolved = Boolean(
     fontsLoaded && initialAuth && (!profileLoading || profileError)
   );
@@ -446,6 +454,11 @@ export function RootLayoutNav() {
 
       hasHandledInitialSession.current = true;
       authSessionRef.current = session;
+      setAuthStartupError(null);
+      setIsRetryingAuth(false);
+      // Sentry signal for sessions lost between launches (storage failures,
+      // rejected refresh tokens). Fire-and-forget; must not delay startup.
+      void trackInitialSession(!!session);
       const pendingMembership = session
         ? await getPendingMembershipReturn().catch(() => null)
         : null;
@@ -462,10 +475,11 @@ export function RootLayoutNav() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       log("[RootLayout] Auth state changed:", event, !!session);
 
-      if (event === "INITIAL_SESSION") {
+      if (event === "INITIAL_SESSION" && session) {
         await resolveInitialSession(session);
       } else if (event === "SIGNED_IN" && session) {
         void trackAppUsage();
+        void recordSignedIn();
         if (!hasHandledInitialSession.current) {
           await resolveInitialSession(session);
         } else {
@@ -483,6 +497,8 @@ export function RootLayoutNav() {
         // User signed out
         authSessionRef.current = null;
         void trackAppUsage();
+        // Reports to Sentry when no screen marked this sign-out as intentional.
+        void trackSignedOut();
         setPendingSignedInUserId(null);
         await authCache.invalidateCache();
         if (!hasHandledInitialSession.current) {
@@ -499,6 +515,15 @@ export function RootLayoutNav() {
     // read gives initialization a deterministic error path as well: invalid
     // or unreadable persisted sessions resolve to signed-out without relying
     // on a timer to reveal the Welcome screen.
+    const handleAuthStartupFailure = (error: unknown) => {
+      reportError("[RootLayout] Failed to initialize auth:", error);
+      setAuthStartupError(
+        "We couldn't securely restore your session. Your sign-in data has not been deleted."
+      );
+      setIsRetryingAuth(false);
+      void SplashScreen.hideAsync();
+    };
+
     void supabase.auth
       .getSession()
       .then(({ data: { session }, error }) => {
@@ -508,15 +533,16 @@ export function RootLayoutNav() {
           // broke. Keep reportError for failures that aren't auth-API answers.
           if (isAuthApiError(error)) {
             warn("[RootLayout] Stored session is no longer valid:", error);
+            return resolveInitialSession(null);
           } else {
-            reportError("[RootLayout] Failed to restore the session:", error);
+            handleAuthStartupFailure(error);
+            return;
           }
         }
-        return resolveInitialSession(error ? null : session);
+        return resolveInitialSession(session);
       })
       .catch((error) => {
-        reportError("[RootLayout] Failed to initialize auth:", error);
-        return resolveInitialSession(null);
+        handleAuthStartupFailure(error);
       });
 
     // Handle app state changes (resume from background)
@@ -543,7 +569,43 @@ export function RootLayoutNav() {
       linkingSubscription.remove();
       appStateSubscription?.remove();
     };
-  }, [router]);
+  }, [authStartupAttempt, router]);
+
+  if (authStartupError && fontsLoaded) {
+    return (
+      <View
+        style={[
+          errorBoundaryStyles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
+          Unable to restore your session
+        </Text>
+        <Text style={[errorBoundaryStyles.body, { color: colors.textMuted }]}>
+          {authStartupError}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try restoring session again"
+          disabled={isRetryingAuth}
+          onPress={() => {
+            setIsRetryingAuth(true);
+            setAuthStartupAttempt((attempt) => attempt + 1);
+          }}
+          style={({ pressed }) => [
+            errorBoundaryStyles.button,
+            (pressed || isRetryingAuth) && errorBoundaryStyles.buttonPressed,
+          ]}
+        >
+          <Text style={errorBoundaryStyles.buttonText}>
+            {isRetryingAuth ? "Trying again…" : "Try again"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   // Return null to keep native splash visible until ready (per Expo docs).
   // Also wait on the brand fonts so first paint isn't in the system face.

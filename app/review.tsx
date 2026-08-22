@@ -198,6 +198,20 @@ function ReviewComposer() {
     ReviewImageSource,
     "width" | "height"
   > | null>(null);
+  const photoAspectRatio =
+    photoDimensions?.width && photoDimensions?.height
+      ? photoDimensions.width / photoDimensions.height
+      : null;
+  const [photoPreviewBounds, setPhotoPreviewBounds] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const photoPreviewFrameSize =
+    photoAspectRatio && photoPreviewBounds
+      ? photoAspectRatio >= photoPreviewBounds.width / photoPreviewBounds.height
+        ? { width: "100%" as const, aspectRatio: photoAspectRatio }
+        : { height: "100%" as const, aspectRatio: photoAspectRatio }
+      : null;
   const [isReviewing, setIsReviewing] = useState(false);
   const [isPhotoPreviewing, setIsPhotoPreviewing] = useState(false);
   const [selectedLocation, setSelectedLocation] =
@@ -978,13 +992,43 @@ function ReviewComposer() {
                 },
               ]}
             />
-            <View style={styles.photoPreviewContent}>
+            <View
+              style={styles.photoPreviewContent}
+              onLayout={({ nativeEvent: { layout } }) => {
+                if (
+                  layout.width !== photoPreviewBounds?.width ||
+                  layout.height !== photoPreviewBounds?.height
+                ) {
+                  setPhotoPreviewBounds({
+                    width: layout.width,
+                    height: layout.height,
+                  });
+                }
+              }}
+            >
               {photo ? (
-                <View style={styles.photoPreviewFrame}>
+                <View
+                  style={[
+                    styles.photoPreviewFrame,
+                    photoPreviewFrameSize ?? styles.photoPreviewFrameFallback,
+                  ]}
+                >
                   <ExpoImage
                     source={{ uri: photo }}
                     style={styles.photoPreviewImage}
                     contentFit="contain"
+                    onLoad={({ source }) => {
+                      if (
+                        !photoDimensions &&
+                        source.width > 0 &&
+                        source.height > 0
+                      ) {
+                        setPhotoDimensions({
+                          width: source.width,
+                          height: source.height,
+                        });
+                      }
+                    }}
                   />
                 </View>
               ) : null}
@@ -1323,15 +1367,21 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.xl,
   },
   photoPreviewFrame: {
-    width: "100%" as const,
-    height: "100%" as const,
+    maxWidth: "100%" as const,
+    maxHeight: "100%" as const,
     overflow: "hidden" as const,
     borderRadius: t.radius.card,
+    borderCurve: "continuous" as const,
+  },
+  photoPreviewFrameFallback: {
+    width: "100%" as const,
+    height: "100%" as const,
   },
   photoPreviewImage: {
     width: "100%" as const,
     height: "100%" as const,
     borderRadius: t.radius.card,
+    borderCurve: "continuous" as const,
   },
   previewWrapper: {
     overflow: "hidden" as const,
