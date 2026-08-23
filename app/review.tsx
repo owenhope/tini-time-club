@@ -29,27 +29,22 @@ import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
 import { useMembership } from "@/context/membership-context";
-import { AppText, Button } from "@/components/shared";
+import { AppText } from "@/components/shared";
 import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
 import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
-import {
-  checkRankUp,
-  collectAchievements,
-  isRegularAt,
-  type Achievement,
-} from "@/utils/celebrations";
+import { collectAchievements, type Achievement } from "@/utils/celebrations";
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
+import { completePostReview } from "@/utils/reviewSubmission";
 import {
-  completePostReview,
-  ReviewSubmissionError,
-  submitNewReview,
-} from "@/utils/reviewSubmission";
+  publishReview,
+  ReviewPublishingError,
+} from "@/services/reviewPublishingService";
 import {
   prepareReviewImageForUpload,
   type ReviewImageSource,
@@ -624,32 +619,6 @@ function ReviewComposer() {
     );
   };
 
-  const createReview = async (
-    userId: string,
-    imageUrl: string,
-    locationId: string | null
-  ) => {
-    try {
-      const newReview = {
-        user_id: userId,
-        location: locationId,
-        spirit: watchedValues.spirit,
-        type: watchedValues.type,
-        taste: watchedValues.taste,
-        presentation: watchedValues.presentation,
-        comment: watchedValues.comment?.trim() || "",
-        image_url: imageUrl,
-        state: 1,
-      };
-
-      const result = await databaseService.createReview(newReview);
-      return result.id;
-    } catch (error) {
-      reportError("Error creating review:", error);
-      return null;
-    }
-  };
-
   const removeReviewImage = async (imagePath: string | null) => {
     if (!imagePath) return;
     const { error } = await supabase.storage
@@ -713,101 +682,91 @@ function ReviewComposer() {
   const handleUploadAndCreateReview = async () => {
     if (!profile) return;
 
-    let reviewId: string;
-    let locationId: string;
-    let numericLocationId: number | null = null;
-    let wasRegular = false;
+    const selectedLocation = watchedValues.location;
+    if (!selectedLocation) return;
+
+    let submission;
 
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      const submission = await submitNewReview({
-        uploadImage: () => uploadImage(profile.id),
-        resolveLocationId: () => resolveLocationId(profile.id),
-        createReview: (imagePath, resolvedLocationId) =>
-          createReview(profile.id, imagePath, resolvedLocationId),
-        removeImage: removeReviewImage,
-        afterLocationResolved: async (resolvedLocationId) => {
-          const parsedLocationId = Number(resolvedLocationId);
-          numericLocationId = Number.isFinite(parsedLocationId)
-            ? parsedLocationId
-            : null;
-          try {
-            wasRegular = numericLocationId
-              ? (await isRegularAt(numericLocationId, profile.id)) === true
-              : false;
-          } catch (error) {
-            reportError("Error checking existing Regular status:", error);
-            wasRegular = false;
-          }
+      submission = await publishReview(
+        {
+          location: {
+            id:
+              selectedLocation.id && !selectedLocation.coordinates
+                ? selectedLocation.id
+                : null,
+            name: selectedLocation.name,
+            address: selectedLocation.address,
+            placeId: selectedLocation.place_id,
+            latitude: selectedLocation.coordinates?.latitude,
+            longitude: selectedLocation.coordinates?.longitude,
+          },
+          spiritId: watchedValues.spirit,
+          typeId: watchedValues.type,
+          taste: watchedValues.taste,
+          presentation: watchedValues.presentation,
+          comment: watchedValues.comment?.trim() || "",
         },
-        onStage: (stage) => {
-          if (stage === "location")
-            setSubmissionMessage("Confirming location...");
-          if (stage === "upload") setSubmissionMessage("Uploading image...");
-          if (stage === "review") setSubmissionMessage("Creating review...");
-        },
-        onLocationResolutionError: (error) =>
-          reportError("Error resolving location:", error),
-        onCleanupError: (error) =>
-          reportError("Error cleaning up review image:", error),
-      });
-      reviewId = submission.reviewId;
-      locationId = submission.locationId;
+        {
+          uploadImage: () => uploadImage(profile.id),
+          removeImage: removeReviewImage,
+          onStage: (stage) => {
+            if (stage === "upload") setSubmissionMessage("Uploading image...");
+            if (stage === "database")
+              setSubmissionMessage("Publishing review...");
+          },
+          onCleanupError: (error) =>
+            reportError("Error cleaning up review image:", error),
+        }
+      );
     } catch (error) {
       reportError("Error submitting review:", error);
       setSubmitError(
-        error instanceof ReviewSubmissionError && error.stage === "upload"
+        error instanceof ReviewPublishingError && error.stage === "upload"
           ? "We couldn't upload your photo. Please try again."
-          : error instanceof ReviewSubmissionError && error.stage === "location"
-            ? "We couldn't confirm this location. Please try again."
-            : error instanceof ReviewSubmissionError && error.stage === "review"
-              ? "We couldn't save your review. Please try again."
-              : "Something went wrong. Please try again."
+          : error instanceof ReviewPublishingError && error.stage === "database"
+            ? "We couldn't save your review. Please try again."
+            : "Something went wrong. Please try again."
       );
       setIsSubmitting(false);
       return;
     }
 
-    const locationName = (watchedValues.location as any)?.name ?? null;
     setSubmissionMessage("Review created successfully!");
-    setPostedReviewId(String(reviewId));
+    setPostedReviewId(submission.reviewId);
+    await databaseService.clearReviewCaches();
+    publishReviewUpdated(submission.reviewId);
 
     try {
       AnalyticService.capture("new_review", {
-        reviewId,
-        locationId,
-        locationName,
+        reviewId: submission.reviewId,
+        locationId: submission.locationId,
+        locationName: submission.locationName,
       });
 
-      setSubmissionMessage("Checking your club status...");
-      const [rankCheck, isRegular] = await Promise.all([
-        checkRankUp(profile.id),
-        numericLocationId
-          ? isRegularAt(numericLocationId, profile.id)
-          : Promise.resolve(false),
-      ]);
       const earnedAchievements = collectAchievements({
-        rankUp: rankCheck.rankUp,
-        wasRegular,
-        isRegular: isRegular === true,
-        locationId: numericLocationId,
-        locationName,
+        rankUp: submission.rankUp,
+        wasRegular: false,
+        isRegular: submission.becameRegular,
+        locationId: Number(submission.locationId),
+        locationName: submission.locationName,
       });
 
       completePostReview({
         hasAchievements: earnedAchievements.length > 0,
         showCelebration: () => {
-          setCelebrationReviewCount(rankCheck.newCount);
+          setCelebrationReviewCount(submission.reviewCount);
           setAchievements(earnedAchievements);
         },
         navigateToFeed: () =>
-          router.dismissTo(feedRouteAfterPost(String(reviewId))),
+          router.dismissTo(feedRouteAfterPost(submission.reviewId)),
         refreshProfile,
       });
     } catch (error) {
       reportError("Review created but post-submit processing failed:", error);
-      router.dismissTo(feedRouteAfterPost(String(reviewId)));
+      router.dismissTo(feedRouteAfterPost(submission.reviewId));
     }
   };
 

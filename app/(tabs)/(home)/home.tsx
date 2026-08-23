@@ -18,6 +18,7 @@ import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
 import databaseService from "@/services/databaseService";
+import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Button, Input, MartiniIcon } from "@/components/shared";
@@ -48,8 +49,8 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
 // A refresh is newest-first, so keep the head; an appended page arrives at the
-// end, so keep the tail or pagination silently dead-ends once the cache is
-// full (pagination offsets track `page`, not the retained window).
+// end, so keep the tail. Cursor pagination is independent of this retained
+// render window, unlike the old array-length-derived offsets.
 const limitRefreshedReviews = (items: Review[]) =>
   items.length > MAX_CACHED_ITEMS ? items.slice(0, MAX_CACHED_ITEMS) : items;
 const limitAppendedReviews = (items: Review[]) =>
@@ -97,6 +98,7 @@ function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
+  const [nextCursor, setNextCursor] = useState<ReviewCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(0);
@@ -180,18 +182,34 @@ function Home() {
           screenshotUserId = screenshotProfile.id;
         }
 
-        const reviewsPromise = databaseService.getReviews({
-          userId: screenshotUserId,
-          currentUserId: profile?.id,
-          followedOnly: source === "people",
-          limit: PAGE_SIZE,
-          offset: start,
-          excludeBlocked: true,
-          forceRefresh: bypassCache,
-        });
+        const cursorPagePromise = profile?.id
+          ? getReviewPage({
+              viewerId: profile.id,
+              cursor: refresh ? null : nextCursor,
+              userId: screenshotUserId,
+              followedOnly: source === "people",
+              limit: PAGE_SIZE,
+              excludeBlocked: true,
+            })
+          : null;
+        const legacyPagePromise = cursorPagePromise
+          ? null
+          : databaseService.getReviews({
+              userId: screenshotUserId,
+              currentUserId: profile?.id,
+              followedOnly: source === "people",
+              limit: PAGE_SIZE,
+              offset: start,
+              excludeBlocked: true,
+              forceRefresh: bypassCache,
+            });
 
-        // Get reviews using optimized database service
-        const reviewsDataFromDB = await withTimeout(reviewsPromise, 25_000);
+        const pageResult = cursorPagePromise
+          ? await withTimeout(cursorPagePromise, 25_000)
+          : null;
+        const reviewsDataFromDB = pageResult
+          ? pageResult.reviews
+          : await withTimeout(legacyPagePromise!, 25_000);
 
         if (!reviewsDataFromDB) {
           throw new Error("Failed to fetch reviews");
@@ -216,7 +234,10 @@ function Home() {
         }
 
         setPage(nextPage);
-        setHasMore(reviewsWithUrls.length === PAGE_SIZE);
+        setNextCursor(pageResult?.nextCursor ?? null);
+        setHasMore(
+          pageResult ? pageResult.hasMore : reviewsWithUrls.length === PAGE_SIZE
+        );
         setLastRefreshTime(now);
 
         if (refresh) {
@@ -248,7 +269,15 @@ function Home() {
         }
       }
     },
-    [profile?.id, page, hasMore, lastRefreshTime, isScreenshotFeed, feedSource]
+    [
+      profile?.id,
+      page,
+      nextCursor,
+      hasMore,
+      lastRefreshTime,
+      isScreenshotFeed,
+      feedSource,
+    ]
   );
 
   const scrollToTop = useCallback(() => {
@@ -339,6 +368,7 @@ function Home() {
     setFeedSource(nextSource);
     setReviews([]);
     setPage(0);
+    setNextCursor(null);
     setHasMore(true);
     setLoading(true);
     void loadReviews(true, true, nextSource, false);

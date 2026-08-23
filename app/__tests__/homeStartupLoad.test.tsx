@@ -75,6 +75,14 @@ jest.mock("@/services/databaseService", () => ({
   },
 }));
 
+jest.mock("@/services/reviewFeedService", () => ({
+  getReviewPage: async (options: Record<string, unknown>) => ({
+    reviews: await mockGetReviews(options),
+    nextCursor: null,
+    hasMore: false,
+  }),
+}));
+
 jest.mock("@/utils/supabase", () => ({
   supabase: {
     from: jest.fn(),
@@ -333,9 +341,10 @@ describe("Feed startup loading", () => {
 
     expect(mockGetReviews).toHaveBeenLastCalledWith(
       expect.objectContaining({
+        cursor: null,
         followedOnly: true,
         limit: 20,
-        offset: 0,
+        viewerId: "member-1",
       })
     );
 

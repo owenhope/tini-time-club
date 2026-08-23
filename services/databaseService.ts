@@ -622,24 +622,6 @@ class DatabaseService {
     return (data ?? []) as Comment[];
   }
 
-  /**
-   * Create a review
-   */
-  async createReview(reviewData: any): Promise<any> {
-    const { data, error } = await supabase
-      .from("reviews")
-      .insert(reviewData)
-      .select("id")
-      .single();
-
-    if (error) throw error;
-
-    // Invalidate related caches
-    this.invalidateUserCaches(reviewData.user_id);
-
-    return data;
-  }
-
   /** Update the editable fields of an owned review. */
   async updateReview(
     reviewId: string,

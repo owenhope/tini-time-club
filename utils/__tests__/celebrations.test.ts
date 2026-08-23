@@ -5,10 +5,6 @@ jest.mock("@/utils/supabase", () => ({
   },
 }));
 
-jest.mock("@/services/regularsService", () => ({
-  getRegularsByLocation: jest.fn(),
-}));
-
 import { collectAchievements } from "@/utils/celebrations";
 import { RANK_TIERS } from "@/utils/ranking";
 

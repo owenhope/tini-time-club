@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { supabase } from "@/utils/supabase";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
 import Regulars from "@/components/Regulars";
-import { withRegulars } from "@/services/regularsService";
 import { formatRating } from "@/utils/ratingUtils";
 import { makeStyles, useTheme } from "@/theme";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
@@ -24,9 +22,12 @@ import {
   ExploreSearchArea,
   ExploreSearchField,
 } from "@/components/explore/ExploreSearchField";
-import { useProfile } from "@/context/profile-context";
-import { publicContentService } from "@/services/public-content-service";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
+import {
+  getDiscoverLocationsPage,
+  getDiscoverProfilesPage,
+  type DiscoveryCursor,
+} from "@/services/discoveryService";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -75,7 +76,6 @@ export default function ExploreLists({
 }: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { profile } = useProfile();
   const activeTab = activeView === "members" ? "profiles" : "locations";
   const [profiles, setProfiles] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -83,6 +83,14 @@ export default function ExploreLists({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreProfiles, setHasMoreProfiles] = useState(true);
   const [hasMoreLocations, setHasMoreLocations] = useState(true);
+  const [profileCursor, setProfileCursor] = useState<DiscoveryCursor | null>(
+    null
+  );
+  const [locationCursor, setLocationCursor] = useState<DiscoveryCursor | null>(
+    null
+  );
+  const profileRequestId = useRef(0);
+  const locationRequestId = useRef(0);
   const [nearby, setNearby] = useState(true); // Default enabled
   const nearbyEnabled =
     nearby && location.status !== "denied" && location.status !== "unavailable";
@@ -97,21 +105,6 @@ export default function ExploreLists({
   // The native tab bar floats over content, so the lists pad their own tails.
   const tabBarInset = useNativeTabBarContentInset();
 
-  const commitLocations = React.useCallback(
-    (nextLocations: any[], offset: number) => {
-      setLocations((current) => {
-        if (offset === 0) return nextLocations;
-        const seen = new Set(current.map((location) => String(location.id)));
-        return [
-          ...current,
-          ...nextLocations.filter((location) => !seen.has(String(location.id))),
-        ];
-      });
-      setHasMoreLocations(nextLocations.length === DISCOVERY_PAGE_SIZE);
-    },
-    []
-  );
-
   useEffect(() => {
     if (!enabled || activeView !== "places" || !nearbyEnabled) return;
 
@@ -120,293 +113,87 @@ export default function ExploreLists({
     }
   }, [activeView, enabled, location.status, nearbyEnabled, requestLocation]);
 
-  // Calculate distance between two points using Haversine formula
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in kilometers
-  };
-
   const fetchProfiles = React.useCallback(
-    async (searchQuery: string, offset = 0) => {
-      if (offset === 0) setLoading(true);
+    async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
+      const append = cursor !== null;
+      const requestId = ++profileRequestId.current;
+      if (!append) setLoading(true);
       else setLoadingMore(true);
       try {
-        // Ranked and filtered in SQL. This previously downloaded every profile,
-        // every published review and every follower row to count them locally.
-        if (!profile) {
-          const nextProfiles = await publicContentService.getProfiles(
-            searchQuery,
-            DISCOVERY_PAGE_SIZE,
-            offset
-          );
-          setProfiles((current) =>
-            offset === 0 ? nextProfiles : [...current, ...nextProfiles]
-          );
-          setHasMoreProfiles(nextProfiles.length === DISCOVERY_PAGE_SIZE);
-          return;
-        }
-
-        let { data, error } = await supabase.rpc("top_profiles", {
-          p_limit: DISCOVERY_PAGE_SIZE,
-          p_search: searchQuery || null,
-          p_offset: offset,
+        const page = await getDiscoverProfilesPage({
+          query: searchQuery,
+          cursor,
+          limit: DISCOVERY_PAGE_SIZE,
         });
-
-        // Keep the first page usable while an environment is still on the
-        // pre-pagination RPC. Later pages stop cleanly instead of retrying an
-        // incompatible function signature and showing an error to the member.
-        if (error && offset === 0) {
-          const legacyResult = await supabase.rpc("top_profiles", {
-            p_limit: DISCOVERY_PAGE_SIZE,
-            p_search: searchQuery || null,
-          });
-          data = legacyResult.data;
-          error = legacyResult.error;
-        }
-
-        if (error) {
-          reportError("Error fetching profiles:", error);
-          if (offset > 0) setHasMoreProfiles(false);
-          if (offset === 0) setProfiles([]);
-          return;
-        }
-
-        const nextProfiles = data ?? [];
+        if (requestId !== profileRequestId.current) return;
         setProfiles((current) =>
-          offset === 0 ? nextProfiles : [...current, ...nextProfiles]
+          append ? [...current, ...page.items] : page.items
         );
-        setHasMoreProfiles(nextProfiles.length === DISCOVERY_PAGE_SIZE);
+        setProfileCursor(page.nextCursor);
+        setHasMoreProfiles(page.hasMore);
       } catch (error) {
         reportError("Error fetching profiles:", error);
-        if (offset === 0) setProfiles([]);
+        if (requestId !== profileRequestId.current) return;
+        if (!append) setProfiles([]);
+        setHasMoreProfiles(false);
       } finally {
-        if (offset === 0) setLoading(false);
-        else setLoadingMore(false);
+        if (requestId === profileRequestId.current) {
+          if (!append) setLoading(false);
+          else setLoadingMore(false);
+        }
       }
     },
-    [profile]
+    []
   );
 
   const fetchLocations = React.useCallback(
-    async (searchQuery: string, offset = 0) => {
-      if (offset === 0) setLoading(true);
+    async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
+      const append = cursor !== null;
+      const requestId = ++locationRequestId.current;
+      if (!append) setLoading(true);
       else setLoadingMore(true);
       try {
-        if (!searchQuery) {
-          if (!profile) {
-            const data = await publicContentService.getLocations(
-              undefined,
-              DISCOVERY_PAGE_SIZE,
-              offset
-            );
-            let processedLocations = data.map((location) => ({
-              id: location.id,
-              name: location.name,
-              address: location.address,
-              latitude: location.lat,
-              longitude: location.lon,
-              rating: location.rating,
-              taste_avg: location.taste_avg,
-              presentation_avg: location.presentation_avg,
-              total_ratings: location.total_ratings,
-            }));
-
-            if (nearbyEnabled && userLocation) {
-              processedLocations = processedLocations.filter((location) =>
-                location.latitude && location.longitude
-                  ? calculateDistance(
-                      userLocation.latitude,
-                      userLocation.longitude,
-                      location.latitude,
-                      location.longitude
-                    ) <= 50
-                  : false
-              );
-            }
-
-            const visibleLocations = processedLocations
-              .filter((location) => (location.total_ratings || 0) >= 2)
-              .sort((a, b) => {
-                const ratingDiff = (b.rating || 0) - (a.rating || 0);
-                return ratingDiff !== 0
-                  ? ratingDiff
-                  : (b.total_ratings || 0) - (a.total_ratings || 0);
-              });
-            commitLocations(await withRegulars(visibleLocations), offset);
-            return;
-          }
-
-          // Use the location_ratings view which already includes coordinates
-          const { data, error } = await supabase
-            .from("location_ratings")
-            .select("*")
-            .gte("total_ratings", 2)
-            .order("rating", { ascending: false, nullsFirst: false })
-            .order("total_ratings", { ascending: false })
-            .range(offset, offset + DISCOVERY_PAGE_SIZE - 1);
-
-          if (error) {
-            reportError("Error fetching location ratings:", error);
-            if (offset === 0) setLocations([]);
-            return;
-          }
-
-          // Process the data to calculate averages and format for display
-          let processedLocations =
-            data?.map((location: any) => {
-              const totalRatings = location.total_ratings || 0;
-
-              // Use pre-extracted coordinates from the view
-              const latitude = location.lat;
-              const longitude = location.lon;
-
-              return {
-                id: location.id,
-                name: location.name,
-                address: location.address,
-                latitude,
-                longitude,
-                rating: location.rating,
-                taste_avg: location.taste_avg,
-                presentation_avg: location.presentation_avg,
-                total_ratings: totalRatings,
-              };
-            }) || [];
-
-          // Filter by distance if nearby is enabled and we have user location
-          if (nearbyEnabled && userLocation) {
-            // Temporary: show all locations with coordinates for debugging
-            const locationsWithCoords = processedLocations.filter(
-              (location) => {
-                if (!location.latitude || !location.longitude) {
-                  return false;
+        const page = await getDiscoverLocationsPage({
+          query: searchQuery,
+          cursor,
+          limit: DISCOVERY_PAGE_SIZE,
+          nearby:
+            !searchQuery && nearbyEnabled && userLocation
+              ? {
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude,
+                  radiusKm: 50,
                 }
-                return true;
-              }
-            );
-
-            // If we have locations with coordinates, apply distance filtering
-            if (locationsWithCoords.length > 0) {
-              processedLocations = locationsWithCoords.filter((location) => {
-                const distance = calculateDistance(
-                  userLocation.latitude,
-                  userLocation.longitude,
-                  location.latitude,
-                  location.longitude
-                );
-                return distance <= 50; // 50km radius for Vancouver area
-              });
-            } else {
-              // If no locations have coordinates, show all locations
-              processedLocations = processedLocations;
-            }
-          }
-
-          // Filter out locations with less than 2 reviews or null ratings (minimum sample size)
-          // Sort by rating first, then by review count as tiebreaker
-          const sortedLocations = processedLocations
-            .filter(
-              (loc) => loc.rating !== null && (loc.total_ratings || 0) >= 2
-            )
-            .sort((a, b) => {
-              // First sort by rating (highest first)
-              const ratingDiff = (b.rating || 0) - (a.rating || 0);
-              if (ratingDiff !== 0) return ratingDiff;
-
-              // If ratings are equal, sort by review count (highest first) - more reviews = more reliable
-              return (b.total_ratings || 0) - (a.total_ratings || 0);
-            });
-
-          commitLocations(await withRegulars(sortedLocations), offset);
-        } else {
-          if (!profile) {
-            const data = await publicContentService.getLocations(
-              searchQuery,
-              DISCOVERY_PAGE_SIZE,
-              offset
-            );
-            commitLocations(
-              await withRegulars(
-                data.map((location) => ({
-                  id: location.id,
-                  name: location.name,
-                  address: location.address,
-                  latitude: location.lat,
-                  longitude: location.lon,
-                  rating: location.total_ratings > 0 ? location.rating : null,
-                  taste_avg:
-                    location.total_ratings > 0 ? location.taste_avg : null,
-                  presentation_avg:
-                    location.total_ratings > 0
-                      ? location.presentation_avg
-                      : null,
-                  total_ratings: location.total_ratings,
-                }))
-              ),
-              offset
-            );
-            return;
-          }
-
-          // Server-side fuzzy search: matches name or address, tolerates
-          // typos via trigram similarity, and ranks name hits first.
-          const { data: locationsData, error: locationsError } =
-            await supabase.rpc("search_locations", {
-              p_query: searchQuery,
-              p_limit: DISCOVERY_PAGE_SIZE,
-              p_offset: offset,
-            });
-
-          if (locationsError) {
-            reportError("Error fetching locations:", locationsError);
-            if (offset === 0) setLocations([]);
-            return;
-          }
-
-          const processedLocations = ((locationsData ?? []) as any[]).map(
-            (location: any) => {
-              const totalRatings = location.total_ratings || 0;
-              return {
-                id: location.id,
-                name: location.name,
-                address: location.address,
-                latitude: location.lat,
-                longitude: location.lon,
-                // The view reports 0 averages for review-less locations; the
-                // UI treats null as "not yet rated".
-                rating: totalRatings > 0 ? location.rating : null,
-                taste_avg: totalRatings > 0 ? location.taste_avg : null,
-                presentation_avg:
-                  totalRatings > 0 ? location.presentation_avg : null,
-                total_ratings: totalRatings,
-              };
-            }
-          );
-
-          commitLocations(await withRegulars(processedLocations), offset);
-        }
+              : null,
+        });
+        if (requestId !== locationRequestId.current) return;
+        const nextLocations = page.items.map((location) => ({
+          ...location,
+          latitude: location.lat,
+          longitude: location.lon,
+          rating:
+            location.total_ratings > 0 && location.rating != null
+              ? location.rating
+              : null,
+        }));
+        setLocations((current) =>
+          append ? [...current, ...nextLocations] : nextLocations
+        );
+        setLocationCursor(page.nextCursor);
+        setHasMoreLocations(page.hasMore);
       } catch (error) {
         reportError("Error fetching locations:", error);
+        if (requestId !== locationRequestId.current) return;
+        if (!append) setLocations([]);
+        setHasMoreLocations(false);
       } finally {
-        if (offset === 0) setLoading(false);
-        else setLoadingMore(false);
+        if (requestId === locationRequestId.current) {
+          if (!append) setLoading(false);
+          else setLoadingMore(false);
+        }
       }
     },
-    [commitLocations, nearbyEnabled, profile, userLocation]
+    [nearbyEnabled, userLocation]
   );
 
   React.useEffect(() => {
@@ -414,9 +201,11 @@ export default function ExploreLists({
 
     if (activeTab === "profiles") {
       setProfiles([]);
+      setProfileCursor(null);
       setHasMoreProfiles(true);
     } else {
       setLocations([]);
+      setLocationCursor(null);
       setHasMoreLocations(true);
     }
 
@@ -451,9 +240,9 @@ export default function ExploreLists({
   const handleEndReached = React.useCallback(() => {
     if (loading || loadingMore) return;
     if (activeTab === "profiles") {
-      if (hasMoreProfiles) void fetchProfiles(query, profiles.length);
+      if (hasMoreProfiles) void fetchProfiles(query, profileCursor);
     } else if (hasMoreLocations) {
-      void fetchLocations(query, locations.length);
+      void fetchLocations(query, locationCursor);
     }
   }, [
     activeTab,
@@ -463,8 +252,8 @@ export default function ExploreLists({
     hasMoreProfiles,
     loading,
     loadingMore,
-    locations.length,
-    profiles.length,
+    locationCursor,
+    profileCursor,
     query,
   ]);
 
