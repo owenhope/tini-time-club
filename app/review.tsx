@@ -46,6 +46,7 @@ import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 import {
+  completePostReview,
   ReviewSubmissionError,
   submitNewReview,
 } from "@/utils/reviewSubmission";
@@ -794,14 +795,16 @@ function ReviewComposer() {
         locationName,
       });
 
-      await refreshProfile();
-
-      if (earnedAchievements.length > 0) {
-        setCelebrationReviewCount(rankCheck.newCount);
-        setAchievements(earnedAchievements);
-      } else {
-        router.dismissTo(feedRouteAfterPost(String(reviewId)));
-      }
+      completePostReview({
+        hasAchievements: earnedAchievements.length > 0,
+        showCelebration: () => {
+          setCelebrationReviewCount(rankCheck.newCount);
+          setAchievements(earnedAchievements);
+        },
+        navigateToFeed: () =>
+          router.dismissTo(feedRouteAfterPost(String(reviewId))),
+        refreshProfile,
+      });
     } catch (error) {
       reportError("Review created but post-submit processing failed:", error);
       router.dismissTo(feedRouteAfterPost(String(reviewId)));
@@ -815,6 +818,7 @@ function ReviewComposer() {
     setCelebrationReviewCount(null);
     requestAnimationFrame(() => {
       router.dismissTo(feedRouteAfterPost(reviewId));
+      void refreshProfile();
     });
   };
 
