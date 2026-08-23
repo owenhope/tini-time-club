@@ -167,59 +167,6 @@ const useLikes = (
   return { hasLiked, likesCount, toggleLike, loading };
 };
 
-// Custom hook for comments management - lazy loaded
-const useComments = (
-  reviewId: string,
-  lazyLoad: boolean = true,
-  currentUserId?: string
-) => {
-  const [comments, setComments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  const fetchComments = useCallback(async () => {
-    if (hasLoaded) return; // Don't refetch if already loaded
-    try {
-      setLoading(true);
-      const data = await databaseService.getComments(reviewId, currentUserId);
-      setComments(data || []);
-      setHasLoaded(true);
-    } catch (error) {
-      reportError("Error fetching comments:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [reviewId, currentUserId, hasLoaded]);
-
-  const addComment = useCallback((newComment: any) => {
-    // Idempotent: the parent's _commentPatch is re-applied whenever a
-    // recycled row remounts, so the same comment can arrive more than once.
-    setComments((prev) =>
-      prev.some((c) => c.id === newComment.id) ? prev : [...prev, newComment]
-    );
-  }, []);
-
-  const removeComment = useCallback((commentId: number) => {
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
-  }, []);
-
-  // Only fetch comments if not lazy loading, or if explicitly requested
-  useEffect(() => {
-    if (!lazyLoad && !hasLoaded) {
-      fetchComments();
-    }
-  }, [lazyLoad, hasLoaded, fetchComments]);
-
-  return {
-    comments,
-    loading,
-    addComment,
-    removeComment,
-    fetchComments,
-    hasLoaded,
-  };
-};
-
 // Reusable UI Components
 const AvatarWrapper = memo(
   ({
@@ -589,7 +536,6 @@ const ReviewFooter = memo(
     onCommentDeleted,
     onEdit,
     isOwnReview,
-    loadCommentsIfNeeded,
   }: {
     review: Review;
     hasLiked: boolean;
@@ -609,7 +555,6 @@ const ReviewFooter = memo(
     onCommentDeleted: (reviewId: string, commentId: number) => void;
     onEdit?: () => void;
     isOwnReview: boolean;
-    loadCommentsIfNeeded: () => void;
   }) => {
     const styles = useStyles();
 
@@ -622,14 +567,12 @@ const ReviewFooter = memo(
       // Visitors get the membership CTA straight from the comment button,
       // not the slider (which only gates posting).
       if (!requireMembership("comment")) return;
-      loadCommentsIfNeeded(); // Ensure comments are loaded before showing
       onShowComments(review.id, onCommentAdded, onCommentDeleted);
     }, [
       review.id,
       onShowComments,
       onCommentAdded,
       onCommentDeleted,
-      loadCommentsIfNeeded,
       requireMembership,
     ]);
 
@@ -755,9 +698,6 @@ const ReviewItemComponent = ({
     review.has_liked ?? false
   );
 
-  const { comments, addComment, removeComment, fetchComments, hasLoaded } =
-    useComments(review.id, true, profile?.id);
-
   const handleShare = useCallback(() => {
     if (requireMembership("share-review")) shareReview();
   }, [requireMembership, shareReview]);
@@ -770,22 +710,33 @@ const ReviewItemComponent = ({
   // count shown in the footer comes with the feed row, so the previous
   // fetch-on-mount (one query per rendered item) is gone.
   const serverCommentCount = review.comments_count ?? 0;
-  const commentCount = hasLoaded ? comments.length : serverCommentCount;
+  const commentCount = serverCommentCount;
 
-  // Preview comments ride along with the feed row; once the full list has been
-  // fetched (user opened the sheet) prefer that.
+  // Preview comments ride along with the feed row. The comments sheet owns
+  // paginated comment bodies, so opening it never starts a duplicate request.
   const commentLikeOverrides =
     commentLikeState.reviewId === review.id ? commentLikeState.overrides : {};
-  const previewComments = (
-    hasLoaded
-      ? comments.slice(-2)
-      : [...(review.recent_comments ?? [])]
-          .slice(0, MAX_PREVIEW_COMMENTS)
-          .reverse()
-  ).map((comment) => ({
-    ...comment,
-    ...commentLikeOverrides[comment.id],
-  }));
+  const recentComments = [...(review.recent_comments ?? [])];
+  const patchedRecentComments =
+    review._commentPatch?.action === "add"
+      ? [
+          review._commentPatch.data,
+          ...recentComments.filter(
+            (comment) => comment.id !== review._commentPatch?.data.id
+          ),
+        ]
+      : review._commentPatch?.action === "delete"
+        ? recentComments.filter(
+            (comment) => comment.id !== review._commentPatch?.id
+          )
+        : recentComments;
+  const previewComments = patchedRecentComments
+    .slice(0, MAX_PREVIEW_COMMENTS)
+    .reverse()
+    .map((comment) => ({
+      ...comment,
+      ...commentLikeOverrides[comment.id],
+    }));
 
   const handleToggleCommentLike = useCallback(
     async (comment: Comment) => {
@@ -850,21 +801,6 @@ const ReviewItemComponent = ({
       review.location?.name,
     ]
   );
-
-  const loadCommentsIfNeeded = useCallback(() => {
-    if (!hasLoaded) fetchComments();
-  }, [hasLoaded, fetchComments]);
-
-  // Handle comment patches
-  useEffect(() => {
-    if (review._commentPatch) {
-      if (review._commentPatch.action === "add") {
-        addComment(review._commentPatch.data);
-      } else if (review._commentPatch.action === "delete") {
-        removeComment(review._commentPatch.id);
-      }
-    }
-  }, [review._commentPatch, addComment, removeComment]);
 
   // Like mutations generate their notification from a database trigger.
   const handleToggleLike = useCallback(async () => {
@@ -958,7 +894,6 @@ const ReviewItemComponent = ({
           onCommentDeleted={() => {}}
           onEdit={undefined}
           isOwnReview={false}
-          loadCommentsIfNeeded={() => {}}
         />
       </View>
     );
@@ -1034,7 +969,6 @@ const ReviewItemComponent = ({
             onCommentDeleted={onCommentDeleted}
             onEdit={onEdit}
             isOwnReview={isOwnReview}
-            loadCommentsIfNeeded={loadCommentsIfNeeded}
           />
         }
       </View>

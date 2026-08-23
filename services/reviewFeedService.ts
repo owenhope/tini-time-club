@@ -1,4 +1,5 @@
 import type { Review } from "@/types/types";
+import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
 import { supabase } from "@/utils/supabase";
 
@@ -14,7 +15,7 @@ export interface ReviewPage {
 }
 
 export interface GetReviewPageOptions {
-  viewerId: string;
+  viewerId?: string;
   cursor?: ReviewCursor | null;
   limit?: number;
   userId?: string;
@@ -80,6 +81,16 @@ export async function getReviewPage({
   excludeBlocked = true,
   followedOnly = false,
 }: GetReviewPageOptions): Promise<ReviewPage> {
+  if (!viewerId) {
+    const page = await publicContentService.getFeedPage({
+      cursor,
+      limit,
+      userId,
+      locationId,
+    });
+    return decodePage(page);
+  }
+
   const { data, error } = await supabase.rpc("get_feed_page_v1", {
     p_cursor_id: cursor ? Number(cursor.id) : null,
     p_cursor_inserted_at: cursor?.insertedAt ?? null,

@@ -17,8 +17,11 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import LikeSlider from "@/components/LikeSlider";
 import CommentsSlider from "@/components/CommentsSlider";
 import { setGlobalScrollToTop } from "@/utils/scrollUtils";
-import databaseService from "@/services/databaseService";
 import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
+import {
+  addReviewComment,
+  deleteReviewComment,
+} from "@/utils/reviewCommentUpdates";
 import { Ionicons } from "@expo/vector-icons";
 import { Filter } from "bad-words";
 import { Button, Input, MartiniIcon } from "@/components/shared";
@@ -134,8 +137,7 @@ function Home() {
     async (
       refresh = false,
       silent = false,
-      sourceOverride: FeedSource = feedSource,
-      bypassCache = refresh
+      sourceOverride: FeedSource = feedSource
     ) => {
       const source = isScreenshotFeed ? "club" : sourceOverride;
 
@@ -167,8 +169,6 @@ function Home() {
       setError(null);
 
       try {
-        const start = nextPage * PAGE_SIZE;
-
         let screenshotUserId: string | undefined;
         if (isScreenshotFeed) {
           const { data: screenshotProfile, error: screenshotProfileError } =
@@ -182,34 +182,18 @@ function Home() {
           screenshotUserId = screenshotProfile.id;
         }
 
-        const cursorPagePromise = profile?.id
-          ? getReviewPage({
-              viewerId: profile.id,
-              cursor: refresh ? null : nextCursor,
-              userId: screenshotUserId,
-              followedOnly: source === "people",
-              limit: PAGE_SIZE,
-              excludeBlocked: true,
-            })
-          : null;
-        const legacyPagePromise = cursorPagePromise
-          ? null
-          : databaseService.getReviews({
-              userId: screenshotUserId,
-              currentUserId: profile?.id,
-              followedOnly: source === "people",
-              limit: PAGE_SIZE,
-              offset: start,
-              excludeBlocked: true,
-              forceRefresh: bypassCache,
-            });
-
-        const pageResult = cursorPagePromise
-          ? await withTimeout(cursorPagePromise, 25_000)
-          : null;
-        const reviewsDataFromDB = pageResult
-          ? pageResult.reviews
-          : await withTimeout(legacyPagePromise!, 25_000);
+        const pageResult = await withTimeout(
+          getReviewPage({
+            viewerId: profile?.id,
+            cursor: refresh ? null : nextCursor,
+            userId: screenshotUserId,
+            followedOnly: source === "people",
+            limit: PAGE_SIZE,
+            excludeBlocked: true,
+          }),
+          25_000
+        );
+        const reviewsDataFromDB = pageResult.reviews;
 
         if (!reviewsDataFromDB) {
           throw new Error("Failed to fetch reviews");
@@ -234,10 +218,8 @@ function Home() {
         }
 
         setPage(nextPage);
-        setNextCursor(pageResult?.nextCursor ?? null);
-        setHasMore(
-          pageResult ? pageResult.hasMore : reviewsWithUrls.length === PAGE_SIZE
-        );
+        setNextCursor(pageResult.nextCursor);
+        setHasMore(pageResult.hasMore);
         setLastRefreshTime(now);
 
         if (refresh) {
@@ -371,7 +353,7 @@ function Home() {
     setNextCursor(null);
     setHasMore(true);
     setLoading(true);
-    void loadReviews(true, true, nextSource, false);
+    void loadReviews(true, true, nextSource);
     requestAnimationFrame(scrollToTop);
   }, [feedSource, loadReviews, requireMembership, scrollToTop]);
 
@@ -731,12 +713,7 @@ function Home() {
     (reviewId: string, newComment: any) => {
       setReviews((prev) =>
         prev.map((review) =>
-          review.id === reviewId
-            ? {
-                ...review,
-                _commentPatch: { action: "add", data: newComment },
-              }
-            : review
+          review.id === reviewId ? addReviewComment(review, newComment) : review
         )
       );
     },
@@ -748,10 +725,7 @@ function Home() {
       setReviews((prev) =>
         prev.map((review) =>
           review.id === reviewId
-            ? {
-                ...review,
-                _commentPatch: { action: "delete", id: commentId },
-              }
+            ? deleteReviewComment(review, commentId)
             : review
         )
       );
@@ -940,10 +914,7 @@ function Home() {
             setReviews((prev) =>
               prev.map((review) =>
                 review.id === reviewId
-                  ? {
-                      ...review,
-                      _commentPatch: { action: "add", data: newComment },
-                    }
+                  ? addReviewComment(review, newComment)
                   : review
               )
             );
@@ -952,10 +923,7 @@ function Home() {
             setReviews((prev) =>
               prev.map((review) =>
                 review.id === reviewId
-                  ? {
-                      ...review,
-                      _commentPatch: { action: "delete", id: commentId },
-                    }
+                  ? deleteReviewComment(review, commentId)
                   : review
               )
             );

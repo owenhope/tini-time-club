@@ -1,5 +1,6 @@
 const mockRpc = jest.fn();
 const mockGetReviewImageUrls = jest.fn();
+const mockGetFeedPage = jest.fn();
 
 jest.mock("@/utils/supabase", () => ({
   supabase: {
@@ -11,6 +12,12 @@ jest.mock("@/utils/imageCache", () => ({
   __esModule: true,
   default: {
     getReviewImageUrls: (...args: unknown[]) => mockGetReviewImageUrls(...args),
+  },
+}));
+
+jest.mock("@/services/public-content-service", () => ({
+  publicContentService: {
+    getFeedPage: (...args: unknown[]) => mockGetFeedPage(...args),
   },
 }));
 
@@ -55,9 +62,39 @@ describe("getReviewPage", () => {
   beforeEach(() => {
     mockRpc.mockReset();
     mockGetReviewImageUrls.mockReset();
+    mockGetFeedPage.mockReset();
     mockGetReviewImageUrls.mockResolvedValue({
       "member-1/review.jpg": "https://signed.test/review.jpg",
     });
+  });
+
+  it("loads an anonymous cursor page through the public adapter", async () => {
+    mockGetFeedPage.mockResolvedValue({
+      reviews: [{ ...review, image_url: "https://signed.test/public.jpg" }],
+      nextCursor: { insertedAt: review.inserted_at, id: "91" },
+      hasMore: true,
+    });
+
+    await expect(
+      getReviewPage({
+        locationId: 42,
+        limit: 12,
+        cursor: { insertedAt: "2026-08-23T11:00:00.000Z", id: "100" },
+      })
+    ).resolves.toEqual({
+      reviews: [expect.objectContaining({ id: "91" })],
+      nextCursor: { insertedAt: review.inserted_at, id: "91" },
+      hasMore: true,
+    });
+
+    expect(mockGetFeedPage).toHaveBeenCalledWith({
+      cursor: { insertedAt: "2026-08-23T11:00:00.000Z", id: "100" },
+      limit: 12,
+      locationId: 42,
+      userId: undefined,
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockGetReviewImageUrls).not.toHaveBeenCalled();
   });
 
   it("loads a fully hydrated cursor page in one database request", async () => {

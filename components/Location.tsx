@@ -34,6 +34,11 @@ import { formatRating } from "@/utils/ratingUtils";
 import RegularsSlider from "@/components/RegularsSlider";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 import { useLocationShareMenu } from "@/hooks/useLocationShareMenu";
+import {
+  addReviewComment,
+  deleteReviewComment,
+} from "@/utils/reviewCommentUpdates";
+import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
 
 // Helper function to format price level
 
@@ -60,6 +65,9 @@ const Location = () => {
   const goBack = useGoBack();
   const [locationReviews, setLocationReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+  const reviewCursorRef = useRef<ReviewCursor | null>(null);
+  const loadingMoreReviewsRef = useRef(false);
   const [regulars, setRegulars] = useState<Regular[]>([]);
   const [loadingRegulars, setLoadingRegulars] = useState<boolean>(true);
   const [regularsOpen, setRegularsOpen] = useState<boolean>(false);
@@ -247,9 +255,7 @@ const Location = () => {
     (reviewId: string, newComment: any) => {
       setLocationReviews((prev) =>
         prev.map((review) =>
-          review.id === reviewId
-            ? { ...review, _commentPatch: { action: "add", data: newComment } }
-            : review
+          review.id === reviewId ? addReviewComment(review, newComment) : review
         )
       );
     },
@@ -261,7 +267,7 @@ const Location = () => {
       setLocationReviews((prev) =>
         prev.map((review) =>
           review.id === reviewId
-            ? { ...review, _commentPatch: { action: "delete", id: commentId } }
+            ? deleteReviewComment(review, commentId)
             : review
         )
       );
@@ -289,15 +295,15 @@ const Location = () => {
 
       setLoadingReviews(true);
       try {
-        const reviewsData = await databaseService.getReviews({
+        const page = await getReviewPage({
           locationId: reviewLocationId,
-          currentUserId: viewerId,
+          viewerId,
           excludeBlocked: true,
-          forceRefresh: isRefresh,
+          limit: 24,
         });
-
-        // getReviews returns image_url already hydrated to a signed URL.
-        setLocationReviews(reviewsData);
+        reviewCursorRef.current = page.nextCursor;
+        setHasMoreReviews(page.hasMore);
+        setLocationReviews(page.reviews);
       } catch (err) {
         reportError("Unexpected error while fetching location reviews:", err);
       } finally {
@@ -306,6 +312,44 @@ const Location = () => {
     },
     [reviewLocationId, viewerId]
   );
+
+  const loadMoreLocationReviews = useCallback(async () => {
+    if (
+      !reviewLocationId ||
+      !hasMoreReviews ||
+      !reviewCursorRef.current ||
+      loadingMoreReviewsRef.current
+    ) {
+      return;
+    }
+
+    loadingMoreReviewsRef.current = true;
+    try {
+      const page = await getReviewPage({
+        locationId: reviewLocationId,
+        viewerId,
+        cursor: reviewCursorRef.current,
+        excludeBlocked: true,
+        limit: 24,
+      });
+      reviewCursorRef.current = page.nextCursor;
+      setHasMoreReviews(page.hasMore);
+      setLocationReviews((current) => {
+        const loaded = new Set(current.map((review) => String(review.id)));
+        return [
+          ...current,
+          ...page.reviews.filter((review) => !loaded.has(String(review.id))),
+        ];
+      });
+    } catch (error) {
+      reportError(
+        "Unexpected error while loading more location reviews:",
+        error
+      );
+    } finally {
+      loadingMoreReviewsRef.current = false;
+    }
+  }, [hasMoreReviews, reviewLocationId, viewerId]);
 
   const onRefresh = useCallback(() => {
     if (displayLocation?.id) {
@@ -367,6 +411,7 @@ const Location = () => {
         loading={loadingReviews}
         refreshing={loadingReviews}
         onRefresh={onRefresh}
+        onEndReached={loadMoreLocationReviews}
         onScroll={handleScroll}
         emptyComponent={renderEmpty()}
         onCommentAdded={handleCommentAdded}

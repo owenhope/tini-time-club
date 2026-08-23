@@ -1,8 +1,7 @@
 /**
- * Pins the comment-patch idempotency fix in ReviewItem's useComments hook:
- * the parent's `_commentPatch` is re-applied whenever a recycled row
- * remounts, so applying the same "add" patch more than once must not
- * duplicate the comment.
+ * Pins feed-row comment previews and patches. The paginated comments sheet
+ * owns comment bodies, so ReviewItem must never launch the legacy full-list
+ * request when it opens the sheet.
  */
 import React from "react";
 import renderer, { act } from "react-test-renderer";
@@ -38,12 +37,6 @@ jest.mock("@/utils/supabase", () => {
     __mockUpsert: mockUpsert,
   };
 });
-
-const { __mockDelete: mockSupabaseDelete, __mockUpsert: mockSupabaseUpsert } =
-  jest.requireMock("@/utils/supabase") as {
-    __mockDelete: jest.Mock;
-    __mockUpsert: jest.Mock;
-  };
 
 jest.mock("@/utils/log", () => ({
   log: jest.fn(),
@@ -227,7 +220,7 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe("ReviewItem comment patches (useComments idempotency)", () => {
+describe("ReviewItem comment previews", () => {
   it("shows a patched comment exactly once after the row remounts with the same review object", async () => {
     const review = makeReview({
       comments_count: 1,
@@ -249,7 +242,10 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
   }, 15_000);
 
   it("does not duplicate a comment when the patch re-arrives after the list has loaded", async () => {
-    const review = makeReview({ comments_count: 1 });
+    const review = makeReview({
+      comments_count: 1,
+      recent_comments: [comment],
+    });
     const tree = renderReview(review);
 
     // Load the full comment list first, so the incoming patch targets a
@@ -261,6 +257,7 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
       tree,
       makeReview({
         comments_count: 1,
+        recent_comments: [comment],
         _commentPatch: { action: "add", data: { ...comment } },
       })
     );
@@ -270,7 +267,10 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
   });
 
   it("applies a delete patch by removing the comment", async () => {
-    const review = makeReview({ comments_count: 1 });
+    const review = makeReview({
+      comments_count: 1,
+      recent_comments: [comment],
+    });
     const tree = renderReview(review);
     await openComments(tree);
     expect(countOccurrences(tree, COMMENT_BODY)).toBe(1);
@@ -278,7 +278,8 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
     updateReview(
       tree,
       makeReview({
-        comments_count: 1,
+        comments_count: 0,
+        recent_comments: [comment],
         _commentPatch: { action: "delete", id: comment.id },
       })
     );
@@ -288,7 +289,10 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
   });
 
   it("adds a genuinely new comment from a patch", async () => {
-    const review = makeReview({ comments_count: 1 });
+    const review = makeReview({
+      comments_count: 1,
+      recent_comments: [comment],
+    });
     const tree = renderReview(review);
     await openComments(tree);
 
@@ -301,11 +305,12 @@ describe("ReviewItem comment patches (useComments idempotency)", () => {
       tree,
       makeReview({
         comments_count: 2,
+        recent_comments: [comment],
         _commentPatch: { action: "add", data: another },
       })
     );
 
-    expect(countOccurrences(tree, COMMENT_BODY)).toBe(1);
+    expect(countOccurrences(tree, COMMENT_BODY)).toBe(0);
     expect(countOccurrences(tree, "Perfectly chilled.")).toBe(1);
     act(() => tree.unmount());
   });

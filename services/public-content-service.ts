@@ -1,5 +1,7 @@
 import { supabase } from "@/utils/supabase";
 import type { LocationRating, Profile, Review, Comment } from "@/types/types";
+import type { ReviewCursor, ReviewPage } from "@/services/reviewFeedService";
+import type { CommentCursor, CommentPage } from "@/services/commentPageService";
 
 type PublicContentRequest =
   | {
@@ -7,10 +9,23 @@ type PublicContentRequest =
       limit?: number;
       offset?: number;
       userId?: string;
-      locationId?: string;
+      locationId?: string | number;
+    }
+  | {
+      operation: "feed-page-v1";
+      cursor?: ReviewCursor | null;
+      limit?: number;
+      userId?: string;
+      locationId?: string | number;
     }
   | { operation: "review"; reviewId: string | number }
   | { operation: "comments"; reviewId: string | number }
+  | {
+      operation: "comment-page-v1";
+      reviewId: string | number;
+      cursor?: CommentCursor | null;
+      limit?: number;
+    }
   | { operation: "profile"; username: string }
   | { operation: "profiles"; search?: string; limit?: number; offset?: number }
   | {
@@ -63,11 +78,25 @@ export const publicContentService = {
     > = {}
   ) => invoke<Review[]>({ operation: "feed", ...request }),
 
+  getFeedPage: (
+    request: Omit<
+      Extract<PublicContentRequest, { operation: "feed-page-v1" }>,
+      "operation"
+    > = {}
+  ) => invoke<ReviewPage>({ operation: "feed-page-v1", ...request }),
+
   getReview: (reviewId: string | number) =>
     invoke<Review>({ operation: "review", reviewId }),
 
   getComments: (reviewId: string | number) =>
     invoke<Comment[]>({ operation: "comments", reviewId }),
+
+  getCommentPage: (
+    request: Omit<
+      Extract<PublicContentRequest, { operation: "comment-page-v1" }>,
+      "operation"
+    >
+  ) => invoke<CommentPage>({ operation: "comment-page-v1", ...request }),
 
   getProfile: (username: string) =>
     invoke<PublicProfileResponse>({ operation: "profile", username }),

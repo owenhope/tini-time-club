@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase";
 import databaseService from "@/services/databaseService";
 import {
@@ -8,6 +8,7 @@ import {
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
 import type { NamedOption, Review } from "@/types/types";
 import { reportError } from "@/utils/log";
+import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
 
 interface UseProfileScreenDataOptions {
   /** Whose data to load. */
@@ -44,6 +45,9 @@ export function useProfileScreenData({
   // the empty state before the first load kicks off.
   const [loadingReviews, setLoadingReviews] = useState<boolean>(true);
   const [refreshingReviews, setRefreshingReviews] = useState<boolean>(false);
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+  const reviewCursorRef = useRef<ReviewCursor | null>(null);
+  const loadingMoreReviewsRef = useRef(false);
   const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
   // True initially so the regulars tab shows its loading state instead of
   // flashing the empty message before the first load resolves.
@@ -55,7 +59,7 @@ export function useProfileScreenData({
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
 
-  const { limit, offset, excludeBlocked } = reviewOptions ?? {};
+  const { limit, excludeBlocked } = reviewOptions ?? {};
 
   const loadUserReviews = useCallback(
     async (isRefresh = false) => {
@@ -73,19 +77,15 @@ export function useProfileScreenData({
         return;
       }
       try {
-        const reviewsData = await databaseService.getReviews({
+        const page = await getReviewPage({
           userId: profileId,
-          // Without the viewer id the server computes has_liked for nobody and
-          // the viewer's liked reviews render with unlit hearts.
-          currentUserId: viewerId,
-          ...(limit !== undefined && { limit }),
-          ...(offset !== undefined && { offset }),
-          ...(excludeBlocked !== undefined && { excludeBlocked }),
-          forceRefresh: isRefresh,
+          viewerId,
+          limit: limit ?? 24,
+          excludeBlocked: excludeBlocked ?? true,
         });
-
-        // getReviews returns image_url already hydrated to a signed URL.
-        setUserReviews(reviewsData);
+        reviewCursorRef.current = page.nextCursor;
+        setHasMoreReviews(page.hasMore);
+        setUserReviews(page.reviews);
       } catch (err) {
         reportError("Unexpected error while fetching reviews:", err);
       } finally {
@@ -96,8 +96,49 @@ export function useProfileScreenData({
         }
       }
     },
-    [profileId, viewerId, limit, offset, excludeBlocked]
+    [profileId, viewerId, limit, excludeBlocked]
   );
+
+  const loadMoreUserReviews = useCallback(async () => {
+    if (
+      !profileId ||
+      !hasMoreReviews ||
+      !reviewCursorRef.current ||
+      loadingMoreReviewsRef.current
+    ) {
+      return;
+    }
+
+    loadingMoreReviewsRef.current = true;
+    try {
+      const page = await getReviewPage({
+        userId: profileId,
+        viewerId,
+        cursor: reviewCursorRef.current,
+        limit: limit ?? 24,
+        excludeBlocked: excludeBlocked ?? true,
+      });
+      reviewCursorRef.current = page.nextCursor;
+      setHasMoreReviews(page.hasMore);
+      setUserReviews((current) => {
+        const loaded = new Set(current.map((review) => String(review.id)));
+        return [
+          ...current,
+          ...page.reviews.filter((review) => !loaded.has(String(review.id))),
+        ];
+      });
+    } catch (error) {
+      reportError("Unexpected error while loading more reviews:", error);
+    } finally {
+      loadingMoreReviewsRef.current = false;
+    }
+  }, [excludeBlocked, hasMoreReviews, limit, profileId, viewerId]);
+
+  useEffect(() => {
+    setUserReviews([]);
+    reviewCursorRef.current = null;
+    setHasMoreReviews(false);
+  }, [profileId]);
 
   const loadRegularPlaces = useCallback(async () => {
     if (!profileId) return;
@@ -188,7 +229,9 @@ export function useProfileScreenData({
     setUserReviews,
     loadingReviews,
     refreshingReviews,
+    hasMoreReviews,
     loadUserReviews,
+    loadMoreUserReviews,
     regularPlaces,
     loadingRegulars,
     loadRegularPlaces,

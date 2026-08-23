@@ -13,6 +13,10 @@ import type { ProfileContentTab } from "@/components/ProfileContentTabs";
 import type { ProfileRegularPlace } from "@/services/regularsService";
 import type { Review } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
+import {
+  addReviewComment,
+  deleteReviewComment,
+} from "@/utils/reviewCommentUpdates";
 
 export interface ProfileBodyProps {
   /** Which tab the header's segmented control is on. */
@@ -25,6 +29,7 @@ export interface ProfileBodyProps {
   loadingReviews: boolean;
   refreshingReviews: boolean;
   onRefreshReviews: () => void;
+  onLoadMoreReviews?: () => void;
   emptyReviews: React.ReactElement | null;
 
   regularPlaces: ProfileRegularPlace[];
@@ -58,6 +63,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
   loadingReviews,
   refreshingReviews,
   onRefreshReviews,
+  onLoadMoreReviews,
   emptyReviews,
   regularPlaces,
   loadingRegulars,
@@ -77,7 +83,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
       setReviews((prev) =>
         prev.map((r) =>
           String(r.id) === String(reviewId)
-            ? { ...r, _commentPatch: { action: "add", data: newComment } }
+            ? addReviewComment(r, newComment)
             : r
         )
       );
@@ -90,7 +96,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
       setReviews((prev) =>
         prev.map((r) =>
           String(r.id) === String(reviewId)
-            ? { ...r, _commentPatch: { action: "delete", id: commentId } }
+            ? deleteReviewComment(r, commentId)
             : r
         )
       );
@@ -108,6 +114,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           loading={loadingReviews}
           refreshing={refreshingReviews}
           onRefresh={onRefreshReviews}
+          onEndReached={onLoadMoreReviews}
           onScroll={onScroll}
           canDelete={canDelete}
           onDelete={onDelete}

@@ -6,6 +6,8 @@ import databaseService from "@/services/databaseService";
 import { ThemeProvider, typography } from "@/theme";
 import ReportModal from "@/components/ReportModal";
 
+const mockGetCommentPage = jest.fn();
+
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
   setItem: jest.fn(() => Promise.resolve()),
@@ -79,6 +81,10 @@ jest.mock("@/services/databaseService", () => ({
   },
 }));
 
+jest.mock("@/services/commentPageService", () => ({
+  getCommentPage: (...args: unknown[]) => mockGetCommentPage(...args),
+}));
+
 jest.mock("@/services/analyticsService", () => ({
   __esModule: true,
   default: { capture: jest.fn() },
@@ -135,7 +141,6 @@ const review = {
   location: { id: "3", name: "Dovetail" },
 };
 
-const getComments = databaseService.getComments as jest.Mock;
 const setCommentLiked = databaseService.setCommentLiked as jest.Mock;
 const reportComment = databaseService.reportComment as jest.Mock;
 
@@ -153,7 +158,12 @@ const renderSlider = async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  getComments.mockResolvedValue([comment]);
+  mockGetCommentPage.mockResolvedValue({
+    comments: [comment],
+    nextCursor: null,
+    hasMore: false,
+    totalCount: 1,
+  });
   setCommentLiked.mockResolvedValue(undefined);
   reportComment.mockResolvedValue("created");
 });

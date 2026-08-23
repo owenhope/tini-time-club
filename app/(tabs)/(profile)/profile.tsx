@@ -87,6 +87,7 @@ const MemberProfile = () => {
     setUserReviews,
     loadingReviews,
     refreshingReviews,
+    loadMoreUserReviews,
     loadUserReviews,
     regularPlaces,
     loadingRegulars,
@@ -383,7 +384,7 @@ const MemberProfile = () => {
     <>
       <ProfileHeader
         profile={profile}
-        reviewsCount={userReviews.length}
+        reviewsCount={profile?.review_count ?? userReviews.length}
         followersCount={followersCount}
         followingCount={followingCount}
         isOwnProfile={true}
@@ -487,6 +488,7 @@ const MemberProfile = () => {
         loadingReviews={loadingReviews}
         refreshingReviews={refreshingReviews}
         onRefreshReviews={() => profile?.id && loadUserReviews(true)}
+        onLoadMoreReviews={loadMoreUserReviews}
         emptyReviews={renderEmpty()}
         regularPlaces={regularPlaces}
         loadingRegulars={loadingRegulars}

@@ -32,6 +32,10 @@ import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { useMembership } from "@/context/membership-context";
+import {
+  getCommentPage,
+  type CommentCursor,
+} from "@/services/commentPageService";
 
 const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
 const COMMENT_SHEET_RESTING_HEIGHT = 430;
@@ -113,6 +117,10 @@ export default function CommentsSlider({
     [bottomContentInset]
   );
   const [comments, setComments] = useState<Comment[]>([]);
+  const [hasMoreComments, setHasMoreComments] = useState(false);
+  const [loadingEarlierComments, setLoadingEarlierComments] = useState(false);
+  const nextCommentCursorRef = useRef<CommentCursor | null>(null);
+  const loadingEarlierCommentsRef = useRef(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
   const listRef = useRef<FlatList>(null);
@@ -122,9 +130,15 @@ export default function CommentsSlider({
     let cancelled = false;
     const loadComments = async () => {
       try {
-        const data = await databaseService.getComments(review.id, profile?.id);
+        const page = await getCommentPage({
+          reviewId: review.id,
+          viewerId: profile?.id,
+          limit: 20,
+        });
         if (cancelled) return;
-        setComments(data || []);
+        setComments(page.comments);
+        nextCommentCursorRef.current = page.nextCursor;
+        setHasMoreComments(page.hasMore);
         setTimeout(() => {
           listRef.current?.scrollToEnd({ animated: false });
         }, 100);
@@ -137,6 +151,41 @@ export default function CommentsSlider({
       cancelled = true;
     };
   }, [profile?.id, review.id]);
+
+  const loadEarlierComments = useCallback(async () => {
+    if (
+      !hasMoreComments ||
+      !nextCommentCursorRef.current ||
+      loadingEarlierCommentsRef.current
+    ) {
+      return;
+    }
+
+    loadingEarlierCommentsRef.current = true;
+    setLoadingEarlierComments(true);
+    try {
+      const page = await getCommentPage({
+        reviewId: review.id,
+        viewerId: profile?.id,
+        cursor: nextCommentCursorRef.current,
+        limit: 20,
+      });
+      nextCommentCursorRef.current = page.nextCursor;
+      setHasMoreComments(page.hasMore);
+      setComments((current) => {
+        const loaded = new Set(current.map((comment) => comment.id));
+        return [
+          ...page.comments.filter((comment) => !loaded.has(comment.id)),
+          ...current,
+        ];
+      });
+    } catch (error) {
+      reportError("Error loading earlier comments:", error);
+    } finally {
+      loadingEarlierCommentsRef.current = false;
+      setLoadingEarlierComments(false);
+    }
+  }, [hasMoreComments, profile, review.id]);
 
   const handleAddComment = useCallback(
     async (comment: string) => {
@@ -452,6 +501,21 @@ export default function CommentsSlider({
           data={comments}
           keyExtractor={(item: any) => item.id.toString()}
           renderItem={renderComment}
+          ListHeaderComponent={
+            hasMoreComments ? (
+              <TouchableOpacity
+                onPress={() => void loadEarlierComments()}
+                disabled={loadingEarlierComments}
+                style={styles.loadEarlierButton}
+                accessibilityRole="button"
+                accessibilityLabel="Load earlier comments"
+              >
+                <Text style={styles.loadEarlierText}>
+                  {loadingEarlierComments ? "Loading…" : "Earlier comments"}
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyTitle}>Say something</Text>
@@ -504,6 +568,16 @@ const useStyles = makeStyles((t) => ({
     padding: t.spacing.lg,
     // Keep the last comment clear of the pinned input footer.
     paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE,
+  },
+  loadEarlierButton: {
+    minHeight: 44,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginBottom: t.spacing.sm,
+  },
+  loadEarlierText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.textSecondary,
   },
   // Fixed offset rather than flex centering: the sheet's scroll container is
   // sized to the tallest snap point, so "centered" would land off-screen at

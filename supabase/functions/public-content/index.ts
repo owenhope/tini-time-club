@@ -32,6 +32,18 @@ const clampOffset = (value: unknown) => {
   return Math.max(0, Math.min(Math.floor(numeric), 10_000));
 };
 
+const parseCursor = (value: unknown) => {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as { insertedAt?: unknown; id?: unknown };
+  if (typeof raw.insertedAt !== "string") return null;
+  const timestamp = Date.parse(raw.insertedAt);
+  const id = Number(raw.id);
+  if (!Number.isFinite(timestamp) || !Number.isSafeInteger(id) || id < 1) {
+    return null;
+  }
+  return { insertedAt: new Date(timestamp).toISOString(), id };
+};
+
 const isRateLimited = (request: Request) => {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0];
   const key = forwarded?.trim() || "unknown";
@@ -227,6 +239,44 @@ async function getFeed(client: ReturnType<typeof createClient>, body: any) {
   return hydrateReviews(client, data ?? []);
 }
 
+async function getFeedPage(client: ReturnType<typeof createClient>, body: any) {
+  const limit = clampLimit(body.limit);
+  let query = client
+    .from("reviews")
+    .select(publicReviewSelect)
+    .eq("state", 1)
+    .eq("profile.is_public", true)
+    .eq("profile.deleted", false)
+    .order("inserted_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit + 1);
+  if (body.userId) query = query.eq("user_id", String(body.userId));
+  if (body.locationId) query = query.eq("location", Number(body.locationId));
+
+  const cursor = parseCursor(body.cursor);
+  if (cursor) {
+    query = query.or(
+      `inserted_at.lt.${cursor.insertedAt},and(inserted_at.eq.${cursor.insertedAt},id.lt.${cursor.id})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  const visible = rows.slice(0, limit);
+  const reviews = await hydrateReviews(client, visible);
+  const last = visible.at(-1);
+  return {
+    reviews,
+    nextCursor:
+      hasMore && last
+        ? { insertedAt: last.inserted_at, id: String(last.id) }
+        : null,
+    hasMore,
+  };
+}
+
 async function getReview(client: ReturnType<typeof createClient>, body: any) {
   const { data, error } = await client
     .from("reviews")
@@ -271,6 +321,82 @@ async function getComments(client: ReturnType<typeof createClient>, body: any) {
   return (data ?? []).map((comment) =>
     sanitizePublicComment(comment, likes.get(String(comment.id)) ?? 0)
   );
+}
+
+async function getCommentPage(
+  client: ReturnType<typeof createClient>,
+  body: any
+) {
+  const reviewId = Number(body.reviewId);
+  const { data: review } = await client
+    .from("reviews")
+    .select(
+      "id,profile:profiles!reviews_user_id_fkey1!inner(is_public,deleted)"
+    )
+    .eq("id", reviewId)
+    .eq("state", 1)
+    .eq("profile.is_public", true)
+    .eq("profile.deleted", false)
+    .maybeSingle();
+  if (!review) {
+    return { comments: [], nextCursor: null, hasMore: false, totalCount: 0 };
+  }
+
+  const limit = clampLimit(body.limit);
+  let query = client
+    .from("comments")
+    .select(
+      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,is_public,deleted)"
+    )
+    .eq("review_id", reviewId)
+    .eq("profile.is_public", true)
+    .eq("profile.deleted", false)
+    .order("inserted_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit + 1);
+  const cursor = parseCursor(body.cursor);
+  if (cursor) {
+    query = query.or(
+      `inserted_at.lt.${cursor.insertedAt},and(inserted_at.eq.${cursor.insertedAt},id.lt.${cursor.id})`
+    );
+  }
+
+  const [{ data, error }, { count, error: countError }] = await Promise.all([
+    query,
+    client
+      .from("comments")
+      .select(
+        "id,profile:profiles!comments_user_id_fkey!inner(is_public,deleted)",
+        { count: "exact", head: true }
+      )
+      .eq("review_id", reviewId)
+      .eq("profile.is_public", true)
+      .eq("profile.deleted", false),
+  ]);
+  if (error) throw error;
+  if (countError) throw countError;
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  const visible = rows.slice(0, limit);
+  const likes = await getCommentLikeCounts(
+    client,
+    visible.map((comment) => comment.id)
+  );
+  const comments = visible
+    .map((comment) =>
+      sanitizePublicComment(comment, likes.get(String(comment.id)) ?? 0)
+    )
+    .reverse();
+  const oldest = visible.at(-1);
+  return {
+    comments,
+    nextCursor:
+      hasMore && oldest
+        ? { insertedAt: oldest.inserted_at, id: String(oldest.id) }
+        : null,
+    hasMore,
+    totalCount: count ?? 0,
+  };
 }
 
 async function getProfile(client: ReturnType<typeof createClient>, body: any) {
@@ -398,11 +524,17 @@ Deno.serve(async (request) => {
       case "feed":
         data = await getFeed(client, body);
         break;
+      case "feed-page-v1":
+        data = await getFeedPage(client, body);
+        break;
       case "review":
         data = await getReview(client, body);
         break;
       case "comments":
         data = await getComments(client, body);
+        break;
+      case "comment-page-v1":
+        data = await getCommentPage(client, body);
         break;
       case "profile":
         data = await getProfile(client, body);

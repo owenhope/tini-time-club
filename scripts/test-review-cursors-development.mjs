@@ -18,6 +18,9 @@ const service = createClient(url, serviceRoleKey, {
 const member = createClient(url, anonKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+const visitor = createClient(url, anonKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const email = `cursor-test-${runId}@example.test`;
 const password = `Cursor-test-${runId}!`;
@@ -56,7 +59,7 @@ try {
 
   const { error: profileError } = await member
     .from("profiles")
-    .update({ username })
+    .update({ username, is_public: true })
     .eq("id", userId);
   if (profileError) throw profileError;
 
@@ -139,6 +142,110 @@ try {
     "A newer mid-pagination review leaked into the older page."
   );
 
+  const commentReviewId = published[0].reviewId;
+  for (let index = 1; index <= 18; index += 1) {
+    const { error } = await member.from("comments").insert({
+      review_id: commentReviewId,
+      user_id: userId,
+      body: `Cursor integration comment ${index}`,
+    });
+    if (error) throw error;
+  }
+
+  const firstCommentPage = await rpc("get_comment_page_v1", {
+    p_cursor_id: null,
+    p_cursor_inserted_at: null,
+    p_limit: 7,
+    p_review_id: commentReviewId,
+    p_viewer: userId,
+  });
+  assert(
+    firstCommentPage.comments.length === 7,
+    "First comment page was not bounded."
+  );
+  assert(
+    firstCommentPage.totalCount === 18 && firstCommentPage.hasMore === true,
+    "Comment page did not return its authoritative count and cursor."
+  );
+
+  const { data: insertedComment, error: insertedCommentError } = await member
+    .from("comments")
+    .insert({
+      review_id: commentReviewId,
+      user_id: userId,
+      body: "Inserted between comment cursor pages",
+    })
+    .select("id")
+    .single();
+  if (insertedCommentError) throw insertedCommentError;
+
+  const secondCommentPage = await rpc("get_comment_page_v1", {
+    p_cursor_id: firstCommentPage.nextCursor.id,
+    p_cursor_inserted_at: firstCommentPage.nextCursor.insertedAt,
+    p_limit: 7,
+    p_review_id: commentReviewId,
+    p_viewer: userId,
+  });
+  const firstCommentIds = new Set(
+    firstCommentPage.comments.map((comment) => String(comment.id))
+  );
+  const secondCommentIds = secondCommentPage.comments.map((comment) =>
+    String(comment.id)
+  );
+  assert(
+    secondCommentIds.every((id) => !firstCommentIds.has(id)),
+    "Cursor pages contained a duplicate comment."
+  );
+  assert(
+    !secondCommentIds.includes(String(insertedComment.id)),
+    "A newer mid-pagination comment leaked into the older page."
+  );
+
+  const { data: publicFeedResponse, error: publicFeedError } =
+    await visitor.functions.invoke("public-content", {
+      body: {
+        operation: "feed-page-v1",
+        userId,
+        limit: 4,
+      },
+    });
+  if (publicFeedError) throw publicFeedError;
+  assert(
+    publicFeedResponse?.data?.reviews?.length === 4 &&
+      publicFeedResponse.data.hasMore === true,
+    "Public review cursor page was unavailable."
+  );
+
+  const { data: publicCommentResponse, error: publicCommentError } =
+    await visitor.functions.invoke("public-content", {
+      body: {
+        operation: "comment-page-v1",
+        reviewId: commentReviewId,
+        limit: 5,
+      },
+    });
+  if (publicCommentError) throw publicCommentError;
+  assert(
+    publicCommentResponse?.data?.comments?.length === 5 &&
+      publicCommentResponse.data.totalCount === 19,
+    "Public comment cursor page was unavailable."
+  );
+
+  const { error: privateError } = await member
+    .from("profiles")
+    .update({ is_public: false })
+    .eq("id", userId);
+  if (privateError) throw privateError;
+  const { data: privateFeedResponse, error: privateFeedError } =
+    await visitor.functions.invoke("public-content", {
+      body: { operation: "feed-page-v1", userId, limit: 4 },
+    });
+  if (privateFeedError) throw privateFeedError;
+  assert(
+    privateFeedResponse?.data?.reviews?.length === 0,
+    "Public review cursor exposed a private profile."
+  );
+
   const profilePage = await rpc("get_discover_profiles_page_v1", {
     p_cursor: null,
     p_limit: 5,
@@ -169,7 +276,7 @@ try {
   );
 
   console.log(
-    "Development integration passed: atomic publish, rank/Regular transitions, stable feed cursors, and cursor discovery."
+    "Development integration passed: atomic publish, stable authenticated/public review and comment cursors, privacy, and cursor discovery."
   );
 } finally {
   await member.auth.signOut().catch(() => undefined);

@@ -67,6 +67,7 @@ const UserProfile = () => {
     setUserReviews,
     loadingReviews,
     refreshingReviews,
+    loadMoreUserReviews,
     loadUserReviews,
     regularPlaces,
     loadingRegulars,
@@ -448,7 +449,7 @@ const UserProfile = () => {
         actions={headerActions}
         progress={progress}
         collapsed={isCollapsed}
-        reviewsCount={userReviews.length}
+        reviewsCount={displayProfile?.review_count ?? userReviews.length}
         followersCount={followersCount}
         followingCount={followingCount}
         isOwnProfile={isViewingOwnProfile}
@@ -498,6 +499,7 @@ const UserProfile = () => {
         onRefreshReviews={() => {
           if (displayProfile?.id) loadUserReviews(true);
         }}
+        onLoadMoreReviews={loadMoreUserReviews}
         emptyReviews={renderEmpty()}
         regularPlaces={regularPlaces}
         loadingRegulars={loadingRegulars}
