@@ -32,6 +32,7 @@
   --color-emerald-950: #1c3a2e;
 
   /* --- Purple (mapped onto `violet-*`) --- */
+  --color-violet-50: #f6f3fb;
   --color-violet-100: #ede7f8;
   --color-violet-300: #d3c7ee;
   --color-violet-500: #b6a3e2; /* brand purple — the wordmark dot */
@@ -153,6 +154,10 @@ html.dark .admin-theme .bg-emerald-50 {
 
 html.dark .admin-theme .bg-emerald-100 {
   background-color: #204f3d;
+}
+
+html.dark .admin-theme .bg-violet-50 {
+  background-color: #211a32;
 }
 
 html.dark .admin-theme .bg-violet-100 {
