@@ -382,8 +382,8 @@ const ReviewShareCard = ({
                 style={[
                   styles.headline,
                   {
-                    fontSize: 26 * artworkScale,
-                    lineHeight: 30 * artworkScale,
+                    fontSize: 28 * artworkScale,
+                    lineHeight: 32 * artworkScale,
                   },
                 ]}
               >

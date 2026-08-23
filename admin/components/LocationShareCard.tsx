@@ -114,7 +114,7 @@ export default function LocationShareCard({
     >
       <section className="text-white" style={{ background: HEADER_BRAND }}>
         <div className="px-[10px] pb-[18px] pt-5">
-          <h1 className="text-[27px] leading-[30px] font-black">
+          <h1 className="text-[26px] leading-[29px] font-black">
             {location.name}
           </h1>
           {cityRegion ? (

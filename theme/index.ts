@@ -12,6 +12,7 @@ export {
   spacing,
   radius,
   typography,
+  compactDisplayTypography,
   fonts,
   elevation,
   duration,

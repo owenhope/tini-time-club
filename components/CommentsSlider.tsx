@@ -36,6 +36,9 @@ import {
   getCommentPage,
   type CommentCursor,
 } from "@/services/commentPageService";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarVisibility } from "@/context/tab-bar-visibility-context";
+import { runNavigation } from "@/utils/reviewItemMemo";
 
 const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
 const COMMENT_SHEET_RESTING_HEIGHT = 430;
@@ -47,6 +50,8 @@ interface CommentsSliderProps {
   onClose: () => void;
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
   onCommentAdded?: (reviewId: string, newComment: any) => void;
+  /** Lets an enclosing native modal dismiss before opening another screen. */
+  onNavigate?: (navigate: () => void) => void;
 }
 
 interface CommentInputFooterProps extends BottomSheetFooterProps {
@@ -105,12 +110,15 @@ export default function CommentsSlider({
   onClose,
   onCommentDeleted,
   onCommentAdded,
+  onNavigate,
 }: CommentsSliderProps) {
   const { profile } = useProfile();
   const { requireMembership } = useMembership();
+  const { setHidden: setTabBarHidden } = useTabBarVisibility();
   const openProfile = useOpenProfile();
   const styles = useStyles();
   const { colors, isDark } = useTheme();
+  const safeAreaInsets = useSafeAreaInsets();
   const bottomContentInset = useNativeTabBarContentInset();
   const snapPoints = React.useMemo(
     () => [COMMENT_SHEET_RESTING_HEIGHT + bottomContentInset, "85%"],
@@ -125,6 +133,11 @@ export default function CommentsSlider({
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
   const listRef = useRef<FlatList>(null);
   const pendingLikes = useRef(new Set<number>());
+
+  useEffect(() => {
+    setTabBarHidden(true);
+    return () => setTabBarHidden(false);
+  }, [setTabBarHidden]);
 
   useEffect(() => {
     let cancelled = false;
@@ -383,7 +396,9 @@ export default function CommentsSlider({
   );
 
   const navigateToUserProfile = (username: string, userId?: string) => {
-    if (userId) openProfile(username, userId);
+    if (userId) {
+      runNavigation(() => openProfile(username, userId), onNavigate);
+    }
   };
 
   const renderBackdrop = useCallback(
@@ -471,11 +486,11 @@ export default function CommentsSlider({
     (props: BottomSheetFooterProps) => (
       <CommentInputFooter
         {...props}
-        bottomContentInset={bottomContentInset}
+        bottomContentInset={safeAreaInsets.bottom}
         onSubmit={handleAddComment}
       />
     ),
-    [bottomContentInset, handleAddComment]
+    [handleAddComment, safeAreaInsets.bottom]
   );
 
   return (

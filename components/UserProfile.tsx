@@ -467,10 +467,12 @@ const UserProfile = () => {
           router.push(routes.following(displayProfile.username))
         }
         tags={favoriteTags}
+        below={
+          <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
+        }
       >
         {favoriteChips}
       </ProfileHeader>
-      <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
     </>
   );
 

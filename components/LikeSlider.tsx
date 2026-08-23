@@ -17,9 +17,15 @@ const CONTENT_BOTTOM_PADDING = 16;
 interface LikesSliderProps {
   reviewId: string;
   onClose: () => void;
+  /** Lets an enclosing native modal dismiss before opening another screen. */
+  onNavigate?: (navigate: () => void) => void;
 }
 
-export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
+export default function LikesSlider({
+  reviewId,
+  onClose,
+  onNavigate,
+}: LikesSliderProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const bottomContentInset = useNativeTabBarContentInset();
@@ -106,7 +112,12 @@ export default function LikesSlider({ reviewId, onClose }: LikesSliderProps) {
             </Text>
           </View>
         ) : (
-          <ProfileList profiles={likesUsers} enableSearch={false} embedded />
+          <ProfileList
+            profiles={likesUsers}
+            enableSearch={false}
+            embedded
+            onNavigate={onNavigate}
+          />
         )}
       </BottomSheetView>
     </BottomSheet>

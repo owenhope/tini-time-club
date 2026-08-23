@@ -13,8 +13,20 @@ export interface ReviewItemMemoProps {
   ) => void;
   onCommentAdded: (reviewId: string, newComment: any) => void;
   onCommentDeleted: (reviewId: string, commentId: number) => void;
+  /** Lets a native modal dismiss fully before the queued route action runs. */
+  onNavigate?: (navigate: () => void) => void;
   previewMode?: boolean;
 }
+
+/** Hand the route action to the host to queue behind its dismissal, or run it
+ * now when nothing wraps this review. */
+export const runNavigation = (
+  navigate: () => void,
+  onNavigate?: (navigate: () => void) => void
+) => {
+  if (onNavigate) onNavigate(navigate);
+  else navigate();
+};
 
 const recentCommentsKey = (comments: Comment[] | undefined) =>
   (comments ?? []).map((comment) => ({
@@ -80,6 +92,7 @@ export const areReviewItemPropsEqual = (
     prevProps.onShowLikes === nextProps.onShowLikes &&
     prevProps.onShowComments === nextProps.onShowComments &&
     prevProps.onCommentAdded === nextProps.onCommentAdded &&
-    prevProps.onCommentDeleted === nextProps.onCommentDeleted
+    prevProps.onCommentDeleted === nextProps.onCommentDeleted &&
+    prevProps.onNavigate === nextProps.onNavigate
   );
 };

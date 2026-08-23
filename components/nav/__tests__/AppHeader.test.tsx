@@ -2,7 +2,7 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { StyleSheet, Text, View } from "react-native";
 import AppHeader from "../AppHeader";
-import { darkColors, ThemeProvider } from "@/theme";
+import { compactDisplayTypography, darkColors, ThemeProvider } from "@/theme";
 
 jest.mock("react-native", () => {
   const actual = jest.requireActual("react-native");
@@ -140,6 +140,31 @@ describe("AppHeader", () => {
       .map((node) => node.props.children);
     expect(text).toContain("Index filters");
     expect(text).not.toContain("Hidden title");
+
+    act(() => tree!.unmount());
+  });
+
+  it("supports a one-point smaller media title", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="media"
+            title="Pier 7 Restaurant + Bar"
+            mediaTitleSize="compact"
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const title = tree!.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "Pier 7 Restaurant + Bar");
+    const style = StyleSheet.flatten(title?.props.style);
+
+    expect(style?.fontSize).toBe(compactDisplayTypography.fontSize);
+    expect(style?.lineHeight).toBe(compactDisplayTypography.lineHeight);
 
     act(() => tree!.unmount());
   });

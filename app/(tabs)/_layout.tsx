@@ -20,6 +20,10 @@ import { getGlobalScrollToTop } from "@/utils/scrollUtils";
 import { getTabBarAccentForPath } from "@/utils/tabBarAccent";
 import { useMembership } from "@/context/membership-context";
 import type { MembershipIntent } from "@/utils/membership";
+import {
+  TabBarVisibilityProvider,
+  useTabBarVisibility,
+} from "@/context/tab-bar-visibility-context";
 
 // Welcome's full-width "Discover Martinis" CTA occupies the strip of screen
 // where the native tab bar mounts, so the tail of that tap can be delivered to
@@ -42,6 +46,7 @@ const LayoutContent = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const { requireMembership } = useMembership();
+  const { hidden: tabBarHidden } = useTabBarVisibility();
   const pathname = usePathname();
   const hasResolvedProfileOnce = useRef(false);
   const mountedAtRef = useRef<number | null>(null);
@@ -142,6 +147,7 @@ const LayoutContent = () => {
 
   return (
     <NativeTabs
+      hidden={tabBarHidden}
       tintColor={tabBarActiveColor}
       backgroundColor={colors.tabBar}
       shadowColor={colors.divider}
@@ -259,4 +265,10 @@ const LayoutContent = () => {
   );
 };
 
-export default LayoutContent;
+const TabsLayout = () => (
+  <TabBarVisibilityProvider>
+    <LayoutContent />
+  </TabBarVisibilityProvider>
+);
+
+export default TabsLayout;

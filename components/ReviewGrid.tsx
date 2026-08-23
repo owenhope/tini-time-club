@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -89,12 +89,27 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
    */
   const [commentsFor, setCommentsFor] = useState<Review | null>(null);
   const [likesFor, setLikesFor] = useState<string | null>(null);
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
 
   /** Closing the sheet has to take its own sheets with it. */
   const closeSheet = useCallback(() => {
     setCommentsFor(null);
     setLikesFor(null);
     setActive(null);
+  }, []);
+
+  const handleReviewNavigation = useCallback(
+    (navigate: () => void) => {
+      pendingNavigationRef.current = navigate;
+      closeSheet();
+    },
+    [closeSheet]
+  );
+
+  const handleSheetDismiss = useCallback(() => {
+    const navigate = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
+    navigate?.();
   }, []);
 
   const tileSize = (windowWidth - GAP * (COLUMNS - 1)) / COLUMNS;
@@ -221,6 +236,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={closeSheet}
+        onDismiss={handleSheetDismiss}
       >
         {/* Its own gesture root: the app's is in the screen's window, and a
             bottom sheet in here would take no pan without one. */}
@@ -244,6 +260,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
                 onShowComments={() => setCommentsFor(active)}
                 onCommentAdded={onCommentAdded ?? (() => {})}
                 onCommentDeleted={onCommentDeleted ?? (() => {})}
+                onNavigate={handleReviewNavigation}
               />
             )}
           </ScrollView>
@@ -254,11 +271,16 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
               onClose={() => setCommentsFor(null)}
               onCommentAdded={onCommentAdded}
               onCommentDeleted={onCommentDeleted}
+              onNavigate={handleReviewNavigation}
             />
           )}
 
           {likesFor && (
-            <LikeSlider reviewId={likesFor} onClose={() => setLikesFor(null)} />
+            <LikeSlider
+              reviewId={likesFor}
+              onClose={() => setLikesFor(null)}
+              onNavigate={handleReviewNavigation}
+            />
           )}
         </GestureHandlerRootView>
       </Modal>

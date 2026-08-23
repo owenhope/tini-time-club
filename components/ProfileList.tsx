@@ -9,13 +9,15 @@ import {
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Avatar, VerifiedName } from "@/components/shared";
-import { Link } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { setFollowing } from "@/services/followService";
 import { useMembership } from "@/context/membership-context";
+import { runNavigation } from "@/utils/reviewItemMemo";
+import { useOpenProfile } from "@/hooks/useAppNavigation";
+
 export interface ProfileType {
   id: string;
   username: string;
@@ -29,6 +31,8 @@ interface ProfileListProps {
   enableSearch?: boolean;
   /** The parent surface already supplies its own gutter and background. */
   embedded?: boolean;
+  /** Lets an enclosing native modal dismiss before opening another screen. */
+  onNavigate?: (navigate: () => void) => void;
 }
 
 const PROFILE_ROW_AVATAR_SIZE = 28;
@@ -37,11 +41,13 @@ export default function ProfileList({
   profiles,
   enableSearch = false,
   embedded = false,
+  onNavigate,
 }: ProfileListProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { profile, loading: profileLoading } = useProfile();
   const { requireMembership } = useMembership();
+  const openProfile = useOpenProfile();
   const profileId = profile?.id;
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [followStateReady, setFollowStateReady] = useState(false);
@@ -136,23 +142,31 @@ export default function ProfileList({
     const isUpdating = updatingFollowIds.includes(item.id);
     return (
       <View style={styles.profileCard}>
-        <Link href={`/users/${item.username || "unknown"}`} asChild>
-          <TouchableOpacity style={styles.profileInfo} activeOpacity={0.7}>
-            <Avatar
-              avatarPath={item.avatar_url}
-              username={item.username}
-              size={PROFILE_ROW_AVATAR_SIZE}
-              reviewCount={item.review_count}
-            />
-            <VerifiedName
-              name={item.username || "Unknown User"}
-              isVerified={item.is_verified}
-              badgeSize={14}
-              style={styles.usernameRow}
-              textStyle={styles.username}
-            />
-          </TouchableOpacity>
-        </Link>
+        <TouchableOpacity
+          style={styles.profileInfo}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          onPress={() =>
+            runNavigation(
+              () => openProfile(item.username || "unknown", item.id),
+              onNavigate
+            )
+          }
+        >
+          <Avatar
+            avatarPath={item.avatar_url}
+            username={item.username}
+            size={PROFILE_ROW_AVATAR_SIZE}
+            reviewCount={item.review_count}
+          />
+          <VerifiedName
+            name={item.username || "Unknown User"}
+            isVerified={item.is_verified}
+            badgeSize={14}
+            style={styles.usernameRow}
+            textStyle={styles.username}
+          />
+        </TouchableOpacity>
         {!isSelf && (
           <View style={styles.followButtonSlot}>
             {followStateReady ? (

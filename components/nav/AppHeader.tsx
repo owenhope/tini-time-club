@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
 import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
-import { makeStyles, useTheme } from "@/theme";
+import { compactDisplayTypography, makeStyles, useTheme } from "@/theme";
 
 /**
  * The app's top bar — four variants, no fifth.
@@ -72,6 +72,8 @@ export interface AppHeaderProps {
   compactContent?: React.ReactNode;
   /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
+  /** Variant C only: reduce a dense media title by one point. */
+  mediaTitleSize?: "default" | "compact";
   /** The coloured ground under variant A/C. `brand` uses the app's purple. */
   ground?: "ink" | "inkDeep" | "brand";
   /** 0→1 over 120pt of scroll. Drives the crossfade in both directions. */
@@ -340,6 +342,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   below,
   compactContent,
   preserveCase = false,
+  mediaTitleSize = "default",
   ground,
   progress,
   collapsed = false,
@@ -552,7 +555,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         <Animated.View style={[styles.mediaIdentity, fade]}>
           <Text
-            style={[styles.mediaTitle, preserveCase && styles.titlePlain]}
+            style={[
+              styles.mediaTitle,
+              mediaTitleSize === "compact" && styles.mediaTitleCompact,
+              preserveCase && styles.titlePlain,
+            ]}
             numberOfLines={2}
             adjustsFontSizeToFit
             minimumFontScale={0.7}
@@ -858,6 +865,9 @@ const useStyles = makeStyles((t) => ({
   mediaTitle: {
     ...t.typography.display,
     color: t.colors.textOnImage,
+  },
+  mediaTitleCompact: {
+    ...compactDisplayTypography,
   },
   mediaMeta: {
     ...t.typography.mono,

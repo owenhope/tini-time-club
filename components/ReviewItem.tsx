@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import {
@@ -38,7 +38,9 @@ import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { useMembership } from "@/context/membership-context";
+import { routes } from "@/utils/routes";
 import {
+  runNavigation,
   areReviewItemPropsEqual,
   type ReviewItemMemoProps,
 } from "@/utils/reviewItemMemo";
@@ -175,20 +177,21 @@ const AvatarWrapper = memo(
     isVerified,
     authorId,
     reviewCount,
+    onNavigate,
   }: {
     avatarUrl: string | null;
     username?: string;
     isVerified?: boolean;
     authorId?: string | null;
     reviewCount?: number | null;
+    onNavigate?: (navigate: () => void) => void;
   }) => {
     const openProfile = useOpenProfile();
     const styles = useStyles();
 
-    const handlePress = useCallback(
-      () => openProfile(username, authorId),
-      [openProfile, username, authorId]
-    );
+    const handlePress = useCallback(() => {
+      runNavigation(() => openProfile(username, authorId), onNavigate);
+    }, [authorId, onNavigate, openProfile, username]);
 
     const content = (
       <View style={styles.headerProfile}>
@@ -300,8 +303,14 @@ ShareButton.displayName = "ShareButton";
  * the image and onto the card below it, where their contrast is a constant
  * rather than a property of the picture.
  */
-const PhotoChips = memo(({ review }: { review: Review }) => {
+interface PhotoChipsProps {
+  review: Review;
+  onNavigate?: (navigate: () => void) => void;
+}
+
+const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
   const styles = useStyles();
+  const router = useRouter();
   // Where in the world it was poured — a venue name alone means nothing to
   // anyone who doesn't already drink there.
   const cityCountry = review.location?.address
@@ -318,6 +327,12 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
   const venueReviewLabel =
     venueCount === 1 ? "1 review" : `${venueCount} reviews`;
 
+  const locationId = review.location?.id;
+  const handleLocationPress = useCallback(() => {
+    if (!locationId) return;
+    runNavigation(() => router.push(routes.place(locationId)), onNavigate);
+  }, [locationId, onNavigate, router]);
+
   return (
     <>
       <View style={styles.photoPills}>
@@ -330,43 +345,38 @@ const PhotoChips = memo(({ review }: { review: Review }) => {
       </View>
 
       <View style={styles.photoFooter}>
-        <Link href={`/places/${review.location?.id}`} asChild>
-          <TouchableOpacity
-            style={styles.venueChip}
-            activeOpacity={0.8}
-            accessibilityLabel={
-              venueRating != null
-                ? `${review.location?.name || "Place"}, ${formatRating(
-                    venueRating
-                  )} from ${venueReviewLabel}`
-                : review.location?.name || "Place"
-            }
-          >
-            <View style={styles.venueChipLines}>
-              <Text style={styles.venueChipText} numberOfLines={1}>
-                {review.location?.name || "N/A"}
+        <TouchableOpacity
+          style={styles.venueChip}
+          activeOpacity={0.8}
+          onPress={handleLocationPress}
+          accessibilityRole="link"
+          accessibilityLabel={
+            venueRating != null
+              ? `${review.location?.name || "Place"}, ${formatRating(
+                  venueRating
+                )} from ${venueReviewLabel}`
+              : review.location?.name || "Place"
+          }
+        >
+          <View style={styles.venueChipLines}>
+            <Text style={styles.venueChipText} numberOfLines={1}>
+              {review.location?.name || "N/A"}
+            </Text>
+            {cityCountry ? (
+              <Text style={styles.venueChipMeta} numberOfLines={1}>
+                {cityCountry}
               </Text>
-              {cityCountry ? (
-                <Text style={styles.venueChipMeta} numberOfLines={1}>
-                  {cityCountry}
+            ) : null}
+            {venueRating != null ? (
+              <View style={styles.venueChipRating}>
+                <RatingPips value={1} max={1} size={13} accessibilityLabel="" />
+                <Text style={styles.venueChipRatingText} numberOfLines={1}>
+                  {formatRating(venueRating)} · {venueReviewLabel}
                 </Text>
-              ) : null}
-              {venueRating != null ? (
-                <View style={styles.venueChipRating}>
-                  <RatingPips
-                    value={1}
-                    max={1}
-                    size={13}
-                    accessibilityLabel=""
-                  />
-                  <Text style={styles.venueChipRatingText} numberOfLines={1}>
-                    {formatRating(venueRating)} · {venueReviewLabel}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        </Link>
+              </View>
+            ) : null}
+          </View>
+        </TouchableOpacity>
       </View>
     </>
   );
@@ -423,10 +433,12 @@ const CommentPreviewItem = memo(
     comment,
     onShowComments,
     onToggleLike,
+    onNavigate,
   }: {
     comment: Comment;
     onShowComments: () => void;
     onToggleLike: (comment: Comment) => void;
+    onNavigate?: (navigate: () => void) => void;
   }) => {
     const styles = useStyles();
     const { colors } = useTheme();
@@ -473,7 +485,11 @@ const CommentPreviewItem = memo(
               }
               onTextLayout={handleTextLayout}
               onUsernamePress={() =>
-                openProfile(comment.profile?.username, comment.profile?.id)
+                runNavigation(
+                  () =>
+                    openProfile(comment.profile?.username, comment.profile?.id),
+                  onNavigate
+                )
               }
             />
           </TouchableOpacity>
@@ -536,6 +552,7 @@ const ReviewFooter = memo(
     onCommentDeleted,
     onEdit,
     isOwnReview,
+    onNavigate,
   }: {
     review: Review;
     hasLiked: boolean;
@@ -555,6 +572,7 @@ const ReviewFooter = memo(
     onCommentDeleted: (reviewId: string, commentId: number) => void;
     onEdit?: () => void;
     isOwnReview: boolean;
+    onNavigate?: (navigate: () => void) => void;
   }) => {
     const styles = useStyles();
 
@@ -620,7 +638,11 @@ const ReviewFooter = memo(
                 usernameStyle={styles.captionUsername}
                 bodyStyle={styles.captionText}
                 onUsernamePress={() =>
-                  openProfile(review.profile?.username, review.profile?.id)
+                  runNavigation(
+                    () =>
+                      openProfile(review.profile?.username, review.profile?.id),
+                    onNavigate
+                  )
                 }
               />
             ) : (
@@ -640,6 +662,7 @@ const ReviewFooter = memo(
                 comment={c}
                 onShowComments={handleShowComments}
                 onToggleLike={onToggleCommentLike}
+                onNavigate={onNavigate}
               />
             ))}
 
@@ -673,6 +696,7 @@ const ReviewItemComponent = ({
   onShowComments,
   onCommentAdded,
   onCommentDeleted,
+  onNavigate,
   previewMode = false,
 }: ReviewItemProps) => {
   const { profile } = useProfile();
@@ -874,7 +898,7 @@ const ReviewItemComponent = ({
             cachePolicy="memory-disk"
             recyclingKey={review.id}
           />
-          <PhotoChips review={review} />
+          <PhotoChips review={review} onNavigate={onNavigate} />
         </View>
 
         <ReviewScores review={review} />
@@ -910,6 +934,7 @@ const ReviewItemComponent = ({
               isVerified={review.profile?.is_verified}
               authorId={review.profile?.id}
               reviewCount={review.profile?.review_count}
+              onNavigate={onNavigate}
             />
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -946,7 +971,7 @@ const ReviewItemComponent = ({
               recyclingKey={review.id}
             />
           </Pressable>
-          <PhotoChips review={review} />
+          <PhotoChips review={review} onNavigate={onNavigate} />
         </View>
 
         <ReviewScores review={review} />
@@ -969,6 +994,7 @@ const ReviewItemComponent = ({
             onCommentDeleted={onCommentDeleted}
             onEdit={onEdit}
             isOwnReview={isOwnReview}
+            onNavigate={onNavigate}
           />
         }
       </View>
@@ -1111,7 +1137,7 @@ const useStyles = makeStyles((t) => ({
     gap: 2,
   },
   venueChipText: {
-    ...t.typography.bodyStrong,
+    ...t.typography.heading,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,

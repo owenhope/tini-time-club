@@ -432,6 +432,7 @@ const Location = () => {
                 variant="media"
                 ground="brand"
                 title={displayLocation?.name ?? ""}
+                mediaTitleSize="compact"
                 meta={headerCityRegion ?? undefined}
                 onBack={goBack}
                 actions={headerActions}

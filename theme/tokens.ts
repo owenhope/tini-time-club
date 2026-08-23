@@ -481,6 +481,15 @@ export const typography = {
   },
 } as const;
 
+/** A one-point reduction for dense media-header titles. This remains outside
+ * the public semantic type scale so screens cannot use it as a general-purpose
+ * typography escape hatch. */
+export const compactDisplayTypography = {
+  ...typography.display,
+  fontSize: typography.display.fontSize - 1,
+  lineHeight: typography.display.lineHeight - 1,
+} as const;
+
 /**
  * Elevation. Shadows are green-tinted, low and two-layered in spirit; RN takes
  * a single shadow, so we use the brand green as the shadow colour. Dark mode

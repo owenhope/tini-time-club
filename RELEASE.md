@@ -148,8 +148,10 @@ Channels map 1:1 to environments. An update only reaches builds whose
 `runtimeVersion` matches, so JS-only fixes can ship without a store review:
 
 ```bash
-npx eas update --branch preview     --message "fix: ..."
-npx eas update --branch production  --message "fix: ..."
+npx eas update --branch preview --platform ios --environment preview \
+  --message "fix: ..."
+npx eas update --branch production --platform ios --environment production \
+  --message "fix: ..."
 ```
 
 Anything touching native code needs a new build, not an update.

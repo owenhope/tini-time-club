@@ -7,6 +7,7 @@ import { ThemeProvider, typography } from "@/theme";
 import ReportModal from "@/components/ReportModal";
 
 const mockGetCommentPage = jest.fn();
+const mockSetTabBarHidden = jest.fn();
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -17,8 +18,13 @@ jest.mock("@gorhom/bottom-sheet", () => {
   const ReactActual = jest.requireActual<typeof import("react")>("react");
   const { TextInput, View: RNView } =
     jest.requireActual<typeof import("react-native")>("react-native");
-  const Sheet = ({ children }: any) =>
-    ReactActual.createElement(RNView, null, children);
+  const Sheet = ({ children, footerComponent }: any) =>
+    ReactActual.createElement(
+      RNView,
+      null,
+      children,
+      footerComponent?.({ animatedFooterPosition: { value: 0 } })
+    );
   const SheetList = ReactActual.forwardRef(
     ({ data, renderItem, ListEmptyComponent }: any, _ref: any) =>
       ReactActual.createElement(
@@ -64,6 +70,10 @@ jest.mock("@/context/membership-context", () => ({
     requireMembership: jest.fn(() => true),
     openMembership: jest.fn(),
   }),
+}));
+
+jest.mock("@/context/tab-bar-visibility-context", () => ({
+  useTabBarVisibility: () => ({ setHidden: mockSetTabBarHidden }),
 }));
 
 jest.mock("@/hooks/useAppNavigation", () => ({
@@ -202,6 +212,24 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
       .findAllByType(Text)
       .some((node) => String(node.props.children) === "1")
   ).toBe(true);
+});
+
+it("does not lift the comment input above the native tab bar", async () => {
+  const tree = await renderSlider();
+  const input = tree.root.findByProps({ placeholder: "Add a comment..." });
+  const inputContainer = input.parent;
+
+  expect(StyleSheet.flatten(inputContainer?.props.style).paddingBottom).toBe(
+    34
+  );
+});
+
+it("covers the native tab bar while the comments sheet is mounted", async () => {
+  const tree = await renderSlider();
+
+  expect(mockSetTabBarHidden).toHaveBeenCalledWith(true);
+  act(() => tree.unmount());
+  expect(mockSetTabBarHidden).toHaveBeenLastCalledWith(false);
 });
 
 it("reports someone else's comment from its long-press menu", async () => {

@@ -9,9 +9,7 @@ const OWNER = "hopemediahouse";
 // Production config values for Tini Time Club.
 const APP_NAME = "Tini Time Club";
 const BUNDLE_IDENTIFIER = "com.ohope.tinitimeclub";
-const PACKAGE_NAME = "com.ohope.tinitimeclub";
 const ICON = "./assets/images/icon-purple.png";
-const ADAPTIVE_ICON = "./assets/images/adaptive-icon.png";
 const SCHEME = "tini-time-club";
 const PHOTO_LIBRARY_USAGE_DESCRIPTION =
   "Allow Tini Time Club to access your photos so you can upload Martini review photos and choose a profile picture.";
@@ -70,7 +68,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   console.log(
     `Building ${appEnvironment} app against ${backendEnvironment} backend`
   );
-  const { name, bundleIdentifier, icon, adaptiveIcon, packageName, scheme } =
+  const { name, bundleIdentifier, icon, scheme } =
     getDynamicAppConfig(appEnvironment);
 
   return {
@@ -81,6 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // would let an OTA update reach an incompatible binary.
     version: "4.0.2",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
+    platforms: ["ios", "web"], // The native app is iOS-only; Expo web remains available.
     orientation: "portrait",
     userInterfaceStyle: "automatic",
     icon: icon,
@@ -89,30 +88,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: false,
       bundleIdentifier: bundleIdentifier,
       // No googleMapsApiKey: react-native-maps >= 1.22 dropped Google Maps on
-      // iOS, so the map uses Apple Maps there (Google remains on Android).
+      // iOS, so the map uses Apple Maps.
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription: PHOTO_LIBRARY_USAGE_DESCRIPTION,
         NSPhotoLibraryAddUsageDescription:
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
-    },
-    android: {
-      adaptiveIcon: {
-        foregroundImage: adaptiveIcon,
-        backgroundColor: "#ffffff",
-      },
-      package: packageName,
-      config: {
-        googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,
-        },
-      },
-      permissions: [
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.CAMERA",
-      ],
     },
     web: {
       bundler: "metro",
@@ -158,7 +140,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           cameraPermission:
             "Allow Tini Time Club to access your camera to take pictures of your Martinis or your profile picture.",
           microphonePermission: false,
-          recordAudioAndroid: false,
           barcodeScannerEnabled: false,
         },
       ],
@@ -198,7 +179,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "react-native-share",
         {
           ios: ["instagram", "instagram-stories"],
-          android: ["com.instagram.android"],
         },
       ],
     ],
@@ -237,9 +217,7 @@ export const getDynamicAppConfig = (
     return {
       name: APP_NAME,
       bundleIdentifier: BUNDLE_IDENTIFIER,
-      packageName: PACKAGE_NAME,
       icon: ICON,
-      adaptiveIcon: ADAPTIVE_ICON,
       scheme: SCHEME,
     };
   }
@@ -248,9 +226,7 @@ export const getDynamicAppConfig = (
     return {
       name: `${APP_NAME} Preview`,
       bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-      packageName: `${PACKAGE_NAME}.preview`,
       icon: "./assets/images/icons/iOS-Prev.png",
-      adaptiveIcon: "./assets/images/icons/Android-Prev.png",
       scheme: `${SCHEME}-prev`,
     };
   }
@@ -259,9 +235,7 @@ export const getDynamicAppConfig = (
   return {
     name: `${APP_NAME} Development`,
     bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-    packageName: `${PACKAGE_NAME}.dev`,
     icon: "./assets/images/icons/iOS-Dev.png",
-    adaptiveIcon: "./assets/images/icons/Android-Dev.png",
     scheme: `${SCHEME}-dev`,
   };
 };

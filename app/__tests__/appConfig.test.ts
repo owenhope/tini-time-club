@@ -26,9 +26,14 @@ describe("native app permissions", () => {
 
     const config = createAppConfig({ config: {} } as ConfigContext);
 
-    expect(config.android?.permissions).not.toContain(
-      "android.permission.RECORD_AUDIO"
-    );
+    // The native app is iOS-only; the separate Expo web target stays intact.
+    expect(config.platforms).toEqual(["ios", "web"]);
+    expect(config.android).toBeUndefined();
+    expect(config.web).toMatchObject({
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png",
+    });
     expect(pluginOptions(config.plugins, "expo-image-picker")).toMatchObject({
       microphonePermission: false,
       photosPermission: expect.stringContaining("upload Martini review photos"),
@@ -36,7 +41,6 @@ describe("native app permissions", () => {
     expect(pluginOptions(config.plugins, "expo-camera")).toMatchObject({
       barcodeScannerEnabled: false,
       microphonePermission: false,
-      recordAudioAndroid: false,
     });
     expect(pluginOptions(config.plugins, "expo-location")).toMatchObject({
       locationAlwaysAndWhenInUsePermission: false,
