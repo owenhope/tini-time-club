@@ -86,7 +86,7 @@ export default async function HealthPage({
             metric={kpis.reviews}
             newLabel="reviews"
             href="/admin/reviews"
-            color="#6B53A8"
+            color="#D6E640"
             rangeLabel={range.label}
             className="col-span-12 xl:col-span-4"
           />
@@ -95,7 +95,7 @@ export default async function HealthPage({
             metric={kpis.locations}
             newLabel="places"
             href="/admin/places"
-            color="#D6E640"
+            color="#6B53A8"
             rangeLabel={range.label}
             className="col-span-12 xl:col-span-4"
           />

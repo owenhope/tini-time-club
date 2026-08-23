@@ -66,7 +66,7 @@ export default async function PlaceDetailPage({
               location.rating != null && location.total_ratings > 0
                 ? Number(location.rating).toFixed(1)
                 : "—",
-            tone: "chartreuse",
+            tone: "purple",
           },
           {
             label: "Active Reviews",
@@ -76,7 +76,7 @@ export default async function PlaceDetailPage({
           {
             label: "All Reviews",
             value: location.all_reviews,
-            tone: "purple",
+            tone: "chartreuse",
           },
           {
             label: "Added",

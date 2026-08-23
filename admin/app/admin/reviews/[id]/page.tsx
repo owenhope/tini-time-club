@@ -49,7 +49,7 @@ export default async function ReviewDetailPage({
           {
             label: "Overall Rating",
             value: overall(review.taste, review.presentation),
-            tone: "purple",
+            tone: "chartreuse",
           },
           { label: "Taste", value: score(review.taste), tone: "chartreuse" },
           {

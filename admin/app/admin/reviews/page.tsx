@@ -55,7 +55,7 @@ export default async function ReviewsPage({
           {
             label: "Total Reviews",
             value: counts.total.toLocaleString(),
-            tone: "purple",
+            tone: "chartreuse",
           },
           {
             label: "Active Reviews",

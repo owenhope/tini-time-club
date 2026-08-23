@@ -73,7 +73,7 @@ export default function ApplicationHealthSummary({
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      className="group flex gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3 transition hover:border-violet-300 hover:bg-white"
+                      className="flex gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3 transition hover:border-stone-300 hover:bg-stone-100"
                     >
                       <span
                         className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-black ${column.markerClass}`}
@@ -81,7 +81,7 @@ export default function ApplicationHealthSummary({
                         {column.marker}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-bold text-stone-800 group-hover:text-violet-700">
+                        <span className="block text-sm font-bold text-stone-800">
                           {item.title} →
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-stone-500">

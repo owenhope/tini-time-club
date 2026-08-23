@@ -21,7 +21,7 @@ export default async function PlacesMapPage() {
           {
             label: "Places on map",
             value: places.length.toLocaleString(),
-            tone: "chartreuse",
+            tone: "purple",
           },
           {
             label: "Rated Places",

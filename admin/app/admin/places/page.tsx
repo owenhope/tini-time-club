@@ -128,7 +128,7 @@ export default async function PlacesPage({
           {
             label: "Total Places",
             value: counts.total.toLocaleString(),
-            tone: "chartreuse",
+            tone: "purple",
           },
           {
             label: "Rated Places",
@@ -138,7 +138,7 @@ export default async function PlacesPage({
           {
             label: "5+ Review Places",
             value: counts.strong.toLocaleString(),
-            tone: "purple",
+            tone: "chartreuse",
           },
         ]}
         statColumns={3}

@@ -45,11 +45,15 @@ export default async function Dashboard() {
         description="Start here when you want the club's current shape: what changed, what needs a look, and where to jump next."
         stats={[
           { label: "Total members", value: kpis.users.total, tone: "green" },
-          { label: "Total reviews", value: kpis.reviews.total, tone: "purple" },
+          {
+            label: "Total reviews",
+            value: kpis.reviews.total,
+            tone: "chartreuse",
+          },
           {
             label: "Total places",
             value: kpis.locations.total,
-            tone: "chartreuse",
+            tone: "purple",
           },
         ]}
         statColumns={3}
@@ -73,7 +77,7 @@ export default async function Dashboard() {
             metric={kpis.reviews}
             newLabel="reviews"
             href="/admin/reviews"
-            color="#6B53A8"
+            color="#D6E640"
             rangeLabel={range.label}
             className="col-span-12 xl:col-span-4"
           />
@@ -82,7 +86,7 @@ export default async function Dashboard() {
             metric={kpis.locations}
             newLabel="places"
             href="/admin/places"
-            color="#D6E640"
+            color="#6B53A8"
             rangeLabel={range.label}
             className="col-span-12 xl:col-span-4"
           />

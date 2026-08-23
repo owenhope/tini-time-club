@@ -40,13 +40,15 @@ export const parseRange = (params: {
         Math.round(
           (startOfDay(until).getTime() - since.getTime()) / 86_400_000
         ) + 1;
-      return {
-        since,
-        until,
-        days,
-        label: `${params.from} → ${params.to}`,
-        query: `from=${params.from}&to=${params.to}`,
-      };
+      if (days <= 366) {
+        return {
+          since,
+          until,
+          days,
+          label: `${params.from} → ${params.to}`,
+          query: `from=${params.from}&to=${params.to}`,
+        };
+      }
     }
   }
 
