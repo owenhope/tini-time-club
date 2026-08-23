@@ -4,6 +4,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type ActiveSection =
   | "dashboard"
+  | "live"
+  | "health"
   | "users"
   | "reviews"
   | "locations"
@@ -14,6 +16,8 @@ type ActiveSection =
 
 const CORE_NAV = [
   { href: "/admin", key: "dashboard", label: "Dashboard" },
+  { href: "/admin/live", key: "live", label: "Live", meta: "Now" },
+  { href: "/admin/health", key: "health", label: "Health" },
   { href: "/admin/users", key: "users", label: "Members" },
   { href: "/admin/reviews", key: "reviews", label: "Reviews" },
   {

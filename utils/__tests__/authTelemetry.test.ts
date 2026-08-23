@@ -8,6 +8,8 @@ import {
   trackSignedOut,
 } from "@/utils/authTelemetry";
 
+const mockCapture = jest.fn(async (..._args: unknown[]) => true);
+
 jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual(
     "@react-native-async-storage/async-storage/jest/async-storage-mock"
@@ -19,6 +21,10 @@ jest.mock("@/utils/log", () => ({
   warn: jest.fn(),
   reportError: jest.fn(),
 }));
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: (...args: unknown[]) => mockCapture(...args) },
+}));
 
 const LAST_SIGNED_IN_KEY = "auth_last_signed_in";
 
@@ -28,6 +34,7 @@ beforeEach(async () => {
   // Drain any expected-sign-out mark left by a previous test.
   await trackSignedOut();
   (reportError as jest.Mock).mockClear();
+  mockCapture.mockClear();
 });
 
 describe("trackSignedOut", () => {
@@ -38,6 +45,7 @@ describe("trackSignedOut", () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining("Unexpected sign-out")
     );
+    expect(mockCapture).toHaveBeenCalledWith("auth_unexpected_sign_out");
     expect(await AsyncStorage.getItem(LAST_SIGNED_IN_KEY)).toBeNull();
   });
 
@@ -91,6 +99,7 @@ describe("trackInitialSession", () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining("Session missing at launch")
     );
+    expect(mockCapture).toHaveBeenCalledWith("auth_session_missing_at_launch");
     // One report per loss, not one per subsequent launch.
     (reportError as jest.Mock).mockClear();
     await trackInitialSession(false);

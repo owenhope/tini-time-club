@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AnalyticService from "@/services/analyticsService";
 import { reportError } from "./log";
 
 /**
@@ -80,6 +81,7 @@ export const trackSignedOut = async (): Promise<void> => {
   const reason = consumeExpectedSignOut();
   await AsyncStorage.removeItem(LAST_SIGNED_IN_KEY).catch(() => {});
   if (!reason) {
+    void AnalyticService.capture("auth_unexpected_sign_out");
     reportError(
       "[Auth] Unexpected sign-out: the session ended without the member asking to sign out."
     );
@@ -101,6 +103,7 @@ export const trackInitialSession = async (
     const wasSignedIn = await AsyncStorage.getItem(LAST_SIGNED_IN_KEY);
     if (!wasSignedIn) return;
     await AsyncStorage.removeItem(LAST_SIGNED_IN_KEY);
+    void AnalyticService.capture("auth_session_missing_at_launch");
     reportError(
       "[Auth] Session missing at launch: the member was signed in last run but must now log in again."
     );

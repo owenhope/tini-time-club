@@ -1,11 +1,16 @@
-import { log } from "@/utils/log";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+import { v4 as uuidv4 } from "uuid";
+import { getInstallationId } from "@/services/installationIdentity";
+import { log, warn } from "@/utils/log";
+import { supabase } from "@/utils/supabase";
 /**
  * Analytics facade.
  *
- * Third-party analytics (PostHog) has been removed; a custom in-house
- * analytics platform will back this interface eventually. The call sites and
- * event taxonomy are kept so instrumentation points don't have to be
- * rediscovered — until then, events are logged in dev and dropped in prod.
+ * Product events cross one privacy-safe seam: callers name an allowlisted
+ * event, while this module owns installation/session metadata, transport, and
+ * failure isolation. Arbitrary properties are logged locally for diagnosis but
+ * are deliberately not sent to the analytics backend.
  */
 
 type AnalyticEventType =
@@ -34,14 +39,44 @@ type AnalyticEventType =
   | "visitor_preview_started"
   | "membership_gate_opened"
   | "membership_gate_dismissed"
-  | "membership_auth_started";
+  | "membership_auth_started"
+  | "onboarding_completed"
+  | "auth_unexpected_sign_out"
+  | "auth_session_missing_at_launch";
+
+const SESSION_ID = uuidv4();
+
+const capture = async (
+  event: AnalyticEventType,
+  properties?: Record<string, unknown>
+): Promise<boolean> => {
+  log(`[Analytics] ${event}`, properties ?? {});
+
+  try {
+    const { error } = await supabase.functions.invoke("app-events", {
+      body: {
+        id: uuidv4(),
+        installationId: await getInstallationId(),
+        sessionId: SESSION_ID,
+        event,
+        platform: Platform.OS,
+        appVersion: Constants.expoConfig?.version ?? null,
+        appEnvironment:
+          Constants.expoConfig?.extra?.environment ?? "production",
+      },
+    });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    warn("[Analytics] Event delivery failed:", event, error);
+    return false;
+  }
+};
 
 const AnalyticService = {
-  capture: (event: AnalyticEventType, properties?: Record<string, any>) => {
-    log(`[Analytics] ${event}`, properties ?? {});
-  },
+  capture,
 
-  identify: (_userId: string, _properties?: Record<string, any>) => {},
+  identify: (_userId: string, _properties?: Record<string, unknown>) => {},
 
   reset: () => {},
 };
