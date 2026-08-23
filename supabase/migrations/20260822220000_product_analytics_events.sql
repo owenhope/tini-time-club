@@ -2,7 +2,7 @@
 -- allowlisted event name plus its existing random installation/session IDs.
 -- Member identity is derived by the Edge Function from Supabase Auth.
 
-CREATE TABLE public.app_analytics_events (
+CREATE TABLE IF NOT EXISTS public.app_analytics_events (
   id uuid PRIMARY KEY,
   installation_id uuid NOT NULL,
   session_id uuid NOT NULL,
@@ -46,12 +46,12 @@ CREATE TABLE public.app_analytics_events (
   occurred_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX app_analytics_events_name_time_idx
+CREATE INDEX IF NOT EXISTS app_analytics_events_name_time_idx
   ON public.app_analytics_events (event_name, occurred_at DESC);
-CREATE INDEX app_analytics_events_user_time_idx
+CREATE INDEX IF NOT EXISTS app_analytics_events_user_time_idx
   ON public.app_analytics_events (user_id, occurred_at DESC)
   WHERE user_id IS NOT NULL;
-CREATE INDEX app_analytics_events_installation_time_idx
+CREATE INDEX IF NOT EXISTS app_analytics_events_installation_time_idx
   ON public.app_analytics_events (installation_id, occurred_at DESC);
 
 ALTER TABLE public.app_analytics_events ENABLE ROW LEVEL SECURITY;
