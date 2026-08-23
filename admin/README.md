@@ -35,10 +35,19 @@ the server (`server-only` imports make client-side use a build error).
 
 ## What exists
 
-- **Dashboard** — member/review/location totals, live anonymous/member app
-  audience, visitor-to-member installations, top locations, and newest
-  signups (email + join date from `auth.users`). Anonymous audience figures
-  are distinct random installations, not inferred people.
+- **Dashboard** — member/review/location totals, top locations, and newest
+  signups (email + join date from `auth.users`).
+- **Live** — automatically refreshed anonymous/member audience, seven-day
+  traffic, visitor-to-member installations, and the latest privacy-safe app
+  actions. Anonymous figures are distinct random installations, not inferred
+  people; installation and session IDs never reach the rendered feed.
+- **Health** — a range-aware operational readout with growth wins and losses,
+  auth and retention detail, moderation status, transparent definitions, and
+  direct links to investigate each signal.
+- **Product analytics** — onboarding and first/second-review funnels from
+  authoritative rows; follows, likes, comments, shares, and invites from their
+  source tables; plus D7 installation retention, auth-session health, and app
+  version adoption from privacy-safe mobile telemetry.
 - **Users** — searchable list (rank tier, review count, email, join/last
   sign-in), detail view with the member's reviews, verify/unverify, and
   soft-delete/restore (`profiles.deleted` — same flag the app respects).

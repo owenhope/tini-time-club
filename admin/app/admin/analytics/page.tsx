@@ -12,20 +12,22 @@ import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
 import UserBadge from "@/components/UserBadge";
-import { fetchAnalytics, fetchAudienceUsage } from "@/lib/data";
+import { fetchAnalytics, fetchProductTelemetry } from "@/lib/data";
 import { formatCityRegion } from "@/lib/format";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
 const SECTIONS = [
-  { id: "audience", label: "App audience" },
-  { id: "membership", label: "Membership" },
-  { id: "reviews", label: "Reviews" },
+  { id: "membership", label: "Onboarding" },
+  { id: "reviews", label: "Review milestones" },
+  { id: "retention", label: "D7 retention" },
+  { id: "auth-health", label: "Auth health" },
+  { id: "versions", label: "App versions" },
   { id: "spirits-types", label: "Spirits & Types" },
   { id: "martini-index", label: "Martini Index" },
   { id: "places", label: "Places" },
-  { id: "engagement", label: "Engagement" },
+  { id: "engagement", label: "Social actions" },
   { id: "sharing", label: "Sharing & referral" },
 ];
 
@@ -52,9 +54,9 @@ export default async function AnalyticsPage({
   searchParams: Promise<{ days?: string; from?: string; to?: string }>;
 }) {
   const range = parseRange(await searchParams);
-  const [a, audience] = await Promise.all([
+  const [a, telemetry] = await Promise.all([
     fetchAnalytics(range),
-    fetchAudienceUsage(range),
+    fetchProductTelemetry(range),
   ]);
 
   const pct = (n: number, of: number) =>
@@ -73,6 +75,10 @@ export default async function AnalyticsPage({
   const activeSpiritReviews = a.spiritPopularity.reduce(
     (sum, spirit) => sum + spirit.reviewCount,
     0
+  );
+  const firstToSecondReviewRate = pct(
+    a.membersWithSecondReview,
+    a.membersWithFirstReview
   );
 
   return (
@@ -95,72 +101,10 @@ export default async function AnalyticsPage({
           </div>
 
           <FeatureSection
-            id="audience"
-            title="App audience"
-            description="Who is actively experiencing the app before and after sign-in. Anonymous totals are distinct installations, not inferred people."
-          >
-            {audience.available ? (
-              <>
-                <div className="grid grid-cols-12 gap-4">
-                  <MetricTile
-                    label="Anonymous active now"
-                    value={audience.visitorActiveNow}
-                    hint="seen in the last 15 minutes"
-                    className="col-span-12 md:col-span-6 xl:col-span-3"
-                  />
-                  <MetricTile
-                    label="Members active now"
-                    value={audience.memberActiveNow}
-                    hint="seen in the last 15 minutes"
-                    className="col-span-12 md:col-span-6 xl:col-span-3"
-                  />
-                  <MetricTile
-                    label="Anonymous in range"
-                    value={audience.visitorInRange}
-                    hint="distinct installations"
-                    className="col-span-12 md:col-span-6 xl:col-span-3"
-                  />
-                  <MetricTile
-                    label="Members in range"
-                    value={audience.memberInRange}
-                    hint="distinct authenticated accounts"
-                    className="col-span-12 md:col-span-6 xl:col-span-3"
-                  />
-                  <MetricTile
-                    label="Visitor → member"
-                    value={audience.convertedInRange}
-                    hint="installations seen in both states during the range"
-                    className="col-span-12 md:col-span-6 xl:col-span-3"
-                  />
-                </div>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <LineChart
-                    title="Anonymous installations"
-                    data={audience.visitorByDay}
-                    color="#6B53A8"
-                    unit="installations"
-                  />
-                  <LineChart
-                    title="Authenticated members"
-                    data={audience.memberByDay}
-                    color="#336654"
-                    unit="members"
-                  />
-                </div>
-              </>
-            ) : (
-              <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-                App audience tracking is not enabled in this environment. The
-                production analytics below remain available.
-              </p>
-            )}
-          </FeatureSection>
-
-          <FeatureSection
             id="membership"
             link={{ href: "/admin/users", label: "All members" }}
-            title="Membership"
-            description="Signups and how many members are actually coming back."
+            title="Onboarding funnel"
+            description="How far members make it from account creation through setup and into the core review loop."
           >
             <div className="grid grid-cols-12 gap-4">
               <MetricTile
@@ -170,21 +114,21 @@ export default async function AnalyticsPage({
                 className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
-                label="Active (7d)"
-                value={a.activeLast7Days}
-                hint={`${pct(a.activeLast7Days, a.totalMembers)} of ${a.totalMembers} members`}
+                label="Completed onboarding"
+                value={a.onboardingCompletedInRange}
+                hint={`${pct(a.onboardingCompletedTotal, a.totalMembers)} of all members are complete`}
                 className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
-                label="Active (30d)"
-                value={a.activeLast30Days}
-                hint={`${pct(a.activeLast30Days, a.totalMembers)} of members`}
+                label="Reached first review"
+                value={a.membersWithFirstReview}
+                hint={`${pct(a.membersWithFirstReview, a.onboardingCompletedTotal)} of completed members`}
                 className="col-span-12 md:col-span-6 xl:col-span-3"
               />
               <MetricTile
-                label="Posted a review"
-                value={a.reviewedInRange}
-                hint={`${pct(a.reviewedInRange, a.totalMembers)} of members, in range`}
+                label="Reached second review"
+                value={a.membersWithSecondReview}
+                hint={`${firstToSecondReviewRate} of first reviewers`}
                 className="col-span-12 md:col-span-6 xl:col-span-3"
               />
             </div>
@@ -199,8 +143,8 @@ export default async function AnalyticsPage({
           <FeatureSection
             id="reviews"
             link={{ href: "/admin/reviews", label: "All reviews" }}
-            title="Reviews"
-            description="The core loop — Martinis rated, and which members are rating them."
+            title="Review milestones"
+            description="The core loop — who reaches a first review, who comes back for a second, and how quickly that happens."
           >
             <div className="grid grid-cols-12 gap-4">
               <MetricTile
@@ -225,7 +169,146 @@ export default async function AnalyticsPage({
                 className="col-span-12 md:col-span-6 xl:col-span-4"
               />
             </div>
+            <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="First reviews"
+                value={a.firstReviewsInRange}
+                hint="members whose first-ever review landed in range"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Second reviews"
+                value={a.secondReviewsInRange}
+                hint="members whose second-ever review landed in range"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="First → second"
+                value={firstToSecondReviewRate}
+                hint={`${a.membersWithSecondReview} of ${a.membersWithFirstReview} first reviewers`}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+              <MetricTile
+                label="Time to first review"
+                value={
+                  a.averageDaysToFirstReview == null
+                    ? "—"
+                    : `${a.averageDaysToFirstReview.toFixed(1)}d`
+                }
+                hint="average from account creation"
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
+            </div>
             <LineChart title="Reviews" data={a.reviewsByDay} unit="reviews" />
+          </FeatureSection>
+
+          <FeatureSection
+            id="retention"
+            title="Seven-day return"
+            description="Installations first seen in the selected range that opened the app again exactly seven days later."
+          >
+            {telemetry.available ? (
+              <div className="grid grid-cols-12 gap-4">
+                <MetricTile
+                  label="Eligible installations"
+                  value={telemetry.retention.eligibleInstallations}
+                  hint="first seen at least seven days before range end"
+                  className="col-span-12 md:col-span-4"
+                />
+                <MetricTile
+                  label="Returned on day 7"
+                  value={telemetry.retention.returnedInstallations}
+                  className="col-span-12 md:col-span-4"
+                />
+                <MetricTile
+                  label="D7 retention"
+                  value={
+                    telemetry.retention.rate == null
+                      ? "Collecting…"
+                      : `${telemetry.retention.rate}%`
+                  }
+                  hint="requires seven full days of production presence data"
+                  className="col-span-12 md:col-span-4"
+                />
+              </div>
+            ) : (
+              <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                Product telemetry is not enabled in this environment yet.
+              </p>
+            )}
+          </FeatureSection>
+
+          <FeatureSection
+            id="auth-health"
+            title="Authentication health"
+            description="Session losses that members did not request. Intentional logout is excluded before an event is emitted."
+          >
+            {telemetry.available ? (
+              <div className="grid grid-cols-12 gap-4">
+                <MetricTile
+                  label="Unexpected sign-outs"
+                  value={telemetry.authHealth.unexpectedSignOuts}
+                  hint="session ended while the app was running"
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="Missing at launch"
+                  value={telemetry.authHealth.sessionMissingAtLaunch}
+                  hint="signed in last run, session absent next launch"
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="Affected installations"
+                  value={telemetry.authHealth.affectedInstallations}
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="Affected rate"
+                  value={
+                    telemetry.authHealth.issueRate == null
+                      ? "—"
+                      : `${telemetry.authHealth.issueRate}%`
+                  }
+                  hint="affected ÷ tracked installations in range"
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+              </div>
+            ) : (
+              <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                Auth-health events will appear after product telemetry is
+                deployed.
+              </p>
+            )}
+          </FeatureSection>
+
+          <FeatureSection
+            id="versions"
+            title="App-version adoption"
+            description="The latest version seen for each distinct installation during the selected range."
+          >
+            {telemetry.available ? (
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_2fr]">
+                <MetricTile
+                  label="Tracked installations"
+                  value={telemetry.trackedInstallations}
+                  hint="distinct installations with a heartbeat"
+                />
+                <BreakdownList
+                  title="Version mix"
+                  rows={telemetry.versions.map((version) => ({
+                    key: version.version,
+                    label: version.version,
+                    value: `${version.installations.toLocaleString()} · ${version.share}%`,
+                  }))}
+                  empty="No app versions have reported in this range."
+                />
+              </div>
+            ) : (
+              <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                Version adoption will appear after product telemetry is
+                deployed.
+              </p>
+            )}
           </FeatureSection>
 
           <FeatureSection
@@ -368,10 +451,16 @@ export default async function AnalyticsPage({
           <FeatureSection
             id="engagement"
             link={{ href: "/admin/reviews", label: "All reviews" }}
-            title="Engagement"
-            description="Review likes, comment likes, and conversations across the club."
+            title="Social actions"
+            description="Successful follows, review likes, comment likes, and conversations across the club."
           >
             <div className="grid grid-cols-12 gap-4">
+              <MetricTile
+                label="New follows"
+                value={a.followsInRange}
+                previous={a.previous.follows}
+                className="col-span-12 md:col-span-6 xl:col-span-3"
+              />
               <MetricTile
                 label="Review likes"
                 value={totalLikes}
@@ -390,21 +479,14 @@ export default async function AnalyticsPage({
                 previous={a.previous.comments}
                 className="col-span-12 md:col-span-6 xl:col-span-3"
               />
-              <MetricTile
-                label="Interactions per review"
-                value={
-                  totalReviews > 0
-                    ? (
-                        (totalLikes + totalCommentLikes + totalComments) /
-                        totalReviews
-                      ).toFixed(1)
-                    : "—"
-                }
-                hint="review likes + comment likes + comments ÷ reviews"
-                className="col-span-12 md:col-span-6 xl:col-span-3"
-              />
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+              <LineChart
+                title="New follows"
+                data={a.followsByDay}
+                color="#059669"
+                unit="follows"
+              />
               <LineChart
                 title="Review likes"
                 data={a.likesByDay}

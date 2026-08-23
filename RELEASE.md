@@ -106,6 +106,7 @@ call the endpoint, and heartbeat failures never block startup or navigation.
 supabase db push
 supabase functions deploy public-content
 supabase functions deploy app-usage
+supabase functions deploy app-events
 ```
 
 The shared migration directory contains two independently deployed versions:
@@ -114,6 +115,8 @@ The shared migration directory contains two independently deployed versions:
   production before distributing 4.0.
 - `20260820143000_app_usage_presence.sql` — additive usage tables and the
   service-role-only admin summary RPC.
+- `20260822220000_product_analytics_events.sql` — allowlisted product events
+  plus service-role-only retention, auth-health, and version summaries.
 
 Never run an unreviewed bare `supabase db push` against production while those
 versions are pending. Stage only reviewed production migrations in an isolated
@@ -130,6 +133,14 @@ UUID and app metadata, but no IP address, advertising identifier, or device
 fingerprint. It derives visitor/member status from Supabase Auth on the server.
 The admin dashboard labels anonymous totals as installations rather than people
 and treats a heartbeat within 15 minutes as active now.
+
+The product-event endpoint uses the same project-JWT requirement and derives
+member identity on the server. The client may send only an allowlisted event
+name plus installation/session/version metadata; arbitrary properties,
+usernames, review text, and client-asserted user IDs are never persisted.
+Delivery failures are contained by the analytics module and must not block app
+behavior. Deploy the database migration before `app-events`, then release the
+matching JavaScript instrumentation.
 
 ## OTA updates
 

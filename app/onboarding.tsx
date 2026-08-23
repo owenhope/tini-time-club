@@ -33,6 +33,7 @@ import AppHeader from "@/components/nav/AppHeader";
 import Regulars from "@/components/Regulars";
 import { useProfile } from "@/context/profile-context";
 import { deleteCurrentAccount } from "@/services/accountService";
+import AnalyticService from "@/services/analyticsService";
 import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
 import { clearUserCaches } from "@/utils/signOut";
 import { runExpectedSignOut } from "@/utils/authTelemetry";
@@ -282,6 +283,7 @@ export default function Onboarding() {
     try {
       const result = await acceptEULA();
       if (result.error) throw result.error;
+      void AnalyticService.capture("onboarding_completed");
       const pending = await consumePendingMembershipReturn().catch(() => null);
       router.replace((pending?.returnTo ?? routes.home()) as never);
     } catch (error) {

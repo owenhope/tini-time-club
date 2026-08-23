@@ -1,6 +1,9 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
+import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
+import { buildProductFunnel } from "@/lib/productFunnel.mjs";
+import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { bucketByDay } from "@/lib/bucket";
 import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { formatCityRegion } from "@/lib/format";
@@ -148,6 +151,86 @@ export const fetchAudienceUsage = async (
     p_active_since: activeSince.toISOString(),
   });
   return resolveAudienceUsageResponse(data, error);
+};
+
+export type LiveActivityTone = "green" | "purple" | "red" | "muted";
+
+export interface LiveActivityEvent {
+  id: string;
+  occurredAt: string;
+  action: string;
+  category: string;
+  tone: LiveActivityTone;
+  actorId: string | null;
+  actor: string;
+  platform: string;
+  appVersion: string;
+  appEnvironment: string;
+}
+
+export interface LiveActivity {
+  available: boolean;
+  events: LiveActivityEvent[];
+}
+
+/**
+ * Recent allowlisted product events for the operator feed. The resolver strips
+ * installation and session identifiers before rows reach the page.
+ */
+export const fetchLiveActivity = async (
+  limit = 60,
+  hours = 24
+): Promise<LiveActivity> => {
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db()
+    .from("app_analytics_events")
+    .select(
+      "id,event_name,user_id,platform,app_version,app_environment,occurred_at"
+    )
+    .gte("occurred_at", since)
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  const initial = resolveLiveActivityResponse(data, error);
+  if (!initial.available || initial.events.length === 0) return initial;
+
+  const userIds = [
+    ...new Set((data ?? []).map((event) => event.user_id).filter(Boolean)),
+  ];
+  const profilesResult =
+    userIds.length > 0
+      ? await db().from("profiles").select("id,username,name").in("id", userIds)
+      : { data: [], error: null };
+  if (profilesResult.error) throw new Error(profilesResult.error.message);
+
+  return resolveLiveActivityResponse(data, null, profilesResult.data ?? []);
+};
+
+export interface ProductTelemetry {
+  available: boolean;
+  trackedInstallations: number;
+  versions: { version: string; installations: number; share: number }[];
+  retention: {
+    eligibleInstallations: number;
+    returnedInstallations: number;
+    rate: number | null;
+  };
+  authHealth: {
+    unexpectedSignOuts: number;
+    sessionMissingAtLaunch: number;
+    affectedInstallations: number;
+    issueRate: number | null;
+  };
+}
+
+export const fetchProductTelemetry = async (
+  range: DateRange
+): Promise<ProductTelemetry> => {
+  const { data, error } = await db().rpc("get_product_analytics_summary", {
+    p_since: range.since.toISOString().slice(0, 10),
+    p_until: range.until.toISOString().slice(0, 10),
+  });
+  return resolveProductTelemetryResponse(data, error);
 };
 
 /** The equal-length window immediately preceding `range`. */
@@ -314,6 +397,7 @@ export interface AnalyticsData {
   likesByDay: { day: string; count: number }[];
   commentLikesByDay: { day: string; count: number }[];
   commentsByDay: { day: string; count: number }[];
+  followsByDay: { day: string; count: number }[];
   sharesByDay: { day: string; count: number }[];
   invitesByDay: { day: string; count: number }[];
   martiniIndexViews: number;
@@ -321,6 +405,14 @@ export interface AnalyticsData {
   martiniIndexGenerations: number;
   activeLast7Days: number;
   activeLast30Days: number;
+  onboardingCompletedTotal: number;
+  onboardingCompletedInRange: number;
+  membersWithFirstReview: number;
+  membersWithSecondReview: number;
+  firstReviewsInRange: number;
+  secondReviewsInRange: number;
+  averageDaysToFirstReview: number | null;
+  followsInRange: number;
   /** Distinct members who reviewed within the selected range. */
   reviewedInRange: number;
   /** Active places added within the selected range. */
@@ -378,6 +470,7 @@ export interface AnalyticsData {
     likes: number;
     commentLikes: number;
     comments: number;
+    follows: number;
     places: number;
     shares: number;
     invites: number;
@@ -466,6 +559,8 @@ export const fetchAnalytics = async (
     typeCatalog,
     spiritCatalog,
     martiniIndexEvents,
+    allReviews,
+    follows,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
@@ -533,7 +628,7 @@ export const fetchAnalytics = async (
       : noRows,
     db()
       .from("profiles")
-      .select("id,review_count,deleted")
+      .select("id,review_count,deleted,eula_accepted_at")
       .eq("deleted", false),
     db().from("types").select("id,name").order("name"),
     db().from("spirits").select("id,name").order("name"),
@@ -544,6 +639,21 @@ export const fetchAnalytics = async (
           .in("user_id", activeMemberIds)
           .gte("created_at", sinceIso)
           .lte("created_at", untilIso)
+      : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("reviews")
+          .select("user_id,inserted_at")
+          .eq("state", 1)
+          .in("user_id", activeMemberIds)
+      : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("followers")
+          .select("followed_at")
+          .in("follower_id", activeMemberIds)
+          .gte("followed_at", sinceIso)
+          .lte("followed_at", untilIso)
       : noRows,
   ]);
 
@@ -560,6 +670,14 @@ export const fetchAnalytics = async (
       `Unable to load Martini Index analytics: ${martiniIndexEvents.error.message}`
     );
   }
+  if (allReviews.error) {
+    throw new Error(
+      `Unable to load review milestones: ${allReviews.error.message}`
+    );
+  }
+  if (follows.error) {
+    throw new Error(`Unable to load follows: ${follows.error.message}`);
+  }
 
   // Previous equal-length window, counts only — enough to say whether each
   // feature is progressing without pulling a second set of rows.
@@ -572,6 +690,7 @@ export const fetchAnalytics = async (
     priorShares,
     priorInvites,
     priorMartiniIndexEvents,
+    priorFollows,
   ] = await Promise.all([
     activeMemberIds.length > 0 && activeLocationIds.length > 0
       ? db()
@@ -639,6 +758,14 @@ export const fetchAnalytics = async (
           .gte("created_at", prior.since.toISOString())
           .lte("created_at", prior.until.toISOString())
       : noRows,
+    activeMemberIds.length > 0
+      ? db()
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .in("follower_id", activeMemberIds)
+          .gte("followed_at", prior.since.toISOString())
+          .lte("followed_at", prior.until.toISOString())
+      : noRows,
   ]);
 
   if (priorCommentLikes.error) {
@@ -691,6 +818,15 @@ export const fetchAnalytics = async (
   const reviewRows = reviews.data ?? [];
   const typeCatalogRows = typeCatalog.data ?? [];
   const spiritCatalogRows = spiritCatalog.data ?? [];
+  const profileRows = profiles.data ?? [];
+  const followRows = follows.data ?? [];
+  const productFunnel = buildProductFunnel({
+    profiles: profileRows,
+    authUsers,
+    reviews: allReviews.data ?? [],
+    since: range.since,
+    until: range.until,
+  });
 
   /** Keep this list aligned with utils/reviewOptions.ts in the app. */
   const enabledTypeOrder = [
@@ -1023,6 +1159,11 @@ export const fetchAnalytics = async (
       range.since,
       range.until
     ),
+    followsByDay: bucketByDay(
+      followRows.map((follow) => follow.followed_at),
+      range.since,
+      range.until
+    ),
     sharesByDay: bucketByDay(
       shareRows.map((s) => s.shared_at),
       range.since,
@@ -1044,6 +1185,8 @@ export const fetchAnalytics = async (
     ),
     activeLast7Days: activeWithin(7),
     activeLast30Days: activeWithin(30),
+    ...productFunnel,
+    followsInRange: followRows.length,
     reviewedInRange: new Set(reviewRows.map((r) => r.user_id)).size,
     placesInRange: locationsInRange.length,
     reviewedPlacesInRange: reviewsByLocation.size,
@@ -1083,7 +1226,7 @@ export const fetchAnalytics = async (
         };
       })
       .filter(Boolean) as AnalyticsData["recentReviewShares"],
-    totalMembers: (profiles.data ?? []).length,
+    totalMembers: profileRows.length,
     totalPlaces: locationRows.length,
     topPlaces: topPlaceEntries
       .map(([id, count]) => {
@@ -1117,6 +1260,7 @@ export const fetchAnalytics = async (
       likes: priorLikes.count ?? 0,
       commentLikes: priorCommentLikes.count ?? 0,
       comments: priorComments.count ?? 0,
+      follows: priorFollows.count ?? 0,
       places: priorPlaces.count ?? 0,
       shares: priorShares.count ?? 0,
       invites: priorInvites.count ?? 0,

@@ -299,6 +299,14 @@ verify_jwt = true
 import_map = "./functions/app-usage/deno.json"
 entrypoint = "./functions/app-usage/index.ts"
 
+[functions.app-events]
+enabled = true
+# Product events use the same project-credential requirement as app usage.
+# The function resolves member identity itself and accepts no client user id.
+verify_jwt = true
+import_map = "./functions/app-events/deno.json"
+entrypoint = "./functions/app-events/index.ts"
+
 [analytics]
 enabled = true
 port = 54327
