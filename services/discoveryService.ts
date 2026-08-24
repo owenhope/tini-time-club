@@ -57,6 +57,19 @@ export async function getDiscoverProfilesPage({
   return decodePage<DiscoveredProfile>(data);
 }
 
+export async function getRegionMembers(
+  regionId: number,
+  query?: string
+): Promise<DiscoveredProfile[]> {
+  const { data, error } = await supabase.rpc("get_region_members_v1", {
+    p_region_id: regionId,
+    p_search: query?.trim() || null,
+    p_limit: 50,
+  });
+  if (error) throw error;
+  return (data ?? []) as DiscoveredProfile[];
+}
+
 export async function getDiscoverLocationsPage({
   query,
   cursor = null,
@@ -77,5 +90,26 @@ export async function getDiscoverLocationsPage({
     p_radius_km: nearby?.radiusKm ?? null,
   });
   if (error) throw error;
-  return decodePage<DiscoveredLocation>(data);
+  const page = decodePage<DiscoveredLocation>(data);
+  const locationIds = page.items
+    .filter((item) => item.is_golden_glass == null)
+    .map((item) => Number(item.id))
+    .filter((id) => Number.isFinite(id));
+  if (!locationIds.length) return page;
+
+  const { data: awards } = await supabase
+    .from("location_ratings")
+    .select("id,is_golden_glass")
+    .in("id", locationIds);
+  const awardsByLocation = new Map(
+    (awards ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
+  );
+  return {
+    ...page,
+    items: page.items.map((item) => ({
+      ...item,
+      is_golden_glass:
+        item.is_golden_glass ?? awardsByLocation.get(String(item.id)) ?? false,
+    })),
+  };
 }

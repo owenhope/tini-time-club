@@ -9,7 +9,7 @@ export type MembershipIntent =
   | "pick-one"
   | "activity"
   | "people-feed"
-  | "top-places"
+  | "golden-glass"
   | "members-directory"
   | "location-details"
   | "social-list"
@@ -80,10 +80,10 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
     title: "Build a feed around your crowd",
     body: "Join the club and follow members to see their latest reviews here.",
   },
-  "top-places": {
-    eyebrow: "TOP PLACES",
-    title: "See what the club recommends",
-    body: "Join or sign in to explore the places members rate highest.",
+  "golden-glass": {
+    eyebrow: "GOLDEN GLASS",
+    title: "See the club's current glass list",
+    body: "Join or sign in to discover the five places the club is raising a glass to right now.",
   },
   "members-directory": {
     eyebrow: "THE MEMBERS",

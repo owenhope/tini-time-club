@@ -33,9 +33,18 @@ log(`[Supabase] Connected to ${new URL(supabaseUrl).hostname}`);
 
 export const supabaseProjectRef = new URL(supabaseUrl).hostname.split(".")[0];
 
+const serverAuthStorage = {
+  getItem: async () => null,
+  setItem: async () => undefined,
+  removeItem: async () => undefined,
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: new LargeSecureStore(),
+    storage:
+      typeof window === "undefined"
+        ? serverAuthStorage
+        : new LargeSecureStore(),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

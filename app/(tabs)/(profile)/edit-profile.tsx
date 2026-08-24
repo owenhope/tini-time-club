@@ -97,8 +97,8 @@ const EditProfile = () => {
         if (profile.favorite_location_id) {
           const { data: favoriteLocationData, error: favoriteLocationError } =
             await supabase
-              .from("locations")
-              .select("id, name, address")
+              .from("location_ratings")
+              .select("id, name, address, is_golden_glass")
               .eq("id", profile.favorite_location_id)
               .maybeSingle();
 

@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { fetchVenueContact } from "@/services/placesService";
+import { MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -29,6 +30,7 @@ const PlaceInfo = () => {
     address?: string;
     lat?: string;
     lon?: string;
+    isGoldenGlass?: string;
   }>();
   const [placeDetails, setPlaceDetails] = useState<{
     phoneNumber?: string;
@@ -96,7 +98,12 @@ const PlaceInfo = () => {
       contentInsetAdjustmentBehavior="automatic"
     >
       <View style={styles.header}>
-        <Text style={styles.name}>{name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{name}</Text>
+          {firstParam(params.isGoldenGlass) === "1" ? (
+            <MartiniIcon size={20} color={colors.awardGold} filled />
+          ) : null}
+        </View>
         {cityRegion ? (
           <Text style={styles.subtitle} selectable>
             {cityRegion}
@@ -199,6 +206,11 @@ const useStyles = makeStyles((t) => ({
   },
   header: {
     gap: t.spacing.xs,
+  },
+  nameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
   },
   name: {
     ...t.typography.title,

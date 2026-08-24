@@ -18,6 +18,7 @@ export interface ProfileRegularPlace {
   location_id: number;
   location_name: string;
   location_address?: string | null;
+  is_golden_glass?: boolean;
   rank: number;
   review_count: number;
 }
@@ -102,5 +103,25 @@ export async function getProfileRegularPlaces(
   });
 
   if (error) throw error;
-  return (data ?? []) as ProfileRegularPlace[];
+  const places = (data ?? []) as ProfileRegularPlace[];
+  const locationIds = places
+    .filter((place) => place.is_golden_glass == null)
+    .map((place) => place.location_id)
+    .filter(Number.isFinite);
+  if (!locationIds.length) return places;
+
+  const { data: awards } = await supabase
+    .from("location_ratings")
+    .select("id,is_golden_glass")
+    .in("id", locationIds);
+  const awardsByLocation = new Map(
+    (awards ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
+  );
+  return places.map((place) => ({
+    ...place,
+    is_golden_glass:
+      place.is_golden_glass ??
+      awardsByLocation.get(String(place.location_id)) ??
+      false,
+  }));
 }

@@ -9,7 +9,9 @@ describe("membership prompt contract", () => {
     expect(getMembershipPromptCopy("review").title).toMatch(/verdict/i);
     expect(getMembershipPromptCopy("pick-one").body).toMatch(/members-only/i);
     expect(getMembershipPromptCopy("share-review").title).toMatch(/sharing/i);
-    expect(getMembershipPromptCopy("top-places").title).toMatch(/recommends/i);
+    expect(getMembershipPromptCopy("golden-glass").title).toMatch(
+      /glass list/i
+    );
     expect(getMembershipPromptCopy("members-directory").title).toMatch(/club/i);
     expect(getMembershipPromptCopy("location-details").title).toMatch(/map/i);
   });

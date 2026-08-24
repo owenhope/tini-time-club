@@ -1,4 +1,4 @@
-export const EXPLORE_VIEWS = ["map", "places", "members"] as const;
+export const EXPLORE_VIEWS = ["map", "golden-glass", "members"] as const;
 
 export type ExploreView = (typeof EXPLORE_VIEWS)[number];
 export type ExploreListView = Exclude<ExploreView, "map">;
@@ -18,8 +18,13 @@ export const resolveExploreView = ({
   if (EXPLORE_VIEWS.includes(requestedView as ExploreView)) {
     return requestedView as ExploreView;
   }
+  if (requestedView === "places") return "golden-glass";
 
-  return firstParam(tab) === "members" ? "members" : "map";
+  if (firstParam(tab) === "members") return "members";
+  // `places` was the released Top Places route. Keep it as a transition
+  // alias, while all newly generated routes use Golden Glass.
+  if (firstParam(tab) === "places") return "golden-glass";
+  return "map";
 };
 
 export const getFirstExploreParam = firstParam;

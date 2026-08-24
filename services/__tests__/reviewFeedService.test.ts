@@ -37,6 +37,7 @@ const review = {
     address: "100 Test Street",
     rating: 4.3,
     total_ratings: 8,
+    is_golden_glass: false,
   },
   spirit: { name: "Gin" },
   type: { name: "Dry" },

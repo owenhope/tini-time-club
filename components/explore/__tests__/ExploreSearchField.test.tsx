@@ -24,7 +24,7 @@ describe("ExploreSearchField", () => {
           <ExploreSearchField
             value="tini"
             onChangeText={jest.fn()}
-            placeholder="Search top places"
+            placeholder="Search places"
             onClear={onClear}
             trailing={<Text>Nearby</Text>}
           />

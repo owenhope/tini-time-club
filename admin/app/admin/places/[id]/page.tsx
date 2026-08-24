@@ -11,7 +11,7 @@ import {
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
 import { updateLocation } from "@/lib/actions";
-import { fetchAdminLocation } from "@/lib/data";
+import { fetchAdminLocation, fetchAdminRegions } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,10 @@ export default async function PlaceDetailPage({
   searchParams: Promise<{ error?: string; updated?: string }>;
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const location = await fetchAdminLocation(id);
+  const [location, regions] = await Promise.all([
+    fetchAdminLocation(id),
+    fetchAdminRegions(),
+  ]);
   if (!location) notFound();
 
   const saveLocation = updateLocation.bind(null, String(location.id));
@@ -48,9 +51,15 @@ export default async function PlaceDetailPage({
       ? "Enter a place name of 160 characters or fewer."
       : query.error === "address"
         ? "Keep the address to 300 characters or fewer."
-        : query.error === "placeId"
-          ? "That Google Place ID is invalid or already belongs to another place."
-          : null;
+        : query.error === "neighborhood"
+          ? "Keep the neighborhood to 120 characters or fewer."
+          : query.error === "region"
+            ? "Choose a valid enabled region."
+            : query.error === "eligibility"
+              ? "An ineligible place needs a reason."
+              : query.error === "placeId"
+                ? "That Google Place ID is invalid or already belongs to another place."
+                : null;
 
   return (
     <AdminShell active="locations">
@@ -144,6 +153,54 @@ export default async function PlaceDetailPage({
                 maxLength={255}
                 defaultValue={location.place_id ?? ""}
                 className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 font-mono text-xs font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+              />
+            </label>
+            <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
+              <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Automatic region
+              </div>
+              <div className="mt-1 text-sm font-bold text-stone-900">
+                {regions.find((region) => region.id === location.region_id)
+                  ?.name ?? "Outside configured catchments"}
+              </div>
+              <p className="mt-1 text-xs leading-5 text-stone-500">
+                Detected from this place&apos;s coordinates and the region
+                catchment. Update the region map bounds to change matching.
+              </p>
+            </div>
+            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+              Neighborhood
+              <input
+                name="neighborhood"
+                maxLength={120}
+                defaultValue={location.neighborhood ?? ""}
+                placeholder="Optional display neighborhood"
+                className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+              />
+            </label>
+            <label className="flex items-start gap-2 text-sm font-semibold text-stone-700">
+              <input
+                name="golden_glass_eligible"
+                type="checkbox"
+                defaultChecked={location.golden_glass_eligible !== false}
+                className="mt-0.5"
+              />
+              <span>
+                Golden Glass eligible
+                <span className="mt-0.5 block text-xs font-normal text-stone-500">
+                  Turn this off only with a documented reason.
+                </span>
+              </span>
+            </label>
+            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+              Ineligibility reason
+              <textarea
+                name="golden_glass_ineligibility_reason"
+                maxLength={500}
+                rows={2}
+                defaultValue={location.golden_glass_ineligibility_reason ?? ""}
+                placeholder="Required when eligibility is off"
+                className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
               />
             </label>
             <button

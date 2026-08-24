@@ -153,6 +153,13 @@ export interface ThemeColors {
   warning: string;
   unread: string;
 
+  // Current Golden Glass recognition. Gold is semantic so award treatments
+  // remain consistent across cards, pins, and native location detail.
+  awardGold: string;
+  onAwardGold: string;
+  awardGoldForeground: string;
+  awardGoldSurface: string;
+
   // Tonal (low-emphasis filled) surfaces for secondary actions
   accentTonal: string;
   onAccentTonal: string;
@@ -252,6 +259,11 @@ export const lightColors: ThemeColors = {
   warning: palette.pimento600,
   unread: palette.pimento600,
 
+  awardGold: "#D4AF37",
+  onAwardGold: "#000000",
+  awardGoldForeground: "#6A4300",
+  awardGoldSurface: "#FFF3D1",
+
   accentTonal: palette.purple100,
   onAccentTonal: palette.purple700, // 4.8:1 on purple-100
 
@@ -330,6 +342,11 @@ export const darkColors: ThemeColors = {
   success: "#4F9D7C", // 4.9:1 on dark surface — success text/UI
   warning: "#EF8A54",
   unread: "#EF8A54",
+
+  awardGold: "#FFD166",
+  onAwardGold: "#000000",
+  awardGoldForeground: "#FFE4A3",
+  awardGoldSurface: "#3A2A12",
 
   accentTonal: "#2A2340",
   onAccentTonal: palette.purple300, // 7.6:1 on the tonal fill

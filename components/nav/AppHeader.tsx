@@ -58,8 +58,14 @@ export interface AppHeaderProps {
   meta?: string;
   /** Variant C: the photo that owns the top. Without one the ground is green. */
   imageUri?: string | null;
+  /** Optional mark rendered immediately after a media title. */
+  titleAccessory?: React.ReactNode;
+  /** Optional title color shared by the media and collapsed title states. */
+  titleColor?: string;
   /** Variant A's single control, or variant B's trailing one. */
   trailing?: HeaderAction;
+  /** Variant A's custom trailing control, rendered in the large header row. */
+  largeTrailing?: React.ReactNode;
   /** Optional leading control for large headers. */
   leading?: HeaderAction;
   /** Variant B and C: the controls on the right, in drawn order. */
@@ -229,6 +235,8 @@ const CompactBar = ({
   overlay,
   preserveCase,
   compactContent,
+  titleAccessory,
+  titleColor,
 }: {
   title: string;
   onBack?: () => void;
@@ -240,6 +248,8 @@ const CompactBar = ({
   overlay?: boolean;
   preserveCase?: boolean;
   compactContent?: React.ReactNode;
+  titleAccessory?: React.ReactNode;
+  titleColor?: string;
 }) => {
   const styles = useStyles();
   const { colors, isDark } = useTheme();
@@ -296,17 +306,21 @@ const CompactBar = ({
               />
             ) : null}
           </View>
-          <Text
-            style={[
-              styles.compactTitle,
-              onInk && styles.compactTitleOnInk,
-              onBrand && styles.compactTitleOnBrand,
-              preserveCase && styles.titlePlain,
-            ]}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
+          <View style={styles.compactTitleRow}>
+            <Text
+              style={[
+                styles.compactTitle,
+                onInk && styles.compactTitleOnInk,
+                onBrand && styles.compactTitleOnBrand,
+                preserveCase && styles.titlePlain,
+                titleColor ? { color: titleColor } : null,
+              ]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            {titleAccessory}
+          </View>
         </>
       )}
       <View
@@ -335,14 +349,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   eyebrow,
   meta,
   imageUri,
+  titleAccessory,
   trailing,
   leading,
   actions,
   onBack,
   below,
   compactContent,
+  largeTrailing,
   preserveCase = false,
   mediaTitleSize = "default",
+  titleColor,
   ground,
   progress,
   collapsed = false,
@@ -398,6 +415,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         overlay={overlay}
         preserveCase={preserveCase}
         compactContent={compactContent}
+        titleAccessory={titleAccessory}
+        titleColor={titleColor}
       />
     );
   }
@@ -554,18 +573,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         </Animated.View>
 
         <Animated.View style={[styles.mediaIdentity, fade]}>
-          <Text
-            style={[
-              styles.mediaTitle,
-              mediaTitleSize === "compact" && styles.mediaTitleCompact,
-              preserveCase && styles.titlePlain,
-            ]}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {title}
-          </Text>
+          <View style={styles.mediaTitleRow}>
+            <Text
+              style={[
+                styles.mediaTitle,
+                mediaTitleSize === "compact" && styles.mediaTitleCompact,
+                preserveCase && styles.titlePlain,
+                titleColor ? { color: titleColor } : null,
+              ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {title}
+            </Text>
+            {titleAccessory}
+          </View>
           {meta ? (
             <Text style={styles.mediaMeta} numberOfLines={1}>
               {meta}
@@ -621,6 +644,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 size={19}
               />
             ))}
+            {largeTrailing}
           </View>
         </View>
       </Animated.View>
@@ -824,6 +848,13 @@ const useStyles = makeStyles((t) => ({
     textAlign: "center" as const,
     color: t.colors.text,
   },
+  compactTitleRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+  },
   compactTitleOnInk: {
     color: t.colors.onInk,
   },
@@ -862,9 +893,15 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.lg,
     gap: 5,
   },
+  mediaTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+  },
   mediaTitle: {
     ...t.typography.display,
     color: t.colors.textOnImage,
+    flexShrink: 1,
   },
   mediaTitleCompact: {
     ...compactDisplayTypography,

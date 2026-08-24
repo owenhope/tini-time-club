@@ -1,7 +1,7 @@
 import { resolveExploreView } from "@/components/explore/exploreView";
 
 describe("resolveExploreView", () => {
-  it.each(["map", "places", "members"] as const)(
+  it.each(["map", "golden-glass", "members"] as const)(
     "accepts the canonical %s view",
     (view) => {
       expect(resolveExploreView({ view })).toBe(view);
@@ -12,14 +12,16 @@ describe("resolveExploreView", () => {
     expect(resolveExploreView({ tab: "members" })).toBe("members");
   });
 
-  it("defaults old and invalid links to the map", () => {
+  it("maps the old Top Places links to Golden Glass", () => {
     expect(resolveExploreView({})).toBe("map");
-    expect(resolveExploreView({ view: "unknown", tab: "places" })).toBe("map");
+    expect(resolveExploreView({ view: "unknown", tab: "places" })).toBe(
+      "golden-glass"
+    );
   });
 
   it("lets the canonical view override a legacy tab param", () => {
     expect(resolveExploreView({ view: "places", tab: "members" })).toBe(
-      "places"
+      "golden-glass"
     );
   });
 });

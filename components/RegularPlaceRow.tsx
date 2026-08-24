@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { ProfileRegularPlace } from "@/services/regularsService";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
+import { MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
@@ -30,9 +31,14 @@ const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
         <Text style={styles.rank}>#{place.rank}</Text>
       </View>
       <View style={styles.content}>
-        <Text style={styles.name} numberOfLines={1}>
-          {place.location_name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {place.location_name}
+          </Text>
+          {place.is_golden_glass ? (
+            <MartiniIcon size={16} color={colors.awardGold} filled />
+          ) : null}
+        </View>
         {subtitle ? (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
@@ -81,6 +87,12 @@ const useStyles = makeStyles((t) => ({
   name: {
     ...t.typography.bodyStrong,
     color: t.colors.text,
+  },
+  nameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    minWidth: 0,
   },
   subtitle: {
     ...t.typography.caption,

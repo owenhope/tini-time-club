@@ -145,12 +145,20 @@ export default async function PlacesPage({
         surface="transparent"
         density="compact"
         actions={
-          <Link
-            href="/admin/places/map"
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
-          >
-            Map view
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/places/map"
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+            >
+              Map view
+            </Link>
+            <Link
+              href="/admin/places/golden-glass"
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+            >
+              Golden Glass
+            </Link>
+          </div>
         }
       />
 

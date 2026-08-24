@@ -1421,6 +1421,10 @@ export interface AdminLocation {
   address: string | null;
   rating: number | null;
   total_ratings: number;
+  neighborhood?: string | null;
+  region_id?: number | null;
+  golden_glass_eligible?: boolean;
+  golden_glass_ineligibility_reason?: string | null;
 }
 
 export type LocationSort = "place" | "area" | "rating" | "reviews";
@@ -1443,6 +1447,43 @@ export interface AdminLocationDetail extends AdminLocation {
   created_by: string;
   all_reviews: number;
   reviews: AdminReviewRow[];
+}
+
+export interface AdminRegion {
+  id: number;
+  slug: string;
+  name: string;
+  enabled: boolean;
+  display_order: number;
+  center_lat: number;
+  center_lon: number;
+  catchment_radius_m: number;
+  golden_glass_count: number;
+}
+
+export interface GoldenGlassInspectionRow {
+  region_id: number;
+  location_id: number;
+  calculated_rank: number;
+  is_current: boolean;
+  venue_name: string | null;
+  raw_overall: number;
+  adjusted_score: number;
+  distinct_reviewers: number;
+  latest_review_at: string;
+  eligible: boolean;
+  ineligibility_reason: string | null;
+  refreshed_at: string | null;
+}
+
+interface GoldenGlassInspectionRpcRow {
+  region_id: number | string;
+  location_id: number | string;
+  calculated_rank: number | string;
+  raw_overall: number | string;
+  adjusted_score: number | string;
+  distinct_reviewers: number | string;
+  [key: string]: unknown;
 }
 
 export interface LatestLocation {
@@ -1773,7 +1814,9 @@ export const fetchLocations = async (
   const offset = (Math.max(1, page) - 1) * perPage;
   let query = db()
     .from("locations")
-    .select("id,name,address")
+    .select(
+      "id,name,address,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason"
+    )
     .order("name", { ascending: true });
   if (search) {
     query = query.or(`name.ilike.%${search}%,address.ilike.%${search}%`);
@@ -1803,6 +1846,11 @@ export const fetchLocations = async (
     id: row.id,
     name: row.name,
     address: row.address,
+    neighborhood: row.neighborhood ?? null,
+    region_id: row.region_id ?? null,
+    golden_glass_eligible: row.golden_glass_eligible ?? true,
+    golden_glass_ineligibility_reason:
+      row.golden_glass_ineligibility_reason ?? null,
     rating: ratings.get(row.id)?.rating ?? null,
     total_ratings: ratings.get(row.id)?.total ?? 0,
   }));
@@ -1847,6 +1895,53 @@ export const fetchLocations = async (
     locations: sorted.slice(offset, offset + perPage),
     total: sorted.length,
   };
+};
+
+export const fetchAdminRegions = async (): Promise<AdminRegion[]> => {
+  const [regionsResult, goldenGlassRows] = await Promise.all([
+    db()
+      .from("regions")
+      .select(
+        "id,slug,name,enabled,display_order,center_lat,center_lon,catchment_radius_m"
+      )
+      .order("display_order")
+      .order("name"),
+    fetchGoldenGlassInspection(),
+  ]);
+  if (regionsResult.error) throw new Error(regionsResult.error.message);
+
+  const goldenGlassCounts = new Map<number, number>();
+  for (const row of goldenGlassRows) {
+    if (!row.is_current) continue;
+    const regionId = row.region_id;
+    goldenGlassCounts.set(regionId, (goldenGlassCounts.get(regionId) ?? 0) + 1);
+  }
+
+  return (regionsResult.data ?? []).map((region) => ({
+    ...region,
+    id: Number(region.id),
+    golden_glass_count: goldenGlassCounts.get(Number(region.id)) ?? 0,
+  })) as AdminRegion[];
+};
+
+export const fetchGoldenGlassInspection = async (
+  regionId?: string
+): Promise<GoldenGlassInspectionRow[]> => {
+  const numericRegionId =
+    regionId && /^\d+$/.test(regionId) ? Number(regionId) : null;
+  const { data, error } = await db().rpc("get_golden_glass_inspection_v1", {
+    p_region_id: numericRegionId,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: GoldenGlassInspectionRpcRow) => ({
+    ...row,
+    region_id: Number(row.region_id),
+    location_id: Number(row.location_id),
+    calculated_rank: Number(row.calculated_rank),
+    raw_overall: Number(row.raw_overall),
+    adjusted_score: Number(row.adjusted_score),
+    distinct_reviewers: Number(row.distinct_reviewers),
+  })) as GoldenGlassInspectionRow[];
 };
 
 export interface MapBounds {
@@ -1904,7 +1999,9 @@ export const fetchAdminLocation = async (
   const [locationResult, ratingResult, reviewsResult] = await Promise.all([
     db()
       .from("locations")
-      .select("id,name,address,place_id,inserted_at,created_by")
+      .select(
+        "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
+      )
       .eq("id", id)
       .maybeSingle(),
     db()
@@ -1936,6 +2033,11 @@ export const fetchAdminLocation = async (
     place_id: location.place_id,
     inserted_at: location.inserted_at,
     created_by: location.created_by,
+    neighborhood: location.neighborhood ?? null,
+    region_id: location.region_id ?? null,
+    golden_glass_eligible: location.golden_glass_eligible ?? true,
+    golden_glass_ineligibility_reason:
+      location.golden_glass_ineligibility_reason ?? null,
     rating: ratingResult.data?.rating ?? null,
     total_ratings: ratingResult.data?.total_ratings ?? 0,
     all_reviews: reviewsResult.count ?? 0,

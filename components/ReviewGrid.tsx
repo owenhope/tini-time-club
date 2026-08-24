@@ -19,7 +19,7 @@ import CommentsSlider from "@/components/CommentsSlider";
 import LikeSlider from "@/components/LikeSlider";
 import AppHeader from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
-import { RatingPips, Skeleton } from "@/components/shared";
+import { MartiniIcon, RatingPips, Skeleton } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
 const COLUMNS = 3;
@@ -171,15 +171,20 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
               pointerEvents="none"
               accessibilityElementsHidden
             >
-              <Text style={styles.tileLocationText} numberOfLines={1}>
-                {tileLabelText}
-              </Text>
+              <View style={styles.tileLocationRow}>
+                <Text style={styles.tileLocationText} numberOfLines={1}>
+                  {tileLabelText}
+                </Text>
+                {tileLabel === "location" && item.location?.is_golden_glass ? (
+                  <MartiniIcon size={14} color={colors.awardGold} filled />
+                ) : null}
+              </View>
             </View>
           ) : null}
         </Pressable>
       );
     },
-    [styles, tileLabel, tileSize]
+    [colors, styles, tileLabel, tileSize]
   );
 
   return (
@@ -358,6 +363,12 @@ const useStyles = makeStyles((t) => ({
   tileLocationText: {
     ...t.typography.caption,
     color: t.colors.textOnImage,
+  },
+  tileLocationRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    minWidth: 0,
   },
   sheet: {
     flex: 1,

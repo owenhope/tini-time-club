@@ -14,6 +14,7 @@ interface LocationPinProps {
     taste_avg?: number | null;
     presentation_avg?: number | null;
     address?: string | null;
+    is_golden_glass?: boolean;
   };
   selected?: boolean;
 }
@@ -34,11 +35,17 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
           reviewed && styles.pinReviewed,
           !reviewed && styles.pinUnrated,
           selected && styles.pinSelected,
+          loc.is_golden_glass && styles.pinGolden,
+          loc.is_golden_glass && selected && styles.pinGoldenSelected,
         ]}
       >
         {showRating ? (
           <Text
-            style={[styles.pinRating, selected && styles.pinRatingSelected]}
+            style={[
+              styles.pinRating,
+              selected && styles.pinRatingSelected,
+              loc.is_golden_glass && styles.pinRatingGolden,
+            ]}
           >
             {loc.rating?.toFixed(1)}
           </Text>
@@ -46,11 +53,13 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
           <MartiniIcon
             size={selected ? 23 : 17}
             color={
-              selected
-                ? colors.onHighlight
-                : reviewed
-                  ? colors.textOnImage
-                  : colors.textMuted
+              loc.is_golden_glass
+                ? colors.onAwardGold
+                : selected
+                  ? colors.onAccent
+                  : reviewed
+                    ? colors.textOnImage
+                    : colors.textMuted
             }
           />
         )}
@@ -64,6 +73,8 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
             reviewed && styles.pointerReviewed,
             !reviewed && styles.pointerUnrated,
             selected && styles.pointerSelected,
+            loc.is_golden_glass && styles.pointerGolden,
+            loc.is_golden_glass && selected && styles.pointerGoldenSelected,
           ]}
         />
       </View>
@@ -101,7 +112,16 @@ const useStyles = makeStyles((t) => ({
   pinSelected: {
     width: 52,
     height: 52,
-    backgroundColor: t.colors.highlight,
+    backgroundColor: t.colors.tabBarActive,
+  },
+  pinGolden: {
+    backgroundColor: t.colors.awardGold,
+    borderWidth: 2,
+    borderColor: t.colors.awardGold,
+  },
+  pinGoldenSelected: {
+    backgroundColor: t.colors.awardGold,
+    borderColor: t.colors.awardGold,
   },
   pinRating: {
     ...t.typography.label,
@@ -110,7 +130,12 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ["tabular-nums"] as const,
   },
   pinRatingSelected: {
-    color: t.colors.onHighlight,
+    color: t.colors.onAccent,
+    fontSize: t.typography.caption.fontSize,
+    lineHeight: t.typography.caption.lineHeight,
+  },
+  pinRatingGolden: {
+    color: t.colors.onAwardGold,
   },
   pointerFrame: {
     width: 18,
@@ -143,7 +168,13 @@ const useStyles = makeStyles((t) => ({
     borderLeftWidth: 8,
     borderRightWidth: 8,
     borderTopWidth: 15,
-    borderTopColor: t.colors.highlight,
+    borderTopColor: t.colors.tabBarActive,
+  },
+  pointerGolden: {
+    borderTopColor: t.colors.awardGold,
+  },
+  pointerGoldenSelected: {
+    borderTopColor: t.colors.awardGold,
   },
 }));
 
@@ -155,5 +186,6 @@ export default memo(
     previous.loc.lat === next.loc.lat &&
     previous.loc.long === next.loc.long &&
     previous.loc.rating === next.loc.rating &&
-    previous.loc.total_ratings === next.loc.total_ratings
+    previous.loc.total_ratings === next.loc.total_ratings &&
+    previous.loc.is_golden_glass === next.loc.is_golden_glass
 );

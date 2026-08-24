@@ -163,6 +163,36 @@ export const autocompleteVenues = async (
   }
 };
 
+/** City-only autocomplete used by the Admin-independent region selector. */
+export const autocompleteCities = async (
+  query: string,
+  sessionToken: string
+): Promise<PlaceResult[]> => {
+  if (query.trim().length < 2) return [];
+  try {
+    const data = await postJson("/places:autocomplete", {
+      input: query,
+      sessionToken,
+      includedPrimaryTypes: ["(cities)"],
+    });
+    return (data.suggestions ?? [])
+      .map((s: any) => s.placePrediction)
+      .filter(Boolean)
+      .map((p: any): PlaceResult => ({
+        place_id: p.placeId,
+        name: normalizeVenueName(
+          p.structuredFormat?.mainText?.text ?? p.text?.text
+        ),
+        raw_name: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+        formatted_address: p.structuredFormat?.secondaryText?.text,
+        types: p.types ?? [],
+      }));
+  } catch (error) {
+    reportError("Error autocompleting cities:", error);
+    return [];
+  }
+};
+
 export interface VenueContact {
   phoneNumber?: string;
   internationalPhoneNumber?: string;

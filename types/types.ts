@@ -42,6 +42,9 @@ export interface LocationRating {
   taste_avg: number;
   presentation_avg: number;
   total_ratings: number;
+  is_golden_glass?: boolean;
+  neighborhood?: string | null;
+  region_id?: number | null;
 }
 
 /** Minimal author/commenter identity embedded in feed rows. */
@@ -61,6 +64,8 @@ export interface ReviewLocation {
   /** Current aggregate TTC rating for this venue. */
   rating?: number | null;
   total_ratings?: number | null;
+  /** Whether this venue is in the current Golden Glass snapshot. */
+  is_golden_glass?: boolean;
 }
 
 /** A selected, identity-bound @mention inside a plain-text body.

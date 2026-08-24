@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
+import { MartiniIcon } from "@/components/shared";
 import type { Review } from "@/types/types";
 import { fonts, typography } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
@@ -46,6 +47,7 @@ const CARD = {
   paper: "#FAF9F6",
   purple: "#B6A3E2",
   chartreuse: "#F2FF71",
+  gold: "#FFD166",
 } as const;
 
 const clamp = (value: number, min: number, max: number) => {
@@ -375,20 +377,32 @@ const ReviewShareCard = ({
               {username}
             </Text>
             <View style={{ gap: 3 * artworkScale }}>
-              <Text
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.65}
-                style={[
-                  styles.headline,
-                  {
-                    fontSize: 28 * artworkScale,
-                    lineHeight: 32 * artworkScale,
-                  },
-                ]}
+              <View
+                style={[styles.shareHeadlineRow, { gap: 7 * artworkScale }]}
               >
-                {headline}
-              </Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.65}
+                  style={[
+                    styles.headline,
+                    styles.shareHeadline,
+                    {
+                      fontSize: 28 * artworkScale,
+                      lineHeight: 32 * artworkScale,
+                    },
+                  ]}
+                >
+                  {headline}
+                </Text>
+                {review.location?.is_golden_glass ? (
+                  <MartiniIcon
+                    size={20 * artworkScale}
+                    color={CARD.gold}
+                    filled
+                  />
+                ) : null}
+              </View>
               {cityCountry ? (
                 <Text
                   numberOfLines={1}
@@ -557,6 +571,15 @@ const styles = StyleSheet.create({
     color: CARD.paper,
     fontFamily: fonts.black,
     letterSpacing: 0,
+  },
+  shareHeadlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+  },
+  shareHeadline: {
+    flex: 1,
+    minWidth: 0,
   },
   meta: {
     color: CARD.paper,

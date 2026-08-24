@@ -13,6 +13,7 @@ import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import {
   Avatar,
+  MartiniIcon,
   RatingPips,
   SectionHeader,
   Skeleton,
@@ -55,11 +56,12 @@ interface LocationType {
   place_id?: string; // Google Places place_id
   phone_number?: string;
   website?: string;
+  is_golden_glass?: boolean;
 }
 
 const Location = () => {
   const styles = useStyles();
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
   const { profile } = useProfile();
   const router = useRouter();
   const goBack = useGoBack();
@@ -155,6 +157,7 @@ const Location = () => {
               address: displayLocation.address ?? "",
               lat: displayLocation.lat ? displayLocation.lat.toString() : "",
               lon: displayLocation.lon ? displayLocation.lon.toString() : "",
+              isGoldenGlass: displayLocation.is_golden_glass ? "1" : "0",
             })
           ),
       },
@@ -203,6 +206,7 @@ const Location = () => {
           presentation_avg:
             totalRatings > 0 ? Number(data.presentation_avg) : undefined,
           total_ratings: totalRatings,
+          is_golden_glass: Boolean(data.is_golden_glass),
         };
 
         setSelectedLocation(formattedLocation);
@@ -432,6 +436,13 @@ const Location = () => {
                 variant="media"
                 ground="brand"
                 title={displayLocation?.name ?? ""}
+                titleAccessory={
+                  displayLocation?.is_golden_glass ? (
+                    <View accessible accessibilityLabel="Golden Glass">
+                      <MartiniIcon size={22} color={colors.awardGold} filled />
+                    </View>
+                  ) : null
+                }
                 mediaTitleSize="compact"
                 meta={headerCityRegion ?? undefined}
                 onBack={goBack}

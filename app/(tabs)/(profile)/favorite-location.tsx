@@ -58,10 +58,15 @@ const FavoriteLocation = () => {
           throw new Error("Favorite location ID is invalid");
         }
 
+        const savedLocation = await databaseService.getLocation(
+          String(numericLocationId),
+          profileId
+        );
         const nextFavoriteLocation = {
           id: numericLocationId,
           name: location.name,
           address: location.address,
+          is_golden_glass: Boolean(savedLocation.is_golden_glass),
         };
 
         if (params.saveImmediately === "1") {

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
+import { MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 
 interface FavoriteLocationPickerProps {
@@ -39,12 +40,17 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
       accessibilityHint="Opens the location chooser"
     >
       <View style={styles.text}>
-        <Text
-          style={[styles.name, selected && styles.textSelected]}
-          numberOfLines={1}
-        >
-          {value?.name ?? "Add favorite location"}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text
+            style={[styles.name, selected && styles.textSelected]}
+            numberOfLines={1}
+          >
+            {value?.name ?? "Add favorite location"}
+          </Text>
+          {value?.is_golden_glass ? (
+            <MartiniIcon size={16} color={colors.awardGold} filled />
+          ) : null}
+        </View>
         {subtitle ? (
           <Text
             style={[styles.address, selected && styles.textSelected]}
@@ -88,6 +94,12 @@ const useStyles = makeStyles((t) => ({
   },
   text: {
     flex: 1,
+    minWidth: 0,
+  },
+  nameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
     minWidth: 0,
   },
   name: {

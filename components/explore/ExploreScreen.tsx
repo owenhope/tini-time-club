@@ -11,13 +11,15 @@ import {
   type ExploreView,
 } from "@/components/explore/exploreView";
 import { useExploreLocation } from "@/components/explore/useExploreLocation";
+import { useExploreRegion } from "@/hooks/useExploreRegion";
+import ExploreRegionSelector from "@/components/explore/ExploreRegionSelector";
 import { useMembership } from "@/context/membership-context";
 import { makeStyles } from "@/theme";
 import type { MembershipIntent } from "@/utils/membership";
 
 const EXPLORE_OPTIONS = [
   { value: "map", label: "Map" },
-  { value: "places", label: "Top Places" },
+  { value: "golden-glass", label: "Golden Glass" },
   { value: "members", label: "Members" },
 ] as const;
 
@@ -30,7 +32,7 @@ interface ExploreScreenProps {
 const membershipIntentForView = (
   view: Exclude<ExploreView, "map">
 ): MembershipIntent =>
-  view === "members" ? "members-directory" : "top-places";
+  view === "members" ? "members-directory" : "golden-glass";
 
 /**
  * The single Explore interface. Routing chooses a view and optional map focus;
@@ -45,11 +47,16 @@ export default function ExploreScreen({
   const { isMember, requireMembership } = useMembership();
   const promptedView = useRef<ExploreListView | null>(null);
   const { state: location, request: requestLocation } = useExploreLocation();
+  const region = useExploreRegion(location, requestLocation);
   const displayedView: ExploreView = isMember ? view : "map";
   const activeListView: ExploreListView =
-    displayedView === "members" ? "members" : "places";
+    displayedView === "members"
+      ? "members"
+      : displayedView === "golden-glass"
+        ? "golden-glass"
+        : "members";
   const [queries, setQueries] = useState<Record<ExploreListView, string>>({
-    places: "",
+    "golden-glass": "",
     members: "",
   });
 
@@ -88,13 +95,22 @@ export default function ExploreScreen({
       <AppHeader
         variant="large"
         title="Explore"
-        below={
-          <SegmentedControl
-            value={displayedView}
-            options={EXPLORE_OPTIONS}
-            onChange={handleViewChange}
-            tone="ink"
+        largeTrailing={
+          <ExploreRegionSelector
+            state={region.state}
+            onSelectRegion={region.selectRegion}
+            onUseMyLocation={region.useMyLocation}
           />
+        }
+        below={
+          <View style={styles.headerControls}>
+            <SegmentedControl
+              value={displayedView}
+              options={EXPLORE_OPTIONS}
+              onChange={handleViewChange}
+              tone="ink"
+            />
+          </View>
         }
       />
 
@@ -108,6 +124,7 @@ export default function ExploreScreen({
             focus={mapFocus}
             location={location}
             requestLocation={requestLocation}
+            exploreRegion={region.state.selectedRegion}
           />
         </View>
 
@@ -127,6 +144,8 @@ export default function ExploreScreen({
             }
             location={location}
             requestLocation={requestLocation}
+            regionId={region.state.selectedRegion?.id ?? null}
+            regionName={region.state.selectedRegion?.name ?? null}
           />
         </View>
       </View>
@@ -143,6 +162,9 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     backgroundColor: t.colors.background,
     position: "relative" as const,
+  },
+  headerControls: {
+    gap: t.spacing.sm,
   },
   panel: {
     ...StyleSheet.absoluteFill,

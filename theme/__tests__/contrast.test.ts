@@ -77,6 +77,12 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   // on a light surface. What has to be legible is the ink laid on top of it.
   ["onSecondary on secondary", c.onSecondary, c.secondary],
   ["danger on surface", c.danger, c.surface],
+  ["awardGold on surface", c.awardGold, c.surface],
+  [
+    "awardGoldForeground on awardGoldSurface",
+    c.awardGoldForeground,
+    c.awardGoldSurface,
+  ],
   ["tabBarActive on tabBar", c.tabBarActive, c.tabBar],
   ["tabBarInactive on tabBar", c.tabBarInactive, c.tabBar],
   ["onAccentTonal on accentTonal", c.onAccentTonal, c.accentTonal],

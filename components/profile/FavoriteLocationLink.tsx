@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { makeStyles } from "@/theme";
+import { MartiniIcon } from "@/components/shared";
+import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 interface FavoriteLocationLinkProps {
-  location: { id: number; name: string } | null;
+  location: { id: number; name: string; is_golden_glass?: boolean } | null;
 }
 
 /**
@@ -15,6 +16,7 @@ interface FavoriteLocationLinkProps {
  */
 const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
   const styles = useStyles();
+  const { colors } = useTheme();
   const router = useRouter();
 
   if (!location) return null;
@@ -28,9 +30,14 @@ const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
         accessibilityRole="link"
         accessibilityLabel={`Favorite location, ${location.name}`}
       >
-        <Text style={styles.favoriteLocationText} numberOfLines={1}>
-          {location.name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.favoriteLocationText} numberOfLines={1}>
+            {location.name}
+          </Text>
+          {location.is_golden_glass ? (
+            <MartiniIcon size={16} color={colors.awardGold} filled />
+          ) : null}
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -53,6 +60,12 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.xs,
+  },
+  nameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    flexShrink: 1,
   },
   favoriteLocationText: {
     ...t.typography.bodyStrong,

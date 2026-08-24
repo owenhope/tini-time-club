@@ -15,6 +15,7 @@ import { useProfile } from "@/context/profile-context";
 import { supabase } from "@/utils/supabase";
 import {
   Avatar,
+  MartiniIcon,
   RatingPips,
   PIPS_MAX,
   VerifiedName,
@@ -322,6 +323,7 @@ interface PhotoChipsProps {
 
 const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
   const styles = useStyles();
+  const { colors } = useTheme();
   const router = useRouter();
   // Where in the world it was poured — a venue name alone means nothing to
   // anyone who doesn't already drink there.
@@ -371,9 +373,14 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
           }
         >
           <View style={styles.venueChipLines}>
-            <Text style={styles.venueChipText} numberOfLines={1}>
-              {review.location?.name || "N/A"}
-            </Text>
+            <View style={styles.venueChipNameRow}>
+              <Text style={styles.venueChipText} numberOfLines={1}>
+                {review.location?.name || "N/A"}
+              </Text>
+              {review.location?.is_golden_glass ? (
+                <MartiniIcon size={16} color={colors.awardGold} filled />
+              ) : null}
+            </View>
             {cityCountry ? (
               <Text style={styles.venueChipMeta} numberOfLines={1}>
                 {cityCountry}
@@ -1150,19 +1157,26 @@ const useStyles = makeStyles((t) => ({
   venueChipLines: {
     flexShrink: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 0,
   },
   venueChipText: {
-    ...t.typography.heading,
+    ...t.typography.title,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
+  },
+  venueChipNameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+    minWidth: 0,
   },
   venueChipRating: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 5,
     minWidth: 0,
+    marginTop: 2,
   },
   venueChipRatingText: {
     ...t.typography.mono,
@@ -1170,9 +1184,10 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
   },
   venueChipMeta: {
-    ...t.typography.mono,
+    ...t.typography.caption,
     color: t.colors.textOnImage,
     flexShrink: 1,
+    marginTop: 2,
   },
   photoPills: {
     position: "absolute" as const,

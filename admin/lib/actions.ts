@@ -203,11 +203,19 @@ export async function updateLocation(locationId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const placeId = String(formData.get("place_id") ?? "").trim();
+  const neighborhood = String(formData.get("neighborhood") ?? "").trim();
+  const eligible = String(formData.get("golden_glass_eligible") ?? "") === "on";
+  const ineligibilityReason = String(
+    formData.get("golden_glass_ineligibility_reason") ?? ""
+  ).trim();
   const path = `/admin/places/${locationId}`;
 
   if (!name || name.length > 160) redirect(`${path}?error=name`);
   if (address.length > 300) redirect(`${path}?error=address`);
   if (placeId.length > 255) redirect(`${path}?error=placeId`);
+  if (neighborhood.length > 120) redirect(`${path}?error=neighborhood`);
+  if (!eligible && !ineligibilityReason) redirect(`${path}?error=eligibility`);
+  if (ineligibilityReason.length > 500) redirect(`${path}?error=eligibility`);
 
   const { error } = await supabaseAdmin()
     .from("locations")
@@ -215,6 +223,9 @@ export async function updateLocation(locationId: string, formData: FormData) {
       name,
       address: address || null,
       place_id: placeId || null,
+      neighborhood: neighborhood || null,
+      golden_glass_eligible: eligible,
+      golden_glass_ineligibility_reason: eligible ? null : ineligibilityReason,
     })
     .eq("id", locationId);
   if (error?.code === "23505") redirect(`${path}?error=placeId`);
@@ -225,4 +236,136 @@ export async function updateLocation(locationId: string, formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
   redirect(`${path}?updated=1`);
+}
+
+export async function upsertRegion(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const returnTo = getRegionReturnPath(formData);
+  const slug = String(formData.get("slug") ?? "")
+    .trim()
+    .toLowerCase();
+  const name = String(formData.get("name") ?? "").trim();
+  const enabled = String(formData.get("enabled") ?? "") === "on";
+  const displayOrder = Number(formData.get("display_order"));
+  const numbers = ["center_lat", "center_lon", "catchment_radius_m"].map(
+    (key) => Number(formData.get(key))
+  );
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 80) {
+    redirect(`${returnTo}?error=slug`);
+  }
+  if (!name || name.length > 100 || !Number.isInteger(displayOrder)) {
+    redirect(`${returnTo}?error=fields`);
+  }
+  if (
+    numbers.some((value) => !Number.isFinite(value)) ||
+    Math.abs(numbers[0]) > 90 ||
+    Math.abs(numbers[1]) > 180 ||
+    numbers[2] <= 0 ||
+    numbers[2] > 500_000
+  ) {
+    redirect(`${returnTo}?error=coordinates`);
+  }
+
+  const values = {
+    slug,
+    name,
+    enabled,
+    display_order: displayOrder,
+    center_lat: numbers[0],
+    center_lon: numbers[1],
+    catchment_radius_m: numbers[2],
+    updated_at: new Date().toISOString(),
+  };
+  const query = supabaseAdmin().from("regions");
+  const result =
+    id && /^\d+$/.test(id)
+      ? await query.update(values).eq("id", id)
+      : await query.insert(values);
+  if (result.error) {
+    if (result.error.code === "23505") redirect(`${returnTo}?error=slug`);
+    throw new Error(result.error.message);
+  }
+  revalidatePath("/admin/places/regions");
+  if (id && /^\d+$/.test(id)) {
+    revalidatePath(`/admin/places/regions/${id}`);
+  }
+  revalidatePath("/admin/places/golden-glass");
+  redirect(`${returnTo}?updated=1`);
+}
+
+const getRegionReturnPath = (formData: FormData) => {
+  const value = String(formData.get("return_to") ?? "").trim();
+  return /^\/admin\/places\/regions(?:\/(?:new|\d+))?$/.test(value)
+    ? value
+    : "/admin/places/regions";
+};
+
+export async function saveRegionGoogleMapping(
+  regionId: string,
+  formData: FormData
+) {
+  if (!/^\d+$/.test(regionId)) throw new Error("Invalid region id");
+  const returnTo = getRegionReturnPath(formData);
+  const googlePlaceId = String(formData.get("google_place_id") ?? "").trim();
+  const submittedLabel = String(formData.get("google_label") ?? "").trim();
+  if (
+    !googlePlaceId ||
+    googlePlaceId.length > 255 ||
+    !submittedLabel ||
+    submittedLabel.length > 200
+  ) {
+    redirect(`${returnTo}?error=mapping`);
+  }
+  const apiKey =
+    process.env.GOOGLE_MAPS_API_KEY ??
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) redirect(`${returnTo}?error=google-config`);
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(googlePlaceId)}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "id,displayName,types",
+      },
+      cache: "no-store",
+    }
+  );
+  const place = await response.json();
+  const cityTypes = new Set([
+    "locality",
+    "postal_town",
+    "administrative_area_level_2",
+  ]);
+  if (
+    !response.ok ||
+    place.id !== googlePlaceId ||
+    !Array.isArray(place.types) ||
+    !place.types.some((type: unknown) => cityTypes.has(String(type)))
+  ) {
+    redirect(`${returnTo}?error=mapping`);
+  }
+  const googleLabel = String(place.displayName?.text ?? submittedLabel).trim();
+  const { error } = await supabaseAdmin()
+    .from("region_google_places")
+    .upsert(
+      {
+        region_id: Number(regionId),
+        google_place_id: googlePlaceId,
+        google_label: googleLabel,
+      },
+      { onConflict: "google_place_id" }
+    );
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/places/regions");
+  revalidatePath(`/admin/places/regions/${regionId}`);
+  redirect(`${returnTo}?updated=1`);
+}
+
+export async function refreshGoldenGlass() {
+  const { error } = await supabaseAdmin().rpc("refresh_golden_glass_v1");
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/places/golden-glass");
+  revalidatePath("/admin/places");
+  redirect("/admin/places/golden-glass?refreshed=1");
 }

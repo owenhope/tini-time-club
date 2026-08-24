@@ -45,8 +45,11 @@ import {
 } from "@/components/explore/useExploreLocation";
 import { ExploreSearchArea } from "@/components/explore/ExploreSearchField";
 import { useProfile } from "@/context/profile-context";
+import { useMembership } from "@/context/membership-context";
 import { publicContentService } from "@/services/public-content-service";
 import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
+import { canOpenMapPinDetails } from "@/utils/mapPinAccess";
+import type { ExploreRegion } from "@/services/regionService";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -75,6 +78,7 @@ interface ExploreMapProps {
   focus: ExploreMapFocus;
   location: ExploreLocationState;
   requestLocation: () => Promise<void>;
+  exploreRegion: ExploreRegion | null;
 }
 
 interface MapLocation {
@@ -88,6 +92,7 @@ interface MapLocation {
   presentation_avg?: number | null;
   total_ratings?: number | null;
   regulars?: Regular[];
+  is_golden_glass?: boolean;
 }
 
 interface MapBounds {
@@ -150,10 +155,12 @@ function ExploreMap({
   focus,
   location,
   requestLocation,
+  exploreRegion,
 }: ExploreMapProps) {
   const styles = useStyles();
   const { isDark, spacing } = useTheme();
   const { profile } = useProfile();
+  const { requireMembership } = useMembership();
   const safeAreaInsets = useSafeAreaInsets();
   const tabBarContentInset = useNativeTabBarContentInset();
   const sheetBottomInset = Math.max(
@@ -214,6 +221,11 @@ function ExploreMap({
 
   const handleMarkerPress = useCallback(
     (location: MapLocation, focusDelta?: number) => {
+      // Gate before any selection, camera movement, or detail-sheet render.
+      if (!canOpenMapPinDetails(Boolean(profile))) {
+        requireMembership("location-details");
+        return;
+      }
       if (markerPressGuardRef.current) {
         clearTimeout(markerPressGuardRef.current);
       }
@@ -245,7 +257,7 @@ function ExploreMap({
       setRegularsSheetOpen(false);
       setSelectedLocationId(location.id);
     },
-    [sheetBottomInset]
+    [profile, requireMembership, sheetBottomInset]
   );
 
   const handleSheetContentLayout = useCallback(() => {
@@ -387,6 +399,44 @@ function ExploreMap({
   }, [enabled, focus.lat, focus.lon, isScreenshotMap, screenshotSeed]);
 
   useEffect(() => {
+    if (!enabled || isScreenshotMap) return;
+    if (!exploreRegion) {
+      setLocationResolved(false);
+      setLocationsReady(false);
+      setLocations([]);
+      setLocationNotice("Choose a region to see its locations.");
+      return;
+    }
+
+    const nextRegion: Region = {
+      latitude: exploreRegion.center.latitude,
+      longitude: exploreRegion.center.longitude,
+      latitudeDelta: Math.max(
+        0.02,
+        (exploreRegion.catchmentRadiusMeters / 111_320) * 2
+      ),
+      longitudeDelta: Math.max(
+        0.02,
+        (exploreRegion.catchmentRadiusMeters /
+          (111_320 *
+            Math.max(
+              0.2,
+              Math.cos((exploreRegion.center.latitude * Math.PI) / 180)
+            ))) *
+          2
+      ),
+    };
+    regionRef.current = nextRegion;
+    setRegion(nextRegion);
+    setLocationNotice(null);
+    setLocationResolved(true);
+    setLocationsReady(false);
+    setLocations([]);
+    fetchedBoundsRef.current = null;
+    mapRef.current?.animateToRegion(nextRegion, 500);
+  }, [enabled, exploreRegion, isScreenshotMap]);
+
+  useEffect(() => {
     if (enabled && !isScreenshotMap && location.status === "idle") {
       void requestLocation();
     }
@@ -396,6 +446,7 @@ function ExploreMap({
     if (
       !enabled ||
       isScreenshotMap ||
+      exploreRegion ||
       initialLocationAppliedRef.current ||
       location.status === "idle" ||
       location.status === "loading"
@@ -438,7 +489,7 @@ function ExploreMap({
     regionRef.current = initial;
     setRegion(initial);
     mapRef.current?.animateToRegion(initial, 1000);
-  }, [enabled, focus.lat, focus.lon, isScreenshotMap, location]);
+  }, [enabled, exploreRegion, focus.lat, focus.lon, isScreenshotMap, location]);
 
   // Handle navigation to specific location from Location component
   useEffect(() => {
@@ -506,11 +557,12 @@ function ExploreMap({
 
     const fetchTimer = setTimeout(async () => {
       const { data, error } = profile
-        ? await supabase.rpc("locations_in_view", {
-            min_lat: queryBounds.minLat,
-            min_long: queryBounds.minLong,
-            max_lat: queryBounds.maxLat,
-            max_long: queryBounds.maxLong,
+        ? await supabase.rpc("locations_in_region_view", {
+            p_min_lat: queryBounds.minLat,
+            p_min_long: queryBounds.minLong,
+            p_max_lat: queryBounds.maxLat,
+            p_max_long: queryBounds.maxLong,
+            p_region_id: exploreRegion?.id,
           })
         : await publicContentService
             .getLocationsInView({
@@ -518,6 +570,7 @@ function ExploreMap({
               minLong: queryBounds.minLong,
               maxLat: queryBounds.maxLat,
               maxLong: queryBounds.maxLong,
+              regionId: exploreRegion?.id ?? null,
             })
             .then((data) => ({ data, error: null }))
             .catch((error) => ({ data: null, error }));
@@ -528,7 +581,33 @@ function ExploreMap({
         reportError("Error fetching locations in view:", error);
         setLocationsReady(true);
       } else {
-        const nextLocations: MapLocation[] = (data ?? []).filter(
+        const rawLocations = (data ?? []) as MapLocation[];
+        const missingAwardIds = rawLocations
+          .filter((location) => location.is_golden_glass == null)
+          .map((location) => Number(location.id))
+          .filter((id) => Number.isFinite(id));
+        let locationsWithAwards = rawLocations;
+        if (missingAwardIds.length > 0) {
+          const { data: awards } = await supabase
+            .from("location_ratings")
+            .select("id,is_golden_glass")
+            .in("id", missingAwardIds);
+          if (requestId !== fetchRequestRef.current) return;
+          const awardsByLocation = new Map(
+            (awards ?? []).map((row) => [
+              String(row.id),
+              Boolean(row.is_golden_glass),
+            ])
+          );
+          locationsWithAwards = rawLocations.map((location) => ({
+            ...location,
+            is_golden_glass:
+              location.is_golden_glass ??
+              awardsByLocation.get(String(location.id)) ??
+              false,
+          }));
+        }
+        const nextLocations: MapLocation[] = locationsWithAwards.filter(
           (location: MapLocation) =>
             Number.isFinite(location.lat) && Number.isFinite(location.long)
         );
@@ -556,7 +635,7 @@ function ExploreMap({
         fetchRequestRef.current += 1;
       }
     };
-  }, [enabled, locationResolved, profile, region]);
+  }, [enabled, exploreRegion?.id, locationResolved, profile, region]);
 
   return (
     <View style={styles.screen}>

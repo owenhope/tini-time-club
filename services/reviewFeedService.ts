@@ -73,6 +73,45 @@ const decodePage = (value: unknown): ReviewPage => {
   };
 };
 
+const hydrateReviewLocationAwards = async (reviews: Review[]) => {
+  const locationIds = [
+    ...new Set(
+      reviews
+        .filter((review) => review.location?.is_golden_glass == null)
+        .map((review) => Number(review.location?.id))
+        .filter((id) => Number.isFinite(id))
+    ),
+  ];
+  if (!locationIds.length) return reviews;
+
+  try {
+    const { data, error } = await supabase
+      .from("location_ratings")
+      .select("id,is_golden_glass")
+      .in("id", locationIds);
+    if (error) throw error;
+
+    const awardsByLocation = new Map(
+      (data ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
+    );
+    return reviews.map((review) => ({
+      ...review,
+      location: review.location
+        ? {
+            ...review.location,
+            is_golden_glass:
+              review.location.is_golden_glass ??
+              awardsByLocation.get(String(review.location.id)) ??
+              false,
+          }
+        : review.location,
+    }));
+  } catch (error) {
+    warn("Unable to hydrate review Golden Glass flags", error);
+    return reviews;
+  }
+};
+
 /** Load one stable feed page. All relational data is supplied by one RPC. */
 export async function getReviewPage({
   viewerId,
@@ -108,10 +147,11 @@ export async function getReviewPage({
   const page = decodePage(data);
   if (!page.reviews.length) return page;
 
+  const reviewsWithAwards = await hydrateReviewLocationAwards(page.reviews);
   const imageUrls = await imageCache.getReviewImageUrls(
-    page.reviews.map((review) => review.image_url)
+    reviewsWithAwards.map((review) => review.image_url)
   );
-  const reviews = page.reviews.map((review) => ({
+  const reviews = reviewsWithAwards.map((review) => ({
     ...review,
     image_url: imageUrls[review.image_url] || review.image_url,
   }));

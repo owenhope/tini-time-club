@@ -2,6 +2,7 @@ export interface FavoriteLocationValue {
   id: number;
   name: string;
   address?: string | null;
+  is_golden_glass?: boolean;
 }
 
 let pendingSelection: FavoriteLocationValue | null | undefined;

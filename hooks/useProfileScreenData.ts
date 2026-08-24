@@ -190,8 +190,8 @@ export function useProfileScreenData({
       }
 
       const { data, error } = await supabase
-        .from("locations")
-        .select("id, name, address")
+        .from("location_ratings")
+        .select("id, name, address, is_golden_glass")
         .eq("id", favoriteLocationId)
         .maybeSingle();
 

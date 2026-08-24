@@ -41,6 +41,7 @@ type PublicContentRequest =
       minLong: number;
       maxLat: number;
       maxLong: number;
+      regionId?: number | null;
     };
 
 interface PublicProfileResponse {
@@ -115,5 +116,6 @@ export const publicContentService = {
     minLong: number;
     maxLat: number;
     maxLong: number;
+    regionId?: number | null;
   }) => invoke<LocationRating[]>({ operation: "locations-in-view", ...bounds }),
 };

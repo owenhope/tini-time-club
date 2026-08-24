@@ -9,7 +9,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
-import { Avatar, RatingPips, VerifiedName } from "@/components/shared";
+import {
+  Avatar,
+  MartiniIcon,
+  RatingPips,
+  VerifiedName,
+} from "@/components/shared";
 import Regulars from "@/components/Regulars";
 import { formatRating } from "@/utils/ratingUtils";
 import { makeStyles, useTheme } from "@/theme";
@@ -25,9 +30,10 @@ import {
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import {
   getDiscoverLocationsPage,
-  getDiscoverProfilesPage,
+  getRegionMembers,
   type DiscoveryCursor,
 } from "@/services/discoveryService";
+import GoldenGlassList from "@/components/explore/GoldenGlassList";
 
 /**
  * Distinguishes "still loading" from "genuinely nothing here" — both used to
@@ -61,18 +67,34 @@ interface ExploreListsProps {
   onQueryChange: (query: string) => void;
   location: ExploreLocationState;
   requestLocation: () => Promise<void>;
+  regionId: number | null;
+  regionName: string | null;
 }
 
 const DISCOVER_PROFILE_AVATAR_SIZE = 40;
 const DISCOVERY_PAGE_SIZE = 25;
 
-export default function ExploreLists({
+export default function ExploreLists(props: ExploreListsProps) {
+  if (props.activeView === "golden-glass") {
+    return (
+      <GoldenGlassList
+        enabled={props.enabled}
+        regionId={props.regionId}
+        regionName={props.regionName}
+      />
+    );
+  }
+  return <ExploreDiscoveryLists {...props} />;
+}
+
+function ExploreDiscoveryLists({
   enabled,
   query,
   activeView,
   onQueryChange,
   location,
   requestLocation,
+  regionId,
 }: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -106,7 +128,7 @@ export default function ExploreLists({
   const tabBarInset = useNativeTabBarContentInset();
 
   useEffect(() => {
-    if (!enabled || activeView !== "places" || !nearbyEnabled) return;
+    if (!enabled || activeView !== "members") return;
 
     if (location.status === "idle") {
       void requestLocation();
@@ -120,11 +142,12 @@ export default function ExploreLists({
       if (!append) setLoading(true);
       else setLoadingMore(true);
       try {
-        const page = await getDiscoverProfilesPage({
-          query: searchQuery,
-          cursor,
-          limit: DISCOVERY_PAGE_SIZE,
-        });
+        if (regionId == null) return;
+        const page = {
+          items: await getRegionMembers(regionId, searchQuery),
+          nextCursor: null,
+          hasMore: false,
+        };
         if (requestId !== profileRequestId.current) return;
         setProfiles((current) =>
           append ? [...current, ...page.items] : page.items
@@ -143,7 +166,7 @@ export default function ExploreLists({
         }
       }
     },
-    []
+    [regionId]
   );
 
   const fetchLocations = React.useCallback(
@@ -198,6 +221,7 @@ export default function ExploreLists({
 
   React.useEffect(() => {
     if (!enabled) return;
+    if (activeTab === "profiles" && regionId == null) return;
 
     if (activeTab === "profiles") {
       setProfiles([]);
@@ -233,6 +257,7 @@ export default function ExploreLists({
     fetchLocations,
     fetchProfiles,
     query,
+    regionId,
     nearbyEnabled,
     userLocation,
   ]);
@@ -324,6 +349,9 @@ export default function ExploreLists({
               >
                 {item.name}
               </Text>
+              {item.is_golden_glass ? (
+                <MartiniIcon size={16} color={colors.awardGold} filled />
+              ) : null}
               <Ionicons
                 name="chevron-forward"
                 size={16}
@@ -393,7 +421,7 @@ export default function ExploreLists({
           value={query}
           onChangeText={onQueryChange}
           placeholder={
-            activeTab === "locations" ? "Search top places" : "Search members"
+            activeTab === "locations" ? "Search places" : "Search members"
           }
           trailing={
             activeTab === "locations" ? (
@@ -442,9 +470,11 @@ export default function ExploreLists({
               <ListState
                 loading={loading}
                 message={
-                  query
-                    ? `Nobody here by that name. Try another.`
-                    : "The club's quiet. Go find a member."
+                  regionId == null
+                    ? "Choose a region to discover members who review there."
+                    : query
+                      ? `Nobody here by that name. Try another.`
+                      : "The club's quiet. Go find a member."
                 }
               />
             }

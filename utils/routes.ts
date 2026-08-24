@@ -38,6 +38,7 @@ export type PlaceInfoParams = {
   address: string;
   lat: string;
   lon: string;
+  isGoldenGlass?: "0" | "1";
 };
 
 /** Params that focus the places map on a location. */

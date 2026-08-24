@@ -9,6 +9,7 @@ type ActiveSection =
   | "users"
   | "reviews"
   | "locations"
+  | "golden-glass"
   | "reports"
   | "analytics"
   | "notifications"
@@ -24,6 +25,11 @@ const CORE_NAV = [
     href: "/admin/places",
     key: "locations",
     label: "Places",
+  },
+  {
+    href: "/admin/places/golden-glass",
+    key: "golden-glass",
+    label: "Golden Glass",
   },
   { href: "/admin/analytics", key: "analytics", label: "Analytics" },
   {

@@ -283,7 +283,9 @@ class DatabaseService {
             const location = review.location;
             return (
               location?.id != null &&
-              (location.rating == null || (location.total_ratings ?? 0) <= 0)
+              (location.rating == null ||
+                (location.total_ratings ?? 0) <= 0 ||
+                location.is_golden_glass == null)
             );
           })
           .map((review) => Number(review.location.id))
@@ -296,7 +298,7 @@ class DatabaseService {
     try {
       const { data, error } = await supabase
         .from("location_ratings")
-        .select("id,rating,total_ratings")
+        .select("id,rating,total_ratings,is_golden_glass")
         .in("id", missingLocationIds);
 
       if (error) throw error;
@@ -312,6 +314,7 @@ class DatabaseService {
           ...review.location,
           rating: rating.rating ?? null,
           total_ratings: rating.total_ratings ?? 0,
+          is_golden_glass: Boolean(rating.is_golden_glass),
         };
       });
     } catch (error) {
@@ -434,7 +437,7 @@ class DatabaseService {
             location?.id
               ? supabase
                   .from("location_ratings")
-                  .select("rating,total_ratings")
+                  .select("rating,total_ratings,is_golden_glass")
                   .eq("id", location.id)
                   .maybeSingle()
               : Promise.resolve({ data: null, error: null }),
@@ -453,6 +456,7 @@ class DatabaseService {
                 ...location,
                 rating: locationRating.data?.rating ?? null,
                 total_ratings: locationRating.data?.total_ratings ?? 0,
+                is_golden_glass: Boolean(locationRating.data?.is_golden_glass),
               }
             : location,
           likes_count: likes.count ?? 0,

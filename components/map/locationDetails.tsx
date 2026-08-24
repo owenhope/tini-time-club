@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { Avatar, RatingPips } from "@/components/shared";
+import { Avatar, MartiniIcon, RatingPips } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
@@ -53,7 +53,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           ]}
           onPress={openLocation}
           accessibilityRole="link"
-          accessibilityLabel={`View ${loc.name}`}
+          accessibilityLabel={`View ${loc.name}${loc.is_golden_glass ? ", Golden Glass" : ""}`}
           accessibilityHint="Opens the location page"
           hitSlop={6}
         >
@@ -61,11 +61,20 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             <Text style={styles.name} numberOfLines={2}>
               {loc.name || "No name available"}
             </Text>
+            {loc.is_golden_glass ? (
+              <View
+                style={styles.goldenGlassIcon}
+                accessible
+                accessibilityLabel="Golden Glass"
+              >
+                <MartiniIcon size={16} color={colors.awardGold} filled />
+              </View>
+            ) : null}
             <Ionicons
               name="chevron-forward"
               size={18}
-              color={colors.accent}
-              pointerEvents="none"
+              color={colors.textMuted}
+              accessibilityElementsHidden
             />
           </View>
         </Pressable>
@@ -152,6 +161,11 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
     paddingTop: t.spacing.xs,
   },
+  goldenGlassIcon: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    flexShrink: 0,
+  },
   identity: {
     gap: 0,
   },
@@ -167,13 +181,14 @@ const useStyles = makeStyles((t) => ({
     maxWidth: "100%" as const,
   },
   name: {
-    ...t.typography.heading,
-    color: t.colors.usernameText,
+    ...t.typography.title,
+    color: t.colors.text,
     flexShrink: 1,
   },
   meta: {
-    ...t.typography.mono,
+    ...t.typography.caption,
     color: t.colors.textSecondary,
+    marginTop: 2,
   },
   detailRow: {
     flexDirection: "row" as const,

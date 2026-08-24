@@ -169,7 +169,7 @@ async function hydrateReviews(
       locationIds.length
         ? client
             .from("location_ratings")
-            .select("id,rating,total_ratings")
+            .select("id,rating,total_ratings,is_golden_glass")
             .in("id", locationIds)
         : Promise.resolve({ data: [] }),
     ]);
@@ -209,6 +209,7 @@ async function hydrateReviews(
             ...row.location,
             rating: rating?.rating ?? null,
             total_ratings: rating?.total_ratings ?? 0,
+            is_golden_glass: Boolean(rating?.is_golden_glass),
           }
         : null,
       likes_count: likesByReview.get(String(row.id)) ?? 0,
@@ -457,7 +458,7 @@ async function getLocations(
   let query = client
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
     )
     .gte("total_ratings", 2)
     .order("rating", { ascending: false, nullsFirst: false })
@@ -481,7 +482,7 @@ async function getLocation(client: ReturnType<typeof createClient>, body: any) {
   const { data, error } = await client
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
     )
     .eq("id", Number(body.locationId))
     .single();
@@ -497,14 +498,53 @@ async function getLocationsInView(
     Number
   );
   if (!bounds.every(Number.isFinite)) throw new Error("Invalid map bounds");
-  const { data, error } = await client.rpc("locations_in_view", {
-    min_lat: bounds[0],
-    min_long: bounds[1],
-    max_lat: bounds[2],
-    max_long: bounds[3],
-  });
+  const regionId = Number(body.regionId);
+  const { data, error } = await client.rpc(
+    Number.isSafeInteger(regionId) && regionId > 0
+      ? "public_locations_in_region_view"
+      : "locations_in_view",
+    {
+      ...(Number.isSafeInteger(regionId) && regionId > 0
+        ? {
+            p_min_lat: bounds[0],
+            p_min_long: bounds[1],
+            p_max_lat: bounds[2],
+            p_max_long: bounds[3],
+          }
+        : {
+            min_lat: bounds[0],
+            min_long: bounds[1],
+            max_lat: bounds[2],
+            max_long: bounds[3],
+          }),
+      ...(Number.isSafeInteger(regionId) && regionId > 0
+        ? { p_region_id: regionId }
+        : {}),
+    }
+  );
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+  const locationIds = rows
+    .filter((row: any) => row.is_golden_glass == null)
+    .map((row: any) => row.id)
+    .filter(Boolean);
+  if (!locationIds.length) return rows;
+
+  const { data: awards } = await client
+    .from("location_ratings")
+    .select("id,is_golden_glass")
+    .in("id", locationIds);
+  const awardsByLocation = new Map(
+    (awards ?? []).map((row: any) => [
+      String(row.id),
+      Boolean(row.is_golden_glass),
+    ])
+  );
+  return rows.map((row: any) => ({
+    ...row,
+    is_golden_glass:
+      row.is_golden_glass ?? awardsByLocation.get(String(row.id)) ?? false,
+  }));
 }
 
 Deno.serve(async (request) => {

@@ -28,7 +28,7 @@ const INITIAL_STATE: ExploreLocationState = {
 
 /**
  * One lazy location request shared by every Explore mode. The promise ref is
- * the internal seam that prevents Map and Top Places from starting competing
+ * the internal seam that prevents Map and Golden Glass from starting competing
  * permission/location requests while the user switches between them.
  */
 export function useExploreLocation() {
