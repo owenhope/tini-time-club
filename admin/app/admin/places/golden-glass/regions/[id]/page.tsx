@@ -18,7 +18,11 @@ export default async function ManageRegionPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ updated?: string; error?: string }>;
+  searchParams: Promise<{
+    updated?: string;
+    error?: string;
+    refresh?: string;
+  }>;
 }) {
   const [{ id }, query, regions] = await Promise.all([
     params,
@@ -58,6 +62,12 @@ export default async function ManageRegionPage({
         {query.updated ? (
           <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950 ring-1 ring-inset ring-emerald-200">
             Region settings updated.
+          </div>
+        ) : null}
+        {query.refresh === "failed" ? (
+          <div className="rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950 ring-1 ring-inset ring-amber-200">
+            Region saved, but Golden Glass could not refresh. Use Refresh
+            snapshot from the Golden Glass index.
           </div>
         ) : null}
         {query.error ? (

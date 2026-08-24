@@ -6,26 +6,33 @@ import type { AdminRegion } from "@/lib/data";
 import RegionCatchmentMap from "./RegionCatchmentMap";
 import RegionForm, { type RegionMapValues } from "./RegionForm";
 
+const defaultValues: RegionMapValues = {
+  center_lat: 49.2827,
+  center_lon: -123.1207,
+  catchment_radius_m: 20_000,
+};
+
 export default function RegionMapEditor({
   region,
   returnTo,
   apiKey,
 }: {
-  region: AdminRegion;
+  region?: AdminRegion;
   returnTo: string;
   apiKey: string;
 }) {
   const [values, setValues] = useState<RegionMapValues>({
-    center_lat: region.center_lat,
-    center_lon: region.center_lon,
-    catchment_radius_m: region.catchment_radius_m,
+    center_lat: region?.center_lat ?? defaultValues.center_lat,
+    center_lon: region?.center_lon ?? defaultValues.center_lon,
+    catchment_radius_m:
+      region?.catchment_radius_m ?? defaultValues.catchment_radius_m,
   });
 
   const center = { lat: values.center_lat, lng: values.center_lon };
 
   return (
     <>
-      <Panel title="Region settings">
+      <Panel title={region ? "Region settings" : "Choose region location"}>
         <div className="p-4">
           <RegionForm
             region={region}

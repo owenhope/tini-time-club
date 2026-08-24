@@ -66,6 +66,10 @@ export default function RegionCatchmentMap({
           streetViewControl={false}
           mapTypeControl={false}
           fullscreenControl={false}
+          onClick={(event) => {
+            const position = event.detail.latLng;
+            if (position && onCenterChange) onCenterChange(position);
+          }}
         >
           <FitToCatchment center={center} radiusMeters={radiusMeters} />
           <Circle

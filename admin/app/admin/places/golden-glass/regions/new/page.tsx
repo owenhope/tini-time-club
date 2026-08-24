@@ -1,7 +1,7 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
-import { PageHeader, Panel } from "@/components/AdminPrimitives";
-import RegionForm from "../../../regions/RegionForm";
+import { PageHeader } from "@/components/AdminPrimitives";
+import RegionMapEditor from "../../../regions/RegionMapEditor";
 
 export default async function NewRegionPage({
   searchParams,
@@ -37,11 +37,10 @@ export default async function NewRegionPage({
             Check the region fields and try again.
           </div>
         ) : null}
-        <Panel title="Region settings">
-          <div className="p-4">
-            <RegionForm returnTo="/admin/places/golden-glass/regions/new" />
-          </div>
-        </Panel>
+        <RegionMapEditor
+          returnTo="/admin/places/golden-glass/regions/new"
+          apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""}
+        />
       </div>
     </AdminShell>
   );

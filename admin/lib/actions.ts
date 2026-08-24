@@ -278,20 +278,39 @@ export async function upsertRegion(formData: FormData) {
     updated_at: new Date().toISOString(),
   };
   const query = supabaseAdmin().from("regions");
+  let savedId = id && /^\d+$/.test(id) ? id : "";
   const result =
-    id && /^\d+$/.test(id)
-      ? await query.update(values).eq("id", id)
-      : await query.insert(values);
+    savedId
+      ? await query.update(values).eq("id", savedId)
+      : await query.insert(values).select("id").single();
   if (result.error) {
     if (result.error.code === "23505") redirect(`${returnTo}?error=slug`);
     throw new Error(result.error.message);
   }
+  if (!savedId && result.data && "id" in result.data) {
+    savedId = String(result.data.id);
+  }
+
+  let refreshFailed = false;
+  const { error: refreshError } = await supabaseAdmin().rpc(
+    "refresh_golden_glass_v1"
+  );
+  if (refreshError) {
+    refreshFailed = true;
+    console.error("[admin] Golden Glass refresh after region save failed", {
+      message: refreshError.message,
+    });
+  }
+
   revalidatePath("/admin/places/regions");
-  if (id && /^\d+$/.test(id)) {
-    revalidatePath(`/admin/places/regions/${id}`);
+  if (savedId) {
+    revalidatePath(`/admin/places/golden-glass/regions/${savedId}`);
   }
   revalidatePath("/admin/places/golden-glass");
-  redirect(`${returnTo}?updated=1`);
+  const destination = savedId
+    ? `/admin/places/golden-glass/regions/${savedId}`
+    : returnTo;
+  redirect(`${destination}?updated=1${refreshFailed ? "&refresh=failed" : ""}`);
 }
 
 const getRegionReturnPath = (formData: FormData) => {
