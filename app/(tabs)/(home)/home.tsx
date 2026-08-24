@@ -844,14 +844,14 @@ function Home() {
         ListHeaderComponent={firstLoadDone ? renderFeedHeader : null}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={3}
-        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={process.env.EXPO_OS === "android"}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={16}
         // Each card is ~1.3 screens tall (square photo + header + footer), so
         // 3 items is already several screens of runway; 10 meant mounting a
         // dozen screens of content and photo decodes before first paint.
         initialNumToRender={3}
-        windowSize={5}
+        windowSize={7}
       />
 
       <Modal visible={showUsernameModal} transparent animationType="slide">
