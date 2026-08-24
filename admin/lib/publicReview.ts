@@ -1,6 +1,7 @@
 import "server-only";
 import { notFound } from "next/navigation";
 import { avatarPublicUrl } from "@/lib/avatar";
+import { fetchWebMentionSpans, type WebMentionSpan } from "@/lib/mentions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export interface PublicReviewComment {
@@ -8,6 +9,7 @@ export interface PublicReviewComment {
   body: string;
   username: string | null;
   is_verified: boolean | null;
+  mentions: WebMentionSpan[];
 }
 
 export interface PublicReview {
@@ -21,6 +23,7 @@ export interface PublicReview {
   likes_count: number;
   comments_count: number;
   recent_comments: PublicReviewComment[];
+  mentions: WebMentionSpan[];
   location: {
     id: number;
     name: string | null;
@@ -141,9 +144,15 @@ export const fetchPublicReview = async (
         body: String(row.body ?? ""),
         username: profile?.username ?? null,
         is_verified: profile?.is_verified ?? null,
+        mentions: [],
       };
     })
     .filter(Boolean) as PublicReviewComment[];
+  const mentionRows = await fetchWebMentionSpans({
+    reviewIds: [review.id],
+    commentIds: comments.map((comment) => comment.id),
+    audience: "public",
+  });
 
   return {
     ...review,
@@ -152,8 +161,14 @@ export const fetchPublicReview = async (
     image_public_url: signedImageResult.data?.signedUrl ?? null,
     likes_count: likesCount ?? 0,
     comments_count: commentsCount ?? 0,
+    mentions: mentionRows.reviews.get(String(review.id)) ?? [],
     // Oldest-first, matching the mobile footer's preview order.
-    recent_comments: comments.reverse(),
+    recent_comments: comments
+      .map((comment) => ({
+        ...comment,
+        mentions: mentionRows.comments.get(String(comment.id)) ?? [],
+      }))
+      .reverse(),
     profile: review.profile
       ? {
           id: review.profile.id,

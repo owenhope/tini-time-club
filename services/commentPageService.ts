@@ -1,6 +1,8 @@
 import { publicContentService } from "@/services/public-content-service";
 import type { Comment } from "@/types/types";
 import { supabase } from "@/utils/supabase";
+import { hydrateCommentMentions } from "@/services/mentionService";
+import { warn } from "@/utils/log";
 
 export interface CommentCursor {
   insertedAt: string;
@@ -86,5 +88,11 @@ export async function getCommentPage({
     p_viewer: viewerId,
   });
   if (error) throw error;
-  return decodePage(data);
+  const page = decodePage(data);
+  try {
+    return { ...page, comments: await hydrateCommentMentions(page.comments) };
+  } catch (error) {
+    warn("Could not hydrate comment mentions", error);
+    return page;
+  }
 }

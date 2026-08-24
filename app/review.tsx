@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Keyboard,
   Pressable,
@@ -9,7 +15,6 @@ import {
   Alert,
   Animated,
   ScrollView,
-  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, useWatch } from "react-hook-form";
@@ -49,6 +54,9 @@ import {
   prepareReviewImageForUpload,
   type ReviewImageSource,
 } from "@/utils/reviewImage";
+import MentionInput from "@/components/mentions/MentionInput";
+import type { MentionSpan } from "@/types/types";
+import { fetchMentionSpans } from "@/services/mentionService";
 
 interface ReviewFormLocation {
   name: string;
@@ -93,6 +101,7 @@ const ReviewPreview = ({
   profile,
   isSubmitting,
   submissionMessage,
+  mentions,
 }: {
   values: ReviewFormValues;
   spirits: { id: number; name: string }[];
@@ -101,6 +110,7 @@ const ReviewPreview = ({
   profile: any;
   isSubmitting?: boolean;
   submissionMessage?: string;
+  mentions: MentionSpan[];
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -112,6 +122,7 @@ const ReviewPreview = ({
         user_id: profile?.id || "",
         image_url: photo || "",
         comment: values.comment || "",
+        mentions,
         taste: values.taste || RATING_MIN,
         presentation: values.presentation || RATING_MIN,
         inserted_at: new Date().toISOString(),
@@ -138,7 +149,7 @@ const ReviewPreview = ({
               address: "",
             },
       }) as any,
-    [values, spirits, types, photo, profile]
+    [mentions, values, spirits, types, photo, profile]
   );
 
   const mockHandlers = {
@@ -231,6 +242,9 @@ function ReviewComposer() {
     number | null
   >(null);
   const [postedReviewId, setPostedReviewId] = useState<string | null>(null);
+  const [captionMentions, setCaptionMentions] = useState<MentionSpan[]>([]);
+  /** True when the edit flow could not load the review's stored mentions. */
+  const captionMentionsUnavailableRef = useRef(false);
   const [opacity] = useState(() => new Animated.Value(1));
   const router = useRouter();
   const goBack = useGoBack();
@@ -300,7 +314,25 @@ function ReviewComposer() {
 
     databaseService
       .getEditableReview(editReviewId, profile.id)
-      .then((review) => {
+      .then(async (review) => {
+        let mentions: MentionSpan[] = [];
+        let mentionsUnavailable = false;
+        try {
+          const rows = await fetchMentionSpans({ reviewIds: [review.id] });
+          mentions = rows
+            .filter((row) => row.sourceKind === "review")
+            .map(({ profileId, username, start, length }) => ({
+              profileId,
+              username,
+              start,
+              length,
+            }));
+        } catch (error) {
+          // Saving with an empty list would strip the review's mentions, so
+          // remember that the stored spans are unknown rather than absent.
+          mentionsUnavailable = true;
+          reportError("Could not load review mentions for editing", error);
+        }
         if (!active) return;
 
         reset({
@@ -318,6 +350,8 @@ function ReviewComposer() {
           presentation: Number(review.presentation),
           comment: review.comment || "",
         });
+        setCaptionMentions(mentions);
+        captionMentionsUnavailableRef.current = mentionsUnavailable;
         setPhoto(review.display_image_url);
         setPhotoDimensions(null);
         setOriginalImagePath(review.image_url);
@@ -377,6 +411,8 @@ function ReviewComposer() {
     setIsChangingPhoto(false);
     setPhotoChanged(false);
     setOriginalImagePath(null);
+    setCaptionMentions([]);
+    captionMentionsUnavailableRef.current = false;
     reset();
     if (isEditMode) {
       goBack();
@@ -514,19 +550,21 @@ function ReviewComposer() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.captionInputContainer}>
-              <TextInput
-                style={styles.captionInput}
+              <MentionInput
+                inputStyle={styles.captionInput}
                 multiline
                 autoFocus
                 placeholder="Add a caption..."
                 placeholderTextColor={colors.textMuted}
-                onChangeText={(caption) =>
+                onChange={(caption, mentions) => {
                   setValue("comment", caption, {
                     shouldDirty: true,
                     shouldValidate: true,
-                  })
-                }
+                  });
+                  setCaptionMentions(mentions);
+                }}
                 value={watchedValues.comment || ""}
+                mentions={captionMentions}
                 maxLength={500}
                 accessibilityLabel="Review caption"
               />
@@ -654,9 +692,14 @@ function ReviewComposer() {
           type: watchedValues.type,
           taste: watchedValues.taste,
           presentation: watchedValues.presentation,
-          comment: watchedValues.comment?.trim() || "",
+          comment: watchedValues.comment || "",
         },
-        profile.id
+        profile.id,
+        // Unknown stored spans plus no composed ones: leave the server's
+        // mentions untouched instead of replacing them with nothing.
+        captionMentionsUnavailableRef.current && captionMentions.length === 0
+          ? null
+          : captionMentions
       );
 
       if (uploadedImagePath && uploadedImagePath !== originalImagePath) {
@@ -707,7 +750,8 @@ function ReviewComposer() {
           typeId: watchedValues.type,
           taste: watchedValues.taste,
           presentation: watchedValues.presentation,
-          comment: watchedValues.comment?.trim() || "",
+          comment: watchedValues.comment || "",
+          mentions: captionMentions,
         },
         {
           uploadImage: () => uploadImage(profile.id),
@@ -1140,6 +1184,7 @@ function ReviewComposer() {
                   profile={profile}
                   isSubmitting={isSubmitting}
                   submissionMessage={submissionMessage}
+                  mentions={captionMentions}
                 />
               ) : (
                 renderCurrentQuestion()

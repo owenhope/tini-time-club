@@ -50,8 +50,9 @@ export const resolveEngagement = (value) => {
         };
       }
     ),
-    recentReviewShares: (
-      Array.isArray(row.recentReviewShares) ? row.recentReviewShares : []
+    recentReviewShares: (Array.isArray(row.recentReviewShares)
+      ? row.recentReviewShares
+      : []
     ).map((value) => {
       const share = record(value);
       return {
@@ -66,9 +67,7 @@ export const resolveEngagement = (value) => {
       };
     }),
     hasMore: Boolean(row.hasMore),
-    nextCursorAt:
-      row.nextCursorAt == null ? null : String(row.nextCursorAt),
-    nextCursorId:
-      row.nextCursorId == null ? null : String(row.nextCursorId),
+    nextCursorAt: row.nextCursorAt == null ? null : String(row.nextCursorAt),
+    nextCursorId: row.nextCursorId == null ? null : String(row.nextCursorId),
   };
 };

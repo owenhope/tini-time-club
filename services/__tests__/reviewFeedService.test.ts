@@ -97,17 +97,22 @@ describe("getReviewPage", () => {
     expect(mockGetReviewImageUrls).not.toHaveBeenCalled();
   });
 
-  it("loads a fully hydrated cursor page in one database request", async () => {
-    mockRpc.mockResolvedValue({
-      data: {
-        reviews: [review],
-        nextCursor: {
-          insertedAt: review.inserted_at,
-          id: 91,
+  it("loads a cursor page and hydrates mention metadata in one batch", async () => {
+    mockRpc.mockImplementation(async (functionName: string) => {
+      if (functionName === "get_mention_spans_v1") {
+        return { data: { mentions: [] }, error: null };
+      }
+      return {
+        data: {
+          reviews: [review],
+          nextCursor: {
+            insertedAt: review.inserted_at,
+            id: 91,
+          },
+          hasMore: true,
         },
-        hasMore: true,
-      },
-      error: null,
+        error: null,
+      };
     });
 
     await expect(
@@ -137,7 +142,7 @@ describe("getReviewPage", () => {
       hasMore: true,
     });
 
-    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledTimes(2);
     expect(mockRpc).toHaveBeenCalledWith("get_feed_page_v1", {
       p_cursor_id: 100,
       p_cursor_inserted_at: "2026-08-23T11:00:00.000Z",
@@ -147,6 +152,10 @@ describe("getReviewPage", () => {
       p_location_id: null,
       p_user_id: null,
       p_viewer: "viewer-1",
+    });
+    expect(mockRpc).toHaveBeenCalledWith("get_mention_spans_v1", {
+      p_comment_ids: [7],
+      p_review_ids: [91],
     });
     expect(mockGetReviewImageUrls).toHaveBeenCalledTimes(1);
   });

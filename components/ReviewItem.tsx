@@ -44,6 +44,8 @@ import {
   areReviewItemPropsEqual,
   type ReviewItemMemoProps,
 } from "@/utils/reviewItemMemo";
+import MentionText from "@/components/mentions/MentionText";
+import type { MentionSpan } from "@/types/types";
 
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
@@ -68,6 +70,8 @@ const InlineIdentityText = ({
   numberOfLines,
   onTextLayout,
   onUsernamePress,
+  mentions,
+  onNavigate,
 }: {
   username: string;
   isVerified?: boolean | null;
@@ -78,6 +82,8 @@ const InlineIdentityText = ({
   onTextLayout?: React.ComponentProps<typeof Text>["onTextLayout"];
   /** Omit for the viewer's own name, which has nowhere to navigate to. */
   onUsernamePress?: () => void;
+  mentions?: MentionSpan[];
+  onNavigate?: (navigate: () => void) => void;
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -102,7 +108,13 @@ const InlineIdentityText = ({
       {isVerified ? (
         <MaterialIcons name="verified" size={13} color={colors.accent} />
       ) : null}
-      <Text> {body}</Text>
+      <Text> </Text>
+      <MentionText
+        text={body}
+        mentions={mentions}
+        style={bodyStyle}
+        onNavigate={onNavigate}
+      />
     </Text>
   );
 };
@@ -491,6 +503,8 @@ const CommentPreviewItem = memo(
                   onNavigate
                 )
               }
+              mentions={comment.mentions}
+              onNavigate={onNavigate}
             />
           </TouchableOpacity>
           {!expanded && canExpand ? (
@@ -644,6 +658,8 @@ const ReviewFooter = memo(
                     onNavigate
                   )
                 }
+                mentions={review.mentions}
+                onNavigate={onNavigate}
               />
             ) : (
               <TouchableOpacity onPress={onEdit}>

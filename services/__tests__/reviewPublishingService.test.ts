@@ -58,7 +58,7 @@ describe("publishReview", () => {
       becameRegular: true,
     });
 
-    expect(mockRpc).toHaveBeenCalledWith("publish_review_v1", {
+    expect(mockRpc).toHaveBeenCalledWith("publish_review_v2", {
       p_comment: "Cold and bright.",
       p_image_url: "member-1/review.jpg",
       p_latitude: 49.28,
@@ -66,6 +66,7 @@ describe("publishReview", () => {
       p_location_id: null,
       p_location_name: "The Test Bar",
       p_longitude: -123.12,
+      p_mentions: [],
       p_place_id: "test-place-id",
       p_presentation: 4,
       p_spirit_id: 2,

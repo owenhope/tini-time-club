@@ -19,15 +19,40 @@ test("overview normalizes Postgres counts and complete daily series", () => {
 });
 
 test("growth preserves a nullable first-review duration", () => {
-  assert.equal(resolveGrowth({ averageDaysToFirstReview: null }).averageDaysToFirstReview, null);
-  assert.equal(resolveGrowth({ averageDaysToFirstReview: "3.75" }).averageDaysToFirstReview, 3.75);
+  assert.equal(
+    resolveGrowth({ averageDaysToFirstReview: null }).averageDaysToFirstReview,
+    null
+  );
+  assert.equal(
+    resolveGrowth({ averageDaysToFirstReview: "3.75" })
+      .averageDaysToFirstReview,
+    3.75
+  );
 });
 
 test("engagement maps bounded share rows and cursor fields", () => {
   const result = resolveEngagement({
     current: { shares: "21" },
-    topSharers: [{ id: "member-1", username: "olive", review_count: "7", share_count: "3", last_shared_at: "2026-08-22T10:00:00Z" }],
-    recentReviewShares: [{ id: "share-1", reviewId: "91", locationName: "Bar One", channel: "sheet", outcome: "shared", sharedAt: "2026-08-22T09:00:00Z", profile: { id: "member-1", username: "olive" } }],
+    topSharers: [
+      {
+        id: "member-1",
+        username: "olive",
+        review_count: "7",
+        share_count: "3",
+        last_shared_at: "2026-08-22T10:00:00Z",
+      },
+    ],
+    recentReviewShares: [
+      {
+        id: "share-1",
+        reviewId: "91",
+        locationName: "Bar One",
+        channel: "sheet",
+        outcome: "shared",
+        sharedAt: "2026-08-22T09:00:00Z",
+        profile: { id: "member-1", username: "olive" },
+      },
+    ],
     hasMore: true,
     nextCursorAt: "2026-08-22T09:00:00Z",
     nextCursorId: "00000000-0000-4000-8000-000000000001",
@@ -46,7 +71,15 @@ test("content calculates shares without downloading review rows", () => {
       { id: 1, name: "Gin", reviewCount: "3" },
       { id: 2, name: "Vodka", reviewCount: 1 },
     ],
-    topPlaces: [{ id: "9", name: "The Gull", rating: "4.25", totalRatings: "8", reviewsInRange: "4" }],
+    topPlaces: [
+      {
+        id: "9",
+        name: "The Gull",
+        rating: "4.25",
+        totalRatings: "8",
+        reviewsInRange: "4",
+      },
+    ],
   });
   assert.equal(result.spiritPopularity[0].share, 0.75);
   assert.equal(result.spiritPopularity[1].share, 0.25);

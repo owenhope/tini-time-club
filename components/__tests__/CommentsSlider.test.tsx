@@ -1,13 +1,21 @@
 import React from "react";
-import { ActionSheetIOS, Alert, StyleSheet, Text } from "react-native";
+import {
+  ActionSheetIOS,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+} from "react-native";
 import renderer, { act } from "react-test-renderer";
 import CommentsSlider from "../CommentsSlider";
 import databaseService from "@/services/databaseService";
-import { ThemeProvider, typography } from "@/theme";
+import { lightColors, ThemeProvider, typography } from "@/theme";
 import ReportModal from "@/components/ReportModal";
+import MentionText from "@/components/mentions/MentionText";
 
 const mockGetCommentPage = jest.fn();
 const mockSetTabBarHidden = jest.fn();
+const mockSearchMentionCandidates = jest.fn();
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -125,6 +133,16 @@ jest.mock("@/components/shared", () => ({
   },
 }));
 
+jest.mock("@/components/shared/Avatar", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("@/services/mentionService", () => ({
+  searchMentionCandidates: (...args: unknown[]) =>
+    mockSearchMentionCandidates(...args),
+}));
+
 jest.mock("@/components/ReportModal", () => ({
   __esModule: true,
   default: jest.fn(() => null),
@@ -176,6 +194,7 @@ beforeEach(() => {
   });
   setCommentLiked.mockResolvedValue(undefined);
   reportComment.mockResolvedValue("created");
+  mockSearchMentionCandidates.mockResolvedValue([]);
 });
 
 it("optimistically toggles a comment heart and hides a zero count", async () => {
@@ -217,11 +236,26 @@ it("optimistically toggles a comment heart and hides a zero count", async () => 
 it("does not lift the comment input above the native tab bar", async () => {
   const tree = await renderSlider();
   const input = tree.root.findByProps({ placeholder: "Add a comment..." });
-  const inputContainer = input.parent;
+  const nativeInput = tree.root.findByType(TextInput);
+  let inputContainer = input.parent;
+  while (
+    inputContainer &&
+    StyleSheet.flatten(inputContainer.props.style)?.paddingBottom !== 34
+  ) {
+    inputContainer = inputContainer.parent;
+  }
 
   expect(StyleSheet.flatten(inputContainer?.props.style).paddingBottom).toBe(
     34
   );
+  expect(StyleSheet.flatten(nativeInput.props.style)).toEqual(
+    expect.objectContaining({
+      height: 44,
+      fontFamily: typography.input.fontFamily,
+      fontSize: typography.input.fontSize,
+    })
+  );
+  expect(nativeInput.props.multiline).toBeUndefined();
 });
 
 it("covers the native tab bar while the comments sheet is mounted", async () => {
@@ -230,6 +264,74 @@ it("covers the native tab bar while the comments sheet is mounted", async () => 
   expect(mockSetTabBarHidden).toHaveBeenCalledWith(true);
   act(() => tree.unmount());
   expect(mockSetTabBarHidden).toHaveBeenLastCalledWith(false);
+});
+
+it("overlays a vertical member list while composing a mention", async () => {
+  jest.useFakeTimers();
+  mockSearchMentionCandidates.mockResolvedValue([
+    {
+      id: "member-2",
+      username: "olivefriend",
+      name: "Olive Friend",
+      avatarUrl: null,
+      isVerified: false,
+      reviewCount: 8,
+      relationship: "following",
+    },
+  ]);
+  const tree = await renderSlider();
+  let input = tree.root.findByType(TextInput);
+
+  act(() => input.props.onFocus({}));
+  act(() => input.props.onChangeText("@oli"));
+  input = tree.root.findByType(TextInput);
+  act(() =>
+    input.props.onSelectionChange({
+      nativeEvent: { selection: { start: 4, end: 4 } },
+    })
+  );
+
+  // The comment list stays mounted under the suggestions overlay so its
+  // scroll position and ref survive composing a mention.
+  expect(
+    tree.root
+      .findAllByType(Text)
+      .some((node) => node.props.children === "Perfectly cold.")
+  ).toBe(true);
+  expect(tree.root.findByProps({ accessibilityLabel: "Mention suggestions" }));
+
+  await act(async () => {
+    jest.advanceTimersByTime(180);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+  const candidate = tree.root.findByProps({
+    accessibilityLabel: "Mention olivefriend, Following",
+  });
+  expect(candidate.props.style.width).toBe("100%");
+
+  act(() => candidate.props.onPress());
+
+  expect(
+    tree.root
+      .findAllByType(Text)
+      .some((node) => node.props.children === "Perfectly cold.")
+  ).toBe(true);
+  expect(tree.root.findByType(TextInput).props.value).toBe("@olivefriend ");
+  expect(
+    tree.root.findAllByProps({ accessibilityLabel: "Selected mentions" })
+  ).toHaveLength(0);
+  const inputMention = tree.root
+    .findAllByType(MentionText)
+    .find((node) => node.props.text === "@olivefriend ");
+  expect(StyleSheet.flatten(inputMention?.props.mentionStyle).color).toBe(
+    lightColors.accent
+  );
+  expect(
+    StyleSheet.flatten(tree.root.findByType(TextInput).props.style).color
+  ).toBe(lightColors.inputText);
+  jest.useRealTimers();
 });
 
 it("reports someone else's comment from its long-press menu", async () => {

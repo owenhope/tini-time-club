@@ -1,5 +1,8 @@
 import { RANK_TIERS, type RankTier } from "@/utils/ranking";
 import { supabase } from "@/utils/supabase";
+import type { MentionSpan } from "@/types/types";
+import { mentionPayload, trimMentionBody } from "@/utils/mentions";
+import AnalyticService from "@/services/analyticsService";
 
 export type ReviewPublishingStage = "upload" | "database";
 
@@ -30,6 +33,7 @@ export interface ReviewPublishDraft {
   taste: number;
   presentation: number;
   comment: string;
+  mentions?: MentionSpan[];
 }
 
 export interface PublishedReview {
@@ -128,8 +132,9 @@ export async function publishReview(
 
   try {
     onStage?.("database");
-    const { data, error } = await supabase.rpc("publish_review_v1", {
-      p_comment: draft.comment.trim(),
+    const caption = trimMentionBody(draft.comment, draft.mentions ?? []);
+    const { data, error } = await supabase.rpc("publish_review_v2", {
+      p_comment: caption.text,
       p_image_url: imagePath,
       p_latitude: finiteNumber(draft.location.latitude),
       p_location_address: optionalText(draft.location.address),
@@ -141,8 +146,16 @@ export async function publishReview(
       p_spirit_id: finiteNumber(draft.spiritId),
       p_taste: draft.taste,
       p_type_id: finiteNumber(draft.typeId),
+      p_mentions: mentionPayload(caption.text, caption.mentions),
     });
     if (error) throw error;
+    if (caption.mentions.length) {
+      void AnalyticService.capture("mention_submitted", {
+        surface: "review",
+        count: new Set(caption.mentions.map((mention) => mention.profileId))
+          .size,
+      });
+    }
     return decodePublishedReview(data, imagePath);
   } catch (error) {
     try {

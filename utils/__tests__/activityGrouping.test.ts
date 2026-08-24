@@ -120,4 +120,22 @@ describe("Activity grouping", () => {
       }),
     ]);
   });
+
+  it("preserves a comment mention's focused notification route", () => {
+    const rows = groupActivityEvents([
+      event({
+        id: "comment-mention",
+        kind: "mentioned_in_comment",
+        comment: { id: "99", body: "@morgan cheers" },
+        data: { url: "/r/42?comments=1&comment=99" },
+      }),
+    ]);
+
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        kind: "mentioned_in_comment",
+        route: "/r/42?comments=1&comment=99",
+      })
+    );
+  });
 });
