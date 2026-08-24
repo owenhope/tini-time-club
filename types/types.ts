@@ -24,6 +24,7 @@ export interface Profile {
   eula_accepted?: boolean | null;
   deleted?: boolean;
   weekly_push_notifications_enabled?: boolean;
+  mention_notifications_enabled?: boolean;
   /** Whether signed-out visitors may discover this profile and its reviews. */
   is_public?: boolean;
   /** Active review count (trigger-maintained); drives the ranking ring. */
@@ -62,6 +63,29 @@ export interface ReviewLocation {
   total_ratings?: number | null;
 }
 
+/** A selected, identity-bound @mention inside a plain-text body.
+ * Offsets use JavaScript UTF-16 indices so emoji and caret positions match
+ * React Native's TextInput selection contract. */
+export interface MentionSpan {
+  profileId: string;
+  username: string;
+  start: number;
+  length: number;
+}
+
+export type MentionRelationship =
+  "mutual" | "following" | "follows_you" | "recent" | "everyone";
+
+export interface MentionCandidate {
+  id: string;
+  username: string;
+  name: string | null;
+  avatarUrl: string | null;
+  isVerified: boolean;
+  reviewCount: number;
+  relationship: MentionRelationship;
+}
+
 export interface Comment {
   id: number;
   body: string;
@@ -71,6 +95,7 @@ export interface Comment {
   profile?: ReviewProfile;
   likes_count?: number;
   has_liked?: boolean;
+  mentions?: MentionSpan[];
 }
 
 /**
@@ -95,4 +120,5 @@ export interface Review {
   comments_count?: number;
   has_liked?: boolean;
   recent_comments?: Comment[];
+  mentions?: MentionSpan[];
 }

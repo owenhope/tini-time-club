@@ -2,6 +2,8 @@ import type { Review } from "@/types/types";
 import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
 import { supabase } from "@/utils/supabase";
+import { hydrateReviewMentions } from "@/services/mentionService";
+import { warn } from "@/utils/log";
 
 export interface ReviewCursor {
   insertedAt: string;
@@ -109,11 +111,20 @@ export async function getReviewPage({
   const imageUrls = await imageCache.getReviewImageUrls(
     page.reviews.map((review) => review.image_url)
   );
+  const reviews = page.reviews.map((review) => ({
+    ...review,
+    image_url: imageUrls[review.image_url] || review.image_url,
+  }));
+  let hydratedReviews = reviews;
+  try {
+    hydratedReviews = await hydrateReviewMentions(reviews);
+  } catch (error) {
+    // Mention metadata is an enhancement; stale/offline search must never
+    // empty an otherwise valid feed page.
+    warn("Could not hydrate review mentions", error);
+  }
   return {
     ...page,
-    reviews: page.reviews.map((review) => ({
-      ...review,
-      image_url: imageUrls[review.image_url] || review.image_url,
-    })),
+    reviews: hydratedReviews,
   };
 }

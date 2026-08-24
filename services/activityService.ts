@@ -52,6 +52,8 @@ const decodeEvent = (value: unknown): ActivityEvent | null => {
       "comment_liked",
       "review_commented",
       "comment_replied",
+      "mentioned_in_review",
+      "mentioned_in_comment",
       "admin_message",
     ].includes(kind)
   ) {

@@ -41,6 +41,15 @@ const recentCommentsKey = (comments: Comment[] | undefined) =>
     avatarUrl: comment.profile?.avatar_url,
     isVerified: comment.profile?.is_verified,
     reviewCount: comment.profile?.review_count,
+    mentions: comment.mentions,
+  }));
+
+const mentionsKey = (mentions: Review["mentions"]) =>
+  (mentions ?? []).map((mention) => ({
+    profileId: mention.profileId,
+    username: mention.username,
+    start: mention.start,
+    length: mention.length,
   }));
 
 const optionId = (
@@ -61,6 +70,8 @@ export const areReviewItemPropsEqual = (
     prev.id === next.id &&
     prev.user_id === next.user_id &&
     prev.comment === next.comment &&
+    JSON.stringify(mentionsKey(prev.mentions)) ===
+      JSON.stringify(mentionsKey(next.mentions)) &&
     prev.image_url === next.image_url &&
     prev.inserted_at === next.inserted_at &&
     prev.taste === next.taste &&

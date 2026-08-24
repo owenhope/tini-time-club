@@ -16,9 +16,13 @@ const Notifications = () => {
   const [reminderOverride, setReminderOverride] = useState<boolean | null>(
     null
   );
+  const [mentionOverride, setMentionOverride] = useState<boolean | null>(null);
   const persistedReminderEnabled =
     profile?.weekly_push_notifications_enabled ?? true;
   const reminderEnabled = reminderOverride ?? persistedReminderEnabled;
+  const persistedMentionEnabled =
+    profile?.mention_notifications_enabled ?? true;
+  const mentionEnabled = mentionOverride ?? persistedMentionEnabled;
 
   const toggleReminder = async (enabled: boolean) => {
     setReminderOverride(enabled);
@@ -33,6 +37,14 @@ const Notifications = () => {
 
     setReminderOverride(null);
     await setFridayMartiniReminderEnabled(enabled);
+  };
+
+  const toggleMentions = async (enabled: boolean) => {
+    setMentionOverride(enabled);
+    await updateProfile({
+      mention_notifications_enabled: enabled,
+    });
+    setMentionOverride(null);
   };
 
   return (
@@ -52,6 +64,20 @@ const Notifications = () => {
             accessibilityLabel="Tini Time Reminder"
           />
         </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Mentions</Text>
+            <Text style={styles.rowSubtitle}>
+              Activity and push alerts when someone tags you
+            </Text>
+          </View>
+          <Switch
+            value={mentionEnabled}
+            onValueChange={toggleMentions}
+            trackColor={{ true: colors.accent }}
+            accessibilityLabel="Mention notifications"
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -65,6 +91,7 @@ const useStyles = makeStyles((t) => ({
   content: {
     paddingHorizontal: t.spacing.xl,
     paddingTop: t.spacing.xl,
+    gap: t.spacing.md,
   },
   row: {
     flexDirection: "row" as const,

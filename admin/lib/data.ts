@@ -6,6 +6,7 @@ import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { bucketByDay } from "@/lib/bucket";
 import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { formatCityRegion } from "@/lib/format";
+import { fetchWebMentionSpans, type WebMentionSpan } from "@/lib/mentions";
 import type { DateRange } from "@/lib/range";
 
 export interface AdminProfile {
@@ -1180,6 +1181,7 @@ export interface AdminReviewDetail extends AdminReviewRow {
     comments: number;
     shares: number;
   };
+  mentions: WebMentionSpan[];
 }
 
 const one = <T>(value: T | T[] | null | undefined): T | null =>
@@ -1384,6 +1386,11 @@ export const fetchAdminReview = async (
   if (error) throw new Error(error.message);
   if (!data) return null;
 
+  const mentionRows = await fetchWebMentionSpans({
+    reviewIds: [id],
+    audience: "admin",
+  });
+
   const imageResult = data.image_url
     ? await db()
         .storage.from("review_images")
@@ -1404,6 +1411,7 @@ export const fetchAdminReview = async (
     type: one(data.type),
     profile: one(data.profile),
     engagement: engagement.get(id) ?? emptyEngagement(),
+    mentions: mentionRows.reviews.get(String(id)) ?? [],
   };
 };
 

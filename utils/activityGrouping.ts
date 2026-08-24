@@ -25,8 +25,23 @@ const routeForEvent = (event: ActivityEvent): string | null => {
   if (event.kind === "user_followed") {
     return getNotificationRouteFromData(event.data);
   }
+  if (
+    event.kind === "mentioned_in_review" ||
+    event.kind === "mentioned_in_comment"
+  ) {
+    const mentionRoute = getNotificationRouteFromData(event.data);
+    if (mentionRoute) return mentionRoute;
+  }
   if (event.review) {
-    return reviewRoute(event.review, event.kind !== "review_liked");
+    return reviewRoute(
+      event.review,
+      [
+        "comment_liked",
+        "review_commented",
+        "comment_replied",
+        "mentioned_in_comment",
+      ].includes(event.kind)
+    );
   }
   return event.kind === "admin_message"
     ? getNotificationRouteFromData(event.data)
@@ -69,7 +84,9 @@ const toRow = (
   if (
     (event.kind === "comment_liked" ||
       event.kind === "review_commented" ||
-      event.kind === "comment_replied") &&
+      event.kind === "comment_replied" ||
+      event.kind === "mentioned_in_review" ||
+      event.kind === "mentioned_in_comment") &&
     event.actor &&
     event.review
   ) {
@@ -173,6 +190,10 @@ export const formatActivityKind = (kind: ActivityDisplayRow["kind"]) => {
       return "Review comment";
     case "comment_replied":
       return "Comment reply";
+    case "mentioned_in_review":
+      return "Review mention";
+    case "mentioned_in_comment":
+      return "Comment mention";
     case "admin_message":
       return "Tini Time Club";
   }

@@ -42,7 +42,10 @@ type AnalyticEventType =
   | "membership_auth_started"
   | "onboarding_completed"
   | "auth_unexpected_sign_out"
-  | "auth_session_missing_at_launch";
+  | "auth_session_missing_at_launch"
+  | "mention_suggestions_opened"
+  | "mention_selected"
+  | "mention_submitted";
 
 const SESSION_ID = uuidv4();
 

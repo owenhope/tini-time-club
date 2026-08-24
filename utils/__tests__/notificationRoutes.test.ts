@@ -6,7 +6,9 @@ describe("getNotificationRouteFromData", () => {
     "/places",
     "/places/42",
     "/users/martini_fan",
+    "/r/42",
     "/r/42?comments=1",
+    "/r/42?comments=1&comment=99",
   ])("accepts the internal route %s", (url) => {
     expect(getNotificationRouteFromData({ url })).toBe(url);
   });
@@ -19,6 +21,8 @@ describe("getNotificationRouteFromData", () => {
     "/users/name/extra",
     "/r/not-a-review?comments=1",
     "/r/42?comments=0",
+    "/r/42?comment=99",
+    "/r/42?comments=1&comment=not-a-comment",
     "/r/42?comments=1&admin=true",
   ])("rejects the route %s", (url) => {
     expect(getNotificationRouteFromData({ url })).toBeNull();

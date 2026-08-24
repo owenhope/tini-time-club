@@ -8,6 +8,7 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
+import MentionRichText from "@/components/MentionRichText";
 import { setReviewActive } from "@/lib/actions";
 import { fetchAdminReview } from "@/lib/data";
 
@@ -156,7 +157,14 @@ export default async function ReviewDetailPage({
                 Caption
               </p>
               <p className="mt-2 whitespace-pre-wrap text-base leading-7 text-stone-900">
-                {review.comment || "No caption."}
+                {review.comment ? (
+                  <MentionRichText
+                    text={review.comment}
+                    mentions={review.mentions}
+                  />
+                ) : (
+                  "No caption."
+                )}
               </p>
             </div>
             {review.image_public_url ? (

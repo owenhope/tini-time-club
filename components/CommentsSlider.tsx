@@ -39,6 +39,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTabBarVisibility } from "@/context/tab-bar-visibility-context";
 import { runNavigation } from "@/utils/reviewItemMemo";
+import MentionInput from "@/components/mentions/MentionInput";
+import type { MentionSuggestionState } from "@/components/mentions/MentionInput";
+import MentionSuggestions from "@/components/mentions/MentionSuggestions";
+import MentionText from "@/components/mentions/MentionText";
+import type { MentionSpan } from "@/types/types";
 
 const COMMENT_SHEET_LIKE_ICON_SIZE = 16;
 const COMMENT_SHEET_RESTING_HEIGHT = 430;
@@ -52,30 +57,43 @@ interface CommentsSliderProps {
   onCommentAdded?: (reviewId: string, newComment: any) => void;
   /** Lets an enclosing native modal dismiss before opening another screen. */
   onNavigate?: (navigate: () => void) => void;
+  initialCommentId?: string | number | null;
 }
 
 interface CommentInputFooterProps extends BottomSheetFooterProps {
-  onSubmit: (comment: string) => Promise<boolean>;
+  onSubmit: (comment: string, mentions: MentionSpan[]) => Promise<boolean>;
   bottomContentInset: number;
+  onMentionSuggestionsChange: (state: MentionSuggestionState) => void;
 }
 
 function CommentInputFooter({
   onSubmit,
   bottomContentInset,
+  onMentionSuggestionsChange,
   ...footerProps
 }: CommentInputFooterProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const [commentText, setCommentText] = useState("");
+  const [mentions, setMentions] = useState<MentionSpan[]>([]);
+
+  const handleCommentChange = useCallback(
+    (text: string, nextMentions: MentionSpan[]) => {
+      setCommentText(text);
+      setMentions(nextMentions);
+    },
+    []
+  );
 
   const handleSubmit = useCallback(async () => {
     const comment = commentText.trim();
     if (!comment) return;
 
-    if (await onSubmit(comment)) {
+    if (await onSubmit(commentText, mentions)) {
       setCommentText("");
+      setMentions([]);
     }
-  }, [commentText, onSubmit]);
+  }, [commentText, mentions, onSubmit]);
 
   return (
     <BottomSheetFooter {...footerProps}>
@@ -88,18 +106,28 @@ function CommentInputFooter({
           },
         ]}
       >
-        <BottomSheetTextInput
-          placeholder="Add a comment..."
-          placeholderTextColor={colors.textMuted}
-          value={commentText}
-          onChangeText={setCommentText}
-          style={styles.input}
-          returnKeyType="send"
-          onSubmitEditing={handleSubmit}
-        />
-        <TouchableOpacity onPress={handleSubmit} style={styles.sendButtonHit}>
-          <Text style={styles.sendButton}>Post</Text>
-        </TouchableOpacity>
+        <View style={styles.inputRow}>
+          <View style={styles.inputComposer}>
+            <MentionInput
+              inputComponent={BottomSheetTextInput}
+              inputStyle={styles.input}
+              placeholder="Add a comment..."
+              placeholderTextColor={colors.textMuted}
+              value={commentText}
+              mentions={mentions}
+              onChange={handleCommentChange}
+              suggestionsPlacement="external"
+              onSuggestionsChange={onMentionSuggestionsChange}
+              maxLength={500}
+              returnKeyType="send"
+              onSubmitEditing={handleSubmit}
+              accessibilityLabel="Comment"
+            />
+          </View>
+          <TouchableOpacity onPress={handleSubmit} style={styles.sendButtonHit}>
+            <Text style={styles.sendButton}>Post</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </BottomSheetFooter>
   );
@@ -111,6 +139,7 @@ export default function CommentsSlider({
   onCommentDeleted,
   onCommentAdded,
   onNavigate,
+  initialCommentId,
 }: CommentsSliderProps) {
   const { profile } = useProfile();
   const { requireMembership } = useMembership();
@@ -131,6 +160,8 @@ export default function CommentsSlider({
   const loadingEarlierCommentsRef = useRef(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [mentionSuggestions, setMentionSuggestions] =
+    useState<MentionSuggestionState | null>(null);
   const listRef = useRef<FlatList>(null);
   const pendingLikes = useRef(new Set<number>());
 
@@ -141,6 +172,9 @@ export default function CommentsSlider({
 
   useEffect(() => {
     let cancelled = false;
+    const containsTarget = (page: Comment[]) =>
+      initialCommentId != null &&
+      page.some((comment) => String(comment.id) === String(initialCommentId));
     const loadComments = async () => {
       try {
         const page = await getCommentPage({
@@ -148,12 +182,50 @@ export default function CommentsSlider({
           viewerId: profile?.id,
           limit: 20,
         });
+        let loaded = page.comments;
+        let cursor = page.nextCursor;
+        let hasMore = page.hasMore;
+        // A mention deep link can target a comment older than the newest
+        // page; walk back a bounded number of pages to bring it into view.
+        let hops = 0;
+        while (
+          initialCommentId != null &&
+          !containsTarget(loaded) &&
+          hasMore &&
+          cursor &&
+          hops < 5 &&
+          !cancelled
+        ) {
+          const earlier = await getCommentPage({
+            reviewId: review.id,
+            viewerId: profile?.id,
+            cursor,
+            limit: 20,
+          });
+          loaded = [...earlier.comments, ...loaded];
+          cursor = earlier.nextCursor;
+          hasMore = earlier.hasMore;
+          hops += 1;
+        }
         if (cancelled) return;
-        setComments(page.comments);
-        nextCommentCursorRef.current = page.nextCursor;
-        setHasMoreComments(page.hasMore);
+        setComments(loaded);
+        nextCommentCursorRef.current = cursor;
+        setHasMoreComments(hasMore);
         setTimeout(() => {
-          listRef.current?.scrollToEnd({ animated: false });
+          const targetIndex = initialCommentId
+            ? loaded.findIndex(
+                (comment) => String(comment.id) === String(initialCommentId)
+              )
+            : -1;
+          if (targetIndex >= 0) {
+            listRef.current?.scrollToIndex({
+              index: targetIndex,
+              animated: true,
+              viewPosition: 0.5,
+            });
+          } else {
+            listRef.current?.scrollToEnd({ animated: false });
+          }
         }, 100);
       } catch (error) {
         reportError("Error loading comments:", error);
@@ -163,7 +235,7 @@ export default function CommentsSlider({
     return () => {
       cancelled = true;
     };
-  }, [profile?.id, review.id]);
+  }, [initialCommentId, profile?.id, review.id]);
 
   const loadEarlierComments = useCallback(async () => {
     if (
@@ -201,18 +273,21 @@ export default function CommentsSlider({
   }, [hasMoreComments, profile, review.id]);
 
   const handleAddComment = useCallback(
-    async (comment: string) => {
+    async (comment: string, mentions: MentionSpan[]) => {
       if (!profile) {
         requireMembership("comment");
         return false;
       }
 
       try {
-        const data = await databaseService.createComment({
-          review_id: review.id,
-          user_id: profile.id,
-          body: comment,
-        });
+        const data = await databaseService.createComment(
+          {
+            review_id: review.id,
+            user_id: profile.id,
+            body: comment,
+          },
+          mentions
+        );
 
         setComments((prev) => [...prev, data]);
         listRef.current?.scrollToEnd({ animated: true });
@@ -454,7 +529,12 @@ export default function CommentsSlider({
                 </TouchableOpacity>
                 <Text style={styles.timestamp}> · {relativeDate}</Text>
               </View>
-              <Text style={styles.commentBody}>{item.body}</Text>
+              <MentionText
+                text={item.body}
+                mentions={item.mentions}
+                style={styles.commentBody}
+                onNavigate={onNavigate}
+              />
             </View>
           </View>
           <TouchableOpacity
@@ -488,6 +568,7 @@ export default function CommentsSlider({
         {...props}
         bottomContentInset={safeAreaInsets.bottom}
         onSubmit={handleAddComment}
+        onMentionSuggestionsChange={setMentionSuggestions}
       />
     ),
     [handleAddComment, safeAreaInsets.bottom]
@@ -511,43 +592,77 @@ export default function CommentsSlider({
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
       >
-        <BottomSheetFlatList
-          ref={listRef as any}
-          data={comments}
-          keyExtractor={(item: any) => item.id.toString()}
-          renderItem={renderComment}
-          ListHeaderComponent={
-            hasMoreComments ? (
-              <TouchableOpacity
-                onPress={() => void loadEarlierComments()}
-                disabled={loadingEarlierComments}
-                style={styles.loadEarlierButton}
-                accessibilityRole="button"
-                accessibilityLabel="Load earlier comments"
-              >
-                <Text style={styles.loadEarlierText}>
-                  {loadingEarlierComments ? "Loading…" : "Earlier comments"}
+        {/* The list stays mounted under the suggestions overlay: unmounting
+            it would discard scroll position and null the ref a mid-compose
+            comment submit relies on. */}
+        <View style={styles.sheetBody}>
+          <BottomSheetFlatList
+            ref={listRef as any}
+            data={comments}
+            keyExtractor={(item: any) => item.id.toString()}
+            renderItem={renderComment}
+            ListHeaderComponent={
+              hasMoreComments ? (
+                <TouchableOpacity
+                  onPress={() => void loadEarlierComments()}
+                  disabled={loadingEarlierComments}
+                  style={styles.loadEarlierButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Load earlier comments"
+                >
+                  <Text style={styles.loadEarlierText}>
+                    {loadingEarlierComments ? "Loading…" : "Earlier comments"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyTitle}>Say something</Text>
+                <Text style={styles.emptySubtitle}>
+                  Nobody&rsquo;s weighed in yet. Your move.
                 </Text>
-              </TouchableOpacity>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyTitle}>Say something</Text>
-              <Text style={styles.emptySubtitle}>
-                Nobody&rsquo;s weighed in yet. Your move.
-              </Text>
+              </View>
+            }
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                paddingBottom:
+                  COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
+              },
+            ]}
+            onScrollToIndexFailed={({ index, averageItemLength }) => {
+              // Deep-link targets can sit past the initially measured rows;
+              // approximate, let the list render, then retry precisely.
+              listRef.current?.scrollToOffset({
+                offset: averageItemLength * index,
+                animated: false,
+              });
+              setTimeout(() => {
+                listRef.current?.scrollToIndex({
+                  index,
+                  animated: true,
+                  viewPosition: 0.5,
+                });
+              }, 120);
+            }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          />
+          {mentionSuggestions?.visible ? (
+            <View style={styles.mentionSearch}>
+              <MentionSuggestions
+                visible
+                loading={mentionSuggestions.loading}
+                unavailable={mentionSuggestions.unavailable}
+                query={mentionSuggestions.query}
+                results={mentionSuggestions.results}
+                onSelect={mentionSuggestions.onSelect}
+                presentation="sheet"
+              />
             </View>
-          }
-          contentContainerStyle={[
-            styles.listContent,
-            {
-              paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE + bottomContentInset,
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        />
+          ) : null}
+        </View>
       </BottomSheet>
       <ReportModal
         visible={reportModalVisible}
@@ -582,6 +697,20 @@ const useStyles = makeStyles((t) => ({
   listContent: {
     padding: t.spacing.lg,
     // Keep the last comment clear of the pinned input footer.
+    paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE,
+  },
+  sheetBody: {
+    flex: 1,
+  },
+  // Overlays the comment list while composing a mention; the list underneath
+  // keeps its scroll position and its ref.
+  mentionSearch: {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: t.colors.surface,
     paddingBottom: COMMENT_LIST_FOOTER_CLEARANCE,
   },
   loadEarlierButton: {
@@ -644,16 +773,19 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.postText,
   },
   inputContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
     paddingHorizontal: t.spacing.sheetGutter,
     paddingTop: t.spacing.md,
     backgroundColor: t.colors.surface,
     borderTopWidth: 1,
     borderColor: t.colors.border,
   },
+  inputRow: {
+    flexDirection: "row" as const,
+    alignItems: "flex-end" as const,
+  },
+  inputComposer: { flex: 1, minWidth: 0 },
   input: {
-    flex: 1,
+    ...t.typography.input,
     height: 44,
     borderWidth: 1,
     borderColor: t.colors.border,

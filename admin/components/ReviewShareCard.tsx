@@ -7,6 +7,8 @@ import {
   formatRelativeDate,
   stripNameFromAddress,
 } from "@/lib/format";
+import MentionRichText from "@/components/MentionRichText";
+import type { WebMentionSpan } from "@/lib/mentions";
 
 /**
  * Web replica of the mobile app's ReviewItem (components/ReviewItem.tsx).
@@ -21,6 +23,7 @@ export interface ShareCardComment {
   body: string;
   username: string | null;
   is_verified: boolean | null;
+  mentions: WebMentionSpan[];
 }
 
 export interface ShareCardReview {
@@ -33,6 +36,7 @@ export interface ShareCardReview {
   likes_count: number;
   comments_count: number;
   recent_comments: ShareCardComment[];
+  mentions: WebMentionSpan[];
   location: {
     name: string | null;
     address: string | null;
@@ -349,16 +353,19 @@ const InlineIdentityText = ({
   body,
   usernameClass,
   bodyClass,
+  mentions,
 }: {
   username: string;
   isVerified?: boolean | null;
   body: string;
   usernameClass: string;
   bodyClass: string;
+  mentions?: WebMentionSpan[];
 }) => (
   <p className={bodyClass} style={{ color: TEXT }}>
     <span className={usernameClass}>{username}</span>
-    {isVerified ? <VerifiedBadge size={13} /> : null} {body}
+    {isVerified ? <VerifiedBadge size={13} /> : null}{" "}
+    <MentionRichText text={body} mentions={mentions} />
   </p>
 );
 
@@ -557,6 +564,7 @@ export default function ReviewShareCard({
               username={username}
               isVerified={review.profile?.is_verified}
               body={review.comment}
+              mentions={review.mentions}
               usernameClass="text-sm font-bold"
               bodyClass="text-sm leading-[21px]"
             />
@@ -569,6 +577,7 @@ export default function ReviewShareCard({
               username={comment.username ?? "Unknown"}
               isVerified={comment.is_verified}
               body={comment.body}
+              mentions={comment.mentions}
               usernameClass="text-sm font-bold"
               bodyClass="text-sm leading-[21px]"
             />

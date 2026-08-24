@@ -4,6 +4,8 @@ export type ActivityKind =
   | "comment_liked"
   | "review_commented"
   | "comment_replied"
+  | "mentioned_in_review"
+  | "mentioned_in_comment"
   | "admin_message";
 
 export interface ActivityActor {
@@ -78,7 +80,12 @@ export interface LikeActivityRow extends ActivityDisplayBase {
 }
 
 export interface CommentActivityRow extends ActivityDisplayBase {
-  kind: "comment_liked" | "review_commented" | "comment_replied";
+  kind:
+    | "comment_liked"
+    | "review_commented"
+    | "comment_replied"
+    | "mentioned_in_review"
+    | "mentioned_in_comment";
   actor: ActivityActor;
   review: ActivityReview;
   preview: string | null;

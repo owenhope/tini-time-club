@@ -19,10 +19,12 @@ export default function SharedReviewScreen() {
     review: reviewParam,
     screenshotSeed,
     comments,
+    comment,
   } = useLocalSearchParams<{
     review?: string;
     screenshotSeed?: string;
     comments?: string;
+    comment?: string;
   }>();
   const reviewId = Array.isArray(reviewParam) ? reviewParam[0] : reviewParam;
   const router = useRouter();
@@ -139,6 +141,7 @@ export default function SharedReviewScreen() {
             <CommentsSlider
               review={review}
               onClose={() => setCommentsOpen(false)}
+              initialCommentId={Array.isArray(comment) ? comment[0] : comment}
             />
           ) : null}
         </>

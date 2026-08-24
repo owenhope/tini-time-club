@@ -1,5 +1,5 @@
 const INTERNAL_ROUTE_PATTERN =
-  /^\/(home|activity|places(?:\/\d+)?|users\/[^/?#]+|r\/\d+\?comments=1)$/;
+  /^\/(home|activity|places(?:\/\d+)?|users\/[^/?#]+|r\/\d+(?:\?comments=1(?:&comment=\d+)?)?)$/;
 
 export const getNotificationRouteFromData = (
   data: Record<string, unknown> | null | undefined

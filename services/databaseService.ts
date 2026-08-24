@@ -5,12 +5,16 @@ import type {
   Comment,
   LocationRating,
   NamedOption,
+  MentionSpan,
   Profile,
   Review,
 } from "@/types/types";
+import { mentionPayload, trimMentionBody } from "@/utils/mentions";
 import { reportError, warn } from "@/utils/log";
 import { withTimeout } from "@/utils/async";
 import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
+import AnalyticService from "@/services/analyticsService";
+import { hydrateReviewMentions } from "@/services/mentionService";
 
 interface CachedQuery {
   data: any;
@@ -296,7 +300,6 @@ class DatabaseService {
         .in("id", missingLocationIds);
 
       if (error) throw error;
-
       const ratingsByLocationId = new Map(
         (data ?? []).map((rating) => [String(rating.id), rating])
       );
@@ -337,7 +340,6 @@ class DatabaseService {
         .select("comment_id,user_id")
         .in("comment_id", commentIds);
       if (error) throw error;
-
       const counts = new Map<number, number>();
       const likedByViewer = new Set<number>();
       for (const like of data ?? []) {
@@ -463,10 +465,17 @@ class DatabaseService {
     );
 
     const imageUrls = await imageCache.getReviewImageUrls([review.image_url]);
-    return {
+    const withImage = {
       ...review,
       image_url: imageUrls[review.image_url] || review.image_url,
     };
+    try {
+      const [withMentions] = await hydrateReviewMentions([withImage]);
+      return withMentions;
+    } catch (error) {
+      warn("Could not hydrate review mentions", error);
+      return withImage;
+    }
   }
 
   /** Load the raw values needed to reopen an owned review in the composer. */
@@ -622,12 +631,46 @@ class DatabaseService {
     return (data ?? []) as Comment[];
   }
 
-  /** Update the editable fields of an owned review. */
+  /** Update the editable fields of an owned review. Passing `null` mentions
+   * keeps the review's stored mentions untouched — the composer could not load
+   * them, and replacing them with nothing would silently strip every mention
+   * and withdraw the targets' notifications. */
   async updateReview(
     reviewId: string,
     updates: ReviewUpdates,
-    userId?: string
+    userId?: string,
+    mentions?: MentionSpan[] | null
   ): Promise<any> {
+    if (mentions !== undefined) {
+      const caption = trimMentionBody(updates.comment ?? "", mentions ?? []);
+      const { data, error } = await supabase.rpc("update_review_v2", {
+        p_comment: caption.text,
+        p_image_url: updates.image_url,
+        p_location_id:
+          updates.location == null ? null : Number(updates.location),
+        p_mentions:
+          mentions === null
+            ? null
+            : mentionPayload(caption.text, caption.mentions),
+        p_presentation: updates.presentation,
+        p_review_id: Number(reviewId),
+        p_spirit_id: updates.spirit == null ? null : Number(updates.spirit),
+        p_taste: updates.taste,
+        p_type_id: updates.type == null ? null : Number(updates.type),
+      });
+      if (error) throw error;
+      if (mentions !== null && caption.mentions.length) {
+        void AnalyticService.capture("mention_submitted", {
+          surface: "review_edit",
+          count: new Set(caption.mentions.map((mention) => mention.profileId))
+            .size,
+        });
+      }
+      this.queryCache.delete(`review_${reviewId}`);
+      if (userId) this.invalidateUserCaches(userId);
+      return data;
+    }
+
     let query = supabase.from("reviews").update(updates).eq("id", reviewId);
 
     if (userId) query = query.eq("user_id", userId);
@@ -648,7 +691,29 @@ class DatabaseService {
   /**
    * Create a comment
    */
-  async createComment(commentData: any): Promise<any> {
+  async createComment(
+    commentData: any,
+    mentions?: MentionSpan[]
+  ): Promise<any> {
+    if (mentions) {
+      const comment = trimMentionBody(String(commentData.body ?? ""), mentions);
+      const { data, error } = await supabase.rpc("create_comment_v2", {
+        p_body: comment.text,
+        p_mentions: mentionPayload(comment.text, comment.mentions),
+        p_review_id: Number(commentData.review_id),
+      });
+      if (error) throw error;
+      if (comment.mentions.length) {
+        void AnalyticService.capture("mention_submitted", {
+          surface: "comment",
+          count: new Set(comment.mentions.map((mention) => mention.profileId))
+            .size,
+        });
+      }
+      this.queryCache.delete(`comments_${commentData.review_id}`);
+      return data;
+    }
+
     const { data, error } = await supabase
       .from("comments")
       .insert(commentData)
