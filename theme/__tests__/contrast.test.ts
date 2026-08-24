@@ -77,7 +77,9 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   // on a light surface. What has to be legible is the ink laid on top of it.
   ["onSecondary on secondary", c.onSecondary, c.secondary],
   ["danger on surface", c.danger, c.surface],
-  ["awardGold on surface", c.awardGold, c.surface],
+  // Gold is used as a fill/icon. Text carried by a gold pin uses the explicit
+  // onAwardGold ink token instead of treating the fill itself as body text.
+  ["onAwardGold on awardGold", c.onAwardGold, c.awardGold],
   [
     "awardGoldForeground on awardGoldSurface",
     c.awardGoldForeground,

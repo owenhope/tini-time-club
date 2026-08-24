@@ -130,9 +130,8 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ["tabular-nums"] as const,
   },
   pinRatingSelected: {
+    ...t.typography.caption,
     color: t.colors.onAccent,
-    fontSize: t.typography.caption.fontSize,
-    lineHeight: t.typography.caption.lineHeight,
   },
   pinRatingGolden: {
     color: t.colors.onAwardGold,
