@@ -22,6 +22,7 @@ export default async function ManageRegionPage({
     updated?: string;
     error?: string;
     refresh?: string;
+    eligibility?: string;
   }>;
 }) {
   const [{ id }, query, regions] = await Promise.all([
@@ -68,6 +69,12 @@ export default async function ManageRegionPage({
           <div className="rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950 ring-1 ring-inset ring-amber-200">
             Region saved, but Golden Glass could not refresh. Use Refresh
             snapshot from the Golden Glass index.
+          </div>
+        ) : null}
+        {query.eligibility === "blocked" ? (
+          <div className="rounded-md bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950 ring-1 ring-inset ring-amber-200">
+            This region needs at least one location with 3 distinct active
+            reviewers before it can be enabled in Explore.
           </div>
         ) : null}
         {query.error ? (

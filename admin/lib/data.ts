@@ -1459,6 +1459,7 @@ export interface AdminRegion {
   center_lon: number;
   catchment_radius_m: number;
   golden_glass_count: number;
+  qualifying_location_count: number;
 }
 
 export interface GoldenGlassInspectionRow {
@@ -1911,16 +1912,27 @@ export const fetchAdminRegions = async (): Promise<AdminRegion[]> => {
   if (regionsResult.error) throw new Error(regionsResult.error.message);
 
   const goldenGlassCounts = new Map<number, number>();
+  const qualifyingLocationCounts = new Map<number, number>();
   for (const row of goldenGlassRows) {
-    if (!row.is_current) continue;
     const regionId = row.region_id;
-    goldenGlassCounts.set(regionId, (goldenGlassCounts.get(regionId) ?? 0) + 1);
+    qualifyingLocationCounts.set(
+      regionId,
+      (qualifyingLocationCounts.get(regionId) ?? 0) + 1
+    );
+    if (row.is_current) {
+      goldenGlassCounts.set(
+        regionId,
+        (goldenGlassCounts.get(regionId) ?? 0) + 1
+      );
+    }
   }
 
   return (regionsResult.data ?? []).map((region) => ({
     ...region,
     id: Number(region.id),
     golden_glass_count: goldenGlassCounts.get(Number(region.id)) ?? 0,
+    qualifying_location_count:
+      qualifyingLocationCounts.get(Number(region.id)) ?? 0,
   })) as AdminRegion[];
 };
 

@@ -87,7 +87,7 @@ export default function RegionForm({
           <input
             name="enabled"
             type="checkbox"
-            defaultChecked={region?.enabled ?? true}
+            defaultChecked={region?.enabled ?? false}
           />{" "}
           Enabled in Explore
         </label>

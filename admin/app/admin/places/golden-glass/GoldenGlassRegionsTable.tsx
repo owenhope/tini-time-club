@@ -85,9 +85,18 @@ export default function GoldenGlassRegionsTable({
                 <StatusPill tone={region.enabled ? "green" : "muted"}>
                   {region.enabled ? "Enabled" : "Disabled"}
                 </StatusPill>
+                <div className="mt-1 text-xs text-stone-500">
+                  {region.qualifying_location_count > 0
+                    ? "Eligible to enable"
+                    : "Needs qualifying reviews"}
+                </div>
               </td>
               <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
-                {recipients.length} awarded
+                {region.golden_glass_count} awarded
+                <div className="mt-1 text-xs text-stone-500">
+                  {region.qualifying_location_count} qualifying place
+                  {region.qualifying_location_count === 1 ? "" : "s"}
+                </div>
               </td>
               <td className="px-4 py-3 font-mono text-xs tabular-nums text-stone-500">
                 {region.center_lat.toFixed(4)}, {region.center_lon.toFixed(4)}
