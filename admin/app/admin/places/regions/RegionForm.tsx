@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { upsertRegion } from "@/lib/actions";
 import type { AdminRegion } from "@/lib/data";
+import {
+  kilometersToMeters,
+  metersToKilometers,
+} from "@/lib/regionRadius.mjs";
 
 const field =
   "mt-1.5 h-9 w-full rounded-md border border-stone-200 bg-white px-2 text-sm text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100";
@@ -129,17 +133,23 @@ export default function RegionForm({
         <label className="text-xs text-stone-500">
           Catchment radius (km)
           <input
+            type="hidden"
             name="catchment_radius_m"
+            value={values.catchment_radius_m}
+            readOnly
+          />
+          <input
+            name="catchment_radius_km"
             type="number"
             min="1"
             max="500"
             step="0.1"
             required
-            value={values.catchment_radius_m / 1_000}
+            value={metersToKilometers(values.catchment_radius_m)}
             onChange={(event) =>
               updateMapValue(
                 "catchment_radius_m",
-                String(Number(event.target.value) * 1_000)
+                String(kilometersToMeters(event.target.value))
               )
             }
             className={numberField}
