@@ -9,6 +9,7 @@ const mockOpenMembership = jest.fn();
 const mockPush = jest.fn();
 const mockRefreshUnseenCount = jest.fn(async () => undefined);
 const mockReportError = jest.fn();
+let mockUnseenCount = 0;
 let mockProfile: {
   id: string;
   username: string;
@@ -55,7 +56,7 @@ jest.mock("@/context/profile-context", () => ({
 
 jest.mock("@/context/activity-context", () => ({
   useActivity: () => ({
-    unseenCount: 0,
+    unseenCount: mockUnseenCount,
     refreshUnseenCount: mockRefreshUnseenCount,
   }),
 }));
@@ -184,6 +185,7 @@ describe("Feed startup loading", () => {
     mockOpenMembership.mockClear();
     mockRefreshUnseenCount.mockClear();
     mockReportError.mockClear();
+    mockUnseenCount = 0;
     mockProfile = {
       id: "member-1",
       username: "olive",
@@ -305,6 +307,22 @@ describe("Feed startup loading", () => {
 
     expect(action.icon).toBe("heart-outline");
     expect(action.accessibilityLabel).toBe("Activity");
+  });
+
+  it("shows the unread Activity count inside the header badge", async () => {
+    mockUnseenCount = 3;
+    mockGetReviews.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+
+    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
+      .props.actions[0];
+
+    expect(action.badgeCount).toBe(3);
+    expect(action.showNotificationDot).toBeUndefined();
+    expect(action.accessibilityLabel).toBe("Activity, 3 unread notifications");
   });
 
   it("keeps the selected people feed when an older club refresh resolves last", async () => {

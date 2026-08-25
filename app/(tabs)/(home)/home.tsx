@@ -67,7 +67,6 @@ function Home() {
   const { profile, authenticated, updateProfile } = useProfile();
   const { unseenCount, refreshUnseenCount } = useActivity();
   const { requireMembership } = useMembership();
-  const showActivityDot = unseenCount > 0;
   const router = useRouter();
   const params = useLocalSearchParams<{
     postedReviewId?: string;
@@ -809,11 +808,12 @@ function Home() {
                 {
                   icon: "heart-outline",
                   iconColor: colors.onInk,
-                  showNotificationDot: showActivityDot,
+                  badgeCount: unseenCount,
                   onPress: () => router.push(routes.activity()),
-                  accessibilityLabel: showActivityDot
-                    ? "Activity, new notifications"
-                    : "Activity",
+                  accessibilityLabel:
+                    unseenCount > 0
+                      ? `Activity, ${unseenCount} unread notifications`
+                      : "Activity",
                 },
               ]
             : [
