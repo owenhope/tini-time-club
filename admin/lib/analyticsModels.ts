@@ -1,4 +1,4 @@
-import { RANK_TIERS } from "@/lib/ranking";
+import { RANK_TIERS } from "./ranking";
 
 export interface TierDistributionRow {
   tier: string;
