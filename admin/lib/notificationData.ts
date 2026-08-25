@@ -4,7 +4,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   resolveNotificationAnalytics,
   type NotificationAnalytics,
-  type NotificationKindStats,
 } from "@/lib/notificationModels";
 
 export type {
