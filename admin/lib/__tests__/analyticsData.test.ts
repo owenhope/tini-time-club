@@ -1,4 +1,7 @@
-import { buildTierDistribution } from "../analyticsModels";
+import {
+  buildTierDistribution,
+  buildTierDistributionFromCounts,
+} from "../analyticsModels";
 
 describe("admin rank distribution", () => {
   it("places profiles at the correct tier boundaries", () => {
@@ -46,5 +49,19 @@ describe("admin rank distribution", () => {
         next: null,
       },
     ]);
+  });
+
+  it("preserves tier metadata for database-aggregated counts", () => {
+    expect(buildTierDistributionFromCounts([3, 2, 1, 1])).toEqual(
+      buildTierDistribution([
+        { review_count: 0 },
+        { review_count: 9 },
+        { review_count: 10 },
+        { review_count: 49 },
+        { review_count: 50 },
+        { review_count: 150 },
+        { review_count: null },
+      ])
+    );
   });
 });

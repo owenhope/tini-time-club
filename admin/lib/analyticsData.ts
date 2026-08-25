@@ -8,7 +8,7 @@ import { dashboardKpisFromOverview, type DashboardKpis } from "./dashboardKpis";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
-  buildTierDistribution,
+  buildTierDistributionFromCounts,
   type TierDistributionRow,
 } from "@/lib/analyticsModels";
 
@@ -138,11 +138,36 @@ export const fetchDashboardKpis = (range: DateRange): Promise<DashboardKpis> =>
 export const fetchTierDistribution = async (): Promise<
   TierDistributionRow[]
 > => {
-  const { data, error } = await db()
-    .from("profiles")
-    .select("review_count")
-    .eq("deleted", false);
-  if (error) throw toAdminDataError(error, "load tier distribution");
-
-  return buildTierDistribution(data ?? []);
+  const ranges = [
+    db()
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("deleted", false)
+      .or("review_count.lt.10,review_count.is.null"),
+    db()
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("deleted", false)
+      .gte("review_count", 10)
+      .lt("review_count", 50),
+    db()
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("deleted", false)
+      .gte("review_count", 50)
+      .lt("review_count", 150),
+    db()
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("deleted", false)
+      .gte("review_count", 150),
+  ];
+  const results = await Promise.all(ranges);
+  for (const result of results) {
+    if (result.error)
+      throw toAdminDataError(result.error, "load tier distribution");
+  }
+  return buildTierDistributionFromCounts(
+    results.map((result) => result.count ?? 0)
+  );
 };
