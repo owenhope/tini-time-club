@@ -1,8 +1,17 @@
 const mockRpc = jest.fn();
+const mockChannel = jest.fn();
+const mockChannelOn = jest.fn();
+const mockChannelSubscribe = jest.fn();
+const channel = {
+  on: mockChannelOn,
+  subscribe: mockChannelSubscribe,
+};
 
 jest.mock("@/utils/supabase", () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
+    channel: (...args: unknown[]) => mockChannel(...args),
+    removeChannel: jest.fn(),
   },
 }));
 
@@ -13,11 +22,19 @@ jest.mock("@/utils/imageCache", () => ({
   },
 }));
 
-import { fetchActivityPage } from "@/services/activityService";
+import {
+  fetchActivityPage,
+  subscribeToActivityChanges,
+} from "@/services/activityService";
 
 describe("activityService", () => {
   beforeEach(() => {
     mockRpc.mockReset();
+    mockChannel.mockReset();
+    mockChannelOn.mockReset();
+    mockChannelSubscribe.mockReset();
+    mockChannelOn.mockReturnValue(channel);
+    mockChannel.mockReturnValue(channel);
   });
 
   it("decodes comment-like notifications into Activity events", async () => {
@@ -73,5 +90,21 @@ describe("activityService", () => {
         ],
       })
     );
+  });
+
+  it("refreshes once the realtime Activity subscription is ready", () => {
+    const onChange = jest.fn();
+
+    subscribeToActivityChanges("user-1", onChange);
+
+    expect(mockChannel).toHaveBeenCalledWith("activity:user-1");
+    expect(mockChannelSubscribe).toHaveBeenCalledWith(expect.any(Function));
+
+    const onStatus = mockChannelSubscribe.mock.calls[0][0] as (
+      status: string
+    ) => void;
+    onStatus("SUBSCRIBED");
+
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

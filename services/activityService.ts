@@ -212,7 +212,12 @@ export function subscribeToActivityChanges(
       },
       onChange
     )
-    .subscribe();
+    .subscribe((status) => {
+      // The initial count query can finish before Realtime is connected. A
+      // refresh on SUBSCRIBED closes that race and also re-syncs after an
+      // automatic Realtime reconnect.
+      if (status === "SUBSCRIBED") onChange();
+    });
 
   return () => {
     void supabase.removeChannel(channel);
