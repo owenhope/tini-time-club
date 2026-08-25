@@ -67,60 +67,32 @@ export const fetchAllReviews = async (
   perPage = USERS_PAGE_SIZE,
   state?: "active" | "inactive"
 ): Promise<{ reviews: AdminReviewRow[]; total: number }> => {
-  const offset = (Math.max(1, page) - 1) * perPage;
-  const trimmedSearch = search?.trim();
-  const usernameSearch = trimmedSearch?.replace(/^@+/, "");
-  const [matchingProfileIds, matchingPlaceIds] = trimmedSearch
-    ? await Promise.all([
-        db()
-          .from("profiles")
-          .select("id")
-          .ilike("username", `%${usernameSearch}%`)
-          .then(({ data, error }) => {
-            if (error) throw toAdminDataError(error, "search review profiles");
-            return (data ?? []).map((profile) => profile.id);
-          }),
-        db()
-          .from("locations")
-          .select("id")
-          .or(`name.ilike.%${trimmedSearch}%,address.ilike.%${trimmedSearch}%`)
-          .then(({ data, error }) => {
-            if (error) throw toAdminDataError(error, "search review places");
-            return (data ?? []).map((place) => place.id);
-          }),
-      ])
-    : [[], []];
-
-  let query = db()
-    .from("reviews")
-    .select(
-      `id,comment,taste,presentation,inserted_at,state,
-       location:locations!reviews_location_fkey(id,name),
-       profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`,
-      { count: "exact" }
-    )
-    .order("inserted_at", { ascending: false })
-    .range(offset, offset + perPage - 1);
-  if (trimmedSearch) {
-    const filters = [`comment.ilike.%${trimmedSearch}%`];
-    if (matchingProfileIds.length > 0) {
-      filters.push(`user_id.in.(${matchingProfileIds.join(",")})`);
-    }
-    if (matchingPlaceIds.length > 0) {
-      filters.push(`location.in.(${matchingPlaceIds.join(",")})`);
-    }
-    query = query.or(filters.join(","));
-  }
-  if (state === "active") query = query.eq("state", 1);
-  if (state === "inactive") query = query.neq("state", 1);
-
-  const { data, error, count } = await query;
+  const { data, error } = await db().rpc("get_admin_reviews_page", {
+    p_search: search ?? null,
+    p_state: state ?? null,
+    p_page: page,
+    p_per_page: perPage,
+  });
   if (error) throw toAdminDataError(error, "load reviews");
-  const reviewIds = (data ?? []).map((row) => String(row.id));
+  const result = (data ?? {}) as {
+    reviews?: Array<{
+      id: string | number;
+      comment: string | null;
+      taste: number | null;
+      presentation: number | null;
+      inserted_at: string;
+      state: number | null;
+      location: AdminReviewRow["location"];
+      profile: AdminReviewRow["profile"];
+    }>;
+    total?: number;
+  };
+  const rows = result.reviews ?? [];
+  const reviewIds = rows.map((row) => String(row.id));
   const engagement = await fetchReviewEngagement(reviewIds);
 
   return {
-    reviews: (data ?? []).map((row) => ({
+    reviews: rows.map((row) => ({
       id: String(row.id),
       comment: row.comment,
       taste: row.taste,
@@ -131,7 +103,7 @@ export const fetchAllReviews = async (
       profile: one(row.profile),
       engagement: engagement.get(String(row.id)) ?? emptyReviewEngagement(),
     })),
-    total: count ?? 0,
+    total: Number(result.total) || 0,
   };
 };
 
