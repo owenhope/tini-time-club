@@ -99,6 +99,8 @@ export const fetchAdminRegions = async (): Promise<AdminRegion[]> => {
 export const fetchMapPlaces = async (
   bounds?: MapBounds
 ): Promise<MapPlace[]> => {
+  if (!bounds) return [];
+
   let query = db()
     .from("location_ratings")
     .select(
@@ -111,6 +113,7 @@ export const fetchMapPlaces = async (
       .gte("lon", bounds.minLon)
       .lte("lon", bounds.maxLon);
   }
+  query = query.limit(1000);
   const { data, error } = await query;
   if (error) throw toAdminDataError(error, "load map places");
 

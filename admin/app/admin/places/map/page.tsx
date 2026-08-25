@@ -2,13 +2,12 @@ import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
 import PlacesMap from "@/components/PlacesMap";
-import { fetchMapPlaces } from "@/lib/placeData";
+import { fetchLocationCounts } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlacesMapPage() {
-  const places = await fetchMapPlaces();
-  const rated = places.filter((place) => place.total_ratings > 0);
+  const counts = await fetchLocationCounts();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
   return (
@@ -20,12 +19,12 @@ export default async function PlacesMapPage() {
         stats={[
           {
             label: "Places on map",
-            value: places.length.toLocaleString(),
+            value: counts.total.toLocaleString(),
             tone: "purple",
           },
           {
             label: "Rated Places",
-            value: rated.length.toLocaleString(),
+            value: counts.rated.toLocaleString(),
             tone: "green",
           },
         ]}
@@ -44,7 +43,7 @@ export default async function PlacesMapPage() {
 
       <div className="px-8 py-6">
         {apiKey ? (
-          <PlacesMap apiKey={apiKey} places={places} />
+          <PlacesMap apiKey={apiKey} places={[]} />
         ) : (
           <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
             Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in admin/.env.local to load the
