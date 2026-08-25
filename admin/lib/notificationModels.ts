@@ -49,6 +49,62 @@ export interface NotificationReviewRow {
   inserted_at: string;
 }
 
+const asNumber = (value: unknown, fallback = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export const resolveNotificationAnalytics = (
+  value: unknown
+): NotificationAnalytics => {
+  const row = value && typeof value === "object" ? value : {};
+  const source = row as {
+    totalSent?: unknown;
+    totalOpened?: unknown;
+    openToReviewRate?: unknown;
+    byKind?: unknown;
+  };
+  const openToReviewRate =
+    source.openToReviewRate == null
+      ? null
+      : asNumber(source.openToReviewRate, NaN);
+
+  return {
+    totalSent: asNumber(source.totalSent),
+    totalOpened: asNumber(source.totalOpened),
+    openToReviewRate: Number.isFinite(openToReviewRate)
+      ? openToReviewRate
+      : null,
+    byKind: Array.isArray(source.byKind)
+      ? source.byKind.map((entry) => {
+          const kind =
+            entry && typeof entry === "object"
+              ? (entry as {
+                  kind?: unknown;
+                  sent?: unknown;
+                  opened?: unknown;
+                  openRate?: unknown;
+                })
+              : {};
+          const sent = asNumber(kind.sent);
+          const opened = asNumber(kind.opened);
+          const openRate =
+            kind.openRate == null ? null : asNumber(kind.openRate, NaN);
+          return {
+            kind: typeof kind.kind === "string" ? kind.kind : "unknown",
+            sent,
+            opened,
+            openRate: Number.isFinite(openRate)
+              ? openRate
+              : sent > 0
+                ? opened / sent
+                : null,
+          };
+        })
+      : [],
+  };
+};
+
 const broadcastKey = (eventKey: string | null): string | null => {
   const match = eventKey?.match(/^admin:([0-9a-f-]{36}):/);
   return match ? match[1] : null;

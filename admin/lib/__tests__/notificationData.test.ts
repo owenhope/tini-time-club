@@ -1,6 +1,7 @@
 import {
   buildNotificationAnalytics,
   groupAdminNotifications,
+  resolveNotificationAnalytics,
 } from "../notificationModels";
 
 describe("admin notification grouping", () => {
@@ -96,6 +97,24 @@ describe("admin notification grouping", () => {
           openRate: 1,
         },
       ],
+    });
+  });
+
+  it("normalizes the bounded analytics RPC response", () => {
+    expect(
+      resolveNotificationAnalytics({
+        totalSent: "4",
+        totalOpened: 3,
+        openToReviewRate: "0.5",
+        byKind: [
+          { kind: "review_liked", sent: "4", opened: "3", openRate: "0.75" },
+        ],
+      })
+    ).toEqual({
+      totalSent: 4,
+      totalOpened: 3,
+      openToReviewRate: 0.5,
+      byKind: [{ kind: "review_liked", sent: 4, opened: 3, openRate: 0.75 }],
     });
   });
 });
