@@ -3,12 +3,8 @@ import { toAdminDataError } from "@/lib/dataErrors";
 import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
 import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
-import { bucketByDay } from "@/lib/bucket";
-import {
-  fetchActiveLocationIds,
-  fetchActiveMemberIds,
-  fetchAuthUsers,
-} from "@/lib/profileData";
+import { fetchAnalyticsOverview } from "./analytics/overview";
+import { dashboardKpisFromOverview, type DashboardKpis } from "./dashboardKpis";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -17,22 +13,7 @@ import {
 } from "@/lib/analyticsModels";
 
 export type { TierDistributionRow } from "@/lib/analyticsModels";
-
-export interface KpiMetric {
-  /** All-time total, ignoring the selected range. */
-  total: number;
-  /** Added within the selected range. */
-  current: number;
-  /** Added within the equal-length window immediately before it. */
-  previous: number;
-  byDay: { day: string; count: number }[];
-}
-
-export interface DashboardKpis {
-  users: KpiMetric;
-  reviews: KpiMetric;
-  locations: KpiMetric;
-}
+export type { DashboardKpis, KpiMetric } from "./dashboardKpis";
 
 export interface AudienceUsage {
   available: boolean;
@@ -145,148 +126,14 @@ export const fetchProductTelemetry = async (
   return resolveProductTelemetryResponse(data, error);
 };
 
-/** The equal-length window immediately preceding `range`. */
-const previousWindow = (range: DateRange) => {
-  const until = new Date(range.since.getTime() - 1);
-  const since = new Date(range.since);
-  since.setDate(since.getDate() - range.days);
-  return { since, until };
-};
-
 /**
  * The three headline KPIs — members, reviews, locations — each as an all-time
- * total plus this-window and previous-window counts so the dashboard can show
- * growth without a second round of queries.
- *
- * Signup dates come from auth.users: `profiles` has no created_at column.
+ * total plus this-window and previous-window counts. The analytics overview
+ * RPC performs the aggregation in Postgres so dashboard load stays bounded as
+ * the underlying tables grow.
  */
-export const fetchDashboardKpis = async (
-  range: DateRange
-): Promise<DashboardKpis> => {
-  const prior = previousWindow(range);
-
-  const [authUsers, activeMemberIds] = await Promise.all([
-    fetchAuthUsers(),
-    fetchActiveMemberIds(),
-  ]);
-
-  const activeMemberIdSet = new Set(activeMemberIds);
-  const activeLocationIds = await fetchActiveLocationIds(activeMemberIds);
-  const noRows = { data: [], count: 0, error: null };
-  const [
-    totalReviews,
-    totalLocations,
-    reviewsInRange,
-    locationsInRange,
-    priorReviews,
-    priorLocations,
-  ] = await Promise.all([
-    activeMemberIds.length > 0 && activeLocationIds.length > 0
-      ? db()
-          .from("reviews")
-          .select("id", { count: "exact", head: true })
-          .eq("state", 1)
-          .in("user_id", activeMemberIds)
-          .in("location", activeLocationIds)
-      : noRows,
-    activeMemberIds.length > 0
-      ? db()
-          .from("locations")
-          .select("id", { count: "exact", head: true })
-          .in("created_by", activeMemberIds)
-      : noRows,
-    activeMemberIds.length > 0 && activeLocationIds.length > 0
-      ? db()
-          .from("reviews")
-          .select("inserted_at")
-          .eq("state", 1)
-          .in("user_id", activeMemberIds)
-          .in("location", activeLocationIds)
-          .gte("inserted_at", range.since.toISOString())
-          .lte("inserted_at", range.until.toISOString())
-      : noRows,
-    activeMemberIds.length > 0
-      ? db()
-          .from("locations")
-          .select("inserted_at")
-          .in("created_by", activeMemberIds)
-          .gte("inserted_at", range.since.toISOString())
-          .lte("inserted_at", range.until.toISOString())
-      : noRows,
-    activeMemberIds.length > 0 && activeLocationIds.length > 0
-      ? db()
-          .from("reviews")
-          .select("*", { count: "exact", head: true })
-          .eq("state", 1)
-          .in("user_id", activeMemberIds)
-          .in("location", activeLocationIds)
-          .gte("inserted_at", prior.since.toISOString())
-          .lte("inserted_at", prior.until.toISOString())
-      : noRows,
-    activeMemberIds.length > 0
-      ? db()
-          .from("locations")
-          .select("*", { count: "exact", head: true })
-          .in("created_by", activeMemberIds)
-          .gte("inserted_at", prior.since.toISOString())
-          .lte("inserted_at", prior.until.toISOString())
-      : noRows,
-  ]);
-
-  if (totalReviews.error)
-    throw toAdminDataError(totalReviews.error, "count dashboard reviews");
-  if (totalLocations.error)
-    throw toAdminDataError(totalLocations.error, "count dashboard locations");
-  if (reviewsInRange.error)
-    throw toAdminDataError(reviewsInRange.error, "load dashboard reviews");
-  if (locationsInRange.error)
-    throw toAdminDataError(locationsInRange.error, "load dashboard locations");
-  if (priorReviews.error)
-    throw toAdminDataError(priorReviews.error, "count prior reviews");
-  if (priorLocations.error)
-    throw toAdminDataError(priorLocations.error, "count prior locations");
-
-  const activeAuthUsers = [...authUsers.entries()]
-    .filter(([id]) => activeMemberIdSet.has(id))
-    .map(([, user]) => user);
-  const signups = activeAuthUsers
-    .map((user) => user.created_at)
-    .filter(Boolean) as string[];
-  const within = (from: Date, to: Date) =>
-    signups.filter((ts) => {
-      const at = new Date(ts).getTime();
-      return at >= from.getTime() && at <= to.getTime();
-    }).length;
-
-  return {
-    users: {
-      total: activeMemberIdSet.size,
-      current: within(range.since, range.until),
-      previous: within(prior.since, prior.until),
-      byDay: bucketByDay(signups, range.since, range.until),
-    },
-    reviews: {
-      total: totalReviews.count ?? 0,
-      current: (reviewsInRange.data ?? []).length,
-      previous: priorReviews.count ?? 0,
-      byDay: bucketByDay(
-        (reviewsInRange.data ?? []).map((row) => row.inserted_at),
-        range.since,
-        range.until
-      ),
-    },
-    locations: {
-      total: totalLocations.count ?? 0,
-      current: (locationsInRange.data ?? []).length,
-      previous: priorLocations.count ?? 0,
-      byDay: bucketByDay(
-        (locationsInRange.data ?? []).map((row) => row.inserted_at),
-        range.since,
-        range.until
-      ),
-    },
-  };
-};
+export const fetchDashboardKpis = (range: DateRange): Promise<DashboardKpis> =>
+  fetchAnalyticsOverview(range).then(dashboardKpisFromOverview);
 
 export const fetchTierDistribution = async (): Promise<
   TierDistributionRow[]
