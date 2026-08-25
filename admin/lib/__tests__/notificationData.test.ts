@@ -1,4 +1,7 @@
-import { groupAdminNotifications } from "../notificationModels";
+import {
+  buildNotificationAnalytics,
+  groupAdminNotifications,
+} from "../notificationModels";
 
 describe("admin notification grouping", () => {
   it("collapses broadcast rows while preserving recipient and open counts", () => {
@@ -56,5 +59,43 @@ describe("admin notification grouping", () => {
         opened: 1,
       },
     ]);
+  });
+
+  it("calculates open rates and 24-hour review conversion by kind", () => {
+    expect(
+      buildNotificationAnalytics(
+        [{ kind: "review_liked" }, { kind: "review_liked" }],
+        [
+          {
+            kind: "review_liked",
+            user_id: "member-1",
+            opened_at: "2026-08-25T10:00:00Z",
+          },
+          {
+            kind: "review_liked",
+            user_id: "member-2",
+            opened_at: "2026-08-25T10:00:00Z",
+          },
+        ],
+        [
+          {
+            user_id: "member-1",
+            inserted_at: "2026-08-25T20:00:00Z",
+          },
+        ]
+      )
+    ).toEqual({
+      totalSent: 2,
+      totalOpened: 2,
+      openToReviewRate: 0.5,
+      byKind: [
+        {
+          kind: "review_liked",
+          sent: 2,
+          opened: 2,
+          openRate: 1,
+        },
+      ],
+    });
   });
 });

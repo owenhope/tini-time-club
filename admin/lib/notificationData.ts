@@ -1,29 +1,19 @@
 import "server-only";
-import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  buildNotificationAnalytics,
   groupAdminNotifications,
   type AdminNotification,
   type AdminNotificationRow,
+  type NotificationAnalytics,
+  type NotificationKindStats,
 } from "@/lib/notificationModels";
 
-export type { AdminNotification } from "@/lib/notificationModels";
-
-export interface NotificationKindStats {
-  kind: string;
-  sent: number;
-  opened: number;
-  /** null when sends aren't tracked server-side (local reminders). */
-  openRate: number | null;
-}
-
-export interface NotificationAnalytics {
-  totalSent: number;
-  totalOpened: number;
-  /** % of opens followed by a review from that member within 24h. */
-  openToReviewRate: number | null;
-  byKind: NotificationKindStats[];
-}
+export type {
+  AdminNotification,
+  NotificationAnalytics,
+  NotificationKindStats,
+} from "@/lib/notificationModels";
 
 export const NOTIFICATIONS_PAGE_SIZE = 50;
 
@@ -95,64 +85,11 @@ export const fetchNotificationAnalytics = async (
       .gte("inserted_at", sinceIso),
   ]);
 
-  const sentRows = (sent.data ?? []).filter((row) =>
-    isAnalyticsNotificationKind(row.kind)
+  return buildNotificationAnalytics(
+    sent.data ?? [],
+    opens.data ?? [],
+    reviews.data ?? []
   );
-  const openRows = (opens.data ?? []).filter((row) =>
-    isAnalyticsNotificationKind(row.kind)
-  );
-
-  const sentByKind = new Map<string, number>();
-  for (const row of sentRows) {
-    const kind = row.kind;
-    sentByKind.set(kind, (sentByKind.get(kind) ?? 0) + 1);
-  }
-  const openedByKind = new Map<string, number>();
-  for (const row of openRows) {
-    const kind = row.kind;
-    openedByKind.set(kind, (openedByKind.get(kind) ?? 0) + 1);
-  }
-
-  const kinds = [
-    ...new Set([...sentByKind.keys(), ...openedByKind.keys()]),
-  ].sort();
-  const byKind = kinds
-    .map((kind) => {
-      const sentCount = sentByKind.get(kind) ?? 0;
-      const openedCount = openedByKind.get(kind) ?? 0;
-      return {
-        kind,
-        sent: sentCount,
-        opened: openedCount,
-        openRate: sentCount > 0 ? openedCount / sentCount : null,
-      };
-    })
-    .sort((left, right) => {
-      if (right.sent !== left.sent) return right.sent - left.sent;
-      return right.opened - left.opened;
-    });
-
-  // Conversion: an open counts if that member posted a review within 24h.
-  const dayMs = 24 * 60 * 60 * 1000;
-  const reviewsByUser = new Map<string, number[]>();
-  for (const review of reviews.data ?? []) {
-    const times = reviewsByUser.get(review.user_id) ?? [];
-    times.push(new Date(review.inserted_at).getTime());
-    reviewsByUser.set(review.user_id, times);
-  }
-  const converted = openRows.filter((open) => {
-    const openedAt = new Date(open.opened_at).getTime();
-    return (reviewsByUser.get(open.user_id) ?? []).some(
-      (t) => t >= openedAt && t <= openedAt + dayMs
-    );
-  }).length;
-
-  return {
-    totalSent: sentRows.length,
-    totalOpened: openRows.length,
-    openToReviewRate: openRows.length > 0 ? converted / openRows.length : null,
-    byKind,
-  };
 };
 
 export const fetchPushTokenCount = async (): Promise<number> => {
