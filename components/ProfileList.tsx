@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -54,6 +54,10 @@ export default function ProfileList({
   const [searchQuery, setSearchQuery] = useState<string>("");
   // Track profile ids that are currently being updated
   const [updatingFollowIds, setUpdatingFollowIds] = useState<string[]>([]);
+  const visibleProfileIds = useMemo(
+    () => [...new Set(profiles.map((item) => item.id))],
+    [profiles]
+  );
 
   // Fetch followed IDs for the current user.
   useEffect(() => {
@@ -70,11 +74,20 @@ export default function ProfileList({
         return;
       }
 
+      if (visibleProfileIds.length === 0) {
+        if (!cancelled) {
+          setFollowedIds([]);
+          setFollowStateReady(true);
+        }
+        return;
+      }
+
       setFollowStateReady(false);
       const { data, error } = await supabase
         .from("followers")
         .select("following_id")
-        .eq("follower_id", profileId);
+        .eq("follower_id", profileId)
+        .in("following_id", visibleProfileIds);
       if (error) {
         reportError("Error fetching followed ids:", error);
       }
@@ -91,7 +104,7 @@ export default function ProfileList({
     return () => {
       cancelled = true;
     };
-  }, [profileId, profileLoading]);
+  }, [profileId, profileLoading, visibleProfileIds]);
 
   // Toggle follow/unfollow action.
   const toggleFollow = async (targetProfileId: string) => {
