@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type {
   AdminProfile,
@@ -28,7 +29,7 @@ export const fetchActiveMemberIds = async (): Promise<string[]> => {
     .from("profiles")
     .select("id")
     .eq("deleted", false);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load active members");
   return (data ?? []).map((profile) => profile.id);
 };
 
@@ -41,7 +42,7 @@ export const fetchActiveLocationIds = async (
     .from("locations")
     .select("id")
     .in("created_by", activeMemberIds);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load active locations");
   return (data ?? []).map((location) => location.id);
 };
 
@@ -57,7 +58,7 @@ export const fetchAuthUsers = async (): Promise<
       page,
       perPage: 1000,
     });
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load auth users");
     for (const user of data.users) {
       users.set(user.id, {
         email: user.email,
@@ -84,7 +85,7 @@ export const fetchTopReviewers = async (limit = 5): Promise<AdminProfile[]> => {
       .limit(limit),
     fetchAuthUsers(),
   ]);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load top reviewers");
   return ((data ?? []) as AdminProfile[]).map((profile) =>
     enrichAdminProfile(profile, authUsers.get(profile.id))
   );
@@ -102,9 +103,11 @@ export const fetchProfileCounts = async (): Promise<ProfileCounts> => {
       .select("id", { count: "exact", head: true })
       .eq("deleted", true),
   ]);
-  if (total.error) throw new Error(total.error.message);
-  if (verified.error) throw new Error(verified.error.message);
-  if (deleted.error) throw new Error(deleted.error.message);
+  if (total.error) throw toAdminDataError(total.error, "count profiles");
+  if (verified.error)
+    throw toAdminDataError(verified.error, "count verified profiles");
+  if (deleted.error)
+    throw toAdminDataError(deleted.error, "count deleted profiles");
   return {
     total: total.count ?? 0,
     verified: verified.count ?? 0,
@@ -128,7 +131,7 @@ const fetchLatestReviewDates = async (
         .in("user_id", ids)
         .order("inserted_at", { ascending: false })
         .range(start, start + rowBatchSize - 1);
-      if (error) throw new Error(error.message);
+      if (error) throw toAdminDataError(error, "load latest review dates");
 
       for (const review of data ?? []) {
         if (!latest.has(review.user_id)) {
@@ -184,7 +187,7 @@ export const fetchProfiles = async (
         batchQuery = batchQuery.eq("is_verified", true);
 
       const { data, error, count } = await batchQuery;
-      if (error) throw new Error(error.message);
+      if (error) throw toAdminDataError(error, "load profiles");
       if (start === 0) total = count ?? 0;
 
       const batch = (data ?? []).map((profile) =>
@@ -245,7 +248,7 @@ export const fetchProfiles = async (
     query,
     fetchAuthUsers(),
   ]);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load profiles");
   const rows = data ?? [];
   const latestReviewDates = await fetchLatestReviewDates(
     rows.map((profile) => profile.id)
@@ -281,7 +284,7 @@ export const fetchProfile = async (
         .order("inserted_at", { ascending: false })
         .limit(50),
     ]);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load profile detail");
   if (!profile) return null;
   const reviewRows = (reviews ?? []) as Array<
     Omit<AdminReview, "location"> & {
@@ -309,7 +312,7 @@ export const fetchNotificationAudienceMembers = async (): Promise<
     .eq("deleted", false)
     .order("username", { ascending: true, nullsFirst: false })
     .order("id", { ascending: true });
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load notification audience");
 
   return data ?? [];
 };

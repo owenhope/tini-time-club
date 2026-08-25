@@ -4,6 +4,7 @@ import {
   type SharePreviewReview,
   type SharePreviewReviewRow,
 } from "@/lib/sharePreviewModels";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type { SharePreviewReview } from "@/lib/sharePreviewModels";
@@ -29,7 +30,7 @@ export const fetchSharePreviewReviews = async (
     .eq("state", 1)
     .order("inserted_at", { ascending: false })
     .limit(limit);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load share preview reviews");
 
   return normalizeSharePreviewReviews((data ?? []) as SharePreviewReviewRow[]);
 };
@@ -43,7 +44,7 @@ export const fetchSharePreviewLocations = async (
     .order("total_ratings", { ascending: false })
     .order("name", { ascending: true })
     .limit(limit);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load share preview locations");
 
   return (data ?? []).map((location) => ({
     id: String(location.id),

@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { resolveEngagement } from "@/lib/analytics/engagementModel.mjs";
 import { rangeArgs, type DayCount } from "@/lib/analytics/shared";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { AdminProfile } from "@/lib/data";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -55,7 +56,7 @@ const loadEngagement = unstable_cache(
       "get_admin_engagement_analytics",
       { p_since, p_until, p_limit: 20, p_cursor_at, p_cursor_id }
     );
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load engagement analytics");
     return resolveEngagement(data) as EngagementAnalytics;
   },
   ["admin-engagement-analytics-v1"],

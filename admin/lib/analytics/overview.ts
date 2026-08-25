@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { resolveOverview } from "@/lib/analytics/overviewModel.mjs";
 import { rangeArgs, type DayCount } from "@/lib/analytics/shared";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -31,7 +32,7 @@ const loadOverview = unstable_cache(
       "get_admin_analytics_overview",
       { p_since, p_until }
     );
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load analytics overview");
     return resolveOverview(data) as AnalyticsOverview;
   },
   ["admin-analytics-overview-v1"],

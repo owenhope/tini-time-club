@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { resolveGrowth } from "@/lib/analytics/growthModel.mjs";
 import { rangeArgs, type DayCount } from "@/lib/analytics/shared";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -29,7 +30,7 @@ const loadGrowth = unstable_cache(
       "get_admin_growth_analytics",
       { p_since, p_until }
     );
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load growth analytics");
     return resolveGrowth(data) as GrowthAnalytics;
   },
   ["admin-growth-analytics-v1"],

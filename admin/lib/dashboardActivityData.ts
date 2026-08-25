@@ -5,6 +5,7 @@ import {
   fetchAuthUsers,
   fetchTopReviewers,
 } from "@/lib/profileData";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { AdminProfile } from "@/lib/profileTypes";
 import type { AdminReviewRow, TopReview } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
@@ -79,8 +80,10 @@ export const fetchLatestActivity = async (
           .limit(limit)
       : { data: [], error: null },
   ]);
-  if (reviews.error) throw new Error(reviews.error.message);
-  if (locations.error) throw new Error(locations.error.message);
+  if (reviews.error)
+    throw toAdminDataError(reviews.error, "load latest reviews");
+  if (locations.error)
+    throw toAdminDataError(locations.error, "load latest locations");
 
   const activeMemberIdSet = new Set(activeMemberIds);
   const newestIds = [...authUsers.entries()]
@@ -102,7 +105,8 @@ export const fetchLatestActivity = async (
           )
           .in("id", newestIds)
       : { data: [], error: null };
-  if (profileError) throw new Error(profileError.message);
+  if (profileError)
+    throw toAdminDataError(profileError, "load latest member profiles");
 
   // Ordered by the auth.users sort, not by the `in` result order.
   const members = newestIds
@@ -167,9 +171,11 @@ export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
           .in("location", activeLocationIds)
       : { data: [], error: null },
   ]);
-  if (likes.error) throw new Error(likes.error.message);
-  if (comments.error) throw new Error(comments.error.message);
-  if (locationReviews.error) throw new Error(locationReviews.error.message);
+  if (likes.error) throw toAdminDataError(likes.error, "load review likes");
+  if (comments.error)
+    throw toAdminDataError(comments.error, "load review comments");
+  if (locationReviews.error)
+    throw toAdminDataError(locationReviews.error, "load activity reviews");
 
   const engagement = new Map<string, { likes: number; comments: number }>();
   const tally = (reviewId: unknown, key: "likes" | "comments") => {
@@ -213,7 +219,7 @@ export const fetchTopActivity = async (limit = 10): Promise<TopActivity> => {
         "id",
         batch.map(([id]) => id)
       );
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load top activity reviews");
 
     // Reordered to the engagement ranking, which `in` does not preserve.
     topReviews.push(

@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   buildNotificationAnalytics,
@@ -35,7 +36,7 @@ export const fetchRecentNotifications = async (
     .select("id,created_at,body,kind,user_id,event_key")
     .order("created_at", { ascending: false })
     .limit(2000);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load notifications");
 
   const userIds = [...new Set((data ?? []).map((n) => n.user_id))];
   const notificationIds = (data ?? []).map((n) => n.id);
@@ -105,7 +106,7 @@ export const fetchWeeklyPushSubscriberCount = async (): Promise<number> => {
     .select("id", { count: "exact", head: true })
     .eq("deleted", false)
     .eq("weekly_push_notifications_enabled", true);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load notification analytics");
 
   return count ?? 0;
 };

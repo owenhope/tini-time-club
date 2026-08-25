@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
 import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
@@ -111,7 +112,8 @@ export const fetchLiveActivity = async (
     userIds.length > 0
       ? await db().from("profiles").select("id,username,name").in("id", userIds)
       : { data: [], error: null };
-  if (profilesResult.error) throw new Error(profilesResult.error.message);
+  if (profilesResult.error)
+    throw toAdminDataError(profilesResult.error, "load live activity profiles");
 
   return resolveLiveActivityResponse(data, null, profilesResult.data ?? []);
 };
@@ -231,12 +233,18 @@ export const fetchDashboardKpis = async (
       : noRows,
   ]);
 
-  if (totalReviews.error) throw new Error(totalReviews.error.message);
-  if (totalLocations.error) throw new Error(totalLocations.error.message);
-  if (reviewsInRange.error) throw new Error(reviewsInRange.error.message);
-  if (locationsInRange.error) throw new Error(locationsInRange.error.message);
-  if (priorReviews.error) throw new Error(priorReviews.error.message);
-  if (priorLocations.error) throw new Error(priorLocations.error.message);
+  if (totalReviews.error)
+    throw toAdminDataError(totalReviews.error, "count dashboard reviews");
+  if (totalLocations.error)
+    throw toAdminDataError(totalLocations.error, "count dashboard locations");
+  if (reviewsInRange.error)
+    throw toAdminDataError(reviewsInRange.error, "load dashboard reviews");
+  if (locationsInRange.error)
+    throw toAdminDataError(locationsInRange.error, "load dashboard locations");
+  if (priorReviews.error)
+    throw toAdminDataError(priorReviews.error, "count prior reviews");
+  if (priorLocations.error)
+    throw toAdminDataError(priorLocations.error, "count prior locations");
 
   const activeAuthUsers = [...authUsers.entries()]
     .filter(([id]) => activeMemberIdSet.has(id))
@@ -287,7 +295,7 @@ export const fetchTierDistribution = async (): Promise<
     .from("profiles")
     .select("review_count")
     .eq("deleted", false);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load tier distribution");
 
   return buildTierDistribution(data ?? []);
 };

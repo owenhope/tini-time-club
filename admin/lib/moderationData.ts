@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { AdminProfile } from "@/lib/profileTypes";
 import {
   normalizeModerationReports,
@@ -44,7 +45,7 @@ export const fetchModerationReports = async ({
   if (contentType) request = request.eq("content_type", contentType);
 
   const { data: reportRows, error } = await request;
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load moderation reports");
 
   const rows = reportRows ?? [];
   const profileIds = [
@@ -90,9 +91,12 @@ export const fetchModerationReports = async ({
       ? db().from("comments").select("id,body").in("id", commentIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (profilesResult.error) throw new Error(profilesResult.error.message);
-  if (reviewsResult.error) throw new Error(reviewsResult.error.message);
-  if (commentsResult.error) throw new Error(commentsResult.error.message);
+  if (profilesResult.error)
+    throw toAdminDataError(profilesResult.error, "load report profiles");
+  if (reviewsResult.error)
+    throw toAdminDataError(reviewsResult.error, "load report reviews");
+  if (commentsResult.error)
+    throw toAdminDataError(commentsResult.error, "load report comments");
 
   const profiles = new Map(
     ((profilesResult.data ?? []) as AdminProfile[]).map((profile) => [
@@ -167,7 +171,7 @@ export const fetchModerationReportCounts =
     const { data, error } = await db()
       .from("reports")
       .select("status,content_type,comment_id");
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "count moderation reports");
 
     const rows = data ?? [];
     return {

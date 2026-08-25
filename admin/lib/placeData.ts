@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { normalizeGoldenGlassInspectionRows } from "@/lib/placeModels";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -38,7 +39,7 @@ export const fetchLocations = async (
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load locations");
 
   const rows = data ?? [];
   const ids = rows.map((row) => row.id);
@@ -48,7 +49,8 @@ export const fetchLocations = async (
       .from("location_ratings")
       .select("id,rating,total_ratings")
       .in("id", ids);
-    if (ratingError) throw new Error(ratingError.message);
+    if (ratingError)
+      throw toAdminDataError(ratingError, "load location ratings");
     for (const row of ratingRows ?? []) {
       ratings.set(row.id, {
         rating: row.rating ?? null,
@@ -120,7 +122,7 @@ export const fetchGoldenGlassInspection = async (
   const { data, error } = await db().rpc("get_golden_glass_inspection_v1", {
     p_region_id: numericRegionId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load Golden Glass inspection");
   return normalizeGoldenGlassInspectionRows(data ?? []);
 };
 
@@ -135,7 +137,8 @@ export const fetchAdminRegions = async (): Promise<AdminRegion[]> => {
       .order("name"),
     fetchGoldenGlassInspection(),
   ]);
-  if (regionsResult.error) throw new Error(regionsResult.error.message);
+  if (regionsResult.error)
+    throw toAdminDataError(regionsResult.error, "load regions");
 
   const goldenGlassCounts = new Map<number, number>();
   const qualifyingLocationCounts = new Map<number, number>();
@@ -178,7 +181,7 @@ export const fetchMapPlaces = async (
       .lte("lon", bounds.maxLon);
   }
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load map places");
 
   return (data ?? [])
     .filter((row) => row.lat != null && row.lon != null)
@@ -207,9 +210,10 @@ export const fetchLocationCounts = async (): Promise<LocationCounts> => {
       .select("id", { count: "exact", head: true })
       .gte("total_ratings", 5),
   ]);
-  if (total.error) throw new Error(total.error.message);
-  if (rated.error) throw new Error(rated.error.message);
-  if (strong.error) throw new Error(strong.error.message);
+  if (total.error) throw toAdminDataError(total.error, "count locations");
+  if (rated.error) throw toAdminDataError(rated.error, "count rated locations");
+  if (strong.error)
+    throw toAdminDataError(strong.error, "count highly rated locations");
   return {
     total: total.count ?? 0,
     rated: rated.count ?? 0,
@@ -249,9 +253,12 @@ export const fetchAdminLocation = async (
       .order("inserted_at", { ascending: false })
       .limit(50),
   ]);
-  if (locationResult.error) throw new Error(locationResult.error.message);
-  if (ratingResult.error) throw new Error(ratingResult.error.message);
-  if (reviewsResult.error) throw new Error(reviewsResult.error.message);
+  if (locationResult.error)
+    throw toAdminDataError(locationResult.error, "load location detail");
+  if (ratingResult.error)
+    throw toAdminDataError(ratingResult.error, "load location rating");
+  if (reviewsResult.error)
+    throw toAdminDataError(reviewsResult.error, "load location reviews");
   if (!locationResult.data) return null;
 
   const location = locationResult.data;

@@ -1,4 +1,5 @@
 import "server-only";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { fetchWebMentionSpans } from "@/lib/mentions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { fetchActiveMemberIds, USERS_PAGE_SIZE } from "@/lib/profileData";
@@ -68,13 +69,14 @@ const fetchReviewEngagement = async (
       .in("review_id", reviewIds)
       .in("user_id", activeMemberIds),
   ]);
-  if (likes.error) throw new Error(likes.error.message);
-  if (comments.error) throw new Error(comments.error.message);
+  if (likes.error) throw toAdminDataError(likes.error, "load review likes");
+  if (comments.error)
+    throw toAdminDataError(comments.error, "load review comments");
   if (
     shares.error &&
     !isMissingRelationError(shares.error, "review_share_events")
   ) {
-    throw new Error(shares.error.message);
+    throw toAdminDataError(shares.error, "load review shares");
   }
 
   const shareRows = shares.error ? [] : (shares.data ?? []);
@@ -94,8 +96,9 @@ export const fetchReviewCounts = async (): Promise<ReviewCounts> => {
       .select("id", { count: "exact", head: true })
       .eq("state", 1),
   ]);
-  if (total.error) throw new Error(total.error.message);
-  if (active.error) throw new Error(active.error.message);
+  if (total.error) throw toAdminDataError(total.error, "count reviews");
+  if (active.error)
+    throw toAdminDataError(active.error, "count active reviews");
   const totalCount = total.count ?? 0;
   const activeCount = active.count ?? 0;
   return {
@@ -122,7 +125,7 @@ export const fetchAllReviews = async (
           .select("id")
           .ilike("username", `%${usernameSearch}%`)
           .then(({ data, error }) => {
-            if (error) throw new Error(error.message);
+            if (error) throw toAdminDataError(error, "search review profiles");
             return (data ?? []).map((profile) => profile.id);
           }),
         db()
@@ -130,7 +133,7 @@ export const fetchAllReviews = async (
           .select("id")
           .or(`name.ilike.%${trimmedSearch}%,address.ilike.%${trimmedSearch}%`)
           .then(({ data, error }) => {
-            if (error) throw new Error(error.message);
+            if (error) throw toAdminDataError(error, "search review places");
             return (data ?? []).map((place) => place.id);
           }),
       ])
@@ -160,7 +163,7 @@ export const fetchAllReviews = async (
   if (state === "inactive") query = query.neq("state", 1);
 
   const { data, error, count } = await query;
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load reviews");
   const reviewIds = (data ?? []).map((row) => String(row.id));
   const activeMemberIds = await fetchActiveMemberIds();
   const engagement = await fetchReviewEngagement(reviewIds, activeMemberIds);
@@ -202,7 +205,7 @@ export const fetchAdminReview = async (
     fetchReviewEngagement([id], activeMemberIds),
   ]);
   const { data, error } = reviewResult;
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "load review detail");
   if (!data) return null;
 
   const mentionRows = await fetchWebMentionSpans({

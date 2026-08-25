@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { toAdminDataError } from "@/lib/dataErrors";
 import { SESSION_COOKIE, createSessionToken } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -39,7 +40,7 @@ export async function setVerified(profileId: string, verified: boolean) {
     .from("profiles")
     .update({ is_verified: verified })
     .eq("id", profileId);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "update profile verification");
   revalidatePath(`/admin/users/${profileId}`);
   revalidatePath("/admin/users");
 }
@@ -69,7 +70,7 @@ export async function sendNotification(formData: FormData) {
       .from("profiles")
       .select("id")
       .eq("deleted", false);
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load notification audience");
     userIds = (data ?? []).map((p) => p.id);
   } else {
     userIds = [audience];
@@ -87,7 +88,7 @@ export async function sendNotification(formData: FormData) {
   }));
 
   const { error } = await admin.from("notifications").insert(rows);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "send notification");
 
   revalidatePath("/admin/notifications");
   redirect(`/admin/notifications?sent=${rows.length}`);
@@ -101,7 +102,7 @@ export async function setDeleted(profileId: string, deleted: boolean) {
       deleted_at: deleted ? new Date().toISOString() : null,
     })
     .eq("id", profileId);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "update profile deletion");
   revalidatePath(`/admin/users/${profileId}`);
   revalidatePath("/admin/users");
 }
@@ -115,7 +116,7 @@ export async function setReviewActive(reviewId: string, active: boolean) {
     .eq("id", reviewId)
     .select("user_id")
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "update review status");
   if (!data) throw new Error("Review not found");
 
   revalidatePath(`/admin/reviews/${reviewId}`);
@@ -140,7 +141,7 @@ export async function setReportStatus(
     .from("reports")
     .update({ status })
     .eq("id", reportId);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "update report status");
 
   revalidatePath("/admin/reports");
 }
@@ -152,7 +153,7 @@ export async function deleteReportedContentAndResolve(reportId: string) {
     .select("content_type,review_id,comment_id")
     .eq("id", reportId)
     .maybeSingle();
-  if (reportError) throw new Error(reportError.message);
+  if (reportError) throw toAdminDataError(reportError, "load report content");
   if (!report) throw new Error("Report not found");
 
   const contentType =
@@ -162,32 +163,40 @@ export async function deleteReportedContentAndResolve(reportId: string) {
       .from("reports")
       .update({ status: "resolved" })
       .eq("comment_id", report.comment_id);
-    if (resolveRelatedError) throw new Error(resolveRelatedError.message);
+    if (resolveRelatedError)
+      throw toAdminDataError(
+        resolveRelatedError,
+        "resolve related comment reports"
+      );
 
     const { error } = await admin
       .from("comments")
       .delete()
       .eq("id", report.comment_id);
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "delete reported comment");
   } else if (contentType === "review" && report.review_id) {
     const { error: resolveRelatedError } = await admin
       .from("reports")
       .update({ status: "resolved" })
       .eq("review_id", report.review_id);
-    if (resolveRelatedError) throw new Error(resolveRelatedError.message);
+    if (resolveRelatedError)
+      throw toAdminDataError(
+        resolveRelatedError,
+        "resolve related review reports"
+      );
 
     const { error } = await admin
       .from("reviews")
       .update({ state: 3 })
       .eq("id", report.review_id);
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "deactivate reported review");
   }
 
   const { error: resolveError } = await admin
     .from("reports")
     .update({ status: "resolved" })
     .eq("id", reportId);
-  if (resolveError) throw new Error(resolveError.message);
+  if (resolveError) throw toAdminDataError(resolveError, "resolve report");
 
   revalidatePath("/admin/reports");
   revalidatePath("/admin/reviews");
@@ -229,7 +238,7 @@ export async function updateLocation(locationId: string, formData: FormData) {
     })
     .eq("id", locationId);
   if (error?.code === "23505") redirect(`${path}?error=placeId`);
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "update location");
 
   revalidatePath(path);
   revalidatePath("/admin/places");
@@ -284,7 +293,7 @@ export async function upsertRegion(formData: FormData) {
     : await query.insert(values).select("id").single();
   if (result.error) {
     if (result.error.code === "23505") redirect(`${returnTo}?error=slug`);
-    throw new Error(result.error.message);
+    throw toAdminDataError(result.error, "save region");
   }
   if (!savedId && result.data && "id" in result.data) {
     savedId = String(result.data.id);
@@ -318,7 +327,8 @@ export async function upsertRegion(formData: FormData) {
         .from("regions")
         .update({ enabled: false, updated_at: new Date().toISOString() })
         .eq("id", savedId);
-      if (disableResult.error) throw new Error(disableResult.error.message);
+      if (disableResult.error)
+        throw toAdminDataError(disableResult.error, "disable region");
       eligibilityBlocked = true;
 
       const { error: disabledRefreshError } = await supabaseAdmin().rpc(
@@ -411,7 +421,7 @@ export async function saveRegionGoogleMapping(
       },
       { onConflict: "google_place_id" }
     );
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "save region Google mapping");
   revalidatePath("/admin/places/regions");
   revalidatePath(`/admin/places/regions/${regionId}`);
   redirect(`${returnTo}?updated=1`);
@@ -419,7 +429,7 @@ export async function saveRegionGoogleMapping(
 
 export async function refreshGoldenGlass() {
   const { error } = await supabaseAdmin().rpc("refresh_golden_glass_v1");
-  if (error) throw new Error(error.message);
+  if (error) throw toAdminDataError(error, "refresh Golden Glass");
   revalidatePath("/admin/places/golden-glass");
   revalidatePath("/admin/places");
   redirect("/admin/places/golden-glass?refreshed=1");

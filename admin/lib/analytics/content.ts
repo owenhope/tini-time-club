@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { resolveContent } from "@/lib/analytics/contentModel.mjs";
 import { rangeArgs, type DayCount } from "@/lib/analytics/shared";
+import { toAdminDataError } from "@/lib/dataErrors";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -43,7 +44,7 @@ const loadContent = unstable_cache(
       "get_admin_content_analytics",
       { p_since, p_until }
     );
-    if (error) throw new Error(error.message);
+    if (error) throw toAdminDataError(error, "load content analytics");
     return resolveContent(data) as ContentAnalytics;
   },
   ["admin-content-analytics-v1"],
