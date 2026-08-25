@@ -1,6 +1,7 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
 import { createClient } from "@supabase/supabase-js";
+import { toReviewImageDeliveryUrl } from "./imageDelivery.ts";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -66,11 +67,6 @@ const getClient = () => {
   });
 };
 
-const renderSignedUrl = (signedUrl: string) =>
-  signedUrl.includes("/object/sign/")
-    ? `${signedUrl.replace("/object/sign/", "/render/image/sign/")}&width=1080&quality=70`
-    : signedUrl;
-
 async function signReviewImages(
   client: ReturnType<typeof createClient>,
   rows: any[]
@@ -90,7 +86,7 @@ async function signReviewImages(
   const urls = new Map<string, string>();
   for (const item of data ?? []) {
     if (item.path && item.signedUrl && !item.error) {
-      urls.set(item.path, renderSignedUrl(item.signedUrl));
+      urls.set(item.path, toReviewImageDeliveryUrl(item.signedUrl));
     }
   }
   return rows.map((row) => ({
