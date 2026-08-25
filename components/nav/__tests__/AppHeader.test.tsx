@@ -84,6 +84,13 @@ describe("AppHeader", () => {
         .findAllByType(Text)
         .some((node) => node.props.children === "99+")
     ).toBe(true);
+
+    const badge = tree!.root.findAllByType(View).find((node) => {
+      const style = StyleSheet.flatten(node.props.style);
+      return style?.minWidth === 20 && style?.height === 20;
+    });
+    expect(badge).toBeDefined();
+    expect(StyleSheet.flatten(badge!.props.style)?.borderWidth).toBeUndefined();
     act(() => tree!.unmount());
   });
 
