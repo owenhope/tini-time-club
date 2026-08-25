@@ -61,6 +61,11 @@ import {
   ReviewPublishingError,
 } from "@/services/reviewPublishingService";
 import {
+  submitEditedReview,
+  submitNewReview,
+  type ReviewComposerLocation,
+} from "@/utils/reviewComposerSubmission";
+import {
   prepareReviewImageForUpload,
   type ReviewImageSource,
 } from "@/utils/reviewImage";
@@ -68,16 +73,8 @@ import MentionInput from "@/components/mentions/MentionInput";
 import type { MentionSpan } from "@/types/types";
 import { fetchMentionSpans } from "@/services/mentionService";
 
-interface ReviewFormLocation {
-  name: string;
-  address: string;
-  coordinates?: { latitude: number; longitude: number };
-  place_id?: string;
-  id?: string;
-}
-
 interface ReviewFormValues {
-  location: ReviewFormLocation | null;
+  location: ReviewComposerLocation | null;
   spirit: string | number;
   type: string | number;
   taste: number;
@@ -217,7 +214,7 @@ function ReviewComposer() {
         : { height: "100%" as const, aspectRatio: photoAspectRatio }
       : null;
   const [selectedLocation, setSelectedLocation] =
-    useState<ReviewFormLocation | null>(null);
+    useState<ReviewComposerLocation | null>(null);
 
   const [types, setTypes] = useState<Option[]>([]);
   const [spirits, setSpirits] = useState<Option[]>([]);
@@ -652,8 +649,7 @@ function ReviewComposer() {
     );
   };
 
-  const removeReviewImage = async (imagePath: string | null) => {
-    if (!imagePath) return;
+  const removeReviewImage = async (imagePath: string) => {
     const { error } = await supabase.storage
       .from("review_images")
       .remove([imagePath]);
@@ -663,43 +659,42 @@ function ReviewComposer() {
   const handleUpdateReview = async () => {
     if (!profile || !editReviewId || !originalImagePath) return;
 
-    let uploadedImagePath: string | null = null;
     try {
       setIsSubmitting(true);
       setSubmitError(null);
 
-      if (photoChanged) {
-        setSubmissionMessage("Uploading new image...");
-        uploadedImagePath = await uploadImage(profile.id);
-        if (!uploadedImagePath) {
-          throw new Error("Replacement image upload failed.");
-        }
-      }
-
-      setSubmissionMessage("Saving changes...");
-      const locationId = await resolveLocationId(profile.id);
-      await databaseService.updateReview(
-        editReviewId,
+      const { locationId } = await submitEditedReview(
         {
-          image_url: uploadedImagePath || originalImagePath,
-          location: locationId,
+          reviewId: editReviewId,
+          userId: profile.id,
+          originalImagePath,
+          photoChanged,
           spirit: watchedValues.spirit,
           type: watchedValues.type,
           taste: watchedValues.taste,
           presentation: watchedValues.presentation,
           comment: watchedValues.comment || "",
+          // Unknown stored spans plus no composed ones: leave the server's
+          // mentions untouched instead of replacing them with nothing.
+          mentions:
+            captionMentionsUnavailableRef.current &&
+            captionMentions.length === 0
+              ? null
+              : captionMentions,
         },
-        profile.id,
-        // Unknown stored spans plus no composed ones: leave the server's
-        // mentions untouched instead of replacing them with nothing.
-        captionMentionsUnavailableRef.current && captionMentions.length === 0
-          ? null
-          : captionMentions
+        {
+          uploadImage: () => {
+            setSubmissionMessage("Uploading new image...");
+            return uploadImage(profile.id);
+          },
+          removeImage: removeReviewImage,
+          resolveLocationId: () => {
+            setSubmissionMessage("Saving changes...");
+            return resolveLocationId(profile.id);
+          },
+          updateReview: databaseService.updateReview.bind(databaseService),
+        }
       );
-
-      if (uploadedImagePath && uploadedImagePath !== originalImagePath) {
-        await removeReviewImage(originalImagePath);
-      }
 
       AnalyticService.capture("edit_review", {
         reviewId: editReviewId,
@@ -711,7 +706,6 @@ function ReviewComposer() {
       goBack();
     } catch (error) {
       reportError("Error updating review:", error);
-      if (uploadedImagePath) await removeReviewImage(uploadedImagePath);
       setSubmitError("We couldn't save your changes. Please try again.");
       setIsSubmitting(false);
     }
@@ -728,19 +722,9 @@ function ReviewComposer() {
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      submission = await publishReview(
+      submission = await submitNewReview(
         {
-          location: {
-            id:
-              selectedLocation.id && !selectedLocation.coordinates
-                ? selectedLocation.id
-                : null,
-            name: selectedLocation.name,
-            address: selectedLocation.address,
-            placeId: selectedLocation.place_id,
-            latitude: selectedLocation.coordinates?.latitude,
-            longitude: selectedLocation.coordinates?.longitude,
-          },
+          location: selectedLocation,
           spiritId: watchedValues.spirit,
           typeId: watchedValues.type,
           taste: watchedValues.taste,
@@ -749,6 +733,7 @@ function ReviewComposer() {
           mentions: captionMentions,
         },
         {
+          publishReview,
           uploadImage: () => uploadImage(profile.id),
           removeImage: removeReviewImage,
           onStage: (stage) => {
