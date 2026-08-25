@@ -75,7 +75,13 @@ async function performPushRegistration({
       permissions.status === "undetermined" &&
       requestPermission
     ) {
-      permissions = await Notifications.requestPermissionsAsync();
+      permissions = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      });
     }
 
     if (!permissions.granted) {

@@ -15,6 +15,7 @@ import {
 } from "@/services/activityService";
 import { reportError } from "@/utils/log";
 import { clearActivityCache } from "@/utils/activityCache";
+import { setActivityBadgeCount } from "@/utils/activityBadge";
 import { supabase } from "@/utils/supabase";
 
 export interface ActivityContextValue {
@@ -41,7 +42,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      setUnseenCount(await fetchUnseenActivityCount());
+      const nextCount = await fetchUnseenActivityCount();
+      setUnseenCount(nextCount);
+      await setActivityBadgeCount(nextCount);
     } catch (error) {
       reportError("Failed to refresh Activity badge:", error);
     }
@@ -50,7 +53,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const markPushOpened = useCallback(async (notificationId: string) => {
     try {
       await markActivityRead([notificationId]);
-      setUnseenCount((count) => Math.max(0, count - 1));
+      const nextCount = await fetchUnseenActivityCount();
+      setUnseenCount(nextCount);
+      await setActivityBadgeCount(nextCount);
     } catch (error) {
       reportError("Failed to mark push Activity as read:", error);
     }
@@ -58,6 +63,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
 
   const clearUnseenIndicator = useCallback(() => {
     setUnseenCount(0);
+    void setActivityBadgeCount(0).catch((error) =>
+      reportError("Failed to clear Activity badge:", error)
+    );
   }, []);
 
   useEffect(() => {
@@ -67,6 +75,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     }
     previousProfileIdRef.current = profileId;
     setUnseenCount(0);
+    void setActivityBadgeCount(0).catch((error) =>
+      reportError("Failed to reset Activity badge:", error)
+    );
     if (!profileId) return;
 
     void refreshUnseenCount();

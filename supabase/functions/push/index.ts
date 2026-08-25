@@ -295,6 +295,10 @@ async function sendExpoPushes(
         // notificationId lets the app attribute the tap when logging opens.
         data: { ...(notification.data ?? {}), notificationId: notification.id },
         sound: "default",
+        // A pending Activity item should leave a visible icon badge while the
+        // app is backgrounded. The app replaces this sentinel with the exact
+        // unread count on its next refresh.
+        badge: 1,
         channelId: "default",
       }))
     )) as { data?: ExpoTicket[] };
