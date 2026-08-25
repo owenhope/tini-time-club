@@ -9,6 +9,10 @@ import type {
 } from "@/lib/profileTypes";
 import type { AdminReview } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
+import {
+  enrichAdminProfile,
+  type AuthUserSummary,
+} from "@/lib/profileModels";
 
 export type {
   AdminProfile,
@@ -46,7 +50,7 @@ export const fetchActiveLocationIds = async (
 
 /** auth.users rows keyed by id — email + signup date live there. */
 export const fetchAuthUsers = async (): Promise<
-  Map<string, { email?: string; created_at?: string; last_sign_in_at?: string }>
+  Map<string, AuthUserSummary>
 > => {
   const users = new Map();
   let page = 1;
@@ -84,10 +88,9 @@ export const fetchTopReviewers = async (limit = 5): Promise<AdminProfile[]> => {
     fetchAuthUsers(),
   ]);
   if (error) throw new Error(error.message);
-  return ((data ?? []) as AdminProfile[]).map((profile) => ({
-    ...profile,
-    ...authUsers.get(profile.id),
-  }));
+  return ((data ?? []) as AdminProfile[]).map((profile) =>
+    enrichAdminProfile(profile, authUsers.get(profile.id))
+  );
 };
 
 export const fetchProfileCounts = async (): Promise<ProfileCounts> => {
@@ -187,10 +190,9 @@ export const fetchProfiles = async (
       if (error) throw new Error(error.message);
       if (start === 0) total = count ?? 0;
 
-      const batch = (data ?? []).map((profile) => ({
-        ...profile,
-        ...authUsers.get(profile.id),
-      }));
+      const batch = (data ?? []).map((profile) =>
+        enrichAdminProfile(profile, authUsers.get(profile.id))
+      );
       profiles.push(...batch);
       if (batch.length < batchSize) break;
     }
@@ -253,8 +255,7 @@ export const fetchProfiles = async (
   );
   return {
     profiles: rows.map((profile) => ({
-      ...profile,
-      ...authUsers.get(profile.id),
+      ...enrichAdminProfile(profile, authUsers.get(profile.id)),
       last_review_at: latestReviewDates.get(profile.id),
     })),
     total: count ?? 0,
@@ -291,7 +292,7 @@ export const fetchProfile = async (
     }
   >;
   return {
-    profile: { ...profile, ...authUsers.get(profile.id) },
+    profile: enrichAdminProfile(profile, authUsers.get(profile.id)),
     reviews: reviewRows.map((review) => ({
       ...review,
       location: Array.isArray(review.location)
