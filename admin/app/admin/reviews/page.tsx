@@ -12,14 +12,10 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
+import { formatOverallRating } from "@/lib/format";
 import { fetchAllReviews, fetchReviewCounts } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
-
-const overall = (taste: number | null, presentation: number | null) =>
-  taste == null || presentation == null
-    ? "—"
-    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
 const shortDate = (value: string) => new Date(value).toLocaleDateString();
 
@@ -138,7 +134,7 @@ export default async function ReviewsPage({
               </td>
               <td className="whitespace-nowrap px-4 py-3">
                 <span className="font-mono text-base font-semibold tabular-nums text-stone-900">
-                  {overall(review.taste, review.presentation)}
+                  {formatOverallRating(review.taste, review.presentation)}
                 </span>
                 <span className="ml-2 text-xs text-stone-400">
                   T {review.taste ?? "—"} / P {review.presentation ?? "—"}

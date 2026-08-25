@@ -10,6 +10,7 @@ import {
 import UserBadge from "@/components/UserBadge";
 import MentionRichText from "@/components/MentionRichText";
 import { setReviewActive } from "@/lib/actions";
+import { formatOverallRating } from "@/lib/format";
 import { fetchAdminReview } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,6 @@ export const dynamic = "force-dynamic";
 const date = (value: string) => new Date(value).toLocaleString();
 
 const score = (value: number | null) => value?.toFixed(1) ?? "—";
-
-const overall = (taste: number | null, presentation: number | null) =>
-  taste == null || presentation == null
-    ? "—"
-    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
 export default async function ReviewDetailPage({
   params,
@@ -49,7 +45,7 @@ export default async function ReviewDetailPage({
         stats={[
           {
             label: "Overall Rating",
-            value: overall(review.taste, review.presentation),
+            value: formatOverallRating(review.taste, review.presentation),
             tone: "chartreuse",
           },
           { label: "Taste", value: score(review.taste), tone: "chartreuse" },

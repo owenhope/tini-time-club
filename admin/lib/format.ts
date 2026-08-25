@@ -140,3 +140,11 @@ export const formatRelativeDate = (dateString: string): string => {
 
 export const formatRating = (rating?: number | null): string =>
   rating == null ? "—" : Number(rating).toFixed(1);
+
+export const formatOverallRating = (
+  taste: number | null,
+  presentation: number | null
+): string =>
+  taste == null || presentation == null
+    ? "—"
+    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);

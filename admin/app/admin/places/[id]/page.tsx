@@ -11,16 +11,12 @@ import {
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
 import { updateLocation } from "@/lib/actions";
+import { formatOverallRating } from "@/lib/format";
 import { fetchAdminLocation, fetchAdminRegions } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
 
 const date = (value: string) => new Date(value).toLocaleDateString();
-
-const overall = (taste: number | null, presentation: number | null) =>
-  taste == null || presentation == null
-    ? "—"
-    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
 export default async function PlaceDetailPage({
   params,
@@ -245,7 +241,7 @@ export default async function PlaceDetailPage({
                   )}
                 </td>
                 <td className="px-4 py-3 font-mono font-semibold tabular-nums text-stone-900">
-                  {overall(review.taste, review.presentation)}
+                  {formatOverallRating(review.taste, review.presentation)}
                 </td>
                 <td className="max-w-0 px-4 py-3 text-stone-500">
                   <div className="truncate" title={review.comment ?? ""}>

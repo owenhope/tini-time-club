@@ -8,17 +8,16 @@ import {
   fetchLatestActivity,
   fetchTopActivity,
 } from "@/lib/dashboardActivityData";
-import { formatCityRegion, formatRelativeDate } from "@/lib/format";
+import {
+  formatCityRegion,
+  formatOverallRating,
+  formatRelativeDate,
+} from "@/lib/format";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
 const LATEST_COUNT = 10;
-
-const overall = (taste: number | null, presentation: number | null) =>
-  taste == null || presentation == null
-    ? "—"
-    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
 const Rank = ({ index }: { index: number }) => (
   <span className="w-5 shrink-0 font-mono text-xs tabular-nums text-stone-400">
@@ -153,7 +152,7 @@ export default async function Dashboard() {
                       </p>
                     </div>
                     <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-emerald-950">
-                      {overall(review.taste, review.presentation)}
+                      {formatOverallRating(review.taste, review.presentation)}
                     </span>
                   </Link>
                 </li>
@@ -242,7 +241,10 @@ export default async function Dashboard() {
                         </span>
                         <span className="block truncate text-xs text-stone-500">
                           @{review.profile?.username ?? "unknown"} ·{" "}
-                          {overall(review.taste, review.presentation)}
+                          {formatOverallRating(
+                            review.taste,
+                            review.presentation
+                          )}
                         </span>
                       </span>
                     </span>

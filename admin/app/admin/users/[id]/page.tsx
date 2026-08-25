@@ -10,15 +10,11 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge, { tierFor } from "@/components/UserBadge";
+import { formatOverallRating } from "@/lib/format";
 import { fetchProfile } from "@/lib/profileData";
 import { setDeleted, setVerified } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
-
-const overall = (taste: number | null, presentation: number | null) =>
-  taste == null || presentation == null
-    ? "—"
-    : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
 
 const date = (value?: string | null) =>
   value ? new Date(value).toLocaleDateString() : "—";
@@ -171,7 +167,7 @@ export default async function UserDetailPage({
                 </td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <span className="font-mono text-base font-semibold tabular-nums">
-                    {overall(review.taste, review.presentation)}
+                    {formatOverallRating(review.taste, review.presentation)}
                   </span>
                   <span className="ml-2 text-xs text-stone-400">
                     T {review.taste ?? "—"} / P {review.presentation ?? "—"}
