@@ -279,10 +279,9 @@ export async function upsertRegion(formData: FormData) {
   };
   const query = supabaseAdmin().from("regions");
   let savedId = id && /^\d+$/.test(id) ? id : "";
-  const result =
-    savedId
-      ? await query.update(values).eq("id", savedId)
-      : await query.insert(values).select("id").single();
+  const result = savedId
+    ? await query.update(values).eq("id", savedId)
+    : await query.insert(values).select("id").single();
   if (result.error) {
     if (result.error.code === "23505") redirect(`${returnTo}?error=slug`);
     throw new Error(result.error.message);
