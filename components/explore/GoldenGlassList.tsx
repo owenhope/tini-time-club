@@ -162,6 +162,19 @@ export default function GoldenGlassList({
     );
   };
 
+  const intro = (
+    <View style={styles.intro}>
+      <Text style={styles.introEyebrow}>The Best Martinis in {regionName}</Text>
+      <View style={styles.introTitleRow}>
+        <Text style={styles.introTitle}>Golden Glass</Text>
+        <MartiniIcon size={22} color={colors.awardGold} filled />
+      </View>
+      <Text style={styles.introBody}>
+        Places the club is raising a glass to right now.
+      </Text>
+    </View>
+  );
+
   if (regionId == null) {
     return (
       <EmptyState message="Choose a region to see its current Golden Glass locations." />
@@ -170,18 +183,7 @@ export default function GoldenGlassList({
 
   return (
     <View style={styles.container}>
-      <View style={styles.intro}>
-        <Text style={styles.introEyebrow}>
-          The Best Martinis in {regionName}
-        </Text>
-        <View style={styles.introTitleRow}>
-          <Text style={styles.introTitle}>Golden Glass</Text>
-          <MartiniIcon size={22} color={colors.awardGold} filled />
-        </View>
-        <Text style={styles.introBody}>
-          Places the club is raising a glass to right now.
-        </Text>
-      </View>
+      {rows.length === 0 ? intro : null}
       {loading ? (
         <View style={styles.state}>
           <ActivityIndicator color={colors.awardGold} />
@@ -198,6 +200,7 @@ export default function GoldenGlassList({
           data={rows}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.locationId)}
+          ListHeaderComponent={intro}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.list,
