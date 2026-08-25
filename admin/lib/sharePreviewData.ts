@@ -1,15 +1,12 @@
 import "server-only";
+import {
+  normalizeSharePreviewReviews,
+  type SharePreviewReview,
+  type SharePreviewReviewRow,
+} from "@/lib/sharePreviewModels";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export interface SharePreviewReview {
-  id: string;
-  comment: string | null;
-  inserted_at: string;
-  taste: number | null;
-  presentation: number | null;
-  location: { name: string | null } | null;
-  profile: { username: string | null } | null;
-}
+export type { SharePreviewReview } from "@/lib/sharePreviewModels";
 
 export interface SharePreviewLocation {
   id: string;
@@ -34,35 +31,7 @@ export const fetchSharePreviewReviews = async (
     .limit(limit);
   if (error) throw new Error(error.message);
 
-  const rows = (data ?? []) as Array<
-    Omit<SharePreviewReview, "id" | "location" | "profile"> & {
-      id: string | number;
-      location:
-        SharePreviewReview["location"] | SharePreviewReview["location"][];
-      profile:
-        | (SharePreviewReview["profile"] & { deleted?: boolean | null })
-        | (SharePreviewReview["profile"] & { deleted?: boolean | null })[];
-    }
-  >;
-
-  return rows
-    .map((review) => {
-      const location = Array.isArray(review.location)
-        ? (review.location[0] ?? null)
-        : review.location;
-      const profile = Array.isArray(review.profile)
-        ? (review.profile[0] ?? null)
-        : review.profile;
-
-      if (profile?.deleted) return null;
-      return {
-        ...review,
-        id: String(review.id),
-        location,
-        profile: profile ? { username: profile.username } : null,
-      };
-    })
-    .filter(Boolean) as SharePreviewReview[];
+  return normalizeSharePreviewReviews((data ?? []) as SharePreviewReviewRow[]);
 };
 
 export const fetchSharePreviewLocations = async (
