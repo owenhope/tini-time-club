@@ -1,5 +1,4 @@
 import "server-only";
-import { RANK_TIERS } from "@/lib/ranking";
 import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
 import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
@@ -11,6 +10,12 @@ import {
 } from "@/lib/profileData";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  buildTierDistribution,
+  type TierDistributionRow,
+} from "@/lib/analyticsModels";
+
+export type { TierDistributionRow } from "@/lib/analyticsModels";
 
 export interface KpiMetric {
   /** All-time total, ignoring the selected range. */
@@ -275,37 +280,6 @@ export const fetchDashboardKpis = async (
   };
 };
 
-export interface TierDistributionRow {
-  tier: string;
-  color: string;
-  count: number;
-  /** Review count that earns the tier. */
-  min: number;
-  /** Last review count still inside the tier; null at the top. */
-  max: number | null;
-  /** The tier above, and the review count that reaches it. */
-  next: { tier: string; min: number } | null;
-}
-
-const tierDistributionFromProfiles = (
-  profiles: { review_count: number | null }[]
-): TierDistributionRow[] =>
-  RANK_TIERS.map((tier, index) => {
-    const next = RANK_TIERS[index + 1];
-    return {
-      tier: tier.name,
-      color: tier.color,
-      count: profiles.filter(
-        (p) =>
-          (p.review_count ?? 0) >= tier.min &&
-          (!next || (p.review_count ?? 0) < next.min)
-      ).length,
-      min: tier.min,
-      max: next ? next.min - 1 : null,
-      next: next ? { tier: next.name, min: next.min } : null,
-    };
-  });
-
 export const fetchTierDistribution = async (): Promise<
   TierDistributionRow[]
 > => {
@@ -315,5 +289,5 @@ export const fetchTierDistribution = async (): Promise<
     .eq("deleted", false);
   if (error) throw new Error(error.message);
 
-  return tierDistributionFromProfiles(data ?? []);
+  return buildTierDistribution(data ?? []);
 };
