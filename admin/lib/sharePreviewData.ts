@@ -38,8 +38,7 @@ export const fetchSharePreviewReviews = async (
     Omit<SharePreviewReview, "id" | "location" | "profile"> & {
       id: string | number;
       location:
-        | SharePreviewReview["location"]
-        | SharePreviewReview["location"][];
+        SharePreviewReview["location"] | SharePreviewReview["location"][];
       profile:
         | (SharePreviewReview["profile"] & { deleted?: boolean | null })
         | (SharePreviewReview["profile"] & { deleted?: boolean | null })[];

@@ -43,7 +43,11 @@ export {
   fetchTopReviewers,
   USERS_PAGE_SIZE,
 } from "@/lib/profileData";
-export { fetchAdminReview, fetchAllReviews, fetchReviewCounts } from "@/lib/reviewData";
+export {
+  fetchAdminReview,
+  fetchAllReviews,
+  fetchReviewCounts,
+} from "@/lib/reviewData";
 export {
   fetchAudienceUsage,
   fetchDashboardKpis,
@@ -83,9 +87,18 @@ export type {
   TierDistributionRow,
 } from "@/lib/analyticsData";
 
-export { fetchSharePreviewLocations, fetchSharePreviewReviews } from "@/lib/sharePreviewData";
-export type { SharePreviewLocation, SharePreviewReview } from "@/lib/sharePreviewData";
-export { fetchLatestActivity, fetchTopActivity } from "@/lib/dashboardActivityData";
+export {
+  fetchSharePreviewLocations,
+  fetchSharePreviewReviews,
+} from "@/lib/sharePreviewData";
+export type {
+  SharePreviewLocation,
+  SharePreviewReview,
+} from "@/lib/sharePreviewData";
+export {
+  fetchLatestActivity,
+  fetchTopActivity,
+} from "@/lib/dashboardActivityData";
 export type {
   LatestActivity,
   LatestLocation,

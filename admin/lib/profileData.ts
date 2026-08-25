@@ -1,10 +1,22 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { AdminProfile, NotificationAudienceMember, ProfileCounts, ProfileSort, SortDirection } from "@/lib/profileTypes";
+import type {
+  AdminProfile,
+  NotificationAudienceMember,
+  ProfileCounts,
+  ProfileSort,
+  SortDirection,
+} from "@/lib/profileTypes";
 import type { AdminReview } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
 
-export type { AdminProfile, NotificationAudienceMember, ProfileCounts, ProfileSort, SortDirection } from "@/lib/profileTypes";
+export type {
+  AdminProfile,
+  NotificationAudienceMember,
+  ProfileCounts,
+  ProfileSort,
+  SortDirection,
+} from "@/lib/profileTypes";
 
 const db = supabaseAdmin;
 

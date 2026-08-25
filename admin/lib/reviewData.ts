@@ -1,10 +1,7 @@
 import "server-only";
 import { fetchWebMentionSpans } from "@/lib/mentions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import {
-  fetchActiveMemberIds,
-  USERS_PAGE_SIZE,
-} from "@/lib/profileData";
+import { fetchActiveMemberIds, USERS_PAGE_SIZE } from "@/lib/profileData";
 import type {
   AdminReviewDetail,
   AdminReviewRow,
@@ -88,7 +85,7 @@ const fetchReviewEngagement = async (
   for (const comment of comments.data ?? []) {
     tally(comment.review_id, "comments");
   }
-  const shareRows = shares.error ? [] : shares.data ?? [];
+  const shareRows = shares.error ? [] : (shares.data ?? []);
   for (const share of shareRows) {
     tally(share.review_id, "shares");
   }
