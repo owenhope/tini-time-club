@@ -9,13 +9,14 @@ import {
   PageHeader,
   StatusPill,
 } from "@/components/AdminPrimitives";
-import Pagination, { parsePerPage } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
 import {
   fetchModerationReportCounts,
   fetchModerationReports,
   type ModerationContentType,
   type ModerationStatus,
 } from "@/lib/moderationData";
+import { parsePagination } from "@/lib/pagination";
 import {
   deleteReportedContentAndResolve,
   setReportStatus,
@@ -59,8 +60,7 @@ export default async function ReportsPage({
   }>;
 }) {
   const params = await searchParams;
-  const page = Math.max(1, Number(params.page) || 1);
-  const perPage = parsePerPage(params.per);
+  const { page, perPage } = parsePagination(params);
   const [{ reports, total }, counts] = await Promise.all([
     fetchModerationReports({
       query: params.q,

@@ -11,8 +11,9 @@ import {
   PageHeader,
   StatusPill,
 } from "@/components/AdminPrimitives";
-import Pagination, { parsePerPage } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
 import { formatAdminDate, formatOverallRating } from "@/lib/format";
+import { parsePagination } from "@/lib/pagination";
 import { fetchAllReviews, fetchReviewCounts } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,7 @@ export default async function ReviewsPage({
   }>;
 }) {
   const { q, page: pageParam, per: perParam, state } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
-  const perPage = parsePerPage(perParam);
+  const { page, perPage } = parsePagination({ page: pageParam, per: perParam });
   const [{ reviews, total }, counts] = await Promise.all([
     fetchAllReviews(q, page, perPage, state),
     fetchReviewCounts(),

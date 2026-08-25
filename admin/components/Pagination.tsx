@@ -1,12 +1,11 @@
 import Link from "next/link";
+import { PER_PAGE_OPTIONS, parsePerPage } from "@/lib/pagination";
 
-export const PER_PAGE_OPTIONS = [25, 50, 100] as const;
-export const DEFAULT_PER_PAGE = 50;
-
-export const parsePerPage = (value?: string): number =>
-  PER_PAGE_OPTIONS.includes(Number(value) as 25 | 50 | 100)
-    ? Number(value)
-    : DEFAULT_PER_PAGE;
+export {
+  DEFAULT_PER_PAGE,
+  PER_PAGE_OPTIONS,
+  parsePerPage,
+} from "@/lib/pagination";
 
 /**
  * Shared table pagination: count, page-size links, previous/next. URL-based

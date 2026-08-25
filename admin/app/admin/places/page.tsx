@@ -9,10 +9,11 @@ import {
   FilterSelect,
   PageHeader,
 } from "@/components/AdminPrimitives";
-import Pagination, { parsePerPage } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
 import { fetchLocationCounts, fetchLocations } from "@/lib/placeData";
 import type { LocationSort } from "@/lib/placeTypes";
 import type { SortDirection } from "@/lib/profileTypes";
+import { parsePagination } from "@/lib/pagination";
 import { formatCityRegion } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -99,8 +100,7 @@ export default async function PlacesPage({
     sort: sortParam,
     dir,
   } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
-  const perPage = parsePerPage(perParam);
+  const { page, perPage } = parsePagination({ page: pageParam, per: perParam });
   const minReviews = Math.max(0, Number(minReviewsParam) || 0);
   const sort = parseLocationSort(sortParam);
   const direction = parseDirection(dir, sort);

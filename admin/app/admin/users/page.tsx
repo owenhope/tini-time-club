@@ -8,11 +8,12 @@ import {
   FilterSelect,
   PageHeader,
 } from "@/components/AdminPrimitives";
-import Pagination, { parsePerPage } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
 import UserBadge, { tierFor } from "@/components/UserBadge";
 import { formatAdminDate } from "@/lib/format";
 import { fetchProfileCounts, fetchProfiles } from "@/lib/profileData";
 import { fetchTierDistribution } from "@/lib/analyticsData";
+import { parsePagination } from "@/lib/pagination";
 import type { ProfileSort, SortDirection } from "@/lib/profileTypes";
 
 export const dynamic = "force-dynamic";
@@ -96,8 +97,7 @@ export default async function UsersPage({
     sort: sortParam,
     dir,
   } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
-  const perPage = parsePerPage(perParam);
+  const { page, perPage } = parsePagination({ page: pageParam, per: perParam });
   const sort = parseSort(sortParam);
   const direction = parseDirection(dir);
   const [{ profiles, total }, counts, tierDistribution] = await Promise.all([
