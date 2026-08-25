@@ -50,6 +50,7 @@ import { publicContentService } from "@/services/public-content-service";
 import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
 import { canOpenMapPinDetails } from "@/utils/mapPinAccess";
 import type { ExploreRegion } from "@/services/regionService";
+import { mergeMapLocations, normalizeMapLocations } from "@/utils/mapLocations";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -94,6 +95,11 @@ interface MapLocation {
   regulars?: Regular[];
   is_golden_glass?: boolean;
 }
+
+const toMapLocation = (location: any): MapLocation => ({
+  ...location,
+  long: location.long ?? location.lon,
+});
 
 interface MapBounds {
   minLat: number;
@@ -188,6 +194,7 @@ function ExploreMap({
   const regionRef = useRef<Region>(INITIAL_REGION);
   const fetchedBoundsRef = useRef<MapBounds | null>(null);
   const fetchRequestRef = useRef(0);
+  const centeredRegionIdRef = useRef<number | null | undefined>(undefined);
   const openedRouteLocationRef = useRef<string | null>(null);
   const focusedCoordinatesRef = useRef<string | null>(null);
   const initialLocationAppliedRef = useRef(false);
@@ -401,12 +408,17 @@ function ExploreMap({
   useEffect(() => {
     if (!enabled || isScreenshotMap) return;
     if (!exploreRegion) {
+      centeredRegionIdRef.current = null;
+      initialLocationAppliedRef.current = false;
       setLocationResolved(false);
       setLocationsReady(false);
       setLocations([]);
-      setLocationNotice("Choose a region to see its locations.");
+      fetchedBoundsRef.current = null;
+      setLocationNotice(null);
       return;
     }
+    if (centeredRegionIdRef.current === exploreRegion.id) return;
+    centeredRegionIdRef.current = exploreRegion.id;
 
     const nextRegion: Region = {
       latitude: exploreRegion.center.latitude,
@@ -557,12 +569,11 @@ function ExploreMap({
 
     const fetchTimer = setTimeout(async () => {
       const { data, error } = profile
-        ? await supabase.rpc("locations_in_region_view", {
-            p_min_lat: queryBounds.minLat,
-            p_min_long: queryBounds.minLong,
-            p_max_lat: queryBounds.maxLat,
-            p_max_long: queryBounds.maxLong,
-            p_region_id: exploreRegion?.id,
+        ? await supabase.rpc("locations_in_view", {
+            min_lat: queryBounds.minLat,
+            min_long: queryBounds.minLong,
+            max_lat: queryBounds.maxLat,
+            max_long: queryBounds.maxLong,
           })
         : await publicContentService
             .getLocationsInView({
@@ -570,7 +581,6 @@ function ExploreMap({
               minLong: queryBounds.minLong,
               maxLat: queryBounds.maxLat,
               maxLong: queryBounds.maxLong,
-              regionId: exploreRegion?.id ?? null,
             })
             .then((data) => ({ data, error: null }))
             .catch((error) => ({ data: null, error }));
@@ -581,7 +591,39 @@ function ExploreMap({
         reportError("Error fetching locations in view:", error);
         setLocationsReady(true);
       } else {
-        const rawLocations = (data ?? []) as MapLocation[];
+        let rawLocations = (data ?? []).map(toMapLocation) as MapLocation[];
+
+        // A venue opened from its detail screen may be outside the selected
+        // Explore region. The viewport RPC intentionally filters by region,
+        // so load the routed venue directly to guarantee the map can show it.
+        if (
+          focus.locationId &&
+          !rawLocations.some(
+            (location) => String(location.id) === String(focus.locationId)
+          )
+        ) {
+          try {
+            const focused = profile
+              ? await supabase
+                  .from("location_ratings")
+                  .select(
+                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
+                  )
+                  .eq("id", focus.locationId)
+                  .maybeSingle()
+              : await publicContentService
+                  .getLocation(focus.locationId)
+                  .then((focused) => ({ data: focused, error: null }))
+                  .catch((error) => ({ data: null, error }));
+
+            if (!focused.error && focused.data) {
+              rawLocations = [...rawLocations, toMapLocation(focused.data)];
+            }
+          } catch (focusedError) {
+            reportError("Error fetching routed map location:", focusedError);
+          }
+        }
+
         const missingAwardIds = rawLocations
           .filter((location) => location.is_golden_glass == null)
           .map((location) => Number(location.id))
@@ -607,10 +649,9 @@ function ExploreMap({
               false,
           }));
         }
-        const nextLocations: MapLocation[] = locationsWithAwards.filter(
-          (location: MapLocation) =>
-            Number.isFinite(location.lat) && Number.isFinite(location.long)
-        );
+        const nextLocations = normalizeMapLocations(
+          locationsWithAwards
+        ) as MapLocation[];
         fetchedBoundsRef.current = queryBounds;
         let committedLocations = nextLocations;
         try {
@@ -624,7 +665,10 @@ function ExploreMap({
         if (requestId !== fetchRequestRef.current) return;
         // Publish one complete marker batch. Mounting an empty clustered map
         // and then replacing it during Fabric reconciliation can crash iOS.
-        setLocations(committedLocations);
+        setLocations((currentLocations) =>
+          mergeMapLocations(currentLocations, committedLocations)
+        );
+        setMapRevision((revision) => revision + 1);
         setLocationsReady(true);
       }
     }, FETCH_DEBOUNCE_MS);
@@ -635,7 +679,14 @@ function ExploreMap({
         fetchRequestRef.current += 1;
       }
     };
-  }, [enabled, exploreRegion?.id, locationResolved, profile, region]);
+  }, [
+    enabled,
+    exploreRegion?.id,
+    focus.locationId,
+    locationResolved,
+    profile,
+    region,
+  ]);
 
   return (
     <View style={styles.screen}>

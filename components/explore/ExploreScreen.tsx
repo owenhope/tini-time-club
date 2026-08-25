@@ -96,11 +96,13 @@ export default function ExploreScreen({
         variant="large"
         title="Explore"
         largeTrailing={
-          <ExploreRegionSelector
-            state={region.state}
-            onSelectRegion={region.selectRegion}
-            onUseMyLocation={region.useMyLocation}
-          />
+          displayedView === "members" ? undefined : (
+            <ExploreRegionSelector
+              state={region.state}
+              onSelectRegion={region.selectRegion}
+              onUseMyLocation={region.useMyLocation}
+            />
+          )
         }
         below={
           <View style={styles.headerControls}>

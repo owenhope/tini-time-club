@@ -165,7 +165,7 @@ const Location = () => {
 
     if (displayLocation.lat && displayLocation.lon) {
       actions.push({
-        icon: "map-outline",
+        icon: "location-outline",
         accessibilityLabel: "Show on map",
         // navigate, not push: this switches to Explore's Map view (or pops
         // back to it) instead of stacking a tab root with no back button.

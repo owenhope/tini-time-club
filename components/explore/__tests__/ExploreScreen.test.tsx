@@ -131,6 +131,9 @@ describe("ExploreScreen", () => {
     expect(
       renderer!.root.findByType("ExploreMap" as React.ElementType).props.enabled
     ).toBe(false);
+    expect(
+      renderer!.root.findAllByType("ExploreRegionSelector" as React.ElementType)
+    ).toHaveLength(0);
     expect(lists.props.enabled).toBe(true);
     expect(lists.props.activeView).toBe("members");
 

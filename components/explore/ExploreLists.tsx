@@ -30,7 +30,7 @@ import {
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import {
   getDiscoverLocationsPage,
-  getRegionMembers,
+  getDiscoverProfilesPage,
   type DiscoveryCursor,
 } from "@/services/discoveryService";
 import GoldenGlassList from "@/components/explore/GoldenGlassList";
@@ -94,7 +94,6 @@ function ExploreDiscoveryLists({
   onQueryChange,
   location,
   requestLocation,
-  regionId,
 }: ExploreListsProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -142,12 +141,11 @@ function ExploreDiscoveryLists({
       if (!append) setLoading(true);
       else setLoadingMore(true);
       try {
-        if (regionId == null) return;
-        const page = {
-          items: await getRegionMembers(regionId, searchQuery),
-          nextCursor: null,
-          hasMore: false,
-        };
+        const page = await getDiscoverProfilesPage({
+          query: searchQuery,
+          cursor,
+          limit: DISCOVERY_PAGE_SIZE,
+        });
         if (requestId !== profileRequestId.current) return;
         setProfiles((current) =>
           append ? [...current, ...page.items] : page.items
@@ -166,7 +164,7 @@ function ExploreDiscoveryLists({
         }
       }
     },
-    [regionId]
+    []
   );
 
   const fetchLocations = React.useCallback(
@@ -221,7 +219,6 @@ function ExploreDiscoveryLists({
 
   React.useEffect(() => {
     if (!enabled) return;
-    if (activeTab === "profiles" && regionId == null) return;
 
     if (activeTab === "profiles") {
       setProfiles([]);
@@ -257,7 +254,6 @@ function ExploreDiscoveryLists({
     fetchLocations,
     fetchProfiles,
     query,
-    regionId,
     nearbyEnabled,
     userLocation,
   ]);
@@ -283,7 +279,7 @@ function ExploreDiscoveryLists({
   ]);
 
   const renderProfile = ({ item }: { item: any }) => {
-    const reviewCount = item.review_count || 0;
+    const reviewCount = Number(item.review_count) || 0;
 
     return (
       <TouchableOpacity
@@ -470,11 +466,9 @@ function ExploreDiscoveryLists({
               <ListState
                 loading={loading}
                 message={
-                  regionId == null
-                    ? "Choose a region to discover members who review there."
-                    : query
-                      ? `Nobody here by that name. Try another.`
-                      : "The club's quiet. Go find a member."
+                  query
+                    ? `Nobody here by that name. Try another.`
+                    : "The club's quiet. Go find a member."
                 }
               />
             }
