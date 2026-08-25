@@ -1,4 +1,5 @@
 import "server-only";
+import { RANK_TIERS } from "@/lib/ranking";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { resolveAudienceUsageResponse } from "@/lib/audienceUsage.mjs";
 import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
@@ -389,14 +390,6 @@ export const fetchTopReviewers = async (limit = 5): Promise<AdminProfile[]> => {
     ...authUsers.get(profile.id),
   }));
 };
-
-/** The four in-app rank tiers, mirrored from utils/ranking.ts. */
-const RANK_TIERS = [
-  { name: "Well", min: 0, color: "#B4783A" },
-  { name: "Call", min: 10, color: "#9BA6B2" },
-  { name: "Premium", min: 50, color: "#D4AF37" },
-  { name: "Top Shelf", min: 150, color: "#8E7CE8" },
-];
 
 export interface TierDistributionRow {
   tier: string;

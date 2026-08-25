@@ -9,6 +9,7 @@ import {
 } from "@/lib/format";
 import MentionRichText from "@/components/MentionRichText";
 import type { WebMentionSpan } from "@/lib/mentions";
+import { RANK_TIERS, getRankTier } from "@/lib/ranking";
 
 /**
  * Web replica of the mobile app's ReviewItem (components/ReviewItem.tsx).
@@ -96,21 +97,8 @@ const tagColors = (name: string | null | undefined) => {
   }
 };
 
-const RANK_TIERS: { min: number; sheen: string; shade: string }[] = [
-  { min: 0, sheen: "#E3B27C", shade: "#6F4518" },
-  { min: 10, sheen: "#EDF2F7", shade: "#5F6B78" },
-  { min: 50, sheen: "#FAF0A8", shade: "#8F701A" },
-  { min: 150, sheen: "#D9D1FB", shade: "#5240B5" },
-];
-
-const rankTier = (reviewCount?: number | null) => {
-  const count = reviewCount ?? 0;
-  let held = RANK_TIERS[0];
-  for (const tier of RANK_TIERS) {
-    if (count >= tier.min) held = tier;
-  }
-  return held;
-};
+const rankTier = (reviewCount?: number | null) =>
+  getRankTier(reviewCount) ?? RANK_TIERS[0];
 
 /* Ionicons path data (512 viewBox), matching the icons the app renders. */
 const Icon = ({

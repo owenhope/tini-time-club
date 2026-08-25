@@ -1,22 +1,9 @@
 import type { AdminProfile } from "@/lib/data";
 import { avatarPublicUrl } from "@/lib/avatar";
+import { tierFor } from "@/lib/ranking";
 import VerifiedBadge from "@/components/VerifiedBadge";
 
-/** The four in-app rank tiers, mirrored from utils/ranking.ts. */
-const TIERS = [
-  { name: "Well", min: 0, color: "#B4783A" },
-  { name: "Call", min: 10, color: "#9BA6B2" },
-  { name: "Premium", min: 50, color: "#D4AF37" },
-  { name: "Top Shelf", min: 150, color: "#8E7CE8" },
-];
-
-export const tierFor = (reviewCount: number | null | undefined) => {
-  let held = TIERS[0];
-  for (const tier of TIERS) {
-    if ((reviewCount ?? 0) >= tier.min) held = tier;
-  }
-  return held;
-};
+export { tierFor };
 
 export default function UserBadge({
   profile,
