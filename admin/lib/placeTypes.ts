@@ -1,3 +1,5 @@
+import type { AdminReviewRow } from "@/lib/reviewTypes";
+
 export interface AdminLocation {
   id: number;
   name: string | null;
@@ -57,4 +59,18 @@ export interface MapBounds {
   maxLat: number;
   minLon: number;
   maxLon: number;
+}
+
+export interface LocationCounts {
+  total: number;
+  rated: number;
+  strong: number;
+}
+
+export interface AdminLocationDetail extends AdminLocation {
+  place_id: string | null;
+  inserted_at: string;
+  created_by: string;
+  all_reviews: number;
+  reviews: AdminReviewRow[];
 }

@@ -1,11 +1,14 @@
 import "server-only";
+import { emptyReviewEngagement } from "@/lib/reviewTypes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { formatCityRegion } from "@/lib/format";
-import type { SortDirection } from "@/lib/data";
+import type { SortDirection } from "@/lib/profileTypes";
 import type {
+  AdminLocationDetail,
   AdminLocation,
   AdminRegion,
   GoldenGlassInspectionRow,
+  LocationCounts,
   LocationSort,
   MapBounds,
   MapPlace,
@@ -207,4 +210,93 @@ export const fetchMapPlaces = async (
       presentation_avg: row.presentation_avg ?? null,
       total_ratings: row.total_ratings ?? 0,
     }));
+};
+
+export const fetchLocationCounts = async (): Promise<LocationCounts> => {
+  const [total, rated, strong] = await Promise.all([
+    db().from("locations").select("id", { count: "exact", head: true }),
+    db()
+      .from("location_ratings")
+      .select("id", { count: "exact", head: true })
+      .gte("total_ratings", 1),
+    db()
+      .from("location_ratings")
+      .select("id", { count: "exact", head: true })
+      .gte("total_ratings", 5),
+  ]);
+  if (total.error) throw new Error(total.error.message);
+  if (rated.error) throw new Error(rated.error.message);
+  if (strong.error) throw new Error(strong.error.message);
+  return {
+    total: total.count ?? 0,
+    rated: rated.count ?? 0,
+    strong: strong.count ?? 0,
+  };
+};
+
+const one = <T>(value: T | T[] | null | undefined): T | null =>
+  Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+
+export const fetchAdminLocation = async (
+  id: string
+): Promise<AdminLocationDetail | null> => {
+  if (!/^\d+$/.test(id)) return null;
+
+  const [locationResult, ratingResult, reviewsResult] = await Promise.all([
+    db()
+      .from("locations")
+      .select(
+        "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("location_ratings")
+      .select("rating,total_ratings")
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("reviews")
+      .select(
+        `id,comment,taste,presentation,inserted_at,state,
+         profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`,
+        { count: "exact" }
+      )
+      .eq("location", id)
+      .order("inserted_at", { ascending: false })
+      .limit(50),
+  ]);
+  if (locationResult.error) throw new Error(locationResult.error.message);
+  if (ratingResult.error) throw new Error(ratingResult.error.message);
+  if (reviewsResult.error) throw new Error(reviewsResult.error.message);
+  if (!locationResult.data) return null;
+
+  const location = locationResult.data;
+  return {
+    id: location.id,
+    name: location.name,
+    address: location.address,
+    place_id: location.place_id,
+    inserted_at: location.inserted_at,
+    created_by: location.created_by,
+    neighborhood: location.neighborhood ?? null,
+    region_id: location.region_id ?? null,
+    golden_glass_eligible: location.golden_glass_eligible ?? true,
+    golden_glass_ineligibility_reason:
+      location.golden_glass_ineligibility_reason ?? null,
+    rating: ratingResult.data?.rating ?? null,
+    total_ratings: ratingResult.data?.total_ratings ?? 0,
+    all_reviews: reviewsResult.count ?? 0,
+    reviews: (reviewsResult.data ?? []).map((review) => ({
+      id: String(review.id),
+      comment: review.comment,
+      taste: review.taste,
+      presentation: review.presentation,
+      inserted_at: review.inserted_at,
+      state: review.state,
+      location: { id: location.id, name: location.name },
+      profile: one(review.profile),
+      engagement: emptyReviewEngagement(),
+    })),
+  };
 };
