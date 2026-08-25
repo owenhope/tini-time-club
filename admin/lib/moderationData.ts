@@ -1,44 +1,25 @@
 import "server-only";
 import type { AdminProfile } from "@/lib/profileTypes";
+import {
+  normalizeModerationReports,
+  type ModerationContentType,
+  type ModerationReport,
+  type ModerationReportCounts,
+  type ModerationStatus,
+  type ModerationReportRow,
+  type ModerationReviewReference,
+  type ModerationCommentReference,
+} from "@/lib/moderationModels";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export type ModerationContentType = "review" | "comment";
-export type ModerationStatus =
-  "pending" | "reviewed" | "resolved" | "dismissed";
-
-export interface ModerationReport {
-  id: string;
-  created_at: string;
-  reason: string;
-  status: ModerationStatus;
-  content_type: ModerationContentType;
-  review_id: number | null;
-  comment_id: number | null;
-  content_snapshot: Record<string, unknown>;
-  reporter: AdminProfile | null;
-  creator: AdminProfile | null;
-  review: {
-    id: number;
-    comment: string | null;
-    state: number | null;
-    location: { name: string | null } | null;
-  } | null;
-  comment: { id: number; body: string } | null;
-}
-
-export interface ModerationReportCounts {
-  total: number;
-  pending: number;
-  reviews: number;
-  comments: number;
-}
+export type {
+  ModerationContentType,
+  ModerationReport,
+  ModerationReportCounts,
+  ModerationStatus,
+} from "@/lib/moderationModels";
 
 const db = supabaseAdmin;
-
-const reportSnapshot = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
 
 export const fetchModerationReports = async ({
   query,
@@ -136,23 +117,12 @@ export const fetchModerationReports = async ({
     (commentsResult.data ?? []).map((comment) => [comment.id, comment])
   );
 
-  const normalized = rows.map((report) => ({
-    id: report.id,
-    created_at: report.created_at,
-    reason: report.reason,
-    status: (report.status ?? "pending") as ModerationStatus,
-    content_type: (report.content_type ??
-      (report.comment_id ? "comment" : "review")) as ModerationContentType,
-    review_id: report.review_id,
-    comment_id: report.comment_id,
-    content_snapshot: reportSnapshot(report.content_snapshot),
-    reporter: profiles.get(report.reporter_id) ?? null,
-    creator: profiles.get(report.creator_id) ?? null,
-    review: report.review_id ? (reviews.get(report.review_id) ?? null) : null,
-    comment: report.comment_id
-      ? (comments.get(report.comment_id) ?? null)
-      : null,
-  })) satisfies ModerationReport[];
+  const normalized = normalizeModerationReports(
+    rows as ModerationReportRow[],
+    profiles,
+    reviews as Map<number, ModerationReviewReference>,
+    comments as Map<number, ModerationCommentReference>
+  );
 
   const needle = query?.trim().toLowerCase();
   const filtered = needle
