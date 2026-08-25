@@ -1,7 +1,4 @@
-import {
-  emptyReviewEngagement,
-  type ReviewEngagement,
-} from "./reviewTypes";
+import { emptyReviewEngagement, type ReviewEngagement } from "./reviewTypes";
 
 export interface ReviewEngagementRow {
   review_id: string | number | null;
@@ -16,10 +13,7 @@ export const buildReviewEngagement = (
   const engagement = new Map(
     reviewIds.map((id) => [id, emptyReviewEngagement()] as const)
   );
-  const tally = (
-    rows: ReviewEngagementRow[],
-    key: keyof ReviewEngagement
-  ) => {
+  const tally = (rows: ReviewEngagementRow[], key: keyof ReviewEngagement) => {
     for (const row of rows) {
       if (row.review_id == null) continue;
       const engagementRow = engagement.get(String(row.review_id));

@@ -48,10 +48,7 @@ export interface ModerationReviewReference {
   id: number;
   comment: string | null;
   state: number | null;
-  location:
-    | { name: string | null }
-    | { name: string | null }[]
-    | null;
+  location: { name: string | null } | { name: string | null }[] | null;
 }
 
 export interface ModerationCommentReference {
@@ -88,9 +85,7 @@ export const normalizeModerationReports = (
     review: row.review_id
       ? (() => {
           const review = reviews.get(row.review_id!);
-          return review
-            ? { ...review, location: one(review.location) }
-            : null;
+          return review ? { ...review, location: one(review.location) } : null;
         })()
       : null,
     comment: row.comment_id ? (comments.get(row.comment_id) ?? null) : null,

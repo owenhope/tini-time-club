@@ -14,10 +14,7 @@ export interface SharePreviewReviewRow {
   inserted_at: string;
   taste: number | null;
   presentation: number | null;
-  location:
-    | { name: string | null }
-    | { name: string | null }[]
-    | null;
+  location: { name: string | null } | { name: string | null }[] | null;
   profile:
     | { username: string | null; deleted?: boolean | null }
     | { username: string | null; deleted?: boolean | null }[]

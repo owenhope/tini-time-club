@@ -77,7 +77,7 @@ const fetchReviewEngagement = async (
     throw new Error(shares.error.message);
   }
 
-  const shareRows = shares.error ? [] : shares.data ?? [];
+  const shareRows = shares.error ? [] : (shares.data ?? []);
   return buildReviewEngagement(
     reviewIds,
     (likes.data ?? []) as ReviewEngagementRow[],

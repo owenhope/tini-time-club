@@ -105,7 +105,9 @@ export const buildNotificationAnalytics = (
     openedByKind.set(row.kind, (openedByKind.get(row.kind) ?? 0) + 1);
   }
 
-  const kinds = [...new Set([...sentByKind.keys(), ...openedByKind.keys()])].sort();
+  const kinds = [
+    ...new Set([...sentByKind.keys(), ...openedByKind.keys()]),
+  ].sort();
   const byKind = kinds
     .map((kind) => {
       const sentCount = sentByKind.get(kind) ?? 0;
@@ -118,8 +120,7 @@ export const buildNotificationAnalytics = (
       };
     })
     .sort(
-      (left, right) =>
-        right.sent - left.sent || right.opened - left.opened
+      (left, right) => right.sent - left.sent || right.opened - left.opened
     );
 
   const reviewsByUser = new Map<string, number[]>();

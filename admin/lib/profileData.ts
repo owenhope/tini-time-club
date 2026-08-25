@@ -9,10 +9,7 @@ import type {
 } from "@/lib/profileTypes";
 import type { AdminReview } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
-import {
-  enrichAdminProfile,
-  type AuthUserSummary,
-} from "@/lib/profileModels";
+import { enrichAdminProfile, type AuthUserSummary } from "@/lib/profileModels";
 
 export type {
   AdminProfile,
