@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -19,20 +19,18 @@ import Regulars from "@/components/Regulars";
 import { formatRating } from "@/utils/ratingUtils";
 import { makeStyles, useTheme } from "@/theme";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import type { ExploreListView } from "@/components/explore/exploreView";
 import type { ExploreLocationState } from "@/components/explore/useExploreLocation";
+import {
+  useExploreDiscovery,
+  type ExploreLocationItem,
+} from "@/hooks/useExploreDiscovery";
 import {
   ExploreSearchArea,
   ExploreSearchField,
 } from "@/components/explore/ExploreSearchField";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-import {
-  getDiscoverLocationsPage,
-  getDiscoverProfilesPage,
-  type DiscoveryCursor,
-} from "@/services/discoveryService";
 import GoldenGlassList from "@/components/explore/GoldenGlassList";
 
 /**
@@ -72,7 +70,6 @@ interface ExploreListsProps {
 }
 
 const DISCOVER_PROFILE_AVATAR_SIZE = 40;
-const DISCOVERY_PAGE_SIZE = 25;
 
 export default function ExploreLists(props: ExploreListsProps) {
   if (props.activeView === "golden-glass") {
@@ -98,185 +95,24 @@ function ExploreDiscoveryLists({
   const styles = useStyles();
   const { colors } = useTheme();
   const activeTab = activeView === "members" ? "profiles" : "locations";
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreProfiles, setHasMoreProfiles] = useState(true);
-  const [hasMoreLocations, setHasMoreLocations] = useState(true);
-  const [profileCursor, setProfileCursor] = useState<DiscoveryCursor | null>(
-    null
-  );
-  const [locationCursor, setLocationCursor] = useState<DiscoveryCursor | null>(
-    null
-  );
-  const profileRequestId = useRef(0);
-  const locationRequestId = useRef(0);
-  const [nearby, setNearby] = useState(true); // Default enabled
-  const nearbyEnabled =
-    nearby && location.status !== "denied" && location.status !== "unavailable";
-  const userLocation =
-    location.status === "ready"
-      ? location.coordinates
-      : location.status === "idle" || location.status === "loading"
-        ? undefined
-        : null;
   const router = useRouter();
   const openProfile = useOpenProfile();
   // The native tab bar floats over content, so the lists pad their own tails.
   const tabBarInset = useNativeTabBarContentInset();
-
-  useEffect(() => {
-    if (!enabled || activeView !== "members") return;
-
-    if (location.status === "idle") {
-      void requestLocation();
-    }
-  }, [activeView, enabled, location.status, nearbyEnabled, requestLocation]);
-
-  const fetchProfiles = React.useCallback(
-    async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
-      const append = cursor !== null;
-      const requestId = ++profileRequestId.current;
-      if (!append) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const page = await getDiscoverProfilesPage({
-          query: searchQuery,
-          cursor,
-          limit: DISCOVERY_PAGE_SIZE,
-        });
-        if (requestId !== profileRequestId.current) return;
-        setProfiles((current) =>
-          append ? [...current, ...page.items] : page.items
-        );
-        setProfileCursor(page.nextCursor);
-        setHasMoreProfiles(page.hasMore);
-      } catch (error) {
-        reportError("Error fetching profiles:", error);
-        if (requestId !== profileRequestId.current) return;
-        if (!append) setProfiles([]);
-        setHasMoreProfiles(false);
-      } finally {
-        if (requestId === profileRequestId.current) {
-          if (!append) setLoading(false);
-          else setLoadingMore(false);
-        }
-      }
-    },
-    []
-  );
-
-  const fetchLocations = React.useCallback(
-    async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
-      const append = cursor !== null;
-      const requestId = ++locationRequestId.current;
-      if (!append) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const page = await getDiscoverLocationsPage({
-          query: searchQuery,
-          cursor,
-          limit: DISCOVERY_PAGE_SIZE,
-          nearby:
-            !searchQuery && nearbyEnabled && userLocation
-              ? {
-                  latitude: userLocation.latitude,
-                  longitude: userLocation.longitude,
-                  radiusKm: 50,
-                }
-              : null,
-        });
-        if (requestId !== locationRequestId.current) return;
-        const nextLocations = page.items.map((location) => ({
-          ...location,
-          latitude: location.lat,
-          longitude: location.lon,
-          rating:
-            location.total_ratings > 0 && location.rating != null
-              ? location.rating
-              : null,
-        }));
-        setLocations((current) =>
-          append ? [...current, ...nextLocations] : nextLocations
-        );
-        setLocationCursor(page.nextCursor);
-        setHasMoreLocations(page.hasMore);
-      } catch (error) {
-        reportError("Error fetching locations:", error);
-        if (requestId !== locationRequestId.current) return;
-        if (!append) setLocations([]);
-        setHasMoreLocations(false);
-      } finally {
-        if (requestId === locationRequestId.current) {
-          if (!append) setLoading(false);
-          else setLoadingMore(false);
-        }
-      }
-    },
-    [nearbyEnabled, userLocation]
-  );
-
-  React.useEffect(() => {
-    if (!enabled) return;
-
-    if (activeTab === "profiles") {
-      setProfiles([]);
-      setProfileCursor(null);
-      setHasMoreProfiles(true);
-    } else {
-      setLocations([]);
-      setLocationCursor(null);
-      setHasMoreLocations(true);
-    }
-
-    // Debounce: without this every keystroke fires its own Supabase request.
-    const handle = setTimeout(
-      () => {
-        if (activeTab === "profiles") {
-          fetchProfiles(query);
-        } else {
-          // For locations tab, if nearby is enabled and we don't have user location yet, wait
-          // But if userLocation is explicitly null (permission denied), proceed anyway
-          if (nearbyEnabled && userLocation === undefined) {
-            return; // Don't fetch until we have location or permission is denied
-          }
-          fetchLocations(query);
-        }
-      },
-      query ? 300 : 0
-    );
-
-    return () => clearTimeout(handle);
-  }, [
-    activeTab,
-    enabled,
-    fetchLocations,
-    fetchProfiles,
-    query,
-    nearbyEnabled,
-    userLocation,
-  ]);
-
-  const handleEndReached = React.useCallback(() => {
-    if (loading || loadingMore) return;
-    if (activeTab === "profiles") {
-      if (hasMoreProfiles) void fetchProfiles(query, profileCursor);
-    } else if (hasMoreLocations) {
-      void fetchLocations(query, locationCursor);
-    }
-  }, [
-    activeTab,
-    fetchLocations,
-    fetchProfiles,
-    hasMoreLocations,
-    hasMoreProfiles,
+  const {
+    profiles,
+    locations,
     loading,
-    loadingMore,
-    locationCursor,
-    profileCursor,
+    nearbyEnabled,
+    toggleNearby,
+    handleEndReached,
+  } = useExploreDiscovery({
+    enabled,
+    activeView: activeTab,
     query,
-  ]);
+    location,
+    requestLocation,
+  });
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = Number(item.review_count) || 0;
@@ -313,7 +149,7 @@ function ExploreDiscoveryLists({
     );
   };
 
-  const renderLocation = ({ item }: { item: any }) => {
+  const renderLocation = ({ item }: { item: ExploreLocationItem }) => {
     const reviewCount = item.total_ratings ?? 0;
     const reviewLabel = `${reviewCount} ${
       reviewCount === 1 ? "review" : "reviews"
@@ -426,7 +262,7 @@ function ExploreDiscoveryLists({
                   styles.nearbyButton,
                   nearbyEnabled && styles.nearbyButtonActive,
                 ]}
-                onPress={() => setNearby(!nearby)}
+                onPress={toggleNearby}
                 activeOpacity={0.7}
               >
                 <Ionicons
