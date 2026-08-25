@@ -4,7 +4,7 @@ import FeatureSection, { BreakdownList } from "@/components/FeatureSection";
 import LineChart from "@/components/LineChart";
 import MetricTile from "@/components/MetricTile";
 import { fetchGrowthAnalytics } from "@/lib/analytics/growth";
-import { fetchProductTelemetry } from "@/lib/data";
+import { fetchProductTelemetry } from "@/lib/analyticsData";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";

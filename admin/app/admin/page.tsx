@@ -3,11 +3,11 @@ import AdminShell from "@/components/AdminShell";
 import KpiCard from "@/components/KpiCard";
 import UserBadge from "@/components/UserBadge";
 import { PageHeader, Panel, StatusPill } from "@/components/AdminPrimitives";
+import { fetchDashboardKpis } from "@/lib/analyticsData";
 import {
-  fetchDashboardKpis,
   fetchLatestActivity,
   fetchTopActivity,
-} from "@/lib/data";
+} from "@/lib/dashboardActivityData";
 import { formatCityRegion, formatRelativeDate } from "@/lib/format";
 import { parseRange } from "@/lib/range";
 

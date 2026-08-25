@@ -8,7 +8,7 @@ import {
   PageHeader,
   Panel,
 } from "@/components/AdminPrimitives";
-import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/data";
+import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/placeData";
 import RegionMapEditor from "../../../regions/RegionMapEditor";
 
 export const dynamic = "force-dynamic";

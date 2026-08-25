@@ -11,7 +11,7 @@ import {
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
 import { updateLocation } from "@/lib/actions";
-import { fetchAdminLocation, fetchAdminRegions } from "@/lib/data";
+import { fetchAdminLocation, fetchAdminRegions } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
 

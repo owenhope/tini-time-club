@@ -4,11 +4,8 @@ import KpiCard from "@/components/KpiCard";
 import MetricTile from "@/components/MetricTile";
 import RangePicker from "@/components/RangePicker";
 import { PageHeader, Panel } from "@/components/AdminPrimitives";
-import {
-  fetchDashboardKpis,
-  fetchModerationReportCounts,
-  fetchProductTelemetry,
-} from "@/lib/data";
+import { fetchDashboardKpis, fetchProductTelemetry } from "@/lib/analyticsData";
+import { fetchModerationReportCounts } from "@/lib/moderationData";
 import { buildApplicationHealth } from "@/lib/applicationHealth.mjs";
 import { parseRange } from "@/lib/range";
 

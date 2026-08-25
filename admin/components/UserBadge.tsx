@@ -1,4 +1,4 @@
-import type { AdminProfile } from "@/lib/data";
+import type { AdminProfile } from "@/lib/profileTypes";
 import { avatarPublicUrl } from "@/lib/avatar";
 import { tierFor } from "@/lib/ranking";
 import VerifiedBadge from "@/components/VerifiedBadge";

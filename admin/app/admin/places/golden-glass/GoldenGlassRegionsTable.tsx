@@ -7,7 +7,7 @@ import {
   EmptyState,
   StatusPill,
 } from "@/components/AdminPrimitives";
-import type { AdminRegion, GoldenGlassInspectionRow } from "@/lib/data";
+import type { AdminRegion, GoldenGlassInspectionRow } from "@/lib/placeTypes";
 
 interface GoldenGlassRegionGroup {
   region: AdminRegion;

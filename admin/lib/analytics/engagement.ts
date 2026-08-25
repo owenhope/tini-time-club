@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { resolveEngagement } from "@/lib/analytics/engagementModel.mjs";
 import { rangeArgs, type DayCount } from "@/lib/analytics/shared";
 import { toAdminDataError } from "@/lib/dataErrors";
-import type { AdminProfile } from "@/lib/data";
+import type { AdminProfile } from "@/lib/profileTypes";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 

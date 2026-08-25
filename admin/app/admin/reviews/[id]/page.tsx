@@ -10,7 +10,7 @@ import {
 import UserBadge from "@/components/UserBadge";
 import MentionRichText from "@/components/MentionRichText";
 import { setReviewActive } from "@/lib/actions";
-import { fetchAdminReview } from "@/lib/data";
+import { fetchAdminReview } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
 

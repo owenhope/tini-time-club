@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Sparkline from "@/components/Sparkline";
-import type { KpiMetric } from "@/lib/data";
+import type { KpiMetric } from "@/lib/analyticsData";
 import { growth, growthArrow, growthClass } from "@/lib/kpi";
 
 /** A selected-window KPI with previous-window comparison and daily history. */

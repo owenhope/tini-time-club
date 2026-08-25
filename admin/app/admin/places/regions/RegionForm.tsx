@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { upsertRegion } from "@/lib/actions";
-import type { AdminRegion } from "@/lib/data";
+import type { AdminRegion } from "@/lib/placeTypes";
 import { kilometersToMeters, metersToKilometers } from "@/lib/regionRadius.mjs";
 
 const field =

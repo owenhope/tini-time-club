@@ -15,7 +15,7 @@ import {
   fetchModerationReports,
   type ModerationContentType,
   type ModerationStatus,
-} from "@/lib/data";
+} from "@/lib/moderationData";
 import {
   deleteReportedContentAndResolve,
   setReportStatus,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
 import PlacesMap from "@/components/PlacesMap";
-import { fetchMapPlaces } from "@/lib/data";
+import { fetchMapPlaces } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
 

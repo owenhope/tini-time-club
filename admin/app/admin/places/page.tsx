@@ -10,8 +10,9 @@ import {
   PageHeader,
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
-import { fetchLocationCounts, fetchLocations } from "@/lib/data";
-import type { LocationSort, SortDirection } from "@/lib/data";
+import { fetchLocationCounts, fetchLocations } from "@/lib/placeData";
+import type { LocationSort } from "@/lib/placeTypes";
+import type { SortDirection } from "@/lib/profileTypes";
 import { formatCityRegion } from "@/lib/format";
 
 export const dynamic = "force-dynamic";

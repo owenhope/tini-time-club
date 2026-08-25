@@ -10,13 +10,9 @@ import {
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
 import UserBadge, { tierFor } from "@/components/UserBadge";
-import {
-  fetchProfileCounts,
-  fetchProfiles,
-  fetchTierDistribution,
-  type ProfileSort,
-  type SortDirection,
-} from "@/lib/data";
+import { fetchProfileCounts, fetchProfiles } from "@/lib/profileData";
+import { fetchTierDistribution } from "@/lib/analyticsData";
+import type { ProfileSort, SortDirection } from "@/lib/profileTypes";
 
 export const dynamic = "force-dynamic";
 

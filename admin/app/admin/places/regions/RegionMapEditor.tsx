@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Panel } from "@/components/AdminPrimitives";
-import type { AdminRegion } from "@/lib/data";
+import type { AdminRegion } from "@/lib/placeTypes";
 import RegionCatchmentMap from "./RegionCatchmentMap";
 import RegionForm, { type RegionMapValues } from "./RegionForm";
 

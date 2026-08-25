@@ -1,10 +1,10 @@
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
+import { fetchNotificationAudienceMembers } from "@/lib/profileData";
 import {
-  fetchNotificationAudienceMembers,
   fetchNotificationAnalytics,
   fetchWeeklyPushSubscriberCount,
-} from "@/lib/data";
+} from "@/lib/notificationData";
 import { sendNotification } from "@/lib/actions";
 import {
   formatNotificationSentValue,

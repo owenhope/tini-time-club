@@ -10,7 +10,7 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge, { tierFor } from "@/components/UserBadge";
-import { fetchProfile } from "@/lib/data";
+import { fetchProfile } from "@/lib/profileData";
 import { setDeleted, setVerified } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";

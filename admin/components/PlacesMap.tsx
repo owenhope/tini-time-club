@@ -11,7 +11,7 @@ import {
 import type { MapEvent } from "@vis.gl/react-google-maps";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import type { Marker } from "@googlemaps/markerclusterer";
-import type { MapBounds, MapPlace } from "@/lib/data";
+import type { MapBounds, MapPlace } from "@/lib/placeTypes";
 import { formatCityRegion } from "@/lib/format";
 
 // The app's light-theme pin colours (theme/tokens.ts): purple700 bubbles with

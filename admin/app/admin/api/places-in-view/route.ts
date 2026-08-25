@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchMapPlaces } from "@/lib/data";
+import { fetchMapPlaces } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
 

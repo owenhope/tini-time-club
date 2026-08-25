@@ -12,7 +12,7 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
-import { fetchAllReviews, fetchReviewCounts } from "@/lib/data";
+import { fetchAllReviews, fetchReviewCounts } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
 

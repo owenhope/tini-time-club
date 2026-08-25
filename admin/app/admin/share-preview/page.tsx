@@ -4,7 +4,7 @@ import { ActionLink, PageHeader } from "@/components/AdminPrimitives";
 import {
   fetchSharePreviewLocations,
   fetchSharePreviewReviews,
-} from "@/lib/data";
+} from "@/lib/sharePreviewData";
 import { formatCityRegion } from "@/lib/format";
 
 export const dynamic = "force-dynamic";

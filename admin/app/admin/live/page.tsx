@@ -9,7 +9,7 @@ import {
   Panel,
   StatusPill,
 } from "@/components/AdminPrimitives";
-import { fetchAudienceUsage, fetchLiveActivity } from "@/lib/data";
+import { fetchAudienceUsage, fetchLiveActivity } from "@/lib/analyticsData";
 import { formatRelativeDate } from "@/lib/format";
 import { parseRange } from "@/lib/range";
 

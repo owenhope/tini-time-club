@@ -2,7 +2,7 @@ import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
 import { refreshGoldenGlass } from "@/lib/actions";
-import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/data";
+import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/placeData";
 import GoldenGlassRegionsTable from "./GoldenGlassRegionsTable";
 
 export const dynamic = "force-dynamic";
