@@ -181,33 +181,30 @@ export default function GoldenGlassList({
     );
   }
 
+  const emptyState = loading ? (
+    <View style={styles.state}>
+      <ActivityIndicator color={colors.awardGold} />
+    </View>
+  ) : failed ? (
+    <EmptyState message="Golden Glass is taking a quick pause. Try again shortly." />
+  ) : (
+    <EmptyState message="No locations qualify for Golden Glass here yet." />
+  );
+
   return (
     <View style={styles.container}>
-      {rows.length === 0 ? intro : null}
-      {loading ? (
-        <View style={styles.state}>
-          <ActivityIndicator color={colors.awardGold} />
-        </View>
-      ) : null}
-      {!loading && failed ? (
-        <EmptyState message="Golden Glass is taking a quick pause. Try again shortly." />
-      ) : null}
-      {!loading && !failed && rows.length === 0 ? (
-        <EmptyState message="No locations qualify for Golden Glass here yet." />
-      ) : null}
-      {!loading && !failed && rows.length > 0 ? (
-        <FlatList
-          data={rows}
-          renderItem={renderItem}
-          keyExtractor={(item) => String(item.locationId)}
-          ListHeaderComponent={intro}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: nativeTabBarInset },
-          ]}
-        />
-      ) : null}
+      <FlatList
+        data={loading || failed ? [] : rows}
+        renderItem={renderItem}
+        keyExtractor={(item) => String(item.locationId)}
+        ListHeaderComponent={intro}
+        ListEmptyComponent={emptyState}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: nativeTabBarInset },
+        ]}
+      />
     </View>
   );
 }

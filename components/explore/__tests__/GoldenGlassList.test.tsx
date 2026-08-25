@@ -118,4 +118,19 @@ describe("GoldenGlassList", () => {
 
     act(() => headerRenderer.unmount());
   });
+
+  it("keeps the intro in the list while locations are loading", async () => {
+    mockGetGoldenGlassRecipients.mockReturnValue(new Promise(() => undefined));
+
+    await act(async () => {
+      renderer = create(
+        <GoldenGlassList enabled regionId={1} regionName="Vancouver" />
+      );
+      await Promise.resolve();
+    });
+
+    const list = renderer!.root.findByType(FlatList);
+    expect(list.props.ListHeaderComponent).toBeTruthy();
+    expect(list.props.data).toEqual([]);
+  });
 });
