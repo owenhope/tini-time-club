@@ -15,6 +15,7 @@ import { withTimeout } from "@/utils/async";
 import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
 import AnalyticService from "@/services/analyticsService";
 import { hydrateReviewMentions } from "@/services/mentionService";
+import { normalizeCommentLikeCounts } from "@/utils/commentLikeCounts";
 
 interface CachedQuery {
   data: any;
@@ -338,26 +339,18 @@ class DatabaseService {
     if (commentIds.length === 0) return reviews;
 
     try {
-      const { data, error } = await supabase
-        .from("comment_likes")
-        .select("comment_id,user_id")
-        .in("comment_id", commentIds);
+      const { data, error } = await supabase.rpc("get_comment_like_counts_v1", {
+        p_comment_ids: commentIds,
+      });
       if (error) throw error;
-      const counts = new Map<number, number>();
-      const likedByViewer = new Set<number>();
-      for (const like of data ?? []) {
-        counts.set(like.comment_id, (counts.get(like.comment_id) ?? 0) + 1);
-        if (currentUserId && like.user_id === currentUserId) {
-          likedByViewer.add(like.comment_id);
-        }
-      }
+      const counts = normalizeCommentLikeCounts(data);
 
       return reviews.map((review) => ({
         ...review,
         recent_comments: (review.recent_comments ?? []).map((comment) => ({
           ...comment,
-          likes_count: counts.get(comment.id) ?? 0,
-          has_liked: likedByViewer.has(comment.id),
+          likes_count: counts.get(comment.id)?.count ?? 0,
+          has_liked: counts.get(comment.id)?.has_liked ?? false,
         })),
       }));
     } catch (error) {
