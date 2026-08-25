@@ -3,7 +3,6 @@ import { toAdminDataError } from "@/lib/dataErrors";
 import { normalizeGoldenGlassInspectionRows } from "@/lib/placeModels";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { formatCityRegion } from "@/lib/format";
 import type { SortDirection } from "@/lib/profileTypes";
 import type {
   AdminLocationDetail,
@@ -27,90 +26,22 @@ export const fetchLocations = async (
   sort: LocationSort = "place",
   direction: SortDirection = "asc"
 ): Promise<{ locations: AdminLocation[]; total: number }> => {
-  const offset = (Math.max(1, page) - 1) * perPage;
-  let query = db()
-    .from("locations")
-    .select(
-      "id,name,address,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason"
-    )
-    .order("name", { ascending: true });
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,address.ilike.%${search}%`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw toAdminDataError(error, "load locations");
-
-  const rows = data ?? [];
-  const ids = rows.map((row) => row.id);
-  const ratings = new Map<number, { rating: number | null; total: number }>();
-  if (ids.length > 0) {
-    const { data: ratingRows, error: ratingError } = await db()
-      .from("location_ratings")
-      .select("id,rating,total_ratings")
-      .in("id", ids);
-    if (ratingError)
-      throw toAdminDataError(ratingError, "load location ratings");
-    for (const row of ratingRows ?? []) {
-      ratings.set(row.id, {
-        rating: row.rating ?? null,
-        total: row.total_ratings ?? 0,
-      });
-    }
-  }
-
-  const locations = rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    address: row.address,
-    neighborhood: row.neighborhood ?? null,
-    region_id: row.region_id ?? null,
-    golden_glass_eligible: row.golden_glass_eligible ?? true,
-    golden_glass_ineligibility_reason:
-      row.golden_glass_ineligibility_reason ?? null,
-    rating: ratings.get(row.id)?.rating ?? null,
-    total_ratings: ratings.get(row.id)?.total ?? 0,
-  }));
-  const filtered =
-    minReviews > 0
-      ? locations.filter((location) => location.total_ratings >= minReviews)
-      : locations;
-  const sorted = [...filtered].sort((left, right) => {
-    const byPlace =
-      (left.name ?? "").localeCompare(right.name ?? "") ||
-      String(left.id).localeCompare(String(right.id));
-    const placeTie = direction === "asc" ? byPlace : -byPlace;
-
-    if (sort === "area") {
-      const byArea =
-        formatCityRegion(left.address).localeCompare(
-          formatCityRegion(right.address)
-        ) || byPlace;
-      return direction === "asc" ? byArea : -byArea;
-    }
-
-    if (sort === "rating") {
-      const byRating =
-        (left.rating ?? -1) - (right.rating ?? -1) ||
-        left.total_ratings - right.total_ratings ||
-        byPlace;
-      return direction === "asc" ? byRating : -byRating || placeTie;
-    }
-
-    if (sort === "reviews") {
-      const byReviews =
-        left.total_ratings - right.total_ratings ||
-        (left.rating ?? -1) - (right.rating ?? -1) ||
-        byPlace;
-      return direction === "asc" ? byReviews : -byReviews || placeTie;
-    }
-
-    return direction === "asc" ? byPlace : -byPlace;
+  const { data, error } = await db().rpc("get_admin_locations_page", {
+    p_search: search ?? null,
+    p_min_reviews: minReviews,
+    p_sort: sort,
+    p_direction: direction,
+    p_page: page,
+    p_per_page: perPage,
   });
-
+  if (error) throw toAdminDataError(error, "load locations");
+  const result = (data ?? {}) as {
+    locations?: AdminLocation[];
+    total?: number;
+  };
   return {
-    locations: sorted.slice(offset, offset + perPage),
-    total: sorted.length,
+    locations: result.locations ?? [],
+    total: Number(result.total) || 0,
   };
 };
 
