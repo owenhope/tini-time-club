@@ -6,6 +6,8 @@ name: Main audit
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 concurrency:
   group: main-audit

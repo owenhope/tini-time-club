@@ -25,8 +25,9 @@ release integrations. Development happens on working branches and preview
 builds are created directly from the branch under test. `main` is always the
 latest live source, including production OTA fixes.
 
-GitHub Actions runs the repository audit only after a push reaches `main`.
-Branch and preview validation is manual: run `npm run verify` before building.
+GitHub Actions runs the repository audit on pull requests targeting `main` and
+again after a push reaches `main`. Branch and preview validation is still
+manual: run `npm run verify` before building.
 
 ## Test policy
 
