@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache";
 import { toAdminDataError } from "@/lib/dataErrors";
 import { SESSION_COOKIE, createSessionToken } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  buildAdminNotificationRows,
+  chunkNotificationRows,
+  NOTIFICATION_BATCH_SIZE,
+} from "@/lib/notificationBroadcast";
 
 export async function login(formData: FormData) {
   const password = formData.get("password");
@@ -64,34 +69,46 @@ export async function sendNotification(formData: FormData) {
   }
 
   const admin = supabaseAdmin();
-  let userIds: string[] = [];
-  if (audience === "all") {
-    const { data, error } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("deleted", false);
-    if (error) throw toAdminDataError(error, "load notification audience");
-    userIds = (data ?? []).map((p) => p.id);
-  } else {
-    userIds = [audience];
-  }
-  if (userIds.length === 0) redirect("/admin/notifications?error=audience");
-
   const broadcastId = crypto.randomUUID();
-  const rows = userIds.map((userId) => ({
-    user_id: userId,
-    body,
-    type: 2,
-    kind: "admin_message",
-    data: { kind: "admin_message", ...(url ? { url } : {}) },
-    event_key: `admin:${broadcastId}:${userId}`,
-  }));
+  let sent = 0;
 
-  const { error } = await admin.from("notifications").insert(rows);
-  if (error) throw toAdminDataError(error, "send notification");
+  const insertRows = async (userIds: string[]) => {
+    const rows = buildAdminNotificationRows(userIds, {
+      body,
+      ...(url ? { url } : {}),
+      broadcastId,
+    });
+    for (const batch of chunkNotificationRows(rows)) {
+      const { error } = await admin
+        .from("notifications")
+        .upsert(batch, { onConflict: "event_key", ignoreDuplicates: true });
+      if (error) throw toAdminDataError(error, "send notification");
+      sent += batch.length;
+    }
+  };
+
+  if (audience === "all") {
+    for (let offset = 0; ; offset += NOTIFICATION_BATCH_SIZE) {
+      const { data, error } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("deleted", false)
+        .order("id", { ascending: true })
+        .range(offset, offset + NOTIFICATION_BATCH_SIZE - 1);
+      if (error) throw toAdminDataError(error, "load notification audience");
+      const userIds = (data ?? []).map((profile) => profile.id);
+      if (userIds.length === 0) break;
+      await insertRows(userIds);
+      if (userIds.length < NOTIFICATION_BATCH_SIZE) break;
+    }
+  } else {
+    await insertRows([audience]);
+  }
+
+  if (sent === 0) redirect("/admin/notifications?error=audience");
 
   revalidatePath("/admin/notifications");
-  redirect(`/admin/notifications?sent=${rows.length}`);
+  redirect(`/admin/notifications?sent=${sent}`);
 }
 
 export async function setDeleted(profileId: string, deleted: boolean) {
