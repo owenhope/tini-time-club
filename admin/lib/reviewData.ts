@@ -9,6 +9,10 @@ import type {
   ReviewEngagement,
 } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
+import {
+  buildReviewEngagement,
+  type ReviewEngagementRow,
+} from "@/lib/reviewModels";
 
 export type {
   AdminReview,
@@ -43,11 +47,8 @@ const fetchReviewEngagement = async (
   reviewIds: string[],
   activeMemberIds: string[]
 ): Promise<Map<string, ReviewEngagement>> => {
-  const engagement = new Map(
-    reviewIds.map((id) => [id, emptyReviewEngagement()] as const)
-  );
   if (reviewIds.length === 0 || activeMemberIds.length === 0) {
-    return engagement;
+    return buildReviewEngagement(reviewIds, [], [], []);
   }
 
   const [likes, comments, shares] = await Promise.all([
@@ -76,21 +77,13 @@ const fetchReviewEngagement = async (
     throw new Error(shares.error.message);
   }
 
-  const tally = (reviewId: unknown, key: keyof ReviewEngagement) => {
-    if (reviewId == null) return;
-    const row = engagement.get(String(reviewId));
-    if (row) row[key] += 1;
-  };
-  for (const like of likes.data ?? []) tally(like.review_id, "likes");
-  for (const comment of comments.data ?? []) {
-    tally(comment.review_id, "comments");
-  }
-  const shareRows = shares.error ? [] : (shares.data ?? []);
-  for (const share of shareRows) {
-    tally(share.review_id, "shares");
-  }
-
-  return engagement;
+  const shareRows = shares.error ? [] : shares.data ?? [];
+  return buildReviewEngagement(
+    reviewIds,
+    (likes.data ?? []) as ReviewEngagementRow[],
+    (comments.data ?? []) as ReviewEngagementRow[],
+    shareRows as ReviewEngagementRow[]
+  );
 };
 
 export const fetchReviewCounts = async (): Promise<ReviewCounts> => {
