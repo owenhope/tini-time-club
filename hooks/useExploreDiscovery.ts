@@ -39,8 +39,10 @@ export function useExploreDiscovery({
 }: UseExploreDiscoveryOptions) {
   const [profiles, setProfiles] = useState<DiscoveredProfile[]>([]);
   const [locations, setLocations] = useState<ExploreLocationItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingMoreProfiles, setLoadingMoreProfiles] = useState(false);
+  const [loadingMoreLocations, setLoadingMoreLocations] = useState(false);
   const [hasMoreProfiles, setHasMoreProfiles] = useState(true);
   const [hasMoreLocations, setHasMoreLocations] = useState(true);
   const [profileCursor, setProfileCursor] = useState<DiscoveryCursor | null>(
@@ -73,8 +75,8 @@ export function useExploreDiscovery({
     async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
       const append = cursor !== null;
       const requestId = ++profileRequestId.current;
-      if (!append) setLoading(true);
-      else setLoadingMore(true);
+      if (!append) setLoadingProfiles(true);
+      else setLoadingMoreProfiles(true);
       try {
         const page = await getDiscoverProfilesPage({
           query: searchQuery,
@@ -94,8 +96,8 @@ export function useExploreDiscovery({
         setHasMoreProfiles(false);
       } finally {
         if (requestId === profileRequestId.current) {
-          if (!append) setLoading(false);
-          else setLoadingMore(false);
+          if (!append) setLoadingProfiles(false);
+          else setLoadingMoreProfiles(false);
         }
       }
     },
@@ -106,8 +108,8 @@ export function useExploreDiscovery({
     async (searchQuery: string, cursor: DiscoveryCursor | null = null) => {
       const append = cursor !== null;
       const requestId = ++locationRequestId.current;
-      if (!append) setLoading(true);
-      else setLoadingMore(true);
+      if (!append) setLoadingLocations(true);
+      else setLoadingMoreLocations(true);
       try {
         const page = await getDiscoverLocationsPage({
           query: searchQuery,
@@ -145,8 +147,8 @@ export function useExploreDiscovery({
         setHasMoreLocations(false);
       } finally {
         if (requestId === locationRequestId.current) {
-          if (!append) setLoading(false);
-          else setLoadingMore(false);
+          if (!append) setLoadingLocations(false);
+          else setLoadingMoreLocations(false);
         }
       }
     },
@@ -189,6 +191,11 @@ export function useExploreDiscovery({
     nearbyEnabled,
     userLocation,
   ]);
+
+  const loading =
+    activeView === "profiles" ? loadingProfiles : loadingLocations;
+  const loadingMore =
+    activeView === "profiles" ? loadingMoreProfiles : loadingMoreLocations;
 
   const handleEndReached = useCallback(() => {
     if (loading || loadingMore) return;
