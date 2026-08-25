@@ -1,11 +1,11 @@
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
-import { fetchNotificationAudienceMembers } from "@/lib/profileData";
+import NotificationComposer from "@/components/NotificationComposer";
+import { fetchNotificationAudienceCount } from "@/lib/profileData";
 import {
   fetchNotificationAnalytics,
   fetchWeeklyPushSubscriberCount,
 } from "@/lib/notificationData";
-import { sendNotification } from "@/lib/actions";
 import {
   formatNotificationSentValue,
   humanizeNotificationKind,
@@ -31,7 +31,7 @@ export default async function NotificationsPage({
   const { sent, error } = params;
 
   const [members, pushSubscriberCount, analytics] = await Promise.all([
-    fetchNotificationAudienceMembers(),
+    fetchNotificationAudienceCount(),
     fetchWeeklyPushSubscriberCount(),
     fetchNotificationAnalytics(30),
   ]);
@@ -49,7 +49,7 @@ export default async function NotificationsPage({
         stats={[
           {
             label: "Audience members",
-            value: members.length,
+            value: members,
             tone: "muted",
           },
           {
@@ -71,55 +71,10 @@ export default async function NotificationsPage({
         surface="transparent"
         density="compact"
         actions={
-          <details className="relative" open={Boolean(sent) || Boolean(error)}>
-            <summary className="cursor-pointer list-none rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-800 [&::-webkit-details-marker]:hidden">
-              + Send notification
-            </summary>
-            <div className="absolute right-0 z-10 mt-2 w-[26rem] max-w-[90vw] rounded-lg border border-stone-200 bg-white p-5 shadow-xl">
-              <form action={sendNotification}>
-                <label className="block text-sm font-medium text-stone-700">
-                  Audience
-                  <select
-                    name="audience"
-                    className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
-                  >
-                    <option value="all">All members ({members.length})</option>
-                    {members.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.username ?? profile.name ?? profile.id}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="mt-3 block text-sm font-medium text-stone-700">
-                  Link (optional, in-app path)
-                  <input
-                    type="text"
-                    name="url"
-                    placeholder="/places/8"
-                    className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
-                  />
-                </label>
-                <label className="mt-3 block text-sm font-medium text-stone-700">
-                  Message
-                  <textarea
-                    name="body"
-                    required
-                    maxLength={180}
-                    rows={3}
-                    placeholder="Happy hour intel, feature news, a nudge..."
-                    className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="mt-4 w-full rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800"
-                >
-                  Send
-                </button>
-              </form>
-            </div>
-          </details>
+          <NotificationComposer
+            memberCount={members}
+            open={Boolean(sent) || Boolean(error)}
+          />
         }
       />
 

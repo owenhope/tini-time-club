@@ -102,7 +102,22 @@ export async function sendNotification(formData: FormData) {
       if (userIds.length < NOTIFICATION_BATCH_SIZE) break;
     }
   } else {
-    await insertRows([audience]);
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        audience
+      )
+    ) {
+      redirect("/admin/notifications?error=audience");
+    }
+    const { data: member, error } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("id", audience)
+      .eq("deleted", false)
+      .maybeSingle();
+    if (error) throw toAdminDataError(error, "load notification audience");
+    if (!member) redirect("/admin/notifications?error=audience");
+    await insertRows([member.id]);
   }
 
   if (sent === 0) redirect("/admin/notifications?error=audience");

@@ -129,16 +129,59 @@ export const fetchProfile = async (
   };
 };
 
-export const fetchNotificationAudienceMembers = async (): Promise<
-  NotificationAudienceMember[]
-> => {
-  const { data, error } = await db()
+export const fetchNotificationAudienceCount = async (): Promise<number> => {
+  const { count, error } = await db()
     .from("profiles")
-    .select("id,username,name")
-    .eq("deleted", false)
-    .order("username", { ascending: true, nullsFirst: false })
-    .order("id", { ascending: true });
-  if (error) throw toAdminDataError(error, "load notification audience");
+    .select("id", { count: "exact", head: true })
+    .eq("deleted", false);
+  if (error) throw toAdminDataError(error, "count notification audience");
+  return count ?? 0;
+};
 
-  return data ?? [];
+/** Search a small candidate set for the notification recipient picker. */
+export const fetchNotificationAudienceMembers = async (
+  search: string,
+  limit = 20
+): Promise<NotificationAudienceMember[]> => {
+  const query = search.trim();
+  if (query.length < 2) return [];
+
+  const safeLimit = Math.max(1, Math.min(limit, 50));
+  const pattern = `%${query}%`;
+  const [usernameResult, nameResult] = await Promise.all([
+    db()
+      .from("profiles")
+      .select("id,username,name")
+      .eq("deleted", false)
+      .ilike("username", pattern)
+      .order("username", { ascending: true, nullsFirst: false })
+      .limit(safeLimit),
+    db()
+      .from("profiles")
+      .select("id,username,name")
+      .eq("deleted", false)
+      .ilike("name", pattern)
+      .order("username", { ascending: true, nullsFirst: false })
+      .limit(safeLimit),
+  ]);
+  if (usernameResult.error)
+    throw toAdminDataError(
+      usernameResult.error,
+      "search notification audience"
+    );
+  if (nameResult.error)
+    throw toAdminDataError(nameResult.error, "search notification audience");
+
+  const members = new Map<string, NotificationAudienceMember>();
+  for (const member of [
+    ...(usernameResult.data ?? []),
+    ...(nameResult.data ?? []),
+  ]) {
+    members.set(member.id, member);
+  }
+  return [...members.values()]
+    .sort((a, b) =>
+      (a.username ?? a.name ?? a.id).localeCompare(b.username ?? b.name ?? b.id)
+    )
+    .slice(0, safeLimit);
 };
