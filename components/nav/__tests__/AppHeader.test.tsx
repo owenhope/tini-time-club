@@ -85,6 +85,13 @@ describe("AppHeader", () => {
         .some((node) => node.props.children === "99+")
     ).toBe(true);
 
+    const countText = tree!.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "99+");
+    expect(StyleSheet.flatten(countText!.props.style)?.color).toBe(
+      darkColors.onInk
+    );
+
     const badge = tree!.root.findAllByType(View).find((node) => {
       const style = StyleSheet.flatten(node.props.style);
       return style?.minWidth === 20 && style?.height === 20;

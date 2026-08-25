@@ -727,7 +727,7 @@ const useStyles = makeStyles((t) => ({
   },
   countBadgeText: {
     ...t.typography.label,
-    color: t.colors.textOnAccent,
+    color: t.colors.onInk,
   },
 
   // A · large
