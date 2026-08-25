@@ -1,10 +1,9 @@
-import React, { useRef, useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Pressable,
-  Alert,
   type StyleProp,
   type TextStyle,
 } from "react-native";
@@ -12,7 +11,6 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
-import { supabase } from "@/utils/supabase";
 import {
   Avatar,
   MartiniIcon,
@@ -22,7 +20,6 @@ import {
 } from "@/components/shared";
 import ReviewTag from "@/components/shared/review-tag";
 import { Comment, Review } from "@/types/types";
-import * as Haptics from "expo-haptics";
 import {
   formatCityRegion,
   formatRelativeDate,
@@ -32,14 +29,11 @@ import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import ReportModal from "@/components/ReportModal";
 import ActionSheet from "@/components/ActionSheet";
 import ReviewImageViewer from "@/components/ReviewImageViewer";
-import AnalyticService from "@/services/analyticsService";
-import databaseService from "@/services/databaseService";
 import { HIT_SLOP, makeStyles, useTheme } from "@/theme";
-import { reportError } from "@/utils/log";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
-import { useReviewShareMenu } from "@/hooks/useReviewShareMenu";
 import { useMembership } from "@/context/membership-context";
 import { routes } from "@/utils/routes";
+import { useReviewEngagement } from "@/hooks/useReviewEngagement";
 import {
   runNavigation,
   areReviewItemPropsEqual,
@@ -121,66 +115,6 @@ const InlineIdentityText = ({
 };
 
 type ReviewItemProps = ReviewItemMemoProps;
-
-/**
- * Likes state for one review.
- *
- * The counts arrive with the feed row (see the feed_reviews DB function), so
- * this no longer issues its own count + membership queries per rendered item —
- * that was two extra round trips per row, ~40 per page.
- */
-const useLikes = (
-  reviewId: string,
-  userId: string | null,
-  initialCount: number,
-  initialHasLiked: boolean
-) => {
-  const [hasLiked, setHasLiked] = useState(initialHasLiked);
-  const [likesCount, setLikesCount] = useState(initialCount);
-  const [loading, setLoading] = useState(false);
-
-  // Re-sync when the row is refreshed or recycled onto a different review.
-  useEffect(() => {
-    setHasLiked(initialHasLiked);
-    setLikesCount(initialCount);
-  }, [reviewId, initialHasLiked, initialCount]);
-
-  const toggleLike = useCallback(async () => {
-    if (!userId || loading) return;
-
-    const wasLiked = hasLiked;
-
-    // Update optimistically so the heart responds immediately, then roll back
-    // if the write fails. supabase-js resolves with { error } rather than
-    // throwing, so the error must be inspected explicitly.
-    setHasLiked(!wasLiked);
-    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    setLoading(true);
-    try {
-      const { error } = wasLiked
-        ? await supabase
-            .from("likes")
-            .delete()
-            .eq("review_id", reviewId)
-            .eq("user_id", userId)
-        : await supabase
-            .from("likes")
-            .upsert([{ review_id: reviewId, user_id: userId }]);
-
-      if (error) throw error;
-    } catch (error) {
-      reportError("Error toggling like:", error);
-      setHasLiked(wasLiked);
-      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
-    } finally {
-      setLoading(false);
-    }
-  }, [reviewId, userId, hasLiked, loading]);
-
-  return { hasLiked, likesCount, toggleLike, loading };
-};
 
 // Reusable UI Components
 const AvatarWrapper = memo(
@@ -729,184 +663,28 @@ const ReviewItemComponent = ({
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
-  const [commentLikeState, setCommentLikeState] = useState<{
-    reviewId: string;
-    overrides: Record<number, Pick<Comment, "has_liked" | "likes_count">>;
-  }>({ reviewId: review.id, overrides: {} });
-  const pendingCommentLikes = useRef(new Set<number>());
   const isOwnReview = String(profile?.id) === String(review.profile?.id);
-  const shareReview = useReviewShareMenu(review);
-
-  // Use custom hooks for data management
-  const { hasLiked, likesCount, toggleLike } = useLikes(
-    review.id,
-    profile?.id || null,
-    review.likes_count ?? 0,
-    review.has_liked ?? false
-  );
-
-  const handleShare = useCallback(() => {
-    if (requireMembership("share-review")) shareReview();
-  }, [requireMembership, shareReview]);
-
-  const handleShowLikes = useCallback(() => {
-    if (requireMembership("social-list")) onShowLikes(review.id);
-  }, [onShowLikes, requireMembership, review.id]);
-
-  // Comment bodies are only needed once the user actually looks at them. The
-  // count shown in the footer comes with the feed row, so the previous
-  // fetch-on-mount (one query per rendered item) is gone.
-  const serverCommentCount = review.comments_count ?? 0;
-  const commentCount = serverCommentCount;
-
-  // Preview comments ride along with the feed row. The comments sheet owns
-  // paginated comment bodies, so opening it never starts a duplicate request.
-  const commentLikeOverrides =
-    commentLikeState.reviewId === review.id ? commentLikeState.overrides : {};
-  const recentComments = [...(review.recent_comments ?? [])];
-  const patchedRecentComments =
-    review._commentPatch?.action === "add"
-      ? [
-          review._commentPatch.data,
-          ...recentComments.filter(
-            (comment) => comment.id !== review._commentPatch?.data.id
-          ),
-        ]
-      : review._commentPatch?.action === "delete"
-        ? recentComments.filter(
-            (comment) => comment.id !== review._commentPatch?.id
-          )
-        : recentComments;
-  const previewComments = patchedRecentComments
-    .slice(0, MAX_PREVIEW_COMMENTS)
-    .reverse()
-    .map((comment) => ({
-      ...comment,
-      ...commentLikeOverrides[comment.id],
-    }));
-
-  const handleToggleCommentLike = useCallback(
-    async (comment: Comment) => {
-      if (!profile) {
-        requireMembership("like-comment");
-        return;
-      }
-      if (pendingCommentLikes.current.has(comment.id)) return;
-
-      const wasLiked = Boolean(comment.has_liked);
-      const previousCount = comment.likes_count ?? 0;
-      const nextLiked = !wasLiked;
-      pendingCommentLikes.current.add(comment.id);
-      setCommentLikeState((current) => ({
-        reviewId: review.id,
-        overrides: {
-          ...(current.reviewId === review.id ? current.overrides : {}),
-          [comment.id]: {
-            has_liked: nextLiked,
-            likes_count: Math.max(0, previousCount + (nextLiked ? 1 : -1)),
-          },
-        },
-      }));
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-      try {
-        await databaseService.setCommentLiked(
-          comment.id,
-          profile.id,
-          nextLiked,
-          review.id
-        );
-        if (nextLiked) {
-          AnalyticService.capture("like_comment", {
-            reviewId: review.id,
-            commentId: comment.id,
-            locationId: review.location?.id,
-            locationName: review.location?.name,
-          });
-        }
-      } catch (error) {
-        setCommentLikeState((current) => ({
-          reviewId: review.id,
-          overrides: {
-            ...(current.reviewId === review.id ? current.overrides : {}),
-            [comment.id]: {
-              has_liked: wasLiked,
-              likes_count: previousCount,
-            },
-          },
-        }));
-        reportError("Error toggling preview comment like:", error);
-      } finally {
-        pendingCommentLikes.current.delete(comment.id);
-      }
-    },
-    [
-      profile,
-      requireMembership,
-      review.id,
-      review.location?.id,
-      review.location?.name,
-    ]
-  );
-
-  // Like mutations generate their notification from a database trigger.
-  const handleToggleLike = useCallback(async () => {
-    if (!profile) {
-      requireMembership("like-review");
-      return;
-    }
-
-    const wasLiked = hasLiked;
-    await toggleLike();
-
-    // Track like event (only when liking, not unliking)
-    if (!wasLiked) {
-      AnalyticService.capture("like_review", {
-        reviewId: review.id,
-        locationId: review.location?.id,
-        locationName: review.location?.name,
-      });
-    }
-  }, [
-    profile,
-    requireMembership,
+  const {
+    commentCount,
+    handleReportSubmit,
+    handleShare,
+    handleShowLikes,
+    handleToggleCommentLike,
+    handleToggleLike,
     hasLiked,
-    toggleLike,
-    review.id,
-    review.location?.id,
-    review.location?.name,
-  ]);
+    likesCount,
+    previewComments,
+  } = useReviewEngagement({
+    review,
+    profile,
+    onShowLikes,
+  });
 
   // No double-tap-to-like: liking lives on the heart button, so a tap on the
   // photo opens the viewer immediately instead of waiting out a second tap.
   const handleImagePress = useCallback(() => {
     setImageViewerVisible(true);
   }, []);
-
-  const handleReportSubmit = useCallback(
-    async (reason: string, customReason?: string) => {
-      if (!profile) return;
-
-      try {
-        // Through the service, like every other write.
-        await databaseService.reportReview(review.id, customReason || reason);
-
-        AnalyticService.capture("report", {
-          reviewId: review.id,
-          reason: customReason || reason,
-          targetUserId: review.profile?.id,
-        });
-        Alert.alert(
-          "Report Submitted",
-          "Thank you for your report. We will review it shortly."
-        );
-      } catch (error) {
-        reportError("Error submitting report:", error);
-        Alert.alert("Error", "Failed to submit report. Please try again.");
-      }
-    },
-    [profile, review.id, review.profile?.id]
-  );
 
   if (previewMode) {
     return (
