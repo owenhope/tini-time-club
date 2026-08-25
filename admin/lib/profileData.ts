@@ -115,36 +115,6 @@ export const fetchProfileCounts = async (): Promise<ProfileCounts> => {
   };
 };
 
-const fetchLatestReviewDates = async (
-  userIds: string[]
-): Promise<Map<string, string>> => {
-  const latest = new Map<string, string>();
-  const idBatchSize = 200;
-  const rowBatchSize = 1000;
-
-  for (let index = 0; index < userIds.length; index += idBatchSize) {
-    const ids = userIds.slice(index, index + idBatchSize);
-    for (let start = 0; ; start += rowBatchSize) {
-      const { data, error } = await db()
-        .from("reviews")
-        .select("user_id,inserted_at")
-        .in("user_id", ids)
-        .order("inserted_at", { ascending: false })
-        .range(start, start + rowBatchSize - 1);
-      if (error) throw toAdminDataError(error, "load latest review dates");
-
-      for (const review of data ?? []) {
-        if (!latest.has(review.user_id)) {
-          latest.set(review.user_id, review.inserted_at);
-        }
-      }
-      if ((data ?? []).length < rowBatchSize) break;
-    }
-  }
-
-  return latest;
-};
-
 export const fetchProfiles = async (
   search?: string,
   page = 1,
@@ -153,7 +123,6 @@ export const fetchProfiles = async (
   sort: ProfileSort = "review_count",
   direction: SortDirection = "desc"
 ): Promise<{ profiles: AdminProfile[]; total: number }> => {
-  const offset = (Math.max(1, page) - 1) * perPage;
   const sortColumn: ProfileSort = [
     "username",
     "rank",
@@ -165,100 +134,22 @@ export const fetchProfiles = async (
     ? sort
     : "review_count";
 
-  if (sortColumn === "created_at" || sortColumn === "last_review_at") {
-    const authUsers = await fetchAuthUsers();
-    const profiles: AdminProfile[] = [];
-    const batchSize = 1000;
-    let total = 0;
-
-    for (let start = 0; ; start += batchSize) {
-      let batchQuery = db()
-        .from("profiles")
-        .select(
-          "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio",
-          { count: "exact" }
-        )
-        .order("id", { ascending: true })
-        .range(start, start + batchSize - 1);
-      if (search) batchQuery = batchQuery.ilike("username", `%${search}%`);
-      if (status === "active") batchQuery = batchQuery.eq("deleted", false);
-      if (status === "deleted") batchQuery = batchQuery.eq("deleted", true);
-      if (status === "verified")
-        batchQuery = batchQuery.eq("is_verified", true);
-
-      const { data, error, count } = await batchQuery;
-      if (error) throw toAdminDataError(error, "load profiles");
-      if (start === 0) total = count ?? 0;
-
-      const batch = (data ?? []).map((profile) =>
-        enrichAdminProfile(profile, authUsers.get(profile.id))
-      );
-      profiles.push(...batch);
-      if (batch.length < batchSize) break;
-    }
-
-    const latestReviewDates = await fetchLatestReviewDates(
-      profiles.map((profile) => profile.id)
-    );
-    for (const profile of profiles) {
-      profile.last_review_at = latestReviewDates.get(profile.id);
-    }
-
-    profiles.sort((left, right) => {
-      const leftValue = left[sortColumn];
-      const rightValue = right[sortColumn];
-      if (!leftValue && !rightValue) return left.id.localeCompare(right.id);
-      if (!leftValue) return 1;
-      if (!rightValue) return -1;
-      const comparison =
-        new Date(leftValue).getTime() - new Date(rightValue).getTime();
-      return comparison === 0
-        ? left.id.localeCompare(right.id)
-        : direction === "asc"
-          ? comparison
-          : -comparison;
-    });
-
-    return {
-      profiles: profiles.slice(offset, offset + perPage),
-      total,
-    };
-  }
-
-  const databaseSortColumn =
-    sortColumn === "rank" ? "review_count" : sortColumn;
-  let query = db()
-    .from("profiles")
-    .select(
-      "id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio",
-      { count: "exact" }
-    )
-    .order(databaseSortColumn, {
-      ascending: direction === "asc",
-      nullsFirst: false,
-    })
-    .order("id", { ascending: true })
-    .range(offset, offset + perPage - 1);
-  if (search) query = query.ilike("username", `%${search}%`);
-  if (status === "active") query = query.eq("deleted", false);
-  if (status === "deleted") query = query.eq("deleted", true);
-  if (status === "verified") query = query.eq("is_verified", true);
-
-  const [{ data, error, count }, authUsers] = await Promise.all([
-    query,
-    fetchAuthUsers(),
-  ]);
+  const { data, error } = await db().rpc("get_admin_profiles_page", {
+    p_search: search ?? null,
+    p_status: status ?? null,
+    p_sort: sortColumn,
+    p_direction: direction,
+    p_page: page,
+    p_per_page: perPage,
+  });
   if (error) throw toAdminDataError(error, "load profiles");
-  const rows = data ?? [];
-  const latestReviewDates = await fetchLatestReviewDates(
-    rows.map((profile) => profile.id)
-  );
+  const result = (data ?? {}) as {
+    profiles?: AdminProfile[];
+    total?: number;
+  };
   return {
-    profiles: rows.map((profile) => ({
-      ...enrichAdminProfile(profile, authUsers.get(profile.id)),
-      last_review_at: latestReviewDates.get(profile.id),
-    })),
-    total: count ?? 0,
+    profiles: (result.profiles ?? []) as AdminProfile[],
+    total: Number(result.total) || 0,
   };
 };
 
