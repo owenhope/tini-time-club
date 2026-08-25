@@ -10,12 +10,10 @@ import {
 import UserBadge from "@/components/UserBadge";
 import MentionRichText from "@/components/MentionRichText";
 import { setReviewActive } from "@/lib/actions";
-import { formatOverallRating } from "@/lib/format";
+import { formatAdminDateTime, formatOverallRating } from "@/lib/format";
 import { fetchAdminReview } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
-
-const date = (value: string) => new Date(value).toLocaleString();
 
 const score = (value: number | null) => value?.toFixed(1) ?? "—";
 
@@ -41,7 +39,7 @@ export default async function ReviewDetailPage({
         backLink={{ href: "/admin/reviews", label: "Back to reviews" }}
         eyebrow="Review management"
         title={review.location?.name ?? `Review #${review.id}`}
-        description={`Posted ${date(review.inserted_at)}`}
+        description={`Posted ${formatAdminDateTime(review.inserted_at)}`}
         stats={[
           {
             label: "Overall Rating",

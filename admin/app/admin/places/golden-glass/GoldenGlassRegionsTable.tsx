@@ -7,15 +7,13 @@ import {
   EmptyState,
   StatusPill,
 } from "@/components/AdminPrimitives";
+import { formatAdminDateTime } from "@/lib/format";
 import type { AdminRegion, GoldenGlassInspectionRow } from "@/lib/placeTypes";
 
 interface GoldenGlassRegionGroup {
   region: AdminRegion;
   recipients: GoldenGlassInspectionRow[];
 }
-
-const date = (value: string | null) =>
-  value ? new Date(value).toLocaleString() : "—";
 
 export default function GoldenGlassRegionsTable({
   groups,
@@ -159,7 +157,7 @@ export default function GoldenGlassRegionsTable({
                             {recipient.distinct_reviewers}
                           </td>
                           <td className="px-4 py-3 text-xs text-stone-500">
-                            {date(recipient.latest_review_at)}
+                            {formatAdminDateTime(recipient.latest_review_at)}
                           </td>
                           <td className="px-4 py-3">
                             <div onClick={(event) => event.stopPropagation()}>

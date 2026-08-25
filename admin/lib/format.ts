@@ -148,3 +148,9 @@ export const formatOverallRating = (
   taste == null || presentation == null
     ? "—"
     : (Math.round(((taste + presentation) / 2) * 10) / 10).toFixed(1);
+
+export const formatAdminDate = (value?: string | null): string =>
+  value ? new Date(value).toLocaleDateString() : "—";
+
+export const formatAdminDateTime = (value?: string | null): string =>
+  value ? new Date(value).toLocaleString() : "—";

@@ -11,12 +11,10 @@ import {
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
 import { updateLocation } from "@/lib/actions";
-import { formatOverallRating } from "@/lib/format";
+import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchAdminLocation, fetchAdminRegions } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
-
-const date = (value: string) => new Date(value).toLocaleDateString();
 
 export default async function PlaceDetailPage({
   params,
@@ -85,7 +83,7 @@ export default async function PlaceDetailPage({
           },
           {
             label: "Added",
-            value: date(location.inserted_at),
+            value: formatAdminDate(location.inserted_at),
             tone: "muted",
           },
         ]}
@@ -231,7 +229,7 @@ export default async function PlaceDetailPage({
                 className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
               >
                 <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
-                  {date(review.inserted_at)}
+                  {formatAdminDate(review.inserted_at)}
                 </td>
                 <td className="px-4 py-3">
                   {review.profile ? (

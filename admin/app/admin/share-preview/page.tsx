@@ -5,7 +5,7 @@ import {
   fetchSharePreviewLocations,
   fetchSharePreviewReviews,
 } from "@/lib/sharePreviewData";
-import { formatCityRegion } from "@/lib/format";
+import { formatAdminDate, formatCityRegion } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -156,7 +156,7 @@ export default async function SharePreviewPage({
                           #{review.id} ·{" "}
                           {review.location?.name ?? "Unknown place"} · @
                           {review.profile?.username ?? "unknown"} ·{" "}
-                          {new Date(review.inserted_at).toLocaleDateString()}
+                          {formatAdminDate(review.inserted_at)}
                         </option>
                       ))}
                   {selectedId &&

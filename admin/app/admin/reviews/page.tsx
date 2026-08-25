@@ -12,12 +12,10 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
-import { formatOverallRating } from "@/lib/format";
+import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchAllReviews, fetchReviewCounts } from "@/lib/reviewData";
 
 export const dynamic = "force-dynamic";
-
-const shortDate = (value: string) => new Date(value).toLocaleDateString();
 
 export default async function ReviewsPage({
   searchParams,
@@ -115,7 +113,7 @@ export default async function ReviewsPage({
               className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
             >
               <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
-                {shortDate(review.inserted_at)}
+                {formatAdminDate(review.inserted_at)}
               </td>
               <td className="px-4 py-3">
                 {review.profile ? (

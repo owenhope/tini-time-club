@@ -10,14 +10,12 @@ import {
 } from "@/components/AdminPrimitives";
 import Pagination, { parsePerPage } from "@/components/Pagination";
 import UserBadge, { tierFor } from "@/components/UserBadge";
+import { formatAdminDate } from "@/lib/format";
 import { fetchProfileCounts, fetchProfiles } from "@/lib/profileData";
 import { fetchTierDistribution } from "@/lib/analyticsData";
 import type { ProfileSort, SortDirection } from "@/lib/profileTypes";
 
 export const dynamic = "force-dynamic";
-
-const date = (value?: string) =>
-  value ? new Date(value).toLocaleDateString() : "—";
 
 const SORTS = [
   "username",
@@ -285,10 +283,10 @@ export default async function UsersPage({
                   {(profile.review_count ?? 0).toLocaleString()}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-stone-500">
-                  {date(profile.created_at)}
+                  {formatAdminDate(profile.created_at)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-stone-500">
-                  {date(profile.last_review_at)}
+                  {formatAdminDate(profile.last_review_at)}
                 </td>
                 <td className="px-4 py-3">
                   <ActionLink href={`/admin/users/${profile.id}`}>

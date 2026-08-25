@@ -9,6 +9,7 @@ import {
   Panel,
 } from "@/components/AdminPrimitives";
 import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/placeData";
+import { formatAdminDateTime } from "@/lib/format";
 import RegionMapEditor from "../../../regions/RegionMapEditor";
 
 export const dynamic = "force-dynamic";
@@ -125,7 +126,7 @@ export default async function ManageRegionPage({
                   {recipient.distinct_reviewers}
                 </td>
                 <td className="px-4 py-3 text-xs text-stone-500">
-                  {new Date(recipient.latest_review_at).toLocaleString()}
+                  {formatAdminDateTime(recipient.latest_review_at)}
                 </td>
                 <td className="px-4 py-3">
                   <ActionLink href={"/admin/places/" + recipient.location_id}>

@@ -10,14 +10,11 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge, { tierFor } from "@/components/UserBadge";
-import { formatOverallRating } from "@/lib/format";
+import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchProfile } from "@/lib/profileData";
 import { setDeleted, setVerified } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
-
-const date = (value?: string | null) =>
-  value ? new Date(value).toLocaleDateString() : "—";
 
 export default async function UserDetailPage({
   params,
@@ -51,10 +48,14 @@ export default async function UserDetailPage({
             value: profile.review_count ?? 0,
             tone: "green",
           },
-          { label: "Joined", value: date(profile.created_at), tone: "muted" },
+          {
+            label: "Joined",
+            value: formatAdminDate(profile.created_at),
+            tone: "muted",
+          },
           {
             label: "Last sign-in",
-            value: date(profile.last_sign_in_at),
+            value: formatAdminDate(profile.last_sign_in_at),
             tone: "muted",
           },
         ]}
@@ -129,7 +130,7 @@ export default async function UserDetailPage({
                     Deleted
                   </dt>
                   <dd className="mt-1 text-stone-900">
-                    {date(profile.deleted_at)}
+                    {formatAdminDate(profile.deleted_at)}
                   </dd>
                 </div>
               ) : null}
@@ -160,7 +161,7 @@ export default async function UserDetailPage({
                 className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
               >
                 <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">
-                  {date(review.inserted_at)}
+                  {formatAdminDate(review.inserted_at)}
                 </td>
                 <td className="max-w-52 truncate px-4 py-3 font-bold text-stone-900">
                   {review.location?.name ?? "Unknown place"}
