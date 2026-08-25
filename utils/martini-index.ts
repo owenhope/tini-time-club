@@ -43,35 +43,32 @@ export const MARTINI_GUIDE_NOTES: MartiniGuideNote[] = [
     title: "Shaken or stirred?",
     body: "Stirring keeps a spirit-forward Martini clear and silky. Shaking chills and dilutes it faster, adding tiny air bubbles and a livelier texture.",
     closer:
-      "Shaking chills and dilutes a Martini faster than stirring, while also adding tiny air bubbles and a lighter texture.",
+      "Ask for stirred or shaken: clear and silky, or more aeration and dilution.",
   },
   {
     id: "neat-vs-up",
     title: "Neat vs. up?",
     body: "“Up” means chilled with ice, then strained into a stemmed glass without ice. “Neat” means poured directly from the bottle without chilling, ice, or added dilution.",
     closer:
-      "A Martini served up is chilled with ice and strained. A neat pour has no ice, chilling, or added dilution.",
+      "Ask for up or neat: chilled and strained, or no chilling or dilution.",
   },
   {
     id: "dry-wet-fifty-fifty",
     title: "Dry, wet, or 50/50?",
     body: "Dry means less dry vermouth. Wet means more. A 50/50 divides the pour equally between spirit and dry vermouth.",
-    closer:
-      "The terms dry and wet describe the amount of vermouth; a 50/50 Martini uses equal parts spirit and vermouth.",
+    closer: "Ask for dry, wet, or 50/50: less, more, or equal vermouth.",
   },
   {
     id: "dirty-to-filthy",
     title: "Dirty, extra-dirty, filthy?",
     body: "They all add olive brine. Each step asks for more, but the exact pour varies by bar, so say how briny you want it.",
-    closer:
-      "There is no fixed measure for a dirty or filthy Martini, so the amount of olive brine varies by recipe and bar.",
+    closer: "Ask for dirty, extra-dirty, or filthy for more olive brine.",
   },
   {
     id: "twist-or-olive",
     title: "Twist or olive?",
     body: "A twist is a strip of citrus peel expressed over the drink, adding fragrant oils and brightness. An olive brings a savory, salty finish.",
-    closer:
-      "A citrus twist contributes fragrant peel oils, while an olive contributes a savory, salty finish.",
+    closer: "Ask for a citrus twist for aroma or an olive for savory flavor.",
   },
 ];
 

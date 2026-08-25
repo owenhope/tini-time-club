@@ -144,6 +144,11 @@ html.dark .admin-theme .bg-white {
   background-color: #11241c;
 }
 
+/* Keep the Golden Glass row accent on the same dark surface as the table. */
+html.dark .admin-theme .bg-amber-50\/50 {
+  background-color: #11241c;
+}
+
 html.dark .admin-theme .bg-stone-900 {
   background-color: #07110c;
 }
