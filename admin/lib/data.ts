@@ -6,9 +6,23 @@ import { resolveProductTelemetryResponse } from "@/lib/productTelemetry.mjs";
 import { resolveLiveActivityResponse } from "@/lib/liveActivity.mjs";
 import { bucketByDay } from "@/lib/bucket";
 import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
-import { fetchWebMentionSpans, type WebMentionSpan } from "@/lib/mentions";
+import { fetchWebMentionSpans } from "@/lib/mentions";
 import type { DateRange } from "@/lib/range";
 import type { AdminLocation } from "@/lib/placeTypes";
+import type {
+  AdminProfile,
+  NotificationAudienceMember,
+  ProfileCounts,
+  ProfileSort,
+  SortDirection,
+} from "@/lib/profileTypes";
+import type {
+  AdminReview,
+  AdminReviewDetail,
+  AdminReviewRow,
+  ReviewCounts,
+  TopReview,
+} from "@/lib/reviewTypes";
 import {
   fetchAdminRegions,
   fetchGoldenGlassInspection,
@@ -32,37 +46,20 @@ export {
   fetchMapPlaces,
 } from "@/lib/placeData";
 
-export interface AdminProfile {
-  id: string;
-  username: string | null;
-  name: string | null;
-  avatar_url: string | null;
-  is_verified: boolean | null;
-  deleted: boolean | null;
-  deleted_at: string | null;
-  review_count: number | null;
-  bio: string | null;
-  email?: string;
-  created_at?: string;
-  last_sign_in_at?: string;
-  last_review_at?: string;
-}
-
-export interface NotificationAudienceMember {
-  id: string;
-  username: string | null;
-  name: string | null;
-}
-
-export interface AdminReview {
-  id: string | number;
-  comment: string | null;
-  taste: number | null;
-  presentation: number | null;
-  inserted_at: string;
-  state: number | null;
-  location: { name: string | null } | null;
-}
+export type {
+  AdminProfile,
+  NotificationAudienceMember,
+  ProfileCounts,
+  ProfileSort,
+  SortDirection,
+} from "@/lib/profileTypes";
+export type {
+  AdminReview,
+  AdminReviewDetail,
+  AdminReviewRow,
+  ReviewCounts,
+  TopReview,
+} from "@/lib/reviewTypes";
 
 export interface SharePreviewReview {
   id: string;
@@ -942,21 +939,6 @@ export const fetchSharePreviewLocations = async (
 
 export const USERS_PAGE_SIZE = 50;
 
-export type ProfileSort =
-  | "username"
-  | "rank"
-  | "review_count"
-  | "deleted"
-  | "created_at"
-  | "last_review_at";
-export type SortDirection = "asc" | "desc";
-
-export interface ProfileCounts {
-  total: number;
-  verified: number;
-  deleted: number;
-}
-
 export const fetchProfileCounts = async (): Promise<ProfileCounts> => {
   const [total, verified, deleted] = await Promise.all([
     db().from("profiles").select("id", { count: "exact", head: true }),
@@ -1169,36 +1151,6 @@ export const fetchProfile = async (
   };
 };
 
-export interface AdminReviewRow {
-  id: string;
-  comment: string | null;
-  taste: number | null;
-  presentation: number | null;
-  inserted_at: string;
-  state: number | null;
-  location: { id: number; name: string | null } | null;
-  profile: AdminProfile | null;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
-}
-
-export interface AdminReviewDetail extends AdminReviewRow {
-  image_url: string | null;
-  image_public_url: string | null;
-  location: { id: number; name: string | null; address: string | null } | null;
-  spirit: { name: string | null } | null;
-  type: { name: string | null } | null;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
-  mentions: WebMentionSpan[];
-}
-
 const one = <T>(value: T | T[] | null | undefined): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 
@@ -1275,12 +1227,6 @@ const fetchReviewEngagement = async (
 
   return engagement;
 };
-
-export interface ReviewCounts {
-  total: number;
-  active: number;
-  inactive: number;
-}
 
 export const fetchReviewCounts = async (): Promise<ReviewCounts> => {
   const [total, active] = await Promise.all([
@@ -1539,11 +1485,6 @@ export const fetchLatestActivity = async (
     locations: (locations.data ?? []) as LatestLocation[],
   };
 };
-
-export interface TopReview extends AdminReviewRow {
-  likes: number;
-  comments: number;
-}
 
 export interface TopLocation {
   id: number;
