@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -44,6 +45,10 @@ import { routes } from "@/utils/routes";
 import { collectAchievements, type Achievement } from "@/utils/celebrations";
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
+import {
+  INITIAL_REVIEW_COMPOSER_FLOW,
+  reviewComposerFlowReducer,
+} from "@/utils/reviewComposerFlow";
 import {
   getReviewStepNumber,
   REVIEW_QUESTIONS,
@@ -211,11 +216,8 @@ function ReviewComposer() {
         ? { width: "100%" as const, aspectRatio: photoAspectRatio }
         : { height: "100%" as const, aspectRatio: photoAspectRatio }
       : null;
-  const [isReviewing, setIsReviewing] = useState(false);
-  const [isPhotoPreviewing, setIsPhotoPreviewing] = useState(false);
   const [selectedLocation, setSelectedLocation] =
     useState<ReviewFormLocation | null>(null);
-  const [step, setStep] = useState(0);
 
   const [types, setTypes] = useState<Option[]>([]);
   const [spirits, setSpirits] = useState<Option[]>([]);
@@ -223,12 +225,10 @@ function ReviewComposer() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isChangingPhoto, setIsChangingPhoto] = useState(false);
   const [photoChanged, setPhotoChanged] = useState(false);
   const [originalImagePath, setOriginalImagePath] = useState<string | null>(
     null
   );
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [celebrationReviewCount, setCelebrationReviewCount] = useState<
     number | null
@@ -252,6 +252,10 @@ function ReviewComposer() {
   const locationLatParam = params.locationLat;
   const locationLonParam = params.locationLon;
   const locationPlaceIdParam = params.locationPlaceId;
+  const [flow, dispatchFlow] = useReducer(
+    reviewComposerFlowReducer,
+    INITIAL_REVIEW_COMPOSER_FLOW
+  );
 
   const { control, formState, handleSubmit, reset, trigger, setValue } =
     useForm<ReviewFormValues>({
@@ -269,6 +273,10 @@ function ReviewComposer() {
     });
   const insets = useSafeAreaInsets();
   const watchedValues = useWatch({ control }) as ReviewFormValues;
+  const isReviewing = flow.screen === "questions";
+  const isPhotoPreviewing = flow.screen === "photoPreview";
+  const isChangingPhoto = flow.screen === "changePhoto";
+  const isTransitioning = flow.isTransitioning;
 
   const getTypes = useCallback(async () => {
     try {
@@ -348,8 +356,7 @@ function ReviewComposer() {
         setPhotoDimensions(null);
         setOriginalImagePath(review.image_url);
         setPhotoChanged(false);
-        setIsReviewing(true);
-        setStep(0);
+        dispatchFlow({ type: "startReview" });
       })
       .catch((error) => {
         reportError("Error loading review for editing:", error);
@@ -392,13 +399,11 @@ function ReviewComposer() {
   const animatedStyle = { opacity };
 
   const discardReview = () => {
-    setStep(0);
+    dispatchFlow({ type: "reset" });
     setPhoto(null);
     setPhotoDimensions(null);
-    setIsReviewing(false);
     setIsSubmitting(false);
     setSubmissionMessage("");
-    setIsChangingPhoto(false);
     setPhotoChanged(false);
     setOriginalImagePath(null);
     setCaptionMentions([]);
@@ -406,9 +411,6 @@ function ReviewComposer() {
     reset();
     if (isEditMode) {
       goBack();
-    } else {
-      setIsPhotoPreviewing(false);
-      setIsReviewing(false);
     }
   };
 
@@ -430,8 +432,8 @@ function ReviewComposer() {
   };
 
   const transitionToStep = (next: number) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
+    if (flow.isTransitioning) return;
+    dispatchFlow({ type: "beginStepTransition" });
 
     Animated.timing(opacity, {
       toValue: 0,
@@ -439,45 +441,48 @@ function ReviewComposer() {
       useNativeDriver: false,
     }).start(({ finished }) => {
       if (!finished) {
-        setIsTransitioning(false);
+        dispatchFlow({ type: "cancelStepTransition" });
         return;
       }
 
-      setStep(next);
+      dispatchFlow({ type: "completeStepTransition", questionIndex: next });
       requestAnimationFrame(() => {
         Animated.timing(opacity, {
           toValue: 1,
           duration: STEP_FADE_IN_MS,
           useNativeDriver: false,
-        }).start(() => setIsTransitioning(false));
+        }).start(() => undefined);
       });
     });
   };
 
   const nextStep = async () => {
-    if (isTransitioning) return;
+    if (flow.isTransitioning) return;
 
-    if (REVIEW_QUESTIONS[step].key === "comment") {
+    if (REVIEW_QUESTIONS[flow.questionIndex].key === "comment") {
       // The caption is required before the preview; form rules don't cover
       // whitespace-only input, so check the trimmed value directly.
       if (!watchedValues.comment?.trim()) return;
     }
-    if (REVIEW_QUESTIONS[step].key) {
-      const isValid = await trigger(REVIEW_QUESTIONS[step].key as any);
+    if (REVIEW_QUESTIONS[flow.questionIndex].key) {
+      const isValid = await trigger(
+        REVIEW_QUESTIONS[flow.questionIndex].key as any
+      );
       if (!isValid) return;
     }
 
-    if (step < REVIEW_QUESTIONS.length - 1) {
-      transitionToStep(step + 1);
+    if (flow.questionIndex < REVIEW_QUESTIONS.length - 1) {
+      transitionToStep(flow.questionIndex + 1);
     }
   };
 
   const prevStep = () => {
-    if (step > 0 && !isTransitioning) transitionToStep(step - 1);
+    if (flow.questionIndex > 0 && !flow.isTransitioning)
+      transitionToStep(flow.questionIndex - 1);
   };
 
   const renderCurrentQuestion = () => {
-    switch (REVIEW_QUESTIONS[step].key) {
+    switch (REVIEW_QUESTIONS[flow.questionIndex].key) {
       case "location":
         return (
           <LocationInput
@@ -815,8 +820,8 @@ function ReviewComposer() {
     });
   };
 
-  const currentQuestionTitle = REVIEW_QUESTIONS[step].title;
-  const currentQuestionKey = REVIEW_QUESTIONS[step].key;
+  const currentQuestionTitle = REVIEW_QUESTIONS[flow.questionIndex].title;
+  const currentQuestionKey = REVIEW_QUESTIONS[flow.questionIndex].key;
   const currentStepIncomplete = !isReviewStepComplete(
     currentQuestionKey,
     {
@@ -841,14 +846,13 @@ function ReviewComposer() {
           {
             icon: "camera-outline",
             onPress: () => {
-              setIsChangingPhoto(true);
-              setIsReviewing(false);
+              dispatchFlow({ type: "startChangingPhoto" });
             },
             accessibilityLabel: "Change review photo",
           },
         ] satisfies HeaderAction[])
       : []),
-    ...(step < REVIEW_QUESTIONS.length - 1
+    ...(flow.questionIndex < REVIEW_QUESTIONS.length - 1
       ? [
           {
             icon: "chevron-forward",
@@ -878,21 +882,17 @@ function ReviewComposer() {
   ];
 
   const returnToPhotoPreview = () => {
-    setIsPhotoPreviewing(true);
-    setIsReviewing(false);
+    dispatchFlow({ type: "showPhotoPreview" });
   };
 
   const continueFromPhotoPreview = () => {
-    setIsPhotoPreviewing(false);
-    setIsReviewing(true);
-    setStep(0);
+    dispatchFlow({ type: "continueFromPhotoPreview" });
   };
 
   const returnToCamera = () => {
     setPhoto(null);
     setPhotoDimensions(null);
-    setIsPhotoPreviewing(false);
-    setIsReviewing(false);
+    dispatchFlow({ type: "returnToCamera" });
   };
 
   return (
@@ -915,8 +915,7 @@ function ReviewComposer() {
             onClose={
               isChangingPhoto
                 ? () => {
-                    setIsChangingPhoto(false);
-                    setIsReviewing(true);
+                    dispatchFlow({ type: "cancelChangingPhoto" });
                   }
                 : goBack
             }
@@ -948,9 +947,7 @@ function ReviewComposer() {
                 height: captured.height,
               });
               setPhotoChanged(isEditMode);
-              setIsChangingPhoto(false);
-              setIsPhotoPreviewing(true);
-              setIsReviewing(false);
+              dispatchFlow({ type: "showPhotoPreview" });
               setIsSubmitting(false);
               setSubmissionMessage("");
             }}
@@ -1078,7 +1075,7 @@ function ReviewComposer() {
                 onBack={
                   currentQuestionTitle === "Preview"
                     ? undefined
-                    : step > 0
+                    : flow.questionIndex > 0
                       ? prevStep
                       : returnToPhotoPreview
                 }
@@ -1090,14 +1087,15 @@ function ReviewComposer() {
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {getReviewStepNumber(step)} of {REVIEW_STEP_TOTAL}
+                        Step {getReviewStepNumber(flow.questionIndex)} of{" "}
+                        {REVIEW_STEP_TOTAL}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
                             {
-                              width: `${(getReviewStepNumber(step) / REVIEW_STEP_TOTAL) * 100}%`,
+                              width: `${(getReviewStepNumber(flow.questionIndex) / REVIEW_STEP_TOTAL) * 100}%`,
                             },
                           ]}
                         />
@@ -1110,14 +1108,15 @@ function ReviewComposer() {
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {getReviewStepNumber(step)} of {REVIEW_STEP_TOTAL}
+                        Step {getReviewStepNumber(flow.questionIndex)} of{" "}
+                        {REVIEW_STEP_TOTAL}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
                             {
-                              width: `${(getReviewStepNumber(step) / REVIEW_STEP_TOTAL) * 100}%`,
+                              width: `${(getReviewStepNumber(flow.questionIndex) / REVIEW_STEP_TOTAL) * 100}%`,
                             },
                           ]}
                         />
