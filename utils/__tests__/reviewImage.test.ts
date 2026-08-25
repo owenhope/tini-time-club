@@ -10,6 +10,7 @@ import {
   MAX_REVIEW_IMAGE_EDGE,
   prepareReviewImageForUpload,
   REVIEW_IMAGE_COMPRESSION,
+  REVIEW_IMAGE_UPLOAD_OPTIONS,
 } from "@/utils/reviewImage";
 
 describe("review image preparation", () => {
@@ -19,6 +20,15 @@ describe("review image preparation", () => {
       uri: "file:///prepared.jpg",
       width: MAX_REVIEW_IMAGE_EDGE,
       height: 1365,
+    });
+  });
+
+  it("uses the canonical delivery size and immutable upload cache policy", () => {
+    expect(MAX_REVIEW_IMAGE_EDGE).toBe(1080);
+    expect(REVIEW_IMAGE_UPLOAD_OPTIONS).toEqual({
+      cacheControl: "31536000",
+      contentType: "image/jpeg",
+      upsert: false,
     });
   });
 
@@ -35,7 +45,7 @@ describe("review image preparation", () => {
   });
 
   it("does not upscale an image already inside the limit", () => {
-    expect(getReviewImageResizeActions({ width: 1200, height: 900 })).toEqual(
+    expect(getReviewImageResizeActions({ width: 1000, height: 900 })).toEqual(
       []
     );
   });

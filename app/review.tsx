@@ -67,6 +67,7 @@ import {
 } from "@/utils/reviewComposerSubmission";
 import {
   prepareReviewImageForUpload,
+  REVIEW_IMAGE_UPLOAD_OPTIONS,
   type ReviewImageSource,
 } from "@/utils/reviewImage";
 import MentionInput from "@/components/mentions/MentionInput";
@@ -598,9 +599,7 @@ function ReviewComposer() {
 
       const { data, error } = await supabase.storage
         .from("review_images")
-        .upload(filePath, fileData, {
-          contentType: "image/jpeg",
-        });
+        .upload(filePath, fileData, REVIEW_IMAGE_UPLOAD_OPTIONS);
 
       if (error || !data) {
         reportError("Error uploading image:", error);

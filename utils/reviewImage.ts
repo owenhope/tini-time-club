@@ -1,12 +1,16 @@
 import * as ImageManipulator from "expo-image-manipulator";
 
-// Every screen reads review photos through the storage transform at 1080px
-// (see utils/imageCache.ts), so the stored original only needs enough
-// headroom over that to stay the master copy. 1440px halves the pixel count
-// of the old 2048px cap — faster uploads, cheaper storage and transforms —
-// without the serving path ever noticing.
-export const MAX_REVIEW_IMAGE_EDGE = 1440;
+// Review photos are delivered directly from Storage, so the upload itself is
+// the canonical delivery variant. Keeping this at the largest screen size
+// avoids a runtime Storage image transformation for every new photo.
+export const MAX_REVIEW_IMAGE_EDGE = 1080;
 export const REVIEW_IMAGE_COMPRESSION = 0.7;
+
+export const REVIEW_IMAGE_UPLOAD_OPTIONS = {
+  cacheControl: "31536000",
+  contentType: "image/jpeg",
+  upsert: false,
+} as const;
 
 export interface ReviewImageSource {
   uri: string;
