@@ -520,25 +520,6 @@ class DatabaseService {
   }
 
   /**
-   * Get blocked user IDs
-   */
-  async getBlockedUserIds(userId: string): Promise<string[]> {
-    return this.query(
-      `blocked_${userId}`,
-      async () => {
-        const { data, error } = await supabase
-          .from("blocks")
-          .select("blocked_id")
-          .eq("blocker_id", userId);
-
-        if (error) throw error;
-        return data.map((row: any) => row.blocked_id);
-      },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
-    );
-  }
-
-  /**
    * Get spirits (static data - long cache)
    */
   async getSpirits(
