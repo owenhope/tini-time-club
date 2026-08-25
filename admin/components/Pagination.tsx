@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PER_PAGE_OPTIONS, parsePerPage } from "@/lib/pagination";
+import { PER_PAGE_OPTIONS } from "@/lib/pagination";
 
 export {
   DEFAULT_PER_PAGE,
