@@ -4,10 +4,7 @@ import KpiCard from "@/components/KpiCard";
 import UserBadge from "@/components/UserBadge";
 import { PageHeader, Panel, StatusPill } from "@/components/AdminPrimitives";
 import { fetchDashboardKpis } from "@/lib/analyticsData";
-import {
-  fetchLatestActivity,
-  fetchTopActivity,
-} from "@/lib/dashboardActivityData";
+import { fetchDashboardActivity } from "@/lib/dashboardActivityData";
 import {
   formatCityRegion,
   formatOverallRating,
@@ -30,11 +27,11 @@ const dashboardRowLinkClass = `${dashboardRowClass} transition hover:bg-stone-50
 
 export default async function Dashboard() {
   const range = parseRange({});
-  const [kpis, latest, top] = await Promise.all([
+  const [kpis, activity] = await Promise.all([
     fetchDashboardKpis(range),
-    fetchLatestActivity(LATEST_COUNT),
-    fetchTopActivity(LATEST_COUNT),
+    fetchDashboardActivity(LATEST_COUNT),
   ]);
+  const { latest, top } = activity;
 
   return (
     <AdminShell active="dashboard">
