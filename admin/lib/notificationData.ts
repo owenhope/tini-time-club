@@ -1,17 +1,13 @@
 import "server-only";
 import { isAnalyticsNotificationKind } from "@/lib/notificationKinds";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  groupAdminNotifications,
+  type AdminNotification,
+  type AdminNotificationRow,
+} from "@/lib/notificationModels";
 
-export interface AdminNotification {
-  id: string;
-  created_at: string;
-  body: string;
-  kind: string | null;
-  /** Username for single-recipient rows; null for grouped broadcasts. */
-  username: string | null;
-  recipients: number;
-  opened: number;
-}
+export type { AdminNotification } from "@/lib/notificationModels";
 
 export interface NotificationKindStats {
   kind: string;
@@ -67,32 +63,11 @@ export const fetchRecentNotifications = async (
     (opens ?? []).map((o) => o.notification_id as string)
   );
 
-  const broadcastKey = (eventKey: string | null): string | null => {
-    const match = eventKey?.match(/^admin:([0-9a-f-]{36}):/);
-    return match ? match[1] : null;
-  };
-
-  const grouped = new Map<string, AdminNotification>();
-  for (const n of data ?? []) {
-    const key = broadcastKey(n.event_key) ?? n.id;
-    const existing = grouped.get(key);
-    if (existing) {
-      existing.recipients += 1;
-      existing.opened += openedIds.has(n.id) ? 1 : 0;
-      existing.username = null; // more than one recipient
-    } else {
-      grouped.set(key, {
-        id: key,
-        created_at: n.created_at,
-        body: n.body,
-        kind: n.kind,
-        username: usernames.get(n.user_id) ?? null,
-        recipients: 1,
-        opened: openedIds.has(n.id) ? 1 : 0,
-      });
-    }
-  }
-  const all = [...grouped.values()];
+  const all = groupAdminNotifications(
+    (data ?? []) as AdminNotificationRow[],
+    usernames,
+    openedIds
+  );
   const offset = (Math.max(1, page) - 1) * perPage;
   return {
     notifications: all.slice(offset, offset + perPage),
