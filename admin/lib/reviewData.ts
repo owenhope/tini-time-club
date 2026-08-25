@@ -2,7 +2,7 @@ import "server-only";
 import { toAdminDataError } from "@/lib/dataErrors";
 import { fetchWebMentionSpans } from "@/lib/mentions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { fetchActiveMemberIds, USERS_PAGE_SIZE } from "@/lib/profileData";
+import { USERS_PAGE_SIZE } from "@/lib/profileData";
 import type {
   AdminReviewDetail,
   AdminReviewRow,
@@ -10,10 +10,7 @@ import type {
   ReviewEngagement,
 } from "@/lib/reviewTypes";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
-import {
-  buildReviewEngagement,
-  type ReviewEngagementRow,
-} from "@/lib/reviewModels";
+import { buildReviewEngagementFromCounts } from "@/lib/reviewModels";
 
 export type {
   AdminReview,
@@ -29,63 +26,18 @@ const db = supabaseAdmin;
 const one = <T>(value: T | T[] | null | undefined): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 
-const isMissingRelationError = (
-  error: { code?: string | null; message?: string | null } | null | undefined,
-  relation: string
-) => {
-  if (!error) return false;
-  const message = error.message?.toLowerCase() ?? "";
-  return (
-    error.code === "42P01" ||
-    error.code === "PGRST205" ||
-    (message.includes(relation.toLowerCase()) &&
-      (message.includes("does not exist") ||
-        message.includes("could not find the table")))
-  );
-};
-
 const fetchReviewEngagement = async (
-  reviewIds: string[],
-  activeMemberIds: string[]
+  reviewIds: string[]
 ): Promise<Map<string, ReviewEngagement>> => {
-  if (reviewIds.length === 0 || activeMemberIds.length === 0) {
-    return buildReviewEngagement(reviewIds, [], [], []);
+  if (reviewIds.length === 0) {
+    return buildReviewEngagementFromCounts(reviewIds, {});
   }
 
-  const [likes, comments, shares] = await Promise.all([
-    db()
-      .from("likes")
-      .select("review_id")
-      .in("review_id", reviewIds)
-      .in("user_id", activeMemberIds),
-    db()
-      .from("comments")
-      .select("review_id")
-      .in("review_id", reviewIds)
-      .in("user_id", activeMemberIds),
-    db()
-      .from("review_share_events")
-      .select("review_id")
-      .in("review_id", reviewIds)
-      .in("user_id", activeMemberIds),
-  ]);
-  if (likes.error) throw toAdminDataError(likes.error, "load review likes");
-  if (comments.error)
-    throw toAdminDataError(comments.error, "load review comments");
-  if (
-    shares.error &&
-    !isMissingRelationError(shares.error, "review_share_events")
-  ) {
-    throw toAdminDataError(shares.error, "load review shares");
-  }
-
-  const shareRows = shares.error ? [] : (shares.data ?? []);
-  return buildReviewEngagement(
-    reviewIds,
-    (likes.data ?? []) as ReviewEngagementRow[],
-    (comments.data ?? []) as ReviewEngagementRow[],
-    shareRows as ReviewEngagementRow[]
-  );
+  const { data, error } = await db().rpc("get_admin_review_engagement", {
+    p_review_ids: reviewIds.map(Number),
+  });
+  if (error) throw toAdminDataError(error, "load review engagement");
+  return buildReviewEngagementFromCounts(reviewIds, data);
 };
 
 export const fetchReviewCounts = async (): Promise<ReviewCounts> => {
@@ -165,8 +117,7 @@ export const fetchAllReviews = async (
   const { data, error, count } = await query;
   if (error) throw toAdminDataError(error, "load reviews");
   const reviewIds = (data ?? []).map((row) => String(row.id));
-  const activeMemberIds = await fetchActiveMemberIds();
-  const engagement = await fetchReviewEngagement(reviewIds, activeMemberIds);
+  const engagement = await fetchReviewEngagement(reviewIds);
 
   return {
     reviews: (data ?? []).map((row) => ({
@@ -189,7 +140,6 @@ export const fetchAdminReview = async (
 ): Promise<AdminReviewDetail | null> => {
   if (!/^\d+$/.test(id)) return null;
 
-  const activeMemberIds = await fetchActiveMemberIds();
   const [reviewResult, engagement] = await Promise.all([
     db()
       .from("reviews")
@@ -202,7 +152,7 @@ export const fetchAdminReview = async (
       )
       .eq("id", id)
       .maybeSingle(),
-    fetchReviewEngagement([id], activeMemberIds),
+    fetchReviewEngagement([id]),
   ]);
   const { data, error } = reviewResult;
   if (error) throw toAdminDataError(error, "load review detail");
