@@ -1,6 +1,18 @@
 import type { WebMentionSpan } from "@/lib/mentions";
 import type { AdminProfile } from "@/lib/profileTypes";
 
+export interface ReviewEngagement {
+  likes: number;
+  comments: number;
+  shares: number;
+}
+
+export const emptyReviewEngagement = (): ReviewEngagement => ({
+  likes: 0,
+  comments: 0,
+  shares: 0,
+});
+
 export interface AdminReview {
   id: string | number;
   comment: string | null;
@@ -20,11 +32,7 @@ export interface AdminReviewRow {
   state: number | null;
   location: { id: number; name: string | null } | null;
   profile: AdminProfile | null;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
+  engagement: ReviewEngagement;
 }
 
 export interface AdminReviewDetail extends AdminReviewRow {
@@ -33,11 +41,7 @@ export interface AdminReviewDetail extends AdminReviewRow {
   location: { id: number; name: string | null; address: string | null } | null;
   spirit: { name: string | null } | null;
   type: { name: string | null } | null;
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
+  engagement: ReviewEngagement;
   mentions: WebMentionSpan[];
 }
 
