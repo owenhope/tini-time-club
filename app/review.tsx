@@ -44,6 +44,11 @@ import { routes } from "@/utils/routes";
 import { collectAchievements, type Achievement } from "@/utils/celebrations";
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
+import {
+  getReviewStepNumber,
+  REVIEW_QUESTIONS,
+  REVIEW_STEP_TOTAL,
+} from "@/utils/reviewComposerSteps";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 import { completePostReview } from "@/utils/reviewSubmission";
 import {
@@ -76,19 +81,6 @@ interface ReviewFormValues {
 }
 
 type Option = { id: number; name: string };
-
-type ReviewQuestionKey =
-  "location" | "spirit" | "type" | "taste" | "presentation" | "comment";
-
-const REVIEW_QUESTIONS: { title: string; key?: ReviewQuestionKey }[] = [
-  { title: "Where was this served?", key: "location" },
-  { title: "Which Spirit?", key: "spirit" },
-  { title: "Which Type?", key: "type" },
-  { title: "Presentation Rating", key: "presentation" },
-  { title: "Taste Rating", key: "taste" },
-  { title: "Add a Caption", key: "comment" },
-  { title: "Preview" },
-];
 
 const STEP_FADE_OUT_MS = 150;
 const STEP_FADE_IN_MS = 220;
@@ -397,8 +389,6 @@ function ReviewComposer() {
     setValue,
   ]);
 
-  const questions = REVIEW_QUESTIONS;
-
   const animatedStyle = { opacity };
 
   const discardReview = () => {
@@ -467,17 +457,17 @@ function ReviewComposer() {
   const nextStep = async () => {
     if (isTransitioning) return;
 
-    if (questions[step].key === "comment") {
+    if (REVIEW_QUESTIONS[step].key === "comment") {
       // The caption is required before the preview; form rules don't cover
       // whitespace-only input, so check the trimmed value directly.
       if (!watchedValues.comment?.trim()) return;
     }
-    if (questions[step].key) {
-      const isValid = await trigger(questions[step].key as any);
+    if (REVIEW_QUESTIONS[step].key) {
+      const isValid = await trigger(REVIEW_QUESTIONS[step].key as any);
       if (!isValid) return;
     }
 
-    if (step < questions.length - 1) {
+    if (step < REVIEW_QUESTIONS.length - 1) {
       transitionToStep(step + 1);
     }
   };
@@ -487,7 +477,7 @@ function ReviewComposer() {
   };
 
   const renderCurrentQuestion = () => {
-    switch (questions[step].key) {
+    switch (REVIEW_QUESTIONS[step].key) {
       case "location":
         return (
           <LocationInput
@@ -825,9 +815,8 @@ function ReviewComposer() {
     });
   };
 
-  const reviewStepTotal = questions.length + 2;
-  const currentQuestionTitle = questions[step].title;
-  const currentQuestionKey = questions[step].key;
+  const currentQuestionTitle = REVIEW_QUESTIONS[step].title;
+  const currentQuestionKey = REVIEW_QUESTIONS[step].key;
   const currentStepIncomplete = !isReviewStepComplete(
     currentQuestionKey,
     {
@@ -859,7 +848,7 @@ function ReviewComposer() {
           },
         ] satisfies HeaderAction[])
       : []),
-    ...(step < questions.length - 1
+    ...(step < REVIEW_QUESTIONS.length - 1
       ? [
           {
             icon: "chevron-forward",
@@ -939,13 +928,13 @@ function ReviewComposer() {
                     tone="onImage"
                     style={styles.subtitle}
                   >
-                    Step 1 of {reviewStepTotal}
+                    Step 1 of {REVIEW_STEP_TOTAL}
                   </AppText>
                   <View style={styles.progressBar}>
                     <View
                       style={[
                         styles.progressFill,
-                        { width: `${(1 / reviewStepTotal) * 100}%` },
+                        { width: `${(1 / REVIEW_STEP_TOTAL) * 100}%` },
                       ]}
                     />
                   </View>
@@ -979,13 +968,13 @@ function ReviewComposer() {
                     tone="onImage"
                     style={styles.subtitle}
                   >
-                    Step 2 of {reviewStepTotal}
+                    Step 2 of {REVIEW_STEP_TOTAL}
                   </AppText>
                   <View style={styles.progressBar}>
                     <View
                       style={[
                         styles.progressFill,
-                        { width: `${(2 / reviewStepTotal) * 100}%` },
+                        { width: `${(2 / REVIEW_STEP_TOTAL) * 100}%` },
                       ]}
                     />
                   </View>
@@ -1101,14 +1090,14 @@ function ReviewComposer() {
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {step + 3} of {reviewStepTotal}
+                        Step {getReviewStepNumber(step)} of {REVIEW_STEP_TOTAL}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
                             {
-                              width: `${((step + 3) / reviewStepTotal) * 100}%`,
+                              width: `${(getReviewStepNumber(step) / REVIEW_STEP_TOTAL) * 100}%`,
                             },
                           ]}
                         />
@@ -1121,14 +1110,14 @@ function ReviewComposer() {
                         tone="onImage"
                         style={styles.subtitle}
                       >
-                        Step {step + 3} of {reviewStepTotal}
+                        Step {getReviewStepNumber(step)} of {REVIEW_STEP_TOTAL}
                       </AppText>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
                             {
-                              width: `${((step + 3) / reviewStepTotal) * 100}%`,
+                              width: `${(getReviewStepNumber(step) / REVIEW_STEP_TOTAL) * 100}%`,
                             },
                           ]}
                         />
