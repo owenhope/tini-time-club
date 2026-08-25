@@ -1,12 +1,19 @@
-export type ActivityKind =
-  | "user_followed"
-  | "review_liked"
-  | "comment_liked"
-  | "review_commented"
-  | "comment_replied"
-  | "mentioned_in_review"
-  | "mentioned_in_comment"
-  | "admin_message";
+export const ACTIVITY_KINDS = [
+  "user_followed",
+  "review_liked",
+  "comment_liked",
+  "review_commented",
+  "comment_replied",
+  "mentioned_in_review",
+  "mentioned_in_comment",
+  "admin_message",
+] as const;
+
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+
+export const isActivityKind = (value: unknown): value is ActivityKind =>
+  typeof value === "string" &&
+  (ACTIVITY_KINDS as readonly string[]).includes(value);
 
 export interface ActivityActor {
   id: string;

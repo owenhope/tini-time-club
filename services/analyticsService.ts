@@ -13,7 +13,7 @@ import { supabase } from "@/utils/supabase";
  * are deliberately not sent to the analytics backend.
  */
 
-type AnalyticEventType =
+export type AnalyticEventType =
   | "login"
   | "create_account"
   | "shared_app"

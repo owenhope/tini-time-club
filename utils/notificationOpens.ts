@@ -2,6 +2,9 @@ import type * as Notifications from "expo-notifications";
 import { supabase } from "@/utils/supabase";
 import { warn } from "@/utils/log";
 import { markActivityRead } from "@/services/activityService";
+import { isActivityKind, type ActivityKind } from "@/types/activity";
+
+export type NotificationOpenKind = ActivityKind | "tini_time_reminder";
 
 /**
  * Record that the member opened (tapped) a notification, feeding the
@@ -17,9 +20,9 @@ export function logNotificationOpen(
 
     // Local Tini Time reminders have no server row; identify them by id.
     const isReminder = request.identifier.startsWith("tini-friday");
-    const kind = isReminder
+    const kind: NotificationOpenKind | null = isReminder
       ? "tini_time_reminder"
-      : typeof data.kind === "string"
+      : isActivityKind(data.kind)
         ? data.kind
         : null;
     const notificationId =

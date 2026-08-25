@@ -1,5 +1,6 @@
 import imageCache from "@/utils/imageCache";
 import { supabase } from "@/utils/supabase";
+import { isActivityKind } from "@/types/activity";
 import type {
   ActivityActor,
   ActivityCursor,
@@ -42,21 +43,7 @@ const decodeEvent = (value: unknown): ActivityEvent | null => {
   const id = stringOrNull(value.id);
   const createdAt = stringOrNull(value.createdAt);
   const kind = stringOrNull(value.kind);
-  if (
-    !id ||
-    !createdAt ||
-    !kind ||
-    ![
-      "user_followed",
-      "review_liked",
-      "comment_liked",
-      "review_commented",
-      "comment_replied",
-      "mentioned_in_review",
-      "mentioned_in_comment",
-      "admin_message",
-    ].includes(kind)
-  ) {
+  if (!id || !createdAt || !isActivityKind(kind)) {
     return null;
   }
 
@@ -84,7 +71,7 @@ const decodeEvent = (value: unknown): ActivityEvent | null => {
   return {
     id,
     createdAt,
-    kind: kind as ActivityEvent["kind"],
+    kind,
     body: stringOrNull(value.body),
     actor,
     isFollowing: value.isFollowing === true,
