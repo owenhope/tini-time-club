@@ -52,6 +52,7 @@ export function useActivityFeed(): ActivityFeed {
   const loadingMoreRef = useRef(false);
   const mountedRef = useRef(true);
   const refreshTokenRef = useRef(0);
+  const profileRequestVersionRef = useRef(0);
   const realtimeRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageNumberRef = useRef(0);
 
@@ -75,10 +76,16 @@ export function useActivityFeed(): ActivityFeed {
     async (showRefreshIndicator = true) => {
       if (!profileId) return;
       const token = ++refreshTokenRef.current;
+      const profileRequestVersion = profileRequestVersionRef.current;
       if (showRefreshIndicator) setRefreshing(true);
       try {
         const page = await fetchActivityPage(null, 30);
-        if (!mountedRef.current || token !== refreshTokenRef.current) return;
+        if (
+          !mountedRef.current ||
+          token !== refreshTokenRef.current ||
+          profileRequestVersion !== profileRequestVersionRef.current
+        )
+          return;
         const unseenAtSnapshot = page.events
           .filter((event) => event.seenAt === null)
           .map((event) => event.id);
@@ -101,7 +108,12 @@ export function useActivityFeed(): ActivityFeed {
         );
       } catch (error) {
         const cached = await readActivityCache(profileId);
-        if (!mountedRef.current || token !== refreshTokenRef.current) return;
+        if (
+          !mountedRef.current ||
+          token !== refreshTokenRef.current ||
+          profileRequestVersion !== profileRequestVersionRef.current
+        )
+          return;
         if (cached) {
           mergeEvents(cached.events, true);
           setCursor(cached.nextCursor);
@@ -122,7 +134,8 @@ export function useActivityFeed(): ActivityFeed {
         if (
           showRefreshIndicator &&
           mountedRef.current &&
-          token === refreshTokenRef.current
+          token === refreshTokenRef.current &&
+          profileRequestVersion === profileRequestVersionRef.current
         ) {
           setRefreshing(false);
         }
@@ -133,11 +146,16 @@ export function useActivityFeed(): ActivityFeed {
 
   const loadMore = useCallback(async () => {
     if (!profileId || !hasMore || !cursor || loadingMoreRef.current) return;
+    const profileRequestVersion = profileRequestVersionRef.current;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
       const page = await fetchActivityPage(cursor, 30);
-      if (!mountedRef.current) return;
+      if (
+        !mountedRef.current ||
+        profileRequestVersion !== profileRequestVersionRef.current
+      )
+        return;
       mergeEvents(page.events, false);
       setCursor(page.nextCursor);
       setHasMore(page.hasMore);
@@ -150,6 +168,11 @@ export function useActivityFeed(): ActivityFeed {
         cached: false,
       });
       const cached = await readActivityCache(profileId);
+      if (
+        !mountedRef.current ||
+        profileRequestVersion !== profileRequestVersionRef.current
+      )
+        return;
       if (cached) {
         await writeActivityCache(profileId, {
           ...cached,
@@ -162,8 +185,10 @@ export function useActivityFeed(): ActivityFeed {
       AnalyticService.capture("activity_load_error", { phase: "load_more" });
       reportError("Failed to load earlier Activity:", error);
     } finally {
-      loadingMoreRef.current = false;
-      if (mountedRef.current) setLoadingMore(false);
+      if (profileRequestVersion === profileRequestVersionRef.current) {
+        loadingMoreRef.current = false;
+        if (mountedRef.current) setLoadingMore(false);
+      }
     }
   }, [cursor, hasMore, mergeEvents, profileId]);
 
@@ -188,6 +213,15 @@ export function useActivityFeed(): ActivityFeed {
 
   useEffect(() => {
     mountedRef.current = true;
+    profileRequestVersionRef.current += 1;
+    refreshTokenRef.current += 1;
+    loadingMoreRef.current = false;
+    setEvents([]);
+    setCursor(null);
+    setHasMore(true);
+    setNewIds(new Set());
+    setLoadingMore(false);
+    setState(profileId ? "loading" : "empty");
     if (profileId) void refresh(false);
     return () => {
       mountedRef.current = false;

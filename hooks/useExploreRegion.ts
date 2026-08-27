@@ -7,7 +7,10 @@ import {
   saveRegion,
   type ExploreRegion,
 } from "@/services/regionService";
-import type { ExploreLocationState } from "@/components/explore/useExploreLocation";
+import type {
+  ExploreLocationRequest,
+  ExploreLocationState,
+} from "@/components/explore/useExploreLocation";
 
 export type ExploreRegionStatus =
   "loading" | "ready" | "needs-selection" | "unsupported";
@@ -21,7 +24,7 @@ export interface ExploreRegionState {
 
 export function useExploreRegion(
   location: ExploreLocationState,
-  requestLocation: () => Promise<void>
+  requestLocation: ExploreLocationRequest
 ): {
   state: ExploreRegionState;
   selectRegion: (region: ExploreRegion) => Promise<void>;
@@ -117,7 +120,8 @@ export function useExploreRegion(
     resolvedCoordinatesRef.current = null;
     setStatus("loading");
     setLocationRefresh((current) => current + 1);
-    await requestLocation();
+    // A manual retry must re-open the permission flow after a previous denial.
+    await requestLocation(true);
   }, [requestLocation]);
 
   return useMemo(

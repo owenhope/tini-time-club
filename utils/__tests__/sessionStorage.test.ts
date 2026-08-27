@@ -218,6 +218,24 @@ describe("LargeSecureStore", () => {
     expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
+  it("treats a malformed master key as an unreadable session instead of crashing", async () => {
+    const store = new LargeSecureStore();
+    await store.setItem(STORAGE_KEY, SESSION);
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ v: 2, iv: "00".repeat(16), data: "00" })
+    );
+    mockKeychain.set(ENCRYPTION_KEY_STORAGE_KEY, "not-a-256-bit-hex-key");
+
+    await expect(
+      new LargeSecureStore().getItem(STORAGE_KEY)
+    ).resolves.toBeNull();
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+      ENCRYPTION_KEY_STORAGE_KEY
+    );
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
   it("returns null for a v1 record whose key is gone (unrecoverable) without throwing", async () => {
     await AsyncStorage.setItem(STORAGE_KEY, "deadbeef");
     expect(await new LargeSecureStore().getItem(STORAGE_KEY)).toBeNull();

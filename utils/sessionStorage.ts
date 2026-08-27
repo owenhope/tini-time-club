@@ -112,8 +112,14 @@ export class LargeSecureStore {
     // A concurrent create may have finished while we were reading.
     if (this.key) return this.key;
     if (storedHex) {
-      this.key = Uint8Array.from(aesjs.utils.hex.toBytes(storedHex));
-      return this.key;
+      if (isHex(storedHex, KEY_BYTES)) {
+        this.key = Uint8Array.from(aesjs.utils.hex.toBytes(storedHex));
+        return this.key;
+      }
+      reportError("[SessionStore] Stored encryption key is malformed.");
+      await SecureStore.deleteItemAsync(ENCRYPTION_KEY_STORAGE_KEY).catch(
+        () => {}
+      );
     }
     if (!createIfMissing) return null;
 

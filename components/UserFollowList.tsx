@@ -19,6 +19,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
   const [profiles, setProfiles] = useState<ProfileType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const params = useLocalSearchParams();
   const username = params.username as string;
   const styles = useStyles();
@@ -35,6 +36,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
 
       setLoading(true);
       setError(null);
+      setProfiles([]);
       try {
         const { data: userProfile, error: userError } = await supabase
           .from("profiles")
@@ -84,7 +86,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
     return () => {
       cancelled = true;
     };
-  }, [username, isFollowers, noun]);
+  }, [username, isFollowers, noun, retryCount]);
 
   if (loading) {
     return (
@@ -101,7 +103,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
         <Text style={styles.statusText}>{error}</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={() => setProfiles([])}
+          onPress={() => setRetryCount((current) => current + 1)}
           accessibilityRole="button"
         >
           <Text style={styles.retryText}>Try again</Text>

@@ -6,7 +6,9 @@ import { writeActivityCache } from "@/utils/activityCache";
 import type { ActivityPage } from "@/types/activity";
 
 jest.mock("@/context/profile-context", () => ({
-  useProfile: () => ({ profile: { id: "viewer-1" } }),
+  useProfile: () => ({
+    profile: mockActiveProfileId ? { id: mockActiveProfileId } : null,
+  }),
 }));
 
 jest.mock("@/services/activityService", () => ({
@@ -39,6 +41,8 @@ const fetchPage = fetchActivityPage as jest.MockedFunction<
 const writeCache = writeActivityCache as jest.MockedFunction<
   typeof writeActivityCache
 >;
+
+let mockActiveProfileId: string | undefined = "viewer-1";
 
 const page: ActivityPage = {
   events: [
@@ -96,5 +100,82 @@ describe("useActivityFeed initial loading", () => {
     expect(latest?.refreshing).toBe(false);
 
     act(() => tree!.unmount());
+  });
+
+  it("ignores an earlier profile's load-more response after the viewer changes", async () => {
+    const initialRequest = deferred<ActivityPage>();
+    const oldLoadMoreRequest = deferred<ActivityPage>();
+    const newProfileRequest = deferred<ActivityPage>();
+    fetchPage.mockReset();
+    writeCache.mockReset();
+    writeCache.mockResolvedValue(undefined);
+    fetchPage
+      .mockReturnValueOnce(initialRequest.promise)
+      .mockReturnValueOnce(oldLoadMoreRequest.promise)
+      .mockReturnValueOnce(newProfileRequest.promise);
+
+    const initialPage: ActivityPage = {
+      ...page,
+      events: page.events,
+      nextCursor: {
+        createdAt: page.events[0].createdAt,
+        id: page.events[0].id,
+      },
+      hasMore: true,
+    };
+    const oldEvent = { ...page.events[0], id: "old-profile-event" };
+    const newEvent = { ...page.events[0], id: "new-profile-event" };
+
+    let latest: ActivityFeed | undefined;
+    const Harness = () => {
+      latest = useActivityFeed();
+      return null;
+    };
+
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<Harness />);
+    });
+
+    await act(async () => {
+      initialRequest.resolve(initialPage);
+      await initialRequest.promise;
+    });
+
+    await act(async () => {
+      void latest!.loadMore();
+      await Promise.resolve();
+    });
+
+    mockActiveProfileId = "viewer-2";
+    act(() => {
+      tree!.update(<Harness />);
+    });
+
+    await act(async () => {
+      oldLoadMoreRequest.resolve({
+        ...page,
+        events: [oldEvent],
+        nextCursor: null,
+        hasMore: false,
+      });
+      await oldLoadMoreRequest.promise;
+    });
+
+    expect(JSON.stringify(latest?.sections)).not.toContain("old-profile-event");
+
+    await act(async () => {
+      newProfileRequest.resolve({
+        ...page,
+        events: [newEvent],
+        nextCursor: null,
+        hasMore: false,
+      });
+      await newProfileRequest.promise;
+    });
+
+    expect(JSON.stringify(latest?.sections)).toContain("new-profile-event");
+    act(() => tree!.unmount());
+    mockActiveProfileId = "viewer-1";
   });
 });

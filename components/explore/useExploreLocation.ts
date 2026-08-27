@@ -26,6 +26,8 @@ const INITIAL_STATE: ExploreLocationState = {
   canOpenSettings: false,
 };
 
+export type ExploreLocationRequest = (force?: boolean) => Promise<void>;
+
 /**
  * One lazy location request shared by every Explore mode. The promise ref is
  * the internal seam that prevents Map and Golden Glass from starting competing
@@ -35,59 +37,62 @@ export function useExploreLocation() {
   const [state, setState] = useState<ExploreLocationState>(INITIAL_STATE);
   const requestRef = useRef<Promise<void> | null>(null);
 
-  const request = useCallback(() => {
-    if (requestRef.current) return requestRef.current;
-    if (state.status === "ready" || state.status === "denied") {
-      return Promise.resolve();
-    }
+  const request = useCallback<ExploreLocationRequest>(
+    (force = false) => {
+      if (requestRef.current) return requestRef.current;
+      if (!force && (state.status === "ready" || state.status === "denied")) {
+        return Promise.resolve();
+      }
 
-    const pending = (async () => {
-      setState({
-        status: "loading",
-        coordinates: null,
-        canOpenSettings: false,
-      });
-
-      try {
-        const { status, canAskAgain } =
-          await Location.requestForegroundPermissionsAsync();
-
-        if (status !== "granted") {
-          setState({
-            status: "denied",
-            coordinates: null,
-            canOpenSettings: !canAskAgain,
-          });
-          return;
-        }
-
-        const coordinates =
-          __DEV__ && !Device.isDevice
-            ? EXPLORE_DEFAULT_COORDINATES
-            : (await Location.getCurrentPositionAsync({})).coords;
-
+      const pending = (async () => {
         setState({
-          status: "ready",
-          coordinates: {
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-          },
-          canOpenSettings: false,
-        });
-      } catch {
-        setState({
-          status: "unavailable",
+          status: "loading",
           coordinates: null,
           canOpenSettings: false,
         });
-      } finally {
-        requestRef.current = null;
-      }
-    })();
 
-    requestRef.current = pending;
-    return pending;
-  }, [state.status]);
+        try {
+          const { status, canAskAgain } =
+            await Location.requestForegroundPermissionsAsync();
+
+          if (status !== "granted") {
+            setState({
+              status: "denied",
+              coordinates: null,
+              canOpenSettings: !canAskAgain,
+            });
+            return;
+          }
+
+          const coordinates =
+            __DEV__ && !Device.isDevice
+              ? EXPLORE_DEFAULT_COORDINATES
+              : (await Location.getCurrentPositionAsync({})).coords;
+
+          setState({
+            status: "ready",
+            coordinates: {
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+            },
+            canOpenSettings: false,
+          });
+        } catch {
+          setState({
+            status: "unavailable",
+            coordinates: null,
+            canOpenSettings: false,
+          });
+        } finally {
+          requestRef.current = null;
+        }
+      })();
+
+      requestRef.current = pending;
+      return pending;
+    },
+    [state.status]
+  );
 
   return { state, request };
 }

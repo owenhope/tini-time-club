@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -44,6 +44,7 @@ const UserProfile = () => {
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("reviews");
   const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
+  const selectedProfileRequestRef = useRef(0);
 
   const { profile } = useProfile(); // logged-in user data
   const { requireMembership } = useMembership();
@@ -90,6 +91,7 @@ const UserProfile = () => {
 
   // Check follow status for the selected user
   useEffect(() => {
+    let active = true;
     const checkFollowStatus = async () => {
       if (displayProfile && profile) {
         const { data, error } = await supabase
@@ -100,16 +102,20 @@ const UserProfile = () => {
           .maybeSingle();
         if (error) {
           reportError("Error checking follow status:", error);
-        } else {
+        } else if (active) {
           setDoesFollow(!!data);
         }
       }
     };
-    checkFollowStatus();
+    void checkFollowStatus();
+    return () => {
+      active = false;
+    };
   }, [displayProfile, profile]);
 
   // Check block status for the selected user
   useEffect(() => {
+    let active = true;
     const checkBlockStatus = async () => {
       if (displayProfile && profile) {
         const { data, error } = await supabase
@@ -120,12 +126,15 @@ const UserProfile = () => {
           .maybeSingle();
         if (error) {
           reportError("Error checking block status:", error);
-        } else {
+        } else if (active) {
           setIsBlocked(!!data);
         }
       }
     };
-    checkBlockStatus();
+    void checkBlockStatus();
+    return () => {
+      active = false;
+    };
   }, [displayProfile, profile]);
 
   const toggleFollow = async () => {
@@ -232,11 +241,13 @@ const UserProfile = () => {
 
   const fetchSelectedProfile = React.useCallback(
     async (username: string) => {
+      const requestId = ++selectedProfileRequestRef.current;
       setProfileError(null);
       try {
         if (!profile) {
           const result =
             await databaseService.getPublicProfileByUsername(username);
+          if (requestId !== selectedProfileRequestRef.current) return;
           setSelectedProfile(result.profile);
           setFollowersCount(result.followersCount);
           setFollowingCount(result.followingCount);
@@ -252,12 +263,15 @@ const UserProfile = () => {
         if (error) {
           reportError("Error fetching selected profile:", error);
           // Without this the screen stays blank forever with no way back.
-          setProfileError(
-            error.code === "PGRST116"
-              ? "This profile isn't available."
-              : "We couldn't load this profile."
-          );
+          if (requestId === selectedProfileRequestRef.current) {
+            setProfileError(
+              error.code === "PGRST116"
+                ? "This profile isn't available."
+                : "We couldn't load this profile."
+            );
+          }
         } else {
+          if (requestId !== selectedProfileRequestRef.current) return;
           setSelectedProfile(data);
           // Track view profile event (only if not viewing own profile)
           if (profile && data.id !== profile.id) {
@@ -269,7 +283,9 @@ const UserProfile = () => {
         }
       } catch (err) {
         reportError("Unexpected error fetching profile:", err);
-        setProfileError("We couldn't load this profile.");
+        if (requestId === selectedProfileRequestRef.current) {
+          setProfileError("We couldn't load this profile.");
+        }
       }
     },
     [profile, setFollowersCount, setFollowingCount]
@@ -280,6 +296,9 @@ const UserProfile = () => {
     if (usernameParam) {
       void fetchSelectedProfile(usernameParam);
     }
+    return () => {
+      selectedProfileRequestRef.current += 1;
+    };
   }, [fetchSelectedProfile, usernameParam]);
 
   const handleBlockUser = async () => {

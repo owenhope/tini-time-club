@@ -48,6 +48,7 @@ export function useProfileScreenData({
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const reviewCursorRef = useRef<ReviewCursor | null>(null);
   const loadingMoreReviewsRef = useRef(false);
+  const reviewsRequestRef = useRef(0);
   const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
   // True initially so the regulars tab shows its loading state instead of
   // flashing the empty message before the first load resolves.
@@ -58,11 +59,18 @@ export function useProfileScreenData({
   const [types, setTypes] = useState<NamedOption[]>([]);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
+  const regularsRequestRef = useRef(0);
+  const followCountsRequestRef = useRef(0);
 
   const { limit, excludeBlocked } = reviewOptions ?? {};
+  const profileDataKey = `${profileId ?? ""}:${viewerId ?? ""}:${limit ?? ""}:${excludeBlocked ?? ""}`;
+  const profileDataKeyRef = useRef(profileDataKey);
+  profileDataKeyRef.current = profileDataKey;
 
   const loadUserReviews = useCallback(
     async (isRefresh = false) => {
+      const requestId = ++reviewsRequestRef.current;
+      const requestKey = profileDataKey;
       if (isRefresh) {
         setRefreshingReviews(true);
       } else {
@@ -83,20 +91,30 @@ export function useProfileScreenData({
           limit: limit ?? 24,
           excludeBlocked: excludeBlocked ?? true,
         });
+        if (
+          requestId !== reviewsRequestRef.current ||
+          requestKey !== profileDataKeyRef.current
+        )
+          return;
         reviewCursorRef.current = page.nextCursor;
         setHasMoreReviews(page.hasMore);
         setUserReviews(page.reviews);
       } catch (err) {
         reportError("Unexpected error while fetching reviews:", err);
       } finally {
-        if (isRefresh) {
-          setRefreshingReviews(false);
-        } else {
-          setLoadingReviews(false);
+        if (
+          requestId === reviewsRequestRef.current &&
+          requestKey === profileDataKeyRef.current
+        ) {
+          if (isRefresh) {
+            setRefreshingReviews(false);
+          } else {
+            setLoadingReviews(false);
+          }
         }
       }
     },
-    [profileId, viewerId, limit, excludeBlocked]
+    [profileDataKey, profileId, viewerId, limit, excludeBlocked]
   );
 
   const loadMoreUserReviews = useCallback(async () => {
@@ -109,15 +127,23 @@ export function useProfileScreenData({
       return;
     }
 
+    const requestId = ++reviewsRequestRef.current;
+    const requestKey = profileDataKey;
+    const cursor = reviewCursorRef.current;
     loadingMoreReviewsRef.current = true;
     try {
       const page = await getReviewPage({
         userId: profileId,
         viewerId,
-        cursor: reviewCursorRef.current,
+        cursor,
         limit: limit ?? 24,
         excludeBlocked: excludeBlocked ?? true,
       });
+      if (
+        requestId !== reviewsRequestRef.current ||
+        requestKey !== profileDataKeyRef.current
+      )
+        return;
       reviewCursorRef.current = page.nextCursor;
       setHasMoreReviews(page.hasMore);
       setUserReviews((current) => {
@@ -130,62 +156,123 @@ export function useProfileScreenData({
     } catch (error) {
       reportError("Unexpected error while loading more reviews:", error);
     } finally {
-      loadingMoreReviewsRef.current = false;
+      if (
+        requestId === reviewsRequestRef.current &&
+        requestKey === profileDataKeyRef.current
+      ) {
+        loadingMoreReviewsRef.current = false;
+      }
     }
-  }, [excludeBlocked, hasMoreReviews, limit, profileId, viewerId]);
+  }, [
+    excludeBlocked,
+    hasMoreReviews,
+    limit,
+    profileDataKey,
+    profileId,
+    viewerId,
+  ]);
 
   useEffect(() => {
+    reviewsRequestRef.current += 1;
+    regularsRequestRef.current += 1;
+    followCountsRequestRef.current += 1;
+    loadingMoreReviewsRef.current = false;
     setUserReviews([]);
     reviewCursorRef.current = null;
     setHasMoreReviews(false);
-  }, [profileId]);
+    setRegularPlaces([]);
+    setLoadingReviews(Boolean(profileId));
+    setLoadingRegulars(Boolean(profileId));
+    setFavoriteLocation(null);
+    setFollowersCount(0);
+    setFollowingCount(0);
+  }, [profileDataKey, profileId]);
 
   const loadRegularPlaces = useCallback(async () => {
-    if (!profileId) return;
+    const requestId = ++regularsRequestRef.current;
+    const requestKey = profileDataKey;
+    if (!profileId) {
+      setLoadingRegulars(false);
+      return;
+    }
     setLoadingRegulars(true);
     try {
-      setRegularPlaces(await getProfileRegularPlaces(profileId));
+      const places = await getProfileRegularPlaces(profileId);
+      if (
+        requestId !== regularsRequestRef.current ||
+        requestKey !== profileDataKeyRef.current
+      )
+        return;
+      setRegularPlaces(places);
     } catch (error) {
       reportError("Error loading regular places:", error);
-      setRegularPlaces([]);
+      if (
+        requestId === regularsRequestRef.current &&
+        requestKey === profileDataKeyRef.current
+      ) {
+        setRegularPlaces([]);
+      }
     } finally {
-      setLoadingRegulars(false);
+      if (
+        requestId === regularsRequestRef.current &&
+        requestKey === profileDataKeyRef.current
+      ) {
+        setLoadingRegulars(false);
+      }
     }
-  }, [profileId]);
+  }, [profileDataKey, profileId]);
 
   const loadFollowCounts = useCallback(async () => {
+    const requestId = ++followCountsRequestRef.current;
+    const requestKey = profileDataKey;
     if (!profileId) return;
     // The two counts are independent — fetch them together.
-    const [
-      { count: followers, error: errorFollowers },
-      { count: following, error: errorFollowing },
-    ] = await Promise.all([
-      supabase
-        .from("followers")
-        .select("*", { count: "exact", head: true })
-        .eq("following_id", profileId),
-      supabase
-        .from("followers")
-        .select("*", { count: "exact", head: true })
-        .eq("follower_id", profileId),
-    ]);
+    try {
+      const [
+        { count: followers, error: errorFollowers },
+        { count: following, error: errorFollowing },
+      ] = await Promise.all([
+        supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("following_id", profileId),
+        supabase
+          .from("followers")
+          .select("*", { count: "exact", head: true })
+          .eq("follower_id", profileId),
+      ]);
 
-    if (errorFollowers) {
-      reportError("Error fetching followers count:", errorFollowers);
-    } else {
-      setFollowersCount(followers || 0);
+      if (
+        requestId !== followCountsRequestRef.current ||
+        requestKey !== profileDataKeyRef.current
+      )
+        return;
+
+      if (errorFollowers) {
+        reportError("Error fetching followers count:", errorFollowers);
+      } else {
+        setFollowersCount(followers || 0);
+      }
+      if (errorFollowing) {
+        reportError("Error fetching following count:", errorFollowing);
+      } else {
+        setFollowingCount(following || 0);
+      }
+    } catch (error) {
+      if (
+        requestId === followCountsRequestRef.current &&
+        requestKey === profileDataKeyRef.current
+      ) {
+        reportError("Error fetching follow counts:", error);
+      }
     }
-    if (errorFollowing) {
-      reportError("Error fetching following count:", errorFollowing);
-    } else {
-      setFollowingCount(following || 0);
-    }
-  }, [profileId]);
+  }, [profileDataKey, profileId]);
 
   useEffect(() => {
+    let active = true;
     const loadFavoriteLocation = async () => {
       if (!favoriteLocationId) {
-        setFavoriteLocation(null);
+        if (active) setFavoriteLocation(null);
         return;
       }
 
@@ -197,16 +284,20 @@ export function useProfileScreenData({
 
       if (error) {
         reportError("Error loading favorite location:", error);
-        setFavoriteLocation(null);
+        if (active) setFavoriteLocation(null);
         return;
       }
-      setFavoriteLocation(data);
+      if (active) setFavoriteLocation(data);
     };
 
-    loadFavoriteLocation();
+    void loadFavoriteLocation();
+    return () => {
+      active = false;
+    };
   }, [favoriteLocationId]);
 
   useEffect(() => {
+    let active = true;
     const loadSpiritsAndTypes = async () => {
       try {
         // Both are cached in databaseService, so this is cheap after first run.
@@ -214,6 +305,7 @@ export function useProfileScreenData({
           databaseService.getSpirits(),
           databaseService.getTypes(),
         ]);
+        if (!active) return;
         setSpirits(spiritsData);
         setTypes(typesData);
       } catch (error) {
@@ -221,7 +313,10 @@ export function useProfileScreenData({
       }
     };
 
-    loadSpiritsAndTypes();
+    void loadSpiritsAndTypes();
+    return () => {
+      active = false;
+    };
   }, []);
 
   return {
