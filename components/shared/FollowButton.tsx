@@ -7,6 +7,7 @@ export interface FollowButtonProps {
   following: boolean;
   loading?: boolean;
   disabled?: boolean;
+  compact?: boolean;
   onPress: () => void;
   accessibilityLabel?: string;
 }
@@ -15,6 +16,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({
   following,
   loading = false,
   disabled = false,
+  compact = false,
   onPress,
   accessibilityLabel,
 }) => {
@@ -34,6 +36,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({
       }}
       style={({ pressed }) => [
         styles.button,
+        compact && styles.compact,
         following ? styles.following : styles.notFollowing,
         pressed && !loading && !disabled && styles.pressed,
       ]}
@@ -58,6 +61,11 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     justifyContent: "center" as const,
     borderWidth: 1,
+  },
+  compact: {
+    minWidth: 80,
+    minHeight: 32,
+    paddingHorizontal: t.spacing.sm,
   },
   notFollowing: {
     backgroundColor: t.colors.accent,

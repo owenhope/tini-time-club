@@ -155,6 +155,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
           following={row.isFollowing}
           loading={followLoading}
           disabled={mutationsDisabled}
+          compact
           onPress={() => void runFollowBack()}
         />
       ) : imageUri ? (
