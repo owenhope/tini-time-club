@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { fetchVenueContact } from "@/services/placesService";
-import { MartiniIcon } from "@/components/shared";
+import { LocationVerifiedBadge, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
@@ -31,6 +31,7 @@ const PlaceInfo = () => {
     lat?: string;
     lon?: string;
     isGoldenGlass?: string;
+    isLocationVerified?: string;
   }>();
   const [placeDetails, setPlaceDetails] = useState<{
     phoneNumber?: string;
@@ -99,9 +100,12 @@ const PlaceInfo = () => {
     >
       <View style={styles.header}>
         <View style={styles.nameRow}>
-          <Text style={styles.name}>{name}</Text>
           {firstParam(params.isGoldenGlass) === "1" ? (
             <MartiniIcon size={20} color={colors.awardGold} filled />
+          ) : null}
+          <Text style={styles.name}>{name}</Text>
+          {firstParam(params.isLocationVerified) === "1" ? (
+            <LocationVerifiedBadge compact />
           ) : null}
         </View>
         {cityRegion ? (

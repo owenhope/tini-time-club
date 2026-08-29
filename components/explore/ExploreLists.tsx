@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import {
   Avatar,
+  LocationVerifiedBadge,
   MartiniIcon,
   RatingPips,
   VerifiedName,
@@ -175,14 +176,17 @@ function ExploreDiscoveryLists({
         <View style={styles.cardContent}>
           <View style={styles.textContainer}>
             <View style={styles.resultTitleRow}>
+              {item.is_golden_glass ? (
+                <MartiniIcon size={20} color={colors.awardGold} filled />
+              ) : null}
               <Text
                 style={[styles.resultTitle, styles.memberResultTitle]}
                 numberOfLines={2}
               >
                 {item.name}
               </Text>
-              {item.is_golden_glass ? (
-                <MartiniIcon size={16} color={colors.awardGold} filled />
+              {item.is_location_verified ? (
+                <LocationVerifiedBadge compact />
               ) : null}
               <Ionicons
                 name="chevron-forward"

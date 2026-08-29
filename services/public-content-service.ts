@@ -49,6 +49,12 @@ interface PublicProfileResponse {
   followingCount: number;
 }
 
+const normalizeLocation = <T extends LocationRating>(location: T): T => ({
+  ...location,
+  is_golden_glass: Boolean(location.is_golden_glass),
+  is_location_verified: Boolean(location.is_location_verified),
+});
+
 class PublicContentError extends Error {
   constructor(message: string) {
     super(message);
@@ -104,16 +110,29 @@ export const publicContentService = {
   getProfiles: (search?: string, limit = 25, offset = 0) =>
     invoke<Profile[]>({ operation: "profiles", search, limit, offset }),
 
-  getLocations: (search?: string, limit = 25, offset = 0) =>
-    invoke<LocationRating[]>({ operation: "locations", search, limit, offset }),
+  getLocations: async (search?: string, limit = 25, offset = 0) =>
+    (
+      await invoke<LocationRating[]>({
+        operation: "locations",
+        search,
+        limit,
+        offset,
+      })
+    ).map(normalizeLocation),
 
-  getLocation: (locationId: string | number) =>
-    invoke<LocationRating>({ operation: "location", locationId }),
+  getLocation: async (locationId: string | number) =>
+    normalizeLocation(
+      await invoke<LocationRating>({ operation: "location", locationId })
+    ),
 
   getLocationsInView: (bounds: {
     minLat: number;
     minLong: number;
     maxLat: number;
     maxLong: number;
-  }) => invoke<LocationRating[]>({ operation: "locations-in-view", ...bounds }),
+  }) =>
+    invoke<LocationRating[]>({
+      operation: "locations-in-view",
+      ...bounds,
+    }).then((locations) => locations.map(normalizeLocation)),
 };

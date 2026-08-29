@@ -92,14 +92,17 @@ export async function getDiscoverLocationsPage({
   if (error) throw error;
   const page = decodePage<DiscoveredLocation>(data);
   const locationIds = page.items
-    .filter((item) => item.is_golden_glass == null)
+    .filter(
+      (item) =>
+        item.is_golden_glass == null || item.is_location_verified == null
+    )
     .map((item) => Number(item.id))
     .filter((id) => Number.isFinite(id));
   if (!locationIds.length) return page;
 
   const { data: awards } = await supabase
     .from("location_ratings")
-    .select("id,is_golden_glass")
+    .select("id,is_golden_glass,is_location_verified")
     .in("id", locationIds);
   const awardsByLocation = new Map(
     (awards ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
@@ -110,6 +113,11 @@ export async function getDiscoverLocationsPage({
       ...item,
       is_golden_glass:
         item.is_golden_glass ?? awardsByLocation.get(String(item.id)) ?? false,
+      is_location_verified: Boolean(
+        item.is_location_verified ??
+        (awards ?? []).find((row) => String(row.id) === String(item.id))
+          ?.is_location_verified
+      ),
     })),
   };
 }

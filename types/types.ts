@@ -43,6 +43,8 @@ export interface LocationRating {
   presentation_avg: number;
   total_ratings: number;
   is_golden_glass?: boolean;
+  /** Current manual Tini Time Club business verification state. */
+  is_location_verified?: boolean;
   neighborhood?: string | null;
   region_id?: number | null;
 }
@@ -66,6 +68,8 @@ export interface ReviewLocation {
   total_ratings?: number | null;
   /** Whether this venue is in the current Golden Glass snapshot. */
   is_golden_glass?: boolean;
+  /** Current manual Tini Time Club business verification state. */
+  is_location_verified?: boolean;
 }
 
 /** A selected, identity-bound @mention inside a plain-text body.

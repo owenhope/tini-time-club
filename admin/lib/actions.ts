@@ -279,6 +279,130 @@ export async function updateLocation(locationId: string, formData: FormData) {
   redirect(`${path}?updated=1`);
 }
 
+const claimsPath = "/admin/claims";
+
+export async function approveLocationClaim(claimId: string) {
+  const { error } = await supabaseAdmin().rpc("approve_location_claim", {
+    p_claim_id: claimId,
+  });
+  if (error) throw toAdminDataError(error, "approve location claim");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/claims/${claimId}`);
+  revalidatePath("/admin/places");
+  redirect(`${claimsPath}/${claimId}?updated=approved`);
+}
+
+export async function verifyLocationDirect(
+  locationId: string,
+  formData: FormData
+) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  const path = `/admin/places/${locationId}`;
+  if (!reason || reason.length > 1000) {
+    redirect(`${path}?error=verificationReason`);
+  }
+  const { error } = await supabaseAdmin().rpc("admin_verify_location", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "verify location directly");
+  revalidatePath(claimsPath);
+  revalidatePath(path);
+  revalidatePath("/admin/places");
+  revalidatePath("/admin");
+  redirect(`${path}?updated=verified`);
+}
+
+export async function rejectLocationClaim(claimId: string, formData: FormData) {
+  const reason = String(formData.get("rejection_reason") ?? "").trim();
+  const notes = String(formData.get("admin_notes") ?? "").trim();
+  if (!reason || reason.length > 1000)
+    redirect(`${claimsPath}/${claimId}?error=reason`);
+  const { error } = await supabaseAdmin().rpc("reject_location_claim", {
+    p_claim_id: claimId,
+    p_rejection_reason: reason,
+    p_admin_notes: notes || null,
+  });
+  if (error) throw toAdminDataError(error, "reject location claim");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/claims/${claimId}`);
+  redirect(`${claimsPath}/${claimId}?updated=rejected`);
+}
+
+export async function revokeLocationVerification(
+  locationId: string,
+  formData: FormData
+) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) redirect(`/admin/claims?error=reason`);
+  const { error } = await supabaseAdmin().rpc("revoke_location_verification", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "revoke location verification");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/places/${locationId}`);
+  redirect(`${claimsPath}?updated=revoked`);
+}
+
+export async function restoreLocationVerification(
+  locationId: string,
+  formData: FormData
+) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) redirect(`/admin/claims?error=reason`);
+  const { error } = await supabaseAdmin().rpc("restore_location_verification", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "restore location verification");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/places/${locationId}`);
+  redirect(`${claimsPath}?updated=restored`);
+}
+
+export async function addLocationManager(
+  locationId: string,
+  formData: FormData
+) {
+  const query = String(formData.get("profile_query") ?? "").trim();
+  const path = `/admin/claims/${String(formData.get("claim_id") ?? "")}`;
+  const { data, error } = await supabaseAdmin().rpc(
+    "find_location_manager_profile",
+    {
+      p_query: query,
+    }
+  );
+  if (error) throw toAdminDataError(error, "find manager profile");
+  const matches = Array.isArray(data) ? data : [];
+  if (matches.length !== 1 || typeof matches[0]?.id !== "string") {
+    redirect(`${path}?error=manager`);
+  }
+  const result = await supabaseAdmin().rpc("add_location_manager", {
+    p_location_id: Number(locationId),
+    p_profile_id: matches[0].id,
+  });
+  if (result.error)
+    throw toAdminDataError(result.error, "add location manager");
+  revalidatePath(path);
+  redirect(`${path}?updated=manager-added`);
+}
+
+export async function removeLocationManager(
+  managerId: string,
+  formData: FormData
+) {
+  const claimId = String(formData.get("claim_id") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  const { error } = await supabaseAdmin().rpc("remove_location_manager", {
+    p_manager_id: managerId,
+    p_reason: reason || null,
+  });
+  if (error) throw toAdminDataError(error, "remove location manager");
+  revalidatePath(`/admin/claims/${claimId}`);
+  redirect(`/admin/claims/${claimId}?updated=manager-removed`);
+}
+
 export async function upsertRegion(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   const returnTo = getRegionReturnPath(formData);

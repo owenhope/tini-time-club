@@ -44,6 +44,8 @@ const TITLES: Record<string, string> = {
   notifications: "Notifications",
   activity: "Activity",
   "place-info": "Information",
+  "location-verification-info": "Business verification",
+  "location-claim": "Verify this place",
   terms: "Terms of Service",
   "delete-account": "Delete Account",
 };

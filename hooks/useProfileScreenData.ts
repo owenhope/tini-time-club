@@ -278,7 +278,7 @@ export function useProfileScreenData({
 
       const { data, error } = await supabase
         .from("location_ratings")
-        .select("id, name, address, is_golden_glass")
+        .select("id, name, address, is_golden_glass, is_location_verified")
         .eq("id", favoriteLocationId)
         .maybeSingle();
 

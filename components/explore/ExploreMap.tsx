@@ -94,6 +94,7 @@ interface MapLocation {
   total_ratings?: number | null;
   regulars?: Regular[];
   is_golden_glass?: boolean;
+  is_location_verified?: boolean;
 }
 
 const toMapLocation = (location: any): MapLocation => ({
@@ -607,7 +608,7 @@ function ExploreMap({
               ? await supabase
                   .from("location_ratings")
                   .select(
-                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
+                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
                   )
                   .eq("id", focus.locationId)
                   .maybeSingle()
@@ -632,7 +633,7 @@ function ExploreMap({
         if (missingAwardIds.length > 0) {
           const { data: awards } = await supabase
             .from("location_ratings")
-            .select("id,is_golden_glass")
+            .select("id,is_golden_glass,is_location_verified")
             .in("id", missingAwardIds);
           if (requestId !== fetchRequestRef.current) return;
           const awardsByLocation = new Map(
@@ -647,6 +648,12 @@ function ExploreMap({
               location.is_golden_glass ??
               awardsByLocation.get(String(location.id)) ??
               false,
+            is_location_verified: Boolean(
+              location.is_location_verified ??
+              (awards ?? []).find(
+                (row) => String(row.id) === String(location.id)
+              )?.is_location_verified
+            ),
           }));
         }
         const nextLocations = normalizeMapLocations(

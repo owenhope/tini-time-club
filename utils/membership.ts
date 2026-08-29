@@ -12,6 +12,7 @@ export type MembershipIntent =
   | "golden-glass"
   | "members-directory"
   | "location-details"
+  | "location-claim"
   | "social-list"
   | "share-review"
   | "share-location"
@@ -95,6 +96,11 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
     title: "Go beyond the map",
     body: "Join or sign in to open the full location and meet its Regulars.",
   },
+  "location-claim": {
+    eyebrow: "CLAIM A PLACE",
+    title: "Help keep the record current",
+    body: "Join or sign in to submit a short claim for a place you represent.",
+  },
   "social-list": {
     eyebrow: "THE SOCIAL GRAPH",
     title: "Meet the rest of the club",
@@ -146,6 +152,7 @@ export const getVisitorGatedRouteIntent = (
   if (pathname === "/review") return "review";
   if (pathname === "/review-share-preview") return "share-review";
   if (pathname === "/activity") return "activity";
+  if (pathname === "/location-claim") return "location-claim";
   if (/^\/users\/[^/]+\/(followers|following)$/.test(pathname)) {
     return "social-list";
   }

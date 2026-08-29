@@ -3,7 +3,12 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { Avatar, MartiniIcon, RatingPips } from "@/components/shared";
+import {
+  Avatar,
+  LocationVerifiedBadge,
+  MartiniIcon,
+  RatingPips,
+} from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
@@ -58,17 +63,20 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           hitSlop={6}
         >
           <View style={styles.titleRow}>
-            <Text style={styles.name} numberOfLines={2}>
-              {loc.name || "No name available"}
-            </Text>
             {loc.is_golden_glass ? (
               <View
                 style={styles.goldenGlassIcon}
                 accessible
                 accessibilityLabel="Golden Glass"
               >
-                <MartiniIcon size={16} color={colors.awardGold} filled />
+                <MartiniIcon size={20} color={colors.awardGold} filled />
               </View>
+            ) : null}
+            <Text style={styles.name} numberOfLines={2}>
+              {loc.name || "No name available"}
+            </Text>
+            {loc.is_location_verified ? (
+              <LocationVerifiedBadge compact />
             ) : null}
             <Ionicons
               name="chevron-forward"

@@ -11,7 +11,7 @@ platform — see GROWTH_PLAN.md at the repo root.
 npm --prefix admin run dev
 ```
 
-Opens on http://localhost:3000. Public pages live at `/` and `/r/<review-id>`;
+Opens on http://localhost:3001. Public pages live at `/` and `/r/<review-id>`;
 the operator dashboard lives under `/admin` and `/admin/login`. Requires
 `admin/.env.local`:
 

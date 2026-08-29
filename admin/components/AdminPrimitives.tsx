@@ -18,6 +18,7 @@ export function PageHeader({
   backLink,
   eyebrow,
   title,
+  titleLeadingAccessory,
   description,
   stats = [],
   statColumns = 4,
@@ -29,6 +30,7 @@ export function PageHeader({
   backLink?: { href: string; label: string };
   eyebrow?: string;
   title: string;
+  titleLeadingAccessory?: React.ReactNode;
   description?: string;
   stats?: HeaderStat[];
   statColumns?: 3 | 4;
@@ -63,8 +65,9 @@ export function PageHeader({
                 {eyebrow}
               </p>
             ) : null}
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900">
-              {title}
+            <h1 className="mt-1 flex items-center gap-2 text-2xl font-black tracking-tight text-stone-900">
+              {titleLeadingAccessory}
+              <span className="min-w-0">{title}</span>
             </h1>
             {description ? (
               <p className="mt-1 max-w-3xl text-sm leading-6 text-stone-500">

@@ -8,7 +8,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Avatar, MartiniIcon, RatingPips } from "@/components/shared";
+import {
+  Avatar,
+  LocationVerifiedBadge,
+  MartiniIcon,
+  RatingPips,
+} from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { formatRating } from "@/utils/ratingUtils";
@@ -77,16 +82,19 @@ export default function GoldenGlassList({
       >
         <View style={styles.cardBody}>
           <View style={styles.titleRow}>
-            <Text style={styles.venueName} numberOfLines={2}>
-              {item.venueName}
-            </Text>
             <View
               style={styles.goldenGlassBadge}
               accessible
               accessibilityLabel="Golden Glass"
             >
-              <MartiniIcon size={16} color={colors.awardGold} filled />
+              <MartiniIcon size={20} color={colors.awardGold} filled />
             </View>
+            <Text style={styles.venueName} numberOfLines={2}>
+              {item.venueName}
+            </Text>
+            {item.is_location_verified ? (
+              <LocationVerifiedBadge compact />
+            ) : null}
             <Ionicons
               name="chevron-forward"
               size={18}
@@ -166,8 +174,8 @@ export default function GoldenGlassList({
     <View style={styles.intro}>
       <Text style={styles.introEyebrow}>The Best Martinis in {regionName}</Text>
       <View style={styles.introTitleRow}>
-        <Text style={styles.introTitle}>Golden Glass</Text>
         <MartiniIcon size={22} color={colors.awardGold} filled />
+        <Text style={styles.introTitle}>Golden Glass</Text>
       </View>
       <Text style={styles.introBody}>
         Places the club is raising a glass to right now.

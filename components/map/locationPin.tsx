@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -15,6 +16,7 @@ interface LocationPinProps {
     presentation_avg?: number | null;
     address?: string | null;
     is_golden_glass?: boolean;
+    is_location_verified?: boolean;
   };
   selected?: boolean;
 }
@@ -63,6 +65,19 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
             }
           />
         )}
+        {loc.is_location_verified ? (
+          <View
+            style={styles.verificationOverlay}
+            accessible
+            accessibilityLabel="Verified business"
+          >
+            <MaterialIcons
+              name="verified"
+              size={selected ? 16 : 13}
+              color={colors.accent}
+            />
+          </View>
+        ) : null}
       </View>
       <View
         style={[styles.pointerFrame, selected && styles.pointerFrameSelected]}
@@ -175,6 +190,17 @@ const useStyles = makeStyles((t) => ({
   pointerGoldenSelected: {
     borderTopColor: t.colors.awardGold,
   },
+  verificationOverlay: {
+    position: "absolute" as const,
+    right: -3,
+    top: -3,
+    width: 17,
+    height: 17,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.surface,
+  },
 }));
 
 export default memo(
@@ -186,5 +212,6 @@ export default memo(
     previous.loc.long === next.loc.long &&
     previous.loc.rating === next.loc.rating &&
     previous.loc.total_ratings === next.loc.total_ratings &&
-    previous.loc.is_golden_glass === next.loc.is_golden_glass
+    previous.loc.is_golden_glass === next.loc.is_golden_glass &&
+    previous.loc.is_location_verified === next.loc.is_location_verified
 );

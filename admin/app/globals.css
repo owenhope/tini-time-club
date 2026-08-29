@@ -165,6 +165,11 @@ html.dark .admin-theme .bg-violet-50 {
   background-color: #211a32;
 }
 
+/* Opacity utilities compile to separate class names; keep callouts dark too. */
+html.dark .admin-theme .bg-violet-50\/60 {
+  background-color: #211a32;
+}
+
 html.dark .admin-theme .bg-violet-100 {
   background-color: #2c2342;
 }
@@ -223,7 +228,8 @@ html.dark .admin-theme .border-emerald-200 {
 }
 
 html.dark .admin-theme .ring-violet-300,
-html.dark .admin-theme .border-violet-300 {
+html.dark .admin-theme .border-violet-300,
+html.dark .admin-theme .border-violet-100 {
   --tw-ring-color: #5a4691;
   border-color: #5a4691;
 }

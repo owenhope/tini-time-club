@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import ClickableRow from "@/components/ClickableRow";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 import {
   ActionLink,
   DataTable,
@@ -244,7 +245,12 @@ export default async function PlacesPage({
               className="cursor-pointer hover:bg-stone-50 focus:bg-stone-50 focus:outline-none"
             >
               <td className="px-4 py-3 font-bold text-stone-900">
-                {location.name ?? "—"}
+                <span className="flex items-center gap-2">
+                  {location.is_golden_glass ? (
+                    <GoldenGlassMark size={20} />
+                  ) : null}
+                  <span className="truncate">{location.name ?? "—"}</span>
+                </span>
               </td>
               <td className="max-w-48 truncate px-4 py-3 text-stone-500">
                 {formatCityRegion(location.address) || "—"}
@@ -258,6 +264,14 @@ export default async function PlacesPage({
                     ? Number(location.rating).toFixed(1)
                     : "—"}
                 </span>
+                {location.is_location_verified ? (
+                  <span
+                    className="ml-2 text-xs font-bold text-violet-700"
+                    aria-label="Verified business"
+                  >
+                    ✓ verified
+                  </span>
+                ) : null}
               </td>
               <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
                 {location.total_ratings}

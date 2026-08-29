@@ -40,6 +40,8 @@ jest.mock("@expo/vector-icons", () => {
       (props: object) => ReactActual.createElement("Ionicons", props),
       { glyphMap: {} }
     ),
+    MaterialIcons: (props: object) =>
+      ReactActual.createElement("MaterialIcons", props),
   };
 });
 
@@ -132,6 +134,32 @@ describe("AppHeader", () => {
         );
       })
     ).toBe(true);
+    act(() => tree!.unmount());
+  });
+
+  it("renders the shared verified-business header glyph", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="media"
+            title="Place"
+            actions={[
+              {
+                customIcon: "verified-business",
+                onPress: jest.fn(),
+                accessibilityLabel: "Claim or manage this place",
+              },
+            ]}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const icon = tree!.root.findByType("MaterialIcons" as React.ElementType);
+    expect(icon.props.name).toBe("verified");
+
     act(() => tree!.unmount());
   });
 

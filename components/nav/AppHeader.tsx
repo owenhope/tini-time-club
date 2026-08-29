@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
@@ -35,7 +35,7 @@ export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
   icon?: keyof typeof Ionicons.glyphMap;
-  customIcon?: "martini-shaker";
+  customIcon?: "martini-shaker" | "verified-business";
   label?: string;
   onPress: () => void;
   accessibilityLabel: string;
@@ -60,6 +60,8 @@ export interface AppHeaderProps {
   imageUri?: string | null;
   /** Optional mark rendered immediately after a media title. */
   titleAccessory?: React.ReactNode;
+  /** Optional mark rendered immediately before a media or compact title. */
+  titleLeadingAccessory?: React.ReactNode;
   /** Optional title color shared by the media and collapsed title states. */
   titleColor?: string;
   /** Variant A's single control, or variant B's trailing one. */
@@ -152,6 +154,8 @@ const NavActionControl = ({
   const renderIcon = (iconSize: number) =>
     action.customIcon === "martini-shaker" ? (
       <MartiniShakerIcon size={iconSize} color={glyph} />
+    ) : action.customIcon === "verified-business" ? (
+      <MaterialIcons name="verified" size={iconSize} color={glyph} />
     ) : action.icon ? (
       <Ionicons name={action.icon} size={iconSize} color={glyph} />
     ) : null;
@@ -236,6 +240,7 @@ const CompactBar = ({
   preserveCase,
   compactContent,
   titleAccessory,
+  titleLeadingAccessory,
   titleColor,
 }: {
   title: string;
@@ -249,6 +254,7 @@ const CompactBar = ({
   preserveCase?: boolean;
   compactContent?: React.ReactNode;
   titleAccessory?: React.ReactNode;
+  titleLeadingAccessory?: React.ReactNode;
   titleColor?: string;
 }) => {
   const styles = useStyles();
@@ -307,6 +313,7 @@ const CompactBar = ({
             ) : null}
           </View>
           <View style={styles.compactTitleRow}>
+            {titleLeadingAccessory}
             <Text
               style={[
                 styles.compactTitle,
@@ -350,6 +357,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   meta,
   imageUri,
   titleAccessory,
+  titleLeadingAccessory,
   trailing,
   leading,
   actions,
@@ -416,6 +424,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         preserveCase={preserveCase}
         compactContent={compactContent}
         titleAccessory={titleAccessory}
+        titleLeadingAccessory={titleLeadingAccessory}
         titleColor={titleColor}
       />
     );
@@ -574,6 +583,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         <Animated.View style={[styles.mediaIdentity, fade]}>
           <View style={styles.mediaTitleRow}>
+            {titleLeadingAccessory}
             <Text
               style={[
                 styles.mediaTitle,

@@ -19,7 +19,12 @@ import CommentsSlider from "@/components/CommentsSlider";
 import LikeSlider from "@/components/LikeSlider";
 import AppHeader from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
-import { MartiniIcon, RatingPips, Skeleton } from "@/components/shared";
+import {
+  LocationVerifiedBadge,
+  MartiniIcon,
+  RatingPips,
+  Skeleton,
+} from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 
 const COLUMNS = 3;
@@ -172,11 +177,15 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
               accessibilityElementsHidden
             >
               <View style={styles.tileLocationRow}>
+                {tileLabel === "location" && item.location?.is_golden_glass ? (
+                  <MartiniIcon size={17} color={colors.awardGold} filled />
+                ) : null}
                 <Text style={styles.tileLocationText} numberOfLines={1}>
                   {tileLabelText}
                 </Text>
-                {tileLabel === "location" && item.location?.is_golden_glass ? (
-                  <MartiniIcon size={14} color={colors.awardGold} filled />
+                {tileLabel === "location" &&
+                item.location?.is_location_verified ? (
+                  <LocationVerifiedBadge compact />
                 ) : null}
               </View>
             </View>
