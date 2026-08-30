@@ -12,7 +12,7 @@ export interface TiniTimeGreeting {
 }
 
 /** Indexed by `Date.getDay()` - 0 is Sunday. */
-export const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
+const GREETINGS_BY_DAY: readonly (readonly TiniTimeGreeting[])[] = [
   [
     {
       headline: "Sunday, slowly 🍸",

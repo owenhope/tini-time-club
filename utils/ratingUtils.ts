@@ -10,7 +10,7 @@ export interface LocationRating {
 }
 
 export const RATING_MIN = 1;
-export const RATING_MAX = 5;
+const RATING_MAX = 5;
 export const RATING_STEP = 0.5;
 
 /** Ratings are selectable from 1.0–5.0 in half-point increments. */

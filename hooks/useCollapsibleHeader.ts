@@ -10,7 +10,7 @@ import {
  * distance, so the gesture feels identical on the feed, the place profile
  * and anywhere else.
  */
-export const COLLAPSE_RANGE = 120;
+const COLLAPSE_RANGE = 120;
 
 /**
  * Scroll-driven header collapse.
@@ -53,5 +53,3 @@ export const useCollapsibleHeader = (range: number = COLLAPSE_RANGE) => {
 
   return { isCollapsed, onScroll, progress, collapsibleStyle };
 };
-
-export default useCollapsibleHeader;

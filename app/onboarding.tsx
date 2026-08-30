@@ -939,23 +939,6 @@ const useStyles = makeStyles((t) => ({
   profileFlow: {
     flex: 1,
   },
-  stepHeaderMeta: {
-    gap: t.spacing.sm,
-  },
-  subtitle: {
-    color: t.colors.highlight,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: t.colors.ratingTrackOnInk,
-    borderRadius: t.radius.pill,
-    overflow: "hidden" as const,
-  },
-  progressFill: {
-    height: "100%" as const,
-    backgroundColor: t.colors.highlight,
-    borderRadius: t.radius.pill,
-  },
   profileContent: {
     flex: 1,
     overflow: "hidden" as const,

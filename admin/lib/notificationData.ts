@@ -25,13 +25,6 @@ export const fetchNotificationAnalytics = async (
   return resolveNotificationAnalytics(data);
 };
 
-export const fetchPushTokenCount = async (): Promise<number> => {
-  const { count } = await db()
-    .from("push_tokens")
-    .select("expo_push_token", { count: "exact", head: true });
-  return count ?? 0;
-};
-
 export const fetchWeeklyPushSubscriberCount = async (): Promise<number> => {
   const { count, error } = await db()
     .from("profiles")

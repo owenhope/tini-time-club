@@ -1071,10 +1071,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     color: t.colors.usernameText,
   },
-  captionBody: {
-    ...t.typography.body,
-    color: t.colors.postText,
-  },
   addCaptionText: {
     ...t.typography.bodyStrong,
     color: t.colors.textSecondary,
@@ -1113,10 +1109,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textMuted,
   },
   commentLikeCountActive: { color: t.colors.like },
-  timestamp: {
-    ...t.typography.caption,
-    color: t.colors.textMuted,
-  },
   viewAllCommentsText: {
     ...t.typography.body,
     color: t.colors.textMuted,

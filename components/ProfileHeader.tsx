@@ -405,10 +405,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.onHeaderBrand,
   },
   // Handles are data — they set in mono, like every other identifier.
-  handle: {
-    ...t.typography.mono,
-    color: t.colors.onHeaderBrand,
-  },
   bio: {
     ...t.typography.body,
     width: "100%" as const,

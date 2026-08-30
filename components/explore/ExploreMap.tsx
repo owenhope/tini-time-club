@@ -859,10 +859,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.label,
     color: t.colors.accent,
   },
-  markerContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-  },
   clusterPin: {
     backgroundColor: t.colors.surfaceBrand,
     borderWidth: 0,

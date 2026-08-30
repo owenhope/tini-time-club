@@ -57,19 +57,6 @@ export async function getDiscoverProfilesPage({
   return decodePage<DiscoveredProfile>(data);
 }
 
-export async function getRegionMembers(
-  regionId: number,
-  query?: string
-): Promise<DiscoveredProfile[]> {
-  const { data, error } = await supabase.rpc("get_region_members_v1", {
-    p_region_id: regionId,
-    p_search: query?.trim() || null,
-    p_limit: 50,
-  });
-  if (error) throw error;
-  return (data ?? []) as DiscoveredProfile[];
-}
-
 export async function getDiscoverLocationsPage({
   query,
   cursor = null,

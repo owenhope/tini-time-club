@@ -1,4 +1,4 @@
-export const EXPLORE_VIEWS = ["map", "golden-glass", "members"] as const;
+const EXPLORE_VIEWS = ["map", "golden-glass", "members"] as const;
 
 export type ExploreView = (typeof EXPLORE_VIEWS)[number];
 export type ExploreListView = Exclude<ExploreView, "map">;

@@ -1,35 +1,5 @@
 import type { LegalSection } from "@/components/PublicLegalPage";
 
-export const supportHighlights = [
-  {
-    title: "Discover Martini spots",
-    body: "Browse nearby lounges, cocktail bars, and hidden gems, then see what other members are drinking and rating in real time.",
-  },
-  {
-    title: "Review and share",
-    body: "Post your own Martini reviews with photos, tasting notes, and ratings for taste and presentation.",
-  },
-  {
-    title: "Connect with regulars",
-    body: "Follow friends and Martini people, comment on reviews, and build a profile that keeps your Martini journey in one place.",
-  },
-];
-
-export const supportTopics = [
-  {
-    title: "Account help",
-    body: "For sign-in issues, profile updates, account questions, or delete-account support, email owen@hopemediahouse.com.",
-  },
-  {
-    title: "Content reports",
-    body: "Use the in-app reporting tools when a review, photo, comment, or profile looks inappropriate. Reports are reviewed promptly.",
-  },
-  {
-    title: "Permissions",
-    body: "Location, camera, photos, and notifications can be managed from iOS Settings. Some discovery, upload, and reminder features may need those permissions to work.",
-  },
-];
-
 export const termsSections: LegalSection[] = [
   {
     title: "1. Overview",

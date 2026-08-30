@@ -340,5 +340,3 @@ export function useProfileScreenData({
     loadFollowCounts,
   };
 }
-
-export default useProfileScreenData;

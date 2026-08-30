@@ -41,7 +41,7 @@ export interface ProfileContextValue {
   profileError: string | null;
 }
 
-export const PROFILE_LOAD_ERROR_MESSAGE =
+const PROFILE_LOAD_ERROR_MESSAGE =
   "We couldn't load your profile. Check your connection and try again.";
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(

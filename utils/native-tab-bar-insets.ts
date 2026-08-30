@@ -9,7 +9,7 @@ const NATIVE_TAB_BAR_CHROME_HEIGHT =
     default: 80,
   }) ?? 80;
 
-export const getNativeTabBarContentInset = (safeAreaBottom: number) =>
+const getNativeTabBarContentInset = (safeAreaBottom: number) =>
   safeAreaBottom + NATIVE_TAB_BAR_CHROME_HEIGHT;
 
 export const useNativeTabBarContentInset = () => {

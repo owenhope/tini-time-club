@@ -3,7 +3,7 @@ import type { ColorValue } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
 
 export const OLIVE_ICON_COLOR = "#336654";
-export const OLIVE_PIMENTO_COLOR = "#EA6363";
+const OLIVE_PIMENTO_COLOR = "#EA6363";
 const OLIVE_VIEW_BOX = {
   x: 66.31,
   y: 58.15,

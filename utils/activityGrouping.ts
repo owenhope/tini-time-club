@@ -177,24 +177,3 @@ export const sectionActivityRows = (
     earlier.length ? { title: "Earlier" as const, data: earlier } : null,
   ].filter((section): section is ActivitySection => section !== null);
 };
-
-export const formatActivityKind = (kind: ActivityDisplayRow["kind"]) => {
-  switch (kind) {
-    case "user_followed":
-      return "New follower";
-    case "review_liked":
-      return "Review like";
-    case "comment_liked":
-      return "Comment like";
-    case "review_commented":
-      return "Review comment";
-    case "comment_replied":
-      return "Comment reply";
-    case "mentioned_in_review":
-      return "Review mention";
-    case "mentioned_in_comment":
-      return "Comment mention";
-    case "admin_message":
-      return "Tini Time Club";
-  }
-};

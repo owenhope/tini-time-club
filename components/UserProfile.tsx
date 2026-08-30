@@ -587,22 +587,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.body,
     color: t.colors.textSecondary,
   },
-  headerTitle: {
-    ...t.typography.title,
-    color: t.colors.onInk,
-  },
-  headerActions: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.md,
-    paddingRight: t.spacing.xs,
-  },
-  headerIconButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
   // The header owns the screen gutter now, so its children sit flush.
   favoritesSection: {
     gap: t.spacing.sm,

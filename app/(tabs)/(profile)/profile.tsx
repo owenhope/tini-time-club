@@ -629,22 +629,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
     textAlign: "center" as const,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  headerActions: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    paddingRight: 2,
-  },
-  headerTitleContainer: { alignItems: "center" as const },
-  headerTitle: {
-    ...t.typography.title,
-    color: t.colors.onInk,
-  },
 }));
 
 const Profile = () => {

@@ -27,5 +27,3 @@ export const clearUserCaches = async (): Promise<void> => {
     }
   });
 };
-
-export default clearUserCaches;

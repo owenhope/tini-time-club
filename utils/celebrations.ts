@@ -42,7 +42,7 @@ export const collectAchievements = ({
   return achievements;
 };
 
-export const achievementKey = (achievement: Achievement) =>
+const achievementKey = (achievement: Achievement) =>
   achievement.kind === "rank"
     ? achievement.tier.key
     : `regular:${achievement.locationId}`;

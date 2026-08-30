@@ -172,7 +172,6 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: "rgba(250,249,246,0.14)",
     gap: t.spacing.xs,
   },
-  icon: { color: t.colors.onInk },
   controlText: { ...t.typography.label, color: t.colors.onInk, flexShrink: 1 },
   modalBackdrop: {
     flex: 1,
@@ -246,5 +245,4 @@ const useStyles = makeStyles((t) => ({
   },
   regionName: { ...t.typography.bodyStrong, color: t.colors.text },
   regionNameSelected: { color: t.colors.accent },
-  check: { color: t.colors.accent },
 }));
