@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useProfile } from "@/context/profile-context";
 import * as Notifications from "expo-notifications";
 import { typography, useTheme } from "@/theme";
@@ -48,7 +48,7 @@ const LayoutContent = () => {
   const { requireMembership } = useMembership();
   const { hidden: tabBarHidden } = useTabBarVisibility();
   const pathname = usePathname();
-  const hasResolvedProfileOnce = useRef(false);
+  const [hasResolvedProfileOnce, setHasResolvedProfileOnce] = useState(false);
   const mountedAtRef = useRef<number | null>(null);
   const gateTabPress = useCallback(
     (intent: MembershipIntent) => {
@@ -135,11 +135,13 @@ const LayoutContent = () => {
   // keep the tree mounted: unmounting NativeTabs mid sign-in blacked out the
   // screen behind the auth card and remounted the tabs as a second visible
   // transition once the profile arrived.
-  if (!loading) {
-    hasResolvedProfileOnce.current = true;
-  }
+  useEffect(() => {
+    if (!loading) {
+      setHasResolvedProfileOnce(true);
+    }
+  }, [loading]);
   if (
-    (loading && !hasResolvedProfileOnce.current) ||
+    (loading && !hasResolvedProfileOnce) ||
     (profile && (!profile.username || !profile.eula_accepted))
   ) {
     return null;

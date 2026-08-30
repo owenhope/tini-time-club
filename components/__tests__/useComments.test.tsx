@@ -85,8 +85,9 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 
 jest.mock("@/components/shared", () => {
-  const ReactActual = require("react");
-  const { Text: RNText } = require("react-native");
+  const ReactActual = jest.requireActual<typeof import("react")>("react");
+  const { Text: RNText } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   return {
     Avatar: () => null,
     Badge: () => null,
