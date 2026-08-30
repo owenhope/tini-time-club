@@ -273,7 +273,7 @@ class ImageCache {
 
           // Missing objects get the same empty sentinel as before, so a
           // deleted image doesn't trigger a re-fetch on every page load.
-          const signedUrl = item.error ? "" : item.signedUrl;
+          const signedUrl = item.error ? "" : (item.signedUrl ?? "");
           const cached: CachedSignedUrl = {
             signedUrl,
             timestamp: now,
