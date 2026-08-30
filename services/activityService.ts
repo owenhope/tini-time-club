@@ -176,12 +176,18 @@ export async function markActivityRead(
   if (error) throw error;
 }
 
+// supabase-js reuses one channel per topic and throws when listeners are
+// added after subscribe(), so concurrent subscribers (the unseen-badge
+// provider and the Activity screen) each need a distinct topic.
+let activityChannelSequence = 0;
+
 export function subscribeToActivityChanges(
   userId: string,
   onChange: () => void
 ): () => void {
+  activityChannelSequence += 1;
   const channel = supabase
-    .channel(`activity:${userId}`)
+    .channel(`activity:${userId}:${activityChannelSequence}`)
     .on(
       "postgres_changes",
       {
