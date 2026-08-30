@@ -12,9 +12,9 @@ SELECT col_is_fk('public', 'location_claims', 'requester_profile_id', 'Claim req
 SELECT col_is_fk('public', 'location_verifications', 'source_claim_id', 'Verification retains source claim');
 SELECT col_is_fk('public', 'location_managers', 'profile_id', 'Managers reference profiles');
 
-SELECT has_index('public', 'location_claims_pending_requester_unique_idx', 'One pending claim per requester/location is indexed');
-SELECT has_index('public', 'location_verifications_one_active_idx', 'One active verification per location is indexed');
-SELECT has_index('public', 'location_managers_active_pair_unique_idx', 'One active manager assignment per pair is indexed');
+SELECT has_index('public', 'location_claims', 'location_claims_pending_requester_unique_idx', 'One pending claim per requester/location is indexed');
+SELECT has_index('public', 'location_verifications', 'location_verifications_one_active_idx', 'One active verification per location is indexed');
+SELECT has_index('public', 'location_managers', 'location_managers_active_pair_unique_idx', 'One active manager assignment per pair is indexed');
 
 SELECT has_function('public', 'submit_location_claim', ARRAY['bigint', 'text', 'text', 'text', 'text'], 'Member claim submission RPC exists');
 SELECT has_function('public', 'get_my_location_claim_status', ARRAY['bigint'], 'Safe member claim status RPC exists');
@@ -26,7 +26,10 @@ SELECT has_function('public', 'merge_locations_v1', ARRAY['bigint', 'bigint'], '
 SELECT ok(
   has_function_privilege('authenticated', 'public.submit_location_claim(bigint,text,text,text,text)', 'EXECUTE')
     AND NOT has_function_privilege('authenticated', 'public.approve_location_claim(uuid)', 'EXECUTE')
-    AND NOT has_function_privilege('authenticated', 'public.admin_verify_location(bigint,text)', 'EXECUTE'),
+    AND NOT has_function_privilege('authenticated', 'public.admin_verify_location(bigint,text)', 'EXECUTE')
+    AND NOT has_function_privilege('authenticated', 'public.location_claim_notification(uuid,uuid,bigint,text,text)', 'EXECUTE')
+    AND NOT has_function_privilege('anon', 'public.location_claim_notification(uuid,uuid,bigint,text,text)', 'EXECUTE')
+    AND NOT has_function_privilege('authenticated', 'public.get_admin_locations_page(text,integer,text,text,integer,integer)', 'EXECUTE'),
   'Member/admin function privileges are separated'
 );
 

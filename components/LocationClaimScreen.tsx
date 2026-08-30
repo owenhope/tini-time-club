@@ -43,6 +43,8 @@ export default function LocationClaimScreen() {
     useLocationClaim(locationId, Boolean(profile && locationId));
   const [role, setRole] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [explanation, setExplanation] = useState("");
 
   const cooldown = status?.status === "rejected" && !status.can_resubmit;
 
@@ -60,10 +62,10 @@ export default function LocationClaimScreen() {
   };
 
   const submitForm = async () => {
-    if (!role.trim() || !businessEmail.trim()) {
+    if (!role.trim() || !businessEmail.trim() || !explanation.trim()) {
       Alert.alert(
         "Complete your claim",
-        "Role and business email are required."
+        "Role, business email, and a short explanation are required."
       );
       return;
     }
@@ -71,7 +73,8 @@ export default function LocationClaimScreen() {
       await submit({
         businessRole: role,
         businessEmail,
-        explanation: role,
+        phone: phone.trim() || undefined,
+        explanation,
       });
       Alert.alert(
         "Claim received",
@@ -155,6 +158,14 @@ export default function LocationClaimScreen() {
                 editable={false}
                 styles={styles}
               />
+              {accountEmail ? (
+                <Field
+                  label="Account email"
+                  value={accountEmail}
+                  editable={false}
+                  styles={styles}
+                />
+              ) : null}
               <Field
                 label="Your role at the business"
                 value={role}
@@ -174,10 +185,26 @@ export default function LocationClaimScreen() {
                 maxLength={320}
                 placeholderTextColor={colors.textMuted}
                 styles={styles}
-                onFocus={() => {
-                  if (!businessEmail && accountEmail)
-                    setBusinessEmail(accountEmail);
-                }}
+              />
+              <Field
+                label="Phone number (optional)"
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="A number we can reach the business at"
+                keyboardType="phone-pad"
+                maxLength={40}
+                placeholderTextColor={colors.textMuted}
+                styles={styles}
+              />
+              <Field
+                label="How are you connected to this business?"
+                value={explanation}
+                onChangeText={setExplanation}
+                placeholder="A sentence or two to help us verify your claim"
+                multiline
+                maxLength={1000}
+                placeholderTextColor={colors.textMuted}
+                styles={styles}
               />
               <Pressable
                 onPress={() => void submitForm()}

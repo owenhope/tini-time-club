@@ -51,9 +51,10 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   label: {
-    ...t.typography.caption,
+    // `label` is the bold chip role; a fontWeight override here would silently
+    // drop Figtree back to the system font.
+    ...t.typography.label,
     color: t.colors.accent,
-    fontWeight: "700" as const,
   },
 }));
 
