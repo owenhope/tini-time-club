@@ -31,7 +31,8 @@ import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
 import { withTimeout } from "@/utils/async";
-import AppHeader from "@/components/nav/AppHeader";
+import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
+import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 import { useActivity } from "@/context/activity-context";
 import { useMembership } from "@/context/membership-context";
@@ -109,6 +110,14 @@ function Home() {
   // club says to you, and saying the same thing seven days running is how a
   // welcome stops being read.
   const greeting = getTiniTimeGreeting();
+  // One value, both halves of the crossfade: the green greeting block scrolls
+  // away with the feed while the wordmark bar fades in, and scrolling back to
+  // the top reverses it 1:1 with the finger.
+  const {
+    isCollapsed,
+    progress,
+    onScroll: handleHeaderScroll,
+  } = useCollapsibleHeader();
 
   useEffect(() => {
     if (profile) {
@@ -129,6 +138,7 @@ function Home() {
     }
   }, [profile, router]);
 
+  const profileId = profile?.id;
   const loadReviews = useCallback(
     // `silent` refreshes the data without the spinners — used by the
     // focus-staleness refresh so returning to the feed doesn't flash a
@@ -183,7 +193,7 @@ function Home() {
 
         const pageResult = await withTimeout(
           getReviewPage({
-            viewerId: profile?.id,
+            viewerId: profileId,
             cursor: refresh ? null : nextCursor,
             userId: screenshotUserId,
             followedOnly: source === "people",
@@ -224,7 +234,7 @@ function Home() {
         if (refresh) {
           setRefreshing(false);
           setLoading(false);
-          if (!firstLoadDone) setFirstLoadDone(true);
+          setFirstLoadDone(true);
         } else {
           setLoadingMore(false);
         }
@@ -244,14 +254,14 @@ function Home() {
         if (refresh) {
           setRefreshing(false);
           setLoading(false);
-          if (!firstLoadDone) setFirstLoadDone(true);
+          setFirstLoadDone(true);
         } else {
           setLoadingMore(false);
         }
       }
     },
     [
-      profile?.id,
+      profileId,
       page,
       nextCursor,
       hasMore,
@@ -652,6 +662,7 @@ function Home() {
     navigateToLocations,
     navigateToReview,
     profile,
+    authenticated,
     colors.onAccent,
     styles,
   ]);
@@ -697,7 +708,12 @@ function Home() {
         <Text style={styles.footerLoaderText}>Loading more...</Text>
       </View>
     );
-  }, [loadingMore]);
+  }, [
+    loadingMore,
+    colors.accent,
+    styles.footerLoader,
+    styles.footerLoaderText,
+  ]);
 
   // Stable callbacks to prevent re-renders
   const handleShowLikes = useCallback((id: string) => {
@@ -763,11 +779,14 @@ function Home() {
     ]
   );
 
-  // Cleanup timeouts on unmount
+  // Cleanup timeouts on unmount. The cleanup must read the refs at unmount
+  // time — the timeouts are (re)armed long after this mount-only effect runs,
+  // so copying `.current` into locals here would clear nothing.
   useEffect(() => {
     return () => {
       latestFeedRequestRef.current += 1;
       if (loadingTimeoutRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         clearTimeout(loadingTimeoutRef.current);
       }
       if (validationTimeoutRef.current) {
@@ -796,34 +815,45 @@ function Home() {
     );
   }
 
+  // The same control renders on both headers in the same top-right slot, so
+  // the crossfade reads as one pinned button while the green block scrolls
+  // away beneath it.
+  const headerActions: HeaderAction[] = profile
+    ? [
+        {
+          icon: "heart-outline",
+          badgeCount: unseenCount,
+          onPress: () => router.push(routes.activity()),
+          accessibilityLabel:
+            unseenCount > 0
+              ? `Activity, ${unseenCount} unread notifications`
+              : "Activity",
+        },
+      ]
+    : [
+        {
+          label: "Join",
+          onPress: () => router.push(routes.auth()),
+          accessibilityLabel: "Join the club",
+        },
+      ];
+
   return (
     <View style={styles.container}>
+      {/* Variant B fades in on the same value that scrolls variant A away —
+          the wordmark bar the public site header wears, over the feed. It
+          speaks for the status bar in both states because it is the header
+          that is always mounted at the top. */}
       <AppHeader
-        variant="large"
-        title={greeting.headline}
-        meta={greeting.subline}
-        actions={
-          profile
-            ? [
-                {
-                  icon: "heart-outline",
-                  iconColor: colors.onInk,
-                  badgeCount: unseenCount,
-                  onPress: () => router.push(routes.activity()),
-                  accessibilityLabel:
-                    unseenCount > 0
-                      ? `Activity, ${unseenCount} unread notifications`
-                      : "Activity",
-                },
-              ]
-            : [
-                {
-                  label: "Join",
-                  onPress: () => router.push(routes.auth()),
-                  accessibilityLabel: "Join the club",
-                },
-              ]
-        }
+        variant="compact"
+        compactContent={<Text style={styles.wordmark}>tini time club</Text>}
+        compactContentCentered
+        transparent
+        actions={headerActions}
+        progress={progress}
+        collapsed={isCollapsed}
+        overlay
+        statusBar="light"
       />
 
       <FlatList
@@ -839,9 +869,25 @@ function Home() {
             tintColor={colors.accent}
           />
         }
+        onScroll={handleHeaderScroll}
+        scrollEventThrottle={16}
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
-        ListHeaderComponent={firstLoadDone ? renderFeedHeader : null}
+        // The greeting block is feed content now: it scrolls away under the
+        // wordmark bar and comes back when the list returns to the top. The
+        // overlaid compact header owns the status bar for both states.
+        ListHeaderComponent={
+          <>
+            <AppHeader
+              variant="large"
+              title={greeting.headline}
+              meta={greeting.subline}
+              actions={headerActions}
+              statusBar="none"
+            />
+            {renderFeedHeader()}
+          </>
+        }
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={process.env.EXPO_OS === "android"}
@@ -936,6 +982,10 @@ function Home() {
 
 const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
+  wordmark: {
+    ...t.typography.wordmark,
+    color: t.colors.onInk,
+  },
   feedHeader: {
     paddingTop: t.spacing.lg,
     paddingBottom: t.spacing.md,
@@ -992,11 +1042,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
     textAlign: "center" as const,
     maxWidth: 300,
-  },
-  errorText: {
-    ...t.typography.body,
-    color: t.colors.textSecondary,
-    textAlign: "center" as const,
   },
   footerLoader: {
     flexDirection: "row" as const,

@@ -78,6 +78,11 @@ export interface AppHeaderProps {
   below?: React.ReactNode;
   /** Variant B: replaces the centred title with compact custom controls. */
   compactContent?: React.ReactNode;
+  /** Variant B: centre `compactContent` between balanced ends like a title. */
+  compactContentCentered?: boolean;
+  /** Variant B: no paper fill or hairline — the bar floats over content on
+   *  the media variant's soft ink scrim, with scrim-plated controls. */
+  transparent?: boolean;
   /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
   /** Variant C only: reduce a dense media title by one point. */
@@ -239,6 +244,8 @@ const CompactBar = ({
   overlay,
   preserveCase,
   compactContent,
+  compactContentCentered,
+  transparent,
   titleAccessory,
   titleLeadingAccessory,
   titleColor,
@@ -253,6 +260,8 @@ const CompactBar = ({
   overlay?: boolean;
   preserveCase?: boolean;
   compactContent?: React.ReactNode;
+  compactContentCentered?: boolean;
+  transparent?: boolean;
   titleAccessory?: React.ReactNode;
   titleLeadingAccessory?: React.ReactNode;
   titleColor?: string;
@@ -279,19 +288,47 @@ const CompactBar = ({
         onBrand && styles.compactBrand,
         { paddingTop: insets.top + 8 },
         overlay && styles.compactOverlay,
+        transparent && styles.compactTransparent,
         progress ? { opacity: progress } : null,
       ]}
       pointerEvents={overlay && !collapsed ? "none" : "auto"}
     >
-      <View
-        style={[
-          styles.compactFill,
-          onInk && styles.compactFillInk,
-          onBrand && styles.compactFillBrand,
-        ]}
-        pointerEvents="none"
-      />
-      {compactContent ? (
+      {transparent ? (
+        // No paper plate — but bare white controls vanish over light content,
+        // so the bar borrows the media variant's soft ink scrim.
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Defs>
+            <LinearGradient id="compactScrim" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={colors.overlay} stopOpacity={0.9} />
+              <Stop offset="1" stopColor={colors.overlay} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#compactScrim)"
+          />
+        </Svg>
+      ) : (
+        <View
+          style={[
+            styles.compactFill,
+            onInk && styles.compactFillInk,
+            onBrand && styles.compactFillBrand,
+          ]}
+          pointerEvents="none"
+        />
+      )}
+      {compactContent && compactContentCentered ? (
+        <>
+          <View style={[styles.compactEnd, { width: leadingWidth }]} />
+          <View style={[styles.compactTitleRow, styles.compactCentered]}>
+            {compactContent}
+          </View>
+        </>
+      ) : compactContent ? (
         <View style={styles.compactCustomContent}>{compactContent}</View>
       ) : (
         <>
@@ -340,7 +377,9 @@ const CompactBar = ({
         {right.map((action) => (
           <NavActionControl
             key={getActionKey(action)}
-            tone={onInk || onBrand ? "onInk" : "outline"}
+            tone={
+              transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
+            }
             action={action}
             size={19}
           />
@@ -364,6 +403,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onBack,
   below,
   compactContent,
+  compactContentCentered = false,
+  transparent = false,
   largeTrailing,
   preserveCase = false,
   mediaTitleSize = "default",
@@ -423,6 +464,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         overlay={overlay}
         preserveCase={preserveCase}
         compactContent={compactContent}
+        compactContentCentered={compactContentCentered}
+        transparent={transparent}
         titleAccessory={titleAccessory}
         titleLeadingAccessory={titleLeadingAccessory}
         titleColor={titleColor}
@@ -855,6 +898,12 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     textAlign: "center" as const,
     color: t.colors.text,
+  },
+  compactTransparent: {
+    borderBottomWidth: 0,
+  },
+  compactCentered: {
+    justifyContent: "center" as const,
   },
   compactTitleRow: {
     flex: 1,

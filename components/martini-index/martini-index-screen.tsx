@@ -44,7 +44,8 @@ export default function MartiniIndexScreen() {
   };
 
   const shakerAction = {
-    customIcon: "martini-shaker" as const,
+    // Same wine-glass glyph as the Feed tab, per design direction.
+    icon: "wine-outline" as const,
     onPress: () => {
       if (requireMembership("pick-one")) setPickOneVisible(true);
     },

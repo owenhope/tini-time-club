@@ -4,6 +4,7 @@ describe("typography interface", () => {
   it("exposes only the approved semantic roles", () => {
     expect(Object.keys(typography)).toEqual([
       "display",
+      "wordmark",
       "title",
       "heading",
       "body",
@@ -18,12 +19,12 @@ describe("typography interface", () => {
     ]);
   });
 
-  it("uses one six-step size scale with no UI text below 12", () => {
+  it("uses one seven-step size scale with no UI text below 12", () => {
     const sizes = [
       ...new Set(Object.values(typography).map((t) => t.fontSize)),
     ];
 
-    expect(sizes.sort((a, b) => a - b)).toEqual([12, 14, 16, 18, 22, 32]);
+    expect(sizes.sort((a, b) => a - b)).toEqual([12, 14, 16, 18, 20, 22, 32]);
   });
 
   it("loads only the five faces used by the public scale", () => {
