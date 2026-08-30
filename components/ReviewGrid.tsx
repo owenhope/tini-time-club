@@ -26,6 +26,7 @@ import {
   Skeleton,
 } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 const COLUMNS = 3;
 const GAP = 2;
@@ -84,6 +85,8 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  // The native tab bar floats over content, so the grid pads its own tail.
+  const tabBarInset = useNativeTabBarContentInset();
   const { width: windowWidth } = useWindowDimensions();
   const [active, setActive] = useState<Review | null>(null);
   /**
@@ -229,6 +232,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         contentContainerStyle={[
           styles.content,
           contentTone === "surface" && styles.contentSurface,
+          { paddingBottom: tabBarInset },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -310,7 +314,6 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surface,
   },
   content: {
-    paddingBottom: t.spacing.xxl,
     backgroundColor: t.colors.background,
   },
   contentSurface: {

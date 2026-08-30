@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import AppHeader from "@/components/nav/AppHeader";
 import { SegmentedControl } from "@/components/shared";
 import ExploreLists from "@/components/explore/ExploreLists";
@@ -14,7 +15,7 @@ import { useExploreLocation } from "@/components/explore/useExploreLocation";
 import { useExploreRegion } from "@/hooks/useExploreRegion";
 import ExploreRegionSelector from "@/components/explore/ExploreRegionSelector";
 import { useMembership } from "@/context/membership-context";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 import type { MembershipIntent } from "@/utils/membership";
 
 const EXPLORE_OPTIONS = [
@@ -44,8 +45,11 @@ export default function ExploreScreen({
   mapFocus,
 }: ExploreScreenProps) {
   const styles = useStyles();
+  const { colors } = useTheme();
   const { isMember, requireMembership } = useMembership();
   const promptedView = useRef<ExploreListView | null>(null);
+  // The map's search bar hides behind the header's magnifier toggle.
+  const [searchOpen, setSearchOpen] = useState(false);
   const { state: location, request: requestLocation } = useExploreLocation();
   const region = useExploreRegion(location, requestLocation);
   const displayedView: ExploreView = isMember ? view : "map";
@@ -97,11 +101,29 @@ export default function ExploreScreen({
         title="Explore"
         largeTrailing={
           displayedView === "members" ? undefined : (
-            <ExploreRegionSelector
-              state={region.state}
-              onSelectRegion={region.selectRegion}
-              onUseMyLocation={region.useMyLocation}
-            />
+            <View style={styles.trailingRow}>
+              {displayedView === "map" ? (
+                <Pressable
+                  style={styles.searchToggle}
+                  onPress={() => setSearchOpen((open) => !open)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    searchOpen ? "Hide map search" : "Search the map"
+                  }
+                >
+                  <Ionicons
+                    name={searchOpen ? "close" : "search"}
+                    size={18}
+                    color={colors.onInk}
+                  />
+                </Pressable>
+              ) : null}
+              <ExploreRegionSelector
+                state={region.state}
+                onSelectRegion={region.selectRegion}
+                onUseMyLocation={region.useMyLocation}
+              />
+            </View>
           )
         }
         below={
@@ -127,6 +149,7 @@ export default function ExploreScreen({
             location={location}
             requestLocation={requestLocation}
             exploreRegion={region.state.selectedRegion}
+            searchVisible={displayedView === "map" && searchOpen}
           />
         </View>
 
@@ -167,6 +190,19 @@ const useStyles = makeStyles((t) => ({
   },
   headerControls: {
     gap: t.spacing.sm,
+  },
+  trailingRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+  },
+  searchToggle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(250,249,246,0.14)",
   },
   panel: {
     ...StyleSheet.absoluteFill,

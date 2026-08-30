@@ -25,10 +25,11 @@ interface SearchProps {
     longitudeDelta: number;
   }) => void;
   currentLocation: { latitude: number; longitude: number } | null;
+  autoFocus?: boolean;
 }
 
 const Search = forwardRef<any, SearchProps>(
-  ({ onPlaceSelected, currentLocation }, ref) => {
+  ({ onPlaceSelected, currentLocation, autoFocus }, ref) => {
     const styles = useStyles();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
@@ -151,6 +152,7 @@ const Search = forwardRef<any, SearchProps>(
         <ExploreSearchField
           value={searchQuery}
           onChangeText={handleSearch}
+          autoFocus={autoFocus}
           placeholder="Search bars and neighbourhoods"
           onClear={() => {
             setSearchQuery("");

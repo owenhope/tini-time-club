@@ -17,6 +17,7 @@ import {
   addReviewComment,
   deleteReviewComment,
 } from "@/utils/reviewCommentUpdates";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 export interface ProfileBodyProps {
   /** Which tab the header's segmented control is on. */
@@ -76,6 +77,8 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
+  // The native tab bar floats over content, so the list pads its own tail.
+  const tabBarInset = useNativeTabBarContentInset();
   // The patch is read by the row on its next render; see useComments in
   // ReviewItem, which applies it idempotently.
   const handleCommentAdded = useCallback(
@@ -155,7 +158,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           }
           onScroll={onScroll}
           scrollEventThrottle={16}
-          contentContainerStyle={styles.regularsList}
+          contentContainerStyle={{ paddingBottom: tabBarInset }}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -164,9 +167,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
-  regularsList: {
-    paddingBottom: t.spacing.xxl,
-  },
   skeletonRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,

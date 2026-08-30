@@ -36,6 +36,7 @@ import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import { isScreenshotSeed } from "@/utils/screenshotMode";
 import { useActivity } from "@/context/activity-context";
 import { useMembership } from "@/context/membership-context";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 // Built once: constructing the profanity list is expensive and the filter is
 // stateless, so a per-render instance was pure waste.
@@ -65,6 +66,8 @@ const limitAppendedReviews = (items: Review[]) =>
 function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
+  // The native tab bar floats over content, so the feed pads its own tail.
+  const tabBarInset = useNativeTabBarContentInset();
   const { profile, authenticated, updateProfile } = useProfile();
   const { unseenCount, refreshUnseenCount } = useActivity();
   const { requireMembership } = useMembership();
@@ -873,6 +876,7 @@ function Home() {
         scrollEventThrottle={16}
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
         // The greeting block is feed content now: it scrolls away under the
         // wordmark bar and comes back when the list returns to the top. The
         // overlaid compact header owns the status bar for both states.
