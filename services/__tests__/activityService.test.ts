@@ -97,8 +97,16 @@ describe("activityService", () => {
 
     subscribeToActivityChanges("user-1", onChange);
 
-    expect(mockChannel).toHaveBeenCalledWith("activity:user-1");
+    expect(mockChannel).toHaveBeenCalledWith(
+      expect.stringMatching(/^activity:user-1:\d+$/)
+    );
     expect(mockChannelSubscribe).toHaveBeenCalledWith(expect.any(Function));
+
+    // Concurrent subscribers (unseen-badge provider + Activity screen) must
+    // not share a topic: supabase-js reuses one channel per topic and throws
+    // when listeners are added after subscribe().
+    subscribeToActivityChanges("user-1", jest.fn());
+    expect(mockChannel.mock.calls[1][0]).not.toBe(mockChannel.mock.calls[0][0]);
 
     const onStatus = mockChannelSubscribe.mock.calls[0][0] as (
       status: string

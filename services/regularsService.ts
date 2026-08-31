@@ -19,6 +19,7 @@ export interface ProfileRegularPlace {
   location_name: string;
   location_address?: string | null;
   is_golden_glass?: boolean;
+  is_location_verified?: boolean;
   rank: number;
   review_count: number;
 }
@@ -105,14 +106,17 @@ export async function getProfileRegularPlaces(
   if (error) throw error;
   const places = (data ?? []) as ProfileRegularPlace[];
   const locationIds = places
-    .filter((place) => place.is_golden_glass == null)
+    .filter(
+      (place) =>
+        place.is_golden_glass == null || place.is_location_verified == null
+    )
     .map((place) => place.location_id)
     .filter(Number.isFinite);
   if (!locationIds.length) return places;
 
   const { data: awards } = await supabase
     .from("location_ratings")
-    .select("id,is_golden_glass")
+    .select("id,is_golden_glass,is_location_verified")
     .in("id", locationIds);
   const awardsByLocation = new Map(
     (awards ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
@@ -123,5 +127,10 @@ export async function getProfileRegularPlaces(
       place.is_golden_glass ??
       awardsByLocation.get(String(place.location_id)) ??
       false,
+    is_location_verified: Boolean(
+      place.is_location_verified ??
+      (awards ?? []).find((row) => String(row.id) === String(place.location_id))
+        ?.is_location_verified
+    ),
   }));
 }

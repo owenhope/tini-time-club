@@ -145,28 +145,10 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     padding: 20,
   },
-  warningContainer: {
-    alignItems: "center" as const,
-    marginBottom: 20,
-  },
-  warningTitle: {
-    ...t.typography.title,
-    color: t.colors.danger,
-    marginTop: t.spacing.md,
-    textAlign: "center" as const,
-  },
   description: {
     ...t.typography.body,
     color: t.colors.textSecondary,
     marginBottom: t.spacing.lg,
-  },
-  listContainer: {
-    marginBottom: 20,
-  },
-  listItem: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-    marginBottom: t.spacing.sm,
   },
   warningText: {
     ...t.typography.bodyStrong,

@@ -60,30 +60,5 @@ export const getRankTier = (
   return held;
 };
 
-export interface RankProgress {
-  tier: RankTier | null;
-  next: RankTier | null;
-  remaining: number;
-  fraction: number;
-}
-
-export const getRankProgress = (
-  reviewCount: number | null | undefined
-): RankProgress => {
-  const count = Math.max(0, reviewCount ?? 0);
-  const tier = getRankTier(count);
-  const next = RANK_TIERS.find((candidate) => candidate.min > count) ?? null;
-
-  if (!next) return { tier, next: null, remaining: 0, fraction: 1 };
-
-  const floor = tier?.min ?? 0;
-  return {
-    tier,
-    next,
-    remaining: next.min - count,
-    fraction: (count - floor) / (next.min - floor),
-  };
-};
-
 export const tierFor = (reviewCount: number | null | undefined) =>
   getRankTier(reviewCount) ?? RANK_TIERS[0];

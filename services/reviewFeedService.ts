@@ -77,7 +77,11 @@ const hydrateReviewLocationAwards = async (reviews: Review[]) => {
   const locationIds = [
     ...new Set(
       reviews
-        .filter((review) => review.location?.is_golden_glass == null)
+        .filter(
+          (review) =>
+            review.location?.is_golden_glass == null ||
+            review.location?.is_location_verified == null
+        )
         .map((review) => Number(review.location?.id))
         .filter((id) => Number.isFinite(id))
     ),
@@ -87,7 +91,7 @@ const hydrateReviewLocationAwards = async (reviews: Review[]) => {
   try {
     const { data, error } = await supabase
       .from("location_ratings")
-      .select("id,is_golden_glass")
+      .select("id,is_golden_glass,is_location_verified")
       .in("id", locationIds);
     if (error) throw error;
 
@@ -103,6 +107,12 @@ const hydrateReviewLocationAwards = async (reviews: Review[]) => {
               review.location.is_golden_glass ??
               awardsByLocation.get(String(review.location.id)) ??
               false,
+            is_location_verified: Boolean(
+              review.location.is_location_verified ??
+              (data ?? []).find(
+                (row) => String(row.id) === String(review.location?.id)
+              )?.is_location_verified
+            ),
           }
         : review.location,
     }));

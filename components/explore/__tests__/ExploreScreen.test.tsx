@@ -83,6 +83,7 @@ jest.mock("@/theme", () => ({
       colors: { surfaceInk: "ink", background: "paper" },
       spacing: { sm: 4 },
     }),
+  useTheme: () => ({ colors: { onInk: "paper" } }),
 }));
 
 describe("ExploreScreen", () => {

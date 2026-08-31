@@ -6,7 +6,6 @@ export {
   type ThemePreference,
 } from "./ThemeProvider";
 export {
-  BRAND,
   lightColors,
   darkColors,
   spacing,
@@ -15,8 +14,6 @@ export {
   compactDisplayTypography,
   fonts,
   elevation,
-  duration,
-  easing,
   PRESS_SCALE,
   HIT_SLOP,
   type ThemeColors,

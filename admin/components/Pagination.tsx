@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { PER_PAGE_OPTIONS } from "@/lib/pagination";
 
-export {
-  DEFAULT_PER_PAGE,
-  PER_PAGE_OPTIONS,
-  parsePerPage,
-} from "@/lib/pagination";
-
 /**
  * Shared table pagination: count, page-size links, previous/next. URL-based
  * so multiple tables on one page paginate independently via their own

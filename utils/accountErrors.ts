@@ -8,7 +8,7 @@
  * Without this the user sees a raw Postgres error ("Failed to update profile")
  * and every subsequent write fails the same way, with no path out.
  */
-export const NO_ROWS = "PGRST116";
+const NO_ROWS = "PGRST116";
 
 export const ACCOUNT_GONE_MESSAGE =
   "This account is no longer available. Please sign in again.";

@@ -43,7 +43,7 @@ const idForDate = (date: Date) =>
     date.getMonth() + 1
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-export async function ensureFridayMartiniReminder(): Promise<void> {
+async function ensureFridayMartiniReminder(): Promise<void> {
   try {
     const permissions = await Notifications.getPermissionsAsync();
     if (!permissions.granted) return;
@@ -92,7 +92,7 @@ export async function syncFridayMartiniReminder(
   }
 }
 
-export async function cancelFridayMartiniReminder(): Promise<void> {
+async function cancelFridayMartiniReminder(): Promise<void> {
   try {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     await Promise.all(

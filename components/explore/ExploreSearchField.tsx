@@ -19,6 +19,7 @@ interface ExploreSearchFieldProps {
   placeholder: string;
   onClear?: () => void;
   trailing?: ReactNode;
+  autoFocus?: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ export function ExploreSearchField({
   placeholder,
   onClear,
   trailing,
+  autoFocus,
 }: ExploreSearchFieldProps) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -45,6 +47,7 @@ export function ExploreSearchField({
         onChangeText={onChangeText}
         placeholderTextColor={colors.textMuted}
         returnKeyType="search"
+        autoFocus={autoFocus}
       />
       {trailing}
       {value.length > 0 ? (

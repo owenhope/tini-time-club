@@ -14,6 +14,18 @@
 - `admin/` is a separate Next.js app. When changing it, read
   [`admin/AGENTS.md`](admin/AGENTS.md) first.
 
+## Local runtimes
+
+- The native app and the admin web app use different dev servers. Run
+  `npm run start:dev` for the Expo dev client and iOS simulator; it serves
+  Metro on port `8081`.
+- Run `npm --prefix admin run dev` for the separate Next.js admin app; it
+  serves the browser at `http://localhost:3001`. Use this URL for admin and
+  public web testing. Do not open the Expo server as the admin web app.
+- When both are needed, keep both processes running and verify the response
+  headers: the admin URL should report `X-Powered-By: Next.js`, while the Expo
+  server is only for the native client.
+
 ## Before changing code
 
 - Check `git status --short --branch` and preserve unrelated user changes.
@@ -64,6 +76,23 @@ development API when appropriate.
   `supabase/.temp/linked-project.json` and compare it with the backend selected
   by the active EAS environment. A successful push to the wrong linked project
   is still the wrong deployment.
+- A Supabase preview branch named `development` is not selected by plain
+  `supabase db push`. If the task names that branch, resolve its database URL
+  first and pass it explicitly to both dry-run and push; keep the URL in a
+  shell variable and never print it:
+
+  ```sh
+  project_ref=$(sed -n 's/.*"ref":"\([^\"]*\)".*/\1/p' supabase/.temp/linked-project.json)
+  branch_db_url=$(supabase branches get development --project-ref "$project_ref" --output json | jq -r '.POSTGRES_URL')
+  supabase db push --db-url "$branch_db_url" --dry-run
+  supabase db push --db-url "$branch_db_url"
+  unset branch_db_url project_ref
+  ```
+
+- Before applying a named branch migration, confirm that its hostname matches
+  the app's target environment and that the dry-run reports the expected
+  pending migration. Afterward, verify the migration list and the affected
+  API/RPC through that same backend before reloading the client.
 - Add a new timestamped migration for changes already applied remotely; do not
   rewrite an applied migration. Use `supabase db push --dry-run` before a real
   push, and run `supabase migration list` afterward.

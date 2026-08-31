@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
@@ -35,7 +35,7 @@ export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
   icon?: keyof typeof Ionicons.glyphMap;
-  customIcon?: "martini-shaker";
+  customIcon?: "martini-shaker" | "verified-business";
   label?: string;
   onPress: () => void;
   accessibilityLabel: string;
@@ -60,6 +60,8 @@ export interface AppHeaderProps {
   imageUri?: string | null;
   /** Optional mark rendered immediately after a media title. */
   titleAccessory?: React.ReactNode;
+  /** Optional mark rendered immediately before a media or compact title. */
+  titleLeadingAccessory?: React.ReactNode;
   /** Optional title color shared by the media and collapsed title states. */
   titleColor?: string;
   /** Variant A's single control, or variant B's trailing one. */
@@ -76,6 +78,11 @@ export interface AppHeaderProps {
   below?: React.ReactNode;
   /** Variant B: replaces the centred title with compact custom controls. */
   compactContent?: React.ReactNode;
+  /** Variant B: centre `compactContent` between balanced ends like a title. */
+  compactContentCentered?: boolean;
+  /** Variant B: no paper fill or hairline — the bar floats over content on
+   *  the media variant's soft ink scrim, with scrim-plated controls. */
+  transparent?: boolean;
   /** Handles keep their owner's capitalisation. */
   preserveCase?: boolean;
   /** Variant C only: reduce a dense media title by one point. */
@@ -152,6 +159,8 @@ const NavActionControl = ({
   const renderIcon = (iconSize: number) =>
     action.customIcon === "martini-shaker" ? (
       <MartiniShakerIcon size={iconSize} color={glyph} />
+    ) : action.customIcon === "verified-business" ? (
+      <MaterialIcons name="verified" size={iconSize} color={glyph} />
     ) : action.icon ? (
       <Ionicons name={action.icon} size={iconSize} color={glyph} />
     ) : null;
@@ -235,7 +244,10 @@ const CompactBar = ({
   overlay,
   preserveCase,
   compactContent,
+  compactContentCentered,
+  transparent,
   titleAccessory,
+  titleLeadingAccessory,
   titleColor,
 }: {
   title: string;
@@ -248,7 +260,10 @@ const CompactBar = ({
   overlay?: boolean;
   preserveCase?: boolean;
   compactContent?: React.ReactNode;
+  compactContentCentered?: boolean;
+  transparent?: boolean;
   titleAccessory?: React.ReactNode;
+  titleLeadingAccessory?: React.ReactNode;
   titleColor?: string;
 }) => {
   const styles = useStyles();
@@ -273,19 +288,47 @@ const CompactBar = ({
         onBrand && styles.compactBrand,
         { paddingTop: insets.top + 8 },
         overlay && styles.compactOverlay,
+        transparent && styles.compactTransparent,
         progress ? { opacity: progress } : null,
       ]}
       pointerEvents={overlay && !collapsed ? "none" : "auto"}
     >
-      <View
-        style={[
-          styles.compactFill,
-          onInk && styles.compactFillInk,
-          onBrand && styles.compactFillBrand,
-        ]}
-        pointerEvents="none"
-      />
-      {compactContent ? (
+      {transparent ? (
+        // No paper plate — but bare white controls vanish over light content,
+        // so the bar borrows the media variant's soft ink scrim.
+        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Defs>
+            <LinearGradient id="compactScrim" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={colors.overlay} stopOpacity={0.9} />
+              <Stop offset="1" stopColor={colors.overlay} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#compactScrim)"
+          />
+        </Svg>
+      ) : (
+        <View
+          style={[
+            styles.compactFill,
+            onInk && styles.compactFillInk,
+            onBrand && styles.compactFillBrand,
+          ]}
+          pointerEvents="none"
+        />
+      )}
+      {compactContent && compactContentCentered ? (
+        <>
+          <View style={[styles.compactEnd, { width: leadingWidth }]} />
+          <View style={[styles.compactTitleRow, styles.compactCentered]}>
+            {compactContent}
+          </View>
+        </>
+      ) : compactContent ? (
         <View style={styles.compactCustomContent}>{compactContent}</View>
       ) : (
         <>
@@ -307,6 +350,7 @@ const CompactBar = ({
             ) : null}
           </View>
           <View style={styles.compactTitleRow}>
+            {titleLeadingAccessory}
             <Text
               style={[
                 styles.compactTitle,
@@ -333,7 +377,9 @@ const CompactBar = ({
         {right.map((action) => (
           <NavActionControl
             key={getActionKey(action)}
-            tone={onInk || onBrand ? "onInk" : "outline"}
+            tone={
+              transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
+            }
             action={action}
             size={19}
           />
@@ -350,12 +396,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   meta,
   imageUri,
   titleAccessory,
+  titleLeadingAccessory,
   trailing,
   leading,
   actions,
   onBack,
   below,
   compactContent,
+  compactContentCentered = false,
+  transparent = false,
   largeTrailing,
   preserveCase = false,
   mediaTitleSize = "default",
@@ -415,7 +464,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         overlay={overlay}
         preserveCase={preserveCase}
         compactContent={compactContent}
+        compactContentCentered={compactContentCentered}
+        transparent={transparent}
         titleAccessory={titleAccessory}
+        titleLeadingAccessory={titleLeadingAccessory}
         titleColor={titleColor}
       />
     );
@@ -574,6 +626,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         <Animated.View style={[styles.mediaIdentity, fade]}>
           <View style={styles.mediaTitleRow}>
+            {titleLeadingAccessory}
             <Text
               style={[
                 styles.mediaTitle,
@@ -845,6 +898,12 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     textAlign: "center" as const,
     color: t.colors.text,
+  },
+  compactTransparent: {
+    borderBottomWidth: 0,
+  },
+  compactCentered: {
+    justifyContent: "center" as const,
   },
   compactTitleRow: {
     flex: 1,

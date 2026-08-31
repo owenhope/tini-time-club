@@ -39,7 +39,18 @@ export type PlaceInfoParams = {
   lat: string;
   lon: string;
   isGoldenGlass?: "0" | "1";
+  isLocationVerified?: "0" | "1";
 };
+
+/** Params shown on the place-verification claim screen. */
+export type LocationClaimParams = {
+  locationId: string | number;
+  name: string;
+  address?: string;
+};
+
+/** Params shown on the business-verification information screen. */
+export type LocationVerificationInfoParams = LocationClaimParams;
 
 /** Params that focus the places map on a location. */
 export type PlacesMapParams = {
@@ -173,6 +184,28 @@ export const routes = {
   /** Place details/info sheet. */
   placeInfo: (params: PlaceInfoParams) =>
     ({ pathname: "/place-info", params }) as const satisfies Href,
+
+  /** Place business-verification claim screen. */
+  locationClaim: (params: LocationClaimParams) =>
+    ({
+      pathname: "/location-claim",
+      params: {
+        locationId: String(params.locationId),
+        name: params.name,
+        address: params.address ?? "",
+      },
+    }) as const satisfies Href,
+
+  /** Business-verification explanation before starting a claim. */
+  locationVerificationInfo: (params: LocationVerificationInfoParams) =>
+    ({
+      pathname: "/location-verification-info",
+      params: {
+        locationId: String(params.locationId),
+        name: params.name,
+        address: params.address ?? "",
+      },
+    }) as const satisfies Href,
 
   /** Compatibility alias for callers that still think in terms of the map. */
   places: (params?: PlacesMapParams) =>

@@ -165,7 +165,9 @@ async function hydrateReviews(
       locationIds.length
         ? client
             .from("location_ratings")
-            .select("id,rating,total_ratings,is_golden_glass")
+            .select(
+              "id,rating,total_ratings,is_golden_glass,is_location_verified"
+            )
             .in("id", locationIds)
         : Promise.resolve({ data: [] }),
     ]);
@@ -206,6 +208,7 @@ async function hydrateReviews(
             rating: rating?.rating ?? null,
             total_ratings: rating?.total_ratings ?? 0,
             is_golden_glass: Boolean(rating?.is_golden_glass),
+            is_location_verified: Boolean(rating?.is_location_verified),
           }
         : null,
       likes_count: likesByReview.get(String(row.id)) ?? 0,
@@ -454,7 +457,7 @@ async function getLocations(
   let query = client
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
     )
     .gte("total_ratings", 2)
     .order("rating", { ascending: false, nullsFirst: false })
@@ -478,7 +481,7 @@ async function getLocation(client: ReturnType<typeof createClient>, body: any) {
   const { data, error } = await client
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
     )
     .eq("id", Number(body.locationId))
     .single();
@@ -521,14 +524,17 @@ async function getLocationsInView(
   if (error) throw error;
   const rows = data ?? [];
   const locationIds = rows
-    .filter((row: any) => row.is_golden_glass == null)
+    .filter(
+      (row: any) =>
+        row.is_golden_glass == null || row.is_location_verified == null
+    )
     .map((row: any) => row.id)
     .filter(Boolean);
   if (!locationIds.length) return rows;
 
   const { data: awards } = await client
     .from("location_ratings")
-    .select("id,is_golden_glass")
+    .select("id,is_golden_glass,is_location_verified")
     .in("id", locationIds);
   const awardsByLocation = new Map(
     (awards ?? []).map((row: any) => [
@@ -540,6 +546,11 @@ async function getLocationsInView(
     ...row,
     is_golden_glass:
       row.is_golden_glass ?? awardsByLocation.get(String(row.id)) ?? false,
+    is_location_verified: Boolean(
+      row.is_location_verified ??
+      (awards ?? []).find((award: any) => String(award.id) === String(row.id))
+        ?.is_location_verified
+    ),
   }));
 }
 

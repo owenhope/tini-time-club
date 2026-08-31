@@ -1,4 +1,5 @@
 import type { AdminReviewRow } from "@/lib/reviewTypes";
+import type { AdminLocationClaim } from "@/lib/claimTypes";
 
 export interface AdminLocation {
   id: number;
@@ -6,6 +7,8 @@ export interface AdminLocation {
   address: string | null;
   rating: number | null;
   total_ratings: number;
+  is_golden_glass?: boolean;
+  is_location_verified?: boolean;
   neighborhood?: string | null;
   region_id?: number | null;
   golden_glass_eligible?: boolean;
@@ -24,6 +27,8 @@ export interface MapPlace {
   taste_avg: number | null;
   presentation_avg: number | null;
   total_ratings: number;
+  is_golden_glass?: boolean;
+  is_location_verified?: boolean;
 }
 
 export interface AdminRegion {
@@ -73,4 +78,6 @@ export interface AdminLocationDetail extends AdminLocation {
   created_by: string;
   all_reviews: number;
   reviews: AdminReviewRow[];
+  claims: AdminLocationClaim[];
+  is_location_verified?: boolean;
 }

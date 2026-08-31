@@ -22,14 +22,6 @@
  * from the brand greens so it still reads as Tini Time Club.
  */
 
-// Brand anchors, kept as-is for fills and large decorative areas.
-export const BRAND = {
-  green: "#336654",
-  purple: "#B6A3E2",
-  chartreuse: "#F2FF71",
-  pimento: "#E8763D",
-} as const;
-
 const palette = {
   // Green ramp — THE brand. #336654 is 6.31:1 on white.
   green900: "#336654",
@@ -407,24 +399,6 @@ export const radius = {
   sheet: 28, // === xl — sheets / modals
 } as const;
 
-/**
- * Motion. Fast and confident: press is 120ms, state changes 180ms, sheets and
- * route transitions 280ms. `spring` is reserved for the two celebratory
- * moments (a review posting, a rank-up) and never used for navigation.
- */
-export const duration = {
-  fast: 120,
-  base: 180,
-  slow: 280,
-} as const;
-
-/** Cubic-bezier control points, for Easing.bezier(...spread). */
-export const easing = {
-  out: [0.2, 0.8, 0.3, 1],
-  inOut: [0.6, 0, 0.3, 1],
-  spring: [0.22, 1.3, 0.36, 1],
-} as const;
-
 /** Filled controls darken and shrink slightly on press. No ripple. */
 export const PRESS_SCALE = 0.97;
 
@@ -443,13 +417,21 @@ export const fonts = {
 } as const;
 
 export const typography = {
-  // Six sizes, five faces, and nine semantic roles. Theme mode never changes
+  // Seven sizes, five faces, and ten semantic roles. Theme mode never changes
   // geometry; light/dark hierarchy belongs to the colour tones above.
   display: {
     fontFamily: fonts.black,
     fontSize: 32,
     lineHeight: 36,
     letterSpacing: -0.8,
+  },
+  // The lowercase brand lockup — same geometry as the public site header's
+  // "tini time club" (Figtree Black 20/28, -0.5 tracking).
+  wordmark: {
+    fontFamily: fonts.black,
+    fontSize: 20,
+    lineHeight: 28,
+    letterSpacing: -0.5,
   },
   title: {
     fontFamily: fonts.bold,

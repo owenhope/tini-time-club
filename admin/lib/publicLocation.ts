@@ -37,6 +37,8 @@ export interface PublicLocation {
   taste_avg: number | null;
   presentation_avg: number | null;
   total_ratings: number;
+  is_golden_glass: boolean;
+  is_location_verified: boolean;
   reviews: PublicLocationReview[];
   regulars: PublicLocationRegular[];
 }
@@ -51,7 +53,7 @@ export const fetchPublicLocation = async (
   const { data: location, error: locationError } = await client
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
     )
     .eq("id", locationId)
     .single();
@@ -142,6 +144,8 @@ export const fetchPublicLocation = async (
         ? null
         : Number(location.presentation_avg),
     total_ratings: Number(location.total_ratings) || 0,
+    is_golden_glass: Boolean(location.is_golden_glass),
+    is_location_verified: Boolean(location.is_location_verified),
     reviews,
     regulars,
   };

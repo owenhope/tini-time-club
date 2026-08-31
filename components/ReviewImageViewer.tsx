@@ -83,7 +83,11 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
     }).start();
   };
 
-  const panResponder = useRef(
+  // The PanResponder is created once; its callbacks run only from native
+  // gesture events, never during render, so the ref reads they capture are
+  // safe despite the compiler's render-time-read heuristic.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
         gestureState.numberActiveTouches === 1 &&
@@ -98,7 +102,7 @@ const ReviewImageViewer: React.FC<ReviewImageViewerProps> = ({
         finishPan(gestureState.dy, gestureState.dx);
       },
     })
-  ).current;
+  );
 
   const imageAspectRatio =
     imageSize.width > 0 && imageSize.height > 0

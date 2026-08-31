@@ -10,6 +10,7 @@ import {
 import MentionRichText from "@/components/MentionRichText";
 import type { WebMentionSpan } from "@/lib/mentions";
 import { RANK_TIERS, getRankTier } from "@/lib/ranking";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 
 /**
  * Web replica of the mobile app's ReviewItem (components/ReviewItem.tsx).
@@ -43,6 +44,8 @@ export interface ShareCardReview {
     address: string | null;
     rating: number | null;
     total_ratings: number | null;
+    is_golden_glass?: boolean;
+    is_location_verified?: boolean;
   } | null;
   spirit: { name: string | null } | null;
   type: { name: string | null } | null;
@@ -460,9 +463,15 @@ export default function ReviewShareCard({
           style={{ background: SCRIM_STRONG }}
         >
           <p className="flex min-w-0 items-center text-[15px] font-bold leading-5">
+            {review.location?.is_golden_glass ? (
+              <GoldenGlassMark size={20} />
+            ) : null}
             <span className="truncate">
               {review.location?.name ?? "Martini review"}
             </span>
+            {review.location?.is_location_verified ? (
+              <VerifiedBadge size={14} />
+            ) : null}
             <ChevronForward size={14} color="#8FB8A8" />
           </p>
           {cityRegion ? (

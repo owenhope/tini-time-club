@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import * as Linking from "expo-linking";
 import { supabase } from "@/utils/supabase";
 
-export const AUTH_MESSAGES = {
+const AUTH_MESSAGES = {
   magicLink: {
     error: "Magic Link Error",
     invalidEmail: "Please enter a valid email address",
@@ -57,5 +57,3 @@ export const useAuth = () => {
 
   return { loading, continueWithEmail };
 };
-
-export default useAuth;

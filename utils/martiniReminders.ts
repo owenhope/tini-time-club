@@ -132,7 +132,7 @@ const inWindow = (date: Date, month: number, from: number, to: number) =>
   date.getMonth() === month && date.getDate() >= from && date.getDate() <= to;
 
 /** First matching rule wins; windows are chosen so at most one Friday hits each. */
-export const SEASONAL_REMINDERS: readonly SeasonalRule[] = [
+const SEASONAL_REMINDERS: readonly SeasonalRule[] = [
   {
     // First Friday of the year.
     matches: (d) => inWindow(d, 0, 1, 7),

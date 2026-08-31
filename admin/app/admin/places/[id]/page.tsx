@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
 import ClickableRow from "@/components/ClickableRow";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 import {
   ActionLink,
   DataTable,
@@ -10,8 +11,15 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
-import { updateLocation } from "@/lib/actions";
+import {
+  approveLocationClaim,
+  rejectLocationClaim,
+  revokeLocationVerification,
+  updateLocation,
+  verifyLocationDirect,
+} from "@/lib/actions";
 import { formatAdminDate, formatOverallRating } from "@/lib/format";
+import { formatLocationClaimStatus } from "@/lib/claimTypes";
 import { fetchAdminLocation, fetchAdminRegions } from "@/lib/placeData";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +61,9 @@ export default async function PlaceDetailPage({
               ? "An ineligible place needs a reason."
               : query.error === "placeId"
                 ? "That Google Place ID is invalid or already belongs to another place."
-                : null;
+                : query.error === "verificationReason"
+                  ? "Enter a private reason for this verification."
+                  : null;
 
   return (
     <AdminShell active="locations">
@@ -61,6 +71,9 @@ export default async function PlaceDetailPage({
         backLink={{ href: "/admin/places", label: "Back to places" }}
         eyebrow="Place management"
         title={location.name ?? `Place #${location.id}`}
+        titleLeadingAccessory={
+          location.is_golden_glass ? <GoldenGlassMark size={22} /> : null
+        }
         description={location.address ?? "No address on file."}
         stats={[
           {
@@ -86,6 +99,11 @@ export default async function PlaceDetailPage({
             value: formatAdminDate(location.inserted_at),
             tone: "muted",
           },
+          {
+            label: "Verification",
+            value: location.is_location_verified ? "Verified" : "Not verified",
+            tone: location.is_location_verified ? "purple" : "muted",
+          },
         ]}
         surface="transparent"
         density="compact"
@@ -108,105 +126,256 @@ export default async function PlaceDetailPage({
       />
 
       <div className="grid grid-cols-12 gap-5 px-8 py-6">
-        <Panel title="Place details" className="col-span-12 xl:col-span-4">
-          <form action={saveLocation} className="space-y-4 p-4">
-            {query.updated ? (
-              <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950 ring-1 ring-inset ring-emerald-200">
-                Place updated.
+        <div className="col-span-12 space-y-5 xl:col-span-6">
+          <Panel title="Place details">
+            <form action={saveLocation} className="space-y-4 p-4">
+              {query.updated ? (
+                <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950 ring-1 ring-inset ring-emerald-200">
+                  {query.updated === "verified"
+                    ? "Place verification updated."
+                    : "Place updated."}
+                </div>
+              ) : null}
+              {errorMessage ? (
+                <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-bold text-red-700 ring-1 ring-inset ring-red-100">
+                  {errorMessage}
+                </div>
+              ) : null}
+              <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Name
+                <input
+                  name="name"
+                  required
+                  maxLength={160}
+                  defaultValue={location.name ?? ""}
+                  className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                />
+              </label>
+              <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Address
+                <textarea
+                  name="address"
+                  maxLength={300}
+                  rows={3}
+                  defaultValue={location.address ?? ""}
+                  className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                />
+              </label>
+              <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Google Place ID
+                <input
+                  name="place_id"
+                  maxLength={255}
+                  defaultValue={location.place_id ?? ""}
+                  className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 font-mono text-xs font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                />
+              </label>
+              <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                  Automatic region
+                </div>
+                <div className="mt-1 text-sm font-bold text-stone-900">
+                  {regions.find((region) => region.id === location.region_id)
+                    ?.name ?? "Outside configured catchments"}
+                </div>
+                <p className="mt-1 text-xs leading-5 text-stone-500">
+                  Detected from this place&apos;s coordinates and the region
+                  catchment. Update the region map bounds to change matching.
+                </p>
               </div>
-            ) : null}
-            {errorMessage ? (
-              <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-bold text-red-700 ring-1 ring-inset ring-red-100">
-                {errorMessage}
-              </div>
-            ) : null}
-            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-              Name
-              <input
-                name="name"
-                required
-                maxLength={160}
-                defaultValue={location.name ?? ""}
-                className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-              Address
-              <textarea
-                name="address"
-                maxLength={300}
-                rows={3}
-                defaultValue={location.address ?? ""}
-                className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-              Google Place ID
-              <input
-                name="place_id"
-                maxLength={255}
-                defaultValue={location.place_id ?? ""}
-                className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 font-mono text-xs font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
-              <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-                Automatic region
-              </div>
-              <div className="mt-1 text-sm font-bold text-stone-900">
-                {regions.find((region) => region.id === location.region_id)
-                  ?.name ?? "Outside configured catchments"}
-              </div>
-              <p className="mt-1 text-xs leading-5 text-stone-500">
-                Detected from this place&apos;s coordinates and the region
-                catchment. Update the region map bounds to change matching.
-              </p>
-            </div>
-            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-              Neighborhood
-              <input
-                name="neighborhood"
-                maxLength={120}
-                defaultValue={location.neighborhood ?? ""}
-                placeholder="Optional display neighborhood"
-                className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <label className="flex items-start gap-2 text-sm font-semibold text-stone-700">
-              <input
-                name="golden_glass_eligible"
-                type="checkbox"
-                defaultChecked={location.golden_glass_eligible !== false}
-                className="mt-0.5"
-              />
-              <span>
-                Golden Glass eligible
-                <span className="mt-0.5 block text-xs font-normal text-stone-500">
-                  Turn this off only with a documented reason.
+              <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Neighborhood
+                <input
+                  name="neighborhood"
+                  maxLength={120}
+                  defaultValue={location.neighborhood ?? ""}
+                  placeholder="Optional display neighborhood"
+                  className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                />
+              </label>
+              <label className="flex items-start gap-2 text-sm font-semibold text-stone-700">
+                <input
+                  name="golden_glass_eligible"
+                  type="checkbox"
+                  defaultChecked={location.golden_glass_eligible !== false}
+                  className="mt-0.5"
+                />
+                <span>
+                  Golden Glass eligible
+                  <span className="mt-0.5 block text-xs font-normal text-stone-500">
+                    Turn this off only with a documented reason.
+                  </span>
                 </span>
-              </span>
-            </label>
-            <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
-              Ineligibility reason
-              <textarea
-                name="golden_glass_ineligibility_reason"
-                maxLength={500}
-                rows={2}
-                defaultValue={location.golden_glass_ineligibility_reason ?? ""}
-                placeholder="Required when eligibility is off"
-                className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-              />
-            </label>
-            <button
-              type="submit"
-              className="h-9 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800"
-            >
-              Save place
-            </button>
-          </form>
-        </Panel>
+              </label>
+              <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                Ineligibility reason
+                <textarea
+                  name="golden_glass_ineligibility_reason"
+                  maxLength={500}
+                  rows={2}
+                  defaultValue={
+                    location.golden_glass_ineligibility_reason ?? ""
+                  }
+                  placeholder="Required when eligibility is off"
+                  className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                />
+              </label>
+              <button
+                type="submit"
+                className="h-9 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800"
+              >
+                Save place
+              </button>
+            </form>
+          </Panel>
 
-        <div className="col-span-12 xl:col-span-8">
+          <Panel title="Business verification">
+            <div className="space-y-4 p-4 text-sm">
+              <p className="text-stone-500">
+                {location.is_location_verified
+                  ? "This place currently displays the Verified Business mark."
+                  : "This place is not currently verified."}
+              </p>
+              {location.is_location_verified ? (
+                <form
+                  action={revokeLocationVerification.bind(
+                    null,
+                    String(location.id)
+                  )}
+                  className="space-y-2"
+                >
+                  <input
+                    name="reason"
+                    required
+                    placeholder="Private revocation reason"
+                    className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
+                    Revoke verification
+                  </button>
+                </form>
+              ) : (
+                <form
+                  action={verifyLocationDirect.bind(null, String(location.id))}
+                  className="grid gap-3 rounded-md border border-stone-200 bg-stone-50 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end"
+                >
+                  <label className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500">
+                    Private verification reason
+                    <input
+                      name="reason"
+                      required
+                      maxLength={1000}
+                      placeholder="What did Tini Time Club review?"
+                      className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </label>
+                  <button className="h-10 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800">
+                    Verify place
+                  </button>
+                  <p className="text-xs leading-5 text-stone-500 lg:col-span-2">
+                    This creates an internal verification record and does not
+                    grant business manager access.
+                  </p>
+                </form>
+              )}
+              <div className="border-t border-stone-200 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-stone-900">Claims</h3>
+                    <p className="mt-0.5 text-xs text-stone-500">
+                      Review and manage claims for this place.
+                    </p>
+                  </div>
+                  <ActionLink href="/admin/claims">All claims</ActionLink>
+                </div>
+                {location.claims.length === 0 ? (
+                  <p className="mt-3 text-sm text-stone-500">
+                    No claims have been submitted for this place.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {location.claims.map((claim) => (
+                      <div
+                        key={claim.id}
+                        className="rounded-md border border-stone-200 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <StatusPill
+                                tone={
+                                  claim.status === "approved"
+                                    ? "green"
+                                    : claim.status === "pending"
+                                      ? "purple"
+                                      : undefined
+                                }
+                              >
+                                {formatLocationClaimStatus(claim.status)}
+                              </StatusPill>
+                              <span className="text-xs text-stone-500">
+                                {formatAdminDate(claim.submitted_at)}
+                              </span>
+                            </div>
+                            <p className="mt-2 font-bold text-stone-900">
+                              {claim.contact_name ?? "Redacted requester"}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              {claim.requester_profile_id === null
+                                ? "Internal Tini Time Club verification"
+                                : `${claim.business_role} · ${claim.business_email ?? "No business email"}`}
+                            </p>
+                            {claim.requester_profile_id === null &&
+                            claim.admin_notes ? (
+                              <p className="mt-1 text-xs text-stone-500">
+                                Reason: {claim.admin_notes}
+                              </p>
+                            ) : null}
+                          </div>
+                          <ActionLink href={`/admin/claims/${claim.id}`}>
+                            Details
+                          </ActionLink>
+                        </div>
+                        {claim.status === "pending" ? (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-100 pt-3">
+                            <form
+                              action={approveLocationClaim.bind(null, claim.id)}
+                            >
+                              <button className="rounded-md bg-emerald-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">
+                                Approve
+                              </button>
+                            </form>
+                            <form
+                              action={rejectLocationClaim.bind(null, claim.id)}
+                              className="flex min-w-0 flex-1 flex-wrap gap-2"
+                            >
+                              <input
+                                name="rejection_reason"
+                                required
+                                placeholder="Reason to reject"
+                                className="min-w-40 flex-1 rounded-md border border-stone-300 px-2 py-2 text-xs"
+                              />
+                              <input
+                                name="admin_notes"
+                                placeholder="Private note"
+                                className="min-w-32 flex-1 rounded-md border border-stone-300 px-2 py-2 text-xs"
+                              />
+                              <button className="rounded-md border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
+                                Reject
+                              </button>
+                            </form>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="col-span-12 xl:col-span-6">
           <DataTable
             columns={[
               "Posted",

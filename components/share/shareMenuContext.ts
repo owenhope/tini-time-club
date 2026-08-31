@@ -16,10 +16,7 @@ export interface ShareMenuConfig {
 
 export type ShareMenuContextValue = (config: ShareMenuConfig) => void;
 
-export const fallbackShowShareMenu: ShareMenuContextValue = ({
-  title,
-  actions,
-}) => {
+const fallbackShowShareMenu: ShareMenuContextValue = ({ title, actions }) => {
   Alert.alert(
     title,
     undefined,

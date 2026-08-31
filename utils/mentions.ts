@@ -1,9 +1,8 @@
 import type { MentionCandidate, MentionSpan } from "@/types/types";
 
-export const MAX_MENTIONS_PER_BODY = 5;
+const MAX_MENTIONS_PER_BODY = 5;
 /** The v2 RPCs reject payloads above this; never send one that would fail. */
-export const MAX_MENTION_SPANS_PER_BODY = 25;
-export const MAX_MENTION_BODY_LENGTH = 500;
+const MAX_MENTION_SPANS_PER_BODY = 25;
 
 export interface MentionQuery {
   start: number;

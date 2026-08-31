@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { Pressable, View, Text } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
@@ -17,6 +17,7 @@ import {
   RatingPips,
   SectionHeader,
   Skeleton,
+  LocationVerifiedBadge,
 } from "@/components/shared";
 import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
@@ -57,6 +58,7 @@ interface LocationType {
   phone_number?: string;
   website?: string;
   is_golden_glass?: boolean;
+  is_location_verified?: boolean;
 }
 
 const Location = () => {
@@ -131,6 +133,16 @@ const Location = () => {
   const hasRating = displayLocation?.rating != null && reviewCount > 0;
   const regularPreview = regulars.slice(0, 3);
   const shareLocation = useLocationShareMenu(displayLocation);
+  const openVerificationInfo = useCallback(() => {
+    if (!displayLocation) return;
+    router.push(
+      routes.locationVerificationInfo({
+        locationId: displayLocation.id,
+        name: displayLocation.name,
+        address: displayLocation.address,
+      })
+    );
+  }, [displayLocation, router]);
 
   /**
    * The two controls the venue carries, in the order the drawing puts them.
@@ -146,6 +158,15 @@ const Location = () => {
         accessibilityLabel: `Share ${displayLocation.name}`,
         onPress: shareLocation,
       },
+      ...(!displayLocation.is_location_verified
+        ? [
+            {
+              customIcon: "verified-business" as const,
+              accessibilityLabel: "Learn about business verification",
+              onPress: openVerificationInfo,
+            },
+          ]
+        : []),
       {
         icon: "information-circle-outline",
         accessibilityLabel: "Location information",
@@ -158,6 +179,9 @@ const Location = () => {
               lat: displayLocation.lat ? displayLocation.lat.toString() : "",
               lon: displayLocation.lon ? displayLocation.lon.toString() : "",
               isGoldenGlass: displayLocation.is_golden_glass ? "1" : "0",
+              isLocationVerified: displayLocation.is_location_verified
+                ? "1"
+                : "0",
             })
           ),
       },
@@ -182,7 +206,7 @@ const Location = () => {
     }
 
     return actions;
-  }, [displayLocation, router, shareLocation]);
+  }, [displayLocation, openVerificationInfo, router, shareLocation]);
 
   const fetchSelectedLocation = useCallback(
     async (locationId: string) => {
@@ -207,6 +231,7 @@ const Location = () => {
             totalRatings > 0 ? Number(data.presentation_avg) : undefined,
           total_ratings: totalRatings,
           is_golden_glass: Boolean(data.is_golden_glass),
+          is_location_verified: Boolean(data.is_location_verified),
         };
 
         setSelectedLocation(formattedLocation);
@@ -224,12 +249,16 @@ const Location = () => {
     [viewerId]
   );
 
-  // Fetch the selected location from the "location_ratings" view
-  useEffect(() => {
-    if (locationIdParam) {
-      void fetchSelectedLocation(locationIdParam);
-    }
-  }, [fetchSelectedLocation, locationIdParam]);
+  // Verification can change while this screen is still mounted in the stack.
+  // Refresh on focus so returning from another screen reflects the current
+  // public identity state.
+  useFocusEffect(
+    useCallback(() => {
+      if (locationIdParam) {
+        void fetchSelectedLocation(locationIdParam);
+      }
+    }, [fetchSelectedLocation, locationIdParam])
+  );
 
   useEffect(() => {
     if (!displayLocation?.id) return;
@@ -436,11 +465,19 @@ const Location = () => {
                 variant="media"
                 ground="brand"
                 title={displayLocation?.name ?? ""}
-                titleAccessory={
+                titleLeadingAccessory={
                   displayLocation?.is_golden_glass ? (
                     <View accessible accessibilityLabel="Golden Glass">
                       <MartiniIcon size={22} color={colors.awardGold} filled />
                     </View>
+                  ) : null
+                }
+                titleAccessory={
+                  displayLocation?.is_location_verified ? (
+                    <LocationVerifiedBadge
+                      compact
+                      color={colors.onHeaderBrand}
+                    />
                   ) : null
                 }
                 mediaTitleSize="compact"

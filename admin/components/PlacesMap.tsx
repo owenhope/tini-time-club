@@ -13,6 +13,7 @@ import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import type { Marker } from "@googlemaps/markerclusterer";
 import type { MapBounds, MapPlace } from "@/lib/placeTypes";
 import { formatCityRegion } from "@/lib/format";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 
 // The app's light-theme pin colours (theme/tokens.ts): purple700 bubbles with
 // paper050 text. The admin map should read as the same product.
@@ -314,8 +315,13 @@ export default function PlacesMap({
           <div className="absolute bottom-4 left-4 w-80 max-w-[calc(100%-2rem)] rounded-2xl border border-stone-200 bg-white p-4 shadow-lg">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-base font-bold text-stone-900">
-                  {selected.name ?? "Unnamed place"}
+                <h3 className="flex min-w-0 items-center gap-2 text-base font-bold text-stone-900">
+                  {selected.is_golden_glass ? (
+                    <GoldenGlassMark size={20} />
+                  ) : null}
+                  <span className="truncate">
+                    {selected.name ?? "Unnamed place"}
+                  </span>
                 </h3>
                 <p className="truncate text-xs text-stone-500">
                   {formatCityRegion(selected.address) ||

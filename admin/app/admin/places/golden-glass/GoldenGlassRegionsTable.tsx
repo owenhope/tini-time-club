@@ -7,6 +7,7 @@ import {
   EmptyState,
   StatusPill,
 } from "@/components/AdminPrimitives";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 import { formatAdminDateTime } from "@/lib/format";
 import type { AdminRegion, GoldenGlassInspectionRow } from "@/lib/placeTypes";
 
@@ -144,8 +145,13 @@ export default function GoldenGlassRegionsTable({
                           className="bg-amber-50/50"
                         >
                           <td className="px-4 py-3 font-bold text-stone-900">
-                            {recipient.venue_name ??
-                              "Place #" + recipient.location_id}
+                            <span className="flex items-center gap-2">
+                              <GoldenGlassMark size={20} />
+                              <span>
+                                {recipient.venue_name ??
+                                  "Place #" + recipient.location_id}
+                              </span>
+                            </span>
                           </td>
                           <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
                             {recipient.calculated_rank}

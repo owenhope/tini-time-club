@@ -5,4 +5,6 @@ import test from "node:test";
 test("purple metric surfaces have a dark-mode background", () => {
   const css = readFileSync("app/globals.css", "utf8");
   assert.match(css, /html\.dark \.admin-theme \.bg-violet-50\s*\{/);
+  assert.match(css, /html\.dark \.admin-theme \.bg-violet-50\\\/60\s*\{/);
+  assert.match(css, /html\.dark \.admin-theme \.border-violet-100\s*\{/);
 });

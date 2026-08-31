@@ -13,7 +13,7 @@ const getExtra = (): ExtraConfig => {
 const getParamValue = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
-export const isDevelopmentBackend = () =>
+const isDevelopmentBackend = () =>
   getExtra()?.backendEnvironment === "development";
 
 export const getScreenshotSeed = (

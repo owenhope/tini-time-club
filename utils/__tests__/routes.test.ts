@@ -25,4 +25,21 @@ describe("Explore routes", () => {
   it("keeps place profiles on their existing public path", () => {
     expect(routes.place(42)).toBe("/places/42");
   });
+
+  it("builds the business-verification information route", () => {
+    expect(
+      routes.locationVerificationInfo({
+        locationId: 42,
+        name: "The Example Bar",
+        address: "123 Main Street",
+      })
+    ).toEqual({
+      pathname: "/location-verification-info",
+      params: {
+        locationId: "42",
+        name: "The Example Bar",
+        address: "123 Main Street",
+      },
+    });
+  });
 });

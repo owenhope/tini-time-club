@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { ProfileRegularPlace } from "@/services/regularsService";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
-import { MartiniIcon } from "@/components/shared";
+import { LocationVerifiedBadge, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
@@ -32,11 +32,14 @@ const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
       </View>
       <View style={styles.content}>
         <View style={styles.nameRow}>
+          {place.is_golden_glass ? (
+            <MartiniIcon size={20} color={colors.awardGold} filled />
+          ) : null}
           <Text style={styles.name} numberOfLines={1}>
             {place.location_name}
           </Text>
-          {place.is_golden_glass ? (
-            <MartiniIcon size={16} color={colors.awardGold} filled />
+          {place.is_location_verified ? (
+            <LocationVerifiedBadge compact />
           ) : null}
         </View>
         {subtitle ? (

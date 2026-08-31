@@ -286,7 +286,8 @@ class DatabaseService {
               location?.id != null &&
               (location.rating == null ||
                 (location.total_ratings ?? 0) <= 0 ||
-                location.is_golden_glass == null)
+                location.is_golden_glass == null ||
+                location.is_location_verified == null)
             );
           })
           .map((review) => Number(review.location.id))
@@ -299,7 +300,7 @@ class DatabaseService {
     try {
       const { data, error } = await supabase
         .from("location_ratings")
-        .select("id,rating,total_ratings,is_golden_glass")
+        .select("id,rating,total_ratings,is_golden_glass,is_location_verified")
         .in("id", missingLocationIds);
 
       if (error) throw error;
@@ -316,6 +317,7 @@ class DatabaseService {
           rating: rating.rating ?? null,
           total_ratings: rating.total_ratings ?? 0,
           is_golden_glass: Boolean(rating.is_golden_glass),
+          is_location_verified: Boolean(rating.is_location_verified),
         };
       });
     } catch (error) {
@@ -430,7 +432,9 @@ class DatabaseService {
             location?.id
               ? supabase
                   .from("location_ratings")
-                  .select("rating,total_ratings,is_golden_glass")
+                  .select(
+                    "rating,total_ratings,is_golden_glass,is_location_verified"
+                  )
                   .eq("id", location.id)
                   .maybeSingle()
               : Promise.resolve({ data: null, error: null }),
@@ -450,6 +454,9 @@ class DatabaseService {
                 rating: locationRating.data?.rating ?? null,
                 total_ratings: locationRating.data?.total_ratings ?? 0,
                 is_golden_glass: Boolean(locationRating.data?.is_golden_glass),
+                is_location_verified: Boolean(
+                  locationRating.data?.is_location_verified
+                ),
               }
             : location,
           likes_count: likes.count ?? 0,
@@ -828,9 +835,15 @@ class DatabaseService {
           .single();
 
         if (error) throw error;
-        return data;
+        return {
+          ...data,
+          is_golden_glass: Boolean(data.is_golden_glass),
+          is_location_verified: Boolean(data.is_location_verified),
+        };
       },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
+      // Verification can be changed by an admin while the member app is
+      // open. Do not serve a stale identity flag from the long-lived cache.
+      { cache: false }
     );
   }
 
@@ -850,109 +863,36 @@ class DatabaseService {
     if (!locationData) {
       throw new Error("Location data is required");
     }
-
-    const isMissingPlaceIdColumn = (error: any) =>
-      error?.code === "42703" &&
-      typeof error.message === "string" &&
-      error.message.includes("locations.place_id");
-    let placeIdSupported = true;
-
-    // Always try to find existing location by place_id first (most reliable)
-    // This is now the primary matching method since all locations have place_id
-    if (locationData.place_id) {
-      const { data: existingByPlaceId, error: placeIdError } = await supabase
-        .from("locations")
-        .select("id")
-        .eq("place_id", locationData.place_id)
-        .maybeSingle();
-
-      if (placeIdError) {
-        if (isMissingPlaceIdColumn(placeIdError)) {
-          placeIdSupported = false;
-        } else {
-          throw placeIdError;
-        }
-      }
-
-      if (existingByPlaceId) {
-        return existingByPlaceId.id;
-      }
-    }
-
-    // Fall back to matching by name and address only if place_id is not available
-    // This handles edge cases where place_id might be missing
-    if (locationData.name && locationData.address) {
-      const { data: existing, error: findError } = await supabase
-        .from("locations")
-        .select("id")
-        .eq("name", locationData.name)
-        .eq("address", locationData.address)
-        .maybeSingle();
-
-      if (findError) throw findError;
-
-      if (existing) {
-        // If we found by name/address but have a place_id, update it for future matches
-        if (locationData.place_id && placeIdSupported) {
-          const { error: backfillError } = await supabase
-            .from("locations")
-            .update({ place_id: locationData.place_id })
-            .eq("id", existing.id);
-          if (backfillError) {
-            if (isMissingPlaceIdColumn(backfillError)) {
-              placeIdSupported = false;
-            } else {
-              reportError("Error backfilling place_id:", backfillError);
-            }
-          }
-        }
-        return existing.id;
-      }
-    }
-
-    // Create new location.
-    const insertData: any = {
-      ...locationData,
-      created_by: userId,
-    };
-    if (!placeIdSupported) {
-      delete insertData.place_id;
-    }
-
-    // With a place_id, upsert against the unique index so two concurrent
-    // submissions for the same bar resolve to one row instead of racing
-    // between the lookup above and this insert.
-    if (locationData.place_id && placeIdSupported) {
-      const { data, error } = await supabase
-        .from("locations")
-        .upsert(insertData, { onConflict: "place_id" })
-        .select("id")
-        .single();
-
-      if (error && isMissingPlaceIdColumn(error)) {
-        const fallbackInsertData = { ...insertData };
-        delete fallbackInsertData.place_id;
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from("locations")
-          .insert(fallbackInsertData)
-          .select("id")
-          .single();
-
-        if (fallbackError) throw fallbackError;
-        return fallbackData.id;
-      }
-      if (error) throw error;
-      return data.id;
-    }
-
-    const { data, error } = await supabase
-      .from("locations")
-      .insert(insertData)
-      .select("id")
-      .single();
-
+    // Keep the public service signature so existing review/favorite callers do
+    // not change. The RPC derives auth.uid() itself; userId is intentionally
+    // not sent to the database and therefore cannot be spoofed by a caller.
+    void userId;
+    const point =
+      typeof locationData.location === "string"
+        ? locationData.location.match(
+            /^POINT\s*\(\s*(-?[\d.]+)\s+(-?[\d.]+)\s*\)$/i
+          )
+        : null;
+    const latitude = Number(
+      locationData.latitude ?? locationData.coordinates?.latitude ?? point?.[2]
+    );
+    const longitude = Number(
+      locationData.longitude ??
+        locationData.coordinates?.longitude ??
+        point?.[1]
+    );
+    const { data, error } = await supabase.rpc("resolve_or_create_location", {
+      p_name: locationData.name,
+      p_address: locationData.address ?? null,
+      p_place_id: locationData.place_id ?? null,
+      p_latitude: Number.isFinite(latitude) ? latitude : null,
+      p_longitude: Number.isFinite(longitude) ? longitude : null,
+    });
     if (error) throw error;
-    return data.id;
+    const resolved = Array.isArray(data) ? data[0] : data;
+    if (!resolved?.id)
+      throw new Error("Location resolver returned no location");
+    return String(resolved.id);
   }
 
   /**

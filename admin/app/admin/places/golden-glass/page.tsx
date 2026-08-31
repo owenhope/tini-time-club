@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 import { PageHeader } from "@/components/AdminPrimitives";
 import { refreshGoldenGlass } from "@/lib/actions";
 import { fetchAdminRegions, fetchGoldenGlassInspection } from "@/lib/placeData";
@@ -30,6 +31,7 @@ export default async function GoldenGlassPage({
         backLink={{ href: "/admin/places", label: "Back to places" }}
         eyebrow="Recognition inspection"
         title="Golden Glass"
+        titleLeadingAccessory={<GoldenGlassMark size={22} />}
         description="Manage regions and review the current Golden Glass recipients for each one. Click a region to expand its recipients."
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">

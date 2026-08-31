@@ -17,6 +17,7 @@ import { setFollowing } from "@/services/followService";
 import { useMembership } from "@/context/membership-context";
 import { runNavigation } from "@/utils/reviewItemMemo";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 export interface ProfileType {
   id: string;
@@ -45,6 +46,9 @@ export default function ProfileList({
 }: ProfileListProps) {
   const styles = useStyles();
   const { colors } = useTheme();
+  // Pushed follower/following screens scroll under the floating tab bar;
+  // embedded sheets float above it and keep their own padding.
+  const tabBarInset = useNativeTabBarContentInset();
   const { profile, loading: profileLoading } = useProfile();
   const { requireMembership } = useMembership();
   const openProfile = useOpenProfile();
@@ -233,7 +237,10 @@ export default function ProfileList({
         data={displayedProfiles}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          !embedded && { paddingBottom: tabBarInset },
+        ]}
       />
     </View>
   );

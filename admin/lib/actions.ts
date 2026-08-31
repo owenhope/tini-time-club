@@ -4,13 +4,28 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { toAdminDataError } from "@/lib/dataErrors";
-import { SESSION_COOKIE, createSessionToken } from "@/lib/session";
+import {
+  SESSION_COOKIE,
+  createSessionToken,
+  verifySessionToken,
+} from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   buildAdminNotificationRows,
   chunkNotificationRows,
   NOTIFICATION_BATCH_SIZE,
 } from "@/lib/notificationBroadcast";
+
+/**
+ * Server actions are registered app-wide, not per-route, so a POST carrying a
+ * known action id against one of the public share pages bypasses the /admin
+ * proxy matcher entirely. Every action that touches data re-asserts the
+ * operator session itself instead of trusting the route guard.
+ */
+async function requireAdminSession() {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!(await verifySessionToken(token))) redirect("/admin/login");
+}
 
 export async function login(formData: FormData) {
   const password = formData.get("password");
@@ -41,6 +56,7 @@ export async function logout() {
 }
 
 export async function setVerified(profileId: string, verified: boolean) {
+  await requireAdminSession();
   const { error } = await supabaseAdmin()
     .from("profiles")
     .update({ is_verified: verified })
@@ -57,6 +73,7 @@ export async function setVerified(profileId: string, verified: boolean) {
  * appears in the member's in-app notification list.
  */
 export async function sendNotification(formData: FormData) {
+  await requireAdminSession();
   const body = String(formData.get("body") ?? "").trim();
   const audience = String(formData.get("audience") ?? "");
   const url = String(formData.get("url") ?? "").trim();
@@ -127,6 +144,7 @@ export async function sendNotification(formData: FormData) {
 }
 
 export async function setDeleted(profileId: string, deleted: boolean) {
+  await requireAdminSession();
   const { error } = await supabaseAdmin()
     .from("profiles")
     .update({
@@ -140,6 +158,7 @@ export async function setDeleted(profileId: string, deleted: boolean) {
 }
 
 export async function setReviewActive(reviewId: string, active: boolean) {
+  await requireAdminSession();
   if (!/^\d+$/.test(reviewId)) throw new Error("Invalid review id");
 
   const { data, error } = await supabaseAdmin()
@@ -166,6 +185,7 @@ export async function setReportStatus(
   reportId: string,
   status: (typeof REPORT_STATUSES)[number]
 ) {
+  await requireAdminSession();
   if (!REPORT_STATUSES.includes(status))
     throw new Error("Invalid report status");
 
@@ -179,6 +199,7 @@ export async function setReportStatus(
 }
 
 export async function deleteReportedContentAndResolve(reportId: string) {
+  await requireAdminSession();
   const admin = supabaseAdmin();
   const { data: report, error: reportError } = await admin
     .from("reports")
@@ -239,6 +260,7 @@ export async function deleteReportedContentAndResolve(reportId: string) {
 }
 
 export async function updateLocation(locationId: string, formData: FormData) {
+  await requireAdminSession();
   if (!/^\d+$/.test(locationId)) throw new Error("Invalid location id");
 
   const name = String(formData.get("name") ?? "").trim();
@@ -279,7 +301,148 @@ export async function updateLocation(locationId: string, formData: FormData) {
   redirect(`${path}?updated=1`);
 }
 
+const claimsPath = "/admin/claims";
+
+export async function approveLocationClaim(claimId: string) {
+  await requireAdminSession();
+  const { data, error } = await supabaseAdmin().rpc("approve_location_claim", {
+    p_claim_id: claimId,
+  });
+  if (error) throw toAdminDataError(error, "approve location claim");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/claims/${claimId}`);
+  revalidatePath("/admin/places");
+  const locationId = (data as { locationId?: number } | null)?.locationId;
+  if (locationId != null) revalidatePath(`/admin/places/${locationId}`);
+  redirect(`${claimsPath}/${claimId}?updated=approved`);
+}
+
+export async function verifyLocationDirect(
+  locationId: string,
+  formData: FormData
+) {
+  await requireAdminSession();
+  const reason = String(formData.get("reason") ?? "").trim();
+  const path = `/admin/places/${locationId}`;
+  if (!reason || reason.length > 1000) {
+    redirect(`${path}?error=verificationReason`);
+  }
+  const { error } = await supabaseAdmin().rpc("admin_verify_location", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "verify location directly");
+  revalidatePath(claimsPath);
+  revalidatePath(path);
+  revalidatePath("/admin/places");
+  revalidatePath("/admin");
+  redirect(`${path}?updated=verified`);
+}
+
+export async function rejectLocationClaim(claimId: string, formData: FormData) {
+  await requireAdminSession();
+  const reason = String(formData.get("rejection_reason") ?? "").trim();
+  const notes = String(formData.get("admin_notes") ?? "").trim();
+  if (!reason || reason.length > 1000)
+    redirect(`${claimsPath}/${claimId}?error=reason`);
+  const { error } = await supabaseAdmin().rpc("reject_location_claim", {
+    p_claim_id: claimId,
+    p_rejection_reason: reason,
+    p_admin_notes: notes || null,
+  });
+  if (error) throw toAdminDataError(error, "reject location claim");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/claims/${claimId}`);
+  const { data: claim } = await supabaseAdmin()
+    .from("location_claims")
+    .select("location_id")
+    .eq("id", claimId)
+    .maybeSingle();
+  if (claim?.location_id != null)
+    revalidatePath(`/admin/places/${claim.location_id}`);
+  redirect(`${claimsPath}/${claimId}?updated=rejected`);
+}
+
+export async function revokeLocationVerification(
+  locationId: string,
+  formData: FormData
+) {
+  await requireAdminSession();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) redirect(`/admin/claims?error=reason`);
+  const { error } = await supabaseAdmin().rpc("revoke_location_verification", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "revoke location verification");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/places/${locationId}`);
+  redirect(`${claimsPath}?updated=revoked`);
+}
+
+export async function restoreLocationVerification(
+  locationId: string,
+  formData: FormData
+) {
+  await requireAdminSession();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) redirect(`/admin/claims?error=reason`);
+  const { error } = await supabaseAdmin().rpc("restore_location_verification", {
+    p_location_id: Number(locationId),
+    p_reason: reason,
+  });
+  if (error) throw toAdminDataError(error, "restore location verification");
+  revalidatePath(claimsPath);
+  revalidatePath(`/admin/places/${locationId}`);
+  redirect(`${claimsPath}?updated=restored`);
+}
+
+export async function addLocationManager(
+  locationId: string,
+  formData: FormData
+) {
+  await requireAdminSession();
+  const query = String(formData.get("profile_query") ?? "").trim();
+  const path = `/admin/claims/${String(formData.get("claim_id") ?? "")}`;
+  const { data, error } = await supabaseAdmin().rpc(
+    "find_location_manager_profile",
+    {
+      p_query: query,
+    }
+  );
+  if (error) throw toAdminDataError(error, "find manager profile");
+  const matches = Array.isArray(data) ? data : [];
+  if (matches.length !== 1 || typeof matches[0]?.id !== "string") {
+    redirect(`${path}?error=manager`);
+  }
+  const result = await supabaseAdmin().rpc("add_location_manager", {
+    p_location_id: Number(locationId),
+    p_profile_id: matches[0].id,
+  });
+  if (result.error)
+    throw toAdminDataError(result.error, "add location manager");
+  revalidatePath(path);
+  redirect(`${path}?updated=manager-added`);
+}
+
+export async function removeLocationManager(
+  managerId: string,
+  formData: FormData
+) {
+  await requireAdminSession();
+  const claimId = String(formData.get("claim_id") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  const { error } = await supabaseAdmin().rpc("remove_location_manager", {
+    p_manager_id: managerId,
+    p_reason: reason || null,
+  });
+  if (error) throw toAdminDataError(error, "remove location manager");
+  revalidatePath(`/admin/claims/${claimId}`);
+  redirect(`/admin/claims/${claimId}?updated=manager-removed`);
+}
+
 export async function upsertRegion(formData: FormData) {
+  await requireAdminSession();
   const id = String(formData.get("id") ?? "").trim();
   const returnTo = getRegionReturnPath(formData);
   const slug = String(formData.get("slug") ?? "")
@@ -398,68 +561,8 @@ const getRegionReturnPath = (formData: FormData) => {
     : "/admin/places/regions";
 };
 
-export async function saveRegionGoogleMapping(
-  regionId: string,
-  formData: FormData
-) {
-  if (!/^\d+$/.test(regionId)) throw new Error("Invalid region id");
-  const returnTo = getRegionReturnPath(formData);
-  const googlePlaceId = String(formData.get("google_place_id") ?? "").trim();
-  const submittedLabel = String(formData.get("google_label") ?? "").trim();
-  if (
-    !googlePlaceId ||
-    googlePlaceId.length > 255 ||
-    !submittedLabel ||
-    submittedLabel.length > 200
-  ) {
-    redirect(`${returnTo}?error=mapping`);
-  }
-  const apiKey =
-    process.env.GOOGLE_MAPS_API_KEY ??
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) redirect(`${returnTo}?error=google-config`);
-  const response = await fetch(
-    `https://places.googleapis.com/v1/places/${encodeURIComponent(googlePlaceId)}`,
-    {
-      headers: {
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "id,displayName,types",
-      },
-      cache: "no-store",
-    }
-  );
-  const place = await response.json();
-  const cityTypes = new Set([
-    "locality",
-    "postal_town",
-    "administrative_area_level_2",
-  ]);
-  if (
-    !response.ok ||
-    place.id !== googlePlaceId ||
-    !Array.isArray(place.types) ||
-    !place.types.some((type: unknown) => cityTypes.has(String(type)))
-  ) {
-    redirect(`${returnTo}?error=mapping`);
-  }
-  const googleLabel = String(place.displayName?.text ?? submittedLabel).trim();
-  const { error } = await supabaseAdmin()
-    .from("region_google_places")
-    .upsert(
-      {
-        region_id: Number(regionId),
-        google_place_id: googlePlaceId,
-        google_label: googleLabel,
-      },
-      { onConflict: "google_place_id" }
-    );
-  if (error) throw toAdminDataError(error, "save region Google mapping");
-  revalidatePath("/admin/places/regions");
-  revalidatePath(`/admin/places/regions/${regionId}`);
-  redirect(`${returnTo}?updated=1`);
-}
-
 export async function refreshGoldenGlass() {
+  await requireAdminSession();
   const { error } = await supabaseAdmin().rpc("refresh_golden_glass_v1");
   if (error) throw toAdminDataError(error, "refresh Golden Glass");
   revalidatePath("/admin/places/golden-glass");

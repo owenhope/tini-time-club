@@ -2,6 +2,8 @@ import React from "react";
 import { FlatList, Text } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
+import Home from "@/app/(tabs)/(home)/home";
+
 const mockGetReviews = jest.fn(
   (_options?: Record<string, unknown>) => new Promise(() => undefined)
 );
@@ -32,7 +34,7 @@ const deferred = <T,>() => {
 };
 
 jest.mock("expo-router", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
   return {
     Link: ({ children }: { children: React.ReactNode }) => children,
     useFocusEffect: (callback: () => void | (() => void)) =>
@@ -126,7 +128,7 @@ jest.mock("bad-words", () => ({
   },
 }));
 jest.mock("@/components/ReviewItem", () => {
-  const React = require("react");
+  const React = jest.requireActual<typeof import("react")>("react");
 
   return function MockReviewItem({ review }: { review: { id: string } }) {
     return React.createElement("ReviewItemMock", { reviewId: review.id });
@@ -173,8 +175,6 @@ jest.mock("@/theme", () => {
     useTheme: () => theme,
   };
 });
-
-import Home from "@/app/(tabs)/(home)/home";
 
 describe("Feed startup loading", () => {
   let renderer: ReactTestRenderer | undefined;
@@ -284,8 +284,13 @@ describe("Feed startup loading", () => {
       renderer = create(<Home />);
     });
 
-    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
-      .props.actions[0];
+    // The feed renders two headers now — the green greeting block and the
+    // wordmark bar — carrying the same trailing action.
+    const headers = renderer!.root.findAllByType(
+      "AppHeader" as React.ElementType
+    );
+    expect(headers).toHaveLength(2);
+    const action = headers[0].props.actions[0];
 
     expect(action.label).toBe("Join");
     expect(action.icon).toBeUndefined();
@@ -302,8 +307,13 @@ describe("Feed startup loading", () => {
       renderer = create(<Home />);
     });
 
-    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
-      .props.actions[0];
+    // The feed renders two headers now — the green greeting block and the
+    // wordmark bar — carrying the same trailing action.
+    const headers = renderer!.root.findAllByType(
+      "AppHeader" as React.ElementType
+    );
+    expect(headers).toHaveLength(2);
+    const action = headers[0].props.actions[0];
 
     expect(action.icon).toBe("heart-outline");
     expect(action.accessibilityLabel).toBe("Activity");
@@ -317,8 +327,13 @@ describe("Feed startup loading", () => {
       renderer = create(<Home />);
     });
 
-    const action = renderer!.root.findByType("AppHeader" as React.ElementType)
-      .props.actions[0];
+    // The feed renders two headers now — the green greeting block and the
+    // wordmark bar — carrying the same trailing action.
+    const headers = renderer!.root.findAllByType(
+      "AppHeader" as React.ElementType
+    );
+    expect(headers).toHaveLength(2);
+    const action = headers[0].props.actions[0];
 
     expect(action.badgeCount).toBe(3);
     expect(action.showNotificationDot).toBeUndefined();

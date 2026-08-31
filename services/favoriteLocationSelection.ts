@@ -3,6 +3,7 @@ export interface FavoriteLocationValue {
   name: string;
   address?: string | null;
   is_golden_glass?: boolean;
+  is_location_verified?: boolean;
 }
 
 let pendingSelection: FavoriteLocationValue | null | undefined;

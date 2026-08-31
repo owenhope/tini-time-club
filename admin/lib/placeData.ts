@@ -2,6 +2,7 @@ import "server-only";
 import { toAdminDataError } from "@/lib/dataErrors";
 import { normalizeGoldenGlassInspectionRows } from "@/lib/placeModels";
 import { emptyReviewEngagement } from "@/lib/reviewTypes";
+import type { AdminLocationClaim } from "@/lib/claimTypes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { SortDirection } from "@/lib/profileTypes";
 import type {
@@ -39,8 +40,30 @@ export const fetchLocations = async (
     locations?: AdminLocation[];
     total?: number;
   };
+  const locations = result.locations ?? [];
+  if (locations.length === 0) {
+    return { locations, total: Number(result.total) || 0 };
+  }
+
+  const { data: awardRows, error: awardError } = await db()
+    .from("location_ratings")
+    .select("id,is_golden_glass")
+    .in(
+      "id",
+      locations.map((location) => location.id)
+    );
+  if (awardError) throw toAdminDataError(awardError, "load Golden Glass flags");
+  const awards = new Map(
+    (awardRows ?? []).map((row) => [
+      Number(row.id),
+      Boolean(row.is_golden_glass),
+    ])
+  );
   return {
-    locations: result.locations ?? [],
+    locations: locations.map((location) => ({
+      ...location,
+      is_golden_glass: awards.get(location.id) ?? false,
+    })),
     total: Number(result.total) || 0,
   };
 };
@@ -104,7 +127,7 @@ export const fetchMapPlaces = async (
   let query = db()
     .from("location_ratings")
     .select(
-      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings"
+      "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
     );
   if (bounds) {
     query = query
@@ -129,6 +152,8 @@ export const fetchMapPlaces = async (
       taste_avg: row.taste_avg ?? null,
       presentation_avg: row.presentation_avg ?? null,
       total_ratings: row.total_ratings ?? 0,
+      is_golden_glass: Boolean(row.is_golden_glass),
+      is_location_verified: Boolean(row.is_location_verified),
     }));
 };
 
@@ -163,36 +188,46 @@ export const fetchAdminLocation = async (
 ): Promise<AdminLocationDetail | null> => {
   if (!/^\d+$/.test(id)) return null;
 
-  const [locationResult, ratingResult, reviewsResult] = await Promise.all([
-    db()
-      .from("locations")
-      .select(
-        "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    db()
-      .from("location_ratings")
-      .select("rating,total_ratings")
-      .eq("id", id)
-      .maybeSingle(),
-    db()
-      .from("reviews")
-      .select(
-        `id,comment,taste,presentation,inserted_at,state,
+  const [locationResult, ratingResult, reviewsResult, claimsResult] =
+    await Promise.all([
+      db()
+        .from("locations")
+        .select(
+          "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      db()
+        .from("location_ratings")
+        .select("rating,total_ratings,is_golden_glass,is_location_verified")
+        .eq("id", id)
+        .maybeSingle(),
+      db()
+        .from("reviews")
+        .select(
+          `id,comment,taste,presentation,inserted_at,state,
          profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`,
-        { count: "exact" }
-      )
-      .eq("location", id)
-      .order("inserted_at", { ascending: false })
-      .limit(50),
-  ]);
+          { count: "exact" }
+        )
+        .eq("location", id)
+        .order("inserted_at", { ascending: false })
+        .limit(50),
+      db()
+        .from("location_claims")
+        .select(
+          "id,location_id,requester_profile_id,contact_name,account_email,business_email,business_role,phone,explanation,status,submitted_at,decided_at,rejection_reason,admin_notes,superseded_by_claim_id,requester_redacted_at"
+        )
+        .eq("location_id", id)
+        .order("submitted_at", { ascending: false }),
+    ]);
   if (locationResult.error)
     throw toAdminDataError(locationResult.error, "load location detail");
   if (ratingResult.error)
     throw toAdminDataError(ratingResult.error, "load location rating");
   if (reviewsResult.error)
     throw toAdminDataError(reviewsResult.error, "load location reviews");
+  if (claimsResult.error)
+    throw toAdminDataError(claimsResult.error, "load location claims");
   if (!locationResult.data) return null;
 
   const location = locationResult.data;
@@ -210,6 +245,8 @@ export const fetchAdminLocation = async (
       location.golden_glass_ineligibility_reason ?? null,
     rating: ratingResult.data?.rating ?? null,
     total_ratings: ratingResult.data?.total_ratings ?? 0,
+    is_golden_glass: Boolean(ratingResult.data?.is_golden_glass),
+    is_location_verified: Boolean(ratingResult.data?.is_location_verified),
     all_reviews: reviewsResult.count ?? 0,
     reviews: (reviewsResult.data ?? []).map((review) => ({
       id: String(review.id),
@@ -222,5 +259,15 @@ export const fetchAdminLocation = async (
       profile: one(review.profile),
       engagement: emptyReviewEngagement(),
     })),
+    claims: (claimsResult.data ?? []).map(
+      (claim) =>
+        ({
+          ...claim,
+          location_name: location.name,
+          location_address: location.address,
+          username: null,
+          profile_name: null,
+        }) as AdminLocationClaim
+    ),
   };
 };

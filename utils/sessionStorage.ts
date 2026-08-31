@@ -35,7 +35,7 @@ interface ParsedJson {
 }
 
 /** Keychain is temporarily inaccessible, rather than definitively empty. */
-export class KeychainUnavailableError extends Error {
+class KeychainUnavailableError extends Error {
   constructor(cause: unknown) {
     super("Keychain unavailable");
     this.name = "KeychainUnavailableError";

@@ -12,8 +12,7 @@ const NOTIFICATION_KIND_LABELS: Record<string, string> = {
 
 const NON_SYSTEM_PUSH_KINDS = new Set(["admin_message", "test_push"]);
 
-export const isSystemPushKind = (kind: string) =>
-  !NON_SYSTEM_PUSH_KINDS.has(kind);
+const isSystemPushKind = (kind: string) => !NON_SYSTEM_PUSH_KINDS.has(kind);
 
 /** Legacy rows without a typed kind cannot produce meaningful open rates. */
 export const isAnalyticsNotificationKind = (

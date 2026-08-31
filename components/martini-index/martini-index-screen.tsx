@@ -9,6 +9,7 @@ import { Chip } from "@/components/shared";
 import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import { makeStyles } from "@/theme";
 import { logMartiniIndexEvent } from "@/utils/martini-index-analytics";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import {
   getMartiniIndexRows,
   MARTINI_SPIRITS,
@@ -20,6 +21,8 @@ const SPIRIT_FILTERS = ["All", ...MARTINI_SPIRITS] as const;
 
 export default function MartiniIndexScreen() {
   const styles = useStyles();
+  // The native tab bar floats over content, so the list pads its own tail.
+  const tabBarInset = useNativeTabBarContentInset();
   const { isMember, requireMembership } = useMembership();
   const [spirit, setSpirit] = useState<MartiniSpirit | "All">("All");
   const [pickOneVisible, setPickOneVisible] = useState(false);
@@ -44,7 +47,8 @@ export default function MartiniIndexScreen() {
   };
 
   const shakerAction = {
-    customIcon: "martini-shaker" as const,
+    // Same wine-glass glyph as the Feed tab, per design direction.
+    icon: "wine-outline" as const,
     onPress: () => {
       if (requireMembership("pick-one")) setPickOneVisible(true);
     },
@@ -113,7 +117,7 @@ export default function MartiniIndexScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
 
@@ -129,9 +133,6 @@ const useStyles = makeStyles((t) => ({
   screen: {
     flex: 1,
     backgroundColor: t.colors.background,
-  },
-  list: {
-    paddingBottom: t.spacing.giant,
   },
   listItem: {
     paddingHorizontal: t.spacing.gutter,

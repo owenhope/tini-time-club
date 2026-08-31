@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { MartiniIcon } from "@/components/shared";
+import { MaterialIcons } from "@expo/vector-icons";
 import type { Review } from "@/types/types";
 import { fonts, typography } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
@@ -380,6 +381,13 @@ const ReviewShareCard = ({
               <View
                 style={[styles.shareHeadlineRow, { gap: 7 * artworkScale }]}
               >
+                {review.location?.is_golden_glass ? (
+                  <MartiniIcon
+                    size={20 * artworkScale}
+                    color={CARD.gold}
+                    filled
+                  />
+                ) : null}
                 <Text
                   numberOfLines={1}
                   adjustsFontSizeToFit
@@ -395,11 +403,12 @@ const ReviewShareCard = ({
                 >
                   {headline}
                 </Text>
-                {review.location?.is_golden_glass ? (
-                  <MartiniIcon
+                {review.location?.is_location_verified ? (
+                  <MaterialIcons
+                    name="verified"
                     size={20 * artworkScale}
-                    color={CARD.gold}
-                    filled
+                    color={CARD.purple}
+                    accessibilityLabel="Verified business"
                   />
                 ) : null}
               </View>

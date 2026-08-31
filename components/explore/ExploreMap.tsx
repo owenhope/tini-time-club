@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import {
+  Animated,
   View,
   StyleSheet,
   Keyboard,
@@ -80,6 +81,8 @@ interface ExploreMapProps {
   location: ExploreLocationState;
   requestLocation: () => Promise<void>;
   exploreRegion: ExploreRegion | null;
+  /** The header's search toggle slides the search bar over the map. */
+  searchVisible: boolean;
 }
 
 interface MapLocation {
@@ -94,6 +97,7 @@ interface MapLocation {
   total_ratings?: number | null;
   regulars?: Regular[];
   is_golden_glass?: boolean;
+  is_location_verified?: boolean;
 }
 
 const toMapLocation = (location: any): MapLocation => ({
@@ -162,6 +166,7 @@ function ExploreMap({
   location,
   requestLocation,
   exploreRegion,
+  searchVisible,
 }: ExploreMapProps) {
   const styles = useStyles();
   const { isDark, spacing } = useTheme();
@@ -177,6 +182,21 @@ function ExploreMap({
   const isScreenshotMap =
     screenshotSeed === "map" || screenshotSeed === "place";
   const searchRef = useRef<any>(null);
+  // Slide the search bar down over the map; stay mounted until the exit
+  // animation lands so the bar doesn't vanish mid-slide.
+  const searchAnim = useRef(new Animated.Value(searchVisible ? 1 : 0)).current;
+  const [searchMounted, setSearchMounted] = useState(searchVisible);
+  useEffect(() => {
+    if (searchVisible) setSearchMounted(true);
+    else Keyboard.dismiss();
+    Animated.timing(searchAnim, {
+      toValue: searchVisible ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished && !searchVisible) setSearchMounted(false);
+    });
+  }, [searchAnim, searchVisible]);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
   const [locationsReady, setLocationsReady] = useState(false);
@@ -607,7 +627,7 @@ function ExploreMap({
               ? await supabase
                   .from("location_ratings")
                   .select(
-                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass"
+                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
                   )
                   .eq("id", focus.locationId)
                   .maybeSingle()
@@ -632,7 +652,7 @@ function ExploreMap({
         if (missingAwardIds.length > 0) {
           const { data: awards } = await supabase
             .from("location_ratings")
-            .select("id,is_golden_glass")
+            .select("id,is_golden_glass,is_location_verified")
             .in("id", missingAwardIds);
           if (requestId !== fetchRequestRef.current) return;
           const awardsByLocation = new Map(
@@ -647,6 +667,12 @@ function ExploreMap({
               location.is_golden_glass ??
               awardsByLocation.get(String(location.id)) ??
               false,
+            is_location_verified: Boolean(
+              location.is_location_verified ??
+              (awards ?? []).find(
+                (row) => String(row.id) === String(location.id)
+              )?.is_location_verified
+            ),
           }));
         }
         const nextLocations = normalizeMapLocations(
@@ -690,16 +716,36 @@ function ExploreMap({
 
   return (
     <View style={styles.screen}>
-      <ExploreSearchArea>
-        <Search
-          ref={searchRef}
-          onPlaceSelected={handleSearchPlaceSelected}
-          currentLocation={{
-            latitude: region.latitude,
-            longitude: region.longitude,
-          }}
-        />
-      </ExploreSearchArea>
+      {searchMounted ? (
+        <Animated.View
+          style={[
+            styles.searchOverlay,
+            {
+              opacity: searchAnim,
+              transform: [
+                {
+                  translateY: searchAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-72, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <ExploreSearchArea>
+            <Search
+              ref={searchRef}
+              autoFocus
+              onPlaceSelected={handleSearchPlaceSelected}
+              currentLocation={{
+                latitude: region.latitude,
+                longitude: region.longitude,
+              }}
+            />
+          </ExploreSearchArea>
+        </Animated.View>
+      ) : null}
       <View
         style={styles.mapFrame}
         onLayout={(event) => {
@@ -818,6 +864,13 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     backgroundColor: t.colors.background,
   },
+  searchOverlay: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+  },
   mapFrame: {
     flex: 1,
     overflow: "hidden" as const,
@@ -851,10 +904,6 @@ const useStyles = makeStyles((t) => ({
   noticeAction: {
     ...t.typography.label,
     color: t.colors.accent,
-  },
-  markerContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
   },
   clusterPin: {
     backgroundColor: t.colors.surfaceBrand,

@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { makeStyles, useTheme } from "@/theme";
 import RatingPips from "./RatingPips";
 
-export const RATING_MAX = 5;
+const RATING_MAX = 5;
 
 export type RatingSummaryTone = "surface" | "onImage";
 

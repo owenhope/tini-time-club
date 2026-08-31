@@ -7,6 +7,7 @@ import type {
   PublicLocation,
   PublicLocationRegular,
 } from "@/lib/publicLocation";
+import GoldenGlassMark from "@/components/GoldenGlassMark";
 
 const TEXT = "#1C3A2E";
 const TEXT_MUTED = "#6E7472";
@@ -18,6 +19,16 @@ const OLIVE = "#336654";
 const PIP_EMPTY = "#8FB8A8";
 const BORDER = "rgba(51,102,84,0.18)";
 const INK_PLATE = "rgba(20,26,23,0.72)";
+
+const LocationVerifiedMark = () => (
+  <span
+    role="img"
+    aria-label="Verified business"
+    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[14px] font-black text-[#7B60BC]"
+  >
+    ✓
+  </span>
+);
 
 const reviewOverall = (taste: number | null, presentation: number | null) =>
   taste == null || presentation == null
@@ -114,9 +125,13 @@ export default function LocationShareCard({
     >
       <section className="text-white" style={{ background: HEADER_BRAND }}>
         <div className="px-[10px] pb-[18px] pt-5">
-          <h1 className="text-[26px] leading-[29px] font-black">
-            {location.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            {location.is_golden_glass ? <GoldenGlassMark size={22} /> : null}
+            <h1 className="text-[26px] leading-[29px] font-black">
+              {location.name}
+            </h1>
+            {location.is_location_verified ? <LocationVerifiedMark /> : null}
+          </div>
           {cityRegion ? (
             <p className="mt-[5px] truncate font-mono text-[12px] text-white/85">
               {cityRegion}

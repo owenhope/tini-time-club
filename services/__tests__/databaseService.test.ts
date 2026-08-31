@@ -44,6 +44,57 @@ beforeEach(async () => {
   await databaseService.clearAllCaches();
 });
 
+it("refreshes location verification state instead of caching it", async () => {
+  const single = jest
+    .fn()
+    .mockResolvedValueOnce({
+      data: {
+        id: 42,
+        name: "Example Bar",
+        address: null,
+        rating: 4,
+        taste_avg: 4,
+        presentation_avg: 4,
+        total_ratings: 2,
+        is_golden_glass: false,
+        is_location_verified: false,
+      },
+      error: null,
+    })
+    .mockResolvedValueOnce({
+      data: {
+        id: 42,
+        name: "Example Bar",
+        address: null,
+        rating: 4,
+        taste_avg: 4,
+        presentation_avg: 4,
+        total_ratings: 2,
+        is_golden_glass: false,
+        is_location_verified: true,
+      },
+      error: null,
+    });
+  from.mockReturnValue({
+    select: jest.fn(() => ({
+      eq: jest.fn(() => ({ single })),
+    })),
+  });
+
+  await expect(
+    databaseService.getLocation("42", "viewer-1")
+  ).resolves.toMatchObject({
+    is_location_verified: false,
+  });
+  await expect(
+    databaseService.getLocation("42", "viewer-1")
+  ).resolves.toMatchObject({
+    is_location_verified: true,
+  });
+
+  expect(single).toHaveBeenCalledTimes(2);
+});
+
 it("loads a followed-members page with one feed RPC", async () => {
   rpc.mockResolvedValue({ data: [], error: null });
 

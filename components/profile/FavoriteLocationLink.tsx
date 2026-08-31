@@ -1,12 +1,17 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { MartiniIcon } from "@/components/shared";
+import { LocationVerifiedBadge, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 interface FavoriteLocationLinkProps {
-  location: { id: number; name: string; is_golden_glass?: boolean } | null;
+  location: {
+    id: number;
+    name: string;
+    is_golden_glass?: boolean;
+    is_location_verified?: boolean;
+  } | null;
 }
 
 /**
@@ -31,11 +36,14 @@ const FavoriteLocationLink = ({ location }: FavoriteLocationLinkProps) => {
         accessibilityLabel={`Favorite location, ${location.name}`}
       >
         <View style={styles.nameRow}>
+          {location.is_golden_glass ? (
+            <MartiniIcon size={20} color={colors.awardGold} filled />
+          ) : null}
           <Text style={styles.favoriteLocationText} numberOfLines={1}>
             {location.name}
           </Text>
-          {location.is_golden_glass ? (
-            <MartiniIcon size={16} color={colors.awardGold} filled />
+          {location.is_location_verified ? (
+            <LocationVerifiedBadge compact />
           ) : null}
         </View>
       </TouchableOpacity>

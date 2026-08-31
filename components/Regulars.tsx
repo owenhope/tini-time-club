@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { Avatar, Skeleton, VerifiedName } from "@/components/shared";
+import { Avatar, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { makeStyles } from "@/theme";
@@ -16,30 +16,6 @@ interface RegularsProps {
 }
 
 type DisplayRegular = Regular & { isPreview?: boolean };
-
-/** Rail-shaped placeholder, so the venue header doesn't grow when regulars land. */
-export const RegularsRailSkeleton = ({
-  onInk = false,
-}: {
-  onInk?: boolean;
-}) => {
-  const styles = useStyles();
-  return (
-    <View style={styles.railSection}>
-      <Text style={[styles.eyebrow, onInk && styles.eyebrowOnInk]}>
-        Regulars
-      </Text>
-      <View style={styles.railRow}>
-        {[0, 1, 2].map((i) => (
-          <View key={i} style={styles.railPerson}>
-            <Skeleton circle height={42} />
-            <Skeleton width={44} height={9} />
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
 
 const Regulars: React.FC<RegularsProps> = ({
   regulars,
@@ -296,10 +272,6 @@ const useStyles = makeStyles((t) => ({
   },
   onInkText: {
     color: t.colors.onInk,
-  },
-  onInkMeta: {
-    color: t.colors.onInk,
-    opacity: 0.8,
   },
   compactRow: {
     minHeight: 30,

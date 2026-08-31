@@ -9,6 +9,7 @@ type ActiveSection =
   | "users"
   | "reviews"
   | "locations"
+  | "claims"
   | "golden-glass"
   | "reports"
   | "analytics"
@@ -40,6 +41,7 @@ const CORE_NAV = [
 ] as const;
 
 const MODERATION_NAV = [
+  { href: "/admin/claims", key: "claims", label: "Claims" },
   { href: "/admin/reports", key: "reports", label: "Reports" },
 ] as const;
 

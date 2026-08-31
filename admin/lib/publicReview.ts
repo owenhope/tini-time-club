@@ -30,6 +30,8 @@ export interface PublicReview {
     address: string | null;
     rating: number | null;
     total_ratings: number | null;
+    is_golden_glass: boolean;
+    is_location_verified: boolean;
   } | null;
   spirit: { name: string | null } | null;
   type: { name: string | null } | null;
@@ -116,7 +118,7 @@ export const fetchPublicReview = async (
     review.location?.id
       ? supabaseAdmin()
           .from("location_ratings")
-          .select("rating,total_ratings")
+          .select("rating,total_ratings,is_golden_glass,is_location_verified")
           .eq("id", review.location.id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
@@ -132,6 +134,10 @@ export const fetchPublicReview = async (
         ...review.location,
         rating: locationRatingResult.data?.rating ?? null,
         total_ratings: locationRatingResult.data?.total_ratings ?? 0,
+        is_golden_glass: Boolean(locationRatingResult.data?.is_golden_glass),
+        is_location_verified: Boolean(
+          locationRatingResult.data?.is_location_verified
+        ),
       }
     : null;
 

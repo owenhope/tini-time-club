@@ -14,6 +14,7 @@ import { useProfile } from "@/context/profile-context";
 import {
   Avatar,
   MartiniIcon,
+  LocationVerifiedBadge,
   RatingPips,
   PIPS_MAX,
   VerifiedName,
@@ -308,11 +309,14 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
         >
           <View style={styles.venueChipLines}>
             <View style={styles.venueChipNameRow}>
+              {review.location?.is_golden_glass ? (
+                <MartiniIcon size={20} color={colors.awardGold} filled />
+              ) : null}
               <Text style={styles.venueChipText} numberOfLines={1}>
                 {review.location?.name || "N/A"}
               </Text>
-              {review.location?.is_golden_glass ? (
-                <MartiniIcon size={16} color={colors.awardGold} filled />
+              {review.location?.is_location_verified ? (
+                <LocationVerifiedBadge compact />
               ) : null}
             </View>
             {cityCountry ? (
@@ -1067,10 +1071,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     color: t.colors.usernameText,
   },
-  captionBody: {
-    ...t.typography.body,
-    color: t.colors.postText,
-  },
   addCaptionText: {
     ...t.typography.bodyStrong,
     color: t.colors.textSecondary,
@@ -1109,10 +1109,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textMuted,
   },
   commentLikeCountActive: { color: t.colors.like },
-  timestamp: {
-    ...t.typography.caption,
-    color: t.colors.textMuted,
-  },
   viewAllCommentsText: {
     ...t.typography.body,
     color: t.colors.textMuted,
