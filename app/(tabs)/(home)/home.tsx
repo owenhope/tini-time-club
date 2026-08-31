@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
+  Animated,
   View,
   Text,
   FlatList,
   ActivityIndicator,
   Modal,
   TouchableOpacity,
-  RefreshControl,
   Alert,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
+import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import ReviewItem from "@/components/ReviewItem";
@@ -56,6 +58,9 @@ const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
 // How far past the top a pull has to travel to count as pull-to-refresh —
 // roughly where UIRefreshControl's own trigger sits.
 const PULL_REFRESH_DISTANCE = 90;
+// The refresh indicator stays up at least this long, so a fast response
+// still reads as "the club went and looked" rather than a flicker.
+const MIN_REFRESH_SPINNER_MS = 650;
 const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
 // A refresh is newest-first, so keep the head; an appended page arrives at the
@@ -71,6 +76,7 @@ const limitAppendedReviews = (items: Review[]) =>
 function Home() {
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   // The native tab bar floats over content, so the feed pads its own tail.
   const tabBarInset = useNativeTabBarContentInset();
   const { profile, authenticated, updateProfile } = useProfile();
@@ -118,14 +124,21 @@ function Home() {
   // club says to you, and saying the same thing seven days running is how a
   // welcome stops being read.
   const greeting = getTiniTimeGreeting();
-  // One value, both halves of the crossfade: the green greeting block scrolls
-  // away with the feed while the wordmark bar fades in, and scrolling back to
-  // the top reverses it 1:1 with the finger.
+  // The greeting block is pinned over the list, not list content: a pull
+  // past the top leaves it exactly where it is (only the feed rubber-bands
+  // beneath it), while scrolling down still slides it away 1:1 with the
+  // finger. Its measured height is both the list's top padding and the
+  // collapse range, so the slide finishes exactly as the block clears.
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 96);
   const {
     isCollapsed,
     progress,
     onScroll: handleHeaderScroll,
-  } = useCollapsibleHeader();
+  } = useCollapsibleHeader(headerHeight);
+  const headerTranslate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -headerHeight],
+  });
 
   useEffect(() => {
     if (profile) {
@@ -351,8 +364,14 @@ function Home() {
     if (refreshingRef.current) return;
     refreshingRef.current = true;
     setRefreshing(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await loadReviews(true, true);
+      // The refresh often resolves in under a frame or two of the release;
+      // holding the indicator briefly is what makes the pull feel answered.
+      await Promise.all([
+        loadReviews(true, true),
+        new Promise((resolve) => setTimeout(resolve, MIN_REFRESH_SPINNER_MS)),
+      ]);
     } finally {
       refreshingRef.current = false;
       setRefreshing(false);
@@ -362,8 +381,10 @@ function Home() {
   // Under the native tab bar (SDK 57 / iOS 26), UIRefreshControl on this list
   // never fires onRefresh — the pull just rubber-bands. The scroll stream
   // still reports the negative offsets of that rubber-band, so the pull is
-  // detected here in JS and the RefreshControl is driven through its
-  // `refreshing` prop instead, which still renders the native spinner.
+  // detected here in JS instead, and a floating spinner over the feed gives
+  // the feedback the broken native control can't. (Its refreshing prop is no
+  // help either: the inset it applies pinned the whole header down the screen
+  // and its spinner drew invisibly.)
   const pullArmedRef = useRef(false);
   const handleFeedScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -897,39 +918,46 @@ function Home() {
         statusBar="light"
       />
 
+      {/* Pinned over the list rather than rendered as list content: a pull
+          past the top can no longer drag the greeting down the screen. The
+          slide-away collapse survives as a translate driven by the same
+          shared progress value the wordmark bar fades in on. */}
+      <Animated.View
+        style={[
+          styles.pinnedHeader,
+          { transform: [{ translateY: headerTranslate }] },
+        ]}
+        pointerEvents={isCollapsed ? "none" : "auto"}
+        onLayout={(e) => {
+          const measured = Math.round(e.nativeEvent.layout.height);
+          if (measured > 0 && measured !== headerHeight) {
+            setHeaderHeight(measured);
+          }
+        }}
+      >
+        <AppHeader
+          variant="large"
+          title={greeting.headline}
+          meta={greeting.subline}
+          actions={headerActions}
+          statusBar="none"
+        />
+      </Animated.View>
+
       <FlatList
         ref={flatListRef}
         data={reviews}
         renderItem={renderReviewItem}
         keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.accent]}
-            tintColor={colors.accent}
-          />
-        }
         onScroll={handleFeedScroll}
         scrollEventThrottle={16}
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
-        contentContainerStyle={{ paddingBottom: tabBarInset }}
-        // The greeting block is feed content now: it scrolls away under the
-        // wordmark bar and comes back when the list returns to the top. The
-        // overlaid compact header owns the status bar for both states.
-        ListHeaderComponent={
-          <>
-            <AppHeader
-              variant="large"
-              title={greeting.headline}
-              meta={greeting.subline}
-              actions={headerActions}
-              statusBar="none"
-            />
-            {renderFeedHeader()}
-          </>
-        }
+        contentContainerStyle={{
+          paddingTop: headerHeight,
+          paddingBottom: tabBarInset,
+        }}
+        ListHeaderComponent={renderFeedHeader()}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         removeClippedSubviews={process.env.EXPO_OS === "android"}
@@ -941,6 +969,19 @@ function Home() {
         initialNumToRender={3}
         windowSize={7}
       />
+
+      {/* Pull-to-refresh feedback. The native RefreshControl is broken under
+          the native tab bar — its spinner never draws and it never fires — so
+          the pull is detected from scroll offsets and answered with this chip
+          floating under the wordmark bar. */}
+      {refreshing ? (
+        <View
+          style={[styles.refreshChip, { top: headerHeight + 12 }]}
+          pointerEvents="none"
+        >
+          <ActivityIndicator size="small" color={colors.accent} />
+        </View>
+      ) : null}
 
       <Modal visible={showUsernameModal} transparent animationType="slide">
         <View style={styles.modalContainer}>
@@ -1024,9 +1065,34 @@ function Home() {
 
 const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
+  // Above the list (which starts under it via padding), below the wordmark
+  // bar's zIndex 10 so the crossfade keeps its stacking order.
+  pinnedHeader: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
   wordmark: {
     ...t.typography.wordmark,
     color: t.colors.onInk,
+  },
+  // A small floating plate, Instagram-style: the feed answers a pull with a
+  // spinner over the content instead of the (broken) native inset spinner.
+  refreshChip: {
+    position: "absolute" as const,
+    alignSelf: "center" as const,
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: t.radius.pill,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: t.colors.surface,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    ...t.elevation.card,
   },
   feedHeader: {
     paddingTop: t.spacing.lg,
