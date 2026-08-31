@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -51,6 +53,9 @@ const END_REACHED_THRESHOLD = 0.3;
 const REFRESH_THRESHOLD = 100; // ms
 // How long the feed may sit unfocused before a re-focus triggers a refresh.
 const FOCUS_REFRESH_AFTER = 2 * 60 * 1000; // 2 minutes
+// How far past the top a pull has to travel to count as pull-to-refresh —
+// roughly where UIRefreshControl's own trigger sits.
+const PULL_REFRESH_DISTANCE = 90;
 const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
 // A refresh is newest-first, so keep the head; an appended page arrives at the
@@ -161,14 +166,15 @@ function Home() {
 
       const nextPage = refresh ? 0 : page + 1;
 
-      // Set loading states
+      // Set loading states. `refreshing` is deliberately not set here: it
+      // belongs to the pull gesture alone (see onRefresh). Toggling the
+      // native RefreshControl programmatically — or leaving it on when a
+      // newer request superseded this one — wedged it: the header sat
+      // shifted down and pulls stopped triggering entirely.
       if (refresh) {
         // Any in-flight pagination is superseded by a first-page refresh.
         setLoadingMore(false);
-        if (!silent) {
-          if (page === 0) setLoading(true);
-          setRefreshing(true);
-        }
+        if (!silent && page === 0) setLoading(true);
       } else {
         if (!hasMore) return;
         setLoadingMore(true);
@@ -234,13 +240,7 @@ function Home() {
         setHasMore(pageResult.hasMore);
         setLastRefreshTime(now);
 
-        if (refresh) {
-          setRefreshing(false);
-          setLoading(false);
-          setFirstLoadDone(true);
-        } else {
-          setLoadingMore(false);
-        }
+        if (refresh) setFirstLoadDone(true);
       } catch (error) {
         if (!isCurrentRequest()) return;
 
@@ -254,10 +254,12 @@ function Home() {
         // first page becomes an unbounded request/error loop.
         setHasMore(false);
 
+        if (refresh) setFirstLoadDone(true);
+      } finally {
+        // Cleared unconditionally — even for a superseded request — so a
+        // spinner can never outlive the call that turned it on.
         if (refresh) {
-          setRefreshing(false);
           setLoading(false);
-          setFirstLoadDone(true);
         } else {
           setLoadingMore(false);
         }
@@ -339,10 +341,46 @@ function Home() {
     }, [profile?.id, refreshUnseenCount, scrollToTop, reviews.length])
   );
 
-  // Optimized refresh handler
-  const onRefresh = useCallback(() => {
-    loadReviews(true);
+  // The pull gesture is the only writer of `refreshing`, and it always
+  // clears its own flag. Routing it through loadReviews let a superseded
+  // request strand the native control mid-refresh, which both shifted the
+  // header down permanently and stopped pull-to-refresh from ever firing
+  // again.
+  const refreshingRef = useRef(false);
+  const onRefresh = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      await loadReviews(true, true);
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+    }
   }, [loadReviews]);
+
+  // Under the native tab bar (SDK 57 / iOS 26), UIRefreshControl on this list
+  // never fires onRefresh — the pull just rubber-bands. The scroll stream
+  // still reports the negative offsets of that rubber-band, so the pull is
+  // detected here in JS and the RefreshControl is driven through its
+  // `refreshing` prop instead, which still renders the native spinner.
+  const pullArmedRef = useRef(false);
+  const handleFeedScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = event.nativeEvent.contentOffset.y;
+      if (y >= 0) {
+        // The finger has to bring the list back to rest before another pull
+        // can trigger — one refresh per gesture, exactly like the native
+        // control.
+        pullArmedRef.current = false;
+      } else if (!pullArmedRef.current && y <= -PULL_REFRESH_DISTANCE) {
+        pullArmedRef.current = true;
+        void onRefresh();
+      }
+      handleHeaderScroll(event);
+    },
+    [handleHeaderScroll, onRefresh]
+  );
 
   useEffect(
     () => subscribeToReviewUpdates(() => void loadReviews(true, true)),
@@ -872,7 +910,7 @@ function Home() {
             tintColor={colors.accent}
           />
         }
-        onScroll={handleHeaderScroll}
+        onScroll={handleFeedScroll}
         scrollEventThrottle={16}
         onEndReached={onEndReached}
         onEndReachedThreshold={END_REACHED_THRESHOLD}
