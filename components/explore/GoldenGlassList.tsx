@@ -45,6 +45,8 @@ export default function GoldenGlassList({
   useEffect(() => {
     if (!enabled || regionId == null) return;
     let active = true;
+    // A region change starts a new external rankings request.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setFailed(false);
     void getGoldenGlassRecipients(regionId)
@@ -176,6 +178,22 @@ export default function GoldenGlassList({
       <View style={styles.introTitleRow}>
         <MartiniIcon size={22} color={colors.awardGold} filled />
         <Text style={styles.introTitle}>Golden Glass</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.infoButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={() => router.push(routes.goldenGlassInfo())}
+          accessibilityRole="button"
+          accessibilityLabel="How Golden Glass works"
+          accessibilityHint="Opens an explanation of how locations qualify and are ranked"
+        >
+          <Ionicons
+            name="information-circle-outline"
+            size={22}
+            color={colors.awardGold}
+          />
+        </Pressable>
       </View>
       <Text style={styles.introBody}>
         Places the club is raising a glass to right now.
@@ -244,6 +262,14 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   introTitle: { ...t.typography.display, color: t.colors.text },
+  infoButton: {
+    width: 44,
+    height: 44,
+    marginLeft: "auto" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderRadius: t.radius.pill,
+  },
   introBody: { ...t.typography.body, color: t.colors.textSecondary },
   list: {
     paddingHorizontal: t.spacing.gutter,

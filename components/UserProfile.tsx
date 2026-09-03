@@ -294,6 +294,8 @@ const UserProfile = () => {
   // Fetch the selected profile when usernameParam is provided.
   useEffect(() => {
     if (usernameParam) {
+      // The route parameter owns the selected external profile snapshot.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       void fetchSelectedProfile(usernameParam);
     }
     return () => {

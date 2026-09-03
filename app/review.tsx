@@ -301,6 +301,8 @@ function ReviewComposer() {
   }, []);
 
   useEffect(() => {
+    // These route-entry loads populate options owned by the external database.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     getTypes();
     getSpirits();
   }, [getTypes, getSpirits]);

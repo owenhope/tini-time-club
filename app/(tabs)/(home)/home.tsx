@@ -5,9 +5,7 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
-  Modal,
   TouchableOpacity,
-  Alert,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
@@ -27,10 +25,9 @@ import {
   deleteReviewComment,
 } from "@/utils/reviewCommentUpdates";
 import { Ionicons } from "@expo/vector-icons";
-import { Filter } from "bad-words";
-import { Button, Input, MartiniIcon } from "@/components/shared";
+import { Button, MartiniIcon } from "@/components/shared";
 import { makeStyles, useTheme } from "@/theme";
-import { log, reportError, warn } from "@/utils/log";
+import { log, warn } from "@/utils/log";
 import { routes } from "@/utils/routes";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 import { getTiniTimeGreeting } from "@/utils/tiniTime";
@@ -41,12 +38,6 @@ import { isScreenshotSeed } from "@/utils/screenshotMode";
 import { useActivity } from "@/context/activity-context";
 import { useMembership } from "@/context/membership-context";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-
-// Built once: constructing the profanity list is expensive and the filter is
-// stateless, so a per-render instance was pure waste.
-const badWordsFilter = new Filter();
-const isExplicitUsername = (username: string) =>
-  badWordsFilter.isProfane(username);
 
 // Constants for optimization
 const PAGE_SIZE = 20; // Increased from 10 to 20 for smoother scrolling
@@ -79,7 +70,7 @@ function Home() {
   const insets = useSafeAreaInsets();
   // The native tab bar floats over content, so the feed pads its own tail.
   const tabBarInset = useNativeTabBarContentInset();
-  const { profile, authenticated, updateProfile } = useProfile();
+  const { profile, authenticated } = useProfile();
   const { unseenCount, refreshUnseenCount } = useActivity();
   const { requireMembership } = useMembership();
   const router = useRouter();
@@ -92,22 +83,12 @@ function Home() {
   const [selectedCommentReview, setSelectedCommentReview] =
     useState<Review | null>(null);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
-  const [showUsernameModal, setShowUsernameModal] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
-  const [usernameValidation, setUsernameValidation] = useState<{
-    isValid: boolean;
-    message: string;
-    isChecking: boolean;
-  }>({ isValid: false, message: "", isChecking: false });
   const flatListRef = useRef<FlatList>(null);
   const handledFeedRefreshRef = useRef<string | null>(null);
   const handledScreenshotFeedRef = useRef(false);
   const latestFeedRequestRef = useRef(0);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
 
   // Direct state management to avoid re-render issues
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -139,25 +120,6 @@ function Home() {
     inputRange: [0, 1],
     outputRange: [0, -headerHeight],
   });
-
-  useEffect(() => {
-    if (profile) {
-      // Check if user needs to accept EULA (first time user or EULA not accepted)
-      // Default to showing EULA if eula_accepted field doesn't exist or is false
-      if (
-        profile.eula_accepted === undefined ||
-        profile.eula_accepted === false ||
-        profile.eula_accepted === null
-      ) {
-        setShowUsernameModal(false);
-        router.replace(routes.onboarding());
-      } else if (!profile.username) {
-        setShowUsernameModal(true);
-      } else {
-        setShowUsernameModal(false);
-      }
-    }
-  }, [profile, router]);
 
   const profileId = profile?.id;
   const loadReviews = useCallback(
@@ -427,134 +389,6 @@ function Home() {
     void loadReviews(true, true, nextSource);
     requestAnimationFrame(scrollToTop);
   }, [feedSource, loadReviews, requireMembership, scrollToTop]);
-
-  // Check if username is unique
-  const checkUsernameUnique = async (username: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", username)
-        .eq("deleted", false)
-        .maybeSingle();
-
-      if (error) {
-        reportError("Error checking username uniqueness:", error);
-        return false;
-      }
-
-      return !data; // Return true if no data found (username is unique)
-    } catch (error) {
-      reportError("Unexpected error checking username:", error);
-      return false;
-    }
-  };
-
-  // Debounced username validation
-  const validateUsernameDebounced = useCallback(async (username: string) => {
-    // Clear existing timeout
-    if (validationTimeoutRef.current) {
-      clearTimeout(validationTimeoutRef.current);
-    }
-
-    const trimmedUsername = username.trim();
-
-    // Immediate validation for basic rules
-    if (!trimmedUsername) {
-      setUsernameValidation({ isValid: false, message: "", isChecking: false });
-      return;
-    }
-
-    // Check for explicit content
-    if (isExplicitUsername(trimmedUsername)) {
-      setUsernameValidation({
-        isValid: false,
-        message: "Username contains inappropriate language",
-        isChecking: false,
-      });
-      return;
-    }
-
-    // Check username length
-    if (trimmedUsername.length < 3) {
-      setUsernameValidation({
-        isValid: false,
-        message: "Username must be at least 3 characters",
-        isChecking: false,
-      });
-      return;
-    }
-
-    if (trimmedUsername.length > 20) {
-      setUsernameValidation({
-        isValid: false,
-        message: "Username must be 20 characters or less",
-        isChecking: false,
-      });
-      return;
-    }
-
-    // Check for valid characters
-    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
-      setUsernameValidation({
-        isValid: false,
-        message: "Username can only contain letters, numbers, and underscores",
-        isChecking: false,
-      });
-      return;
-    }
-
-    // Set checking state
-    setUsernameValidation({
-      isValid: false,
-      message: "Checking availability...",
-      isChecking: true,
-    });
-
-    // Debounce the uniqueness check
-    validationTimeoutRef.current = setTimeout(async () => {
-      const isUnique = await checkUsernameUnique(trimmedUsername);
-      if (isUnique) {
-        setUsernameValidation({
-          isValid: true,
-          message: "Username is available!",
-          isChecking: false,
-        });
-      } else {
-        setUsernameValidation({
-          isValid: false,
-          message: "Username is already taken",
-          isChecking: false,
-        });
-      }
-    }, 500); // 500ms debounce
-  }, []);
-
-  const handleSaveUsername = useCallback(async () => {
-    const trimmedUsername = newUsername.trim();
-    if (!trimmedUsername || !usernameValidation.isValid) return;
-
-    try {
-      const result = await updateProfile({ username: trimmedUsername });
-      if (result.error) {
-        reportError("Error saving username:", result.error);
-        Alert.alert("Error", "Failed to save username. Please try again.", [
-          { text: "OK" },
-        ]);
-        return;
-      }
-
-      // Only close modal if update was successful
-      setShowUsernameModal(false);
-      setNewUsername("");
-      setUsernameValidation({ isValid: false, message: "", isChecking: false });
-    } catch (error) {
-      reportError("Unexpected error saving username:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.", [
-        { text: "OK" },
-      ]);
-    }
-  }, [newUsername, updateProfile, usernameValidation.isValid]);
 
   const navigateToLocations = useCallback(() => {
     router.navigate(routes.discover({ view: "map" }));
@@ -851,9 +685,6 @@ function Home() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         clearTimeout(loadingTimeoutRef.current);
       }
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -982,51 +813,6 @@ function Home() {
           <ActivityIndicator size="small" color={colors.accent} />
         </View>
       ) : null}
-
-      <Modal visible={showUsernameModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Your Username</Text>
-            <Input
-              placeholder="Enter username"
-              value={newUsername}
-              onChangeText={(text) => {
-                setNewUsername(text);
-                validateUsernameDebounced(text);
-              }}
-              type="text"
-              size="medium"
-              variant="default"
-              autoCapitalize="none"
-            />
-
-            {/* Validation Message */}
-            {usernameValidation.message && (
-              <Text
-                style={[
-                  styles.validationMessage,
-                  usernameValidation.isValid && styles.validationSuccess,
-                  usernameValidation.isChecking && styles.validationChecking,
-                ]}
-              >
-                {usernameValidation.message}
-              </Text>
-            )}
-
-            <Button
-              title={usernameValidation.isChecking ? "Checking..." : "Save"}
-              onPress={handleSaveUsername}
-              disabled={
-                !usernameValidation.isValid || usernameValidation.isChecking
-              }
-              loading={usernameValidation.isChecking}
-              variant="primary"
-              size="medium"
-              fullWidth
-            />
-          </View>
-        </View>
-      </Modal>
 
       {selectedReviewId && (
         <LikeSlider
@@ -1161,39 +947,6 @@ const useStyles = makeStyles((t) => ({
   footerLoaderText: {
     ...t.typography.caption,
     color: t.colors.accent,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    backgroundColor: t.colors.overlay,
-  },
-  modalContent: {
-    backgroundColor: t.colors.surface,
-    paddingVertical: t.spacing.xl - 4,
-    paddingHorizontal: 40,
-    borderRadius: t.radius.sheet,
-    width: "90%" as const,
-    alignItems: "center" as const,
-  },
-  modalTitle: {
-    ...t.typography.title,
-    marginBottom: t.spacing.md,
-    color: t.colors.text,
-    textAlign: "center" as const,
-  },
-  validationMessage: {
-    ...t.typography.caption,
-    color: t.colors.danger,
-    textAlign: "center" as const,
-    marginTop: t.spacing.sm,
-    marginBottom: t.spacing.sm,
-  },
-  validationSuccess: {
-    color: t.colors.accent,
-  },
-  validationChecking: {
-    color: t.colors.textMuted,
   },
   welcomeContainer: {
     flex: 1,

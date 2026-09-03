@@ -36,11 +36,12 @@ interface ProfileHeaderProps {
   rankPreviewCount?: number;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
-  /** Spirit/type chips; rendered to the right of the name and bio so they
-      don't cost the header an extra row. */
+  /** Spirit/type chips shown inside the compact taste-profile panel. */
   tags?: React.ReactNode;
-  /** Rendered between the bio and the action row (favourite location, etc.). */
+  /** Favorite-location content shown inside the taste-profile panel. */
   children?: React.ReactNode;
+  /** Own-profile prompt shown where a missing bio would otherwise sit. */
+  bioAction?: React.ReactNode;
   /**
    * The one thing you can do to this person — Follow, on someone else's
    * profile. It sits in the block rather than the nav bar: iOS 26 wraps
@@ -100,6 +101,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onFollowingPress,
   tags,
   children,
+  bioAction,
   action,
   titleAction,
   below,
@@ -120,6 +122,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const displayedRankCount = rankPreviewCount ?? rankCount;
   const rank = getRankProgress(displayedRankCount);
   const canPressAvatar = Boolean(onAvatarPress);
+  const displayName = profile.name?.trim();
+  const shouldShowDisplayName =
+    Boolean(displayName) &&
+    displayName?.localeCompare(profile.username, undefined, {
+      sensitivity: "accent",
+    }) !== 0;
 
   const metrics: Metric[] = [
     {
@@ -215,14 +223,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
 
           <View style={styles.identity}>
-            <Text
-              style={styles.name}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.55}
-            >
-              {profile.name || profile.username}
-            </Text>
+            {shouldShowDisplayName ? (
+              <Text
+                style={styles.name}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.55}
+              >
+                {displayName}
+              </Text>
+            ) : null}
             {action ? <View style={styles.identityFoot}>{action}</View> : null}
             <View style={styles.compactMetrics}>
               {metrics.map((m) => (
@@ -276,14 +286,19 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Text style={styles.bio} numberOfLines={3}>
             {profile.bio}
           </Text>
+        ) : bioAction ? (
+          <View style={styles.bioAction}>{bioAction}</View>
         ) : null}
 
         {(children || tags) && (
-          <View style={styles.favoritesRow}>
-            {children ? (
-              <View style={styles.favoritesMain}>{children}</View>
-            ) : null}
-            {tags ? <View style={styles.favoriteTags}>{tags}</View> : null}
+          <View style={styles.tasteProfile}>
+            <Text style={styles.tasteProfileLabel}>Taste Profile</Text>
+            <View style={styles.favoritesRow}>
+              {children ? (
+                <View style={styles.favoritesMain}>{children}</View>
+              ) : null}
+              {tags ? <View style={styles.favoriteTags}>{tags}</View> : null}
+            </View>
           </View>
         )}
 
@@ -300,9 +315,9 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.headerBrand,
   },
   container: {
-    paddingBottom: t.spacing.xl,
+    paddingBottom: t.spacing.lg,
     paddingHorizontal: t.spacing.gutter,
-    gap: t.spacing.lg,
+    gap: t.spacing.md,
   },
   below: {
     paddingBottom: t.spacing.xs,
@@ -385,6 +400,17 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     gap: t.spacing.lg,
   },
+  tasteProfile: {
+    gap: t.spacing.sm,
+    padding: t.spacing.md,
+    borderRadius: t.radius.card,
+    backgroundColor: "rgba(250,249,246,0.10)",
+  },
+  tasteProfileLabel: {
+    ...t.typography.eyebrow,
+    color: t.colors.onHeaderBrand,
+    opacity: 0.72,
+  },
   favoritesMain: {
     flex: 1,
     minWidth: 0,
@@ -410,6 +436,9 @@ const useStyles = makeStyles((t) => ({
     width: "100%" as const,
     color: t.colors.onHeaderBrand,
     opacity: 0.85,
+  },
+  bioAction: {
+    alignSelf: "flex-start" as const,
   },
   error: {
     ...t.typography.caption,

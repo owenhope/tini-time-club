@@ -20,6 +20,8 @@ import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { routes } from "@/utils/routes";
 import { useProfile } from "@/context/profile-context";
 import { shareInviteViaSheet } from "@/utils/inviteShare";
+import SegmentedControl from "@/components/shared/SegmentedControl";
+import { LEGAL_URLS } from "@/utils/legalUrls";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
@@ -99,7 +101,13 @@ const Settings = () => {
       id: "terms",
       title: "Terms of Service",
       icon: "document-text-outline",
-      onPress: () => router.push(routes.terms()),
+      onPress: () => void Linking.openURL(LEGAL_URLS.terms),
+    },
+    {
+      id: "privacy",
+      title: "Privacy Policy",
+      icon: "shield-checkmark-outline",
+      onPress: () => void Linking.openURL(LEGAL_URLS.privacy),
     },
     {
       id: "support",
@@ -126,30 +134,12 @@ const Settings = () => {
       <View style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Appearance</Text>
-          <View style={styles.segmented}>
-            {APPEARANCE_OPTIONS.map((option) => {
-              const selected = preference === option.value;
-              return (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[styles.segment, selected && styles.segmentSelected]}
-                  onPress={() => setPreference(option.value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`${option.label} appearance`}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      selected && styles.segmentTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <SegmentedControl
+            value={preference}
+            options={APPEARANCE_OPTIONS}
+            onChange={setPreference}
+            accessibilityLabel="Appearance"
+          />
         </View>
 
         {menuItems.map((item, index) => (
@@ -208,31 +198,6 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textMuted,
     textTransform: "uppercase" as const,
     marginBottom: t.spacing.md,
-  },
-  segmented: {
-    flexDirection: "row" as const,
-    backgroundColor: t.colors.surfaceSunken,
-    borderRadius: t.radius.pill,
-    padding: t.spacing.xs,
-    gap: t.spacing.xs,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: t.spacing.sm + 2,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-  },
-  segmentSelected: {
-    backgroundColor: t.colors.surface,
-    ...t.elevation.card,
-  },
-  segmentText: {
-    ...t.typography.body,
-    color: t.colors.textSecondary,
-  },
-  segmentTextSelected: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
   },
   menuItem: {
     backgroundColor: t.colors.surface,

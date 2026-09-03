@@ -39,9 +39,9 @@ const TasteInput = ({ control }: { control: any }) => {
   );
 };
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles((t) => ({
   inputContainer: {
-    marginVertical: 5,
+    paddingVertical: t.spacing.xs,
     width: "100%" as const,
   },
 }));

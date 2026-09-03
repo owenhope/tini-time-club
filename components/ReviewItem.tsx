@@ -268,14 +268,6 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
       )
     : null;
 
-  const venueCount = review.location?.total_ratings ?? 0;
-  const venueRating =
-    review.location?.rating != null && venueCount > 0
-      ? Number(review.location.rating)
-      : null;
-  const venueReviewLabel =
-    venueCount === 1 ? "1 review" : `${venueCount} reviews`;
-
   const locationId = review.location?.id;
   const handleLocationPress = useCallback(() => {
     if (!locationId) return;
@@ -299,13 +291,7 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
           activeOpacity={0.8}
           onPress={handleLocationPress}
           accessibilityRole="link"
-          accessibilityLabel={
-            venueRating != null
-              ? `${review.location?.name || "Place"}, ${formatRating(
-                  venueRating
-                )} from ${venueReviewLabel}`
-              : review.location?.name || "Place"
-          }
+          accessibilityLabel={review.location?.name || "Place"}
         >
           <View style={styles.venueChipLines}>
             <View style={styles.venueChipNameRow}>
@@ -323,14 +309,6 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
               <Text style={styles.venueChipMeta} numberOfLines={1}>
                 {cityCountry}
               </Text>
-            ) : null}
-            {venueRating != null ? (
-              <View style={styles.venueChipRating}>
-                <RatingPips value={1} max={1} size={13} accessibilityLabel="" />
-                <Text style={styles.venueChipRatingText} numberOfLines={1}>
-                  {formatRating(venueRating)} · {venueReviewLabel}
-                </Text>
-              </View>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -356,30 +334,19 @@ const ReviewScores = memo(({ review }: { review: Review }) => {
       accessibilityRole="summary"
       accessibilityLabel={`Taste ${review.taste} out of ${PIPS_MAX}. Presentation ${review.presentation} out of ${PIPS_MAX}. Overall ${formatRating(overall)}.`}
     >
-      <View style={styles.scoreAxis}>
-        <Text style={styles.scoreLabel}>Taste</Text>
-        <View style={styles.scorePips}>
-          <RatingPips
-            value={review.taste ?? 0}
-            size={15}
-            accessibilityLabel=""
-          />
-        </View>
-      </View>
-      <View style={styles.scoreAxis}>
-        <Text style={styles.scoreLabel}>Presentation</Text>
-        <View style={styles.scorePips}>
-          <RatingPips
-            value={review.presentation ?? 0}
-            size={15}
-            accessibilityLabel=""
-          />
-        </View>
-      </View>
-      <View style={styles.scoreOverall}>
+      <View style={styles.scorePrimary}>
         <Text style={styles.scoreLabel}>Overall</Text>
-        <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
+        <View style={styles.scoreOverallRow}>
+          <Text style={styles.scoreOverallValue}>{formatRating(overall)}</Text>
+          <View style={styles.scorePips}>
+            <RatingPips value={overall ?? 0} size={15} accessibilityLabel="" />
+          </View>
+        </View>
       </View>
+      <Text style={styles.scoreBreakdown} accessibilityElementsHidden>
+        Taste {formatRating(review.taste)} · Presentation{" "}
+        {formatRating(review.presentation)}
+      </Text>
     </View>
   );
 });
@@ -953,18 +920,6 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.xs,
     minWidth: 0,
   },
-  venueChipRating: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 5,
-    minWidth: 0,
-    marginTop: 2,
-  },
-  venueChipRatingText: {
-    ...t.typography.mono,
-    color: t.colors.textOnImage,
-    flexShrink: 1,
-  },
   venueChipMeta: {
     ...t.typography.caption,
     color: t.colors.textOnImage,
@@ -979,19 +934,23 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     gap: 6,
   },
-  // A review is two scores. They read as olives — the brand's own scale —
-  // with the blended TTC number beside them, never instead of them.
+  // Overall leads; its two inputs remain visible as compact supporting copy.
   scores: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
-    gap: t.spacing.xl,
+    alignItems: "flex-end" as const,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
     paddingHorizontal: t.spacing.lg,
-    paddingTop: t.spacing.lg - 2,
+    paddingTop: t.spacing.md,
     backgroundColor: t.colors.surface,
   },
-  scoreAxis: {
-    alignItems: "flex-start" as const,
-    gap: 7,
+  scorePrimary: {
+    gap: t.spacing.xs,
+  },
+  scoreOverallRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
   },
   // The same sunken well places put around their olives (see the map peek
   // sheet and the venue header), so ratings read as one system everywhere.
@@ -1005,11 +964,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.eyebrow,
     color: t.colors.textMuted,
   },
-  scoreOverall: {
-    flex: 1,
-    alignItems: "flex-end" as const,
-    gap: 3,
-  },
   scoreOverallValue: {
     ...t.typography.display,
     // The score belongs to the olives beside it, so it takes their green
@@ -1018,6 +972,13 @@ const useStyles = makeStyles((t) => ({
     // dark-mode numbers.
     color: t.isDark ? t.colors.textSecondary : t.colors.secondary,
     fontVariant: ["tabular-nums"] as const,
+  },
+  scoreBreakdown: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+    textAlign: "right" as const,
+    paddingBottom: t.spacing.xs,
+    flexShrink: 1,
   },
   footer: {
     backgroundColor: t.colors.surface,
@@ -1032,8 +993,6 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.lg + 2,
     borderTopWidth: 1,
     borderTopColor: t.colors.divider,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.divider,
     paddingTop: t.spacing.md - 1,
     paddingBottom: t.spacing.md + 1,
     marginBottom: t.spacing.md - 1,

@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import GoldenGlassList from "@/components/explore/GoldenGlassList";
 
 const mockGetGoldenGlassRecipients = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock("@/services/goldenGlassService", () => ({
   getGoldenGlassRecipients: (...args: unknown[]) =>
@@ -11,7 +12,7 @@ jest.mock("@/services/goldenGlassService", () => ({
 }));
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock("@/utils/native-tab-bar-insets", () => ({
@@ -70,6 +71,7 @@ describe("GoldenGlassList", () => {
 
   beforeEach(() => {
     mockGetGoldenGlassRecipients.mockReset();
+    mockPush.mockReset();
   });
 
   afterEach(() => {
@@ -132,5 +134,31 @@ describe("GoldenGlassList", () => {
     const list = renderer!.root.findByType(FlatList);
     expect(list.props.ListHeaderComponent).toBeTruthy();
     expect(list.props.data).toEqual([]);
+  });
+
+  it("explains how locations qualify and rank", async () => {
+    mockGetGoldenGlassRecipients.mockResolvedValue([]);
+
+    await act(async () => {
+      renderer = create(
+        <GoldenGlassList enabled regionId={1} regionName="Vancouver" />
+      );
+      await Promise.resolve();
+    });
+
+    const list = renderer!.root.findByType(FlatList);
+    let headerRenderer!: ReactTestRenderer;
+    act(() => {
+      headerRenderer = create(list.props.ListHeaderComponent);
+    });
+    act(() => {
+      headerRenderer.root
+        .findByProps({ accessibilityLabel: "How Golden Glass works" })
+        .props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/golden-glass-info");
+
+    act(() => headerRenderer.unmount());
   });
 });

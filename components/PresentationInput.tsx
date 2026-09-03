@@ -39,9 +39,9 @@ const PresentationInput = ({ control }: { control: any }) => {
   );
 };
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles((t) => ({
   inputContainer: {
-    marginBottom: 10,
+    paddingBottom: t.spacing.md,
     width: "100%" as const,
   },
 }));

@@ -264,11 +264,17 @@ const Location = () => {
     if (!displayLocation?.id) return;
 
     let active = true;
+    // A location-id change starts a new external regulars request.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingRegulars(true);
     getRegularsByLocation([displayLocation.id])
       .then((grouped) => {
         if (active) {
-          setRegulars(grouped.get(String(displayLocation.id)) ?? []);
+          const nextRegulars = grouped.get(String(displayLocation.id)) ?? [];
+          setRegulars(nextRegulars);
+          if (shouldOpenRegularsForScreenshot && nextRegulars.length > 0) {
+            setRegularsOpen(true);
+          }
         }
       })
       .catch((error) => {
@@ -282,7 +288,7 @@ const Location = () => {
     return () => {
       active = false;
     };
-  }, [displayLocation?.id]);
+  }, [displayLocation?.id, shouldOpenRegularsForScreenshot]);
 
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
@@ -410,12 +416,6 @@ const Location = () => {
       loadLocationReviews();
     }
   }, [displayLocation?.id, loadLocationReviews]);
-
-  useEffect(() => {
-    if (shouldOpenRegularsForScreenshot && regularPreview.length > 0) {
-      setRegularsOpen(true);
-    }
-  }, [regularPreview.length, shouldOpenRegularsForScreenshot]);
 
   return (
     <View style={styles.container}>

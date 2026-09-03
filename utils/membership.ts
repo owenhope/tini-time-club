@@ -84,7 +84,7 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
   "golden-glass": {
     eyebrow: "GOLDEN GLASS",
     title: "See the club's current glass list",
-    body: "Join or sign in to discover the five places the club is raising a glass to right now.",
+    body: "Join or sign in to discover the ten places the club is raising a glass to right now.",
   },
   "members-directory": {
     eyebrow: "THE MEMBERS",

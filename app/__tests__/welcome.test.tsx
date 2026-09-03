@@ -1,4 +1,5 @@
 import React from "react";
+import { Linking } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import Welcome from "@/app/welcome";
 
@@ -69,8 +70,10 @@ jest.mock("@expo/vector-icons", () => ({
 
 describe("Welcome", () => {
   let renderer: ReactTestRenderer | undefined;
+  let openUrlSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    openUrlSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     mockReplace.mockClear();
     mockPush.mockClear();
     mockAcceptVisitorPreview.mockClear();
@@ -80,6 +83,7 @@ describe("Welcome", () => {
 
   afterEach(() => {
     act(() => renderer?.unmount());
+    openUrlSpy.mockRestore();
   });
 
   it("invites signed-out users to discover Martinis and opens the visitor feed", async () => {
@@ -103,5 +107,30 @@ describe("Welcome", () => {
     expect(mockBeginSignOut).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith("/home");
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("lets visitors inspect both legal documents before continuing", async () => {
+    act(() => {
+      renderer = create(<Welcome />);
+    });
+
+    await act(async () => {
+      renderer!.root
+        .findByProps({ accessibilityLabel: "Read the Terms of Service" })
+        .props.onPress();
+      renderer!.root
+        .findByProps({ accessibilityLabel: "Read the Privacy Policy" })
+        .props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(openUrlSpy).toHaveBeenNthCalledWith(
+      1,
+      "https://tinitimeclub.com/terms"
+    );
+    expect(openUrlSpy).toHaveBeenNthCalledWith(
+      2,
+      "https://tinitimeclub.com/privacy"
+    );
   });
 });

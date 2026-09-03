@@ -49,7 +49,7 @@ const MultiSelectInput = ({
               key={id}
               style={[styles.optionButton, isSelected && styles.selectedButton]}
               onPress={() => toggleSelection(id)}
-              accessibilityRole="button"
+              accessibilityRole="checkbox"
               accessibilityState={{ selected: isSelected }}
             >
               <Text
@@ -70,7 +70,7 @@ const MultiSelectInput = ({
 
 const useStyles = makeStyles((t) => ({
   container: {
-    marginVertical: 10,
+    paddingVertical: t.spacing.md,
     width: "100%" as const,
   },
   label: {
@@ -84,7 +84,9 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   optionButton: {
-    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: "center" as const,
+    paddingVertical: t.spacing.sm,
     paddingHorizontal: t.spacing.lg,
     borderRadius: t.radius.pill,
     borderWidth: 1,

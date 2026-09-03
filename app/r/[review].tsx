@@ -35,7 +35,9 @@ export default function SharedReviewScreen() {
   const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(
+    () => comments === "1" || isScreenshotSeed(screenshotSeed, "comments")
+  );
 
   const shareReview = useReviewShareMenu(review);
 
@@ -60,17 +62,10 @@ export default function SharedReviewScreen() {
   }, [reviewId, viewerId]);
 
   useEffect(() => {
+    // The route parameter owns the shared review's asynchronous snapshot.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadReview();
   }, [loadReview]);
-
-  useEffect(() => {
-    if (
-      review &&
-      (comments === "1" || isScreenshotSeed(screenshotSeed, "comments"))
-    ) {
-      setCommentsOpen(true);
-    }
-  }, [comments, review, screenshotSeed]);
 
   const goBack = () => {
     if (router.canGoBack()) {

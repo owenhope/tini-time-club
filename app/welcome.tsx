@@ -1,6 +1,6 @@
 import "react-native-get-random-values";
 import React from "react";
-import { Pressable, View, Text } from "react-native";
+import { Linking, Pressable, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import { acceptVisitorPreview } from "@/services/visitor-session";
 import { reportError } from "@/utils/log";
 import AnalyticService from "@/services/analyticsService";
 import { useProfile } from "@/context/profile-context";
+import { LEGAL_URLS } from "@/utils/legalUrls";
 
 const FEATURES = [
   {
@@ -130,10 +131,31 @@ const Welcome = () => {
             size="medium"
             fullWidth
           />
-          <Text style={styles.legalCopy}>
-            By continuing, you confirm you are of legal drinking age and agree
-            to the Terms and Privacy Policy.
-          </Text>
+          <View style={styles.legalRow}>
+            <Text style={styles.legalCopy}>
+              By continuing, you confirm you are of legal drinking age and agree
+              to the
+            </Text>
+            <View style={styles.legalLinks}>
+              <Pressable
+                onPress={() => void Linking.openURL(LEGAL_URLS.terms)}
+                accessibilityRole="link"
+                accessibilityLabel="Read the Terms of Service"
+                hitSlop={8}
+              >
+                <Text style={styles.legalLink}>Terms of Service</Text>
+              </Pressable>
+              <Text style={styles.legalCopy}>and</Text>
+              <Pressable
+                onPress={() => void Linking.openURL(LEGAL_URLS.privacy)}
+                accessibilityRole="link"
+                accessibilityLabel="Read the Privacy Policy"
+                hitSlop={8}
+              >
+                <Text style={styles.legalLink}>Privacy Policy</Text>
+              </Pressable>
+            </View>
+          </View>
           <Pressable
             onPress={() => router.push(routes.auth())}
             style={({ pressed }) => [
@@ -225,6 +247,21 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     color: t.colors.textOnImage,
     textAlign: "center" as const,
+  },
+  legalRow: {
+    alignItems: "center" as const,
+    gap: t.spacing.xs,
+  },
+  legalLinks: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    justifyContent: "center" as const,
+    gap: t.spacing.sm,
+  },
+  legalLink: {
+    ...t.typography.caption,
+    color: t.colors.textOnImage,
+    textDecorationLine: "underline" as const,
   },
   signInLink: {
     minHeight: 44,

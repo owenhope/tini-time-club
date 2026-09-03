@@ -52,7 +52,7 @@ const SelectableOptionsInput = <TFieldValues extends FieldValues>({
                     void Haptics.selectionAsync();
                     onChange(id);
                   }}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityLabel={optionName}
                   accessibilityState={{ selected: isSelected }}
                 >
@@ -76,18 +76,18 @@ const SelectableOptionsInput = <TFieldValues extends FieldValues>({
 
 const useStyles = makeStyles((t) => ({
   inputContainer: {
-    marginVertical: 5,
+    paddingVertical: t.spacing.xs,
     width: "100%" as const,
   },
   buttonGroup: {
     flexDirection: "column" as const,
-    marginTop: 5,
+    paddingTop: t.spacing.xs,
+    gap: t.spacing.md,
   },
   optionButton: {
     width: "100%" as const,
     paddingVertical: t.spacing.lg,
     paddingHorizontal: t.spacing.xl - 4,
-    marginBottom: t.spacing.md,
     borderRadius: t.radius.pill,
     // Reserve the selected outline so toggling never changes the pill's box.
     borderWidth: 2,

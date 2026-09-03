@@ -75,13 +75,20 @@ export default function ExploreRegionSelector({
               </View>
               <Pressable
                 onPress={() => setOpen(false)}
+                accessibilityRole="button"
                 accessibilityLabel="Close region selector"
+                hitSlop={10}
               >
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </Pressable>
             </View>
 
-            <Pressable style={styles.locationButton} onPress={onUseMyLocation}>
+            <Pressable
+              style={styles.locationButton}
+              onPress={onUseMyLocation}
+              accessibilityRole="button"
+              accessibilityLabel="Use my current location"
+            >
               {state.status === "loading" ? (
                 <ActivityIndicator color={colors.onAccentTonal} />
               ) : (
@@ -129,6 +136,10 @@ export default function ExploreRegionSelector({
                       styles.regionRowSelected,
                   ]}
                   onPress={() => void select(item)}
+                  accessibilityRole="radio"
+                  accessibilityState={{
+                    selected: item.id === state.selectedRegion?.id,
+                  }}
                 >
                   <Text
                     style={[
@@ -163,7 +174,7 @@ export default function ExploreRegionSelector({
 
 const useStyles = makeStyles((t) => ({
   control: {
-    minHeight: 38,
+    minHeight: 44,
     borderRadius: t.radius.pill,
     paddingHorizontal: t.spacing.md,
     flexDirection: "row" as const,

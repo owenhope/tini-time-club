@@ -114,6 +114,9 @@ export const routes = {
   /** Martini Index and its instant Pick One tool. */
   martiniIndex: () => "/martini-index" as const satisfies Href,
 
+  /** Explanation of Golden Glass qualification and ranking. */
+  goldenGlassInfo: () => "/golden-glass-info" as const satisfies Href,
+
   /** Own profile tab. */
   profile: () => "/profile" as const satisfies Href,
 

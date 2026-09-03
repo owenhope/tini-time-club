@@ -17,6 +17,9 @@ const Notifications = () => {
     null
   );
   const [mentionOverride, setMentionOverride] = useState<boolean | null>(null);
+  const [savingReminder, setSavingReminder] = useState(false);
+  const [savingMentions, setSavingMentions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const persistedReminderEnabled =
     profile?.weekly_push_notifications_enabled ?? true;
   const reminderEnabled = reminderOverride ?? persistedReminderEnabled;
@@ -25,26 +28,45 @@ const Notifications = () => {
   const mentionEnabled = mentionOverride ?? persistedMentionEnabled;
 
   const toggleReminder = async (enabled: boolean) => {
+    setError(null);
+    setSavingReminder(true);
     setReminderOverride(enabled);
-    const result = await updateProfile({
-      weekly_push_notifications_enabled: enabled,
-    });
+    try {
+      const result = await updateProfile({
+        weekly_push_notifications_enabled: enabled,
+      });
 
-    if (result.error) {
+      if (result.error) {
+        setError("We couldn't save your reminder preference. Try again.");
+        return;
+      }
+
+      await setFridayMartiniReminderEnabled(enabled);
+    } catch {
+      setError("Your preference was saved, but the reminder couldn't update.");
+    } finally {
       setReminderOverride(null);
-      return;
+      setSavingReminder(false);
     }
-
-    setReminderOverride(null);
-    await setFridayMartiniReminderEnabled(enabled);
   };
 
   const toggleMentions = async (enabled: boolean) => {
+    setError(null);
+    setSavingMentions(true);
     setMentionOverride(enabled);
-    await updateProfile({
-      mention_notifications_enabled: enabled,
-    });
-    setMentionOverride(null);
+    try {
+      const result = await updateProfile({
+        mention_notifications_enabled: enabled,
+      });
+      if (result.error) {
+        setError("We couldn't save your mention preference. Try again.");
+      }
+    } catch {
+      setError("We couldn't save your mention preference. Try again.");
+    } finally {
+      setMentionOverride(null);
+      setSavingMentions(false);
+    }
   };
 
   return (
@@ -60,6 +82,7 @@ const Notifications = () => {
           <Switch
             value={reminderEnabled}
             onValueChange={toggleReminder}
+            disabled={savingReminder}
             trackColor={{ true: colors.accent }}
             accessibilityLabel="Tini Time Reminder"
           />
@@ -74,10 +97,16 @@ const Notifications = () => {
           <Switch
             value={mentionEnabled}
             onValueChange={toggleMentions}
+            disabled={savingMentions}
             trackColor={{ true: colors.accent }}
             accessibilityLabel="Mention notifications"
           />
         </View>
+        {error ? (
+          <Text style={styles.error} accessibilityRole="alert" selectable>
+            {error}
+          </Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -114,6 +143,11 @@ const useStyles = makeStyles((t) => ({
   rowSubtitle: {
     ...t.typography.caption,
     color: t.colors.textSecondary,
+  },
+  error: {
+    ...t.typography.caption,
+    color: t.colors.danger,
+    paddingHorizontal: t.spacing.sm,
   },
 }));
 

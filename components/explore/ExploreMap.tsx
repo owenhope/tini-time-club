@@ -182,20 +182,19 @@ function ExploreMap({
   const isScreenshotMap =
     screenshotSeed === "map" || screenshotSeed === "place";
   const searchRef = useRef<any>(null);
-  // Slide the search bar down over the map; stay mounted until the exit
-  // animation lands so the bar doesn't vanish mid-slide.
-  const searchAnim = useRef(new Animated.Value(searchVisible ? 1 : 0)).current;
-  const [searchMounted, setSearchMounted] = useState(searchVisible);
+  // Keep the inexpensive overlay mounted and animate its visibility. This
+  // avoids a second render-state machine whose mount timing could race the
+  // native animation.
+  const [searchAnim] = useState(
+    () => new Animated.Value(searchVisible ? 1 : 0)
+  );
   useEffect(() => {
-    if (searchVisible) setSearchMounted(true);
-    else Keyboard.dismiss();
+    if (!searchVisible) Keyboard.dismiss();
     Animated.timing(searchAnim, {
       toValue: searchVisible ? 1 : 0,
       duration: 200,
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished && !searchVisible) setSearchMounted(false);
-    });
+    }).start();
   }, [searchAnim, searchVisible]);
   const [region, setRegion] = useState<Region>(INITIAL_REGION);
   const [locationResolved, setLocationResolved] = useState(false);
@@ -430,6 +429,8 @@ function ExploreMap({
     if (!exploreRegion) {
       centeredRegionIdRef.current = null;
       initialLocationAppliedRef.current = false;
+      // Clearing the selected region intentionally resets its map snapshot.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocationResolved(false);
       setLocationsReady(false);
       setLocations([]);
@@ -490,6 +491,8 @@ function ExploreMap({
     setLocationResolved(true);
 
     if (location.status === "denied") {
+      // Permission results are external state mirrored as actionable UI copy.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocationNotice(
         location.canOpenSettings
           ? "Location is off. Enable it in Settings to see bars near you."
@@ -716,36 +719,33 @@ function ExploreMap({
 
   return (
     <View style={styles.screen}>
-      {searchMounted ? (
-        <Animated.View
-          style={[
-            styles.searchOverlay,
-            {
-              opacity: searchAnim,
-              transform: [
-                {
-                  translateY: searchAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-72, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <ExploreSearchArea>
-            <Search
-              ref={searchRef}
-              autoFocus
-              onPlaceSelected={handleSearchPlaceSelected}
-              currentLocation={{
-                latitude: region.latitude,
-                longitude: region.longitude,
-              }}
-            />
-          </ExploreSearchArea>
-        </Animated.View>
-      ) : null}
+      <Animated.View
+        pointerEvents={searchVisible ? "auto" : "none"}
+        accessibilityElementsHidden={!searchVisible}
+        importantForAccessibility={
+          searchVisible ? "auto" : "no-hide-descendants"
+        }
+        style={[
+          styles.searchOverlay,
+          {
+            opacity: searchAnim,
+            transformOrigin: "top center",
+            transform: [{ scaleY: searchAnim }],
+          },
+        ]}
+      >
+        <ExploreSearchArea>
+          <Search
+            ref={searchRef}
+            autoFocus={searchVisible}
+            onPlaceSelected={handleSearchPlaceSelected}
+            currentLocation={{
+              latitude: region.latitude,
+              longitude: region.longitude,
+            }}
+          />
+        </ExploreSearchArea>
+      </Animated.View>
       <View
         style={styles.mapFrame}
         onLayout={(event) => {
@@ -870,6 +870,7 @@ const useStyles = makeStyles((t) => ({
     left: 0,
     right: 0,
     zIndex: 30,
+    overflow: "hidden" as const,
   },
   mapFrame: {
     flex: 1,

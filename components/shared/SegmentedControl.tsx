@@ -19,6 +19,7 @@ export interface SegmentedControlProps<Value extends string> {
   onChange: (value: Value) => void;
   style?: StyleProp<ViewStyle>;
   tone?: "default" | "ink" | "brand";
+  accessibilityLabel?: string;
 }
 
 /** The app-wide text-only segmented control used to switch peer views. */
@@ -28,6 +29,7 @@ const SegmentedControl = <Value extends string>({
   onChange,
   style,
   tone = "default",
+  accessibilityLabel,
 }: SegmentedControlProps<Value>) => {
   const styles = useStyles();
   const onInk = tone === "ink";
@@ -41,6 +43,8 @@ const SegmentedControl = <Value extends string>({
         onBrand && styles.containerBrand,
         style,
       ]}
+      accessibilityRole="tablist"
+      accessibilityLabel={accessibilityLabel}
     >
       {options.map((option) => {
         const selected = value === option.value;

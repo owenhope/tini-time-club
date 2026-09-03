@@ -333,17 +333,6 @@ const MemberProfile = () => {
           <Text style={styles.ctaText}>Add favorite spirits & types</Text>
         </TouchableOpacity>
       )}
-      {!profile?.bio && (
-        <TouchableOpacity
-          onPress={() => router.push(routes.editProfile())}
-          style={styles.ctaContainer}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel="Add a bio to your profile"
-        >
-          <Text style={styles.ctaText}>Add a bio</Text>
-        </TouchableOpacity>
-      )}
       {favoriteLocation ? (
         <FavoriteLocationLink location={favoriteLocation} />
       ) : (
@@ -410,6 +399,19 @@ const MemberProfile = () => {
           profile?.username && router.push(routes.following(profile.username))
         }
         tags={favoriteTags}
+        bioAction={
+          !profile?.bio ? (
+            <TouchableOpacity
+              onPress={() => router.push(routes.editProfile())}
+              style={styles.bioCta}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Add a bio to your profile"
+            >
+              <Text style={styles.bioCtaText}>Add a short bio</Text>
+            </TouchableOpacity>
+          ) : null
+        }
       >
         {favoriteChips}
       </ProfileHeader>
@@ -525,6 +527,14 @@ const useStyles = makeStyles((t) => ({
     alignItems: "flex-start" as const,
     minHeight: 32,
     justifyContent: "center" as const,
+  },
+  bioCta: {
+    minHeight: 32,
+    justifyContent: "center" as const,
+  },
+  bioCtaText: {
+    ...t.typography.bodyStrong,
+    color: t.colors.highlight,
   },
   // The header owns the screen gutter now, so its children sit flush.
   favoritesSection: {

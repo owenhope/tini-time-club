@@ -197,9 +197,9 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.sm,
   },
   searchToggle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: "rgba(250,249,246,0.14)",

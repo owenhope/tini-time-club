@@ -123,6 +123,8 @@ const EditProfile = () => {
   }, [profile]);
 
   useEffect(() => {
+    // Route entry is the ownership boundary for this form's initial snapshot.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
 

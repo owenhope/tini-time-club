@@ -137,6 +137,8 @@ const LayoutContent = () => {
   // transition once the profile arrived.
   useEffect(() => {
     if (!loading) {
+      // This intentionally latches the first completed external profile read.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasResolvedProfileOnce(true);
     }
   }, [loading]);

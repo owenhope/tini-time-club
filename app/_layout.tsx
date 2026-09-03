@@ -339,6 +339,8 @@ export function RootLayoutNav() {
       return;
     }
 
+    // Consuming this external auth transition prevents duplicate routing.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingSignedInUserId(null);
     void (async () => {
       const defaultTarget = getAuthenticatedDefaultRoute(profile);
