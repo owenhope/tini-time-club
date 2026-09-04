@@ -131,31 +131,28 @@ const Welcome = () => {
             size="medium"
             fullWidth
           />
-          <View style={styles.legalRow}>
-            <Text style={styles.legalCopy}>
-              By continuing, you confirm you are of legal drinking age and agree
-              to the
+          <Text style={styles.legalCopy}>
+            By continuing, you confirm you are of legal drinking age and agree
+            to the{" "}
+            <Text
+              style={styles.legalLink}
+              onPress={() => void Linking.openURL(LEGAL_URLS.terms)}
+              accessibilityRole="link"
+              accessibilityLabel="Read the Terms of Service"
+            >
+              Terms of Service
             </Text>
-            <View style={styles.legalLinks}>
-              <Pressable
-                onPress={() => void Linking.openURL(LEGAL_URLS.terms)}
-                accessibilityRole="link"
-                accessibilityLabel="Read the Terms of Service"
-                hitSlop={8}
-              >
-                <Text style={styles.legalLink}>Terms of Service</Text>
-              </Pressable>
-              <Text style={styles.legalCopy}>and</Text>
-              <Pressable
-                onPress={() => void Linking.openURL(LEGAL_URLS.privacy)}
-                accessibilityRole="link"
-                accessibilityLabel="Read the Privacy Policy"
-                hitSlop={8}
-              >
-                <Text style={styles.legalLink}>Privacy Policy</Text>
-              </Pressable>
-            </View>
-          </View>
+            {" and "}
+            <Text
+              style={styles.legalLink}
+              onPress={() => void Linking.openURL(LEGAL_URLS.privacy)}
+              accessibilityRole="link"
+              accessibilityLabel="Read the Privacy Policy"
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
           <Pressable
             onPress={() => router.push(routes.auth())}
             style={({ pressed }) => [
@@ -163,10 +160,12 @@ const Welcome = () => {
               pressed && styles.pressed,
             ]}
             accessibilityRole="link"
-            accessibilityLabel="Sign in"
+            accessibilityLabel="Already have an account? Sign in."
             hitSlop={{ top: 8, bottom: 8, left: 24, right: 24 }}
           >
-            <Text style={styles.signInText}>Sign In</Text>
+            <Text style={styles.signInText}>
+              Already have an account? Sign in.
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -246,17 +245,7 @@ const useStyles = makeStyles((t) => ({
   legalCopy: {
     ...t.typography.caption,
     color: t.colors.textOnImage,
-    textAlign: "center" as const,
-  },
-  legalRow: {
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
-  },
-  legalLinks: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    justifyContent: "center" as const,
-    gap: t.spacing.sm,
+    textAlign: "left" as const,
   },
   legalLink: {
     ...t.typography.caption,

@@ -131,6 +131,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           keyExtractor={(place) => String(place.location_id)}
           renderItem={({ item }) => <RegularPlaceRow place={item} />}
           ListHeaderComponent={header}
+          ListHeaderComponentStyle={styles.regularsHeader}
           ListEmptyComponent={
             loadingRegulars ? (
               <View>
@@ -167,6 +168,9 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
+  regularsHeader: {
+    paddingBottom: t.spacing.md,
+  },
   skeletonRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,

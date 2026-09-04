@@ -27,6 +27,7 @@ import {
   type PlaceResult,
 } from "@/services/placesService";
 import { makeStyles, useTheme } from "@/theme";
+import { useSelectionRowStyles } from "@/components/shared/selection-row-styles";
 import { reportError, warn } from "@/utils/log";
 
 export interface LocationInputValue {
@@ -74,6 +75,7 @@ const LocationInput = ({
   onLocationSelected,
 }: LocationInputProps) => {
   const styles = useStyles();
+  const selectionStyles = useSelectionRowStyles();
   const { colors } = useTheme();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
@@ -334,9 +336,11 @@ const LocationInput = ({
           return (
             <TouchableOpacity
               key={place.place_id}
+              activeOpacity={0.7}
               style={[
+                selectionStyles.row,
                 styles.placeButton,
-                selected && styles.selectedPlaceButton,
+                selected && selectionStyles.selected,
               ]}
               onPress={() => {
                 void Haptics.selectionAsync();
@@ -352,8 +356,9 @@ const LocationInput = ({
                 <View style={styles.placeTextContainer}>
                   <Text
                     style={[
+                      selectionStyles.title,
                       styles.placeName,
-                      selected && styles.selectedPlaceText,
+                      selected && selectionStyles.selectedText,
                     ]}
                   >
                     {placeName}
@@ -361,7 +366,7 @@ const LocationInput = ({
                   <Text
                     style={[
                       styles.placeAddress,
-                      selected && styles.selectedPlaceText,
+                      selected && selectionStyles.selectedText,
                     ]}
                   >
                     {place.vicinity || place.formatted_address}
@@ -375,7 +380,7 @@ const LocationInput = ({
                     <Text
                       style={[
                         styles.distanceText,
-                        selected && styles.selectedPlaceText,
+                        selected && selectionStyles.selectedText,
                       ]}
                     >
                       {formatDistance(distance)}
@@ -538,16 +543,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: 80,
   },
   placeButton: {
-    backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderRadius: t.radius.md,
-    padding: t.spacing.md,
     marginBottom: t.spacing.sm,
-  },
-  selectedPlaceButton: {
-    backgroundColor: t.colors.accent,
-    borderColor: t.colors.accent,
   },
   placeContent: {
     flexDirection: "row" as const,
@@ -559,8 +555,6 @@ const useStyles = makeStyles((t) => ({
     marginRight: t.spacing.md,
   },
   placeName: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
     marginBottom: t.spacing.xs,
   },
   placeAddress: {
@@ -590,9 +584,6 @@ const useStyles = makeStyles((t) => ({
   },
   ratingText: {
     ...t.typography.label,
-    color: t.colors.onAccent,
-  },
-  selectedPlaceText: {
     color: t.colors.onAccent,
   },
   loadingContainer: {

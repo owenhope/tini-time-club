@@ -42,6 +42,7 @@ import AnalyticService from "@/services/analyticsService";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { collectAchievements, type Achievement } from "@/utils/celebrations";
 import { RATING_MIN } from "@/utils/ratingUtils";
 import { isReviewStepComplete } from "@/utils/reviewStepValidation";
@@ -108,6 +109,7 @@ const ReviewPreview = ({
   mentions: MentionSpan[];
 }) => {
   const styles = useStyles();
+  const tabBarInset = useNativeTabBarContentInset();
   const { colors } = useTheme();
 
   const mockReview = useMemo(
@@ -174,19 +176,21 @@ const ReviewPreview = ({
   return (
     <ScrollView
       style={styles.previewContainer}
-      contentContainerStyle={styles.previewScrollContent}
+      contentContainerStyle={[
+        styles.previewScrollContent,
+        { paddingBottom: tabBarInset },
+      ]}
+      contentInsetAdjustmentBehavior="never"
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.previewWrapper}>
-        <View style={styles.scaledReviewContainer}>
-          <ReviewItem
-            review={mockReview}
-            canDelete={false}
-            previewMode={true}
-            {...mockHandlers}
-          />
-        </View>
+        <ReviewItem
+          review={mockReview}
+          canDelete={false}
+          previewMode={true}
+          {...mockHandlers}
+        />
       </View>
     </ScrollView>
   );
@@ -883,7 +887,10 @@ function ReviewComposer() {
 
   return (
     <>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback
+        onPress={Keyboard.dismiss}
+        disabled={isReviewing && currentQuestionTitle === "Preview"}
+      >
         {isEditMode && !isReviewing && !isChangingPhoto ? (
           <View style={styles.editLoadingContainer}>
             <ActivityIndicator size="large" color={colors.accent} />
@@ -1294,6 +1301,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "stretch" as const,
   },
   previewContent: {
+    paddingHorizontal: t.spacing.md,
     paddingTop: t.spacing.sm + 2,
   },
   locationContent: {
@@ -1366,19 +1374,13 @@ const useStyles = makeStyles((t) => ({
     borderCurve: "continuous" as const,
   },
   previewWrapper: {
-    overflow: "hidden" as const,
-    paddingHorizontal: t.spacing.md,
-    alignItems: "center" as const,
+    width: "100%" as const,
+    alignSelf: "center" as const,
   },
   previewScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center" as const,
     paddingBottom: t.spacing.xl,
-  },
-  scaledReviewContainer: {
-    width: "115%" as const,
-    alignSelf: "center" as const,
-    marginLeft: "-7.5%" as const,
-    transform: [{ scale: 0.82 }],
-    transformOrigin: "top center",
   },
   captionInputContainer: {
     backgroundColor: t.colors.background,

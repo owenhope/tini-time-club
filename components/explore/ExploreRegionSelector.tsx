@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { makeStyles, useTheme } from "@/theme";
+import { useSelectionRowStyles } from "@/components/shared/selection-row-styles";
 import type { ExploreRegionState } from "@/hooks/useExploreRegion";
 import type { ExploreRegion } from "@/services/regionService";
 
@@ -25,6 +26,7 @@ export default function ExploreRegionSelector({
   onUseMyLocation,
 }: Props) {
   const styles = useStyles();
+  const selectionStyles = useSelectionRowStyles();
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -130,10 +132,12 @@ export default function ExploreRegionSelector({
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <Pressable
-                  style={[
+                  style={({ pressed }) => [
+                    selectionStyles.row,
                     styles.regionRow,
                     item.id === state.selectedRegion?.id &&
-                      styles.regionRowSelected,
+                      selectionStyles.selected,
+                    pressed && selectionStyles.pressed,
                   ]}
                   onPress={() => void select(item)}
                   accessibilityRole="radio"
@@ -143,9 +147,9 @@ export default function ExploreRegionSelector({
                 >
                   <Text
                     style={[
-                      styles.regionName,
+                      selectionStyles.title,
                       item.id === state.selectedRegion?.id &&
-                        styles.regionNameSelected,
+                        selectionStyles.selectedText,
                     ]}
                   >
                     {item.name}
@@ -154,7 +158,7 @@ export default function ExploreRegionSelector({
                     <Ionicons
                       name="checkmark"
                       size={18}
-                      color={colors.accent}
+                      color={colors.onAccent}
                     />
                   ) : null}
                 </Pressable>
@@ -238,22 +242,9 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: t.spacing.xs,
   },
   regionRow: {
-    minHeight: 56,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.md,
-    borderRadius: t.radius.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    backgroundColor: t.colors.surface,
-    ...t.elevation.card,
+    gap: t.spacing.md,
   },
-  regionRowSelected: {
-    backgroundColor: t.colors.accentSubtle,
-    borderColor: t.colors.accent,
-  },
-  regionName: { ...t.typography.bodyStrong, color: t.colors.text },
-  regionNameSelected: { color: t.colors.accent },
 }));
