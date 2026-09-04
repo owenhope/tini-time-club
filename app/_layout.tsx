@@ -52,6 +52,7 @@ import {
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { requestAppTrackingTransparencyAsync } from "@/services/appTrackingTransparencyService";
 import { trackAppUsage } from "@/services/appUsageService";
+import { checkForAppStoreUpdate } from "@/services/appVersionService";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
 import {
@@ -61,6 +62,25 @@ import {
 } from "@/services/visitor-session";
 
 const APP_USAGE_HEARTBEAT_MS = 5 * 60 * 1000;
+let lastPromptedAppStoreVersion: string | null = null;
+
+const promptForAppStoreUpdate = async () => {
+  const update = await checkForAppStoreUpdate();
+  if (!update || lastPromptedAppStoreVersion === update.latestVersion) return;
+
+  lastPromptedAppStoreVersion = update.latestVersion;
+  Alert.alert(
+    "Update available",
+    `Tini Time Club ${update.latestVersion} is available. You're using ${update.installedVersion}.`,
+    [
+      { text: "Not now", style: "cancel" },
+      {
+        text: "Update",
+        onPress: () => void Linking.openURL(update.storeUrl),
+      },
+    ]
+  );
+};
 
 // Keep the splash screen visible while we fetch resources
 // Must be called in global scope per Expo docs
@@ -277,6 +297,7 @@ export function RootLayoutNav() {
     if (!isReady || !fontsLoaded) return;
 
     void requestAppTrackingTransparencyAsync();
+    void promptForAppStoreUpdate();
   }, [fontsLoaded, isReady]);
 
   // A heartbeat on startup and every five foreground minutes powers the
@@ -552,6 +573,7 @@ export function RootLayoutNav() {
       void authCache.onAppStateChange(nextAppState);
 
       if (nextAppState === "active") {
+        void promptForAppStoreUpdate();
         void Promise.resolve(retryPendingPushUnregistrationAsync()).catch(
           (error) => {
             warn("[RootLayout] Push cleanup retry skipped:", error);
