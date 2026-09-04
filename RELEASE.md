@@ -29,6 +29,11 @@ GitHub Actions runs the repository audit on pull requests targeting `main` and
 again after a push reaches `main`. Branch and preview validation is still
 manual: run `npm run verify` before building.
 
+Audit cancellation is scoped to each PR/ref. CI also exports an iOS bundle
+with placeholder configuration and source-map uploads disabled. This proves
+compilation only: that artifact must not be published or used to validate a
+real backend. Root Jest excludes the separately tested admin application.
+
 ## Test policy
 
 Automated tests protect behavior that can break accounts, releases, or stored
@@ -168,6 +173,12 @@ precedence over `.env.local`.
 that app instance is using. `start:prod` deliberately keeps `APP_ENV=development`
 so the installed development client still opens through its `.dev` URL scheme,
 while its Supabase URL and anon key come from the production EAS environment.
+
+Configuration rejects unknown environment names. Preview defaults to and must
+use `BACKEND_ENV=development`; production must use `BACKEND_ENV=production`.
+Development clients can use either backend. These checks validate declared
+targets, not the Supabase project's actual identity: before any release, still
+verify the URL/key project, EAS channel, runtime version, and selected commit.
 
 Each environment must define:
 

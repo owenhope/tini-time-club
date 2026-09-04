@@ -58,10 +58,31 @@ const validateReleaseEnvironment = (
 };
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const appEnvironment =
-    (process.env.APP_ENV as "development" | "preview" | "production") ||
-    "development";
-  const backendEnvironment = process.env.BACKEND_ENV || appEnvironment;
+  const appEnvironment = process.env.APP_ENV ?? "development";
+  if (
+    appEnvironment !== "development" &&
+    appEnvironment !== "preview" &&
+    appEnvironment !== "production"
+  ) {
+    throw new Error("APP_ENV must be development, preview, or production.");
+  }
+  const backendEnvironment =
+    process.env.BACKEND_ENV ??
+    (appEnvironment === "production" ? "production" : "development");
+  if (
+    backendEnvironment !== "development" &&
+    backendEnvironment !== "production"
+  ) {
+    throw new Error("BACKEND_ENV must be development or production.");
+  }
+  if (
+    (appEnvironment === "production" && backendEnvironment !== "production") ||
+    (appEnvironment === "preview" && backendEnvironment !== "development")
+  ) {
+    throw new Error(
+      "Release app identity does not match its required backend environment."
+    );
+  }
 
   validateReleaseEnvironment(appEnvironment);
 

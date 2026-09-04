@@ -1,8 +1,8 @@
 name: Main audit
 
 # Main is the latest live source, including production OTA fixes. Development
-# and preview validation is run manually on the branch being tested; this
-# workflow audits only commits that have reached main.
+# and preview device validation is manual. This workflow checks PRs targeting
+# main and repeats the audit after merge.
 on:
   push:
     branches: ["main"]
@@ -10,7 +10,7 @@ on:
     branches: ["main"]
 
 concurrency:
-  group: main-audit
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -60,6 +60,23 @@ jobs:
           SENTRY_ORG: ci-placeholder
           SENTRY_PROJECT: ci-placeholder
           SENTRY_AUTH_TOKEN: ci-placeholder
+
+      # This is a compilation check, not a deployable update or backend test.
+      # Disable dotenv loading and source-map uploads; no real credentials needed.
+      - name: Export iOS bundle
+        run: npx expo export --platform ios --output-dir dist/ios-smoke
+        env:
+          CI: "1"
+          EXPO_NO_DOTENV: "1"
+          APP_ENV: production
+          BACKEND_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_META_APP_ID: ci-placeholder
+          EXPO_PUBLIC_SENTRY_DSN: https://public@example.ingest.sentry.io/1
+          SENTRY_ORG: ci-placeholder
+          SENTRY_PROJECT: ci-placeholder
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
       - name: Install admin dependencies
         run: npm ci --prefix admin

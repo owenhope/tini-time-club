@@ -77,19 +77,20 @@ describe("release environment validation", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    process.env.APP_ENV = originalAppEnvironment;
-    process.env.BACKEND_ENV = originalBackendEnvironment;
-    process.env.EXPO_PUBLIC_SUPABASE_URL = originalSupabaseUrl;
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = originalSupabaseAnonKey;
-    process.env.EXPO_PUBLIC_META_APP_ID = originalMetaAppId;
-    process.env.EXPO_PUBLIC_SENTRY_DSN = originalSentryDsn;
-    process.env.SENTRY_ORG = originalSentryOrg;
-    process.env.SENTRY_PROJECT = originalSentryProject;
-    process.env.SENTRY_AUTH_TOKEN = originalSentryAuthToken;
-    if (originalEasBuild === undefined) {
-      delete process.env.EAS_BUILD;
-    } else {
-      process.env.EAS_BUILD = originalEasBuild;
+    for (const [key, value] of Object.entries({
+      APP_ENV: originalAppEnvironment,
+      BACKEND_ENV: originalBackendEnvironment,
+      EXPO_PUBLIC_SUPABASE_URL: originalSupabaseUrl,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: originalSupabaseAnonKey,
+      EXPO_PUBLIC_META_APP_ID: originalMetaAppId,
+      EXPO_PUBLIC_SENTRY_DSN: originalSentryDsn,
+      SENTRY_ORG: originalSentryOrg,
+      SENTRY_PROJECT: originalSentryProject,
+      SENTRY_AUTH_TOKEN: originalSentryAuthToken,
+      EAS_BUILD: originalEasBuild,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
     }
   });
 
@@ -152,7 +153,7 @@ describe("release environment validation", () => {
     ).toBe("com.ohope.tinitimeclub");
   });
 
-  it("points the audited production app at the production backend", () => {
+  it("copies the configured backend environment into runtime metadata", () => {
     jest.spyOn(console, "log").mockImplementation(() => {});
     process.env.APP_ENV = "production";
     process.env.BACKEND_ENV = "production";
@@ -164,5 +165,59 @@ describe("release environment validation", () => {
     expect(
       createAppConfig({ config: {} } as ConfigContext).extra?.backendEnvironment
     ).toBe("production");
+  });
+
+  it.each(["prod", "", "staging"])(
+    "rejects unknown app environment %s",
+    (value) => {
+      process.env.APP_ENV = value;
+      expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
+        "APP_ENV must be"
+      );
+    }
+  );
+
+  it.each(["preview", "", "prod"])(
+    "rejects unknown backend environment %s",
+    (value) => {
+      process.env.APP_ENV = "development";
+      process.env.BACKEND_ENV = value;
+      expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
+        "BACKEND_ENV must be"
+      );
+    }
+  );
+
+  it.each([
+    ["production", "development"],
+    ["preview", "production"],
+  ])("rejects %s identity with %s backend", (app, backend) => {
+    process.env.APP_ENV = app;
+    process.env.BACKEND_ENV = backend;
+    expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
+      "Release app identity"
+    );
+  });
+
+  it("keeps development clients usable with production", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "development";
+    process.env.BACKEND_ENV = "production";
+    const config = createAppConfig({ config: {} } as ConfigContext);
+    expect(config.ios?.bundleIdentifier).toBe("com.ohope.tinitimeclub.dev");
+    expect(config.extra?.backendEnvironment).toBe("production");
+  });
+
+  it("defaults preview to the development backend", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "preview";
+    delete process.env.BACKEND_ENV;
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    setSentryReleaseEnvironment();
+    expect(
+      createAppConfig({ config: {} } as ConfigContext).extra?.backendEnvironment
+    ).toBe("development");
   });
 });
