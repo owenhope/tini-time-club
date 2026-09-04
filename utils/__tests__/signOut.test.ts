@@ -20,7 +20,7 @@ jest.mock("@/utils/log", () => ({ log: jest.fn(), reportError: jest.fn() }));
 describe("clearUserCaches", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("empties all three caches that hold member data", async () => {
+  it("requests cleanup from all three member-data caches", async () => {
     await clearUserCaches();
     expect(authCache.invalidateCache).toHaveBeenCalledTimes(1);
     expect(databaseService.clearAllCaches).toHaveBeenCalledTimes(1);

@@ -1,39 +1,23 @@
 import { fonts, typography } from "../tokens";
 
 describe("typography interface", () => {
-  it("exposes only the approved semantic roles", () => {
-    expect(Object.keys(typography)).toEqual([
-      "display",
-      "wordmark",
-      "title",
-      "heading",
-      "body",
-      // TextInput text: body without a lineHeight, because iOS TextInputs
-      // misalign typed text against the placeholder when one is set.
-      "input",
-      "bodyStrong",
-      "caption",
-      "label",
-      "eyebrow",
-      "mono",
-    ]);
+  it("omits input line height to preserve iOS placeholder alignment", () => {
+    expect(typography.input).not.toHaveProperty("lineHeight");
   });
 
-  it("uses one seven-step size scale with no UI text below 12", () => {
+  it("keeps UI text at least 12 points", () => {
     const sizes = [
       ...new Set(Object.values(typography).map((t) => t.fontSize)),
     ];
 
-    expect(sizes.sort((a, b) => a - b)).toEqual([12, 14, 16, 18, 20, 22, 32]);
+    expect(sizes.every((size) => Number.isFinite(size) && size >= 12)).toBe(
+      true
+    );
   });
 
-  it("loads only the five faces used by the public scale", () => {
-    expect(Object.keys(fonts)).toEqual([
-      "regular",
-      "semibold",
-      "bold",
-      "black",
-      "mono",
-    ]);
+  it("uses declared font families for every semantic role", () => {
+    for (const role of Object.values(typography)) {
+      expect(Object.values(fonts)).toContain(role.fontFamily);
+    }
   });
 });

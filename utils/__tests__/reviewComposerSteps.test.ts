@@ -8,14 +8,14 @@ import {
 describe("review composer steps", () => {
   it("keeps the camera and photo preview ahead of the question flow", () => {
     expect(REVIEW_STEP_TOTAL).toBe(9);
-    expect(REVIEW_QUESTIONS.map(({ title }) => title)).toEqual([
-      "Where was this served?",
-      "Which Spirit?",
-      "Which Type?",
-      "Presentation Rating",
-      "Taste Rating",
-      "Add a Caption",
-      "Preview",
+    expect(REVIEW_QUESTIONS.map(({ key }) => key)).toEqual([
+      "location",
+      "spirit",
+      "type",
+      "presentation",
+      "taste",
+      "comment",
+      undefined,
     ]);
   });
 

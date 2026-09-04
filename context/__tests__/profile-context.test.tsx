@@ -73,7 +73,10 @@ const signedInUser = { id: "10000000-0000-0000-0000-000000000001" };
 let latestContext: ReturnType<typeof useProfile> | undefined;
 
 function ProfileProbe() {
-  latestContext = useProfile();
+  const context = useProfile();
+  React.useEffect(() => {
+    latestContext = context;
+  }, [context]);
   return null;
 }
 
