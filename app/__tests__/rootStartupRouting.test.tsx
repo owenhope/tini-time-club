@@ -4,6 +4,7 @@ import { AppState, Text, TouchableOpacity } from "react-native";
 import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
 import SharedTabLayout from "../(tabs)/(home,discover,profile)/_layout";
+import { clearUserCaches } from "@/utils/signOut";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual(
@@ -669,7 +670,8 @@ describe("root startup routing", () => {
     expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
   });
 
-  it("returns to Welcome after logout", async () => {
+  it("clears member caches and returns to Welcome on automatic sign-out", async () => {
+    jest.mocked(clearUserCaches).mockClear();
     mockProfileState = {
       profile: {
         id: "member-1",
@@ -697,6 +699,7 @@ describe("root startup routing", () => {
     });
 
     expect(mockReplace).toHaveBeenLastCalledWith("/welcome");
+    expect(clearUserCaches).toHaveBeenCalledTimes(1);
   });
 
   it("keeps an authenticated member in place when a resume session read momentarily returns null", async () => {

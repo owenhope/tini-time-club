@@ -58,6 +58,84 @@ beforeEach(async () => {
 });
 
 describe("authCache.getProfile", () => {
+  it("keeps the new account's profile when the previous account's request finishes last", async () => {
+    signInAs("u1");
+    let release!: (value: unknown) => void;
+    respondWith(
+      new Promise((resolve) => {
+        release = resolve;
+      })
+    );
+    const oldRead = authCache.getProfile();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    signInAs("u2");
+    respondWith({
+      data: { id: "u2", username: "new-account", is_verified: true },
+      error: null,
+    });
+    await authCache.getProfile();
+    release({
+      data: { id: "u1", username: "old-account", is_verified: true },
+      error: null,
+    });
+    expect(await oldRead).toBeNull();
+    await expect(authCache.getProfile()).resolves.toMatchObject({ id: "u2" });
+    expect(
+      JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE_KEY))!).profile.id
+    ).toBe("u2");
+  });
+
+  it("finishes an already-started storage write before clearing persisted profile data", async () => {
+    signInAs("u1");
+    respondWith({
+      data: { id: "u1", username: "member", is_verified: true },
+      error: null,
+    });
+    const write = jest.mocked(AsyncStorage.setItem);
+    const originalSet = write.getMockImplementation()!;
+    let release!: () => void;
+    write.mockImplementationOnce(async (key, value) => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await originalSet(key, value);
+    });
+    try {
+      const read = authCache.getProfile();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      const clearing = authCache.clearCache();
+      release();
+      await Promise.all([read, clearing]);
+      expect(await AsyncStorage.getItem(PROFILE_CACHE_KEY)).toBeNull();
+    } finally {
+      write.mockImplementation(originalSet);
+    }
+  });
+  it("does not restore a profile when its read completes after sign-out cleanup", async () => {
+    signInAs("u1");
+    let release!: (value: unknown) => void;
+    respondWith(
+      new Promise((resolve) => {
+        release = resolve;
+      })
+    );
+    const oldRead = authCache.getProfile();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await authCache.clearCache();
+    release({
+      data: { id: "u1", username: "stale", is_verified: true },
+      error: null,
+    });
+    await oldRead;
+    expect(await AsyncStorage.getItem(PROFILE_CACHE_KEY)).toBeNull();
+    respondWith({
+      data: { id: "u1", username: "fresh", is_verified: true },
+      error: null,
+    });
+    await expect(authCache.getProfile()).resolves.toMatchObject({
+      username: "fresh",
+    });
+  });
   it("fetches once, then serves the cached profile", async () => {
     signInAs("u1");
     const profile = { id: "u1", username: "owen", is_verified: true };

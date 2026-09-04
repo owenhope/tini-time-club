@@ -44,6 +44,59 @@ beforeEach(async () => {
   await databaseService.clearAllCaches();
 });
 
+it("keeps the replacement request deduplicated when an invalidated read finishes", async () => {
+  const releases: ((value: unknown) => void)[] = [];
+  const single = jest.fn(
+    () => new Promise((resolve) => releases.push(resolve))
+  );
+  const query = { select: jest.fn(), eq: jest.fn(), single };
+  query.select.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  from.mockReturnValue(query);
+  const oldRead = databaseService.getUserProfile("member-1");
+  await databaseService.clearAllCaches();
+  const freshRead = databaseService.getUserProfile("member-1");
+  releases[0]({ data: { id: "member-1", username: "stale" }, error: null });
+  await oldRead;
+  const joinedRead = databaseService.getUserProfile("member-1");
+  expect(single).toHaveBeenCalledTimes(2);
+  releases[1]({ data: { id: "member-1", username: "fresh" }, error: null });
+  await expect(Promise.all([freshRead, joinedRead])).resolves.toEqual([
+    { id: "member-1", username: "fresh" },
+    { id: "member-1", username: "fresh" },
+  ]);
+});
+
+it("does not reuse a profile read completed after cache invalidation", async () => {
+  let release!: (value: unknown) => void;
+  const single = jest
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    )
+    .mockResolvedValue({
+      data: { id: "member-1", username: "fresh" },
+      error: null,
+    });
+  const query = { select: jest.fn(), eq: jest.fn(), single };
+  query.select.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  from.mockReturnValue(query);
+
+  const oldRead = databaseService.getUserProfile("member-1");
+  await databaseService.clearAllCaches();
+  release({ data: { id: "member-1", username: "stale" }, error: null });
+  await oldRead;
+
+  await expect(
+    databaseService.getUserProfile("member-1")
+  ).resolves.toMatchObject({ username: "fresh" });
+  expect(single).toHaveBeenCalledTimes(2);
+});
+
 it("refreshes location verification state instead of caching it", async () => {
   const single = jest
     .fn()

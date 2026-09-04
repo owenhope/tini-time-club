@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 const APP_STORE_LOOKUP_URL = "https://itunes.apple.com/lookup";
 const CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
+const RETRY_INTERVAL_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 
 type AppStoreLookupResult = {
@@ -21,7 +22,8 @@ export type AppUpdate = {
   storeUrl: string;
 };
 
-let lastCheckedAt = 0;
+let nextCheckAt = 0;
+let cachedUpdate: AppUpdate | null = null;
 
 const numericVersionParts = (version: string) => {
   const core = version.trim().split("-")[0];
@@ -69,7 +71,7 @@ export async function checkForAppStoreUpdate({
   bundleIdentifier?: string;
   appEnvironment?: unknown;
 } = {}): Promise<AppUpdate | null> {
-  if (platform !== "ios" || now - lastCheckedAt < CHECK_INTERVAL_MS) {
+  if (platform !== "ios") {
     return null;
   }
 
@@ -77,8 +79,9 @@ export async function checkForAppStoreUpdate({
 
   // Preview and development identifiers are not App Store listings.
   if (appEnvironment !== "production") return null;
+  if (now < nextCheckAt) return cachedUpdate;
 
-  lastCheckedAt = now;
+  nextCheckAt = now + RETRY_INTERVAL_MS;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -94,6 +97,10 @@ export async function checkForAppStoreUpdate({
     if (!response.ok) return null;
 
     const result = decodeLookupResult(await response.json());
+    // Empty listings are valid; malformed listings should be retried sooner.
+    if (result && typeof result.version !== "string") return null;
+    nextCheckAt = now + CHECK_INTERVAL_MS;
+    cachedUpdate = null;
     if (
       typeof result?.version !== "string" ||
       typeof result.trackViewUrl !== "string" ||
@@ -102,11 +109,12 @@ export async function checkForAppStoreUpdate({
       return null;
     }
 
-    return {
+    cachedUpdate = {
       installedVersion,
       latestVersion: result.version,
       storeUrl: result.trackViewUrl,
     };
+    return cachedUpdate;
   } catch {
     // Version discovery must never prevent startup or normal offline use.
     return null;
@@ -116,5 +124,6 @@ export async function checkForAppStoreUpdate({
 }
 
 export const resetAppVersionCheckForTests = () => {
-  lastCheckedAt = 0;
+  nextCheckAt = 0;
+  cachedUpdate = null;
 };

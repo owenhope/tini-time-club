@@ -64,6 +64,7 @@ class DatabaseService {
   private static instance: DatabaseService;
   private queryCache = new Map<string, CachedQuery>();
   private pendingQueries = new Map<string, Promise<any>>();
+  private cacheGeneration = 0;
 
   // Default cache durations (in milliseconds) - Persistent for better UX
   private readonly DEFAULT_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
@@ -108,6 +109,7 @@ class DatabaseService {
     }
 
     // Execute query
+    const generation = this.cacheGeneration;
     const queryPromise = withTimeout(queryFn(), QUERY_TIMEOUT_MS);
     this.pendingQueries.set(queryKey, queryPromise);
 
@@ -115,7 +117,11 @@ class DatabaseService {
       const result = await queryPromise;
 
       // Cache the result
-      if (cache) {
+      if (
+        cache &&
+        generation === this.cacheGeneration &&
+        this.pendingQueries.get(queryKey) === queryPromise
+      ) {
         this.queryCache.set(queryKey, {
           data: result,
           timestamp: Date.now(),
@@ -125,7 +131,9 @@ class DatabaseService {
 
       return result;
     } finally {
-      this.pendingQueries.delete(queryKey);
+      if (this.pendingQueries.get(queryKey) === queryPromise) {
+        this.pendingQueries.delete(queryKey);
+      }
     }
   }
 
@@ -954,6 +962,7 @@ class DatabaseService {
    * Clear all caches
    */
   async clearAllCaches(): Promise<void> {
+    this.cacheGeneration += 1;
     this.queryCache.clear();
     this.pendingQueries.clear();
   }

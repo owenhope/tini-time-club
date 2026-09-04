@@ -25,6 +25,15 @@ class AuthCache {
   private static instance: AuthCache;
   private profileCache: CachedProfile | null = null;
   private pendingRequests = new Map<string, Promise<any>>();
+  private cacheGeneration = 0;
+  private profileOwnerId: string | null = null;
+  private storageWork: Promise<void> = Promise.resolve();
+
+  private queueStorage(operation: () => Promise<void>): Promise<void> {
+    const work = this.storageWork.then(operation);
+    this.storageWork = work.catch(() => {});
+    return work;
+  }
 
   private readonly PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -65,9 +74,19 @@ class AuthCache {
    * Get cached profile or fetch from database
    */
   async getProfile(): Promise<any> {
-    const cacheKey = "profile";
+    let generation = this.cacheGeneration;
     const user = await this.getUser();
-    if (!user) return null;
+    if (!user || generation !== this.cacheGeneration) return null;
+    const cacheKey = user.id;
+    const owner = this.profileOwnerId ?? this.profileCache?.profile?.id;
+    if (owner && owner !== user.id) {
+      const clearing = this.clearProfileCache();
+      generation = this.cacheGeneration;
+      this.profileOwnerId = user.id;
+      await clearing;
+      if (generation !== this.cacheGeneration) return null;
+    }
+    this.profileOwnerId = user.id;
 
     if (
       this.profileCache &&
@@ -82,26 +101,24 @@ class AuthCache {
       return this.profileCache.profile;
     }
 
-    if (this.profileCache?.profile?.id !== user.id) {
-      await this.clearProfileCache();
-    }
-
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
       return this.pendingRequests.get(cacheKey);
     }
 
-    const request = this.fetchProfile(user.id);
+    const request = this.fetchProfile(user.id, generation);
     this.pendingRequests.set(cacheKey, request);
 
     try {
       return await request;
     } finally {
-      this.pendingRequests.delete(cacheKey);
+      if (this.pendingRequests.get(cacheKey) === request) {
+        this.pendingRequests.delete(cacheKey);
+      }
     }
   }
 
-  private async fetchProfile(userId: string): Promise<any> {
+  private async fetchProfile(userId: string, generation: number): Promise<any> {
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -116,15 +133,17 @@ class AuthCache {
         throw new Error(`Profile fetch error: ${error.code || error.message}`);
       }
 
-      await this.setProfile(data);
-      return data;
+      if (generation !== this.cacheGeneration) return null;
+      await this.setProfile(data, generation);
+      return generation === this.cacheGeneration ? data : null;
     } catch (error) {
       reportError("Error fetching profile:", error);
       return null;
     }
   }
 
-  private async setProfile(profile: any): Promise<void> {
+  private async setProfile(profile: any, generation: number): Promise<void> {
+    if (generation !== this.cacheGeneration) return;
     this.profileCache = {
       profile,
       timestamp: Date.now(),
@@ -132,10 +151,11 @@ class AuthCache {
       version: PROFILE_CACHE_VERSION,
     };
     try {
-      await AsyncStorage.setItem(
-        PROFILE_CACHE_KEY,
-        JSON.stringify(this.profileCache)
-      );
+      const serialized = JSON.stringify(this.profileCache);
+      await this.queueStorage(async () => {
+        if (generation !== this.cacheGeneration) return;
+        await AsyncStorage.setItem(PROFILE_CACHE_KEY, serialized);
+      });
     } catch (error) {
       reportError("Error persisting profile cache:", error);
     }
@@ -145,10 +165,11 @@ class AuthCache {
    * Update profile in the database and refresh the cache
    */
   async updateProfile(updates: any): Promise<{ data?: any; error?: any }> {
+    const generation = this.cacheGeneration;
     try {
       const user = await this.getUser();
-      const profileId = this.profileCache?.profile?.id ?? user?.id;
-      if (!profileId) {
+      const profileId = user?.id;
+      if (!profileId || generation !== this.cacheGeneration) {
         return { error: "No profile to update" };
       }
 
@@ -164,7 +185,11 @@ class AuthCache {
         return { error };
       }
 
-      await this.setProfile(data);
+      if (generation !== this.cacheGeneration)
+        return { error: "Profile session changed" };
+      await this.setProfile(data, generation);
+      if (generation !== this.cacheGeneration)
+        return { error: "Profile session changed" };
       return { data };
     } catch (error) {
       reportError("Error updating profile:", error);
@@ -176,10 +201,12 @@ class AuthCache {
    * Clear profile cache to force fresh profile data
    */
   async clearProfileCache(): Promise<void> {
+    this.cacheGeneration += 1;
+    this.profileOwnerId = null;
     this.profileCache = null;
-    this.pendingRequests.delete("profile");
+    this.pendingRequests.clear();
     try {
-      await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
+      await this.queueStorage(() => AsyncStorage.removeItem(PROFILE_CACHE_KEY));
     } catch (error) {
       reportError("Error clearing profile cache:", error);
     }
@@ -203,12 +230,19 @@ class AuthCache {
    * plaintext session cache if present.
    */
   async loadFromStorage(): Promise<void> {
+    const generation = this.cacheGeneration;
     try {
       // Remove the legacy cache that stored tokens in plaintext.
       await AsyncStorage.removeItem(LEGACY_AUTH_CACHE_KEY);
       await AsyncStorage.removeItem(LEGACY_PROFILE_CACHE_KEY);
 
       const data = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
+      if (
+        generation !== this.cacheGeneration ||
+        this.profileCache ||
+        this.pendingRequests.size
+      )
+        return;
       if (data) {
         const cached = JSON.parse(data) as CachedProfile;
         if (

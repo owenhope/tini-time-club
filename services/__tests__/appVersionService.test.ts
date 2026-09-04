@@ -51,15 +51,13 @@ describe("appVersionService", () => {
     });
   });
 
-  it("does not report the installed or an older version", async () => {
+  it.each(["4.1.0", "4.0.2"])("does not report version %s", async (version) => {
     const fetchImpl = jest.fn(
       async () =>
         new Response(
           JSON.stringify({
             resultCount: 1,
-            results: [
-              { version: "4.1.0", trackViewUrl: "https://example.com" },
-            ],
+            results: [{ version, trackViewUrl: "https://example.com" }],
           }),
           { status: 200 }
         )
@@ -99,6 +97,55 @@ describe("appVersionService", () => {
       fetchImpl,
     });
 
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await checkForAppStoreUpdate({
+      ...runtime,
+      now: 1_000_000_000 + 12 * 60 * 60 * 1000,
+      fetchImpl,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["offline", "server"])(
+    "retries a %s failure after five minutes",
+    async (failure) => {
+      const fetchImpl = jest
+        .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+        .mockResolvedValue(new Response(JSON.stringify({ results: [] })));
+      if (failure === "offline")
+        fetchImpl.mockRejectedValueOnce(new Error("offline"));
+      else fetchImpl.mockResolvedValueOnce(new Response(null, { status: 503 }));
+      await checkForAppStoreUpdate({ ...runtime, now: 0, fetchImpl });
+      await checkForAppStoreUpdate({ ...runtime, now: 1, fetchImpl });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      await checkForAppStoreUpdate({ ...runtime, now: 300_000, fetchImpl });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    }
+  );
+
+  it("retains a discovered update for deferred foreground presentation", async () => {
+    const fetchImpl = jest.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                version: "4.2.0",
+                trackViewUrl: "https://apps.apple.com/app/id123",
+              },
+            ],
+          })
+        )
+    );
+    const update = await checkForAppStoreUpdate({
+      ...runtime,
+      now: 0,
+      fetchImpl,
+    });
+    expect(update?.latestVersion).toBe("4.2.0");
+    expect(
+      await checkForAppStoreUpdate({ ...runtime, now: 1, fetchImpl })
+    ).toEqual(update);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
