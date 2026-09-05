@@ -22,8 +22,10 @@ describe("review composer submission orchestration", () => {
         locationName: "Bar",
         imagePath: "member-1/review.jpg",
         reviewCount: 3,
+        passportPoints: 3,
         rankUp: null,
         becameRegular: false,
+        passportStamps: [],
       };
     });
     const onStage = jest.fn();

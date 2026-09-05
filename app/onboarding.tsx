@@ -44,7 +44,7 @@ import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { RANK_TIERS } from "@/utils/ranking";
 
-type OnboardingStep = 1 | 2 | 3;
+type OnboardingStep = 1 | 2 | 3 | 4;
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -68,11 +68,12 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ previewStep?: string }>();
-  const isDevelopmentPreview = __DEV__ && params.previewStep === "2";
+  const previewStep = __DEV__ ? Number(params.previewStep) : 0;
+  const isDevelopmentPreview = previewStep === 2 || previewStep === 3;
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
   const [step, setStep] = useState<OnboardingStep>(() =>
-    isDevelopmentPreview ? 2 : 1
+    isDevelopmentPreview ? (previewStep as OnboardingStep) : 1
   );
   const [username, setUsername] = useState("");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -548,7 +549,7 @@ export default function Onboarding() {
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
-              title="Rings & regulars"
+              title="Passport & rankings"
               trailing={{
                 icon: "close",
                 onPress: confirmQuitSignup,
@@ -563,20 +564,21 @@ export default function Onboarding() {
             >
               <View style={styles.educationIntro}>
                 <AppText variant="heading">
-                  Every review builds your standing.
+                  Every discovery builds your Passport.
                 </AppText>
                 <AppText variant="body" tone="secondary">
-                  Your ring shows your rank across the club, while Regular
-                  status is earned one location at a time.
+                  Reviews unlock Passport stamps and points. Your point total
+                  determines the ring that shows your rank across the club.
                 </AppText>
               </View>
 
               <View style={styles.educationSection}>
                 <AppText variant="eyebrow" tone="secondary">
-                  Rings & rankings
+                  Passport points
                 </AppText>
                 <AppText variant="body" tone="secondary">
-                  Your avatar ring levels up as your active review count grows.
+                  Explore locations, Martini styles, and club milestones to earn
+                  stamps. Each stamp permanently adds its listed points.
                 </AppText>
                 <View style={styles.rankRow}>
                   {RANK_TIERS.map((tier) => (
@@ -598,81 +600,6 @@ export default function Onboarding() {
                   ))}
                 </View>
               </View>
-
-              <View style={styles.educationSection}>
-                <AppText variant="eyebrow" tone="secondary">
-                  Regulars
-                </AppText>
-                <AppText variant="body" tone="secondary">
-                  The three members with the most active reviews at each
-                  location earn its Regular spots.
-                </AppText>
-
-                <View style={styles.regularsLocationCard}>
-                  <View style={styles.regularsLocationTitleRow}>
-                    <AppText
-                      variant="heading"
-                      numberOfLines={1}
-                      style={styles.regularsLocationTitle}
-                    >
-                      The Keefer Bar
-                    </AppText>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.accent}
-                    />
-                  </View>
-                  <AppText variant="caption" tone="secondary">
-                    Vancouver, BC
-                  </AppText>
-                  <View style={styles.regularsRating}>
-                    <RatingPips value={4.8} size={18} accessibilityLabel="" />
-                    <View style={styles.regularsRatingMeta}>
-                      <AppText variant="title" style={styles.regularsScore}>
-                        4.8
-                      </AppText>
-                      <AppText variant="mono" tone="secondary">
-                        86 reviews
-                      </AppText>
-                    </View>
-                  </View>
-                  <Regulars
-                    variant="compact"
-                    interactive={false}
-                    regulars={[
-                      {
-                        location_id: 1,
-                        rank: 1,
-                        profile_id: profile.id,
-                        username:
-                          profile.username ?? (username.trim() || "You"),
-                        avatar_url: profile.avatar_url,
-                        profile_review_count: 156,
-                        review_count: 12,
-                      },
-                      {
-                        location_id: 1,
-                        rank: 2,
-                        profile_id: "onboarding-regular-2",
-                        username: "OliveHour",
-                        avatar_url: null,
-                        profile_review_count: 64,
-                        review_count: 9,
-                      },
-                      {
-                        location_id: 1,
-                        rank: 3,
-                        profile_id: "onboarding-regular-3",
-                        username: "LastCall",
-                        avatar_url: null,
-                        profile_review_count: 18,
-                        review_count: 7,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
             </ScrollView>
 
             <View
@@ -686,7 +613,7 @@ export default function Onboarding() {
             >
               <View style={styles.navigation}>
                 <Button
-                  title="Review terms"
+                  title="Meet the Regulars"
                   onPress={() => setStep(3)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -698,6 +625,117 @@ export default function Onboarding() {
         ) : null}
 
         {step === 3 ? (
+          <View style={styles.profileFlow}>
+            <AppHeader
+              variant="large"
+              title="Regulars"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
+            <ScrollView
+              contentContainerStyle={styles.educationContent}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              <View style={styles.educationIntro}>
+                <AppText variant="heading">
+                  Every location has its Regulars.
+                </AppText>
+                <AppText tone="secondary">
+                  The three members with the most active reviews at a location
+                  hold its Regular spots. Keep exploring and reviewing to join
+                  them.
+                </AppText>
+              </View>
+              <View style={styles.regularsLocationCard}>
+                <View style={styles.regularsLocationTitleRow}>
+                  <AppText
+                    variant="heading"
+                    style={styles.regularsLocationTitle}
+                  >
+                    The Keefer Bar
+                  </AppText>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </View>
+                <AppText variant="caption" tone="secondary">
+                  Vancouver, BC
+                </AppText>
+                <View style={styles.regularsRating}>
+                  <RatingPips value={4.8} size={18} accessibilityLabel="" />
+                  <View style={styles.regularsRatingMeta}>
+                    <AppText variant="title" style={styles.regularsScore}>
+                      4.8
+                    </AppText>
+                    <AppText variant="mono" tone="secondary">
+                      86 reviews
+                    </AppText>
+                  </View>
+                </View>
+                <Regulars
+                  variant="compact"
+                  interactive={false}
+                  regulars={[
+                    {
+                      location_id: 1,
+                      rank: 1,
+                      profile_id: profile.id,
+                      username: profile.username ?? (username.trim() || "You"),
+                      avatar_url: profile.avatar_url,
+                      profile_review_count: 156,
+                      review_count: 12,
+                    },
+                    {
+                      location_id: 1,
+                      rank: 2,
+                      profile_id: "onboarding-regular-2",
+                      username: "OliveHour",
+                      avatar_url: null,
+                      profile_review_count: 64,
+                      review_count: 9,
+                    },
+                    {
+                      location_id: 1,
+                      rank: 3,
+                      profile_id: "onboarding-regular-3",
+                      username: "LastCall",
+                      avatar_url: null,
+                      profile_review_count: 18,
+                      review_count: 7,
+                    },
+                  ]}
+                />
+              </View>
+            </ScrollView>
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <Button
+                  title="Review terms"
+                  onPress={() => setStep(4)}
+                  icon="chevron-forward"
+                  iconPosition="right"
+                  size="medium"
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {step === 4 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"

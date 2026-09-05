@@ -16,9 +16,11 @@ export type { MartiniIconProps } from "./MartiniIcon";
 
 export { default as MartiniShakerIcon } from "./martini-shaker-icon";
 export { default as MartiniGlassOutlineIcon } from "./martini-glass-outline-icon";
+export { default as PassportIcon } from "./passport-icon";
 export { default as ReviewTag } from "./review-tag";
 export type { MartiniShakerIconProps } from "./martini-shaker-icon";
 export type { MartiniGlassOutlineIconProps } from "./martini-glass-outline-icon";
+export type { PassportIconProps } from "./passport-icon";
 
 export { default as OliveIcon, OLIVE_ICON_COLOR } from "./OliveIcon";
 export type { OliveIconProps } from "./OliveIcon";

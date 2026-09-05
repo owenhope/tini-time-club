@@ -511,7 +511,7 @@ export default function CommentsSlider({
                 avatarPath={avatarPath}
                 username={username}
                 size={32}
-                reviewCount={item.profile?.review_count}
+                reviewCount={item.profile?.passport_points}
               />
             </TouchableOpacity>
             <View style={styles.commentContent}>

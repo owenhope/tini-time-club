@@ -34,7 +34,7 @@ describe("publishReview", () => {
   it("publishes the uploaded image and returns database transitions", async () => {
     const uploadImage = jest.fn(async () => "member-1/review.jpg");
     const removeImage = jest.fn(async () => undefined);
-    mockRpc.mockResolvedValue({
+    mockRpc.mockResolvedValueOnce({
       data: {
         reviewId: 91,
         locationId: 42,
@@ -42,6 +42,21 @@ describe("publishReview", () => {
         reviewCount: 10,
         rankUp: "call",
         becameRegular: true,
+      },
+      error: null,
+    });
+    mockRpc.mockResolvedValueOnce({
+      data: {
+        points: 50,
+        previousPoints: 49,
+        unlocked: [{
+          id: "stamp-1", key: "locations-5", series: "Venues",
+          metric: "locations", threshold: 5, points: 25,
+          title: "Total Locations", label: "5 locations", unit: "locations",
+          hint: "Review different venues.", artwork_key: "locations",
+          progress: 5, earned: true, awarded_at: "2026-09-04T20:00:00Z",
+          subject_a: null, subject_b: null,
+        }],
       },
       error: null,
     });
@@ -54,8 +69,10 @@ describe("publishReview", () => {
       locationName: "The Test Bar",
       imagePath: "member-1/review.jpg",
       reviewCount: 10,
+      passportPoints: 50,
       rankUp: expect.objectContaining({ key: "call" }),
       becameRegular: true,
+      passportStamps: [expect.objectContaining({ key: "locations-5", points: 25 })],
     });
 
     expect(mockRpc).toHaveBeenCalledWith("publish_review_v2", {
@@ -73,6 +90,7 @@ describe("publishReview", () => {
       p_taste: 4.5,
       p_type_id: 3,
     });
+    expect(mockRpc).toHaveBeenCalledWith("reconcile_my_passport_v1");
     expect(removeImage).not.toHaveBeenCalled();
   });
 

@@ -102,6 +102,27 @@ describe("Activity grouping", () => {
     });
   });
 
+  it("routes Passport achievement ledger entries to the Passport", () => {
+    const rows = groupActivityEvents([
+      event({
+        kind: "admin_message",
+        actor: null,
+        review: null,
+        body: "Passport stamp earned: 5 locations · +25 pts",
+        data: {
+          category: "passport_achievement",
+          definitionKey: "combo-gin-espresso",
+          url: "/passport",
+        },
+      }),
+    ]);
+    expect(rows[0]).toMatchObject({
+      kind: "admin_message",
+      route: "/passport?stampKey=combo-gin-espresso",
+      body: "Passport stamp earned: 5 locations · +25 pts",
+    });
+  });
+
   it("keeps comment likes as actionable comment rows", () => {
     const rows = groupActivityEvents([
       event({

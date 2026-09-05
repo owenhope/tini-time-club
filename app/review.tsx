@@ -5,6 +5,7 @@ import React, {
   useReducer,
   useRef,
   useState,
+  useContext,
 } from "react";
 import {
   Keyboard,
@@ -74,6 +75,7 @@ import {
 import MentionInput from "@/components/mentions/MentionInput";
 import type { MentionSpan } from "@/types/types";
 import { fetchMentionSpans } from "@/services/mentionService";
+import { PassportToastContext } from "@/context/passport-toast-context";
 
 interface ReviewFormValues {
   location: ReviewComposerLocation | null;
@@ -244,6 +246,7 @@ function ReviewComposer() {
   const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile, refreshProfile } = useProfile();
+  const { showPassportStamps } = useContext(PassportToastContext);
   const rawEditReviewId = params.editReviewId;
   const editReviewId = Array.isArray(rawEditReviewId)
     ? rawEditReviewId[0]
@@ -782,11 +785,12 @@ function ReviewComposer() {
         locationId: Number(submission.locationId),
         locationName: submission.locationName,
       });
+      showPassportStamps(submission.passportStamps, submission.passportPoints);
 
       completePostReview({
         hasAchievements: earnedAchievements.length > 0,
         showCelebration: () => {
-          setCelebrationReviewCount(submission.reviewCount);
+          setCelebrationReviewCount(submission.passportPoints);
           setAchievements(earnedAchievements);
         },
         navigateToFeed: () =>

@@ -14,6 +14,7 @@ import { reportError, warn } from "@/utils/log";
 import { withTimeout } from "@/utils/async";
 import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
 import AnalyticService from "@/services/analyticsService";
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 import { hydrateReviewMentions } from "@/services/mentionService";
 import { normalizeCommentLikeCounts } from "@/utils/commentLikeCounts";
 
@@ -397,7 +398,7 @@ class DatabaseService {
             location:locations!reviews_location_fkey(id,name,address),
             spirit:spirits(name),
             type:types(name),
-            profile:profiles!reviews_user_id_fkey1(id,username,avatar_url,is_verified,review_count,deleted)
+            profile:profiles!reviews_user_id_fkey1(id,username,avatar_url,is_verified,review_count,passport_points,deleted)
           `
           )
           .eq("id", reviewId)
@@ -431,7 +432,7 @@ class DatabaseService {
               inserted_at,
               review_id,
               user_id,
-              profile:profiles!comments_user_id_fkey(id,username,avatar_url,is_verified,review_count)
+              profile:profiles!comments_user_id_fkey(id,username,avatar_url,is_verified,review_count,passport_points)
             `
               )
               .eq("review_id", reviewId)
@@ -704,6 +705,7 @@ class DatabaseService {
         });
       }
       this.queryCache.delete(`comments_${commentData.review_id}`);
+      requestPassportReconciliation();
       return data;
     }
 
@@ -713,7 +715,7 @@ class DatabaseService {
       .select(
         `
         *,
-        profile:profiles!comments_user_id_fkey(id, username, avatar_url, is_verified, review_count)
+        profile:profiles!comments_user_id_fkey(id, username, avatar_url, is_verified, review_count, passport_points)
       `
       )
       .single();
@@ -722,6 +724,7 @@ class DatabaseService {
 
     // Invalidate comments cache
     this.queryCache.delete(`comments_${commentData.review_id}`);
+    requestPassportReconciliation();
 
     return { ...data, likes_count: 0, has_liked: false };
   }

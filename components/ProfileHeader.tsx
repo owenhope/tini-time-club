@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Avatar, StatCard } from "@/components/shared";
+import { RankGradient } from "@/components/passport/rank-gradient";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
 import { getRankProgress } from "@/utils/ranking";
@@ -19,11 +20,13 @@ interface ProfileHeaderProps {
     bio?: string | null;
     avatar_url?: string | null;
     review_count?: number | null;
+    passport_points?: number | null;
   } | null;
   reviewsCount: number;
   followersCount: number;
   followingCount: number;
   isOwnProfile: boolean;
+  rankAction?: React.ReactNode;
   onAvatarPress?: () => void;
   /**
    * Development-only escape hatch: long-pressing the avatar reveals the rank
@@ -92,6 +95,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   followersCount,
   followingCount,
   isOwnProfile,
+  rankAction,
   onAvatarPress,
   onAvatarLongPress,
   avatarLoading = false,
@@ -116,9 +120,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   if (!profile) return null;
 
-  // Ranking is driven by the trigger-maintained count when present; the
-  // locally loaded review list (capped by its fetch limit) is the fallback.
-  const rankCount = profile.review_count ?? reviewsCount;
+  const reviewCount = profile.review_count ?? reviewsCount;
+  // Passport awards are permanent and now provide the club-wide rank score.
+  const rankCount = profile.passport_points ?? 0;
   const displayedRankCount = rankPreviewCount ?? rankCount;
   const rank = getRankProgress(displayedRankCount);
   const canPressAvatar = Boolean(onAvatarPress);
@@ -132,8 +136,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const metrics: Metric[] = [
     {
       key: "reviews",
-      value: rankCount,
-      label: rankCount === 1 ? "Review" : "Reviews",
+      value: reviewCount,
+      label: reviewCount === 1 ? "Review" : "Reviews",
     },
     {
       key: "followers",
@@ -215,7 +219,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 </View>
               )}
             </Pressable>
-            {rank.tier ? (
+            {rank.tier && !(isOwnProfile && rankAction) ? (
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
               </View>
@@ -246,48 +250,56 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 />
               ))}
             </View>
+            {profile.bio ? (
+              <Text style={styles.bio} numberOfLines={3}>
+                {profile.bio}
+              </Text>
+            ) : bioAction ? (
+              <View style={styles.bioAction}>{bioAction}</View>
+            ) : null}
           </View>
         </View>
 
-        {isOwnProfile && rank.next ? (
-          <View style={styles.rankProgress}>
-            <View style={styles.rankLabels}>
-              <Text style={styles.rankCount}>
-                {rankCount} {rankCount === 1 ? "review" : "reviews"}
-              </Text>
-              <Text style={styles.rankRemaining}>
-                {rank.remaining} to {rank.next.name}
-              </Text>
-            </View>
-            <View
-              style={styles.rankTrack}
-              accessibilityRole="progressbar"
-              accessibilityLabel={`${rank.remaining} reviews to ${rank.next.name}`}
-              accessibilityValue={{
-                min: rank.tier?.min ?? 0,
-                max: rank.next.min,
-                now: displayedRankCount,
-              }}
-            >
-              <View
-                style={[
-                  styles.rankFill,
-                  {
-                    width: `${Math.round(rank.fraction * 100)}%`,
-                    backgroundColor: rank.next.color,
-                  },
-                ]}
-              />
-            </View>
+        {isOwnProfile && (rank.next || rankAction) ? (
+          <View style={styles.rankStack}>
+            {rank.next ? (
+              <View style={styles.rankProgress}>
+                <View style={styles.rankLabels}>
+                  <Text style={styles.rankCount}>
+                    {rank.tier?.name ?? "Well"} · {displayedRankCount}{" "}
+                    {displayedRankCount === 1 ? "point" : "points"}
+                  </Text>
+                  <Text style={styles.rankRemaining}>
+                    {rank.remaining} pts to {rank.next.name}
+                  </Text>
+                </View>
+                <View
+                  style={styles.rankTrack}
+                  accessibilityRole="progressbar"
+                  accessibilityLabel={`${rank.tier?.name ?? "Well"} rank, ${displayedRankCount} Passport points, ${rank.remaining} points to ${rank.next.name}`}
+                  accessibilityValue={{
+                    // The drawn bar is cumulative (count / next.min), so the
+                    // announced range starts at zero to match.
+                    min: 0,
+                    max: rank.next.min,
+                    now: displayedRankCount,
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.rankFill,
+                      {
+                        width: `${Math.round(rank.fraction * 100)}%`,
+                      },
+                    ]}
+                  >
+                    <RankGradient color={rank.tier?.color ?? rank.next.color} />
+                  </View>
+                </View>
+              </View>
+            ) : null}
+            {rankAction}
           </View>
-        ) : null}
-
-        {profile.bio ? (
-          <Text style={styles.bio} numberOfLines={3}>
-            {profile.bio}
-          </Text>
-        ) : bioAction ? (
-          <View style={styles.bioAction}>{bioAction}</View>
         ) : null}
 
         {(children || tags) && (
@@ -368,9 +380,13 @@ const useStyles = makeStyles((t) => ({
   // Full width, and labelled at both ends: a bare 4px sliver under the
   // avatar never said what it was counting towards.
   rankProgress: {
+    flex: 1,
+    minWidth: 0,
     gap: 7,
   },
+  rankStack: { gap: t.spacing.md },
   rankLabels: {
+    flexWrap: "wrap" as const,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "baseline" as const,
@@ -379,6 +395,7 @@ const useStyles = makeStyles((t) => ({
   rankCount: {
     ...t.typography.label,
     color: t.colors.onHeaderBrand,
+    textTransform: "uppercase" as const,
   },
   rankRemaining: {
     ...t.typography.label,

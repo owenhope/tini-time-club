@@ -1,8 +1,10 @@
-import { RANK_TIERS, type RankTier } from "@/utils/ranking";
+import { getRankTier, type RankTier } from "@/utils/ranking";
 import { supabase } from "@/utils/supabase";
 import type { MentionSpan } from "@/types/types";
 import { mentionPayload, trimMentionBody } from "@/utils/mentions";
 import AnalyticService from "@/services/analyticsService";
+import type { PassportStampRecord } from "@/services/passportService";
+import { decodePassportStamp } from "@/services/passportService";
 
 export type ReviewPublishingStage = "upload" | "database";
 
@@ -42,8 +44,10 @@ export interface PublishedReview {
   locationName: string;
   imagePath: string;
   reviewCount: number;
+  passportPoints: number;
   rankUp: RankTier | null;
   becameRegular: boolean;
+  passportStamps: PassportStampRecord[];
 }
 
 interface PublishReviewDependencies {
@@ -94,19 +98,16 @@ const decodePublishedReview = (
     throw new Error("Review publishing returned an incomplete result.");
   }
 
-  const rankUp =
-    typeof value.rankUp === "string"
-      ? (RANK_TIERS.find((tier) => tier.key === value.rankUp) ?? null)
-      : null;
-
   return {
     reviewId,
     locationId,
     locationName,
     imagePath,
     reviewCount,
-    rankUp,
+    passportPoints: 0,
+    rankUp: null,
     becameRegular: value.becameRegular === true,
+    passportStamps: [],
   };
 };
 
@@ -130,6 +131,7 @@ export async function publishReview(
     throw new ReviewPublishingError("upload", "Review image upload failed.");
   }
 
+  let published: PublishedReview;
   try {
     onStage?.("database");
     const caption = trimMentionBody(draft.comment, draft.mentions ?? []);
@@ -156,7 +158,7 @@ export async function publishReview(
           .size,
       });
     }
-    return decodePublishedReview(data, imagePath);
+    published = decodePublishedReview(data, imagePath);
   } catch (error) {
     try {
       await removeImage(imagePath);
@@ -169,4 +171,30 @@ export async function publishReview(
       { cause: error }
     );
   }
+
+  // Passport reconciliation is intentionally outside the publishing failure
+  // boundary: the review is already committed and its image must not be
+  // removed if this optional follow-up is unavailable.
+  try {
+    const { data: passportTransition, error: passportError } =
+      await supabase.rpc("reconcile_my_passport_v1");
+    if (!passportError && isRecord(passportTransition)) {
+      const points = finiteNumber(passportTransition.points) ?? 0;
+      const previousPoints =
+        finiteNumber(passportTransition.previousPoints) ?? 0;
+      const previousTier = getRankTier(previousPoints);
+      const currentTier = getRankTier(points);
+      published.passportPoints = points;
+      published.rankUp =
+        currentTier && currentTier.key !== previousTier?.key
+          ? currentTier
+          : null;
+      published.passportStamps = Array.isArray(passportTransition.unlocked)
+        ? passportTransition.unlocked.map(decodePassportStamp)
+        : [];
+    }
+  } catch {
+    // The Passport screen reconciles again when it opens.
+  }
+  return published;
 }

@@ -1,5 +1,6 @@
 import { logReviewShare, reviewShareText } from "../reviewShare";
 import { supabase } from "@/utils/supabase";
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 
 jest.mock("react-native", () => ({
   Alert: {},
@@ -14,6 +15,9 @@ jest.mock("expo-clipboard", () => ({
 
 jest.mock("@/utils/supabase", () => ({
   supabase: { rpc: jest.fn() },
+}));
+jest.mock("@/utils/passport-reconciliation-events", () => ({
+  requestPassportReconciliation: jest.fn(),
 }));
 
 describe("review share text", () => {
@@ -44,5 +48,6 @@ describe("review share text", () => {
       p_channel: "instagram_story",
       p_outcome: "previewed",
     });
+    expect(requestPassportReconciliation).toHaveBeenCalledTimes(1);
   });
 });

@@ -10,6 +10,7 @@ import {
   shareMessageWithUrl,
   whatsappShareUrl,
 } from "@/utils/shareDestinations";
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 
 export { TTC_WEB_ORIGIN } from "@/utils/shareUrls";
 
@@ -40,7 +41,11 @@ export const logReviewShare = async (
     p_channel: channel,
     p_outcome: outcome,
   });
-  if (error) warn("Review share analytics failed:", error);
+  if (error) {
+    warn("Review share analytics failed:", error);
+    return;
+  }
+  requestPassportReconciliation();
 };
 
 export const reviewShareText = (review: Review) =>

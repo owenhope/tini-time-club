@@ -705,7 +705,7 @@ const ReviewItemComponent = ({
               username={review.profile?.username}
               isVerified={review.profile?.is_verified}
               authorId={review.profile?.id}
-              reviewCount={review.profile?.review_count}
+              reviewCount={review.profile?.passport_points}
               onNavigate={onNavigate}
             />
             <View style={styles.headerActions}>

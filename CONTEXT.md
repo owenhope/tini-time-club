@@ -33,3 +33,27 @@ An olive added to a martini for a savory, salty finish.
 **Pick One**:
 The Martini Index tool that immediately selects an entry and offers another different choice whenever a member shakes again.
 _Avoid_: Order for me, randomizer
+
+## Passport language
+
+**Martini Passport**:
+A member's collection of earned stamps and current exploration progress.
+
+**Region Page**:
+The portion of a member's Passport associated with one region.
+
+**Stamp Series**:
+A set of ordered milestones sharing one exploration theme.
+
+**Challenge**:
+The next milestone a member can reach in a Stamp Series.
+
+**Stamp**:
+An earned exploration milestone in a member's Passport.
+_Avoid_: Badge, points
+
+**Passport Award**:
+The authoritative record that a member earned a Stamp.
+
+**Passport Progress**:
+The member's current eligible exploration counts, distinct from earned history.

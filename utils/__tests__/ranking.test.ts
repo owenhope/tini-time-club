@@ -25,11 +25,12 @@ describe("getRankTier", () => {
 
   it("returns the tier at each threshold", () => {
     expect(getRankTier(1)?.key).toBe("well");
-    expect(getRankTier(9)?.key).toBe("well");
-    expect(getRankTier(10)?.key).toBe("call");
-    expect(getRankTier(50)?.key).toBe("premium");
-    expect(getRankTier(149)?.key).toBe("premium");
-    expect(getRankTier(150)?.key).toBe("topShelf");
+    expect(getRankTier(49)?.key).toBe("well");
+    expect(getRankTier(50)?.key).toBe("call");
+    expect(getRankTier(499)?.key).toBe("call");
+    expect(getRankTier(500)?.key).toBe("premium");
+    expect(getRankTier(999)?.key).toBe("premium");
+    expect(getRankTier(1000)?.key).toBe("topShelf");
     expect(getRankTier(5000)?.key).toBe("topShelf");
   });
 });
@@ -39,28 +40,28 @@ describe("getRankProgress", () => {
     const p = getRankProgress(0);
     expect(p.tier?.key).toBe("well");
     expect(p.next?.key).toBe("call");
-    expect(p.remaining).toBe(10);
+    expect(p.remaining).toBe(50);
     expect(p.fraction).toBe(0);
   });
 
-  it("reports remaining and fraction between tiers", () => {
-    const p = getRankProgress(30);
+  it("reports remaining and cumulative progress toward the next tier", () => {
+    const p = getRankProgress(100);
     expect(p.tier?.key).toBe("call");
     expect(p.next?.key).toBe("premium");
-    expect(p.remaining).toBe(20);
-    expect(p.fraction).toBeCloseTo((30 - 10) / (50 - 10));
+    expect(p.remaining).toBe(400);
+    expect(p.fraction).toBeCloseTo(100 / 500);
   });
 
-  it("is exactly 0 at a tier floor", () => {
-    const p = getRankProgress(10);
+  it("does not reset the bar when a member reaches a new tier", () => {
+    const p = getRankProgress(50);
     expect(p.tier?.key).toBe("call");
     expect(p.next?.key).toBe("premium");
-    expect(p.fraction).toBe(0);
-    expect(p.remaining).toBe(40);
+    expect(p.fraction).toBeCloseTo(50 / 500);
+    expect(p.remaining).toBe(450);
   });
 
   it("caps at the top tier", () => {
-    const p = getRankProgress(250);
+    const p = getRankProgress(1000);
     expect(p.tier?.key).toBe("topShelf");
     expect(p.next).toBeNull();
     expect(p.remaining).toBe(0);

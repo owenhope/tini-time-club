@@ -34,7 +34,7 @@ const PROMPT_COPY: Record<MembershipIntent, MembershipPromptCopy> = {
   profile: {
     eyebrow: "YOUR PROFILE",
     title: "Join the club",
-    body: "Create a profile, keep your reviews together, earn rings, and become a Regular.",
+    body: "Create a profile, build your Martini Passport, earn rank points, and become a Regular.",
   },
   review: {
     eyebrow: "POST A REVIEW",
