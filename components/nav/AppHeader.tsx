@@ -278,7 +278,8 @@ const CompactBar = ({
   const onBrand = ground === "brand";
 
   const right = actions ?? (trailing ? [trailing] : []);
-  const left = leading ??
+  const left =
+    leading ??
     (onBack
       ? {
           icon: "chevron-back" as const,
@@ -340,7 +341,9 @@ const CompactBar = ({
           <View style={[styles.compactEnd, { width: leadingWidth }]}>
             {left ? (
               <NavActionControl
-                tone={transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"}
+                tone={
+                  transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
+                }
                 action={left}
               />
             ) : null}

@@ -65,28 +65,28 @@ export function decodePassport(value: unknown): Passport {
 }
 
 export function decodePassportStamp(raw: unknown): PassportStampRecord {
-      const stamp = record(raw);
-      const id = text(stamp.id);
-      const key = text(stamp.key);
-      if (!id || !key) throw new Error("Passport stamp data is invalid.");
-      return {
-        id,
-        key,
-        section: text(stamp.series),
-        metric: stampShape(stamp.metric),
-        threshold: number(stamp.threshold),
-        points: number(stamp.points),
-        title: text(stamp.title),
-        label: text(stamp.label),
-        unit: text(stamp.unit),
-        hint: text(stamp.hint),
-        artworkKey: text(stamp.artwork_key),
-        progress: number(stamp.progress),
-        earned: stamp.earned === true,
-        awardedAt: stamp.awarded_at == null ? null : text(stamp.awarded_at),
-        subjectA: nullableNumber(stamp.subject_a),
-        subjectB: nullableNumber(stamp.subject_b),
-      };
+  const stamp = record(raw);
+  const id = text(stamp.id);
+  const key = text(stamp.key);
+  if (!id || !key) throw new Error("Passport stamp data is invalid.");
+  return {
+    id,
+    key,
+    section: text(stamp.series),
+    metric: stampShape(stamp.metric),
+    threshold: number(stamp.threshold),
+    points: number(stamp.points),
+    title: text(stamp.title),
+    label: text(stamp.label),
+    unit: text(stamp.unit),
+    hint: text(stamp.hint),
+    artworkKey: text(stamp.artwork_key),
+    progress: number(stamp.progress),
+    earned: stamp.earned === true,
+    awardedAt: stamp.awarded_at == null ? null : text(stamp.awarded_at),
+    subjectA: nullableNumber(stamp.subject_a),
+    subjectB: nullableNumber(stamp.subject_b),
+  };
 }
 
 export async function getMyPassport(): Promise<Passport> {

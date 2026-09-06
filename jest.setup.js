@@ -14,7 +14,7 @@ require("whatwg-fetch");
 // Reanimated's native worklets runtime does not exist under Jest; use the
 // official mock so components that animate (AvatarRing etc.) can render.
 jest.mock("react-native-reanimated", () =>
-  require("react-native-reanimated/mock"),
+  require("react-native-reanimated/mock")
 );
 
 // The native tab bar inset hook needs a SafeAreaProvider; component tests

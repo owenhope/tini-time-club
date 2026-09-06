@@ -1,10 +1,11 @@
-import React, { createContext, useCallback, useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  PanResponder,
-  Pressable,
-  View,
-} from "react-native";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Animated, PanResponder, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,7 +34,11 @@ export const PassportToastContext = createContext<PassportToastContextValue>({
 const AUTO_DISMISS_MS = 6500;
 const SWIPE_DISMISS_Y = -38;
 
-export function PassportToastProvider({ children }: { children: React.ReactNode }) {
+export function PassportToastProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -169,8 +174,12 @@ export function PassportToastProvider({ children }: { children: React.ReactNode 
                   ? "MARTINI EXPLORER STAMP"
                   : "PASSPORT STAMP EARNED"}
               </AppText>
-              <AppText variant="heading" numberOfLines={1}>{current.label}</AppText>
-              <AppText variant="caption" tone="secondary">+{current.points} pts · Tap to view your Passport</AppText>
+              <AppText variant="heading" numberOfLines={1}>
+                {current.label}
+              </AppText>
+              <AppText variant="caption" tone="secondary">
+                +{current.points} pts · Tap to view your Passport
+              </AppText>
             </View>
           </Pressable>
         </Animated.View>

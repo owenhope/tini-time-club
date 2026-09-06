@@ -118,20 +118,22 @@ export default function PassportScreen() {
   const scrollToLinkedAchievement = useCallback(() => {
     if (!stampKey || scrolledStampKeyRef.current === stampKey) return;
     requestAnimationFrame(() => {
-      linkedGroupRef.current?.measure((_x, _y, _width, _height, _pageX, pageY) => {
-        scrollRef.current?.getNativeScrollRef()?.measure(
-          (_sx, _sy, _sw, _sh, _spx, scrollPageY) => {
-            scrolledStampKeyRef.current = stampKey;
-            scrollRef.current?.scrollTo({
-              y: Math.max(
-                0,
-                scrollOffsetRef.current + pageY - scrollPageY - 12
-              ),
-              animated: true,
+      linkedGroupRef.current?.measure(
+        (_x, _y, _width, _height, _pageX, pageY) => {
+          scrollRef.current
+            ?.getNativeScrollRef()
+            ?.measure((_sx, _sy, _sw, _sh, _spx, scrollPageY) => {
+              scrolledStampKeyRef.current = stampKey;
+              scrollRef.current?.scrollTo({
+                y: Math.max(
+                  0,
+                  scrollOffsetRef.current + pageY - scrollPageY - 12
+                ),
+                animated: true,
+              });
             });
-          }
-        );
-      });
+        }
+      );
     });
   }, [stampKey]);
 
@@ -237,15 +239,18 @@ export default function PassportScreen() {
                   .reduce((total, stamp) => total + stamp.points, 0);
                 const currentCount =
                   stamps[0]?.metric === "combination"
-                    ? stamps.filter((stamp) => stamp.progress >= stamp.threshold)
-                        .length
+                    ? stamps.filter(
+                        (stamp) => stamp.progress >= stamp.threshold
+                      ).length
                     : Math.max(0, ...stamps.map((stamp) => stamp.progress));
                 return (
                   <View
                     key={title}
                     ref={containsLinkedStamp ? linkedGroupRef : undefined}
                     onLayout={
-                      containsLinkedStamp ? scrollToLinkedAchievement : undefined
+                      containsLinkedStamp
+                        ? scrollToLinkedAchievement
+                        : undefined
                     }
                     style={[styles.group, index > 0 && styles.divider]}
                   >

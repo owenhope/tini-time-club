@@ -111,8 +111,16 @@ function PassportEntrySkeleton() {
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.72, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.38, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, {
+          toValue: 0.72,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.38,
+          duration: 700,
+          useNativeDriver: true,
+        }),
       ])
     );
     pulse.start();

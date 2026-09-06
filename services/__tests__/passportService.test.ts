@@ -1,6 +1,9 @@
 jest.mock("@/utils/supabase", () => ({ supabase: { rpc: jest.fn() } }));
 
-import { decodePassport, reconcileMyPassport } from "@/services/passportService";
+import {
+  decodePassport,
+  reconcileMyPassport,
+} from "@/services/passportService";
 import { supabase } from "@/utils/supabase";
 
 describe("decodePassport", () => {
@@ -64,13 +67,26 @@ describe("decodePassport", () => {
       data: {
         points: 35,
         previousPoints: 10,
-        unlocked: [{
-          id: "stamp-5", key: "locations-5", series: "Venues",
-          metric: "locations", threshold: 5, points: 25,
-          title: "Total Locations", label: "5 locations", unit: "locations",
-          hint: "Review venues", artwork_key: "locations", progress: 5,
-          earned: true, awarded_at: "2026-09-04", subject_a: null, subject_b: null,
-        }],
+        unlocked: [
+          {
+            id: "stamp-5",
+            key: "locations-5",
+            series: "Venues",
+            metric: "locations",
+            threshold: 5,
+            points: 25,
+            title: "Total Locations",
+            label: "5 locations",
+            unit: "locations",
+            hint: "Review venues",
+            artwork_key: "locations",
+            progress: 5,
+            earned: true,
+            awarded_at: "2026-09-04",
+            subject_a: null,
+            subject_b: null,
+          },
+        ],
       },
       error: null,
     });

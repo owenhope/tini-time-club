@@ -49,14 +49,26 @@ describe("publishReview", () => {
       data: {
         points: 50,
         previousPoints: 49,
-        unlocked: [{
-          id: "stamp-1", key: "locations-5", series: "Venues",
-          metric: "locations", threshold: 5, points: 25,
-          title: "Total Locations", label: "5 locations", unit: "locations",
-          hint: "Review different venues.", artwork_key: "locations",
-          progress: 5, earned: true, awarded_at: "2026-09-04T20:00:00Z",
-          subject_a: null, subject_b: null,
-        }],
+        unlocked: [
+          {
+            id: "stamp-1",
+            key: "locations-5",
+            series: "Venues",
+            metric: "locations",
+            threshold: 5,
+            points: 25,
+            title: "Total Locations",
+            label: "5 locations",
+            unit: "locations",
+            hint: "Review different venues.",
+            artwork_key: "locations",
+            progress: 5,
+            earned: true,
+            awarded_at: "2026-09-04T20:00:00Z",
+            subject_a: null,
+            subject_b: null,
+          },
+        ],
       },
       error: null,
     });
@@ -72,7 +84,9 @@ describe("publishReview", () => {
       passportPoints: 50,
       rankUp: expect.objectContaining({ key: "call" }),
       becameRegular: true,
-      passportStamps: [expect.objectContaining({ key: "locations-5", points: 25 })],
+      passportStamps: [
+        expect.objectContaining({ key: "locations-5", points: 25 }),
+      ],
     });
 
     expect(mockRpc).toHaveBeenCalledWith("publish_review_v2", {

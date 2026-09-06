@@ -16,8 +16,7 @@ type PassportStampProps = {
 };
 
 type StampGeometry =
-  | { kind: "circle" }
-  | { kind: "polygon"; sides: number; notched?: boolean };
+  { kind: "circle" } | { kind: "polygon"; sides: number; notched?: boolean };
 
 const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   locations: { kind: "circle" },
