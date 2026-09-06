@@ -46,14 +46,25 @@ import { PassportStamp } from "@/components/passport/passport-stamp";
 import { RankTierList } from "@/components/passport/rank-tier-list";
 import type { PassportStampShape } from "@/services/passportService";
 
-type OnboardingStep = 1 | 2 | 3 | 4;
+type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
-// Example first stamps for the Passport education step — one of each stamp
-// silhouette so new members see what they'll actually collect.
-const PREVIEW_STAMPS: { shape: PassportStampShape; label: string }[] = [
-  { shape: "locations", label: "Location" },
-  { shape: "regulars", label: "Regular" },
-  { shape: "comments", label: "Comment" },
+// Example first stamps for the Passport education step — one from every
+// stamp family, at its real first milestone, so new members see the full
+// range of what they'll collect.
+const PREVIEW_STAMPS: {
+  shape: PassportStampShape;
+  label: string;
+  milestone: number;
+  points: number;
+}[] = [
+  { shape: "locations", label: "Location", milestone: 1, points: 10 },
+  { shape: "martinis", label: "Martini", milestone: 1, points: 10 },
+  { shape: "combination", label: "Vodka Twist", milestone: 1, points: 10 },
+  { shape: "type_reviews", label: "Classics", milestone: 10, points: 10 },
+  { shape: "regulars", label: "Regular", milestone: 1, points: 10 },
+  { shape: "comments", label: "Comment", milestone: 1, points: 10 },
+  { shape: "likes_received", label: "Like", milestone: 1, points: 10 },
+  { shape: "shares", label: "Share", milestone: 1, points: 10 },
 ];
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
@@ -79,7 +90,7 @@ export default function Onboarding() {
   const router = useRouter();
   const params = useLocalSearchParams<{ previewStep?: string }>();
   const previewStep = __DEV__ ? Number(params.previewStep) : 0;
-  const isDevelopmentPreview = previewStep === 2 || previewStep === 3;
+  const isDevelopmentPreview = previewStep >= 2 && previewStep <= 4;
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
   const [step, setStep] = useState<OnboardingStep>(() =>
@@ -559,7 +570,7 @@ export default function Onboarding() {
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
-              title="Passport & rankings"
+              title="Martini Passport"
               trailing={{
                 icon: "close",
                 onPress: confirmQuitSignup,
@@ -577,8 +588,8 @@ export default function Onboarding() {
                   Every discovery builds your Passport.
                 </AppText>
                 <AppText variant="body" tone="secondary">
-                  Reviews unlock Passport stamps and points. Your point total
-                  determines the ring that shows your rank across the club.
+                  Explore locations, Martini styles, and club milestones to earn
+                  stamps. Each stamp permanently adds its listed points.
                 </AppText>
               </View>
 
@@ -586,24 +597,68 @@ export default function Onboarding() {
                 <AppText variant="eyebrow" tone="secondary">
                   Collect stamps
                 </AppText>
-                <AppText variant="body" tone="secondary">
-                  Explore locations, Martini styles, and club milestones to earn
-                  stamps. Each stamp permanently adds its listed points.
-                </AppText>
                 <View style={styles.stampRow}>
                   {PREVIEW_STAMPS.map((stamp) => (
                     <View key={stamp.shape} style={styles.stampCell}>
                       <PassportStamp
                         shape={stamp.shape}
-                        milestone={1}
-                        pointAward={10}
+                        milestone={stamp.milestone}
+                        pointAward={stamp.points}
                         earned
                         label={stamp.label}
-                        accessibilityLabel={`Example stamp: 1 ${stamp.label.toLowerCase()}, 10 points`}
+                        accessibilityLabel={`Example stamp: ${stamp.milestone} ${stamp.label.toLowerCase()}, ${stamp.points} points`}
                       />
                     </View>
                   ))}
                 </View>
+              </View>
+            </ScrollView>
+
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <Button
+                  title="See the rankings"
+                  onPress={() => setStep(3)}
+                  icon="chevron-forward"
+                  iconPosition="right"
+                  size="medium"
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {step === 3 ? (
+          <View style={styles.profileFlow}>
+            <AppHeader
+              variant="large"
+              title="Rankings"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
+
+            <ScrollView
+              contentContainerStyle={styles.educationContent}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              <View style={styles.educationIntro}>
+                <AppText variant="heading">Your points set your rank.</AppText>
+                <AppText variant="body" tone="secondary">
+                  As your Passport point total grows, you rank up and unlock a
+                  new animated ring around your member avatar.
+                </AppText>
               </View>
 
               <View style={styles.educationSection}>
@@ -626,7 +681,7 @@ export default function Onboarding() {
               <View style={styles.navigation}>
                 <Button
                   title="Meet the Regulars"
-                  onPress={() => setStep(3)}
+                  onPress={() => setStep(4)}
                   icon="chevron-forward"
                   iconPosition="right"
                   size="medium"
@@ -636,7 +691,7 @@ export default function Onboarding() {
           </View>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
@@ -701,6 +756,7 @@ export default function Onboarding() {
                       username: profile.username ?? (username.trim() || "You"),
                       avatar_url: profile.avatar_url,
                       profile_review_count: 156,
+                      passport_points: 1050,
                       review_count: 12,
                     },
                     {
@@ -710,6 +766,7 @@ export default function Onboarding() {
                       username: "OliveHour",
                       avatar_url: null,
                       profile_review_count: 64,
+                      passport_points: 640,
                       review_count: 9,
                     },
                     {
@@ -719,6 +776,7 @@ export default function Onboarding() {
                       username: "LastCall",
                       avatar_url: null,
                       profile_review_count: 18,
+                      passport_points: 120,
                       review_count: 7,
                     },
                   ]}
@@ -737,7 +795,7 @@ export default function Onboarding() {
               <View style={styles.navigation}>
                 <Button
                   title="Review terms"
-                  onPress={() => setStep(4)}
+                  onPress={() => setStep(5)}
                   icon="chevron-forward"
                   iconPosition="right"
                   size="medium"
@@ -747,7 +805,7 @@ export default function Onboarding() {
           </View>
         ) : null}
 
-        {step === 4 ? (
+        {step === 5 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
@@ -1018,13 +1076,13 @@ const useStyles = makeStyles((t) => ({
   },
   stampRow: {
     flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
     justifyContent: "space-between" as const,
-    gap: t.spacing.md,
+    rowGap: t.spacing.lg,
     paddingTop: t.spacing.sm,
   },
   stampCell: {
-    flex: 1,
-    maxWidth: 96,
+    width: "23%" as const,
     alignItems: "center" as const,
   },
   regularsLocationCard: {
