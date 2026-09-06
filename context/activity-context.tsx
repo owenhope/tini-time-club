@@ -17,6 +17,7 @@ import { reportError } from "@/utils/log";
 import { clearActivityCache } from "@/utils/activityCache";
 import { setActivityBadgeCount } from "@/utils/activityBadge";
 import { supabase } from "@/utils/supabase";
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 
 export interface ActivityContextValue {
   unseenCount: number;
@@ -85,6 +86,7 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
       refreshTimerRef.current = setTimeout(() => {
         refreshTimerRef.current = null;
+        requestPassportReconciliation();
         void refreshUnseenCount();
       }, 250);
     };
@@ -92,7 +94,10 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     const appStateSubscription = AppState.addEventListener(
       "change",
       (state) => {
-        if (state === "active") void refreshUnseenCount();
+        if (state === "active") {
+          requestPassportReconciliation();
+          void refreshUnseenCount();
+        }
       }
     );
 

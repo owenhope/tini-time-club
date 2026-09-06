@@ -708,9 +708,15 @@ function Home() {
     );
   }
 
-  // The same control renders on both headers in the same top-right slot, so
-  // the crossfade reads as one pinned button while the green block scrolls
-  // away beneath it.
+  // Expanded: Passport sits immediately left of Activity on the right.
+  // Collapsed: Passport crosses to the far left while Activity stays right.
+  const passportAction: HeaderAction | undefined = profile
+    ? {
+        customIcon: "passport",
+        onPress: () => router.push(routes.passport()),
+        accessibilityLabel: "Open Martini Passport",
+      }
+    : undefined;
   const headerActions: HeaderAction[] = profile
     ? [
         {
@@ -730,6 +736,9 @@ function Home() {
           accessibilityLabel: "Join the club",
         },
       ];
+  const expandedHeaderActions = passportAction
+    ? [passportAction, ...headerActions]
+    : headerActions;
 
   return (
     <View style={styles.container}>
@@ -742,6 +751,7 @@ function Home() {
         compactContent={<Text style={styles.wordmark}>tini time club</Text>}
         compactContentCentered
         transparent
+        leading={passportAction}
         actions={headerActions}
         progress={progress}
         collapsed={isCollapsed}
@@ -770,7 +780,7 @@ function Home() {
           variant="large"
           title={greeting.headline}
           meta={greeting.subline}
-          actions={headerActions}
+          actions={expandedHeaderActions}
           statusBar="none"
         />
       </Animated.View>

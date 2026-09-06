@@ -22,6 +22,13 @@ const safePreview = (body: string | null) => {
 const actorName = (actor: ActivityActor) => actor.username || "Someone";
 
 const routeForEvent = (event: ActivityEvent): string | null => {
+  if (
+    event.kind === "admin_message" &&
+    event.data.category === "passport_achievement" &&
+    typeof event.data.definitionKey === "string"
+  ) {
+    return `/passport?stampKey=${encodeURIComponent(event.data.definitionKey)}`;
+  }
   if (event.kind === "user_followed") {
     return getNotificationRouteFromData(event.data);
   }
@@ -59,6 +66,7 @@ const toRow = (
     isUnread: event.readAt === null,
     isNew: newIds.has(event.id),
     route: routeForEvent(event),
+    data: event.data,
   };
 
   if (event.kind === "user_followed" && event.actor) {

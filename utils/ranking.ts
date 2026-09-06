@@ -1,8 +1,8 @@
 /**
- * Review-count ranking tiers ("avatar rings").
+ * Passport-point ranking tiers ("avatar rings").
  *
- * A profile's tier is derived from how many active reviews they've posted
- * (profiles.review_count, trigger-maintained). The first tier starts at zero,
+ * A profile's tier is derived from permanent earned Passport points
+ * (profiles.passport_points). The first tier starts at zero,
  * so every profile holds a rank. The ring is a slowly rotating two-tone
  * gradient of the tier color; see components/shared/AvatarRing.tsx.
  *
@@ -16,7 +16,7 @@
 export interface RankTier {
   key: "well" | "call" | "premium" | "topShelf";
   name: string;
-  /** Minimum active reviews to hold this tier. */
+  /** Minimum Passport points needed to hold this tier. */
   min: number;
   /** Primary tier color, used for labels and as the ring's midtone. */
   color: string;
@@ -38,7 +38,7 @@ export const RANK_TIERS: readonly RankTier[] = [
   {
     key: "call",
     name: "Call",
-    min: 10,
+    min: 50,
     color: "#9BA6B2",
     sheen: "#EDF2F7",
     shade: "#5F6B78",
@@ -46,7 +46,7 @@ export const RANK_TIERS: readonly RankTier[] = [
   {
     key: "premium",
     name: "Premium",
-    min: 50,
+    min: 500,
     color: "#D4AF37",
     sheen: "#FAF0A8",
     shade: "#8F701A",
@@ -54,20 +54,20 @@ export const RANK_TIERS: readonly RankTier[] = [
   {
     key: "topShelf",
     name: "Top Shelf",
-    min: 150,
+    min: 1000,
     color: "#8E7CE8",
     sheen: "#D9D1FB",
     shade: "#5240B5",
   },
 ] as const;
 
-/** The tier held at a given review count. Nullish counts as zero, and the
+/** The tier held at a given Passport point total. Nullish counts as zero, and the
     first tier starts at zero, so this never returns null in practice; the
     nullable type is kept so callers stay guarded if the floor moves. */
 export const getRankTier = (
-  reviewCount: number | null | undefined
+  passportPoints: number | null | undefined
 ): RankTier | null => {
-  const count = reviewCount ?? 0;
+  const count = passportPoints ?? 0;
   let held: RankTier | null = null;
   for (const tier of RANK_TIERS) {
     if (count >= tier.min) held = tier;
@@ -81,15 +81,15 @@ export interface RankProgress {
   next: RankTier | null;
   /** Reviews still needed to reach `next` (0 when at the top). */
   remaining: number;
-  /** 0..1 progress from the current tier's floor to the next tier's. */
+  /** 0..1 cumulative progress toward the next tier's point requirement. */
   fraction: number;
 }
 
-/** Where a review count sits between its tier and the next. */
+/** Where a Passport point total sits between its tier and the next. */
 export const getRankProgress = (
-  reviewCount: number | null | undefined
+  passportPoints: number | null | undefined
 ): RankProgress => {
-  const count = Math.max(0, reviewCount ?? 0);
+  const count = Math.max(0, passportPoints ?? 0);
   const tier = getRankTier(count);
   const next = RANK_TIERS.find((t) => t.min > count) ?? null;
 
@@ -97,11 +97,10 @@ export const getRankProgress = (
     return { tier, next: null, remaining: 0, fraction: 1 };
   }
 
-  const floor = tier?.min ?? 0;
   return {
     tier,
     next,
     remaining: next.min - count,
-    fraction: (count - floor) / (next.min - floor),
+    fraction: count / next.min,
   };
 };

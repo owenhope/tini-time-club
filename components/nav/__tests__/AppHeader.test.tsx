@@ -186,6 +186,34 @@ describe("AppHeader", () => {
     act(() => tree!.unmount());
   });
 
+  it("renders a leading action with centered compact content", () => {
+    const onPress = jest.fn();
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="compact"
+            compactContent={<Text>tini time club</Text>}
+            compactContentCentered
+            leading={{
+              customIcon: "passport",
+              onPress,
+              accessibilityLabel: "Open Martini Passport",
+            }}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const passport = tree!.root.findByProps({
+      accessibilityLabel: "Open Martini Passport",
+    });
+    act(() => passport.props.onPress());
+    expect(onPress).toHaveBeenCalledTimes(1);
+    act(() => tree!.unmount());
+  });
+
   it("supports a one-point smaller media title", () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {

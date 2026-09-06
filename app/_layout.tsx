@@ -39,6 +39,7 @@ import { MembershipProvider } from "@/context/membership-context";
 import { ActivityProvider } from "@/context/activity-context";
 import { ThemeProvider, typography, useTheme } from "@/theme";
 import { ShareMenuProvider } from "@/components/share/ShareMenuSheet";
+import { PassportToastProvider } from "@/context/passport-toast-context";
 import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
@@ -173,9 +174,11 @@ function RootLayout() {
         <ProfileProvider>
           <MembershipProvider>
             <ActivityProvider>
-              <ShareMenuProvider>
-                <RootLayoutNav />
-              </ShareMenuProvider>
+              <PassportToastProvider>
+                <ShareMenuProvider>
+                  <RootLayoutNav />
+                </ShareMenuProvider>
+              </PassportToastProvider>
             </ActivityProvider>
           </MembershipProvider>
         </ProfileProvider>

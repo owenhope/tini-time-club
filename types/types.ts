@@ -27,8 +27,10 @@ export interface Profile {
   mention_notifications_enabled?: boolean;
   /** Whether signed-out visitors may discover this profile and its reviews. */
   is_public?: boolean;
-  /** Active review count (trigger-maintained); drives the ranking ring. */
+  /** Active review count (trigger-maintained). */
   review_count?: number;
+  /** Permanent Passport award points; drives club ranking. */
+  passport_points?: number;
 }
 
 /** A row from the location_ratings view (aggregates computed server-side). */
@@ -55,8 +57,9 @@ export interface ReviewProfile {
   username: string;
   avatar_url?: string | null;
   is_verified?: boolean;
-  /** Active review count (trigger-maintained); drives the ranking ring. */
+  /** Active review count (trigger-maintained). */
   review_count?: number;
+  passport_points?: number;
 }
 
 export interface ReviewLocation {

@@ -45,6 +45,7 @@ const Regulars: React.FC<RegularsProps> = ({
             avatar_url: null,
             is_verified: false,
             profile_review_count: undefined,
+            passport_points: undefined,
             review_count: 1,
             isPreview: true,
           },
@@ -56,6 +57,7 @@ const Regulars: React.FC<RegularsProps> = ({
             avatar_url: null,
             is_verified: false,
             profile_review_count: undefined,
+            passport_points: undefined,
             review_count: 1,
             isPreview: true,
           },
@@ -98,7 +100,7 @@ const Regulars: React.FC<RegularsProps> = ({
                   avatarPath={regular.avatar_url}
                   username={regular.username}
                   size={compactAvatarSize}
-                  reviewCount={regular.profile_review_count}
+                  reviewCount={regular.passport_points}
                 />
               </Pressable>
             ))}
@@ -146,7 +148,7 @@ const Regulars: React.FC<RegularsProps> = ({
                 avatarPath={regular.avatar_url}
                 username={regular.username}
                 size={42}
-                reviewCount={regular.profile_review_count}
+                reviewCount={regular.passport_points}
                 onInk={onInk}
               />
               <Text
@@ -184,7 +186,7 @@ const Regulars: React.FC<RegularsProps> = ({
             avatarPath={regular.avatar_url}
             username={regular.username}
             size={34}
-            reviewCount={regular.profile_review_count}
+            reviewCount={regular.passport_points}
           />
           <View style={styles.identity}>
             <VerifiedName

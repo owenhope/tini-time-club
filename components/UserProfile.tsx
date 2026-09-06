@@ -544,7 +544,7 @@ const UserProfile = () => {
         visible={avatarViewerOpen}
         avatarPath={displayProfile?.avatar_url}
         username={displayProfile?.username}
-        reviewCount={displayProfile?.review_count}
+        reviewCount={displayProfile?.passport_points}
         onClose={() => setAvatarViewerOpen(false)}
       />
     </View>

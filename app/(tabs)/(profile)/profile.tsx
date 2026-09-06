@@ -18,6 +18,7 @@ import {
 } from "expo-router";
 import { v4 as uuidv4 } from "uuid";
 import ProfileHeader from "@/components/ProfileHeader";
+import { PassportEntry } from "@/components/passport/passport-entry";
 import AppHeader from "@/components/nav/AppHeader";
 import { useCollapsibleHeader } from "@/hooks/useCollapsibleHeader";
 import ProfileBody from "@/components/profile/ProfileBody";
@@ -358,8 +359,7 @@ const MemberProfile = () => {
 
   const rankPreview = RANK_PREVIEW_OPTIONS[rankPreviewIndex];
   const actualRankColor =
-    getRankTier(profile?.review_count ?? userReviews.length)?.color ??
-    colors.borderStrong;
+    getRankTier(profile?.passport_points ?? 0)?.color ?? colors.borderStrong;
 
   const settingsAction = {
     icon: "settings-outline" as const,
@@ -381,6 +381,7 @@ const MemberProfile = () => {
         avatarLoading={avatarLoading}
         avatarError={avatarError}
         titleAction={settingsAction}
+        rankAction={<PassportEntry />}
         below={
           <ProfileContentTabs activeTab={activeTab} onChange={setActiveTab} />
         }

@@ -27,8 +27,8 @@ const FEATURES = [
     palette: "secondary" as const,
   },
   {
-    icon: "account-group-outline" as const,
-    title: "Follow the Regulars",
+    icon: "passport" as const,
+    title: "Build Your Passport",
     palette: "highlight" as const,
   },
 ];

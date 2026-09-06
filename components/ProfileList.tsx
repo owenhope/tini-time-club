@@ -25,6 +25,7 @@ export interface ProfileType {
   avatar_url?: string | null;
   is_verified?: boolean;
   review_count?: number;
+  passport_points?: number;
 }
 
 interface ProfileListProps {
@@ -174,7 +175,7 @@ export default function ProfileList({
             avatarPath={item.avatar_url}
             username={item.username}
             size={PROFILE_ROW_AVATAR_SIZE}
-            reviewCount={item.review_count}
+            reviewCount={item.passport_points}
           />
           <VerifiedName
             name={item.username || "Unknown User"}

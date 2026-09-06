@@ -106,7 +106,7 @@ const publicReviewSelect = `
   location:locations!reviews_location_fkey(id,name,address),
   spirit:spirits(name),
   type:types(name),
-  profile:profiles!reviews_user_id_fkey1!inner(id,username,avatar_url,is_verified,review_count,is_public,deleted)
+  profile:profiles!reviews_user_id_fkey1!inner(id,username,avatar_url,is_verified,review_count,passport_points,is_public,deleted)
 `;
 
 async function getCommentLikeCounts(
@@ -156,7 +156,7 @@ async function hydrateReviews(
       client
         .from("comments")
         .select(
-          "id,review_id,user_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,is_public,deleted)"
+          "id,review_id,user_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,passport_points,is_public,deleted)"
         )
         .in("review_id", reviewIds)
         .eq("profile.is_public", true)
@@ -306,7 +306,7 @@ async function getComments(client: ReturnType<typeof createClient>, body: any) {
   const { data, error } = await client
     .from("comments")
     .select(
-      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,is_public,deleted)"
+      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,passport_points,is_public,deleted)"
     )
     .eq("review_id", Number(body.reviewId))
     .eq("profile.is_public", true)
@@ -346,7 +346,7 @@ async function getCommentPage(
   let query = client
     .from("comments")
     .select(
-      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,is_public,deleted)"
+      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,passport_points,is_public,deleted)"
     )
     .eq("review_id", reviewId)
     .eq("profile.is_public", true)
@@ -403,7 +403,7 @@ async function getProfile(client: ReturnType<typeof createClient>, body: any) {
   const { data: profile, error } = await client
     .from("profiles")
     .select(
-      "id,username,name,bio,avatar_url,is_verified,favorite_spirits,favorite_types,favorite_location_id,review_count,is_public"
+      "id,username,name,bio,avatar_url,is_verified,favorite_spirits,favorite_types,favorite_location_id,review_count,passport_points,is_public"
     )
     .eq("username", String(body.username ?? ""))
     .eq("is_public", true)

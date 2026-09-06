@@ -46,7 +46,9 @@ export default function LikesSlider({
       // capped so a viral review can't pull an unbounded list.
       const { data, error } = await supabase
         .from("likes")
-        .select("profiles(id, username, avatar_url, is_verified, review_count)")
+        .select(
+          "profiles(id, username, avatar_url, is_verified, review_count, passport_points)"
+        )
         .eq("review_id", reviewId)
         .limit(200);
       if (error) {

@@ -125,6 +125,7 @@ const AvatarWrapper = memo(
     isVerified,
     authorId,
     reviewCount,
+    passportPoints,
     onNavigate,
   }: {
     avatarUrl: string | null;
@@ -132,6 +133,7 @@ const AvatarWrapper = memo(
     isVerified?: boolean;
     authorId?: string | null;
     reviewCount?: number | null;
+    passportPoints?: number | null;
     onNavigate?: (navigate: () => void) => void;
   }) => {
     const openProfile = useOpenProfile();
@@ -147,7 +149,7 @@ const AvatarWrapper = memo(
           avatarPath={avatarUrl}
           username={username}
           size={REVIEW_AUTHOR_AVATAR_SIZE}
-          reviewCount={reviewCount}
+          reviewCount={passportPoints}
         />
         <View style={styles.headerIdentity}>
           <VerifiedName
@@ -706,6 +708,7 @@ const ReviewItemComponent = ({
               isVerified={review.profile?.is_verified}
               authorId={review.profile?.id}
               reviewCount={review.profile?.review_count}
+              passportPoints={review.profile?.passport_points}
               onNavigate={onNavigate}
             />
             <View style={styles.headerActions}>

@@ -42,9 +42,30 @@ import { routes } from "@/utils/routes";
 import { consumePendingMembershipReturn } from "@/services/visitor-session";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { RANK_TIERS } from "@/utils/ranking";
+import { PassportStamp } from "@/components/passport/passport-stamp";
+import { RankTierList } from "@/components/passport/rank-tier-list";
+import type { PassportStampShape } from "@/services/passportService";
 
-type OnboardingStep = 1 | 2 | 3;
+type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+
+// Example first stamps for the Passport education step — one from every
+// stamp family, at its real first milestone, so new members see the full
+// range of what they'll collect.
+const PREVIEW_STAMPS: {
+  shape: PassportStampShape;
+  label: string;
+  milestone: number;
+  points: number;
+}[] = [
+  { shape: "locations", label: "Location", milestone: 1, points: 10 },
+  { shape: "martinis", label: "Martini", milestone: 1, points: 10 },
+  { shape: "combination", label: "Vodka Twist", milestone: 1, points: 10 },
+  { shape: "type_reviews", label: "Classics", milestone: 10, points: 10 },
+  { shape: "regulars", label: "Regular", milestone: 1, points: 10 },
+  { shape: "comments", label: "Comment", milestone: 1, points: 10 },
+  { shape: "likes_received", label: "Like", milestone: 1, points: 10 },
+  { shape: "shares", label: "Share", milestone: 1, points: 10 },
+];
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -68,11 +89,12 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ previewStep?: string }>();
-  const isDevelopmentPreview = __DEV__ && params.previewStep === "2";
+  const previewStep = __DEV__ ? Number(params.previewStep) : 0;
+  const isDevelopmentPreview = previewStep >= 2 && previewStep <= 4;
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
   const [step, setStep] = useState<OnboardingStep>(() =>
-    isDevelopmentPreview ? 2 : 1
+    isDevelopmentPreview ? (previewStep as OnboardingStep) : 1
   );
   const [username, setUsername] = useState("");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -548,7 +570,7 @@ export default function Onboarding() {
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
-              title="Rings & regulars"
+              title="Martini Passport"
               trailing={{
                 icon: "close",
                 onPress: confirmQuitSignup,
@@ -563,114 +585,31 @@ export default function Onboarding() {
             >
               <View style={styles.educationIntro}>
                 <AppText variant="heading">
-                  Every review builds your standing.
+                  Every discovery builds your Passport.
                 </AppText>
                 <AppText variant="body" tone="secondary">
-                  Your ring shows your rank across the club, while Regular
-                  status is earned one location at a time.
+                  Explore locations, Martini styles, and club milestones to earn
+                  stamps. Each stamp permanently adds its listed points.
                 </AppText>
               </View>
 
               <View style={styles.educationSection}>
                 <AppText variant="eyebrow" tone="secondary">
-                  Rings & rankings
+                  Collect stamps
                 </AppText>
-                <AppText variant="body" tone="secondary">
-                  Your avatar ring levels up as your active review count grows.
-                </AppText>
-                <View style={styles.rankRow}>
-                  {RANK_TIERS.map((tier) => (
-                    <View key={tier.key} style={styles.rankItem}>
-                      <Avatar
-                        avatarPath={profile.avatar_url}
-                        username={profile.username ?? username.trim()}
-                        fallbackText="TT"
-                        size={48}
-                        reviewCount={tier.min}
+                <View style={styles.stampRow}>
+                  {PREVIEW_STAMPS.map((stamp) => (
+                    <View key={stamp.shape} style={styles.stampCell}>
+                      <PassportStamp
+                        shape={stamp.shape}
+                        milestone={stamp.milestone}
+                        pointAward={stamp.points}
+                        earned
+                        label={stamp.label}
+                        accessibilityLabel={`Example stamp: ${stamp.milestone} ${stamp.label.toLowerCase()}, ${stamp.points} points`}
                       />
-                      <AppText variant="label" style={styles.rankName}>
-                        {tier.name}
-                      </AppText>
-                      <AppText variant="caption" tone="secondary">
-                        {tier.min}+
-                      </AppText>
                     </View>
                   ))}
-                </View>
-              </View>
-
-              <View style={styles.educationSection}>
-                <AppText variant="eyebrow" tone="secondary">
-                  Regulars
-                </AppText>
-                <AppText variant="body" tone="secondary">
-                  The three members with the most active reviews at each
-                  location earn its Regular spots.
-                </AppText>
-
-                <View style={styles.regularsLocationCard}>
-                  <View style={styles.regularsLocationTitleRow}>
-                    <AppText
-                      variant="heading"
-                      numberOfLines={1}
-                      style={styles.regularsLocationTitle}
-                    >
-                      The Keefer Bar
-                    </AppText>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.accent}
-                    />
-                  </View>
-                  <AppText variant="caption" tone="secondary">
-                    Vancouver, BC
-                  </AppText>
-                  <View style={styles.regularsRating}>
-                    <RatingPips value={4.8} size={18} accessibilityLabel="" />
-                    <View style={styles.regularsRatingMeta}>
-                      <AppText variant="title" style={styles.regularsScore}>
-                        4.8
-                      </AppText>
-                      <AppText variant="mono" tone="secondary">
-                        86 reviews
-                      </AppText>
-                    </View>
-                  </View>
-                  <Regulars
-                    variant="compact"
-                    interactive={false}
-                    regulars={[
-                      {
-                        location_id: 1,
-                        rank: 1,
-                        profile_id: profile.id,
-                        username:
-                          profile.username ?? (username.trim() || "You"),
-                        avatar_url: profile.avatar_url,
-                        profile_review_count: 156,
-                        review_count: 12,
-                      },
-                      {
-                        location_id: 1,
-                        rank: 2,
-                        profile_id: "onboarding-regular-2",
-                        username: "OliveHour",
-                        avatar_url: null,
-                        profile_review_count: 64,
-                        review_count: 9,
-                      },
-                      {
-                        location_id: 1,
-                        rank: 3,
-                        profile_id: "onboarding-regular-3",
-                        username: "LastCall",
-                        avatar_url: null,
-                        profile_review_count: 18,
-                        review_count: 7,
-                      },
-                    ]}
-                  />
                 </View>
               </View>
             </ScrollView>
@@ -685,8 +624,20 @@ export default function Onboarding() {
               ]}
             >
               <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(1)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to profile setup"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
                 <Button
-                  title="Review terms"
+                  title="Rankings"
                   onPress={() => setStep(3)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -698,6 +649,199 @@ export default function Onboarding() {
         ) : null}
 
         {step === 3 ? (
+          <View style={styles.profileFlow}>
+            <AppHeader
+              variant="large"
+              title="Rankings"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
+
+            <ScrollView
+              contentContainerStyle={styles.educationContent}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              <View style={styles.educationIntro}>
+                <AppText variant="heading">Your points set your rank.</AppText>
+                <AppText variant="body" tone="secondary">
+                  As your Passport point total grows, you rank up and unlock a
+                  new animated ring around your member avatar.
+                </AppText>
+              </View>
+
+              <View style={styles.educationSection}>
+                <AppText variant="eyebrow" tone="secondary">
+                  Rings to unlock
+                </AppText>
+                <RankTierList />
+              </View>
+            </ScrollView>
+
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(2)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to the Passport"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
+                <Button
+                  title="Regulars"
+                  onPress={() => setStep(4)}
+                  icon="chevron-forward"
+                  iconPosition="right"
+                  size="medium"
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {step === 4 ? (
+          <View style={styles.profileFlow}>
+            <AppHeader
+              variant="large"
+              title="Regulars"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
+            <ScrollView
+              contentContainerStyle={styles.educationContent}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              <View style={styles.educationIntro}>
+                <AppText variant="heading">
+                  Every location has its Regulars.
+                </AppText>
+                <AppText tone="secondary">
+                  The three members with the most active reviews at a location
+                  hold its Regular spots. Keep exploring and reviewing to join
+                  them.
+                </AppText>
+              </View>
+              <View style={styles.regularsLocationCard}>
+                <View style={styles.regularsLocationTitleRow}>
+                  <AppText
+                    variant="heading"
+                    style={styles.regularsLocationTitle}
+                  >
+                    The Keefer Bar
+                  </AppText>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </View>
+                <AppText variant="caption" tone="secondary">
+                  Vancouver, BC
+                </AppText>
+                <View style={styles.regularsRating}>
+                  <RatingPips value={4.8} size={18} accessibilityLabel="" />
+                  <View style={styles.regularsRatingMeta}>
+                    <AppText variant="title" style={styles.regularsScore}>
+                      4.8
+                    </AppText>
+                    <AppText variant="mono" tone="secondary">
+                      86 reviews
+                    </AppText>
+                  </View>
+                </View>
+                <Regulars
+                  variant="compact"
+                  interactive={false}
+                  regulars={[
+                    {
+                      location_id: 1,
+                      rank: 1,
+                      profile_id: profile.id,
+                      username: profile.username ?? (username.trim() || "You"),
+                      avatar_url: profile.avatar_url,
+                      profile_review_count: 156,
+                      passport_points: 1050,
+                      review_count: 12,
+                    },
+                    {
+                      location_id: 1,
+                      rank: 2,
+                      profile_id: "onboarding-regular-2",
+                      username: "OliveHour",
+                      avatar_url: null,
+                      profile_review_count: 64,
+                      passport_points: 640,
+                      review_count: 9,
+                    },
+                    {
+                      location_id: 1,
+                      rank: 3,
+                      profile_id: "onboarding-regular-3",
+                      username: "LastCall",
+                      avatar_url: null,
+                      profile_review_count: 18,
+                      passport_points: 120,
+                      review_count: 7,
+                    },
+                  ]}
+                />
+              </View>
+            </ScrollView>
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(3)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to the rankings"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
+                <Button
+                  title="Terms"
+                  onPress={() => setStep(5)}
+                  icon="chevron-forward"
+                  iconPosition="right"
+                  size="medium"
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {step === 5 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
@@ -966,21 +1110,16 @@ const useStyles = makeStyles((t) => ({
   educationSection: {
     gap: t.spacing.md,
   },
-  rankRow: {
-    minHeight: 100,
+  stampRow: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
+    flexWrap: "wrap" as const,
     justifyContent: "space-between" as const,
+    rowGap: t.spacing.lg,
     paddingTop: t.spacing.sm,
   },
-  rankItem: {
-    width: 72,
+  stampCell: {
+    width: "23%" as const,
     alignItems: "center" as const,
-    gap: t.spacing.xs,
-  },
-  rankName: {
-    color: t.colors.text,
-    textAlign: "center" as const,
   },
   regularsLocationCard: {
     padding: t.spacing.lg,
@@ -1094,4 +1233,16 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "flex-end" as const,
     alignItems: "center" as const,
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    marginRight: "auto" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderRadius: t.radius.pill,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  backButtonPressed: { opacity: 0.6 },
 }));

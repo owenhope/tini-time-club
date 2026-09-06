@@ -70,6 +70,7 @@ export interface ActivityDisplayBase {
   isUnread: boolean;
   isNew: boolean;
   route: string | null;
+  data: Record<string, unknown>;
 }
 
 export interface FollowActivityRow extends ActivityDisplayBase {

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
 import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
+import PassportIcon from "@/components/shared/passport-icon";
 import { compactDisplayTypography, makeStyles, useTheme } from "@/theme";
 
 /**
@@ -35,7 +36,7 @@ export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
   icon?: keyof typeof Ionicons.glyphMap;
-  customIcon?: "martini-shaker" | "verified-business";
+  customIcon?: "martini-shaker" | "verified-business" | "passport";
   label?: string;
   onPress: () => void;
   accessibilityLabel: string;
@@ -159,6 +160,8 @@ const NavActionControl = ({
   const renderIcon = (iconSize: number) =>
     action.customIcon === "martini-shaker" ? (
       <MartiniShakerIcon size={iconSize} color={glyph} />
+    ) : action.customIcon === "passport" ? (
+      <PassportIcon size={iconSize} color={glyph} />
     ) : action.customIcon === "verified-business" ? (
       <MaterialIcons name="verified" size={iconSize} color={glyph} />
     ) : action.icon ? (
@@ -235,6 +238,7 @@ const NavActionControl = ({
  */
 const CompactBar = ({
   title,
+  leading,
   onBack,
   actions,
   trailing,
@@ -251,6 +255,7 @@ const CompactBar = ({
   titleColor,
 }: {
   title: string;
+  leading?: HeaderAction;
   onBack?: () => void;
   actions?: HeaderAction[];
   trailing?: HeaderAction;
@@ -273,6 +278,16 @@ const CompactBar = ({
   const onBrand = ground === "brand";
 
   const right = actions ?? (trailing ? [trailing] : []);
+  const left =
+    leading ??
+    (onBack
+      ? {
+          icon: "chevron-back" as const,
+          iconColor: isDark && !onInk && !onBrand ? colors.text : undefined,
+          onPress: onBack,
+          accessibilityLabel: "Back",
+        }
+      : null);
   // The title is centred between the two ends, so an end with nothing in it
   // still has to take up its width.
   const trailingWidth = getActionsWidth(right);
@@ -323,7 +338,16 @@ const CompactBar = ({
       )}
       {compactContent && compactContentCentered ? (
         <>
-          <View style={[styles.compactEnd, { width: leadingWidth }]} />
+          <View style={[styles.compactEnd, { width: leadingWidth }]}>
+            {left ? (
+              <NavActionControl
+                tone={
+                  transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
+                }
+                action={left}
+              />
+            ) : null}
+          </View>
           <View style={[styles.compactTitleRow, styles.compactCentered]}>
             {compactContent}
           </View>
@@ -333,19 +357,10 @@ const CompactBar = ({
       ) : (
         <>
           <View style={[styles.compactEnd, { width: leadingWidth }]}>
-            {onBack ? (
+            {left ? (
               <NavActionControl
                 tone={onInk || onBrand ? "onInk" : "outline"}
-                action={{
-                  icon: "chevron-back",
-                  // Purple is the light-surface navigation accent. Against a
-                  // dark header, back navigation uses the primary foreground
-                  // so the chevron stays white and immediately legible.
-                  iconColor:
-                    isDark && !onInk && !onBrand ? colors.text : undefined,
-                  onPress: onBack,
-                  accessibilityLabel: "Back",
-                }}
+                action={left}
               />
             ) : null}
           </View>
@@ -455,6 +470,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     return (
       <CompactBar
         title={title ?? ""}
+        leading={leading}
         onBack={onBack}
         actions={actions}
         trailing={trailing}

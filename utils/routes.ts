@@ -65,6 +65,10 @@ export type HomeParams = {
   feedRefresh?: string;
 };
 
+export type PassportParams = {
+  stampKey?: string;
+};
+
 export type DiscoverParams = {
   view?: ExploreView;
   lat?: string;
@@ -119,6 +123,15 @@ export const routes = {
 
   /** Own profile tab. */
   profile: () => "/profile" as const satisfies Href,
+
+  /** The signed-in member's Martini Passport. */
+  passport: (params?: PassportParams) =>
+    (params
+      ? ({ pathname: "/passport", params } as const)
+      : ("/passport" as const)) satisfies Href,
+
+  /** Explanation of Passport points, ranks, and avatar rings. */
+  passportInfo: () => "/passport-info" as const satisfies Href,
 
   /** Settings screen inside the profile stack. */
   settings: () => "/settings" as const satisfies Href,

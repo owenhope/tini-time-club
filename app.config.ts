@@ -98,7 +98,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "4.1.0",
+    version: "4.2.0",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     platforms: ["ios", "web"], // The native app is iOS-only; Expo web remains available.
     orientation: "portrait",

@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import type { ActivityDisplayRow } from "@/types/activity";
 import Avatar from "@/components/shared/Avatar";
@@ -13,6 +13,7 @@ import FollowButton from "@/components/shared/FollowButton";
 import VerifiedName from "@/components/shared/VerifiedName";
 import { formatRelativeDate } from "@/utils/helpers";
 import { makeStyles, useTheme } from "@/theme";
+import PassportIcon from "@/components/shared/passport-icon";
 
 interface ActivityRowProps {
   row: ActivityDisplayRow;
@@ -35,6 +36,12 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
   const { colors } = useTheme();
   const [followLoading, setFollowLoading] = useState(false);
   const actor = "actor" in row ? row.actor : null;
+  const isPassportAchievement =
+    row.kind === "admin_message" &&
+    row.data.category === "passport_achievement";
+  const isVerificationActivity =
+    row.kind === "admin_message" &&
+    (row.data.claimStatus === "approved" || row.data.status === "verified");
 
   const handleActorPress = (event: GestureResponderEvent) => {
     event.stopPropagation();
@@ -126,7 +133,15 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={styles.leading}>
-        {row.kind === "admin_message" ? (
+        {isPassportAchievement ? (
+          <View style={styles.passportIcon}>
+            <PassportIcon size={21} color={colors.accent} />
+          </View>
+        ) : isVerificationActivity ? (
+          <View style={styles.passportIcon}>
+            <MaterialIcons name="verified" size={21} color={colors.accent} />
+          </View>
+        ) : row.kind === "admin_message" ? (
           <View style={styles.adminIcon}>
             <Ionicons name="heart" size={19} color={colors.onAccent} />
           </View>
@@ -214,6 +229,12 @@ const useStyles = makeStyles((t) => ({
     height: 34,
     borderRadius: t.radius.pill,
     backgroundColor: t.colors.accent,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  passportIcon: {
+    width: 34,
+    height: 34,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
