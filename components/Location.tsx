@@ -569,7 +569,7 @@ const Location = () => {
                             <Avatar
                               avatarPath={regular.avatar_url}
                               username={regular.username}
-                              reviewCount={regular.profile_review_count}
+                              reviewCount={regular.passport_points}
                               size={32}
                               onInk
                             />

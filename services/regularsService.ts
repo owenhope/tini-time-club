@@ -8,8 +8,10 @@ export interface Regular {
   username: string;
   avatar_url?: string | null;
   is_verified?: boolean;
-  /** Global active review count used for the member rank. */
+  /** Global active review count for the author byline. */
   profile_review_count?: number;
+  /** Permanent Passport points that determine the member's rank ring. */
+  passport_points?: number;
   /** Active reviews at this location, used for regular placement. */
   review_count: number;
 }

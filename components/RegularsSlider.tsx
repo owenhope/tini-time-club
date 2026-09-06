@@ -93,7 +93,7 @@ export default function RegularsSlider({
                 avatarPath={regular.avatar_url}
                 username={regular.username}
                 size={42}
-                reviewCount={regular.profile_review_count}
+                reviewCount={regular.passport_points}
               />
               <View style={styles.identity}>
                 <VerifiedName
