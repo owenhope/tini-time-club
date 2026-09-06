@@ -42,9 +42,19 @@ import { routes } from "@/utils/routes";
 import { consumePendingMembershipReturn } from "@/services/visitor-session";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { RANK_TIERS } from "@/utils/ranking";
+import { PassportStamp } from "@/components/passport/passport-stamp";
+import { RankTierList } from "@/components/passport/rank-tier-list";
+import type { PassportStampShape } from "@/services/passportService";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
+
+// Example first stamps for the Passport education step — one of each stamp
+// silhouette so new members see what they'll actually collect.
+const PREVIEW_STAMPS: { shape: PassportStampShape; label: string }[] = [
+  { shape: "locations", label: "Location" },
+  { shape: "regulars", label: "Regular" },
+  { shape: "comments", label: "Comment" },
+];
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -574,31 +584,33 @@ export default function Onboarding() {
 
               <View style={styles.educationSection}>
                 <AppText variant="eyebrow" tone="secondary">
-                  Passport points
+                  Collect stamps
                 </AppText>
                 <AppText variant="body" tone="secondary">
                   Explore locations, Martini styles, and club milestones to earn
                   stamps. Each stamp permanently adds its listed points.
                 </AppText>
-                <View style={styles.rankRow}>
-                  {RANK_TIERS.map((tier) => (
-                    <View key={tier.key} style={styles.rankItem}>
-                      <Avatar
-                        avatarPath={profile.avatar_url}
-                        username={profile.username ?? username.trim()}
-                        fallbackText="TT"
-                        size={48}
-                        reviewCount={tier.min}
+                <View style={styles.stampRow}>
+                  {PREVIEW_STAMPS.map((stamp) => (
+                    <View key={stamp.shape} style={styles.stampCell}>
+                      <PassportStamp
+                        shape={stamp.shape}
+                        milestone={1}
+                        pointAward={10}
+                        earned
+                        label={stamp.label}
+                        accessibilityLabel={`Example stamp: 1 ${stamp.label.toLowerCase()}, 10 points`}
                       />
-                      <AppText variant="label" style={styles.rankName}>
-                        {tier.name}
-                      </AppText>
-                      <AppText variant="caption" tone="secondary">
-                        {tier.min}+
-                      </AppText>
                     </View>
                   ))}
                 </View>
+              </View>
+
+              <View style={styles.educationSection}>
+                <AppText variant="eyebrow" tone="secondary">
+                  Rings to unlock
+                </AppText>
+                <RankTierList />
               </View>
             </ScrollView>
 
@@ -1004,21 +1016,16 @@ const useStyles = makeStyles((t) => ({
   educationSection: {
     gap: t.spacing.md,
   },
-  rankRow: {
-    minHeight: 100,
+  stampRow: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
     justifyContent: "space-between" as const,
+    gap: t.spacing.md,
     paddingTop: t.spacing.sm,
   },
-  rankItem: {
-    width: 72,
+  stampCell: {
+    flex: 1,
+    maxWidth: 96,
     alignItems: "center" as const,
-    gap: t.spacing.xs,
-  },
-  rankName: {
-    color: t.colors.text,
-    textAlign: "center" as const,
   },
   regularsLocationCard: {
     padding: t.spacing.lg,

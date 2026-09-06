@@ -1,8 +1,8 @@
 import { ScrollView, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, AvatarRing } from "@/components/shared";
+import { AppText } from "@/components/shared";
+import { RankTierList } from "@/components/passport/rank-tier-list";
 import { makeStyles, useTheme } from "@/theme";
-import { RANK_TIERS } from "@/utils/ranking";
 
 export default function PassportInfoScreen() {
   const styles = useStyles();
@@ -36,27 +36,7 @@ export default function PassportInfoScreen() {
         <AppText variant="eyebrow" tone="secondary" selectable>
           Rings to unlock
         </AppText>
-        <View style={styles.ranks}>
-          {RANK_TIERS.map((tier, index) => (
-            <View key={tier.key} style={styles.rankCard}>
-              <AvatarRing reviewCount={tier.min} size={52}>
-                <View style={styles.avatarCore}>
-                  <Ionicons name="person" size={25} color={colors.onInk} />
-                </View>
-              </AvatarRing>
-              <View style={styles.rankCopy}>
-                <AppText variant="title" selectable>
-                  {tier.name}
-                </AppText>
-                <AppText variant="label" tone="secondary" selectable>
-                  {index === 0
-                    ? "Your starting ring"
-                    : `Unlocks at ${tier.min} Passport points`}
-                </AppText>
-              </View>
-            </View>
-          ))}
-        </View>
+        <RankTierList selectable />
       </View>
     </ScrollView>
   );
@@ -77,26 +57,4 @@ const useStyles = makeStyles((t) => ({
   },
   title: { flex: 1 },
   section: { gap: t.spacing.sm },
-  ranks: { gap: t.spacing.sm },
-  rankCard: {
-    minHeight: 88,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.lg,
-    padding: t.spacing.md,
-    borderRadius: t.radius.card,
-    borderCurve: "continuous" as const,
-    backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  avatarCore: {
-    width: 52,
-    height: 52,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.surfaceInkDeep,
-  },
-  rankCopy: { flex: 1, minWidth: 0, gap: 2 },
 }));
