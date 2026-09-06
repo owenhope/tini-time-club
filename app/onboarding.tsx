@@ -624,8 +624,20 @@ export default function Onboarding() {
               ]}
             >
               <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(1)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to profile setup"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
                 <Button
-                  title="See the rankings"
+                  title="Rankings"
                   onPress={() => setStep(3)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -679,8 +691,20 @@ export default function Onboarding() {
               ]}
             >
               <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(2)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to the Passport"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
                 <Button
-                  title="Meet the Regulars"
+                  title="Regulars"
                   onPress={() => setStep(4)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -793,8 +817,20 @@ export default function Onboarding() {
               ]}
             >
               <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(3)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to the rankings"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
                 <Button
-                  title="Review terms"
+                  title="Terms"
                   onPress={() => setStep(5)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -1197,4 +1233,16 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "flex-end" as const,
     alignItems: "center" as const,
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    marginRight: "auto" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderRadius: t.radius.pill,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+  },
+  backButtonPressed: { opacity: 0.6 },
 }));
