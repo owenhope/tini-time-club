@@ -7,7 +7,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/utils/supabase";
 import { decode } from "base64-arraybuffer";
 import { useProfile } from "@/context/profile-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
 import {
   Redirect,
@@ -474,6 +474,16 @@ const MemberProfile = () => {
       <AppHeader
         variant="compact"
         title={profile?.username ?? ""}
+        titleAccessory={
+          profile?.is_verified ? (
+            <MaterialIcons
+              name="verified"
+              size={16}
+              color={colors.onHeaderBrand}
+              accessibilityLabel="Verified member"
+            />
+          ) : undefined
+        }
         preserveCase
         trailing={settingsAction}
         ground="brand"

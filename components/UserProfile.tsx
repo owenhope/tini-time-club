@@ -7,6 +7,7 @@ import {
   Platform,
   ActionSheetIOS,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
@@ -36,7 +37,7 @@ import { useMembership } from "@/context/membership-context";
 
 const UserProfile = () => {
   const styles = useStyles();
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
@@ -502,6 +503,16 @@ const UserProfile = () => {
       <AppHeader
         variant="compact"
         title={displayProfile?.username ?? ""}
+        titleAccessory={
+          displayProfile?.is_verified ? (
+            <MaterialIcons
+              name="verified"
+              size={16}
+              color={colors.onHeaderBrand}
+              accessibilityLabel="Verified member"
+            />
+          ) : undefined
+        }
         preserveCase
         onBack={goBack}
         actions={headerActions}

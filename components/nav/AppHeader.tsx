@@ -1,5 +1,12 @@
 import React, { useCallback } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
@@ -289,9 +296,18 @@ const CompactBar = ({
         }
       : null);
   // The title is centred between the two ends, so an end with nothing in it
-  // still has to take up its width.
+  // still has to take up its width. But balancing against several actions can
+  // starve the title entirely (four circles ≈ 187pt per side on a 393pt
+  // screen), so the balance only holds while the title keeps readable room;
+  // past that the title gives up dead centre and sits beside the back control.
+  const windowWidth = Dimensions.get("window").width;
   const trailingWidth = getActionsWidth(right);
-  const leadingWidth = Math.max(CIRCLE, trailingWidth);
+  const balancedLeading = Math.max(CIRCLE, trailingWidth);
+  const MIN_TITLE_ROOM = 132;
+  const leadingWidth =
+    balancedLeading * 2 + MIN_TITLE_ROOM <= windowWidth
+      ? balancedLeading
+      : CIRCLE;
 
   return (
     <Animated.View
@@ -927,7 +943,9 @@ const useStyles = makeStyles((t) => ({
   },
   compactTitle: {
     ...t.typography.heading,
-    flex: 1,
+    // Shrink, don't flex: a flexed title spans the whole row and shoves the
+    // titleAccessory to the far edge instead of keeping it beside the name.
+    flexShrink: 1,
     textAlign: "center" as const,
     color: t.colors.text,
   },
@@ -942,6 +960,7 @@ const useStyles = makeStyles((t) => ({
     minWidth: 0,
     flexDirection: "row" as const,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: t.spacing.xs,
   },
   compactTitleOnInk: {

@@ -421,11 +421,24 @@ const Location = () => {
     <View style={styles.container}>
       {/* Variant B, fading in on the same value that fades variant C out —
           one scroll, one animated value, both halves of the crossfade. */}
+      {/* Collapsed, the bar keeps only the identity: back, the name, and its
+          marks — the share/info/map controls live in the expanded header. */}
       <AppHeader
         variant="compact"
         title={displayLocation?.name ?? ""}
+        titleLeadingAccessory={
+          displayLocation?.is_golden_glass ? (
+            <View accessible accessibilityLabel="Golden Glass">
+              <MartiniIcon size={18} color={colors.awardGold} filled />
+            </View>
+          ) : null
+        }
+        titleAccessory={
+          displayLocation?.is_location_verified ? (
+            <LocationVerifiedBadge compact color={colors.onHeaderBrand} />
+          ) : null
+        }
         onBack={goBack}
-        actions={headerActions}
         ground="brand"
         progress={progress}
         collapsed={isCollapsed}
