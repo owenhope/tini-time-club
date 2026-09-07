@@ -171,7 +171,7 @@ export function PassportToastProvider({
             accessibilityLabel={
               current.key === "summary"
                 ? `Passport Stamps: ${current.threshold} new, ${current.points} points earned. Open Passport.`
-                : `Passport Stamp: ${current.title}, ${current.points} points earned. Open Passport.`
+                : `Passport Stamp: ${current.label}, ${current.points} points earned. Open Passport.`
             }
             onPress={() => {
               dismiss();
@@ -195,8 +195,8 @@ export function PassportToastProvider({
             <View style={styles.copy}>
               <AppText variant="heading" numberOfLines={1}>
                 {current.key === "summary"
-                  ? `Passport Stamps · ${current.threshold} new`
-                  : `Passport Stamp · ${current.title}`}
+                  ? `Passport Stamps · ${current.threshold} new · +${current.points} pts`
+                  : `Passport Stamp · ${current.label} · +${current.points} pts`}
               </AppText>
               <AppText variant="caption" tone="secondary">
                 Tap to view your Passport

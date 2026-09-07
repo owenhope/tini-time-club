@@ -32,6 +32,7 @@ const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   profile_photo: { kind: "polygon", sides: 12 },
   favorite_location: { kind: "polygon", sides: 12 },
   taste_profile: { kind: "polygon", sides: 12 },
+  bio: { kind: "polygon", sides: 12 },
 };
 
 const polygonPoints = (sides: number, outer = 45, inner?: number) => {

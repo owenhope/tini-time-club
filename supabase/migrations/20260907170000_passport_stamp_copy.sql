@@ -71,7 +71,12 @@ BEGIN
     SELECT
       v_actor,
       NULL,
-      concat('Passport Stamp · ', d.title),
+      concat('Passport Stamp · ',
+        CASE
+          WHEN d.metric = 'combination' THEN concat_ws(' · ', s.name, t.name)
+          ELSE d.threshold::text || ' ' ||
+            CASE WHEN d.threshold = 1 THEN regexp_replace(d.unit, 's$', '') ELSE d.unit END
+        END, ' · +', d.points, ' pts'),
       2,
       'admin_message',
       jsonb_build_object(
@@ -83,6 +88,8 @@ BEGIN
       ),
       concat('passport:', v_actor, ':', d.id)
     FROM public.passport_definitions d
+    LEFT JOIN public.spirits s ON d.metric = 'combination' AND s.id = d.subject_a
+    LEFT JOIN public.types t ON d.metric = 'combination' AND t.id = d.subject_b
     WHERE d.id = ANY(v_new_ids)
     ON CONFLICT (event_key) WHERE event_key IS NOT NULL DO NOTHING;
   END IF;

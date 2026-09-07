@@ -694,14 +694,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             />
           ) : null}
           <View style={styles.largeIdentity}>
-            <Text
-              style={[styles.largeTitle, preserveCase && styles.titlePlain]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.55}
-            >
-              {title}
-            </Text>
+            <View style={styles.largeTitleRow}>
+              <Text
+                style={[
+                  styles.largeTitle,
+                  styles.largeTitleShrink,
+                  preserveCase && styles.titlePlain,
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.55}
+              >
+                {title}
+              </Text>
+              {titleAccessory}
+            </View>
             {meta ? <Text style={styles.largeMeta}>{meta}</Text> : null}
           </View>
           <View style={styles.largeActions}>
@@ -821,6 +828,15 @@ const useStyles = makeStyles((t) => ({
   largeIdentity: {
     flex: 1,
     minWidth: 0,
+  },
+  largeTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+    minWidth: 0,
+  },
+  largeTitleShrink: {
+    flexShrink: 1,
   },
   largeActions: {
     minWidth: CIRCLE,

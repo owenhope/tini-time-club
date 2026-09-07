@@ -6,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Avatar, StatCard } from "@/components/shared";
 import { RankGradient } from "@/components/passport/rank-gradient";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
@@ -21,6 +22,7 @@ interface ProfileHeaderProps {
     avatar_url?: string | null;
     review_count?: number | null;
     passport_points?: number | null;
+    is_verified?: boolean | null;
   } | null;
   reviewsCount: number;
   followersCount: number;
@@ -153,6 +155,17 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     },
   ];
 
+  // On the brand-purple header ground both purple verified tones vanish, so
+  // the badge takes the header's own foreground color, like the place page.
+  const verifiedAccessory = profile.is_verified ? (
+    <MaterialIcons
+      name="verified"
+      size={20}
+      color={colors.onHeaderBrand}
+      accessibilityLabel="Verified member"
+    />
+  ) : undefined;
+
   return (
     <View style={styles.ground}>
       {/* The header names the screen with the handle — variant A on your own
@@ -164,6 +177,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           variant="media"
           ground="brand"
           title={profile.username}
+          titleAccessory={verifiedAccessory}
           preserveCase
           // No meta line: the name is the identity row's job, and setting it
           // here printed it twice, eight points apart.
@@ -181,6 +195,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           ground="brand"
           preserveCase
           title={profile.username}
+          titleAccessory={verifiedAccessory}
           trailing={titleAction}
           progress={progress}
           collapsed={collapsed}
