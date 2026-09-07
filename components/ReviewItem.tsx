@@ -321,9 +321,12 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
             ) : null}
             {venueRating != null ? (
               <View style={styles.venueChipScoreRow}>
-                <RatingPips value={1} max={1} size={14} accessibilityLabel="" />
+                <RatingPips value={1} max={1} size={16} accessibilityLabel="" />
                 <Text style={styles.venueChipScoreValue} numberOfLines={1}>
-                  {formatRating(venueRating)} · {venueReviewLabel}
+                  {formatRating(venueRating)}
+                </Text>
+                <Text style={styles.venueChipScoreMeta} numberOfLines={1}>
+                  · {venueReviewLabel}
                 </Text>
               </View>
             ) : null}
@@ -939,10 +942,15 @@ const useStyles = makeStyles((t) => ({
     marginTop: 4,
   },
   venueChipScoreValue: {
+    ...t.typography.title,
+    letterSpacing: 0,
+    color: t.colors.textOnImage,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  venueChipScoreMeta: {
     ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
     flexShrink: 1,
-    fontVariant: ["tabular-nums"] as const,
   },
   venueChipNameRow: {
     flexDirection: "row" as const,
