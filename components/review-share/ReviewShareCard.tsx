@@ -561,7 +561,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   shareHeadline: {
-    flex: 1,
+    // Shrink, don't flex: a flexed headline spans the row and shoves the
+    // verified mark to the card's edge instead of keeping it by the name.
+    flexShrink: 1,
     minWidth: 0,
   },
   meta: {
