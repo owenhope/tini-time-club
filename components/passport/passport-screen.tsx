@@ -19,6 +19,9 @@ import { getRankProgress } from "@/utils/ranking";
 import { routes } from "@/utils/routes";
 
 const MARTINI_STYLE_HINTS: Record<string, string> = {
+  Vodka: "Clean, crisp martinis built on vodka.",
+  Gin: "Botanical martinis built on gin.",
+  Vesper: "The 007 order — gin and vodka with a wine aperitif.",
   Twist: "Bright martinis finished with a citrus twist.",
   Dirty: "Savory martinis made with olive brine.",
   Dry: "Spirit-forward martinis with less vermouth.",
@@ -38,14 +41,15 @@ const passportSection = (metric: string, series: string) => {
   if (
     metric === "martinis" ||
     metric === "combination" ||
-    metric === "type_reviews"
+    metric === "type_reviews" ||
+    metric === "spirit_reviews"
   ) {
     return "Martinis";
   }
   return series;
 };
 
-const SECTION_ORDER = ["Venues", "Martinis", "Community"];
+const SECTION_ORDER = ["Profile", "Venues", "Martinis", "Community"];
 // Sections outside SECTION_ORDER (a new server-side series, say) sort after
 // the known ones instead of jumping above "Venues".
 const sectionRank = (title: string) => {
@@ -227,7 +231,9 @@ export default function PassportScreen() {
                   (stamp) => stamp.key === stampKey
                 );
                 const expanded = open[title] ?? containsLinkedStamp;
-                const isMartiniStyle = stamps[0]?.metric === "type_reviews";
+                const isMartiniStyle =
+                  stamps[0]?.metric === "type_reviews" ||
+                  stamps[0]?.metric === "spirit_reviews";
                 const styleName = styleNameFromTitle(title);
                 const displayTitle = isMartiniStyle ? styleName : title;
                 const hint = isMartiniStyle
@@ -237,12 +243,15 @@ export default function PassportScreen() {
                 const pointsEarned = stamps
                   .filter((stamp) => stamp.earned)
                   .reduce((total, stamp) => total + stamp.points, 0);
-                const currentCount =
-                  stamps[0]?.metric === "combination"
-                    ? stamps.filter(
-                        (stamp) => stamp.progress >= stamp.threshold
-                      ).length
-                    : Math.max(0, ...stamps.map((stamp) => stamp.progress));
+                // Groups of one-shot stamps (every threshold is 1 — the
+                // combos, the First Steps profile stamps) count completions;
+                // milestone ladders show the best progress along the ladder.
+                const currentCount = stamps.every(
+                  (stamp) => stamp.threshold === 1
+                )
+                  ? stamps.filter((stamp) => stamp.progress >= stamp.threshold)
+                      .length
+                  : Math.max(0, ...stamps.map((stamp) => stamp.progress));
                 return (
                   <View
                     key={title}

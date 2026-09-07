@@ -5,10 +5,14 @@ export const PASSPORT_STAMP_SHAPES = [
   "martinis",
   "combination",
   "type_reviews",
+  "spirit_reviews",
   "regulars",
   "comments",
   "likes_received",
   "shares",
+  "profile_photo",
+  "favorite_location",
+  "taste_profile",
 ] as const;
 export type PassportStampShape = (typeof PASSPORT_STAMP_SHAPES)[number];
 

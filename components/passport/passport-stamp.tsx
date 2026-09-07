@@ -23,10 +23,15 @@ const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   martinis: { kind: "circle" },
   combination: { kind: "circle" },
   type_reviews: { kind: "circle" },
+  spirit_reviews: { kind: "circle" },
   regulars: { kind: "polygon", sides: 18, notched: true },
   comments: { kind: "polygon", sides: 8 },
   likes_received: { kind: "polygon", sides: 18, notched: true },
   shares: { kind: "polygon", sides: 8 },
+  // The one-time First Steps profile stamps share a dodecagon silhouette.
+  profile_photo: { kind: "polygon", sides: 12 },
+  favorite_location: { kind: "polygon", sides: 12 },
+  taste_profile: { kind: "polygon", sides: 12 },
 };
 
 const polygonPoints = (sides: number, outer = 45, inner?: number) => {
