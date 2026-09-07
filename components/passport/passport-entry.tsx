@@ -145,9 +145,7 @@ function PassportEntrySkeleton() {
 const useStyles = makeStyles((t) => ({
   card: {
     width: "100%" as const,
-    paddingHorizontal: t.spacing.md,
-    paddingTop: t.spacing.md,
-    paddingBottom: t.spacing.xs,
+    padding: t.spacing.md,
     gap: t.spacing.sm,
     backgroundColor: "rgba(250,249,246,0.10)",
     borderRadius: t.radius.card,

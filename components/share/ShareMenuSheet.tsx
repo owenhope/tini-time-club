@@ -231,7 +231,7 @@ const useStyles = makeStyles((t) => ({
   tile: {
     minHeight: 96,
     borderRadius: t.radius.thumb,
-    paddingHorizontal: t.spacing.sm,
+    paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.md,
     alignItems: "center" as const,
     justifyContent: "center" as const,

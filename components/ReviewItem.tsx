@@ -269,6 +269,13 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
         stripNameFromAddress(review.location.name, review.location.address)
       )
     : null;
+  const venueCount = review.location?.total_ratings ?? 0;
+  const venueRating =
+    review.location?.rating != null && venueCount > 0
+      ? Number(review.location.rating)
+      : null;
+  const venueReviewLabel =
+    venueCount === 1 ? "1 review" : `${venueCount} reviews`;
 
   const locationId = review.location?.id;
   const handleLocationPress = useCallback(() => {
@@ -307,10 +314,27 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
                 <LocationVerifiedBadge compact />
               ) : null}
             </View>
-            {cityCountry ? (
-              <Text style={styles.venueChipMeta} numberOfLines={1}>
-                {cityCountry}
-              </Text>
+            {venueRating != null || cityCountry ? (
+              <View style={styles.venueChipRating}>
+                {venueRating != null ? (
+                  <RatingPips
+                    value={1}
+                    max={1}
+                    size={13}
+                    accessibilityLabel=""
+                  />
+                ) : null}
+                <Text style={styles.venueChipMeta} numberOfLines={1}>
+                  {[
+                    venueRating != null
+                      ? `${formatRating(venueRating)} · ${venueReviewLabel}`
+                      : null,
+                    cityCountry,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              </View>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -900,8 +924,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     gap: 7,
-    paddingLeft: t.spacing.md,
-    paddingRight: t.spacing.md,
+    paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
     borderRadius: t.radius.card,
     backgroundColor: t.colors.scrimStrong,
@@ -916,6 +939,13 @@ const useStyles = makeStyles((t) => ({
     letterSpacing: 0,
     color: t.colors.textOnImage,
     flexShrink: 1,
+  },
+  venueChipRating: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 5,
+    minWidth: 0,
+    marginTop: 2,
   },
   venueChipNameRow: {
     flexDirection: "row" as const,
@@ -997,8 +1027,8 @@ const useStyles = makeStyles((t) => ({
     borderTopWidth: 1,
     borderTopColor: t.colors.divider,
     paddingTop: t.spacing.md - 1,
-    paddingBottom: t.spacing.md + 1,
-    marginBottom: t.spacing.md - 1,
+    paddingBottom: t.spacing.sm,
+    marginBottom: 0,
   },
   action: {
     flexDirection: "row" as const,
