@@ -255,28 +255,29 @@ export default function PassportScreen() {
                     style={[styles.group, index > 0 && styles.divider]}
                   >
                     <Pressable
-                      style={styles.groupHeader}
                       onPress={() =>
                         setOpen((value) => ({ ...value, [title]: !expanded }))
                       }
                       accessibilityRole="button"
                       accessibilityState={{ expanded }}
                     >
-                      <AppText variant="bodyStrong" style={styles.flex}>
-                        {displayTitle} · {currentCount}
+                      <View style={styles.groupHeader}>
+                        <AppText variant="bodyStrong" style={styles.flex}>
+                          {displayTitle} · {currentCount}
+                        </AppText>
+                        <AppText variant="label" style={styles.groupProgress}>
+                          {pointsEarned} pts
+                        </AppText>
+                        <Ionicons
+                          name={expanded ? "chevron-up" : "chevron-down"}
+                          size={18}
+                          color={colors.textMuted}
+                        />
+                      </View>
+                      <AppText variant="caption" tone="secondary">
+                        {hint}
                       </AppText>
-                      <AppText variant="label" style={styles.groupProgress}>
-                        {pointsEarned} pts
-                      </AppText>
-                      <Ionicons
-                        name={expanded ? "chevron-up" : "chevron-down"}
-                        size={18}
-                        color={colors.textMuted}
-                      />
                     </Pressable>
-                    <AppText variant="caption" tone="secondary">
-                      {hint}
-                    </AppText>
                     {expanded ? (
                       <View style={styles.grid}>
                         {stamps.map((stamp) => (
@@ -392,7 +393,7 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.md,
     backgroundColor: t.colors.surfaceRaised,
   },
-  cell: { width: "25%" as const, padding: t.spacing.xs / 2 },
+  cell: { width: "33.3333%" as const, padding: t.spacing.xs / 2 },
   // A small floating plate, Instagram-style: the screen answers a pull with a
   // spinner over the content instead of the (broken) native inset spinner.
   refreshChip: {
