@@ -72,7 +72,10 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
   const renderCopy = () => {
     if (row.kind === "admin_message") {
       return (
-        <Text style={styles.body} numberOfLines={2}>
+        <Text
+          style={isPassportAchievement ? styles.stampBody : styles.body}
+          numberOfLines={2}
+        >
           {row.body}
         </Text>
       );
@@ -260,6 +263,12 @@ const useStyles = makeStyles((t) => ({
   },
   body: {
     ...t.typography.body,
+    color: t.colors.postText,
+  },
+  // Stamp rows are all name-and-points, so the whole line carries the same
+  // strong weight usernames get.
+  stampBody: {
+    ...t.typography.bodyStrong,
     color: t.colors.postText,
   },
   actorName: {

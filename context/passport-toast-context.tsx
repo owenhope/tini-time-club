@@ -170,10 +170,10 @@ export function PassportToastProvider({
             </View>
             <View style={styles.copy}>
               <AppText variant="heading" numberOfLines={1}>
-                {current.label}
+                {current.label} · +{current.points} pts
               </AppText>
               <AppText variant="caption" tone="secondary">
-                +{current.points} pts · Tap to view your Passport
+                Tap to view your Passport
               </AppText>
             </View>
           </Pressable>
