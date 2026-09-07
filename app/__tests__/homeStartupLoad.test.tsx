@@ -146,9 +146,12 @@ jest.mock("@/components/nav/AppHeader", () => {
   };
 });
 jest.mock("@/components/shared", () => ({
+  AppText: () => null,
   Button: () => null,
   Input: () => null,
-  MartiniIcon: () => null,
+}));
+jest.mock("@/components/passport/passport-stamp", () => ({
+  PassportStamp: () => null,
 }));
 
 jest.mock("@/theme", () => {

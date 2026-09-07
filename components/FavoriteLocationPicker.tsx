@@ -85,7 +85,7 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: t.spacing.sm,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     backgroundColor: t.colors.background,
   },
   containerSelected: {

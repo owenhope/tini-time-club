@@ -269,6 +269,13 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
         stripNameFromAddress(review.location.name, review.location.address)
       )
     : null;
+  const venueCount = review.location?.total_ratings ?? 0;
+  const venueRating =
+    review.location?.rating != null && venueCount > 0
+      ? Number(review.location.rating)
+      : null;
+  const venueReviewLabel =
+    venueCount === 1 ? "1 review" : `${venueCount} reviews`;
 
   const locationId = review.location?.id;
   const handleLocationPress = useCallback(() => {
@@ -311,6 +318,17 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
               <Text style={styles.venueChipMeta} numberOfLines={1}>
                 {cityCountry}
               </Text>
+            ) : null}
+            {venueRating != null ? (
+              <View style={styles.venueChipScoreRow}>
+                <RatingPips value={1} max={1} size={16} accessibilityLabel="" />
+                <Text style={styles.venueChipScoreValue} numberOfLines={1}>
+                  {formatRating(venueRating)}
+                </Text>
+                <Text style={styles.venueChipScoreMeta} numberOfLines={1}>
+                  · {venueReviewLabel}
+                </Text>
+              </View>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -900,10 +918,9 @@ const useStyles = makeStyles((t) => ({
     flexDirection: "row" as const,
     alignItems: "flex-start" as const,
     gap: 7,
-    paddingLeft: t.spacing.md,
-    paddingRight: t.spacing.md,
+    paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.card,
     backgroundColor: t.colors.scrimStrong,
   },
   venueChipLines: {
@@ -914,6 +931,24 @@ const useStyles = makeStyles((t) => ({
   venueChipText: {
     ...t.typography.title,
     letterSpacing: 0,
+    color: t.colors.textOnImage,
+    flexShrink: 1,
+  },
+  venueChipScoreRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 5,
+    minWidth: 0,
+    marginTop: 4,
+  },
+  venueChipScoreValue: {
+    ...t.typography.title,
+    letterSpacing: 0,
+    color: t.colors.textOnImage,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  venueChipScoreMeta: {
+    ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
@@ -960,7 +995,7 @@ const useStyles = makeStyles((t) => ({
   scorePips: {
     paddingHorizontal: t.spacing.sm,
     paddingVertical: t.spacing.xs,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.surfaceSunken,
   },
   scoreLabel: {
@@ -997,8 +1032,8 @@ const useStyles = makeStyles((t) => ({
     borderTopWidth: 1,
     borderTopColor: t.colors.divider,
     paddingTop: t.spacing.md - 1,
-    paddingBottom: t.spacing.md + 1,
-    marginBottom: t.spacing.md - 1,
+    paddingBottom: t.spacing.sm,
+    marginBottom: 0,
   },
   action: {
     flexDirection: "row" as const,

@@ -81,7 +81,8 @@ jest.mock("@/theme", () => ({
   makeStyles: (factory: (theme: object) => object) => () =>
     factory({
       colors: { surfaceInk: "ink", background: "paper" },
-      spacing: { sm: 4 },
+      spacing: { sm: 4, lg: 16, xxl: 32 },
+      radius: { input: 10, thumb: 16, card: 22, sheet: 28, pill: 999 },
     }),
   useTheme: () => ({ colors: { onInk: "paper" } }),
 }));

@@ -205,11 +205,11 @@ const useStyles = makeStyles(() => ({
   container: { width: "100%" as const, alignItems: "center" as const },
   stamp: {
     width: "100%" as const,
-    maxWidth: 84,
+    maxWidth: 112,
     aspectRatio: 1,
     position: "relative" as const,
   },
-  profileStamp: { maxWidth: 78 },
+  profileStamp: { maxWidth: 104 },
   outline: {
     position: "absolute" as const,
     top: 0,

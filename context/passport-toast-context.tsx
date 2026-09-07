@@ -152,7 +152,7 @@ export function PassportToastProvider({
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Passport stamp earned: ${current.label}, ${current.points} points. Open Passport.`}
+            accessibilityLabel={`${current.label}, ${current.points} points earned. Open Passport.`}
             onPress={() => {
               dismiss();
               router.push(routes.passport({ stampKey: current.key }));
@@ -169,16 +169,11 @@ export function PassportToastProvider({
               />
             </View>
             <View style={styles.copy}>
-              <AppText variant="eyebrow" tone="accent">
-                {current.metric === "combination"
-                  ? "MARTINI EXPLORER STAMP"
-                  : "PASSPORT STAMP EARNED"}
-              </AppText>
               <AppText variant="heading" numberOfLines={1}>
-                {current.label}
+                {current.label} · +{current.points} pts
               </AppText>
               <AppText variant="caption" tone="secondary">
-                +{current.points} pts · Tap to view your Passport
+                Tap to view your Passport
               </AppText>
             </View>
           </Pressable>

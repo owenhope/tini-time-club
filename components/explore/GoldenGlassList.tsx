@@ -349,7 +349,7 @@ const useStyles = makeStyles((t) => ({
   ratingPips: {
     paddingHorizontal: t.spacing.sm,
     paddingVertical: t.spacing.xs,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.surfaceSunken,
   },
   reviewCount: { ...t.typography.mono, color: t.colors.textMuted },

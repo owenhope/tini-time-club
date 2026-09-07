@@ -382,21 +382,17 @@ export const spacing = {
 } as const;
 
 /**
- * Controls are pill, surfaces are soft-square — the scale below is the design
- * system's, so `card`/`sheet`/`thumb`/`input` are the semantic names for the
- * steps rather than a second, disagreeing set of numbers.
+ * Controls are pill, surfaces are soft-square. Four role-named steps, +6
+ * apart, chosen so nesting stays concentric with the standard 12pt content
+ * padding: inner radius = outer radius − padding (sheet 28 → thumb 16,
+ * card 22 → input 10). Pick by role; never add a raw number.
  */
 export const radius = {
-  xs: 6,
-  sm: 10,
-  md: 16,
-  lg: 22,
-  xl: 28,
-  pill: 999,
-  input: 10, // === sm
-  thumb: 16, // === md — thumbnails
-  card: 22, // === lg
-  sheet: 28, // === xl — sheets / modals
+  input: 10, // inputs, chips, small tiles
+  thumb: 16, // thumbnails, inner media
+  card: 22, // standalone surface cards
+  sheet: 28, // sheets / modals
+  pill: 999, // circles and pills
 } as const;
 
 /** Filled controls darken and shrink slightly on press. No ripple. */

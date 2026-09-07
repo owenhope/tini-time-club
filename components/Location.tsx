@@ -639,7 +639,7 @@ const useStyles = makeStyles((t) => ({
   venuePips: {
     paddingHorizontal: t.spacing.sm,
     paddingVertical: 5,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: "rgba(250,249,246,0.10)",
   },
   venueEyebrow: {

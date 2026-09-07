@@ -306,7 +306,7 @@ const useStyles = makeStyles((t) => ({
     minHeight: 48,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,
     color: t.colors.inputText,
@@ -315,7 +315,7 @@ const useStyles = makeStyles((t) => ({
   multiline: { minHeight: 112, textAlignVertical: "top" as const },
   submit: {
     alignItems: "center" as const,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.accent,
     padding: t.spacing.md,
   },
@@ -324,7 +324,7 @@ const useStyles = makeStyles((t) => ({
   statusCard: {
     gap: t.spacing.xs,
     padding: t.spacing.lg,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     backgroundColor: t.colors.surface,
     borderWidth: 1,
     borderColor: t.colors.border,

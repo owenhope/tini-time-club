@@ -128,7 +128,7 @@ const useStyles = makeStyles((t) => ({
     height: 44,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderRadius: 22,
+    borderRadius: t.radius.pill,
     backgroundColor: "rgba(0, 0, 0, 0.42)",
   },
 }));

@@ -893,7 +893,7 @@ const useStyles = makeStyles((t) => ({
     right: t.spacing.md,
     zIndex: 10,
     backgroundColor: t.colors.overlay,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     paddingVertical: t.spacing.md,
     paddingHorizontal: t.spacing.lg,
     gap: 6,

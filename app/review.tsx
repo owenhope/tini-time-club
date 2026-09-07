@@ -1339,7 +1339,7 @@ const useStyles = makeStyles((t) => ({
   footerClose: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.surfaceSunken,

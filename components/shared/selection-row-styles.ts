@@ -5,7 +5,7 @@ export const useSelectionRowStyles = makeStyles((t) => ({
   row: {
     minHeight: 56,
     padding: t.spacing.md,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     borderCurve: "continuous" as const,
     borderWidth: 1,
     borderColor: t.colors.border,
