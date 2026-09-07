@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import * as Sentry from "@sentry/react-native";
-import { registerErrorReporter } from "@/utils/log";
+import { isNetworkError, registerErrorReporter } from "@/utils/log";
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 const enableOutsideProduction =
@@ -45,6 +45,18 @@ registerErrorReporter((...args: unknown[]) => {
   const errorLike = args.find(
     (value) => value && typeof value === "object" && !(value instanceof Error)
   );
+
+  // A device losing connectivity is not an app defect, and every failure in
+  // that window (upload, feed, activity badge, push registration) would land
+  // as its own issue. Keep a breadcrumb for context on any later real event.
+  if (args.some(isNetworkError)) {
+    Sentry.addBreadcrumb({
+      category: "network",
+      level: "warning",
+      message: context || "Request failed while offline",
+    });
+    return;
+  }
 
   if (exception) {
     Sentry.captureException(exception, {
