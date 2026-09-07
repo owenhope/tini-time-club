@@ -23,6 +23,7 @@ const profile = (value) => {
     deleted: Boolean(row.deleted),
     deleted_at: row.deleted_at == null ? null : String(row.deleted_at),
     review_count: count(row.review_count),
+    passport_points: count(row.passport_points),
     bio: row.bio == null ? null : String(row.bio),
   };
 };

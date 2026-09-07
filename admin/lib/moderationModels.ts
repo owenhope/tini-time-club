@@ -67,6 +67,7 @@ const profileFromRpc = (value: unknown): AdminProfile | null => {
     deleted: (row.deleted as boolean | null | undefined) ?? null,
     deleted_at: (row.deleted_at as string | null | undefined) ?? null,
     review_count: numeric(row.review_count),
+    passport_points: numeric(row.passport_points),
     bio: (row.bio as string | null | undefined) ?? null,
   };
 };
