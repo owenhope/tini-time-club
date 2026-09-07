@@ -16,6 +16,11 @@ const SCREENS = [
     label: "Content & places",
     key: "content",
   },
+  {
+    href: "/admin/analytics/passport",
+    label: "Passport",
+    key: "passport",
+  },
 ] as const;
 
 export default function AnalyticsHeader({

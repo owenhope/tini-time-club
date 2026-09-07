@@ -62,3 +62,22 @@ export const getRankTier = (
 
 export const tierFor = (reviewCount: number | null | undefined) =>
   getRankTier(reviewCount) ?? RANK_TIERS[0];
+
+/**
+ * The app's CURRENT rank ladder: since 4.2.0 rings key off Passport points
+ * (utils/ranking.ts), not review counts. The legacy review-count RANK_TIERS
+ * above still drive UserBadge rings until admin profile payloads carry
+ * passport_points everywhere; new passport surfaces must use these.
+ */
+export const PASSPORT_RANK_TIERS: readonly RankTier[] = RANK_TIERS.map(
+  (tier, index) => ({ ...tier, min: [0, 50, 500, 1000][index] })
+);
+
+export const passportTierFor = (points: number | null | undefined): RankTier => {
+  const value = points ?? 0;
+  let held: RankTier = PASSPORT_RANK_TIERS[0];
+  for (const tier of PASSPORT_RANK_TIERS) {
+    if (value >= tier.min) held = tier;
+  }
+  return held;
+};
