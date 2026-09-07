@@ -49,6 +49,9 @@ const CARD = {
   purple: "#B6A3E2",
   chartreuse: "#F2FF71",
   gold: "#FFD166",
+  // The dark-theme `verified` token: the card sits on an ink scrim, so the
+  // marks wear the same deeper purple the app's dark badges do.
+  verified: "#8E76C9",
 } as const;
 
 const clamp = (value: number, min: number, max: number) => {
@@ -365,18 +368,28 @@ const ReviewShareCard = ({
           ]}
         >
           <View style={{ gap: 5 * artworkScale }}>
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.username,
-                {
-                  fontSize: 15 * artworkScale,
-                  lineHeight: 19 * artworkScale,
-                },
-              ]}
-            >
-              {username}
-            </Text>
+            <View style={[styles.usernameRow, { gap: 4 * artworkScale }]}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.username,
+                  {
+                    fontSize: 15 * artworkScale,
+                    lineHeight: 19 * artworkScale,
+                  },
+                ]}
+              >
+                {username}
+              </Text>
+              {review.profile?.is_verified ? (
+                <MaterialIcons
+                  name="verified"
+                  size={14 * artworkScale}
+                  color={CARD.verified}
+                  accessibilityLabel="Verified member"
+                />
+              ) : null}
+            </View>
             <View style={{ gap: 3 * artworkScale }}>
               <View
                 style={[styles.shareHeadlineRow, { gap: 7 * artworkScale }]}
@@ -407,7 +420,7 @@ const ReviewShareCard = ({
                   <MaterialIcons
                     name="verified"
                     size={20 * artworkScale}
-                    color={CARD.purple}
+                    color={CARD.verified}
                     accessibilityLabel="Verified business"
                   />
                 ) : null}
@@ -570,11 +583,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+  },
   username: {
     color: CARD.paper,
     fontFamily: fonts.bold,
     letterSpacing: 0,
     opacity: 0.94,
+    flexShrink: 1,
   },
   headline: {
     color: CARD.paper,
