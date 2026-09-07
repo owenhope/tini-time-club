@@ -33,7 +33,7 @@ const LocationVerifiedBadge = ({
       <MaterialIcons
         name="verified"
         size={compact ? 20 : 18}
-        color={color ?? colors.accent}
+        color={color ?? colors.verified}
       />
       {!compact ? <Text style={styles.label}>Verified business</Text> : null}
     </Pressable>
@@ -54,7 +54,7 @@ const useStyles = makeStyles((t) => ({
     // `label` is the bold chip role; a fontWeight override here would silently
     // drop Figtree back to the system font.
     ...t.typography.label,
-    color: t.colors.accent,
+    color: t.colors.verified,
   },
 }));
 

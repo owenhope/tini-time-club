@@ -178,6 +178,11 @@ class DatabaseService {
     // Invalidate cache
     this.queryCache.delete(`profile_${userId}`);
 
+    // Profile fields feed the one-time First Steps stamps (photo, favorite
+    // bar, taste profile, bio), so award them right after the save instead
+    // of waiting for the next activity-driven reconcile.
+    requestPassportReconciliation();
+
     return data;
   }
 
