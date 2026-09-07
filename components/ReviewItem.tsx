@@ -319,20 +319,15 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
                 {cityCountry}
               </Text>
             ) : null}
-          </View>
-          {venueRating != null ? (
-            <View style={styles.venueChipScore}>
+            {venueRating != null ? (
               <View style={styles.venueChipScoreRow}>
-                <RatingPips value={1} max={1} size={15} accessibilityLabel="" />
-                <Text style={styles.venueChipScoreValue}>
-                  {formatRating(venueRating)}
+                <RatingPips value={1} max={1} size={14} accessibilityLabel="" />
+                <Text style={styles.venueChipScoreValue} numberOfLines={1}>
+                  {formatRating(venueRating)} · {venueReviewLabel}
                 </Text>
               </View>
-              <Text style={styles.venueChipMeta} numberOfLines={1}>
-                {venueReviewLabel}
-              </Text>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
         </TouchableOpacity>
       </View>
     </>
@@ -936,21 +931,17 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
-  // The venue's own score, sized like the review's overall so the two read
-  // as the same system: the venue on the photo, the pour below it.
-  venueChipScore: {
-    marginLeft: "auto" as const,
-    alignItems: "flex-end" as const,
-  },
   venueChipScoreRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 5,
+    minWidth: 0,
+    marginTop: 4,
   },
   venueChipScoreValue: {
-    ...t.typography.title,
-    letterSpacing: 0,
+    ...t.typography.bodyStrong,
     color: t.colors.textOnImage,
+    flexShrink: 1,
     fontVariant: ["tabular-nums"] as const,
   },
   venueChipNameRow: {
