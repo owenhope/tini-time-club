@@ -82,6 +82,18 @@ describe("Sentry reportError bridge", () => {
     expect(mockAddBreadcrumb).toHaveBeenCalled();
   });
 
+  it("filters storage-js transport failures (fetch failed prefix)", () => {
+    const error = new Error(
+      "fetch failed: UnexpectedException: The network connection was lost. (at ExpoModulesCore/Promise.swift:56)"
+    );
+    error.name = "StorageUnknownError";
+
+    reportError("Error removing review image:", error);
+
+    expect(mockCaptureException).not.toHaveBeenCalled();
+    expect(mockAddBreadcrumb).toHaveBeenCalled();
+  });
+
   it("still captures non-network storage failures", () => {
     const error = new Error("new row violates row-level security policy");
 

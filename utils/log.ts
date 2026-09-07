@@ -34,7 +34,7 @@ export const reportError = (...args: unknown[]): void => {
 };
 
 const NETWORK_FAILURE_PATTERN =
-  /network request failed|failed to fetch|network connection was lost|internet connection appears to be offline|could not connect to the server|request timed out|load failed/i;
+  /network request failed|failed to fetch|fetch failed|network connection was lost|internet connection appears to be offline|could not connect to the server|request timed out|load failed/i;
 
 /**
  * True when an error is the device losing connectivity rather than anything
