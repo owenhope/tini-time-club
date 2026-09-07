@@ -757,7 +757,9 @@ function ReviewComposer() {
       // Upload-stage failures were already reported (with their real cause)
       // inside uploadImage; re-reporting the cause-less wrapper here doubled
       // every one of them in telemetry.
-      if (!(error instanceof ReviewPublishingError && error.stage === "upload")) {
+      if (!(
+        error instanceof ReviewPublishingError && error.stage === "upload"
+      )) {
         reportError("Error submitting review:", error);
       }
       setSubmitError(

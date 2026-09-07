@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { MartiniIcon } from "@/components/shared";
-import { fonts, makeStyles, useTheme } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 interface LocationPinProps {
   loc: {
@@ -140,10 +140,9 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ["tabular-nums"] as const,
   },
   pinRatingSelected: {
-    ...t.typography.caption,
-    // Keep the rating bold at the larger selected size; Figtree weights only
-    // change via fontFamily.
-    fontFamily: fonts.bold,
+    // bodyStrong keeps the selected rating heavy at the larger size without
+    // reaching for a raw fontFamily outside the semantic roles.
+    ...t.typography.bodyStrong,
     color: t.colors.accent,
   },
   pinRatingVerified: {
