@@ -25,7 +25,11 @@ import {
   deleteReviewComment,
 } from "@/utils/reviewCommentUpdates";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, MartiniIcon } from "@/components/shared";
+import { AppText, Button } from "@/components/shared";
+import {
+  PassportStamp,
+  type PassportStampShape,
+} from "@/components/passport/passport-stamp";
 import { makeStyles, useTheme } from "@/theme";
 import { log, warn } from "@/utils/log";
 import { routes } from "@/utils/routes";
@@ -54,6 +58,15 @@ const PULL_REFRESH_DISTANCE = 90;
 const MIN_REFRESH_SPINNER_MS = 650;
 const FEED_LOAD_ERROR_MESSAGE = "We couldn't load the club right now.";
 type FeedSource = "club" | "people";
+
+// Example first stamps shown in the empty-feed welcome — the same visual
+// language as the onboarding Passport step, so the first-run story carries
+// from sign-up into the feed.
+const WELCOME_STAMPS: { shape: PassportStampShape; label: string }[] = [
+  { shape: "locations", label: "Location" },
+  { shape: "martinis", label: "Martini" },
+  { shape: "regulars", label: "Regular" },
+];
 // A refresh is newest-first, so keep the head; an appended page arrives at the
 // end, so keep the tail. Cursor pagination is independent of this retained
 // render window, unlike the old array-length-derived offsets.
@@ -461,89 +474,68 @@ function Home() {
 
     return (
       <View style={styles.welcomeContainer}>
-        <View style={styles.heroSection}>
-          <Text style={styles.heroSubtitle}>
-            Start your cocktail journey by discovering amazing drinks and
-            sharing your own experiences.
-          </Text>
+        <View style={styles.welcomeHero}>
+          <AppText variant="eyebrow" tone="accent">
+            Your club journey
+          </AppText>
+          <AppText variant="heading" style={styles.welcomeTitle}>
+            Your first pour awaits.
+          </AppText>
+          <AppText variant="body" tone="secondary" style={styles.welcomeBody}>
+            Review your first martini to collect your first Passport stamps —
+            every discovery counts.
+          </AppText>
         </View>
 
-        <View style={styles.stepsContainer}>
-          <TouchableOpacity
-            style={styles.stepCard}
-            onPress={navigateToLocations}
-            activeOpacity={0.7}
-          >
-            <View style={styles.stepIconContainer}>
-              <Ionicons name="map-outline" size={24} color={colors.onAccent} />
-            </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Discover Locations</Text>
-              <Text style={styles.stepDescription}>
-                Browse the map to find the best martini near you
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {profile && authenticated ? (
-            <>
-              <TouchableOpacity
-                style={styles.stepCard}
-                onPress={navigateToReview}
-                activeOpacity={0.7}
-              >
-                <View style={styles.stepIconContainer}>
-                  <MartiniIcon size={24} color={colors.onAccent} />
-                </View>
-                <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>Try A Martini</Text>
-                  <Text style={styles.stepDescription}>
-                    Order something new and take a photo
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.stepCard}
-                onPress={navigateToReview}
-                activeOpacity={0.7}
-              >
-                <View style={styles.stepIconContainer}>
-                  <Ionicons
-                    name="camera-outline"
-                    size={24}
-                    color={colors.onAccent}
-                  />
-                </View>
-                <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>Share Your Review</Text>
-                  <Text style={styles.stepDescription}>
-                    Rate the taste, presentation, and share your thoughts
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </>
-          ) : null}
-
-          <TouchableOpacity
-            style={styles.stepCard}
-            onPress={navigateToDiscover}
-            activeOpacity={0.7}
-          >
-            <View style={styles.stepIconContainer}>
-              <Ionicons
-                name="search-outline"
-                size={24}
-                color={colors.onAccent}
+        <View
+          style={styles.welcomeStamps}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {WELCOME_STAMPS.map((stamp) => (
+            <View key={stamp.shape} style={styles.welcomeStampCell}>
+              <PassportStamp
+                shape={stamp.shape}
+                milestone={1}
+                pointAward={10}
+                earned
+                label={stamp.label}
               />
             </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Connect With Others</Text>
-              <Text style={styles.stepDescription}>
-                Follow fellow Martini lovers and discover new favorites
-              </Text>
+          ))}
+        </View>
+
+        <View style={styles.welcomeActions}>
+          {profile && authenticated ? (
+            <Button
+              title="Review your first Martini"
+              onPress={navigateToReview}
+              size="large"
+              fullWidth
+              icon="arrow-forward"
+              iconPosition="right"
+            />
+          ) : null}
+          <View style={styles.welcomeSecondaryRow}>
+            <View style={styles.welcomeSecondaryButton}>
+              <Button
+                title="Explore the map"
+                onPress={navigateToLocations}
+                variant="tonal"
+                size="medium"
+                fullWidth
+              />
             </View>
-          </TouchableOpacity>
+            <View style={styles.welcomeSecondaryButton}>
+              <Button
+                title="Find members"
+                onPress={navigateToDiscover}
+                variant="tonal"
+                size="medium"
+                fullWidth
+              />
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -961,58 +953,39 @@ const useStyles = makeStyles((t) => ({
   welcomeContainer: {
     flex: 1,
     backgroundColor: t.colors.background,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingTop: 60,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: 48,
     paddingBottom: 40,
+    gap: t.spacing.xxl,
   },
-  heroSection: {
-    alignItems: "center" as const,
-    marginBottom: 40,
-    paddingHorizontal: t.spacing.xl - 4,
+  welcomeHero: {
+    gap: t.spacing.sm,
   },
-  heroSubtitle: {
-    ...t.typography.bodyStrong,
+  welcomeTitle: {
     color: t.colors.text,
-    textAlign: "center" as const,
-    maxWidth: 320,
-    letterSpacing: 0,
   },
-  stepsContainer: {
-    flex: 1,
-    paddingHorizontal: t.spacing.xs,
+  welcomeBody: {
+    maxWidth: 480,
   },
-  stepCard: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.card,
-    padding: t.spacing.xl - 4,
-    marginBottom: t.spacing.lg,
+  welcomeStamps: {
     flexDirection: "row" as const,
-    alignItems: "center" as const,
-    ...t.elevation.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
+    justifyContent: "space-between" as const,
+    gap: t.spacing.md,
   },
-  stepIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.accent,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    marginRight: t.spacing.lg,
-  },
-  stepContent: {
+  welcomeStampCell: {
     flex: 1,
+    maxWidth: 112,
+    alignItems: "center" as const,
   },
-  stepTitle: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
-    marginBottom: t.spacing.xs,
-    letterSpacing: 0,
+  welcomeActions: {
+    gap: t.spacing.md,
   },
-  stepDescription: {
-    ...t.typography.caption,
-    color: t.colors.textMuted,
+  welcomeSecondaryRow: {
+    flexDirection: "row" as const,
+    gap: t.spacing.md,
+  },
+  welcomeSecondaryButton: {
+    flex: 1,
   },
 }));
 
