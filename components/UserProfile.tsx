@@ -8,6 +8,7 @@ import {
   ActionSheetIOS,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { PassportEntry } from "@/components/passport/passport-entry";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
@@ -475,6 +476,14 @@ const UserProfile = () => {
         followersCount={followersCount}
         followingCount={followingCount}
         isOwnProfile={isViewingOwnProfile}
+        rankAction={
+          displayProfile ? (
+            <PassportEntry
+              profileId={isViewingOwnProfile ? undefined : displayProfile.id}
+              username={displayProfile.username}
+            />
+          ) : undefined
+        }
         onAvatarPress={
           isViewingOwnProfile ? undefined : () => setAvatarViewerOpen(true)
         }

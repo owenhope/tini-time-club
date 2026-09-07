@@ -234,7 +234,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 </View>
               )}
             </Pressable>
-            {rank.tier && !(isOwnProfile && rankAction) ? (
+            {/* The avatar tier chip stands in only when the rank stack below
+                (progress bar + Passport entry) isn't rendered. */}
+            {rank.tier && !(rankAction || rank.next) ? (
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
               </View>
@@ -275,7 +277,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
         </View>
 
-        {isOwnProfile && (rank.next || rankAction) ? (
+        {/* The rank progress and Passport entry show on every member's
+            profile — the journey is public — not just your own. */}
+        {rank.next || rankAction ? (
           <View style={styles.rankStack}>
             {rank.next ? (
               <View style={styles.rankProgress}>
