@@ -314,29 +314,25 @@ const PhotoChips = memo(({ review, onNavigate }: PhotoChipsProps) => {
                 <LocationVerifiedBadge compact />
               ) : null}
             </View>
-            {venueRating != null || cityCountry ? (
-              <View style={styles.venueChipRating}>
-                {venueRating != null ? (
-                  <RatingPips
-                    value={1}
-                    max={1}
-                    size={13}
-                    accessibilityLabel=""
-                  />
-                ) : null}
-                <Text style={styles.venueChipMeta} numberOfLines={1}>
-                  {[
-                    venueRating != null
-                      ? `${formatRating(venueRating)} · ${venueReviewLabel}`
-                      : null,
-                    cityCountry,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Text>
-              </View>
+            {cityCountry ? (
+              <Text style={styles.venueChipMeta} numberOfLines={1}>
+                {cityCountry}
+              </Text>
             ) : null}
           </View>
+          {venueRating != null ? (
+            <View style={styles.venueChipScore}>
+              <View style={styles.venueChipScoreRow}>
+                <RatingPips value={1} max={1} size={15} accessibilityLabel="" />
+                <Text style={styles.venueChipScoreValue}>
+                  {formatRating(venueRating)}
+                </Text>
+              </View>
+              <Text style={styles.venueChipMeta} numberOfLines={1}>
+                {venueReviewLabel}
+              </Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
       </View>
     </>
@@ -940,12 +936,22 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textOnImage,
     flexShrink: 1,
   },
-  venueChipRating: {
+  // The venue's own score, sized like the review's overall so the two read
+  // as the same system: the venue on the photo, the pour below it.
+  venueChipScore: {
+    marginLeft: "auto" as const,
+    alignItems: "flex-end" as const,
+  },
+  venueChipScoreRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 5,
-    minWidth: 0,
-    marginTop: 2,
+  },
+  venueChipScoreValue: {
+    ...t.typography.title,
+    letterSpacing: 0,
+    color: t.colors.textOnImage,
+    fontVariant: ["tabular-nums"] as const,
   },
   venueChipNameRow: {
     flexDirection: "row" as const,
