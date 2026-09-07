@@ -33,6 +33,20 @@ export const PassportToastContext = createContext<PassportToastContextValue>({
 
 const AUTO_DISMISS_MS = 6500;
 const SWIPE_DISMISS_Y = -38;
+// Four or more stamps at once (a first reconcile after an update, a catalog
+// expansion) collapse into one summary toast instead of a long parade —
+// mirroring the server's batched notification.
+const SUMMARY_THRESHOLD = 4;
+
+const summaryStamp = (stamps: PassportStampRecord[]): PassportStampRecord => ({
+  ...stamps[0],
+  id: `summary-${stamps.map((stamp) => stamp.id).join(":")}`,
+  key: "summary",
+  metric: "martinis",
+  threshold: stamps.length,
+  points: stamps.reduce((total, stamp) => total + stamp.points, 0),
+  label: "Stamps",
+});
 
 export function PassportToastProvider({
   children,
@@ -67,9 +81,11 @@ export function PassportToastProvider({
         );
       }
       if (!stamps.length) return;
+      const incoming =
+        stamps.length >= SUMMARY_THRESHOLD ? [summaryStamp(stamps)] : stamps;
       setQueue((items) => {
         const known = new Set(items.map((item) => item.id));
-        return [...items, ...stamps.filter((stamp) => !known.has(stamp.id))];
+        return [...items, ...incoming.filter((stamp) => !known.has(stamp.id))];
       });
     },
     [setProfile]
@@ -152,10 +168,18 @@ export function PassportToastProvider({
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${current.label}, ${current.points} points earned. Open Passport.`}
+            accessibilityLabel={
+              current.key === "summary"
+                ? `${current.threshold} stamps, ${current.points} points earned. Open Passport.`
+                : `${current.label}, ${current.points} points earned. Open Passport.`
+            }
             onPress={() => {
               dismiss();
-              router.push(routes.passport({ stampKey: current.key }));
+              router.push(
+                current.key === "summary"
+                  ? routes.passport()
+                  : routes.passport({ stampKey: current.key })
+              );
             }}
             style={({ pressed }) => [styles.toast, pressed && styles.pressed]}
           >
@@ -170,7 +194,9 @@ export function PassportToastProvider({
             </View>
             <View style={styles.copy}>
               <AppText variant="heading" numberOfLines={1}>
-                {current.label} · +{current.points} pts
+                {current.key === "summary"
+                  ? `${current.threshold} stamps · +${current.points} pts`
+                  : `${current.label} · +${current.points} pts`}
               </AppText>
               <AppText variant="caption" tone="secondary">
                 Tap to view your Passport
