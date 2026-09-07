@@ -66,27 +66,19 @@ export function AppleAuth() {
               });
 
               if (error) {
-                reportError(
-                  "[AppleAuth] ❌ Supabase authentication failed:",
-                  error
-                );
-                throw new Error(`Authentication failed: ${error.message}`);
-              } else {
-                AnalyticService.capture("login", { method: "apple" });
+                throw new Error(`Authentication failed: ${error.message}`, {
+                  cause: error,
+                });
               }
+              AnalyticService.capture("login", { method: "apple" });
             } else {
-              reportError("[AppleAuth] ❌ No identityToken received");
               throw new Error("No identityToken.");
             }
           } catch (e: any) {
+            // Dismissing Apple's sheet is a deliberate user action, not an
+            // app failure — keep it out of telemetry.
+            if (e?.code === "ERR_REQUEST_CANCELED") return;
             reportError("[AppleAuth] ❌ Apple Sign-In error:", e);
-
-            if (e.code === "ERR_REQUEST_CANCELED") {
-              // handle that the user canceled the sign-in flow
-            } else {
-              reportError("[AppleAuth] ❌ Other error:", e.message || e);
-              // handle other errors
-            }
           }
         }}
       />
