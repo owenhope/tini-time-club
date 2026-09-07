@@ -8,7 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { MartiniIcon } from "@/components/shared";
+import { MartiniIcon, RatingPips } from "@/components/shared";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Review } from "@/types/types";
 import { fonts, typography } from "@/theme";
@@ -49,6 +49,9 @@ const CARD = {
   purple: "#B6A3E2",
   chartreuse: "#F2FF71",
   gold: "#FFD166",
+  // The dark-theme `verified` token: the card sits on an ink scrim, so the
+  // marks wear the same deeper purple the app's dark badges do.
+  verified: "#8E76C9",
 } as const;
 
 const clamp = (value: number, min: number, max: number) => {
@@ -202,9 +205,6 @@ const ReviewShareCard = ({
   }));
 
   const panelPadding = (format === "story" ? 20 : 17) * artworkScale;
-  const sideMetricGap = 12 * artworkScale;
-  const sideMetricWidth = 96 * artworkScale;
-  const overallMetricWidth = 82 * artworkScale;
   const logoSize = (format === "story" ? 58 : 48) * artworkScale;
   const cityCountry = review.location?.address
     ? formatCityRegion(
@@ -365,18 +365,28 @@ const ReviewShareCard = ({
           ]}
         >
           <View style={{ gap: 5 * artworkScale }}>
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.username,
-                {
-                  fontSize: 15 * artworkScale,
-                  lineHeight: 19 * artworkScale,
-                },
-              ]}
-            >
-              {username}
-            </Text>
+            <View style={[styles.usernameRow, { gap: 4 * artworkScale }]}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.username,
+                  {
+                    fontSize: 15 * artworkScale,
+                    lineHeight: 19 * artworkScale,
+                  },
+                ]}
+              >
+                {username}
+              </Text>
+              {review.profile?.is_verified ? (
+                <MaterialIcons
+                  name="verified"
+                  size={14 * artworkScale}
+                  color={CARD.verified}
+                  accessibilityLabel="Verified member"
+                />
+              ) : null}
+            </View>
             <View style={{ gap: 3 * artworkScale }}>
               <View
                 style={[styles.shareHeadlineRow, { gap: 7 * artworkScale }]}
@@ -407,7 +417,7 @@ const ReviewShareCard = ({
                   <MaterialIcons
                     name="verified"
                     size={20 * artworkScale}
-                    color={CARD.purple}
+                    color={CARD.verified}
                     accessibilityLabel="Verified business"
                   />
                 ) : null}
@@ -429,6 +439,8 @@ const ReviewShareCard = ({
             </View>
           </View>
 
+          {/* Mirrors ReviewItem's ReviewScores: one prominent overall with
+              the olive pips beside it, the two axes as a small caption. */}
           <View
             style={[
               styles.metrics,
@@ -437,109 +449,68 @@ const ReviewShareCard = ({
               },
             ]}
           >
-            <View style={[styles.sideMetrics, { gap: sideMetricGap }]}>
-              <ShareMetric
-                label="Taste"
-                value={formatRating(review.taste)}
-                unit="/5"
-                width={sideMetricWidth}
-                scale={artworkScale}
-              />
-              <ShareMetric
-                label="Presentation"
-                value={formatRating(review.presentation)}
-                unit="/5"
-                width={sideMetricWidth}
-                scale={artworkScale}
-              />
+            <View style={{ gap: 3 * artworkScale }}>
+              <Text
+                style={[
+                  styles.metricLabel,
+                  {
+                    fontSize: 11 * artworkScale,
+                    lineHeight: 14 * artworkScale,
+                  },
+                ]}
+              >
+                Overall
+              </Text>
+              <View style={[styles.overallRow, { gap: 8 * artworkScale }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.overallValue,
+                    {
+                      fontSize: 30 * artworkScale,
+                      lineHeight: 34 * artworkScale,
+                    },
+                  ]}
+                >
+                  {formatRating(overall)}
+                </Text>
+                <View
+                  style={[
+                    styles.pipsWell,
+                    {
+                      paddingHorizontal: 8 * artworkScale,
+                      paddingVertical: 4 * artworkScale,
+                      borderRadius: 10 * artworkScale,
+                    },
+                  ]}
+                >
+                  <RatingPips
+                    value={overall ?? 0}
+                    size={13 * artworkScale}
+                    accessibilityLabel=""
+                  />
+                </View>
+              </View>
             </View>
-            <ShareMetric
-              label="Overall"
-              value={formatRating(overall)}
-              unit="/5"
-              width={overallMetricWidth}
-              scale={artworkScale}
-              align="right"
-              strong
-            />
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.breakdown,
+                {
+                  fontSize: 12 * artworkScale,
+                  lineHeight: 16 * artworkScale,
+                },
+              ]}
+            >
+              Taste {formatRating(review.taste)} · Presentation{" "}
+              {formatRating(review.presentation)}
+            </Text>
           </View>
         </View>
       </Animated.View>
     </GestureDetector>
   );
 };
-
-const ShareMetric = ({
-  label,
-  value,
-  unit,
-  width,
-  scale,
-  align = "left",
-  strong = false,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  width: number;
-  scale: number;
-  align?: "left" | "right";
-  strong?: boolean;
-}) => (
-  <View
-    style={[styles.metric, align === "right" && styles.metricRight, { width }]}
-  >
-    <Text
-      numberOfLines={1}
-      style={[
-        styles.metricLabel,
-        align === "right" && styles.metricTextRight,
-        {
-          fontSize: 12 * scale,
-          lineHeight: 16 * scale,
-        },
-      ]}
-    >
-      {label}
-    </Text>
-    <View
-      style={[
-        styles.metricValueRow,
-        align === "right" && styles.metricValueRowRight,
-        { gap: 3 * scale },
-      ]}
-    >
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.7}
-        style={[
-          styles.metricValue,
-          strong && styles.metricValueStrong,
-          {
-            fontSize: (strong ? 26 : 20) * scale,
-            lineHeight: (strong ? 31 : 25) * scale,
-          },
-        ]}
-      >
-        {value}
-      </Text>
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.metricUnit,
-          strong && styles.metricUnitStrong,
-          {
-            fontSize: (strong ? 14 : 11) * scale,
-            lineHeight: (strong ? 18 : 15) * scale,
-          },
-        ]}
-      >
-        {unit}
-      </Text>
-    </View>
-  </View>
-);
 
 const styles = StyleSheet.create({
   photo: {
@@ -570,11 +541,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+  },
   username: {
     color: CARD.paper,
     fontFamily: fonts.bold,
     letterSpacing: 0,
     opacity: 0.94,
+    flexShrink: 1,
   },
   headline: {
     color: CARD.paper,
@@ -587,7 +564,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   shareHeadline: {
-    flex: 1,
+    // Shrink, don't flex: a flexed headline spans the row and shoves the
+    // verified mark to the card's edge instead of keeping it by the name.
+    flexShrink: 1,
     minWidth: 0,
   },
   meta: {
@@ -601,53 +580,32 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "space-between",
   },
-  sideMetrics: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
-  metric: {
-    minWidth: 0,
-    justifyContent: "flex-end",
-  },
-  metricRight: {
-    alignItems: "flex-end",
-  },
-  metricTextRight: {
-    textAlign: "right",
-  },
   metricLabel: {
     ...typography.label,
     color: CARD.paper,
     textTransform: "uppercase",
     opacity: 0.92,
   },
-  metricValueRow: {
+  overallRow: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
   },
-  metricValueRowRight: {
-    justifyContent: "flex-end",
-  },
-  metricValue: {
+  overallValue: {
     color: CARD.paper,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.black,
     fontVariant: ["tabular-nums"],
     letterSpacing: 0,
-    opacity: 0.92,
   },
-  metricValueStrong: {
-    fontFamily: fonts.black,
-    opacity: 1,
+  // The app's sunken pips well, translated to the card's ink scrim.
+  pipsWell: {
+    backgroundColor: "rgba(250,249,246,0.16)",
   },
-  metricUnit: {
+  breakdown: {
     color: CARD.paper,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
     letterSpacing: 0,
-    opacity: 0.82,
-  },
-  metricUnitStrong: {
-    fontFamily: fonts.bold,
-    opacity: 0.96,
+    opacity: 0.9,
+    textAlign: "right",
   },
 });
 

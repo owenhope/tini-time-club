@@ -17,7 +17,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView from "@/components/map/ClusteredMap";
 import {
@@ -170,7 +169,6 @@ function ExploreMap({
   searchVisible,
 }: ExploreMapProps) {
   const styles = useStyles();
-  const router = useRouter();
   const { isDark, spacing } = useTheme();
   const { profile } = useProfile();
   const { requireMembership } = useMembership();
@@ -816,16 +814,6 @@ function ExploreMap({
             <ActivityIndicator size="small" />
           </View>
         )}
-        {__DEV__ ? (
-          <TouchableOpacity
-            style={styles.devPinGalleryButton}
-            onPress={() => router.push("/pin-gallery")}
-            accessibilityRole="button"
-            accessibilityLabel="Open pin gallery"
-          >
-            <Text style={styles.devPinGalleryText}>Pins</Text>
-          </TouchableOpacity>
-        ) : null}
         {selectedLocation ? (
           <View
             pointerEvents="none"
@@ -961,20 +949,6 @@ const useStyles = makeStyles((t) => ({
     width: 40,
     height: 4,
     backgroundColor: t.colors.borderStrong,
-  },
-  devPinGalleryButton: {
-    position: "absolute" as const,
-    top: t.spacing.sm,
-    right: t.spacing.sm,
-    paddingVertical: t.spacing.xs,
-    paddingHorizontal: t.spacing.md,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.colors.surfaceInk,
-    ...t.elevation.raised,
-  },
-  devPinGalleryText: {
-    ...t.typography.label,
-    color: t.colors.onInk,
   },
   sheetTabBarUnderlay: {
     position: "absolute" as const,
