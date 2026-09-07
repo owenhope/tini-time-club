@@ -156,7 +156,7 @@ const useStyles = makeStyles((t) => ({
     gap: t.spacing.md,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     backgroundColor: t.colors.surface,
     paddingHorizontal: t.spacing.md,
     paddingVertical: t.spacing.sm,

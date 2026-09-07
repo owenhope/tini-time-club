@@ -196,7 +196,7 @@ const useStyles = makeStyles((t) => ({
     left: 0,
     right: 0,
     backgroundColor: t.colors.surface,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     maxHeight: 200,
     ...t.elevation.card,
   },

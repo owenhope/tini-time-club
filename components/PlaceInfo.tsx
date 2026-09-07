@@ -228,7 +228,7 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden" as const,
     borderWidth: 1,
     borderColor: t.colors.border,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     backgroundColor: t.colors.surface,
   },
   row: {

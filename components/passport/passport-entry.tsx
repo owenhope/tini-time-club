@@ -201,7 +201,7 @@ const useStyles = makeStyles((t) => ({
   skeletonRing: {
     width: 78,
     height: 78,
-    borderRadius: 39,
+    borderRadius: t.radius.pill,
     borderWidth: 2,
     borderColor: t.colors.onHeaderBrand,
   },

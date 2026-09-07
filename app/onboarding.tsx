@@ -1186,7 +1186,7 @@ const useStyles = makeStyles((t) => ({
   avatarPicker: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.surfaceSunken,
@@ -1196,7 +1196,7 @@ const useStyles = makeStyles((t) => ({
   avatarPreview: {
     width: 112,
     height: 112,
-    borderRadius: 56,
+    borderRadius: t.radius.pill,
   },
   avatarBadge: {
     position: "absolute" as const,

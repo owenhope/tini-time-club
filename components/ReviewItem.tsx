@@ -903,7 +903,7 @@ const useStyles = makeStyles((t) => ({
     paddingLeft: t.spacing.md,
     paddingRight: t.spacing.md,
     paddingVertical: t.spacing.sm,
-    borderRadius: t.radius.lg,
+    borderRadius: t.radius.card,
     backgroundColor: t.colors.scrimStrong,
   },
   venueChipLines: {
@@ -960,7 +960,7 @@ const useStyles = makeStyles((t) => ({
   scorePips: {
     paddingHorizontal: t.spacing.sm,
     paddingVertical: t.spacing.xs,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.surfaceSunken,
   },
   scoreLabel: {

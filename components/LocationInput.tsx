@@ -517,7 +517,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "space-between" as const,
     gap: t.spacing.md,
     backgroundColor: t.colors.accent,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     padding: t.spacing.md,
     marginBottom: t.spacing.sm,
   },

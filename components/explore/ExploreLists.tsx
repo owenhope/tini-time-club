@@ -422,7 +422,7 @@ const useStyles = makeStyles((t) => ({
   resultPips: {
     paddingHorizontal: t.spacing.xs,
     paddingVertical: t.spacing.xs,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.surfaceSunken,
   },
   resultScore: {

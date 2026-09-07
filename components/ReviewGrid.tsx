@@ -369,7 +369,7 @@ const useStyles = makeStyles((t) => ({
     maxWidth: "88%" as const,
     paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.scrimStrong,
   },
   tileLocationText: {

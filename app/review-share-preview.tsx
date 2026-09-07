@@ -384,7 +384,7 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     borderCurve: "continuous" as const,
     backgroundColor: "transparent",
   },
@@ -392,12 +392,12 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     borderCurve: "continuous" as const,
   },
   artworkFrame: {
     overflow: "hidden" as const,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     borderCurve: "continuous" as const,
   },
   unavailable: {

@@ -199,7 +199,7 @@ const useStyles = makeStyles((t) => ({
   searchToggle: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: "rgba(250,249,246,0.14)",

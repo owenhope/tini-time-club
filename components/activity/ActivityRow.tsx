@@ -280,13 +280,13 @@ const useStyles = makeStyles((t) => ({
   thumbnail: {
     width: 44,
     height: 44,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.imagePlaceholder,
   },
   thumbnailFallback: {
     width: 44,
     height: 44,
-    borderRadius: t.radius.xs,
+    borderRadius: t.radius.input,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.imagePlaceholder,

@@ -100,7 +100,7 @@ const useStyles = makeStyles((t) => ({
   explainer: {
     gap: t.spacing.sm,
     padding: t.spacing.lg,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     backgroundColor: t.colors.accentSubtle,
     borderWidth: 1,
     borderColor: t.colors.border,
@@ -117,7 +117,7 @@ const useStyles = makeStyles((t) => ({
   body: { ...t.typography.body, color: t.colors.textSecondary },
   button: {
     alignItems: "center" as const,
-    borderRadius: t.radius.sm,
+    borderRadius: t.radius.input,
     backgroundColor: t.colors.accent,
     padding: t.spacing.md,
   },

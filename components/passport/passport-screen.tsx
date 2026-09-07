@@ -347,7 +347,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "flex-start" as const,
     gap: 2,
     padding: t.spacing.lg,
-    borderRadius: t.radius.md,
+    borderRadius: t.radius.thumb,
     borderCurve: "continuous" as const,
     backgroundColor: t.colors.surface,
     borderWidth: 1,

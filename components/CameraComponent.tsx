@@ -335,14 +335,14 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.textOnImage,
     width: 85,
     height: 85,
-    borderRadius: 45,
+    borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
   shutterBtnInner: {
     width: 70,
     height: 70,
-    borderRadius: 50,
+    borderRadius: t.radius.pill,
     backgroundColor: t.colors.textOnImage,
   },
   shutterPressed: {
