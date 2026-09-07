@@ -453,7 +453,10 @@ const ReviewShareCard = ({
               <Text
                 style={[
                   styles.metricLabel,
-                  { fontSize: 11 * artworkScale, lineHeight: 14 * artworkScale },
+                  {
+                    fontSize: 11 * artworkScale,
+                    lineHeight: 14 * artworkScale,
+                  },
                 ]}
               >
                 Overall

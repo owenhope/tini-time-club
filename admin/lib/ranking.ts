@@ -73,7 +73,9 @@ export const PASSPORT_RANK_TIERS: readonly RankTier[] = RANK_TIERS.map(
   (tier, index) => ({ ...tier, min: [0, 50, 500, 1000][index] })
 );
 
-export const passportTierFor = (points: number | null | undefined): RankTier => {
+export const passportTierFor = (
+  points: number | null | undefined
+): RankTier => {
   const value = points ?? 0;
   let held: RankTier = PASSPORT_RANK_TIERS[0];
   for (const tier of PASSPORT_RANK_TIERS) {

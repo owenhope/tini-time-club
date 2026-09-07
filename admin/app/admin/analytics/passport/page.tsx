@@ -137,7 +137,9 @@ export default async function PassportAnalyticsPage({
         >
           <DataTable
             columns={["Member", "Rank", "Points", "Stamps", "Last stamp"]}
-            empty={<EmptyState>No member holds Passport points yet.</EmptyState>}
+            empty={
+              <EmptyState>No member holds Passport points yet.</EmptyState>
+            }
           >
             {passport.topMembers.map((member) => {
               const tier = passportTierFor(member.passportPoints);
