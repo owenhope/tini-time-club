@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import LocationVerifiedBadge from "@/components/LocationVerifiedBadge";
 import { useProfile } from "@/context/profile-context";
 import { useLocationClaim } from "@/hooks/useLocationClaim";
 import { makeStyles, useTheme } from "@/theme";
@@ -104,9 +105,12 @@ export default function LocationClaimScreen() {
         <View style={styles.content}>
           <View style={styles.placeContext}>
             <Text style={styles.eyebrow}>BUSINESS VERIFICATION</Text>
-            <Text style={styles.placeName} selectable>
-              {locationName}
-            </Text>
+            <View style={styles.placeNameRow}>
+              <Text style={styles.placeName} selectable>
+                {locationName}
+              </Text>
+              <LocationVerifiedBadge compact />
+            </View>
             {locationAddress ? (
               <Text style={styles.placeAddress} selectable>
                 {locationAddress}
@@ -294,7 +298,16 @@ const useStyles = makeStyles((t) => ({
   content: { gap: t.spacing.lg },
   placeContext: { gap: t.spacing.xs },
   eyebrow: { ...t.typography.eyebrow, color: t.colors.accent },
-  placeName: { ...t.typography.heading, color: t.colors.text },
+  placeNameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: t.spacing.sm,
+  },
+  placeName: {
+    ...t.typography.display,
+    color: t.colors.text,
+    flexShrink: 1,
+  },
   placeAddress: { ...t.typography.caption, color: t.colors.textSecondary },
   sectionTitle: { ...t.typography.heading, color: t.colors.text },
   loading: { alignItems: "center" as const, padding: t.spacing.lg },

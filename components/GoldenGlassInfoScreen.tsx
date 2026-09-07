@@ -6,15 +6,15 @@ import { makeStyles, useTheme } from "@/theme";
 const KEY_RULES = [
   {
     value: "10",
-    label: "places per region",
+    label: "places\nper region",
   },
   {
     value: "3+",
-    label: "different members",
+    label: "different\nmembers",
   },
   {
     value: "1",
-    label: "voice per member",
+    label: "voice\nper member",
   },
 ] as const;
 
@@ -154,6 +154,7 @@ const useStyles = makeStyles((t) => ({
   ruleCard: {
     flex: 1,
     minHeight: 104,
+    alignItems: "center" as const,
     justifyContent: "center" as const,
     gap: t.spacing.xs,
     padding: t.spacing.md,
@@ -163,11 +164,13 @@ const useStyles = makeStyles((t) => ({
   ruleValue: {
     ...t.typography.display,
     color: t.colors.awardGold,
+    textAlign: "center" as const,
     fontVariant: ["tabular-nums"] as const,
   },
   ruleLabel: {
     ...t.typography.caption,
     color: t.colors.onInk,
+    textAlign: "center" as const,
   },
   details: {
     gap: t.spacing.md,

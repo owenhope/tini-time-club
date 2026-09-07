@@ -49,6 +49,7 @@ const TITLES: Record<string, string> = {
   "location-verification-info": "Business verification",
   "location-claim": "Verify this place",
   "golden-glass-info": "Golden Glass",
+  "pin-gallery": "Pin gallery (dev)",
   terms: "Terms of Service",
   "delete-account": "Delete Account",
 };

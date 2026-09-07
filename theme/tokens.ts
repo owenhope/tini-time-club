@@ -152,6 +152,19 @@ export interface ThemeColors {
   awardGoldForeground: string;
   awardGoldSurface: string;
 
+  // Business verification. The darker brand purple, so the verified mark
+  // reads consistently across badges and map pins — standard pins take the
+  // lighter `brandPurple` step for contrast against it.
+  verified: string;
+
+  // The raw brand purple (purple-500) in every theme. Decorative fills and
+  // rings only — it fails as text on light surfaces.
+  brandPurple: string;
+
+  // Tonal fill behind the verified ring, a tint of `verified` the way
+  // accentTonal tints the accent — map pins use it to stand off the basemap.
+  verifiedSurface: string;
+
   // Tonal (low-emphasis filled) surfaces for secondary actions
   accentTonal: string;
   onAccentTonal: string;
@@ -256,6 +269,10 @@ export const lightColors: ThemeColors = {
   awardGoldForeground: "#6A4300",
   awardGoldSurface: "#FFF3D1",
 
+  verified: palette.purple700, // the darker brand purple
+  brandPurple: palette.purple500,
+  verifiedSurface: palette.purple300,
+
   accentTonal: palette.purple100,
   onAccentTonal: palette.purple700, // 4.8:1 on purple-100
 
@@ -339,6 +356,12 @@ export const darkColors: ThemeColors = {
   onAwardGold: "#000000",
   awardGoldForeground: "#FFE4A3",
   awardGoldSurface: "#3A2A12",
+
+  // One step darker than the dark-mode accent so verified still reads as the
+  // deeper purple without vanishing against ink surfaces.
+  verified: palette.purple600,
+  brandPurple: palette.purple500,
+  verifiedSurface: "#352B54", // one step deeper than the dark accentTonal
 
   accentTonal: "#2A2340",
   onAccentTonal: palette.purple300, // 7.6:1 on the tonal fill

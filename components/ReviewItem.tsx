@@ -942,7 +942,7 @@ const useStyles = makeStyles((t) => ({
     marginTop: 4,
   },
   venueChipScoreValue: {
-    ...t.typography.title,
+    ...t.typography.bodyStrong,
     letterSpacing: 0,
     color: t.colors.textOnImage,
     fontVariant: ["tabular-nums"] as const,
@@ -1075,7 +1075,7 @@ const useStyles = makeStyles((t) => ({
   commentItem: {
     width: "100%" as const,
     flexDirection: "row" as const,
-    alignItems: "center" as const,
+    alignItems: "flex-start" as const,
     justifyContent: "space-between" as const,
     marginBottom: 4,
   },
@@ -1085,11 +1085,10 @@ const useStyles = makeStyles((t) => ({
     paddingRight: t.spacing.xs,
   },
   commentLikeButton: {
-    minHeight: 34,
     flexShrink: 0,
     flexDirection: "column" as const,
     alignItems: "center" as const,
-    justifyContent: "flex-end" as const,
+    justifyContent: "flex-start" as const,
     gap: 1,
   },
   commentMoreButton: {
