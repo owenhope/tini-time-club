@@ -206,7 +206,7 @@ export const fetchAdminLocation = async (
         .from("reviews")
         .select(
           `id,comment,taste,presentation,inserted_at,state,
-         profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,bio)`,
+         profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,passport_points,bio)`,
           { count: "exact" }
         )
         .eq("location", id)

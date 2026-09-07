@@ -1,9 +1,7 @@
 import type { AdminProfile } from "@/lib/profileTypes";
 import { avatarPublicUrl } from "@/lib/avatar";
-import { tierFor } from "@/lib/ranking";
+import { passportTierFor } from "@/lib/ranking";
 import VerifiedBadge from "@/components/VerifiedBadge";
-
-export { tierFor };
 
 export default function UserBadge({
   profile,
@@ -12,7 +10,7 @@ export default function UserBadge({
   profile: AdminProfile;
   size?: "default" | "compact";
 }) {
-  const tier = tierFor(profile.review_count);
+  const tier = passportTierFor(profile.passport_points);
   const username = profile.username ?? "Unknown member";
   const initial = username.charAt(0).toUpperCase();
   const avatarUrl = avatarPublicUrl(profile.avatar_url);
@@ -27,7 +25,7 @@ export default function UserBadge({
       <span
         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] bg-stone-100 text-sm font-semibold text-stone-600"
         style={{ borderColor: tier.color }}
-        title={`${tier.name} — ${profile.review_count ?? 0} reviews`}
+        title={`${tier.name} — ${profile.passport_points ?? 0} Passport points`}
       >
         {avatarUrl ? (
           <span

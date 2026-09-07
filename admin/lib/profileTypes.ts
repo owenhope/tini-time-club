@@ -7,6 +7,7 @@ export interface AdminProfile {
   deleted: boolean | null;
   deleted_at: string | null;
   review_count: number | null;
+  passport_points?: number | null;
   bio: string | null;
   email?: string;
   created_at?: string;

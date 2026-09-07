@@ -138,29 +138,30 @@ export const fetchDashboardKpis = (range: DateRange): Promise<DashboardKpis> =>
 export const fetchTierDistribution = async (): Promise<
   TierDistributionRow[]
 > => {
+  // Buckets mirror the app's Passport rank ladder (utils/ranking.ts).
   const ranges = [
     db()
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("deleted", false)
-      .or("review_count.lt.10,review_count.is.null"),
+      .or("passport_points.lt.50,passport_points.is.null"),
     db()
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("deleted", false)
-      .gte("review_count", 10)
-      .lt("review_count", 50),
+      .gte("passport_points", 50)
+      .lt("passport_points", 500),
     db()
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("deleted", false)
-      .gte("review_count", 50)
-      .lt("review_count", 150),
+      .gte("passport_points", 500)
+      .lt("passport_points", 1000),
     db()
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("deleted", false)
-      .gte("review_count", 150),
+      .gte("passport_points", 1000),
   ];
   const results = await Promise.all(ranges);
   for (const result of results) {

@@ -9,7 +9,8 @@ import {
   PageHeader,
 } from "@/components/AdminPrimitives";
 import Pagination from "@/components/Pagination";
-import UserBadge, { tierFor } from "@/components/UserBadge";
+import UserBadge from "@/components/UserBadge";
+import { passportTierFor } from "@/lib/ranking";
 import { formatAdminDate } from "@/lib/format";
 import { fetchProfileCounts, fetchProfiles } from "@/lib/profileData";
 import { fetchTierDistribution } from "@/lib/analyticsData";
@@ -266,7 +267,7 @@ export default async function UsersPage({
           }
         >
           {profiles.map((profile) => {
-            const tier = tierFor(profile.review_count);
+            const tier = passportTierFor(profile.passport_points);
             return (
               <ClickableRow
                 key={profile.id}

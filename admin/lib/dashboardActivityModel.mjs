@@ -14,6 +14,7 @@ const profile = (value) => {
     deleted: row.deleted ?? null,
     deleted_at: row.deleted_at ?? null,
     review_count: nullableNumber(row.review_count),
+    passport_points: nullableNumber(row.passport_points),
     bio: row.bio ?? null,
     ...(row.created_at ? { created_at: String(row.created_at) } : {}),
   };

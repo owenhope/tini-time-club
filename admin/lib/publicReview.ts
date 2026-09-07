@@ -42,6 +42,7 @@ export interface PublicReview {
     deleted: boolean | null;
     avatar_public_url: string | null;
     review_count: number | null;
+    passport_points: number | null;
   } | null;
 }
 
@@ -72,7 +73,7 @@ export const fetchPublicReview = async (
       location:locations!reviews_location_fkey(id,name,address),
       spirit:spirits(name),
       type:types(name),
-      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted,avatar_url,review_count)
+      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted,avatar_url,review_count,passport_points)
     `
     )
     .eq("id", reviewId)
@@ -183,6 +184,7 @@ export const fetchPublicReview = async (
           deleted: review.profile.deleted,
           avatar_public_url: avatarPublicUrl(review.profile.avatar_url),
           review_count: review.profile.review_count,
+          passport_points: review.profile.passport_points,
         }
       : null,
   };

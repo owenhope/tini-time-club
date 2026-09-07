@@ -9,7 +9,8 @@ import {
   Panel,
   StatusPill,
 } from "@/components/AdminPrimitives";
-import UserBadge, { tierFor } from "@/components/UserBadge";
+import UserBadge from "@/components/UserBadge";
+import { passportTierFor } from "@/lib/ranking";
 import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchProfile } from "@/lib/profileData";
 import { setDeleted, setVerified } from "@/lib/actions";
@@ -25,7 +26,7 @@ export default async function UserDetailPage({
   const result = await fetchProfile(id);
   if (!result) notFound();
   const { profile, reviews } = result;
-  const tier = tierFor(profile.review_count);
+  const tier = passportTierFor(profile.passport_points);
 
   const toggleVerified = setVerified.bind(
     null,

@@ -9,7 +9,7 @@ import {
 } from "@/lib/format";
 import MentionRichText from "@/components/MentionRichText";
 import type { WebMentionSpan } from "@/lib/mentions";
-import { RANK_TIERS, getRankTier } from "@/lib/ranking";
+import { passportTierFor } from "@/lib/ranking";
 import GoldenGlassMark from "@/components/GoldenGlassMark";
 
 /**
@@ -54,6 +54,7 @@ export interface ShareCardReview {
     is_verified: boolean | null;
     avatar_public_url: string | null;
     review_count: number | null;
+    passport_points?: number | null;
   } | null;
 }
 
@@ -100,8 +101,8 @@ const tagColors = (name: string | null | undefined) => {
   }
 };
 
-const rankTier = (reviewCount?: number | null) =>
-  getRankTier(reviewCount) ?? RANK_TIERS[0];
+const rankTier = (passportPoints?: number | null) =>
+  passportTierFor(passportPoints);
 
 /* Ionicons path data (512 viewBox), matching the icons the app renders. */
 const Icon = ({
@@ -213,15 +214,15 @@ const VerifiedBadge = ({ size }: { size: number }) => (
 const AvatarWithRing = ({
   avatarUrl,
   username,
-  reviewCount,
+  passportPoints,
   size,
 }: {
   avatarUrl: string | null;
   username: string | null;
-  reviewCount: number | null;
+  passportPoints: number | null;
   size: number;
 }) => {
-  const tier = rankTier(reviewCount);
+  const tier = rankTier(passportPoints);
   const borderWidth = size < 36 ? 3 : size < 64 ? 4 : 6;
   const inset = borderWidth + 1;
   const diameter = size + inset * 2;
@@ -396,7 +397,7 @@ export default function ReviewShareCard({
           <AvatarWithRing
             avatarUrl={review.profile?.avatar_public_url ?? null}
             username={review.profile?.username ?? null}
-            reviewCount={review.profile?.review_count ?? null}
+            passportPoints={review.profile?.passport_points ?? null}
             size={34}
           />
           <span className="min-w-0">
