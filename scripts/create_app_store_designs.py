@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "app-store-designs"
 W, H = 1242, 2688
 
-SCREENSHOTS = Path("/Users/owenhope/Desktop")
+SCREENSHOTS = ROOT / "scripts" / "screenshots" / "output" / "raw"
 FONT_HEADLINE = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
 FONT_SUBHEAD = "/System/Library/Fonts/SFNS.ttf"
 FONT_LABEL = "/System/Library/Fonts/SFNS.ttf"
@@ -16,8 +16,38 @@ FONT_LABEL = "/System/Library/Fonts/SFNS.ttf"
 
 DESIGNS = [
     {
+        "slug": "feed",
+        "source": "01-feed.png",
+        "headline": "REVIEW",
+        "subhead": "Rate it. Share it. Repeat.",
+        "background": "#6B50A9",
+        "ink": "#FFFFFF",
+        "sub_ink": "#FFFFFF",
+        "accent": "#BFA7F2",
+    },
+    {
+        "slug": "review-detail",
+        "source": "02-review.png",
+        "headline": "RATE",
+        "subhead": "Taste and presentation, olive by olive.",
+        "background": "#6B50A9",
+        "ink": "#FFFFFF",
+        "sub_ink": "#FFFFFF",
+        "accent": "#BFA7F2",
+    },
+    {
+        "slug": "comments",
+        "source": "03-comments.png",
+        "headline": "TALK",
+        "subhead": "Compare notes with the club.",
+        "background": "#6B50A9",
+        "ink": "#FFFFFF",
+        "sub_ink": "#FFFFFF",
+        "accent": "#BFA7F2",
+    },
+    {
         "slug": "explore-map",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.27.01.png",
+        "source": "04-map.png",
         "headline": "DISCOVER",
         "subhead": "Explore nearby pours.",
         "background": "#6B50A9",
@@ -26,8 +56,8 @@ DESIGNS = [
         "accent": "#BFA7F2",
     },
     {
-        "slug": "venue-map",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.28.53.png",
+        "slug": "regulars",
+        "source": "05-regulars.png",
         "headline": "REGULARS",
         "subhead": "See where locals return.",
         "background": "#6B50A9",
@@ -37,7 +67,7 @@ DESIGNS = [
     },
     {
         "slug": "profile",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.28.28.png",
+        "source": "06-profile.png",
         "headline": "HISTORY",
         "subhead": "Your pours, remembered.",
         "background": "#6B50A9",
@@ -46,10 +76,10 @@ DESIGNS = [
         "accent": "#BFA7F2",
     },
     {
-        "slug": "martini-index",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.28.05.png",
-        "headline": "LEARN",
-        "subhead": "Know your classics.",
+        "slug": "passport",
+        "source": "07-passport.png",
+        "headline": "PASSPORT",
+        "subhead": "Earn stamps. Climb the ranks.",
         "background": "#6B50A9",
         "ink": "#FFFFFF",
         "sub_ink": "#FFFFFF",
@@ -57,7 +87,7 @@ DESIGNS = [
     },
     {
         "slug": "golden-glass",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.39.50.png",
+        "source": "08-golden-glass.png",
         "headline": "TOP SPOTS",
         "subhead": "Vancouver’s best martinis.",
         "background": "#6B50A9",
@@ -66,10 +96,10 @@ DESIGNS = [
         "accent": "#BFA7F2",
     },
     {
-        "slug": "feed",
-        "source": "Simulator Screenshot - Tini First Install - 2026-08-30 at 18.27.58.png",
-        "headline": "REVIEW",
-        "subhead": "Rate it. Share it. Repeat.",
+        "slug": "martini-index",
+        "source": "09-index.png",
+        "headline": "LEARN",
+        "subhead": "Know your classics.",
         "background": "#6B50A9",
         "ink": "#FFFFFF",
         "sub_ink": "#FFFFFF",
