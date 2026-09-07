@@ -100,6 +100,15 @@ export async function getMyPassport(): Promise<Passport> {
   return decodePassport(data);
 }
 
+/** Another member's Passport — read-only, never reconciles their awards. */
+export async function getMemberPassport(profileId: string): Promise<Passport> {
+  const { data, error } = await supabase.rpc("get_member_passport_v1", {
+    p_profile_id: profileId,
+  });
+  if (error) throw error;
+  return decodePassport(data);
+}
+
 export async function reconcileMyPassport(): Promise<PassportTransition> {
   const { data, error } = await supabase.rpc("reconcile_my_passport_v1");
   if (error) throw error;

@@ -8,8 +8,15 @@ import { usePassport } from "@/hooks/usePassport";
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
-export function PassportEntry() {
-  const { passport, loading } = usePassport();
+export interface PassportEntryProps {
+  /** Show another member's Passport instead of the signed-in member's. */
+  profileId?: string;
+  username?: string;
+}
+
+export function PassportEntry({ profileId, username }: PassportEntryProps) {
+  const { passport, loading } = usePassport(profileId);
+  const ownerLabel = profileId ? `${username ?? "Member"}'s` : "Your";
   const router = useRouter();
   const longPressHandled = useRef(false);
   const styles = useStyles();
@@ -25,13 +32,15 @@ export function PassportEntry() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Your Martini Passport, ${displayedPassport?.points ?? 0} points`}
+      accessibilityLabel={`${ownerLabel} Martini Passport, ${displayedPassport?.points ?? 0} points`}
       onPress={() => {
         if (longPressHandled.current) {
           longPressHandled.current = false;
           return;
         }
-        router.push(routes.passport());
+        router.push(
+          routes.passport(profileId ? { profileId, username } : undefined)
+        );
       }}
       onLongPress={
         __DEV__
@@ -51,7 +60,7 @@ export function PassportEntry() {
     >
       <View style={styles.header}>
         <AppText variant="eyebrow" style={styles.eyebrow}>
-          Your Passport
+          {ownerLabel} Passport
         </AppText>
         {showSkeleton ? (
           <View style={[styles.headerSkeleton, styles.points]} />
@@ -92,10 +101,14 @@ export function PassportEntry() {
           <PassportIcon size={23} color={colors.onHeaderBrand} />
           <View style={styles.emptyCopy}>
             <AppText variant="label" style={styles.text}>
-              Your first stamp is waiting
+              {profileId
+                ? "No stamps earned yet"
+                : "Your first stamp is waiting"}
             </AppText>
             <AppText variant="caption" style={styles.muted}>
-              Publish a review to start your Passport.
+              {profileId
+                ? "Their Passport starts with their first review."
+                : "Publish a review to start your Passport."}
             </AppText>
           </View>
         </View>

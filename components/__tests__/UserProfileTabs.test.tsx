@@ -95,6 +95,9 @@ jest.mock("@/components/profile/ProfileBody", () => {
 });
 
 jest.mock("@/components/profile/AvatarViewer", () => () => null);
+jest.mock("@/components/passport/passport-entry", () => ({
+  PassportEntry: () => null,
+}));
 jest.mock("@/components/profile/FavoriteTags", () => ({
   __esModule: true,
   default: () => null,

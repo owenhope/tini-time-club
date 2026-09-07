@@ -67,6 +67,9 @@ export type HomeParams = {
 
 export type PassportParams = {
   stampKey?: string;
+  /** View another member's Passport instead of your own. */
+  profileId?: string;
+  username?: string;
 };
 
 export type DiscoverParams = {

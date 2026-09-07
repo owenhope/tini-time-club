@@ -66,8 +66,14 @@ const MIN_REFRESH_SPINNER_MS = 650;
 
 export default function PassportScreen() {
   const router = useRouter();
-  const { stampKey } = useLocalSearchParams<{ stampKey?: string }>();
-  const { passport, error, refresh } = usePassport();
+  const { stampKey, profileId, username } = useLocalSearchParams<{
+    stampKey?: string;
+    profileId?: string;
+    username?: string;
+  }>();
+  const isMemberView = Boolean(profileId);
+  const ownerLabel = isMemberView ? `${username ?? "Member"}'s` : "Your";
+  const { passport, error, refresh } = usePassport(profileId);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const scrollRef = useRef<ScrollView>(null);
   const linkedGroupRef = useRef<View>(null);
@@ -164,12 +170,12 @@ export default function PassportScreen() {
       >
         <View style={styles.intro}>
           <AppText variant="eyebrow" tone="accent">
-            Your club journey
+            {isMemberView ? "Their club journey" : "Your club journey"}
           </AppText>
           <View style={styles.introTitleRow}>
             <PassportIcon size={27} color={colors.accent} strokeWidth={1.7} />
             <AppText variant="display" style={styles.flex}>
-              Your Passport
+              {ownerLabel} Passport
             </AppText>
             <Pressable
               style={({ pressed }) => [
@@ -189,8 +195,9 @@ export default function PassportScreen() {
             </Pressable>
           </View>
           <AppText tone="secondary" style={styles.introBody}>
-            Complete milestones to earn Passport points and unlock new rank
-            rings.
+            {isMemberView
+              ? "Milestones they've completed for Passport points and rank rings."
+              : "Complete milestones to earn Passport points and unlock new rank rings."}
           </AppText>
           <View style={styles.rankSummary}>
             <View style={styles.rankMetric}>
