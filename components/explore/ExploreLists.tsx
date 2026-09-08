@@ -117,6 +117,7 @@ function ExploreDiscoveryLists({
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = Number(item.review_count) || 0;
+    const passportPoints = Number(item.passport_points) || 0;
 
     return (
       <TouchableOpacity
@@ -130,7 +131,7 @@ function ExploreDiscoveryLists({
               avatarPath={item.avatar_url}
               username={item.username}
               size={DISCOVER_PROFILE_AVATAR_SIZE}
-              reviewCount={reviewCount}
+              reviewCount={passportPoints}
             />
           </View>
           <View style={styles.textContainer}>

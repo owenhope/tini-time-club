@@ -45,6 +45,7 @@ const decodeCandidate = (value: unknown): MentionCandidate | null => {
     avatarUrl: typeof value.avatarUrl === "string" ? value.avatarUrl : null,
     isVerified: value.isVerified === true,
     reviewCount: numberValue(value.reviewCount),
+    passportPoints: numberValue(value.passportPoints),
     relationship,
   };
 };

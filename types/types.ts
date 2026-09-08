@@ -95,6 +95,7 @@ export interface MentionCandidate {
   avatarUrl: string | null;
   isVerified: boolean;
   reviewCount: number;
+  passportPoints: number;
   relationship: MentionRelationship;
 }
 

@@ -16,6 +16,7 @@ const claire: MentionCandidate = {
   avatarUrl: null,
   isVerified: false,
   reviewCount: 4,
+  passportPoints: 0,
   relationship: "mutual",
 };
 
