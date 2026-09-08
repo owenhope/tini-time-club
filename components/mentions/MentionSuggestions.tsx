@@ -82,7 +82,7 @@ export default function MentionSuggestions({
                 avatarPath={candidate.avatarUrl}
                 username={candidate.username}
                 size={30}
-                reviewCount={candidate.reviewCount}
+                reviewCount={candidate.passportPoints}
               />
               <View style={styles.copy}>
                 <Text style={styles.username} numberOfLines={1}>

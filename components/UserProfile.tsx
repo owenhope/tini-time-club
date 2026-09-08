@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -404,6 +404,16 @@ const UserProfile = () => {
     [loadRegularPlaces, loadUserReviews]
   );
 
+  // Viewing this member just reconciled their Passport server-side; fold the
+  // fresh points into the profile so the rank bar and ring match on first view.
+  const handlePassportPoints = useCallback((points: number) => {
+    setSelectedProfile((current) =>
+      current && current.passport_points !== points
+        ? { ...current, passport_points: points }
+        : current
+    );
+  }, []);
+
   if (profileError) {
     return (
       <View style={[styles.container, styles.errorState]}>
@@ -481,6 +491,7 @@ const UserProfile = () => {
             <PassportEntry
               profileId={isViewingOwnProfile ? undefined : displayProfile.id}
               username={displayProfile.username}
+              onPointsLoaded={handlePassportPoints}
             />
           ) : undefined
         }

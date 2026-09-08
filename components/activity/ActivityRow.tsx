@@ -159,7 +159,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
               avatarPath={actor.avatarUrl}
               username={actor.username}
               size={32}
-              reviewCount={actor.reviewCount}
+              reviewCount={actor.passportPoints}
             />
           </Pressable>
         ) : null}

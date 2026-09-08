@@ -21,6 +21,7 @@ export interface ActivityActor {
   avatarUrl: string | null;
   isVerified: boolean;
   reviewCount: number;
+  passportPoints: number;
 }
 
 export interface ActivityReview {

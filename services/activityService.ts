@@ -35,6 +35,7 @@ const decodeActor = (value: unknown): ActivityActor | null => {
     avatarUrl: stringOrNull(value.avatarUrl),
     isVerified: value.isVerified === true,
     reviewCount: numberValue(value.reviewCount),
+    passportPoints: numberValue(value.passportPoints),
   };
 };
 

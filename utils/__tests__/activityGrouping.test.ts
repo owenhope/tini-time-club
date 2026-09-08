@@ -10,6 +10,7 @@ const actor = (id: string, username: string) => ({
   avatarUrl: null,
   isVerified: false,
   reviewCount: 1,
+  passportPoints: 0,
 });
 
 const event = (overrides: Partial<ActivityEvent>): ActivityEvent => ({

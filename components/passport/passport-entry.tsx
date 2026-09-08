@@ -12,9 +12,19 @@ export interface PassportEntryProps {
   /** Show another member's Passport instead of the signed-in member's. */
   profileId?: string;
   username?: string;
+  /**
+   * Fresh points from the Passport load. Viewing a member reconciles them
+   * server-side, so the surrounding profile's stale passport_points (rank
+   * bar, ring) can catch up without a second visit.
+   */
+  onPointsLoaded?: (points: number) => void;
 }
 
-export function PassportEntry({ profileId, username }: PassportEntryProps) {
+export function PassportEntry({
+  profileId,
+  username,
+  onPointsLoaded,
+}: PassportEntryProps) {
   const { passport, loading } = usePassport(profileId);
   const ownerLabel = profileId ? `${username ?? "Member"}'s` : "Your";
   const router = useRouter();
@@ -22,6 +32,10 @@ export function PassportEntry({ profileId, username }: PassportEntryProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const [preview, setPreview] = useState<"live" | "empty" | "loading">("live");
+  const points = passport?.points;
+  useEffect(() => {
+    if (points != null) onPointsLoaded?.(points);
+  }, [onPointsLoaded, points]);
   const displayedPassport = preview === "empty" ? null : passport;
   const showSkeleton = preview === "loading" || (loading && !passport);
   const recent = [...(displayedPassport?.stamps ?? [])]
