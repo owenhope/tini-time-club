@@ -35,6 +35,13 @@ const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   bio: { kind: "polygon", sides: 12 },
 };
 
+const FIRST_STEPS_SHAPES = new Set<PassportStampShape>([
+  "profile_photo",
+  "favorite_location",
+  "taste_profile",
+  "bio",
+]);
+
 const polygonPoints = (sides: number, outer = 45, inner?: number) => {
   const count = inner ? sides * 2 : sides;
   return Array.from({ length: count }, (_, index) => {
@@ -68,7 +75,9 @@ function StampOutline({
   onProfile: boolean;
 }) {
   const { colors, typography } = useTheme();
-  const displayLabel = label.replace(" · ", " ").toUpperCase();
+  const displayLabel = (
+    shape === "profile_photo" ? "profile picture" : label.replace(" · ", " ")
+  ).toUpperCase();
   const words = displayLabel.split(/\s+/);
   const splitAt = Math.ceil(words.length / 2);
   const labelLines =
@@ -76,6 +85,7 @@ function StampOutline({
       ? [displayLabel]
       : [words.slice(0, splitAt).join(" "), words.slice(splitAt).join(" ")];
   const isCombination = shape === "combination";
+  const isLabelOnly = isCombination || FIRST_STEPS_SHAPES.has(shape);
   const textColor = onProfile ? colors.onHeaderBrand : colors.text;
   // Profile stamps sit on the purple brand surface, so their rings stay white
   // in both color schemes. The full Passport keeps the theme accent treatment.
@@ -136,7 +146,7 @@ function StampOutline({
       >
         {`+${pointAward} pts`}
       </SvgText>
-      {!isCombination ? (
+      {!isLabelOnly ? (
         <SvgText
           x="50"
           y={MILESTONE_BASELINE_Y}
@@ -150,20 +160,18 @@ function StampOutline({
       ) : null}
       <SvgText
         x="50"
-        y={
-          isCombination ? (labelLines.length === 1 ? 59 : 54) : LABEL_BASELINE_Y
-        }
+        y={isLabelOnly ? (labelLines.length === 1 ? 59 : 54) : LABEL_BASELINE_Y}
         fill={textColor}
         fontFamily={typography.eyebrow.fontFamily}
-        fontSize={isCombination ? "10" : "7"}
-        letterSpacing={isCombination ? "0.5" : "0.7"}
+        fontSize={isLabelOnly ? "10" : "7"}
+        letterSpacing={isLabelOnly ? "0.5" : "0.7"}
         textAnchor="middle"
       >
         {labelLines.map((line, index) => (
           <TSpan
             key={`${line}-${index}`}
             x="50"
-            dy={index === 0 ? 0 : isCombination ? 11 : LABEL_LINE_HEIGHT}
+            dy={index === 0 ? 0 : isLabelOnly ? 11 : LABEL_LINE_HEIGHT}
           >
             {line}
           </TSpan>

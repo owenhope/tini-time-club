@@ -94,6 +94,24 @@ describe("Sentry reportError bridge", () => {
     expect(mockAddBreadcrumb).toHaveBeenCalled();
   });
 
+  it("filters storage-js request timeouts", () => {
+    const error = new Error(
+      "fetch failed: UnexpectedException: The request timed out. (at ExpoModulesCore/Promise.swift:56)"
+    );
+    error.name = "StorageUnknownError";
+
+    reportError("Failed to cache Activity:", error);
+
+    expect(mockCaptureException).not.toHaveBeenCalled();
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
+    expect(mockAddBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "network",
+        message: "Failed to cache Activity:",
+      })
+    );
+  });
+
   it("still captures non-network storage failures", () => {
     const error = new Error("new row violates row-level security policy");
 

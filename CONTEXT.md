@@ -52,6 +52,12 @@ The next milestone a member can reach in a Stamp Series.
 An earned exploration milestone in a member's Passport.
 _Avoid_: Badge, points
 
+**First Steps Stamp**:
+A one-time Stamp for completing a profile action, such as adding a Profile
+Picture, Bio, Favorite Bar, or Taste Profile. Its label names the action and is
+not a count.
+_Avoid_: Photo, 1 Profile Picture, 1 Bio, 1 Favorite Bar, 1 Taste Profile
+
 **Passport Award**:
 The authoritative record that a member earned a Stamp.
 

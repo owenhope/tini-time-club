@@ -36,6 +36,7 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const profileId = profile?.id ?? null;
   const previousProfileIdRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appStateRef = useRef(AppState.currentState);
 
   const refreshUnseenCount = useCallback(async () => {
     if (!profileId) {
@@ -47,7 +48,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       setUnseenCount(nextCount);
       await setActivityBadgeCount(nextCount);
     } catch (error) {
-      reportError("Failed to refresh Activity badge:", error);
+      if (appStateRef.current === "active") {
+        reportError("Failed to refresh Activity badge:", error);
+      }
     }
   }, [profileId]);
 
@@ -94,6 +97,7 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     const appStateSubscription = AppState.addEventListener(
       "change",
       (state) => {
+        appStateRef.current = state;
         if (state === "active") {
           requestPassportReconciliation();
           void refreshUnseenCount();

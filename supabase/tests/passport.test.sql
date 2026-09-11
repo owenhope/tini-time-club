@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(23);
+SELECT plan(26);
 
 SELECT has_table('public','passport_definitions','Passport definitions exist');
 SELECT has_table('public','passport_awards','Passport awards exist');
@@ -30,6 +30,11 @@ SELECT ok(
   ),
   'Every Passport achievement uses a standard reward value'
 );
+SELECT is(
+  (SELECT unit FROM public.passport_definitions WHERE key = 'first-photo'),
+  'profile picture',
+  'The First Steps photo stamp is called Profile Picture'
+);
 SELECT ok(
   NOT EXISTS(
     SELECT 1 FROM public.passport_definitions
@@ -48,6 +53,16 @@ SELECT ok(pg_get_functiondef('public.reconcile_my_passport_v1()'::regprocedure) 
 SELECT ok(pg_get_functiondef('public.reconcile_my_passport_v1()'::regprocedure) LIKE '%revoked_at IS NULL%','Revoked awards do not contribute points');
 SELECT ok(pg_get_functiondef('public.reconcile_my_passport_v1()'::regprocedure) LIKE '%passport_achievement%','New stamps append a Passport Activity event');
 SELECT ok(pg_get_functiondef('public.reconcile_my_passport_v1()'::regprocedure) LIKE '%awarded_at%','Reconciliation returns complete stamp display data');
+SELECT ok(
+  pg_get_functiondef('public.get_feed_page_v1(uuid,integer,timestamptz,bigint,uuid,bigint,boolean,boolean)'::regprocedure)
+    ~ $pattern$'passport_points'\s*,\s*p\.passport_points$pattern$,
+  'Review feed author profiles expose current Passport points'
+);
+SELECT ok(
+  pg_get_functiondef('public.get_feed_page_v1(uuid,integer,timestamptz,bigint,uuid,bigint,boolean,boolean)'::regprocedure)
+    ~ $pattern$'passport_points'\s*,\s*preview\.profile_passport_points$pattern$,
+  'Review feed comment profiles expose current Passport points'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
