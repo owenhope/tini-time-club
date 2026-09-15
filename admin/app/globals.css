@@ -187,8 +187,15 @@ html.dark .admin-theme .bg-sky-50 {
 }
 
 html.dark .admin-theme .text-emerald-950,
-html.dark .admin-theme .text-emerald-800 {
+html.dark .admin-theme .text-emerald-900,
+html.dark .admin-theme .text-emerald-800,
+html.dark .admin-theme .hover\:text-emerald-900:hover,
+html.dark .admin-theme .hover\:text-emerald-800:hover {
   color: #c9ddd3;
+}
+
+html.dark .admin-theme .hover\:bg-emerald-200:hover {
+  background-color: #2a5445;
 }
 
 html.dark .admin-theme .text-stone-800 {

@@ -14,6 +14,7 @@ type ActiveSection =
   | "reports"
   | "analytics"
   | "notifications"
+  | "emails"
   | "share-preview";
 
 const CORE_NAV = [
@@ -46,6 +47,7 @@ const MODERATION_NAV = [
 ] as const;
 
 const SECONDARY_NAV = [
+  { href: "/admin/emails", key: "emails", label: "Emails" },
   {
     href: "/admin/share-preview",
     key: "share-preview",

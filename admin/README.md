@@ -63,3 +63,43 @@ Built with Vercel in mind: set the four env vars, root directory `admin/`.
 Do not deploy pointed at prod until the auth story is upgraded past a shared
 password, or at minimum the deployment is IP-restricted / behind Vercel
 authentication.
+
+## Member emails
+
+`/admin/emails` supports one member, selected members (up to 500), or all
+eligible members. Apply `20260915180000_admin_email_campaigns.sql` and
+`20260915190000_admin_email_audience_exclusions.sql` to the admin's backend first. Drafts freeze the message, sender, unsubscribe origin,
+and deduplicated recipient list. Accounts must be active with confirmed email;
+opt-outs are checked when drafting and again before delivery.
+
+Choosing all eligible members loads a complete list of usernames and email
+addresses beside the composer. Remove individual recipients with × or use
+Restore all. These exclusions apply only to that email and are enforced when
+the draft recipient list is saved; they do not unsubscribe the member.
+
+Add these server-only variables to `admin/.env.local` and deployment settings:
+
+- `RESEND_API_KEY`: Resend sending API key.
+- `RESEND_FROM_EMAIL`: verified sender, e.g. `hello@tinitimeclub.com`.
+- `EMAIL_PUBLIC_URL`: public HTTPS origin serving this app's unsubscribe routes.
+
+Deploy the public `/email/unsubscribe` page and `/api/email/unsubscribe` POST
+handler against the same database before setting `EMAIL_PUBLIC_URL`. Leaving
+it unset permits composing and reviewing drafts but disables sending. Create
+a fresh draft after changing sender settings. Never point development email
+links at a production app backed by a different database.
+
+Sending advances in chunks of ten while the page is open. History allows
+resuming after a reload. Each recipient has a stable Resend idempotency key;
+interrupted attempts wait five minutes before retry. After 23 hours, uncertain
+attempts require checking Resend manually rather than risking duplicates.
+"Accepted" means Resend accepted the email, not that it reached the inbox.
+Resend's dashboard contains delivery and bounce details. This UI does not
+override Resend quotas; a rate/quota error pauses the campaign.
+
+Member broadcasts include opt-out links and RFC 8058 one-click unsubscribe.
+Use an appropriately subscribed audience for promotional content; account
+creation alone is not recorded as marketing consent by this feature.
+
+Validation: `npm --prefix admin test`, `npm --prefix admin run typecheck`,
+and `supabase test db supabase/tests/admin_email_campaigns.test.sql`.
