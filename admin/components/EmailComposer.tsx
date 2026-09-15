@@ -356,7 +356,10 @@ export default function EmailComposer({
               expanded={showPreview}
               onToggle={() => setShowPreview(!showPreview)}
             >
-              <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+              {/* The sent email always renders light, so the preview pins the
+                  template's literal colors instead of theme classes (which the
+                  dark theme remaps, hiding ink text on a darkened card). */}
+              <div className="overflow-hidden rounded-2xl border border-[#e7e5e4] bg-[#ffffff]">
                 <div className="bg-[#10241B] px-6 py-4">
                   <p className="text-lg font-bold text-[#FAF9F6]">
                     tini time club.
@@ -366,14 +369,14 @@ export default function EmailComposer({
                   <h3 className="mb-4 break-words text-xl font-bold text-[#10241B]">
                     {subject || "Your subject"}
                   </h3>
-                  <div className="whitespace-pre-wrap break-words text-sm leading-7">
+                  <div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#1c1917]">
                     {body || "Your message will appear here."}
                   </div>
                   <span className="mt-7 inline-block rounded-full bg-[#F2FF71] px-6 py-3 text-sm font-bold text-[#10241B]">
                     Download on the App Store
                   </span>
                 </div>
-                <p className="border-t border-stone-200 px-6 py-4 text-xs text-stone-500">
+                <p className="border-t border-[#e7e5e4] px-6 py-4 text-xs text-[#78716c]">
                   Tini Time Club ·{" "}
                   <span className="underline">Get the app</span> ·{" "}
                   <span className="underline">
