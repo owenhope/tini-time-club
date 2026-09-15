@@ -52,8 +52,7 @@ export const EMAIL_BRAND = {
   muted: "#78716c",
 };
 
-const EMAIL_FONTS =
-  "Figtree,'Avenir Next','Helvetica Neue',Arial,sans-serif";
+const EMAIL_FONTS = "Figtree,'Avenir Next','Helvetica Neue',Arial,sans-serif";
 
 /** @param {{subject: string, body: string, sender: string, public_url: string}} campaign
  * @param {{id: string, email: string}} recipient */
