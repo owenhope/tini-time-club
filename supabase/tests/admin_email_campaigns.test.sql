@@ -75,9 +75,9 @@ SELECT is((SELECT count(*)::integer FROM public.admin_email_recipients WHERE cam
 SELECT ok(NOT has_function_privilege('authenticated', 'public.admin_email_all_members(text)', 'EXECUTE'), 'Segment member list is server-only');
 SELECT ok(NOT has_function_privilege('anon', 'public.admin_email_audience_counts()', 'EXECUTE'), 'Audience counts are server-only');
 SELECT ok(NOT has_function_privilege('authenticated', 'public.admin_email_segment_matches(text,uuid)', 'EXECUTE'), 'Segment predicate is server-only');
-INSERT INTO public.reviews(user_id, inserted_at) VALUES
-  ('70000000-0000-0000-0000-000000000001', now() - interval '5 days'),
-  ('70000000-0000-0000-0000-000000000002', now() - interval '120 days');
+INSERT INTO public.reviews(user_id, taste, presentation, inserted_at) VALUES
+  ('70000000-0000-0000-0000-000000000001', 4, 4, now() - interval '5 days'),
+  ('70000000-0000-0000-0000-000000000002', 4, 4, now() - interval '120 days');
 SELECT is((SELECT count(*)::integer FROM jsonb_array_elements(public.admin_email_all_members('active')) m WHERE (m->>'email') LIKE 'email-test-%'), 1, 'Active segment lists only members with a recent review');
 SELECT is((SELECT count(*)::integer FROM jsonb_array_elements(public.admin_email_all_members('inactive')) m WHERE (m->>'email') = 'email-test-2@example.test'), 1, 'A stale reviewer counts as inactive');
 SELECT is((public.admin_email_audience_counts()->>'active')::integer, 1, 'Audience counts report the active segment');
