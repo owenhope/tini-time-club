@@ -36,6 +36,19 @@ it("creates and persists one random installation identifier", async () => {
   );
 });
 
+it("regenerates a stored identifier that is not a uuid", async () => {
+  // The backend takes the identifier as a uuid; a legacy value in any other
+  // shape would make push registration fail with a 400 forever.
+  mockSecureStore.set("push-installation-id", "legacy-device-token");
+
+  await expect(getInstallationId()).resolves.toBe(
+    "7850f79e-df35-4ecc-b517-e8dd66307b15"
+  );
+  expect(mockSecureStore.get("push-installation-id")).toBe(
+    "7850f79e-df35-4ecc-b517-e8dd66307b15"
+  );
+});
+
 it("reuses the identifier created by an earlier app version", async () => {
   mockSecureStore.set(
     "push-installation-id",

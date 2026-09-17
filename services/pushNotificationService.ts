@@ -9,6 +9,9 @@ import { getNotificationRouteFromData } from "@/utils/notificationRoutes";
 import { warn, reportError } from "@/utils/log";
 
 const DEFAULT_CHANNEL_ID = "default";
+// Mirrors the shape register_push_token validates server-side; anything else
+// would be rejected with a 400 on every retry.
+const EXPO_PUSH_TOKEN_PATTERN = /^(ExponentPushToken|ExpoPushToken)\[[^\]]+\]$/;
 const UNREGISTRATION_PENDING_KEY = "push-unregistration-pending";
 const REGISTRATION_RETRY_DELAY_MS = 60_000;
 
@@ -94,6 +97,15 @@ async function performPushRegistration({
 
     const token = await getCurrentExpoPushToken();
     if (!token) return null;
+    if (!EXPO_PUSH_TOKEN_PATTERN.test(token)) {
+      // Never send the token value itself; the shape is enough to diagnose.
+      reportError("[Push] Expo returned an unexpected push token shape:", {
+        length: token.length,
+        bracketed: token.includes("["),
+      });
+      registrationRetryAfter = Date.now() + REGISTRATION_RETRY_DELAY_MS;
+      return null;
+    }
 
     await retryPendingPushUnregistrationAsync();
 
@@ -104,7 +116,14 @@ async function performPushRegistration({
       p_app_environment: getAppEnvironment(),
     });
 
-    if (error) throw error;
+    if (error) {
+      // The registration inputs passed local validation, so a rejection here
+      // is a real defect; reportError's network filter keeps offline
+      // failures out of telemetry.
+      reportError("[Push] Token registration failed:", error);
+      registrationRetryAfter = Date.now() + REGISTRATION_RETRY_DELAY_MS;
+      return null;
+    }
 
     clearedDeniedRegistration = false;
     registrationRetryAfter = 0;
