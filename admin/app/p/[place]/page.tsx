@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import LocationShareCard from "@/components/LocationShareCard";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
 import PublicShareHeader from "@/components/PublicShareHeader";
@@ -78,6 +79,15 @@ export default async function PublicLocationPage({
 
         <div className="px-[10px] pb-8 pt-3 sm:px-0 sm:pt-0">
           <LocationShareCard location={location} />
+          <p className="pt-4 text-center text-[13px] text-[#6E7472]">
+            Own this place?{" "}
+            <Link
+              href={`/p/${encodeURIComponent(location.id)}/claim`}
+              className="font-semibold text-[#336654] underline"
+            >
+              Claim it
+            </Link>
+          </p>
         </div>
       </div>
     </main>

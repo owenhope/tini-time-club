@@ -18,7 +18,7 @@ SELECT col_not_null(
 
 SELECT is(
   (
-    SELECT column_default
+    SELECT column_default::text
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'profiles'

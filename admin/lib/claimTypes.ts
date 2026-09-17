@@ -19,6 +19,7 @@ export interface AdminLocationClaim {
   phone: string | null;
   explanation: string | null;
   status: LocationClaimStatus;
+  source: "app" | "web";
   submitted_at: string;
   decided_at: string | null;
   rejection_reason: string | null;
