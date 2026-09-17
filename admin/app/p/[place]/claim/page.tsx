@@ -196,7 +196,7 @@ export default async function ClaimLocationPage({
 
                   <button
                     type="submit"
-                    className="rounded-full bg-[#336654] px-5 py-3 text-[15px] font-bold text-[#F2FF71] transition-opacity hover:opacity-90"
+                    className="rounded-full bg-[#336654] px-5 py-3 text-[15px] font-bold text-white transition-opacity hover:opacity-90"
                   >
                     Submit claim
                   </button>

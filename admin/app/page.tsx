@@ -188,6 +188,74 @@ export default function PublicHomePage() {
         </div>
       </section>
 
+      <section
+        id="places"
+        className="bg-white px-5 py-20 text-emerald-950 sm:px-6 sm:py-24 lg:px-8"
+      >
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="grid gap-7 md:grid-cols-[0.9fr_1.1fr] md:items-end">
+            <div>
+              <p className="font-mono text-xs font-bold uppercase text-violet-700">
+                Places &amp; status
+              </p>
+              <h2 className="mt-3 text-4xl font-black leading-none sm:text-5xl">
+                The marks that mean something here.
+              </h2>
+            </div>
+            <p className="max-w-2xl text-lg leading-8 text-emerald-950/72">
+              Every place on the map earns its reputation from real reviews —
+              and the club has its own ways of saying a bar, or a member, has
+              put in the work.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
+            <article className="rounded-[8px] border border-emerald-950/10 bg-paper p-6 shadow-sm shadow-emerald-950/5">
+              <p className="inline-flex items-center gap-2 rounded-[6px] bg-violet-100 px-3 py-1.5 font-mono text-xs font-black uppercase text-violet-800">
+                <span aria-hidden>✓</span> Verified Business
+              </p>
+              <h3 className="mt-4 text-2xl font-black leading-8">
+                The real people behind the bar.
+              </h3>
+              <p className="mt-4 text-base leading-7 text-emerald-950/70">
+                The purple check means Tini Time Club reviewed a claim from the
+                business by hand. Own or manage a place? Open its page here on
+                tinitimeclub.com and tap{" "}
+                <span className="font-bold">Claim it</span>.
+              </p>
+            </article>
+
+            <article className="rounded-[8px] border border-emerald-950/10 bg-paper p-6 shadow-sm shadow-emerald-950/5">
+              <p className="inline-flex items-center gap-2 rounded-[6px] bg-chartreuse px-3 py-1.5 font-mono text-xs font-black uppercase text-emerald-950">
+                <span aria-hidden>🥂</span> Golden Glass
+              </p>
+              <h3 className="mt-4 text-2xl font-black leading-8">
+                Earned by the pour, never bought.
+              </h3>
+              <p className="mt-4 text-base leading-7 text-emerald-950/70">
+                Each region&apos;s Golden Glass goes to the places members keep
+                rating best. It is the club&apos;s highest recognition for a
+                Martini — decided entirely by reviews.
+              </p>
+            </article>
+
+            <article className="rounded-[8px] border border-emerald-950/10 bg-paper p-6 shadow-sm shadow-emerald-950/5">
+              <p className="inline-flex items-center gap-2 rounded-[6px] bg-emerald-100 px-3 py-1.5 font-mono text-xs font-black uppercase text-emerald-950">
+                <span aria-hidden>📕</span> Passport
+              </p>
+              <h3 className="mt-4 text-2xl font-black leading-8">
+                Stamps for every step of the journey.
+              </h3>
+              <p className="mt-4 text-base leading-7 text-emerald-950/70">
+                Members collect Passport stamps for new places, new pours, and
+                milestones along the way. Stamps earn points, points build your
+                rank in the club.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section className="overflow-hidden bg-emerald-950 px-5 py-20 text-white sm:px-6 sm:py-24 lg:px-8">
         <div className="mx-auto grid w-full max-w-6xl gap-10 md:grid-cols-2 md:items-center">
           <div className="relative mx-auto w-full max-w-md">
