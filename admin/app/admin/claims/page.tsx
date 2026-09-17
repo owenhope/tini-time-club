@@ -123,6 +123,11 @@ export default async function ClaimsPage({
                   claim.contact_name ??
                   claim.username ??
                   "Redacted"}
+                {claim.source === "web" ? (
+                  <span className="ml-2 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-950">
+                    Web
+                  </span>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-stone-700">
                 {claim.business_role}

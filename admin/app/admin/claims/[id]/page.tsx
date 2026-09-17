@@ -59,9 +59,16 @@ export default async function ClaimDetailPage({
               <span className="text-stone-500">Requester</span>
               <p className="font-bold">
                 {claim.contact_name ?? claim.username ?? "Redacted"}
+                {claim.source === "web" ? (
+                  <span className="ml-2 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-950">
+                    Web
+                  </span>
+                ) : null}
               </p>
               <p className="text-stone-500">
-                {claim.account_email ?? "Redacted"}
+                {claim.source === "web"
+                  ? "Submitted from the public website — no member account"
+                  : (claim.account_email ?? "Redacted")}
               </p>
             </div>
             <div>
