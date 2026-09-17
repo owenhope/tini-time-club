@@ -249,16 +249,16 @@ export default function PublicHomePage() {
               Golden Glass
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              One gold glass per city. The best Martini in town.
+              Each city&apos;s five best Martinis, ranked by members.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
-              The Golden Glass marks the single highest-rated Martini spot in
-              each of the club&apos;s regions — Vancouver, Seattle, New York,
-              and the rest. A place qualifies once at least three different
-              members have reviewed it, and the award goes to the qualifying
-              spot with the best member scores. It recalculates as reviews come
-              in, so holding the Golden Glass means a bar is earning it right
-              now — there&apos;s no application and no fee.
+              The Golden Glass is the club&apos;s ranking of the top five
+              Martini spots in each of its regions — Vancouver, Seattle, New
+              York, and the rest. A place qualifies once at least three
+              different members have reviewed it, and the five qualifying spots
+              with the best member scores take the list. It recalculates as
+              reviews come in, so a place on the Golden Glass is earning it
+              right now — there&apos;s no application and no fee.
             </p>
           </div>
         </div>
