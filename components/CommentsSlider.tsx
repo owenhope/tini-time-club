@@ -154,6 +154,9 @@ export default function CommentsSlider({
     [bottomContentInset]
   );
   const [comments, setComments] = useState<Comment[]>([]);
+  const [initialLoadFailed, setInitialLoadFailed] = useState(false);
+  // Bumped by the retry affordance to re-run the initial-load effect.
+  const [reloadToken, setReloadToken] = useState(0);
   const [hasMoreComments, setHasMoreComments] = useState(false);
   const [loadingEarlierComments, setLoadingEarlierComments] = useState(false);
   const nextCommentCursorRef = useRef<CommentCursor | null>(null);
@@ -229,13 +232,15 @@ export default function CommentsSlider({
         }, 100);
       } catch (error) {
         reportError("Error loading comments:", error);
+        if (!cancelled) setInitialLoadFailed(true);
       }
     };
+    setInitialLoadFailed(false);
     loadComments();
     return () => {
       cancelled = true;
     };
-  }, [initialCommentId, profile?.id, review.id]);
+  }, [initialCommentId, profile?.id, review.id, reloadToken]);
 
   const loadEarlierComments = useCallback(async () => {
     if (
@@ -617,12 +622,28 @@ export default function CommentsSlider({
               ) : null
             }
             ListEmptyComponent={
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyTitle}>Say something</Text>
-                <Text style={styles.emptySubtitle}>
-                  Nobody&rsquo;s weighed in yet. Your move.
-                </Text>
-              </View>
+              initialLoadFailed ? (
+                <TouchableOpacity
+                  style={styles.emptyStateContainer}
+                  onPress={() => setReloadToken((token) => token + 1)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading comments"
+                >
+                  <Text style={styles.emptyTitle}>
+                    Couldn&rsquo;t load comments
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    Check your connection, then tap to retry.
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <Text style={styles.emptyTitle}>Say something</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Nobody&rsquo;s weighed in yet. Your move.
+                  </Text>
+                </View>
+              )
             }
             contentContainerStyle={[
               styles.listContent,

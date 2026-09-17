@@ -1,0 +1,33 @@
+name: Database tests
+
+# pgTAP contract tests for supabase/migrations and supabase/tests. These do
+# not run in the main audit, so schema drift in the SQL functions is only
+# caught here.
+on:
+  push:
+    branches: ["main"]
+    paths: ["supabase/**"]
+  pull_request:
+    branches: ["main"]
+    paths: ["supabase/**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pgtap:
+    name: pgTAP contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase and apply migrations
+        run: supabase start
+
+      - name: Run pgTAP tests
+        run: supabase test db
