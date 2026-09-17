@@ -569,3 +569,17 @@ export async function refreshGoldenGlass() {
   revalidatePath("/admin/places");
   redirect("/admin/places/golden-glass?refreshed=1");
 }
+
+export async function setBusinessInquiryHandled(formData: FormData) {
+  await requireAdminSession();
+  const inquiryId = String(formData.get("inquiry_id") ?? "").trim();
+  const handled = String(formData.get("handled") ?? "") === "1";
+  if (!inquiryId) redirect("/admin/inquiries");
+  const { error } = await supabaseAdmin().rpc("mark_business_inquiry_handled", {
+    p_inquiry_id: inquiryId,
+    p_handled: handled,
+  });
+  if (error) throw toAdminDataError(error, "update business inquiry");
+  revalidatePath("/admin/inquiries");
+  redirect("/admin/inquiries?updated=1");
+}

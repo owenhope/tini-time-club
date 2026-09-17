@@ -52,3 +52,44 @@ export async function submitPublicLocationClaim(formData: FormData) {
 
   redirect(`${path}?submitted=1`);
 }
+
+/**
+ * The homepage "Get in touch" flow: a general business inquiry with no
+ * location attached, triaged in /admin/inquiries.
+ */
+export async function submitBusinessInquiry(formData: FormData) {
+  const path = "/business";
+
+  if (String(formData.get("website") ?? "").trim()) {
+    redirect(`${path}?submitted=1`);
+  }
+
+  const contactName = String(formData.get("contact_name") ?? "").trim();
+  const businessName = String(formData.get("business_name") ?? "").trim();
+  const businessEmail = String(formData.get("business_email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const message = String(formData.get("message") ?? "").trim();
+
+  if (!contactName || contactName.length > 120) redirect(`${path}?error=name`);
+  if (!businessName || businessName.length > 160)
+    redirect(`${path}?error=business`);
+  if (
+    !businessEmail ||
+    businessEmail.length > 320 ||
+    businessEmail.indexOf("@") < 1
+  )
+    redirect(`${path}?error=email`);
+  if (phone.length > 40) redirect(`${path}?error=phone`);
+  if (!message || message.length > 1000) redirect(`${path}?error=message`);
+
+  const { error } = await supabaseAdmin().rpc("submit_business_inquiry", {
+    p_contact_name: contactName,
+    p_business_name: businessName,
+    p_business_email: businessEmail,
+    p_phone: phone || null,
+    p_message: message,
+  });
+  if (error) redirect(`${path}?error=submit`);
+
+  redirect(`${path}?submitted=1`);
+}
