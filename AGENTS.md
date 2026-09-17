@@ -17,8 +17,13 @@
 ## Local runtimes
 
 - The native app and the admin web app use different dev servers. Run
-  `npm run start:dev` for the Expo dev client and iOS simulator; it serves
-  Metro on port `8081`.
+  `npm run start:dev` for the Expo dev client; it serves Metro on port
+  `8081`.
+- Simulated iOS devices are managed through **Device Hub** (Xcode's
+  replacement for the Simulator app): open it with
+  `open /Applications/Xcode.app/Contents/Applications/DeviceHub.app`, boot a
+  device there, then launch the installed dev client against Metro. Do not
+  look for or try to open the old Simulator app.
 - Run `npm --prefix admin run dev` for the separate Next.js admin app; it
   serves the browser at `http://localhost:3001`. Use this URL for admin and
   public web testing. Do not open the Expo server as the admin web app.

@@ -72,7 +72,10 @@ dep)? bump at least the minor and never reuse a shipped version.**
 ## Building
 
 ```bash
-# Build the dev client once for the simulator (JS iterates over Metro afterwards)
+# Build the dev client once for a simulated device (JS iterates over Metro
+# afterwards). Simulated devices are booted and managed via Device Hub —
+# Xcode's replacement for the Simulator app — the EAS profile name is
+# unchanged.
 npx eas build --profile ios-simulator --platform ios
 
 # Use the installed dev client against development Supabase

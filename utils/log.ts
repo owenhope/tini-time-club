@@ -34,7 +34,7 @@ export const reportError = (...args: unknown[]): void => {
 };
 
 const NETWORK_FAILURE_PATTERN =
-  /network request failed|failed to fetch|fetch failed|network connection was lost|internet connection appears to be offline|could not connect to the server|request timed out|software caused connection abort|load failed/i;
+  /network request failed|failed to fetch|fetch failed|network connection was lost|internet connection appears to be offline|could not connect to the server|request timed out|software caused connection abort|load failed|request was aborted|aborterror|\bcancell?ed\b|hostname could not be found|dns lookup failed|connection reset|socket is not connected|network is down|secure connection to the server cannot be made/i;
 
 /**
  * True when an error is the device losing connectivity rather than anything
@@ -49,12 +49,18 @@ export const isNetworkError = (value: unknown): boolean => {
     seen.add(current);
     const record = current as {
       message?: unknown;
+      details?: unknown;
+      hint?: unknown;
       cause?: unknown;
       originalError?: unknown;
     };
+    // Supabase clients surface transport failures as plain objects; the
+    // original fetch rejection often only appears in details or hint.
     if (
-      typeof record.message === "string" &&
-      NETWORK_FAILURE_PATTERN.test(record.message)
+      [record.message, record.details, record.hint].some(
+        (field) =>
+          typeof field === "string" && NETWORK_FAILURE_PATTERN.test(field)
+      )
     ) {
       return true;
     }

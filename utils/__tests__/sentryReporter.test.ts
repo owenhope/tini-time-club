@@ -112,6 +112,67 @@ describe("Sentry reportError bridge", () => {
     );
   });
 
+  it("filters iOS request suspensions surfaced as 'cancelled'", () => {
+    // iOS kills in-flight requests when the app backgrounds; RN surfaces
+    // NSURLErrorCancelled as a bare "cancelled" message.
+    reportError("Failed to refresh Activity badge:", {
+      message: "TypeError: cancelled",
+      details: "",
+      hint: "",
+      code: "",
+    });
+
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
+    expect(mockAddBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "network" })
+    );
+  });
+
+  it("filters aborted requests via the postgrest hint field", () => {
+    reportError("Failed to refresh Activity badge:", {
+      message: "AbortError: Aborted",
+      details: "",
+      hint: "Request was aborted (timeout or manual cancellation)",
+      code: "",
+    });
+
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
+    expect(mockAddBreadcrumb).toHaveBeenCalled();
+  });
+
+  it("filters transport failures only visible in the details field", () => {
+    reportError("Failed to refresh Activity badge:", {
+      message: "FetchError: something went wrong",
+      details:
+        "FetchError: something went wrong\n\nCaused by: Error: The network connection was lost.",
+      hint: "",
+      code: "",
+    });
+
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
+    expect(mockAddBreadcrumb).toHaveBeenCalled();
+  });
+
+  it("includes non-Error object messages in captured messages", () => {
+    reportError("Failed to refresh Activity badge:", {
+      message: "permission denied for table notifications",
+      code: "42501",
+    });
+
+    expect(mockCaptureMessage).toHaveBeenCalledWith(
+      "Failed to refresh Activity badge: permission denied for table notifications",
+      {
+        level: "error",
+        extra: {
+          error: {
+            message: "permission denied for table notifications",
+            code: "42501",
+          },
+        },
+      }
+    );
+  });
+
   it("still captures non-network storage failures", () => {
     const error = new Error("new row violates row-level security policy");
 
