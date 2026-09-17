@@ -56,7 +56,7 @@ UPDATE public.admin_email_campaigns SET started_at = now() WHERE id = '71000000-
 SELECT is((SELECT count(*)::integer FROM public.claim_admin_email_recipients('71000000-0000-0000-0000-000000000002')), 0, 'Unsubscribed and deleted members are excluded after draft review');
 SELECT is((public.get_admin_email_campaign('71000000-0000-0000-0000-000000000002')->'counts'->>'skipped')::integer, 2, 'Skipped recipients are reflected in campaign progress');
 
-SELECT ok(NOT has_function_privilege('authenticated', 'public.admin_email_all_members()', 'EXECUTE'), 'Full member list is server-only');
+SELECT ok(NOT has_function_privilege('authenticated', 'public.admin_email_all_members(text)', 'EXECUTE'), 'Full member list is server-only');
 SELECT ok(NOT has_function_privilege('anon', 'public.create_admin_email_campaign_excluding(uuid,text,text,text,text,text,uuid[],uuid[])', 'EXECUTE'), 'Exclusion-aware creation is server-only');
 UPDATE public.profiles SET deleted = false WHERE id = '70000000-0000-0000-0000-000000000001';
 DELETE FROM public.admin_email_optouts WHERE email = 'email-test-2@example.test';
