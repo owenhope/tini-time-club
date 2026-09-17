@@ -194,43 +194,6 @@ export default function PublicHomePage() {
       </section>
 
       <section
-        id="verified"
-        className="bg-white px-5 py-20 text-emerald-950 sm:px-6 sm:py-24 lg:px-8"
-      >
-        <div className="mx-auto grid w-full max-w-6xl gap-10 md:grid-cols-[auto_1fr] md:items-start">
-          <div className="flex h-24 w-24 items-center justify-center rounded-[8px] bg-violet-100 text-violet-700">
-            <VerifiedGlyph size={52} />
-          </div>
-          <div>
-            <p className="font-mono text-xs font-bold uppercase text-violet-700">
-              Verified Business
-            </p>
-            <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              The purple check: we spoke to the business.
-            </h2>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              When a place shows the purple check, it means someone who owns or
-              manages that bar contacted Tini Time Club and we confirmed the
-              connection by hand. That&apos;s all it means — verification never
-              touches a place&apos;s rating, can&apos;t be bought, and
-              isn&apos;t an endorsement. It simply tells members the business
-              itself is represented here.
-            </p>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              Own or manage a place that pours a serious Martini? Send us a note
-              and we&apos;ll take it from there.
-            </p>
-            <a
-              href="/business"
-              className="mt-8 inline-flex min-h-12 items-center rounded-md bg-emerald-900 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800"
-            >
-              Get in touch
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section
         id="golden-glass"
         className="bg-emerald-950 px-5 py-20 text-white sm:px-6 sm:py-24 lg:px-8"
       >
@@ -288,6 +251,43 @@ export default function PublicHomePage() {
               Call, Premium, and finally Top Shelf at 150, and that rank rings
               your profile photo everywhere in the app.
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="verified"
+        className="bg-white px-5 py-20 text-emerald-950 sm:px-6 sm:py-24 lg:px-8"
+      >
+        <div className="mx-auto grid w-full max-w-6xl gap-10 md:grid-cols-[auto_1fr] md:items-start">
+          <div className="flex h-24 w-24 items-center justify-center rounded-[8px] bg-violet-100 text-violet-700">
+            <VerifiedGlyph size={52} />
+          </div>
+          <div>
+            <p className="font-mono text-xs font-bold uppercase text-violet-700">
+              Verified Business
+            </p>
+            <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
+              Run one of these bars? Make it official.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
+              When a place shows the purple check, it means someone who owns or
+              manages that bar contacted Tini Time Club and we confirmed the
+              connection by hand. That&apos;s all it means — verification never
+              touches a place&apos;s rating, can&apos;t be bought, and
+              isn&apos;t an endorsement. It simply tells members the business
+              itself is represented here.
+            </p>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-emerald-950/72">
+              Own or manage a place that pours a serious Martini? Send us a note
+              and we&apos;ll take it from there.
+            </p>
+            <a
+              href="/business"
+              className="mt-8 inline-flex min-h-12 items-center rounded-md bg-emerald-900 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800"
+            >
+              Get in touch
+            </a>
           </div>
         </div>
       </section>
