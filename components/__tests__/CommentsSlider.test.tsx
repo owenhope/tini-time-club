@@ -366,3 +366,31 @@ it("reports someone else's comment from its long-press menu", async () => {
     "Thanks. We’ll review this comment."
   );
 });
+
+it("shows a retry state when the initial comment load fails, and recovers", async () => {
+  mockGetCommentPage.mockRejectedValueOnce(new Error("load failed"));
+  const tree = await renderSlider();
+
+  const retry = tree.root.findByProps({
+    accessibilityLabel: "Retry loading comments",
+  });
+  expect(
+    tree.root
+      .findAllByType(Text)
+      .some((node) => node.props.children === "Couldn’t load comments")
+  ).toBe(true);
+
+  await act(async () => {
+    retry.props.onPress();
+  });
+
+  expect(mockGetCommentPage).toHaveBeenCalledTimes(2);
+  expect(
+    tree.root
+      .findAllByType(Text)
+      .some((node) => node.props.children === "Perfectly cold.")
+  ).toBe(true);
+  expect(
+    tree.root.findAllByProps({ accessibilityLabel: "Retry loading comments" })
+  ).toHaveLength(0);
+});
