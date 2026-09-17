@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { notifyOperator } from "@/lib/operatorNotify.mjs";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -38,7 +39,8 @@ export async function submitPublicLocationClaim(formData: FormData) {
   if (!explanation || explanation.length > 1000)
     redirect(`${path}?error=explanation`);
 
-  const { error } = await supabaseAdmin().rpc("submit_web_location_claim", {
+  const db = supabaseAdmin();
+  const { data, error } = await db.rpc("submit_web_location_claim", {
     p_location_id: Number(locationId),
     p_contact_name: contactName,
     p_business_role: businessRole,
@@ -49,6 +51,28 @@ export async function submitPublicLocationClaim(formData: FormData) {
   // A duplicate pending claim also returns success from the RPC, so any
   // error here is a real failure worth a retry message.
   if (error) redirect(`${path}?error=submit`);
+
+  // A duplicate changed nothing, so only new claims notify the operator.
+  const isNewClaim = (data as { claimId?: string } | null)?.claimId;
+  if (isNewClaim) {
+    const { data: location } = await db
+      .from("locations")
+      .select("name")
+      .eq("id", Number(locationId))
+      .maybeSingle();
+    await notifyOperator(
+      `New place claim: ${location?.name ?? `location ${locationId}`}`,
+      [
+        `${contactName} (${businessRole}) claimed ${location?.name ?? `location ${locationId}`} from the public website.`,
+        `Business email: ${businessEmail}`,
+        phone ? `Phone: ${phone}` : "No phone provided.",
+        "",
+        explanation,
+        "",
+        "Review it: https://tinitimeclub.com/admin/claims",
+      ]
+    );
+  }
 
   redirect(`${path}?submitted=1`);
 }
@@ -90,6 +114,16 @@ export async function submitBusinessInquiry(formData: FormData) {
     p_message: message,
   });
   if (error) redirect(`${path}?error=submit`);
+
+  await notifyOperator(`New business inquiry: ${businessName}`, [
+    `${contactName} sent an inquiry about ${businessName} from the public website.`,
+    `Business email: ${businessEmail}`,
+    phone ? `Phone: ${phone}` : "No phone provided.",
+    "",
+    message,
+    "",
+    "Handle it: https://tinitimeclub.com/admin/inquiries",
+  ]);
 
   redirect(`${path}?submitted=1`);
 }
