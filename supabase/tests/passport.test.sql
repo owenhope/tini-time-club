@@ -1,5 +1,30 @@
 BEGIN;
-SELECT plan(26);
+SELECT plan(30);
+
+-- A member whose favorites survive from the legacy shape: jsonb string
+-- scalars holding a stringified array, which the app parses but strict
+-- jsonb_array_length calls reject.
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at
+) VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  '77700000-0000-0000-0000-000000000001',
+  'authenticated',
+  'authenticated',
+  'passport-legacy@example.test',
+  '',
+  now(),
+  '{"provider":"email","providers":["email"]}',
+  '{}',
+  now(),
+  now()
+);
+UPDATE public.profiles
+SET favorite_spirits = to_jsonb('["1","2"]'::text),
+    favorite_types = to_jsonb('["3"]'::text)
+WHERE id = '77700000-0000-0000-0000-000000000001';
 
 SELECT has_table('public','passport_definitions','Passport definitions exist');
 SELECT has_table('public','passport_awards','Passport awards exist');
@@ -62,6 +87,31 @@ SELECT ok(
   pg_get_functiondef('public.get_feed_page_v1(uuid,integer,timestamptz,bigint,uuid,bigint,boolean,boolean)'::regprocedure)
     ~ $pattern$'passport_points'\s*,\s*preview\.profile_passport_points$pattern$,
   'Review feed comment profiles expose current Passport points'
+);
+
+SELECT is(
+  public.normalize_favorite_ids(to_jsonb('["1","2"]'::text)),
+  '["1","2"]'::jsonb,
+  'Legacy stringified favorites normalize to arrays'
+);
+SELECT is(
+  public.normalize_favorite_ids(to_jsonb('martini'::text)),
+  '[]'::jsonb,
+  'Unparseable legacy favorites normalize to empty'
+);
+SELECT lives_ok(
+  $$SELECT public.reconcile_passport_for_v1('77700000-0000-0000-0000-000000000001')$$,
+  'Reconciliation survives legacy string-shaped favorites'
+);
+SELECT is(
+  (
+    SELECT p.progress
+    FROM public.passport_progress_v1('77700000-0000-0000-0000-000000000001') p
+    JOIN public.passport_definitions d ON d.id = p.definition_id
+    WHERE d.metric = 'taste_profile'
+  ),
+  1,
+  'Legacy string-shaped favorites still earn the taste profile stamp'
 );
 
 SELECT * FROM finish();
