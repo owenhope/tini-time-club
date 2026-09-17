@@ -242,10 +242,7 @@ export default function PublicHomePage() {
               Every member carries a Passport: a collection of stamps earned by
               doing things in the club. Review your first ten venues, try a new
               spirit-and-style combination, leave your fiftieth comment, become
-              a Regular — each milestone stamps the book and pays 10 to 200
-              points. Your points total sets your rank, from Well at zero to
-              Call, Premium, and finally Top Shelf at 150, and that rank rings
-              your profile photo everywhere in the app.
+              a Regular — each milestone stamps the book.
             </p>
           </div>
         </div>
