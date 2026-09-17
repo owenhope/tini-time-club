@@ -217,11 +217,7 @@ export default function PublicHomePage() {
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
               The Golden Glass is the club&apos;s ranking of the best Martini
               spots in each of its regions — Vancouver, Seattle, New York, and
-              the rest. A place qualifies once at least three different members
-              have reviewed it, and the qualifying spots with the best member
-              scores take the list. It recalculates as reviews come in, so a
-              place on the Golden Glass is earning it right now — there&apos;s
-              no application and no fee.
+              the rest.
             </p>
           </div>
         </div>
