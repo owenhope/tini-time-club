@@ -212,16 +212,16 @@ export default function PublicHomePage() {
               Golden Glass
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              Each city&apos;s five best Martinis, ranked by members.
+              Each city&apos;s best Martinis, ranked by members.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
-              The Golden Glass is the club&apos;s ranking of the top five
-              Martini spots in each of its regions — Vancouver, Seattle, New
-              York, and the rest. A place qualifies once at least three
-              different members have reviewed it, and the five qualifying spots
-              with the best member scores take the list. It recalculates as
-              reviews come in, so a place on the Golden Glass is earning it
-              right now — there&apos;s no application and no fee.
+              The Golden Glass is the club&apos;s ranking of the best Martini
+              spots in each of its regions — Vancouver, Seattle, New York, and
+              the rest. A place qualifies once at least three different members
+              have reviewed it, and the qualifying spots with the best member
+              scores take the list. It recalculates as reviews come in, so a
+              place on the Golden Glass is earning it right now — there&apos;s
+              no application and no fee.
             </p>
           </div>
         </div>
@@ -271,14 +271,6 @@ export default function PublicHomePage() {
               Run one of these bars? Make it official.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              When a place shows the purple check, it means someone who owns or
-              manages that bar contacted Tini Time Club and we confirmed the
-              connection by hand. That&apos;s all it means — verification never
-              touches a place&apos;s rating, can&apos;t be bought, and
-              isn&apos;t an endorsement. It simply tells members the business
-              itself is represented here.
-            </p>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-emerald-950/72">
               Own or manage a place that pours a serious Martini? Send us a note
               and we&apos;ll take it from there.
             </p>
