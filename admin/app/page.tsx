@@ -206,16 +206,19 @@ export default function PublicHomePage() {
               Verified Business
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              The real people behind the bar.
+              The purple check: we spoke to the business.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              The purple check next to a place means Tini Time Club reviewed a
-              claim from the business by hand. It tells members the bar is
-              really represented here — never that a rating was bought.
+              When a place shows the purple check, it means someone who owns or
+              manages that bar contacted Tini Time Club and we confirmed the
+              connection by hand. That&apos;s all it means — verification never
+              touches a place&apos;s rating, can&apos;t be bought, and
+              isn&apos;t an endorsement. It simply tells members the business
+              itself is represented here.
             </p>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              Own or manage a place that pours a serious Martini? Introduce
-              yourself and the club will take it from there.
+              Own or manage a place that pours a serious Martini? Send us a note
+              and we&apos;ll take it from there.
             </p>
             <a
               href="/business"
@@ -246,13 +249,16 @@ export default function PublicHomePage() {
               Golden Glass
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              Earned by the pour, never bought.
+              One gold glass per city. The best Martini in town.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
-              Each region&apos;s Golden Glass goes to the places members keep
-              rating best — the club&apos;s highest recognition for a Martini.
-              It is decided entirely by reviews, so the gold glass beside a
-              place name means the room agrees.
+              The Golden Glass marks the single highest-rated Martini spot in
+              each of the club&apos;s regions — Vancouver, Seattle, New York,
+              and the rest. A place qualifies once at least three different
+              members have reviewed it, and the award goes to the qualifying
+              spot with the best member scores. It recalculates as reviews come
+              in, so holding the Golden Glass means a bar is earning it right
+              now — there&apos;s no application and no fee.
             </p>
           </div>
         </div>
@@ -271,13 +277,16 @@ export default function PublicHomePage() {
               Passport
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
-              Stamps for every step of the journey.
+              A stamp book of everywhere you&apos;ve been.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
-              Every member carries a Passport. New places, new pours, and
-              milestones along the way earn stamps; stamps earn points, and
-              points build your rank in the club — from Well all the way to Top
-              Shelf.
+              Every member carries a Passport: a collection of stamps earned by
+              doing things in the club. Review your first ten venues, try a new
+              spirit-and-style combination, leave your fiftieth comment, become
+              a Regular — each milestone stamps the book and pays 10 to 200
+              points. Your points total sets your rank, from Well at zero to
+              Call, Premium, and finally Top Shelf at 150, and that rank rings
+              your profile photo everywhere in the app.
             </p>
           </div>
         </div>
