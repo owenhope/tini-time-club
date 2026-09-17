@@ -65,10 +65,17 @@ registerErrorReporter((...args: unknown[]) => {
     return;
   }
 
-  Sentry.captureMessage(context || "Application error reported", {
-    level: "error",
-    extra: errorLike ? { error: safeErrorDetails(errorLike) } : undefined,
-  });
+  const errorDetails = errorLike ? safeErrorDetails(errorLike) : undefined;
+  const detailMessage =
+    typeof errorDetails?.message === "string" ? errorDetails.message : "";
+  Sentry.captureMessage(
+    [context, detailMessage].filter(Boolean).join(" ") ||
+      "Application error reported",
+    {
+      level: "error",
+      extra: errorDetails ? { error: errorDetails } : undefined,
+    }
+  );
 });
 
 const manifest = Updates.manifest;
