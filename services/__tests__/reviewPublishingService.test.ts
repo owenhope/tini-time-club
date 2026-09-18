@@ -1,7 +1,14 @@
+import { clearMemberPoints } from "@/utils/memberPoints";
 const mockRpc = jest.fn();
 
 jest.mock("@/utils/supabase", () => ({
   supabase: {
+    auth: {
+      getSession: jest.fn(async () => ({
+        data: { session: { user: { id: "member-1" } } },
+        error: null,
+      })),
+    },
     rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }));
@@ -29,6 +36,7 @@ const draft = {
 describe("publishReview", () => {
   beforeEach(() => {
     mockRpc.mockReset();
+    clearMemberPoints();
   });
 
   it("publishes the uploaded image and returns database transitions", async () => {
@@ -106,6 +114,52 @@ describe("publishReview", () => {
     });
     expect(mockRpc).toHaveBeenCalledWith("reconcile_my_passport_v1");
     expect(removeImage).not.toHaveBeenCalled();
+  });
+
+  it("leaves points unknown when optional reconciliation fails", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: {
+        reviewId: 91,
+        locationId: 42,
+        locationName: "The Test Bar",
+        reviewCount: 10,
+      },
+      error: null,
+    });
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Unavailable" },
+    });
+    const removeImage = jest.fn(async () => undefined);
+    await expect(
+      publishReview(draft, {
+        uploadImage: async () => "member-1/review.jpg",
+        removeImage,
+      })
+    ).resolves.toMatchObject({ passportPoints: null, rankUp: null });
+    expect(removeImage).not.toHaveBeenCalled();
+  });
+
+  it("does not invent a rank-up when the previous points are unknown", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: {
+        reviewId: 91,
+        locationId: 42,
+        locationName: "The Test Bar",
+        reviewCount: 10,
+      },
+      error: null,
+    });
+    mockRpc.mockResolvedValueOnce({
+      data: { points: 500, unlocked: [] },
+      error: null,
+    });
+    await expect(
+      publishReview(draft, {
+        uploadImage: async () => "member-1/review.jpg",
+        removeImage: async () => undefined,
+      })
+    ).resolves.toMatchObject({ passportPoints: 500, rankUp: null });
   });
 
   it("deletes the uploaded image when the transaction fails", async () => {

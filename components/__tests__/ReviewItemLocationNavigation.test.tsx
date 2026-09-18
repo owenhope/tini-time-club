@@ -77,7 +77,7 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 
 jest.mock("@/components/shared", () => ({
-  Avatar: () => null,
+  MemberAvatar: () => null,
   RatingPips: () => null,
   PIPS_MAX: 5,
   VerifiedName: () => null,

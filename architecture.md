@@ -100,6 +100,23 @@ Pure transformations belong in `utils/` and should stay free of Supabase and
 React state where possible. Examples include activity grouping, route parsing,
 review validation, ranking, and share-card calculations.
 
+Member identity projections pass through `decodeMemberSummary` at service
+boundaries. Full profiles use `normalizeProfile`, which preserves settings and
+the empty username used by onboarding. Both represent unavailable Passport
+points as `null`; zero is a confirmed score. Review totals and venue standings
+are separate from club rank. `MemberAvatar` takes member data and owns the rank
+ring composition; the lower-level `Avatar` renders only the photo or fallback.
+Screens should pass the member object rather than choose a numeric rank input.
+
+Successful Passport reads and reconciliation publish confirmed totals to the
+session-scoped `memberPoints` store. `useMemberPoints` makes those totals available
+to mounted avatars, profile rank progress, and Passport screens without refetching
+every feed or list. Embedded member totals remain the fallback until a Passport
+total is confirmed. Request ordering rejects older responses; totals may decrease
+after explicit award revocation. Sign-out clears the store and invalidates pending
+reads. The profile provider invalidates its persisted cache when confirmed points
+supersede the stored profile, and toast presentation does not own rank state.
+
 `utils/supabase.ts` is the Supabase client adapter. It resolves runtime config,
 persists auth through secure storage on native, and starts/stops token refresh
 with app foreground state.

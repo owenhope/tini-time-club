@@ -1,3 +1,4 @@
+import type { MemberSummary } from "@/utils/memberSummary";
 export const ACTIVITY_KINDS = [
   "user_followed",
   "review_liked",
@@ -15,13 +16,8 @@ export const isActivityKind = (value: unknown): value is ActivityKind =>
   typeof value === "string" &&
   (ACTIVITY_KINDS as readonly string[]).includes(value);
 
-export interface ActivityActor {
-  id: string;
-  username: string;
-  avatarUrl: string | null;
-  isVerified: boolean;
-  reviewCount: number;
-  passportPoints: number;
+export interface ActivityActor extends MemberSummary {
+  review_count: number;
 }
 
 export interface ActivityReview {

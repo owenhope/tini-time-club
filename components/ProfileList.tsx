@@ -1,3 +1,4 @@
+import type { MemberSummary as ProfileType } from "@/utils/memberSummary";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
@@ -8,7 +9,7 @@ import {
 } from "react-native";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { MemberAvatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { makeStyles, useTheme } from "@/theme";
@@ -19,14 +20,7 @@ import { runNavigation } from "@/utils/reviewItemMemo";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
-export interface ProfileType {
-  id: string;
-  username: string;
-  avatar_url?: string | null;
-  is_verified?: boolean;
-  review_count?: number;
-  passport_points?: number;
-}
+export type { MemberSummary as ProfileType } from "@/utils/memberSummary";
 
 interface ProfileListProps {
   profiles: ProfileType[];
@@ -171,12 +165,7 @@ export default function ProfileList({
             )
           }
         >
-          <Avatar
-            avatarPath={item.avatar_url}
-            username={item.username}
-            size={PROFILE_ROW_AVATAR_SIZE}
-            reviewCount={item.passport_points}
-          />
+          <MemberAvatar member={item} size={PROFILE_ROW_AVATAR_SIZE} />
           <VerifiedName
             name={item.username || "Unknown User"}
             isVerified={item.is_verified}

@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import {
-  Avatar,
+  MemberAvatar,
   LocationVerifiedBadge,
   MartiniIcon,
   RatingPips,
@@ -117,7 +117,6 @@ function ExploreDiscoveryLists({
 
   const renderProfile = ({ item }: { item: any }) => {
     const reviewCount = Number(item.review_count) || 0;
-    const passportPoints = Number(item.passport_points) || 0;
 
     return (
       <TouchableOpacity
@@ -127,12 +126,7 @@ function ExploreDiscoveryLists({
       >
         <View style={styles.cardContent}>
           <View style={styles.avatarContainer}>
-            <Avatar
-              avatarPath={item.avatar_url}
-              username={item.username}
-              size={DISCOVER_PROFILE_AVATAR_SIZE}
-              reviewCount={passportPoints}
-            />
+            <MemberAvatar member={item} size={DISCOVER_PROFILE_AVATAR_SIZE} />
           </View>
           <View style={styles.textContainer}>
             <VerifiedName

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { normalizeProfile } from "@/utils/normalizeProfile";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -250,7 +251,7 @@ const UserProfile = () => {
           const result =
             await databaseService.getPublicProfileByUsername(username);
           if (requestId !== selectedProfileRequestRef.current) return;
-          setSelectedProfile(result.profile);
+          setSelectedProfile(normalizeProfile(result.profile));
           setFollowersCount(result.followersCount);
           setFollowingCount(result.followingCount);
           return;
@@ -274,7 +275,7 @@ const UserProfile = () => {
           }
         } else {
           if (requestId !== selectedProfileRequestRef.current) return;
-          setSelectedProfile(data);
+          setSelectedProfile(normalizeProfile(data));
           // Track view profile event (only if not viewing own profile)
           if (profile && data.id !== profile.id) {
             AnalyticService.capture("view_profile", {
@@ -404,16 +405,6 @@ const UserProfile = () => {
     [loadRegularPlaces, loadUserReviews]
   );
 
-  // Viewing this member just reconciled their Passport server-side; fold the
-  // fresh points into the profile so the rank bar and ring match on first view.
-  const handlePassportPoints = useCallback((points: number) => {
-    setSelectedProfile((current) =>
-      current && current.passport_points !== points
-        ? { ...current, passport_points: points }
-        : current
-    );
-  }, []);
-
   if (profileError) {
     return (
       <View style={[styles.container, styles.errorState]}>
@@ -491,7 +482,6 @@ const UserProfile = () => {
             <PassportEntry
               profileId={isViewingOwnProfile ? undefined : displayProfile.id}
               username={displayProfile.username}
-              onPointsLoaded={handlePassportPoints}
             />
           ) : undefined
         }
@@ -573,9 +563,7 @@ const UserProfile = () => {
       />
       <AvatarViewer
         visible={avatarViewerOpen}
-        avatarPath={displayProfile?.avatar_url}
-        username={displayProfile?.username}
-        reviewCount={displayProfile?.passport_points}
+        member={displayProfile}
         onClose={() => setAvatarViewerOpen(false)}
       />
     </View>

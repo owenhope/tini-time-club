@@ -7,10 +7,10 @@ import type { ActivityEvent } from "@/types/activity";
 const actor = (id: string, username: string) => ({
   id,
   username,
-  avatarUrl: null,
-  isVerified: false,
-  reviewCount: 1,
-  passportPoints: 0,
+  avatar_url: null,
+  is_verified: false,
+  review_count: 1,
+  passport_points: 0,
 });
 
 const event = (overrides: Partial<ActivityEvent>): ActivityEvent => ({

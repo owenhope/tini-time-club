@@ -1,3 +1,4 @@
+import { decodeMemberSummary } from "@/utils/memberSummary";
 import { supabase } from "@/utils/supabase";
 import { reportError } from "@/utils/log";
 
@@ -11,9 +12,46 @@ export interface Regular {
   /** Global active review count for the author byline. */
   profile_review_count?: number;
   /** Permanent Passport points that determine the member's rank ring. */
-  passport_points?: number;
+  passport_points?: number | null;
   /** Active reviews at this location, used for regular placement. */
   review_count: number;
+}
+
+/** Decode membership placement separately from global member rank inputs. */
+export function decodeRegulars(value: unknown): Regular[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row: unknown) => {
+    if (typeof row !== "object" || row === null) return [];
+    const record = row as Record<string, unknown>;
+    const member = decodeMemberSummary({
+      ...record,
+      id: record.profile_id,
+      review_count: record.profile_review_count,
+    });
+    if (
+      !member ||
+      typeof record.location_id !== "number" ||
+      !Number.isFinite(record.location_id) ||
+      typeof record.rank !== "number" ||
+      !Number.isFinite(record.rank) ||
+      typeof record.review_count !== "number" ||
+      !Number.isFinite(record.review_count)
+    )
+      return [];
+    return [
+      {
+        location_id: record.location_id,
+        rank: record.rank,
+        profile_id: member.id,
+        username: member.username,
+        avatar_url: member.avatar_url,
+        is_verified: member.is_verified,
+        passport_points: member.passport_points,
+        profile_review_count: member.review_count,
+        review_count: record.review_count,
+      },
+    ];
+  });
 }
 
 export interface ProfileRegularPlace {
@@ -84,7 +122,7 @@ export async function getRegularsByLocation(
   }
 
   const fetched = new Map<string, Regular[]>();
-  for (const regular of (data ?? []) as Regular[]) {
+  for (const regular of decodeRegulars(data)) {
     const key = String(regular.location_id);
     fetched.set(key, [...(fetched.get(key) ?? []), regular]);
   }

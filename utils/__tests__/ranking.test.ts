@@ -17,10 +17,10 @@ describe("RANK_TIERS", () => {
 });
 
 describe("getRankTier", () => {
-  it("holds the first tier from zero, including nullish counts", () => {
+  it("holds the first tier from confirmed zero", () => {
     expect(getRankTier(0)?.key).toBe("well");
-    expect(getRankTier(null)?.key).toBe("well");
-    expect(getRankTier(undefined)?.key).toBe("well");
+    expect(getRankTier(null)).toBeNull();
+    expect(getRankTier(undefined)).toBeNull();
   });
 
   it("returns the tier at each threshold", () => {
@@ -37,7 +37,7 @@ describe("getRankTier", () => {
 
 describe("getRankProgress", () => {
   it("starts at the first tier and targets the second from zero", () => {
-    const p = getRankProgress(0);
+    const p = getRankProgress(0)!;
     expect(p.tier?.key).toBe("well");
     expect(p.next?.key).toBe("call");
     expect(p.remaining).toBe(50);
@@ -45,7 +45,7 @@ describe("getRankProgress", () => {
   });
 
   it("reports remaining and cumulative progress toward the next tier", () => {
-    const p = getRankProgress(100);
+    const p = getRankProgress(100)!;
     expect(p.tier?.key).toBe("call");
     expect(p.next?.key).toBe("premium");
     expect(p.remaining).toBe(400);
@@ -53,7 +53,7 @@ describe("getRankProgress", () => {
   });
 
   it("does not reset the bar when a member reaches a new tier", () => {
-    const p = getRankProgress(50);
+    const p = getRankProgress(50)!;
     expect(p.tier?.key).toBe("call");
     expect(p.next?.key).toBe("premium");
     expect(p.fraction).toBeCloseTo(50 / 500);
@@ -61,16 +61,18 @@ describe("getRankProgress", () => {
   });
 
   it("caps at the top tier", () => {
-    const p = getRankProgress(1000);
+    const p = getRankProgress(1000)!;
     expect(p.tier?.key).toBe("topShelf");
     expect(p.next).toBeNull();
     expect(p.remaining).toBe(0);
     expect(p.fraction).toBe(1);
   });
 
-  it("clamps negative and nullish counts to the first tier", () => {
-    expect(getRankProgress(-3).tier?.key).toBe("well");
-    expect(getRankProgress(-3).next?.key).toBe("call");
-    expect(getRankProgress(null).fraction).toBe(0);
-  });
+  it.each([null, undefined, NaN, Infinity, -3])(
+    "leaves invalid or unknown points %s unranked",
+    (points) => {
+      expect(getRankTier(points)).toBeNull();
+      expect(getRankProgress(points)).toBeNull();
+    }
+  );
 });

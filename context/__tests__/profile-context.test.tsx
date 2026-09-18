@@ -1,3 +1,9 @@
+import {
+  beginMemberPointsRead,
+  commitMemberPoints,
+  clearMemberPoints,
+  getMemberPoints,
+} from "@/utils/memberPoints";
 import React from "react";
 import { Alert } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
@@ -85,6 +91,7 @@ describe("ProfileProvider profile failures", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    clearMemberPoints();
     latestContext = undefined;
     mockGetProfile.mockResolvedValue(null);
     mockGetUser.mockResolvedValue(signedInUser);
@@ -147,11 +154,71 @@ describe("ProfileProvider profile failures", () => {
       await latestContext?.refreshProfile();
     });
 
-    expect(latestContext?.profile).toEqual(cachedProfile);
+    expect(latestContext?.profile).toEqual({
+      ...cachedProfile,
+      avatar_url: null,
+      passport_points: null,
+    });
     expect(latestContext?.profileError).toBe(
       "We couldn't load your profile. Check your connection and try again."
     );
     expect(mockSignOut).not.toHaveBeenCalled();
+  });
+
+  it("keeps confirmed points across stale profile refreshes and invalidates the persisted cache", async () => {
+    mockGetProfile.mockResolvedValue({
+      id: signedInUser.id,
+      username: "olive",
+      passport_points: 0,
+    });
+    await renderProvider();
+    await act(async () => {
+      commitMemberPoints(beginMemberPointsRead(), signedInUser.id, 500);
+    });
+    expect(latestContext?.profile?.passport_points).toBe(500);
+    expect(mockClearProfileCache).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await latestContext?.refreshProfile();
+    });
+    expect(latestContext?.profile?.passport_points).toBe(500);
+    await act(async () => {
+      latestContext?.beginSignOut();
+    });
+    expect(latestContext?.profile).toBeNull();
+    expect(getMemberPoints(signedInUser.id)).toBeNull();
+  });
+
+  it("retains confirmed totals on same-account sign-in events and clears them on an account switch", async () => {
+    mockGetProfile.mockResolvedValue({
+      id: signedInUser.id,
+      username: "olive",
+      passport_points: 0,
+    });
+    await renderProvider();
+    await act(async () => {
+      commitMemberPoints(beginMemberPointsRead(), signedInUser.id, 500);
+    });
+    await act(async () => {
+      mockAuthStateChange?.("SIGNED_IN", { user: signedInUser });
+    });
+    expect(latestContext?.profile?.passport_points).toBe(500);
+    const oldRead = beginMemberPointsRead();
+    mockGetProfile.mockResolvedValue({
+      id: "member-2",
+      username: "twist",
+      passport_points: 0,
+    });
+    await act(async () => {
+      mockAuthStateChange?.("SIGNED_IN", { user: { id: "member-2" } });
+    });
+    await act(async () => {
+      commitMemberPoints(oldRead, signedInUser.id, 900);
+    });
+    expect(getMemberPoints(signedInUser.id)).toBeNull();
+    expect(latestContext?.profile).toMatchObject({
+      id: "member-2",
+      passport_points: 0,
+    });
   });
 
   it("signs out when the authenticated account profile is gone", async () => {

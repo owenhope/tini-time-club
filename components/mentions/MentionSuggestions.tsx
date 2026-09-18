@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Avatar from "@/components/shared/Avatar";
+import MemberAvatar from "@/components/shared/MemberAvatar";
 import type { MentionCandidate } from "@/types/types";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -78,12 +78,7 @@ export default function MentionSuggestions({
               accessibilityRole="button"
               accessibilityLabel={`Mention ${candidate.username}, ${relationshipLabel[candidate.relationship]}`}
             >
-              <Avatar
-                avatarPath={candidate.avatarUrl}
-                username={candidate.username}
-                size={30}
-                reviewCount={candidate.passportPoints}
-              />
+              <MemberAvatar member={candidate} size={30} />
               <View style={styles.copy}>
                 <Text style={styles.username} numberOfLines={1}>
                   @{candidate.username}

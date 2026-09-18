@@ -12,7 +12,7 @@ import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 import { useProfile } from "@/context/profile-context";
 import {
-  Avatar,
+  MemberAvatar,
   MartiniIcon,
   LocationVerifiedBadge,
   RatingPips,
@@ -120,22 +120,16 @@ type ReviewItemProps = ReviewItemMemoProps;
 // Reusable UI Components
 const AvatarWrapper = memo(
   ({
-    avatarUrl,
-    username,
-    isVerified,
-    authorId,
-    reviewCount,
-    passportPoints,
+    member,
     onNavigate,
   }: {
-    avatarUrl: string | null;
-    username?: string;
-    isVerified?: boolean;
-    authorId?: string | null;
-    reviewCount?: number | null;
-    passportPoints?: number | null;
+    member?: Review["profile"];
     onNavigate?: (navigate: () => void) => void;
   }) => {
+    const username = member?.username;
+    const authorId = member?.id;
+    const reviewCount = member?.review_count;
+    const isVerified = member?.is_verified;
     const openProfile = useOpenProfile();
     const styles = useStyles();
 
@@ -145,12 +139,7 @@ const AvatarWrapper = memo(
 
     const content = (
       <View style={styles.headerProfile}>
-        <Avatar
-          avatarPath={avatarUrl}
-          username={username}
-          size={REVIEW_AUTHOR_AVATAR_SIZE}
-          reviewCount={passportPoints}
-        />
+        <MemberAvatar member={member} size={REVIEW_AUTHOR_AVATAR_SIZE} />
         <View style={styles.headerIdentity}>
           <VerifiedName
             name={username || "Unknown"}
@@ -720,15 +709,7 @@ const ReviewItemComponent = ({
       <View style={styles.card}>
         {
           <View style={styles.header}>
-            <AvatarWrapper
-              avatarUrl={review.profile?.avatar_url || null}
-              username={review.profile?.username}
-              isVerified={review.profile?.is_verified}
-              authorId={review.profile?.id}
-              reviewCount={review.profile?.review_count}
-              passportPoints={review.profile?.passport_points}
-              onNavigate={onNavigate}
-            />
+            <AvatarWrapper member={review.profile} onNavigate={onNavigate} />
             <View style={styles.headerActions}>
               <TouchableOpacity
                 onPress={() => setActionSheetVisible(true)}

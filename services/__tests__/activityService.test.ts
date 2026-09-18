@@ -85,11 +85,118 @@ describe("activityService", () => {
           expect.objectContaining({
             id: "notification-1",
             kind: "comment_liked",
+            actor: expect.objectContaining({ passport_points: null }),
             comment: { id: "9", body: "Perfectly cold." },
           }),
         ],
       })
     );
+  });
+
+  it.each([undefined, null, 0, 500, "500", NaN, -1])(
+    "decodes actor points independently of review counts (%s)",
+    async (passportPoints) => {
+      mockRpc.mockResolvedValue({
+        data: {
+          events: [
+            {
+              id: "notification-1",
+              createdAt: "2026-09-18T00:00:00Z",
+              kind: "review_liked",
+              actor: {
+                id: "actor-1",
+                username: "olive",
+                avatarUrl: "avatar.jpg",
+                isVerified: true,
+                reviewCount: 12,
+                passportPoints,
+              },
+              body: "olive liked your review.",
+              data: { reviewId: 42 },
+              isFollowing: true,
+            },
+          ],
+        },
+        error: null,
+      });
+      const page = await fetchActivityPage();
+      expect(page.events[0]).toMatchObject({
+        body: "olive liked your review.",
+        data: { reviewId: 42 },
+        isFollowing: true,
+        actor: {
+          id: "actor-1",
+          username: "olive",
+          avatar_url: "avatar.jpg",
+          is_verified: true,
+          review_count: 12,
+          passport_points:
+            typeof passportPoints === "number" &&
+            Number.isFinite(passportPoints) &&
+            passportPoints >= 0
+              ? passportPoints
+              : null,
+        },
+      });
+    }
+  );
+
+  it.each([null, {}, { id: 42 }, { id: " " }])(
+    "keeps notifications with missing or invalid actors (%s)",
+    async (actor) => {
+      mockRpc.mockResolvedValue({
+        data: {
+          events: [
+            {
+              id: "notification-1",
+              createdAt: "2026-09-18T00:00:00Z",
+              kind: "admin_message",
+              actor,
+              body: "Club news",
+              data: { url: "/passport" },
+            },
+          ],
+        },
+        error: null,
+      });
+      const page = await fetchActivityPage();
+      expect(page.events).toHaveLength(1);
+      expect(page.events[0]).toMatchObject({
+        actor: null,
+        body: "Club news",
+        data: { url: "/passport" },
+      });
+    }
+  );
+
+  it("keeps the Someone fallback and uses safe avatar defaults", async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        events: [
+          {
+            id: "notification-1",
+            createdAt: "2026-09-18T00:00:00Z",
+            kind: "user_followed",
+            actor: {
+              id: "actor-1",
+              avatarUrl: {},
+              isVerified: "true",
+              passportPoints: 0,
+            },
+          },
+        ],
+      },
+      error: null,
+    });
+    const page = await fetchActivityPage();
+    expect(page.events[0].actor).toEqual({
+      id: "actor-1",
+      username: "Someone",
+      avatar_url: null,
+      is_verified: false,
+      review_count: 0,
+      passport_points: 0,
+    });
   });
 
   it("refreshes once the realtime Activity subscription is ready", () => {

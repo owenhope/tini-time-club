@@ -8,7 +8,7 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import type { ActivityDisplayRow } from "@/types/activity";
-import Avatar from "@/components/shared/Avatar";
+import MemberAvatar from "@/components/shared/MemberAvatar";
 import FollowButton from "@/components/shared/FollowButton";
 import VerifiedName from "@/components/shared/VerifiedName";
 import { formatRelativeDate } from "@/utils/helpers";
@@ -109,7 +109,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
           >
             <VerifiedName
               name={actor?.username ?? "Someone"}
-              isVerified={actor?.isVerified}
+              isVerified={actor?.is_verified}
               badgeSize={13}
               textStyle={styles.actorNameText}
             />
@@ -155,12 +155,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
             accessibilityLabel={`Open ${actor.username}'s profile`}
             hitSlop={6}
           >
-            <Avatar
-              avatarPath={actor.avatarUrl}
-              username={actor.username}
-              size={32}
-              reviewCount={actor.passportPoints}
-            />
+            <MemberAvatar member={actor} size={32} />
           </Pressable>
         ) : null}
       </View>

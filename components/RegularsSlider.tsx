@@ -5,7 +5,7 @@ import BottomSheet, {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { MemberAvatar, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { makeStyles } from "@/theme";
@@ -89,12 +89,7 @@ export default function RegularsSlider({
               accessibilityRole="link"
               accessibilityLabel={`View ${regular.username}'s profile`}
             >
-              <Avatar
-                avatarPath={regular.avatar_url}
-                username={regular.username}
-                size={42}
-                reviewCount={regular.passport_points}
-              />
+              <MemberAvatar member={regular} size={42} />
               <View style={styles.identity}>
                 <VerifiedName
                   name={regular.username}

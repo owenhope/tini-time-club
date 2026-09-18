@@ -89,7 +89,7 @@ jest.mock("@/components/shared", () => {
   const { Text: RNText } =
     jest.requireActual<typeof import("react-native")>("react-native");
   return {
-    Avatar: () => null,
+    MemberAvatar: () => null,
     Badge: () => null,
     RatingPips: () => null,
     PIPS_MAX: 5,

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
-import { supabase } from "@/utils/supabase";
+import {
+  getFollowProfiles,
+  type FollowDirection,
+} from "@/services/memberListService";
 import ProfileList, { ProfileType } from "@/components/ProfileList";
 import { useLocalSearchParams } from "expo-router";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 
-export type FollowDirection = "followers" | "following";
+export type { FollowDirection } from "@/services/memberListService";
 
 /**
  * Shared implementation for the follower/following lists.
@@ -38,41 +41,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
       setError(null);
       setProfiles([]);
       try {
-        const { data: userProfile, error: userError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", username)
-          .eq("deleted", false)
-          .single();
-
-        if (userError || !userProfile) {
-          reportError("Error fetching user profile:", userError);
-          if (!cancelled) setError("We couldn't load this profile.");
-          return;
-        }
-
-        // followers: people following them. following: people they follow.
-        const joinColumn = isFollowers
-          ? "profiles!followers_follower_id_fkey(id, username, avatar_url, is_verified, review_count, passport_points)"
-          : "profiles!followers_following_id_fkey(id, username, avatar_url, is_verified, review_count, passport_points)";
-        const matchColumn = isFollowers ? "following_id" : "follower_id";
-
-        const { data, error: listError } = await supabase
-          .from("followers")
-          .select(joinColumn)
-          .eq(matchColumn, userProfile.id)
-          // Cap so a large account can't pull an unbounded list in one shot.
-          .limit(200);
-
-        if (listError) {
-          reportError(`Error fetching ${noun}:`, listError);
-          if (!cancelled) setError(`We couldn't load ${noun}.`);
-          return;
-        }
-
-        const list =
-          (data as any[])?.map((row: any) => row.profiles).filter(Boolean) ??
-          [];
+        const list = await getFollowProfiles(username, direction);
         if (!cancelled) setProfiles(list);
       } catch (err) {
         reportError(`Unexpected error fetching ${noun}:`, err);
@@ -86,7 +55,7 @@ const UserFollowList = ({ direction }: { direction: FollowDirection }) => {
     return () => {
       cancelled = true;
     };
-  }, [username, isFollowers, noun, retryCount]);
+  }, [username, direction, noun, retryCount]);
 
   if (loading) {
     return (

@@ -12,7 +12,7 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import {
-  Avatar,
+  MemberAvatar,
   MartiniIcon,
   RatingPips,
   SectionHeader,
@@ -579,13 +579,7 @@ const Location = () => {
                               index > 0 && styles.regularAvatarOverlap,
                             ]}
                           >
-                            <Avatar
-                              avatarPath={regular.avatar_url}
-                              username={regular.username}
-                              reviewCount={regular.passport_points}
-                              size={32}
-                              onInk
-                            />
+                            <MemberAvatar member={regular} size={32} onInk />
                           </View>
                         ))}
                       </View>

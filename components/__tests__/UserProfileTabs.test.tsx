@@ -12,6 +12,9 @@ const mockTargetProfile = {
 };
 
 const mockLoad = jest.fn(async () => undefined);
+const mockSignedInProfile = { id: "member-1", username: "olive" };
+const mockSetFollowersCount = jest.fn();
+const mockSetFollowingCount = jest.fn();
 
 jest.mock("@/utils/supabase", () => {
   const relation = {
@@ -31,7 +34,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/context/profile-context", () => ({
-  useProfile: () => ({ profile: { id: "member-1", username: "olive" } }),
+  useProfile: () => ({ profile: mockSignedInProfile }),
 }));
 
 jest.mock("@/context/membership-context", () => ({
@@ -54,8 +57,8 @@ jest.mock("@/hooks/useProfileScreenData", () => ({
     types: [],
     followersCount: 7,
     followingCount: 3,
-    setFollowersCount: jest.fn(),
-    setFollowingCount: jest.fn(),
+    setFollowersCount: mockSetFollowersCount,
+    setFollowingCount: mockSetFollowingCount,
     loadFollowCounts: mockLoad,
   }),
 }));
@@ -150,4 +153,5 @@ it("renders another member's Reviews and Regulars tabs inside the profile header
   expect(
     header.findAllByProps({ testID: "profile-content-tabs" }).length
   ).toBeGreaterThan(0);
+  act(() => tree!.unmount());
 });

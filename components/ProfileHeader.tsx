@@ -1,3 +1,4 @@
+import { useMemberPoints } from "@/hooks/useMemberPoints";
 import React from "react";
 import {
   Animated,
@@ -7,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Avatar, StatCard } from "@/components/shared";
+import { MemberAvatar, StatCard } from "@/components/shared";
 import { RankGradient } from "@/components/passport/rank-gradient";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
@@ -38,7 +39,7 @@ interface ProfileHeaderProps {
   avatarLoading?: boolean;
   avatarError?: string | null;
   /** Development-only visual override used by the profile rank preview. */
-  rankPreviewCount?: number;
+  rankPreviewPassportPoints?: number;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
   /** Spirit/type chips shown inside the compact taste-profile panel. */
@@ -102,7 +103,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onAvatarLongPress,
   avatarLoading = false,
   avatarError = null,
-  rankPreviewCount,
+  rankPreviewPassportPoints,
   onFollowersPress,
   onFollowingPress,
   tags,
@@ -120,13 +121,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const styles = useStyles();
   const { colors } = useTheme();
 
+  const passportPoints = useMemberPoints(profile);
   if (!profile) return null;
 
   const reviewCount = profile.review_count ?? reviewsCount;
   // Passport awards are permanent and now provide the club-wide rank score.
-  const rankCount = profile.passport_points ?? 0;
-  const displayedRankCount = rankPreviewCount ?? rankCount;
-  const rank = getRankProgress(displayedRankCount);
+  const displayedPassportPoints = rankPreviewPassportPoints ?? passportPoints;
+  const rank = getRankProgress(displayedPassportPoints);
   const canPressAvatar = Boolean(onAvatarPress);
   const displayName = profile.name?.trim();
   const shouldShowDisplayName =
@@ -221,11 +222,17 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               }
               accessibilityState={{ busy: avatarLoading }}
             >
-              <Avatar
-                avatarPath={profile.avatar_url}
-                username={profile.username}
+              <MemberAvatar
+                member={{
+                  ...profile,
+                  // A developer preview is a sample, not live member state.
+                  id:
+                    rankPreviewPassportPoints === undefined
+                      ? profile.id
+                      : undefined,
+                  passport_points: displayedPassportPoints,
+                }}
                 size={AVATAR_SIZE}
-                reviewCount={displayedRankCount}
                 onInk
               />
               {avatarLoading && (
@@ -236,7 +243,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </Pressable>
             {/* The avatar tier chip stands in only when the rank stack below
                 (progress bar + Passport entry) isn't rendered. */}
-            {rank.tier && !(rankAction || rank.next) ? (
+            {rank?.tier && !(rankAction || rank.next) ? (
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{rank.tier.name}</Text>
               </View>
@@ -279,14 +286,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
         {/* The rank progress and Passport entry show on every member's
             profile — the journey is public — not just your own. */}
-        {rank.next || rankAction ? (
+        {rank?.next || rankAction ? (
           <View style={styles.rankStack}>
-            {rank.next ? (
+            {rank?.next ? (
               <View style={styles.rankProgress}>
                 <View style={styles.rankLabels}>
-                  <Text style={styles.rankCount}>
-                    {rank.tier?.name ?? "Well"} · {displayedRankCount}{" "}
-                    {displayedRankCount === 1 ? "point" : "points"}
+                  <Text style={styles.rankPoints}>
+                    {rank.tier?.name ?? "Well"} · {displayedPassportPoints}{" "}
+                    {displayedPassportPoints === 1 ? "point" : "points"}
                   </Text>
                   <Text style={styles.rankRemaining}>
                     {rank.remaining} pts to {rank.next.name}
@@ -295,13 +302,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <View
                   style={styles.rankTrack}
                   accessibilityRole="progressbar"
-                  accessibilityLabel={`${rank.tier?.name ?? "Well"} rank, ${displayedRankCount} Passport points, ${rank.remaining} points to ${rank.next.name}`}
+                  accessibilityLabel={`${rank.tier?.name ?? "Well"} rank, ${displayedPassportPoints} Passport points, ${rank.remaining} points to ${rank.next.name}`}
                   accessibilityValue={{
                     // The drawn bar is cumulative (count / next.min), so the
                     // announced range starts at zero to match.
                     min: 0,
                     max: rank.next.min,
-                    now: displayedRankCount,
+                    now: displayedPassportPoints ?? undefined,
                   }}
                 >
                   <View
@@ -411,7 +418,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "baseline" as const,
     gap: t.spacing.sm,
   },
-  rankCount: {
+  rankPoints: {
     ...t.typography.label,
     color: t.colors.onHeaderBrand,
     textTransform: "uppercase" as const,

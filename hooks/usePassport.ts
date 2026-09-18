@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef, useMemo } from "react";
+import { useProfile } from "@/context/profile-context";
+import { useMemberPoints } from "@/hooks/useMemberPoints";
 import { useFocusEffect } from "expo-router";
 import {
   getMemberPassport,
@@ -9,21 +11,41 @@ import { reportError } from "@/utils/log";
 
 /**
  * The signed-in member's Passport, or — given a profileId — another member's
- * (read-only; their awards reconcile on their own device).
+ * with access checks and award reconciliation owned by the server.
  */
 export function usePassport(profileId?: string | null) {
-  const [passport, setPassport] = useState<Passport | null>(null);
+  const { profile } = useProfile();
+  const ownerId = profileId ?? profile?.id;
+  const requestRef = useRef(0);
+  const [result, setResult] = useState<{
+    ownerId: string | undefined;
+    passport: Passport;
+  } | null>(null);
+  const passport =
+    result?.ownerId === ownerId ? (result?.passport ?? null) : null;
+  const points = useMemberPoints({
+    id: ownerId,
+    passport_points: passport?.points,
+  });
+  const displayedPassport = useMemo(
+    () => (passport ? { ...passport, points } : null),
+    [passport, points]
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    const request = ++requestRef.current;
     setLoading(true);
     setError(null);
     try {
-      setPassport(
-        await (profileId ? getMemberPassport(profileId) : getMyPassport())
-      );
+      const loaded = await (profileId
+        ? getMemberPassport(profileId)
+        : getMyPassport());
+      if (request === requestRef.current)
+        setResult({ ownerId, passport: loaded });
     } catch (cause) {
+      if (request !== requestRef.current) return;
       reportError("Unable to load Martini Passport:", cause);
       setError(
         profileId
@@ -31,15 +53,23 @@ export function usePassport(profileId?: string | null) {
           : "We couldn't load your Passport. Pull to try again."
       );
     } finally {
-      setLoading(false);
+      if (request === requestRef.current) setLoading(false);
     }
-  }, [profileId]);
+  }, [profileId, ownerId]);
 
   useFocusEffect(
     useCallback(() => {
       void refresh();
+      return () => {
+        requestRef.current++;
+      };
     }, [refresh])
   );
 
-  return { passport, loading, error, refresh };
+  return {
+    passport: displayedPassport,
+    loading,
+    error,
+    refresh,
+  };
 }

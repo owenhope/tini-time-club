@@ -82,7 +82,7 @@ export default function PassportScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const bottom = useNativeTabBarContentInset();
-  const passportPoints = passport?.points ?? 0;
+  const passportPoints = passport?.points;
   const rank = getRankProgress(passportPoints);
   const sections = useMemo(() => {
     const result = new Map<
@@ -205,10 +205,14 @@ export default function PassportScreen() {
                 Current rank
               </AppText>
               <AppText variant="title" style={styles.rankValue}>
-                {rank.tier?.name ?? "Well"}
+                {rank?.tier?.name ?? "—"}
               </AppText>
               <AppText variant="caption" tone="secondary">
-                {rank.next ? `Next Rank: ${rank.next.name}` : "Highest rank"}
+                {rank
+                  ? rank.next
+                    ? `Next Rank: ${rank.next.name}`
+                    : "Highest rank"
+                  : "Rank unavailable"}
               </AppText>
             </View>
             <View style={styles.rankMetric}>
@@ -216,12 +220,14 @@ export default function PassportScreen() {
                 Passport points
               </AppText>
               <AppText variant="title" style={styles.rankValue}>
-                {passportPoints}
+                {passportPoints ?? "—"}
               </AppText>
               <AppText variant="caption" tone="secondary">
-                {rank.next
-                  ? `${rank.remaining} points to ${rank.next.name}`
-                  : "Top rank unlocked"}
+                {!rank
+                  ? "Points unavailable"
+                  : rank.next
+                    ? `${rank.remaining} points to ${rank.next.name}`
+                    : "Top rank unlocked"}
               </AppText>
             </View>
           </View>

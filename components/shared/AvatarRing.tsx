@@ -12,8 +12,8 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { getRankTier } from "@/utils/ranking";
 
 interface AvatarRingProps {
-  /** Active review count driving the tier; nullish counts as zero. */
-  reviewCount?: number | null;
+  /** Passport points driving the tier; unknown points render without a ring. */
+  passportPoints?: number | null;
   /** Diameter of the avatar being wrapped. */
   size: number;
   children: React.ReactNode;
@@ -26,8 +26,8 @@ const getBorderWidth = (size: number): number => {
 };
 
 /** Extra pixels AvatarRing adds around each edge of an avatar. */
-const ringInset = (reviewCount?: number | null, size = 40): number =>
-  getRankTier(reviewCount) ? getBorderWidth(size) + 1 : 0;
+const ringInset = (passportPoints?: number | null, size = 40): number =>
+  getRankTier(passportPoints) ? getBorderWidth(size) + 1 : 0;
 
 const ROTATION_DURATION_MS = 6000;
 // SVG strokes are centered on their path. Leave a small inset between the
@@ -41,11 +41,11 @@ const STROKE_VIEWPORT_INSET = 1;
  * itself stays, so tiers remain distinguishable).
  */
 const AvatarRing: React.FC<AvatarRingProps> = ({
-  reviewCount,
+  passportPoints,
   size,
   children,
 }) => {
-  const tier = getRankTier(reviewCount);
+  const tier = getRankTier(passportPoints);
   // SVG gradient ids are document-global; scope per instance so a feed of
   // rings doesn't resolve every stroke to the first mounted tier. useId's
   // colons are stripped — they're invalid inside a url(#...) reference.
@@ -96,7 +96,7 @@ const AvatarRing: React.FC<AvatarRingProps> = ({
 
   if (!tier) return <>{children}</>;
 
-  const inset = ringInset(reviewCount, size);
+  const inset = ringInset(passportPoints, size);
   const diameter = size + inset * 2;
   const borderWidth = getBorderWidth(size);
   const center = diameter / 2;

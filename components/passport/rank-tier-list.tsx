@@ -19,7 +19,7 @@ export function RankTierList({ selectable = false }: { selectable?: boolean }) {
     <View style={styles.ranks}>
       {RANK_TIERS.map((tier, index) => (
         <View key={tier.key} style={styles.rankCard}>
-          <AvatarRing reviewCount={tier.min} size={52}>
+          <AvatarRing passportPoints={tier.min} size={52}>
             <View style={styles.avatarCore}>
               <Ionicons name="person" size={25} color={colors.onInk} />
             </View>

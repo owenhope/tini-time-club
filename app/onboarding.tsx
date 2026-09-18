@@ -489,7 +489,6 @@ export default function Onboarding() {
                         username={username.trim()}
                         fallbackText="TT"
                         size={112}
-                        showRing={false}
                       />
                     )}
                     <View style={styles.avatarBadge}>

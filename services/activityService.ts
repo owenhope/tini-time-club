@@ -1,3 +1,4 @@
+import { decodeMemberSummary } from "@/utils/memberSummary";
 import imageCache from "@/utils/imageCache";
 import { supabase } from "@/utils/supabase";
 import { isActivityKind } from "@/types/activity";
@@ -14,9 +15,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const stringOrNull = (value: unknown): string | null =>
   typeof value === "string" && value.length > 0 ? value : null;
 
-const stringValue = (value: unknown, fallback = "") =>
-  typeof value === "string" ? value : fallback;
-
 const identifierString = (value: unknown): string | null => {
   if (typeof value === "string" && value.length > 0) return value;
   return typeof value === "number" && Number.isFinite(value)
@@ -28,14 +26,23 @@ const numberValue = (value: unknown, fallback = 0) =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
 const decodeActor = (value: unknown): ActivityActor | null => {
-  if (!isRecord(value) || !stringOrNull(value.id)) return null;
+  if (!isRecord(value)) return null;
+  const member = decodeMemberSummary({
+    id: value.id,
+    // Keep Activity's existing prose fallback while sharing member validation.
+    username:
+      typeof value.username === "string" && value.username.trim()
+        ? value.username
+        : "Someone",
+    avatar_url: value.avatarUrl,
+    is_verified: value.isVerified,
+    review_count: value.reviewCount,
+    passport_points: value.passportPoints,
+  });
+  if (!member) return null;
   return {
-    id: value.id as string,
-    username: stringValue(value.username, "Someone"),
-    avatarUrl: stringOrNull(value.avatarUrl),
-    isVerified: value.isVerified === true,
-    reviewCount: numberValue(value.reviewCount),
-    passportPoints: numberValue(value.passportPoints),
+    ...member,
+    review_count: member.review_count ?? 0,
   };
 };
 

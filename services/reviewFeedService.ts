@@ -1,3 +1,4 @@
+import { decodeReviewMembers } from "@/utils/reviewMembers";
 import type { Review } from "@/types/types";
 import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
@@ -54,11 +55,11 @@ const decodeReview = (value: unknown): Review | null => {
   const location = isRecord(value.location)
     ? { ...value.location, id: identifier(value.location.id) ?? "" }
     : value.location;
-  return {
+  return decodeReviewMembers({
     ...(value as unknown as Review),
     id,
     location: location as Review["location"],
-  };
+  });
 };
 
 const decodePage = (value: unknown): ReviewPage => {

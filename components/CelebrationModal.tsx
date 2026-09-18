@@ -11,20 +11,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Avatar } from "@/components/shared";
+import { MemberAvatar, type AvatarMember } from "@/components/shared";
 import { makeStyles } from "@/theme";
 import { logCelebrationEvent, type Achievement } from "@/utils/celebrations";
 
 interface CelebrationModalProps {
   /** Shown one at a time; dismissing the last one closes the modal. */
   achievements: Achievement[];
-  profile: {
-    id?: string | null;
-    username?: string | null;
-    avatar_url?: string | null;
-  } | null;
-  /** Fresh review count so the celebrated ring matches the new tier. */
-  reviewCount: number | null;
+  member: AvatarMember | null;
   onClose: () => void;
   previewMode?: boolean;
 }
@@ -51,8 +45,7 @@ const copyFor = (achievement: Achievement) =>
  */
 const CelebrationModal: React.FC<CelebrationModalProps> = ({
   achievements,
-  profile,
-  reviewCount,
+  member,
   onClose,
   previewMode = false,
 }) => {
@@ -106,12 +99,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       >
         <View style={styles.centerContent}>
           <Animated.View style={[styles.avatarWell, avatarStyle]}>
-            <Avatar
-              avatarPath={profile?.avatar_url}
-              username={profile?.username ?? undefined}
-              size={AVATAR_SIZE - 12}
-              reviewCount={reviewCount}
-            />
+            <MemberAvatar member={member} size={AVATAR_SIZE - 12} />
           </Animated.View>
           <Animated.View style={[styles.textBlock, textStyle]}>
             <Text style={styles.headline}>{headline}</Text>

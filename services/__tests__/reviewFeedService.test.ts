@@ -73,6 +73,60 @@ describe("getReviewPage", () => {
     });
   });
 
+  it.each(["member", "visitor"])(
+    "normalizes authors and preview commenters on %s pages",
+    async (viewer) => {
+      const payload = {
+        reviews: [
+          {
+            ...review,
+            profile: { ...review.profile, passport_points: 500 },
+            recent_comments: [
+              {
+                ...review.recent_comments[0],
+                profile: {
+                  ...review.recent_comments[0].profile,
+                  passport_points: 0,
+                },
+              },
+            ],
+          },
+        ],
+      };
+      mockGetFeedPage.mockResolvedValue(payload);
+      mockRpc.mockResolvedValue({ data: payload, error: null });
+      const page = await getReviewPage({
+        viewerId: viewer === "member" ? "viewer-1" : undefined,
+      });
+      expect(page.reviews[0].profile).toMatchObject({
+        passport_points: 500,
+        review_count: 10,
+      });
+      expect(page.reviews[0].recent_comments?.[0].profile).toMatchObject({
+        passport_points: 0,
+        review_count: 4,
+      });
+    }
+  );
+
+  it("keeps review content without assigning a mismatched author's rank", async () => {
+    mockGetFeedPage.mockResolvedValue({
+      reviews: [
+        {
+          ...review,
+          profile: {
+            id: "wrong-member",
+            username: "wrong",
+            passport_points: 1000,
+          },
+        },
+      ],
+    });
+    const page = await getReviewPage({});
+    expect(page.reviews[0].profile).toBeUndefined();
+    expect(page.reviews[0].comment).toBe(review.comment);
+  });
+
   it("loads an anonymous cursor page through the public adapter", async () => {
     mockGetFeedPage.mockResolvedValue({
       reviews: [{ ...review, image_url: "https://signed.test/public.jpg" }],

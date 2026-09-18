@@ -10,6 +10,8 @@ export { default as Input } from "./Input";
 export type { InputProps, InputSize, InputVariant, InputType } from "./Input";
 
 export { default as Avatar } from "./Avatar";
+export { default as MemberAvatar } from "./MemberAvatar";
+export type { AvatarMember } from "./MemberAvatar";
 
 export { default as MartiniIcon } from "./MartiniIcon";
 export type { MartiniIconProps } from "./MartiniIcon";

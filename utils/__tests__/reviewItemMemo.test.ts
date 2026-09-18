@@ -97,8 +97,8 @@ describe("ReviewItem memo comparison", () => {
 
   it.each([
     ["timestamp", (next: Review) => (next.inserted_at = "2026-08-18")],
-    ["username", (next: Review) => (next.profile.username = "new-name")],
-    ["avatar", (next: Review) => (next.profile.avatar_url = "new.jpg")],
+    ["username", (next: Review) => (next.profile!.username = "new-name")],
+    ["avatar", (next: Review) => (next.profile!.avatar_url = "new.jpg")],
     ["venue", (next: Review) => (next.location.name = "New Bar")],
     ["spirit", (next: Review) => (next.spirit.name = "Vodka")],
     ["type", (next: Review) => (next.type.name = "Dirty")],

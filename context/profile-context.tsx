@@ -1,9 +1,13 @@
+import { useMemberPoints } from "@/hooks/useMemberPoints";
+import { clearMemberPoints } from "@/utils/memberPoints";
+import { normalizeProfile } from "@/utils/normalizeProfile";
 import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useRef,
+  useMemo,
   useState,
 } from "react";
 import { Alert } from "react-native";
@@ -62,6 +66,26 @@ export const ProfileProvider = ({
   children: React.ReactNode;
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const confirmedPoints = useMemberPoints(profile);
+  const displayedProfile = useMemo(
+    () =>
+      profile && confirmedPoints !== profile.passport_points
+        ? { ...profile, passport_points: confirmedPoints }
+        : profile,
+    [profile, confirmedPoints]
+  );
+  const profileId = profile?.id;
+  const profilePoints = profile?.passport_points;
+  useEffect(() => {
+    if (
+      profileId &&
+      confirmedPoints != null &&
+      confirmedPoints !== profilePoints
+    ) {
+      // Prevent persisted snapshots or in-flight cache writes restoring old totals.
+      void authCache.clearProfileCache();
+    }
+  }, [profileId, profilePoints, confirmedPoints]);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -70,6 +94,7 @@ export const ProfileProvider = ({
   // still resolving. Ignore results from that older auth generation so a
   // signed-out user cannot be put back into the member feed.
   const authGenerationRef = useRef(0);
+  const authOwnerRef = useRef<string | null>(null);
   const router = useRouter();
 
   /**
@@ -77,6 +102,8 @@ export const ProfileProvider = ({
    * (so the stale session can't keep failing every write) and explain why.
    */
   const handleAccountGone = useCallback(async () => {
+    authOwnerRef.current = null;
+    clearMemberPoints();
     setProfile(null);
     setProfileError(null);
     await unregisterPushNotificationsAsync();
@@ -93,6 +120,8 @@ export const ProfileProvider = ({
   }, [router]);
 
   const beginSignOut = useCallback(() => {
+    authOwnerRef.current = null;
+    clearMemberPoints();
     authGenerationRef.current += 1;
     setAuthenticated(false);
     setProfile(null);
@@ -108,8 +137,9 @@ export const ProfileProvider = ({
       const cachedProfile = await authCache.getProfile();
       if (cachedProfile) {
         if (!isCurrentRequest()) return;
+        authOwnerRef.current = cachedProfile.id;
         setAuthenticated(true);
-        setProfile(cachedProfile);
+        setProfile(normalizeProfile(cachedProfile));
         setProfileError(null);
         setLoading(false);
         return;
@@ -148,8 +178,9 @@ export const ProfileProvider = ({
       }
 
       if (!isCurrentRequest()) return;
+      authOwnerRef.current = user.id;
       setAuthenticated(true);
-      setProfile(data);
+      setProfile(normalizeProfile(data));
       setProfileError(null);
     } catch (error) {
       reportError("Error in fetchProfile:", error);
@@ -182,6 +213,11 @@ export const ProfileProvider = ({
       }
 
       if (event === "SIGNED_IN" && session) {
+        if (authOwnerRef.current !== session.user.id) {
+          clearMemberPoints();
+          setProfile(null);
+        }
+        authOwnerRef.current = session.user.id;
         authGenerationRef.current += 1;
         setAuthenticated(true);
         setLoading(true);
@@ -210,7 +246,7 @@ export const ProfileProvider = ({
         return { error: result.error };
       }
 
-      setProfile(result.data);
+      setProfile(normalizeProfile(result.data));
       return { data: result.data };
     },
     [profile, handleAccountGone]
@@ -245,7 +281,7 @@ export const ProfileProvider = ({
         return { error };
       }
 
-      if (data) setProfile(data);
+      if (data) setProfile(normalizeProfile(data));
       return { data };
     } catch (error) {
       reportError("Unexpected error in acceptEULA:", error);
@@ -258,7 +294,7 @@ export const ProfileProvider = ({
   return (
     <ProfileContext.Provider
       value={{
-        profile,
+        profile: displayedProfile,
         authenticated,
         beginSignOut,
         setProfile,

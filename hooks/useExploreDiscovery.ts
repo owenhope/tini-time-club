@@ -133,7 +133,7 @@ export function useExploreDiscovery({
             item.total_ratings > 0 && item.rating != null
               ? item.rating
               : undefined,
-          regulars: item.regulars as Regular[],
+          regulars: item.regulars,
         }));
         setLocations((current) =>
           append ? [...current, ...nextLocations] : nextLocations

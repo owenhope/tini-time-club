@@ -234,7 +234,7 @@ function ReviewComposer() {
     null
   );
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [celebrationReviewCount, setCelebrationReviewCount] = useState<
+  const [celebrationPassportPoints, setCelebrationPassportPoints] = useState<
     number | null
   >(null);
   const [postedReviewId, setPostedReviewId] = useState<string | null>(null);
@@ -792,12 +792,12 @@ function ReviewComposer() {
         locationId: Number(submission.locationId),
         locationName: submission.locationName,
       });
-      showPassportStamps(submission.passportStamps, submission.passportPoints);
+      showPassportStamps(submission.passportStamps, profile.id);
 
       completePostReview({
         hasAchievements: earnedAchievements.length > 0,
         showCelebration: () => {
-          setCelebrationReviewCount(submission.passportPoints);
+          setCelebrationPassportPoints(submission.passportPoints);
           setAchievements(earnedAchievements);
         },
         navigateToFeed: () =>
@@ -814,7 +814,7 @@ function ReviewComposer() {
     const reviewId = postedReviewId;
 
     setAchievements([]);
-    setCelebrationReviewCount(null);
+    setCelebrationPassportPoints(null);
     requestAnimationFrame(() => {
       router.dismissTo(feedRouteAfterPost(reviewId));
       void refreshProfile();
@@ -1223,8 +1223,11 @@ function ReviewComposer() {
       {achievements.length > 0 && (
         <CelebrationModal
           achievements={achievements}
-          profile={profile}
-          reviewCount={celebrationReviewCount}
+          member={
+            profile
+              ? { ...profile, passport_points: celebrationPassportPoints }
+              : null
+          }
           onClose={finishCelebration}
         />
       )}

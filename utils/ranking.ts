@@ -61,13 +61,18 @@ export const RANK_TIERS: readonly RankTier[] = [
   },
 ] as const;
 
-/** The tier held at a given Passport point total. Nullish counts as zero, and the
-    first tier starts at zero, so this never returns null in practice; the
-    nullable type is kept so callers stay guarded if the floor moves. */
+/** Missing or invalid totals are unknown, never a confirmed starting rank. */
+export const normalizePassportPoints = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+
+/** The tier held at a known Passport point total, or null when unknown. */
 export const getRankTier = (
   passportPoints: number | null | undefined
 ): RankTier | null => {
-  const count = passportPoints ?? 0;
+  const count = normalizePassportPoints(passportPoints);
+  if (count === null) return null;
   let held: RankTier | null = null;
   for (const tier of RANK_TIERS) {
     if (count >= tier.min) held = tier;
@@ -79,7 +84,7 @@ export interface RankProgress {
   tier: RankTier | null;
   /** The next tier up, or null at the top. */
   next: RankTier | null;
-  /** Reviews still needed to reach `next` (0 when at the top). */
+  /** Passport points still needed to reach `next` (0 when at the top). */
   remaining: number;
   /** 0..1 cumulative progress toward the next tier's point requirement. */
   fraction: number;
@@ -88,8 +93,9 @@ export interface RankProgress {
 /** Where a Passport point total sits between its tier and the next. */
 export const getRankProgress = (
   passportPoints: number | null | undefined
-): RankProgress => {
-  const count = Math.max(0, passportPoints ?? 0);
+): RankProgress | null => {
+  const count = normalizePassportPoints(passportPoints);
+  if (count === null) return null;
   const tier = getRankTier(count);
   const next = RANK_TIERS.find((t) => t.min > count) ?? null;
 

@@ -1,4 +1,5 @@
 import authCache from "@/utils/authCache";
+import { clearMemberPoints } from "@/utils/memberPoints";
 import imageCache from "@/utils/imageCache";
 import databaseService from "@/services/databaseService";
 import { reportError } from "@/utils/log";
@@ -15,6 +16,7 @@ import { reportError } from "@/utils/log";
  * Best-effort: a cache that refuses to clear must not stop the sign-out.
  */
 export const clearUserCaches = async (): Promise<void> => {
+  clearMemberPoints();
   await Promise.allSettled([
     authCache.invalidateCache(),
     databaseService.clearAllCaches(),

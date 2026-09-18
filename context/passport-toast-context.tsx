@@ -1,8 +1,13 @@
+import {
+  beginMemberPointsRead,
+  isMemberPointsReadCurrent,
+} from "@/utils/memberPoints";
 import React, {
   createContext,
   useCallback,
   useEffect,
   useRef,
+  useMemo,
   useState,
 } from "react";
 import { Animated, PanResponder, Pressable, View } from "react-native";
@@ -20,7 +25,10 @@ import { makeStyles } from "@/theme";
 import { routes } from "@/utils/routes";
 
 type PassportToastContextValue = {
-  showPassportStamps: (stamps: PassportStampRecord[], points?: number) => void;
+  showPassportStamps: (
+    stamps: PassportStampRecord[],
+    profileId: string
+  ) => void;
 };
 
 export const PassportToastContext = createContext<PassportToastContextValue>({
@@ -56,65 +64,85 @@ export function PassportToastProvider({
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { setProfile } = useProfile();
-  const [queue, setQueue] = useState<PassportStampRecord[]>([]);
+  const { profile } = useProfile();
+  const profileId = profile?.id;
+  const scope = useMemo(
+    () => (profileId ? beginMemberPointsRead() : null),
+    [profileId]
+  );
+  const [queue, setQueue] = useState<{
+    profileId: string;
+    stamps: PassportStampRecord[];
+  }>({ profileId: "", stamps: [] });
   const translateY = useRef(new Animated.Value(-140)).current;
-  const current = queue[0] ?? null;
-  const reconcilingRef = useRef(false);
-  const reconcileAgainRef = useRef(false);
+  const current =
+    queue.profileId === profileId ? (queue.stamps[0] ?? null) : null;
 
   const dismiss = useCallback(() => {
     Animated.timing(translateY, {
       toValue: -160,
       duration: 180,
       useNativeDriver: true,
-    }).start(() => setQueue((items) => items.slice(1)));
+    }).start(() =>
+      setQueue((items) => ({ ...items, stamps: items.stamps.slice(1) }))
+    );
   }, [translateY]);
 
   const showPassportStamps = useCallback(
-    (stamps: PassportStampRecord[], points?: number) => {
-      if (points != null) {
-        setProfile((profile) =>
-          profile && profile.passport_points !== points
-            ? { ...profile, passport_points: points }
-            : profile
-        );
-      }
+    (stamps: PassportStampRecord[], ownerId: string) => {
+      if (ownerId !== profileId || !scope || !isMemberPointsReadCurrent(scope))
+        return;
       if (!stamps.length) return;
       const incoming =
         stamps.length >= SUMMARY_THRESHOLD ? [summaryStamp(stamps)] : stamps;
       setQueue((items) => {
-        const known = new Set(items.map((item) => item.id));
-        return [...items, ...incoming.filter((stamp) => !known.has(stamp.id))];
+        const existing = items.profileId === ownerId ? items.stamps : [];
+        const known = new Set(existing.map((item) => item.id));
+        return {
+          profileId: ownerId,
+          stamps: [
+            ...existing,
+            ...incoming.filter((stamp) => !known.has(stamp.id)),
+          ],
+        };
       });
     },
-    [setProfile]
+    [profileId, scope]
   );
 
-  const reconcile = useCallback(async () => {
-    if (reconcilingRef.current) {
-      reconcileAgainRef.current = true;
-      return;
-    }
-    reconcilingRef.current = true;
-    try {
-      const transition = await reconcileMyPassport();
-      showPassportStamps(transition.unlocked, transition.points);
-    } catch (error) {
-      reportError("Unable to reconcile Passport achievements:", error);
-    } finally {
-      reconcilingRef.current = false;
-      if (reconcileAgainRef.current) {
-        reconcileAgainRef.current = false;
-        void reconcile();
+  useEffect(() => {
+    if (!profileId) return;
+    let active = true;
+    let running = false;
+    let again = false;
+    const reconcile = async () => {
+      if (running) {
+        again = true;
+        return;
       }
-    }
-  }, [showPassportStamps]);
-
-  useEffect(
-    () => subscribeToPassportReconciliationRequests(() => void reconcile()),
-    [reconcile]
-  );
+      running = true;
+      try {
+        do {
+          again = false;
+          const transition = await reconcileMyPassport();
+          if (active)
+            showPassportStamps(transition.unlocked, transition.profileId);
+        } while (active && again);
+      } catch (error) {
+        if (active)
+          reportError("Unable to reconcile Passport achievements:", error);
+      } finally {
+        running = false;
+      }
+    };
+    const unsubscribe = subscribeToPassportReconciliationRequests(
+      () => void reconcile()
+    );
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [profileId, showPassportStamps]);
 
   useEffect(() => {
     if (!current) return;

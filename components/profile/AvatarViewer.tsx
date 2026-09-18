@@ -1,21 +1,17 @@
 import React from "react";
 import { Modal, Pressable, useWindowDimensions } from "react-native";
-import { Avatar } from "@/components/shared";
+import { MemberAvatar, type AvatarMember } from "@/components/shared";
 import { makeStyles } from "@/theme";
 
 interface AvatarViewerProps {
   visible: boolean;
-  avatarPath?: string | null;
-  username?: string | null;
-  reviewCount?: number | null;
+  member?: AvatarMember | null;
   onClose: () => void;
 }
 
 const AvatarViewer: React.FC<AvatarViewerProps> = ({
   visible,
-  avatarPath,
-  username,
-  reviewCount,
+  member,
   onClose,
 }) => {
   const styles = useStyles();
@@ -37,12 +33,7 @@ const AvatarViewer: React.FC<AvatarViewerProps> = ({
         accessibilityLabel="Close profile photo"
       >
         <Pressable style={styles.stage} onPress={() => {}}>
-          <Avatar
-            avatarPath={avatarPath}
-            username={username ?? undefined}
-            size={avatarSize}
-            reviewCount={reviewCount}
-          />
+          <MemberAvatar member={member} size={avatarSize} />
         </Pressable>
       </Pressable>
     </Modal>

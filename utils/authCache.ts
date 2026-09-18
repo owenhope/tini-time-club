@@ -1,3 +1,5 @@
+import { normalizeProfile } from "@/utils/normalizeProfile";
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, supabaseProjectRef } from "./supabase";
 import { reportError } from "./log";
@@ -98,7 +100,7 @@ class AuthCache {
         "is_verified"
       )
     ) {
-      return this.profileCache.profile;
+      return normalizeProfile(this.profileCache.profile);
     }
 
     // Check if request is already pending
@@ -134,8 +136,12 @@ class AuthCache {
       }
 
       if (generation !== this.cacheGeneration) return null;
-      await this.setProfile(data, generation);
-      return generation === this.cacheGeneration ? data : null;
+      const profile = normalizeProfile(data);
+      // Do not make an incomplete legacy response look cache-complete.
+      if (Object.prototype.hasOwnProperty.call(data, "is_verified")) {
+        await this.setProfile(profile, generation);
+      }
+      return generation === this.cacheGeneration ? profile : null;
     } catch (error) {
       reportError("Error fetching profile:", error);
       return null;
@@ -187,10 +193,15 @@ class AuthCache {
 
       if (generation !== this.cacheGeneration)
         return { error: "Profile session changed" };
-      await this.setProfile(data, generation);
+      const profile = normalizeProfile(data);
+      // Do not make an incomplete legacy response look cache-complete.
+      if (Object.prototype.hasOwnProperty.call(data, "is_verified")) {
+        await this.setProfile(profile, generation);
+      }
       if (generation !== this.cacheGeneration)
         return { error: "Profile session changed" };
-      return { data };
+      requestPassportReconciliation();
+      return { data: profile };
     } catch (error) {
       reportError("Error updating profile:", error);
       return { error };

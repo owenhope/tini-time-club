@@ -43,7 +43,7 @@ import { isScreenshotSeed } from "@/utils/screenshotMode";
 interface RankPreviewOption {
   label: string;
   shortLabel: string;
-  count?: number;
+  passportPoints?: number;
   color?: string;
 }
 
@@ -52,7 +52,7 @@ const RANK_PREVIEW_OPTIONS: readonly RankPreviewOption[] = [
   ...RANK_TIERS.map((tier) => ({
     label: tier.name,
     shortLabel: tier.key === "topShelf" ? "Top" : tier.name,
-    count: tier.min,
+    passportPoints: tier.min,
     color: tier.color,
   })),
 ];
@@ -359,7 +359,7 @@ const MemberProfile = () => {
 
   const rankPreview = RANK_PREVIEW_OPTIONS[rankPreviewIndex];
   const actualRankColor =
-    getRankTier(profile?.passport_points ?? 0)?.color ?? colors.borderStrong;
+    getRankTier(profile?.passport_points)?.color ?? colors.borderStrong;
 
   const settingsAction = {
     icon: "settings-outline" as const,
@@ -390,8 +390,8 @@ const MemberProfile = () => {
         onAvatarLongPress={
           __DEV__ ? () => setRankPreviewOpen((open) => !open) : undefined
         }
-        rankPreviewCount={
-          __DEV__ && rankPreviewOpen ? rankPreview.count : undefined
+        rankPreviewPassportPoints={
+          __DEV__ && rankPreviewOpen ? rankPreview.passportPoints : undefined
         }
         onFollowersPress={() =>
           profile?.username && router.push(routes.followers(profile.username))
@@ -431,7 +431,9 @@ const MemberProfile = () => {
               const selected = index === rankPreviewIndex;
               const ringColor =
                 option.color ??
-                (option.count == null ? actualRankColor : colors.border);
+                (option.passportPoints == null
+                  ? actualRankColor
+                  : colors.border);
               return (
                 <TouchableOpacity
                   key={option.label}

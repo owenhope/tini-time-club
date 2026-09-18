@@ -26,6 +26,11 @@ jest.mock("@/services/public-content-service", () => ({
   },
 }));
 
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => undefined) },
+}));
+
 jest.mock("@/utils/log", () => ({
   reportError: jest.fn(),
   warn: jest.fn(),
@@ -62,8 +67,20 @@ it("keeps the replacement request deduplicated when an invalidated read finishes
   expect(single).toHaveBeenCalledTimes(2);
   releases[1]({ data: { id: "member-1", username: "fresh" }, error: null });
   await expect(Promise.all([freshRead, joinedRead])).resolves.toEqual([
-    { id: "member-1", username: "fresh" },
-    { id: "member-1", username: "fresh" },
+    {
+      id: "member-1",
+      username: "fresh",
+      avatar_url: null,
+      is_verified: false,
+      passport_points: null,
+    },
+    {
+      id: "member-1",
+      username: "fresh",
+      avatar_url: null,
+      is_verified: false,
+      passport_points: null,
+    },
   ]);
 });
 
@@ -78,7 +95,13 @@ it("does not reuse a profile read completed after cache invalidation", async () 
         })
     )
     .mockResolvedValue({
-      data: { id: "member-1", username: "fresh" },
+      data: {
+        id: "member-1",
+        username: "fresh",
+        avatar_url: null,
+        is_verified: false,
+        passport_points: null,
+      },
       error: null,
     });
   const query = { select: jest.fn(), eq: jest.fn(), single };
@@ -208,6 +231,7 @@ it("qualifies the profile relationship when creating a comment", async () => {
   };
   const newComment = {
     id: 42,
+    inserted_at: "2026-09-18T00:00:00Z",
     review_id: 9,
     user_id: "author-1",
     body: "Perfectly cold.",
@@ -237,8 +261,88 @@ it("qualifies the profile relationship when creating a comment", async () => {
     })
   ).resolves.toEqual({
     ...newComment,
+    profile: {
+      ...newComment.profile,
+      avatar_url: null,
+      is_verified: false,
+      passport_points: null,
+    },
     likes_count: 0,
     has_liked: false,
   });
   expect(selectedColumns).toContain("profile:profiles!comments_user_id_fkey");
+});
+
+it.each([undefined, null, 0, 500])(
+  "decodes newly posted comment points (%s) like loaded comments",
+  async (points) => {
+    const mention = {
+      profileId: "member-2",
+      username: "twist",
+      start: 7,
+      length: 6,
+    };
+    rpc.mockResolvedValue({
+      data: {
+        id: 43,
+        review_id: 9,
+        user_id: "author-1",
+        body: "Cheers @twist",
+        inserted_at: "2026-09-18T00:00:00Z",
+        profile: {
+          id: "author-1",
+          username: "olive",
+          passport_points: points,
+          review_count: 2,
+        },
+        likes_count: 0,
+        has_liked: false,
+        mentions: [mention],
+      },
+      error: null,
+    });
+    await expect(
+      databaseService.createComment(
+        { review_id: 9, user_id: "author-1", body: "Cheers @twist" },
+        [mention]
+      )
+    ).resolves.toMatchObject({
+      profile: {
+        id: "author-1",
+        passport_points: points ?? null,
+        review_count: 2,
+      },
+      likes_count: 0,
+      has_liked: false,
+      mentions: [mention],
+    });
+  }
+);
+
+it("normalizes member data on visitor review details and cached feeds", async () => {
+  const review = {
+    id: "42",
+    user_id: "member-1",
+    comment: "Cold",
+    profile: {
+      id: "member-1",
+      username: "olive",
+      review_count: 2,
+      passport_points: 500,
+    },
+  };
+  mockGetPublicReview.mockResolvedValue(review);
+  mockGetPublicFeed.mockResolvedValue([review]);
+  expect((await databaseService.getReview("42")).profile).toMatchObject({
+    passport_points: 500,
+    review_count: 2,
+    avatar_url: null,
+  });
+  const first = await databaseService.getReviews({});
+  const cached = await databaseService.getReviews({});
+  expect(first[0].profile).toMatchObject({
+    passport_points: 500,
+    avatar_url: null,
+  });
+  expect(cached).toEqual(first);
 });

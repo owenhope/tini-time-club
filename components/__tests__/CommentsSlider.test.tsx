@@ -124,7 +124,7 @@ jest.mock("@expo/vector-icons", () => {
 });
 
 jest.mock("@/components/shared", () => ({
-  Avatar: () => null,
+  MemberAvatar: () => null,
   VerifiedName: ({ name }: { name: string }) => {
     const ReactActual = jest.requireActual<typeof import("react")>("react");
     const { Text: RNText } =
@@ -273,9 +273,9 @@ it("overlays a vertical member list while composing a mention", async () => {
       id: "member-2",
       username: "olivefriend",
       name: "Olive Friend",
-      avatarUrl: null,
-      isVerified: false,
-      reviewCount: 8,
+      avatar_url: null,
+      is_verified: false,
+      review_count: 8,
       relationship: "following",
     },
   ]);

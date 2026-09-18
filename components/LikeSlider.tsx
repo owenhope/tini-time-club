@@ -5,7 +5,8 @@ import BottomSheet, {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { supabase } from "@/utils/supabase";
+import { getReviewLikers } from "@/services/memberListService";
+import type { MemberSummary } from "@/utils/memberSummary";
 import ProfileList from "@/components/ProfileList";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
@@ -33,7 +34,7 @@ export default function LikesSlider({
     () => [LIKES_SHEET_VISIBLE_HEIGHT + bottomContentInset],
     [bottomContentInset]
   );
-  const [likesUsers, setLikesUsers] = useState<any[]>([]);
+  const [likesUsers, setLikesUsers] = useState<MemberSummary[]>([]);
   // An in-flight fetch and an unliked review both left the list empty, which
   // read as "nobody" for as long as the query took.
   const [loading, setLoading] = useState(true);
@@ -42,25 +43,13 @@ export default function LikesSlider({
     let cancelled = false;
 
     const fetchLikesUsers = async () => {
-      // One embedded query instead of the old likes -> profiles waterfall;
-      // capped so a viral review can't pull an unbounded list.
-      const { data, error } = await supabase
-        .from("likes")
-        .select(
-          "profiles(id, username, avatar_url, is_verified, review_count, passport_points)"
-        )
-        .eq("review_id", reviewId)
-        .limit(200);
-      if (error) {
+      try {
+        const members = await getReviewLikers(reviewId);
+        if (!cancelled) setLikesUsers(members);
+      } catch (error) {
         reportError("Error fetching likes users:", error);
+      } finally {
         if (!cancelled) setLoading(false);
-        return;
-      }
-      if (!cancelled) {
-        setLikesUsers(
-          (data ?? []).map((row: any) => row.profiles).filter(Boolean)
-        );
-        setLoading(false);
       }
     };
 

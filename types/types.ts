@@ -1,3 +1,4 @@
+import type { MemberSummary } from "@/utils/memberSummary";
 /** An option row from the spirits/types lookup tables. */
 export interface NamedOption {
   id: number;
@@ -30,7 +31,7 @@ export interface Profile {
   /** Active review count (trigger-maintained). */
   review_count?: number;
   /** Permanent Passport award points; drives club ranking. */
-  passport_points?: number;
+  passport_points?: number | null;
 }
 
 /** A row from the location_ratings view (aggregates computed server-side). */
@@ -59,7 +60,7 @@ export interface ReviewProfile {
   is_verified?: boolean;
   /** Active review count (trigger-maintained). */
   review_count?: number;
-  passport_points?: number;
+  passport_points?: number | null;
 }
 
 export interface ReviewLocation {
@@ -88,14 +89,9 @@ export interface MentionSpan {
 export type MentionRelationship =
   "mutual" | "following" | "follows_you" | "recent" | "everyone";
 
-export interface MentionCandidate {
-  id: string;
-  username: string;
+export interface MentionCandidate extends MemberSummary {
   name: string | null;
-  avatarUrl: string | null;
-  isVerified: boolean;
-  reviewCount: number;
-  passportPoints: number;
+  review_count: number;
   relationship: MentionRelationship;
 }
 
@@ -127,7 +123,7 @@ export interface Review {
   location: ReviewLocation;
   spirit: NamedOption | { name: string };
   type: NamedOption | { name: string };
-  profile: ReviewProfile;
+  profile?: ReviewProfile;
   // Engagement, computed server-side per viewer.
   likes_count?: number;
   comments_count?: number;

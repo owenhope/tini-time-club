@@ -4,7 +4,7 @@ import type { MentionSpan } from "@/types/types";
 import { mentionPayload, trimMentionBody } from "@/utils/mentions";
 import AnalyticService from "@/services/analyticsService";
 import type { PassportStampRecord } from "@/services/passportService";
-import { decodePassportStamp } from "@/services/passportService";
+import { reconcileMyPassport } from "@/services/passportService";
 
 export type ReviewPublishingStage = "upload" | "database";
 
@@ -44,7 +44,7 @@ export interface PublishedReview {
   locationName: string;
   imagePath: string;
   reviewCount: number;
-  passportPoints: number;
+  passportPoints: number | null;
   rankUp: RankTier | null;
   becameRegular: boolean;
   passportStamps: PassportStampRecord[];
@@ -104,7 +104,7 @@ const decodePublishedReview = (
     locationName,
     imagePath,
     reviewCount,
-    passportPoints: 0,
+    passportPoints: null,
     rankUp: null,
     becameRegular: value.becameRegular === true,
     passportStamps: [],
@@ -176,23 +176,15 @@ export async function publishReview(
   // boundary: the review is already committed and its image must not be
   // removed if this optional follow-up is unavailable.
   try {
-    const { data: passportTransition, error: passportError } =
-      await supabase.rpc("reconcile_my_passport_v1");
-    if (!passportError && isRecord(passportTransition)) {
-      const points = finiteNumber(passportTransition.points) ?? 0;
-      const previousPoints =
-        finiteNumber(passportTransition.previousPoints) ?? 0;
-      const previousTier = getRankTier(previousPoints);
-      const currentTier = getRankTier(points);
-      published.passportPoints = points;
-      published.rankUp =
-        currentTier && currentTier.key !== previousTier?.key
-          ? currentTier
-          : null;
-      published.passportStamps = Array.isArray(passportTransition.unlocked)
-        ? passportTransition.unlocked.map(decodePassportStamp)
-        : [];
-    }
+    const transition = await reconcileMyPassport();
+    const previousTier = getRankTier(transition.previousPoints);
+    const currentTier = getRankTier(transition.points);
+    published.passportPoints = transition.points;
+    published.rankUp =
+      currentTier && previousTier && currentTier.key !== previousTier.key
+        ? currentTier
+        : null;
+    published.passportStamps = transition.unlocked;
   } catch {
     // The Passport screen reconciles again when it opens.
   }

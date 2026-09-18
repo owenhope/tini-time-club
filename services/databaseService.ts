@@ -1,8 +1,14 @@
+import { normalizeProfile } from "@/utils/normalizeProfile";
+import { decodeReviewMembers } from "@/utils/reviewMembers";
+import {
+  decodeComment,
+  decodeCommentList,
+  type DecodedComment,
+} from "@/utils/commentDecoder";
 import { supabase } from "@/utils/supabase";
 import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
 import type {
-  Comment,
   LocationRating,
   NamedOption,
   MentionSpan,
@@ -142,7 +148,7 @@ class DatabaseService {
    * Get user profile
    */
   async getUserProfile(userId: string): Promise<Profile> {
-    return this.query(
+    const profile = await this.query<Profile>(
       `profile_${userId}`,
       async () => {
         const { data, error } = await supabase
@@ -157,6 +163,7 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
+    return normalizeProfile(profile);
   }
 
   /**
@@ -183,7 +190,7 @@ class DatabaseService {
     // of waiting for the next activity-driven reconcile.
     requestPassportReconciliation();
 
-    return data;
+    return normalizeProfile(data);
   }
 
   /**
@@ -262,14 +269,15 @@ class DatabaseService {
     // Visitor rows already carry short-lived, transformed signed URLs from
     // the public-content gateway. Attempting to sign them again would treat a
     // URL as a storage path and fail under the intentionally locked anon role.
-    if (!currentUserId) return reviews ?? [];
+    if (!currentUserId) return (reviews ?? []).map(decodeReviewMembers);
 
     // Hydrate image paths into signed URLs on the way out — after the cache,
     // because signed URLs expire on their own schedule. Every review surface
     // needs this, so it lives here instead of copy-pasted at each call site.
     if (!reviews?.length) return reviews ?? [];
-    const reviewsWithLocationRatings =
-      await this.hydrateReviewLocationRatings(reviews);
+    const reviewsWithLocationRatings = await this.hydrateReviewLocationRatings(
+      reviews.map(decodeReviewMembers)
+    );
     const reviewsWithCommentLikes = await this.hydrateRecentCommentLikes(
       reviewsWithLocationRatings,
       currentUserId
@@ -384,7 +392,9 @@ class DatabaseService {
     currentUserId?: string
   ): Promise<Review> {
     if (!currentUserId) {
-      return publicContentService.getReview(reviewId);
+      return decodeReviewMembers(
+        await publicContentService.getReview(reviewId)
+      );
     }
     const review = await this.query<any>(
       `review_${reviewId}`,
@@ -484,7 +494,7 @@ class DatabaseService {
 
     const imageUrls = await imageCache.getReviewImageUrls([review.image_url]);
     const withImage = {
-      ...review,
+      ...decodeReviewMembers(review),
       image_url: imageUrls[review.image_url] || review.image_url,
     };
     try {
@@ -618,16 +628,18 @@ class DatabaseService {
   async getComments(
     reviewId: string,
     currentUserId?: string
-  ): Promise<Comment[]> {
+  ): Promise<DecodedComment[]> {
     if (!currentUserId) {
-      return publicContentService.getComments(reviewId);
+      return decodeCommentList(
+        await publicContentService.getComments(reviewId)
+      );
     }
     const { data, error } = await supabase.rpc("get_review_comments", {
       p_review_id: Number(reviewId),
     });
 
     if (error) throw error;
-    return (data ?? []) as Comment[];
+    return decodeCommentList(data);
   }
 
   /** Update the editable fields of an owned review. Passing `null` mentions
@@ -693,7 +705,7 @@ class DatabaseService {
   async createComment(
     commentData: any,
     mentions?: MentionSpan[]
-  ): Promise<any> {
+  ): Promise<DecodedComment> {
     if (mentions) {
       const comment = trimMentionBody(String(commentData.body ?? ""), mentions);
       const { data, error } = await supabase.rpc("create_comment_v2", {
@@ -711,7 +723,9 @@ class DatabaseService {
       }
       this.queryCache.delete(`comments_${commentData.review_id}`);
       requestPassportReconciliation();
-      return data;
+      const decoded = decodeComment(data);
+      if (!decoded) throw new Error("Comment returned an invalid response.");
+      return decoded;
     }
 
     const { data, error } = await supabase
@@ -731,7 +745,9 @@ class DatabaseService {
     this.queryCache.delete(`comments_${commentData.review_id}`);
     requestPassportReconciliation();
 
-    return { ...data, likes_count: 0, has_liked: false };
+    const decoded = decodeComment(data);
+    if (!decoded) throw new Error("Comment returned an invalid response.");
+    return { ...decoded, likes_count: 0, has_liked: false };
   }
 
   /**
@@ -865,7 +881,8 @@ class DatabaseService {
 
   /** Public profile projection used only while no member session exists. */
   async getPublicProfileByUsername(username: string) {
-    return publicContentService.getProfile(username);
+    const result = await publicContentService.getProfile(username);
+    return { ...result, profile: normalizeProfile(result.profile) };
   }
 
   /**

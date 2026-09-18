@@ -1,3 +1,10 @@
+import {
+  beginMemberPointsRead,
+  commitMemberPoints,
+  getMemberPoints,
+  isMemberPointsReadCurrent,
+} from "@/utils/memberPoints";
+import { normalizePassportPoints } from "@/utils/ranking";
 import { supabase } from "@/utils/supabase";
 
 export const PASSPORT_STAMP_SHAPES = [
@@ -36,9 +43,11 @@ export type PassportStampRecord = {
   subjectB: number | null;
 };
 
-export type Passport = { points: number; stamps: PassportStampRecord[] };
+export type Passport = { points: number | null; stamps: PassportStampRecord[] };
 export type PassportTransition = {
-  points: number;
+  previousPoints: number | null;
+  profileId: string;
+  points: number | null;
   unlocked: PassportStampRecord[];
 };
 
@@ -64,7 +73,7 @@ export function decodePassport(value: unknown): Passport {
   const root = record(value);
   if (!Array.isArray(root.stamps)) throw new Error("Passport data is invalid.");
   return {
-    points: number(root.points),
+    points: normalizePassportPoints(root.points),
     stamps: root.stamps.map(decodePassportStamp),
   };
 }
@@ -94,29 +103,71 @@ export function decodePassportStamp(raw: unknown): PassportStampRecord {
   };
 }
 
-export async function getMyPassport(): Promise<Passport> {
-  const { data, error } = await supabase.rpc("get_my_passport_v1");
+/** Bind self-scoped RPC results to the session that started them. */
+async function ownPassportRead() {
+  const read = beginMemberPointsRead();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
   if (error) throw error;
-  return decodePassport(data);
+  if (!session?.user.id || !isMemberPointsReadCurrent(read))
+    throw new Error("Passport session changed.");
+  return { read, profileId: session.user.id };
 }
 
-/** Another member's Passport — read-only, never reconciles their awards. */
+function confirmPoints(
+  read: ReturnType<typeof beginMemberPointsRead>,
+  profileId: string,
+  points: number | null
+) {
+  if (!isMemberPointsReadCurrent(read))
+    throw new Error("Passport session changed.");
+  commitMemberPoints(read, profileId, points);
+  return getMemberPoints(profileId) ?? points;
+}
+
+export async function getMyPassport(): Promise<Passport> {
+  const { read, profileId } = await ownPassportRead();
+  const { data, error } = await supabase.rpc("get_my_passport_v1");
+  if (error) throw error;
+  const passport = decodePassport(data);
+  return {
+    ...passport,
+    points: confirmPoints(read, profileId, passport.points),
+  };
+}
+
+/** The server validates access and reconciles awards before returning the member's Passport. */
 export async function getMemberPassport(profileId: string): Promise<Passport> {
+  const read = beginMemberPointsRead();
   const { data, error } = await supabase.rpc("get_member_passport_v1", {
     p_profile_id: profileId,
   });
   if (error) throw error;
-  return decodePassport(data);
+  const passport = decodePassport(data);
+  return {
+    ...passport,
+    points: confirmPoints(read, profileId, passport.points),
+  };
 }
 
 export async function reconcileMyPassport(): Promise<PassportTransition> {
+  const { read, profileId } = await ownPassportRead();
   const { data, error } = await supabase.rpc("reconcile_my_passport_v1");
   if (error) throw error;
   const root = record(data);
+  const unlocked = Array.isArray(root.unlocked)
+    ? root.unlocked.map(decodePassportStamp)
+    : [];
   return {
-    points: number(root.points),
-    unlocked: Array.isArray(root.unlocked)
-      ? root.unlocked.map(decodePassportStamp)
-      : [],
+    profileId,
+    previousPoints: normalizePassportPoints(root.previousPoints),
+    points: confirmPoints(
+      read,
+      profileId,
+      normalizePassportPoints(root.points)
+    ),
+    unlocked,
   };
 }

@@ -1,3 +1,4 @@
+import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/utils/supabase";
 import authCache from "@/utils/authCache";
@@ -12,6 +13,10 @@ jest.mock("@/utils/supabase", () => ({
     from: jest.fn(),
   },
   supabaseProjectRef: "testref",
+}));
+
+jest.mock("@/utils/passport-reconciliation-events", () => ({
+  requestPassportReconciliation: jest.fn(),
 }));
 
 jest.mock("@/utils/log", () => ({
@@ -141,8 +146,16 @@ describe("authCache.getProfile", () => {
     const profile = { id: "u1", username: "owen", is_verified: true };
     respondWith({ data: profile, error: null });
 
-    expect(await authCache.getProfile()).toEqual(profile);
-    expect(await authCache.getProfile()).toEqual(profile);
+    expect(await authCache.getProfile()).toEqual({
+      ...profile,
+      avatar_url: null,
+      passport_points: null,
+    });
+    expect(await authCache.getProfile()).toEqual({
+      ...profile,
+      avatar_url: null,
+      passport_points: null,
+    });
     expect(from).toHaveBeenCalledTimes(1);
   });
 
@@ -161,7 +174,11 @@ describe("authCache.getProfile", () => {
     const upgraded = { id: "u1", username: "owen", is_verified: false };
     respondWith({ data: upgraded, error: null });
 
-    expect(await authCache.getProfile()).toEqual(upgraded);
+    expect(await authCache.getProfile()).toEqual({
+      ...upgraded,
+      avatar_url: null,
+      passport_points: null,
+    });
     expect(from).toHaveBeenCalledTimes(2);
   });
 
@@ -177,7 +194,11 @@ describe("authCache.getProfile", () => {
     const otherProfile = { id: "u2", username: "guest", is_verified: false };
     respondWith({ data: otherProfile, error: null });
 
-    expect(await authCache.getProfile()).toEqual(otherProfile);
+    expect(await authCache.getProfile()).toEqual({
+      ...otherProfile,
+      avatar_url: null,
+      passport_points: null,
+    });
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith(PROFILE_CACHE_KEY);
     expect(from).toHaveBeenCalledTimes(2);
   });
@@ -220,7 +241,7 @@ describe("authCache.getProfile", () => {
     const [a, b] = await Promise.all([first, second]);
 
     expect(a).toBe(b);
-    expect(a).toEqual(profile);
+    expect(a).toEqual({ ...profile, avatar_url: null, passport_points: null });
     expect(from).toHaveBeenCalledTimes(1);
     expect(authCache.getCacheStats().pendingRequests).toBe(0);
   });
@@ -250,7 +271,11 @@ describe("authCache.loadFromStorage", () => {
     await authCache.loadFromStorage();
 
     signInAs("u1");
-    expect(await authCache.getProfile()).toEqual(storedEntry().profile);
+    expect(await authCache.getProfile()).toEqual({
+      ...storedEntry().profile,
+      avatar_url: null,
+      passport_points: null,
+    });
     expect(from).not.toHaveBeenCalled();
   });
 
@@ -293,4 +318,24 @@ describe("authCache.loadFromStorage", () => {
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith("auth_cache");
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith("profile_cache");
   });
+});
+
+it("requests First Steps reconciliation only after a successful profile save", async () => {
+  signInAs("u1");
+  const single = jest.fn().mockResolvedValue({
+    data: { id: "u1", username: "olive", is_verified: false, bio: "Hello" },
+    error: null,
+  });
+  const query = { update: jest.fn(), eq: jest.fn(), select: jest.fn(), single };
+  query.update.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  query.select.mockReturnValue(query);
+  from.mockReturnValue(query);
+  await expect(
+    authCache.updateProfile({ bio: "Hello" })
+  ).resolves.toMatchObject({ data: { bio: "Hello" } });
+  expect(requestPassportReconciliation).toHaveBeenCalledTimes(1);
+  single.mockResolvedValueOnce({ data: null, error: { message: "offline" } });
+  await authCache.updateProfile({ bio: "Other" });
+  expect(requestPassportReconciliation).toHaveBeenCalledTimes(1);
 });

@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-  Avatar,
+  MemberAvatar,
   LocationVerifiedBadge,
   MartiniIcon,
   RatingPips,
@@ -155,12 +155,7 @@ export default function GoldenGlassList({
                         index > 0 && styles.regularAvatarOverlap,
                       ]}
                     >
-                      <Avatar
-                        avatarPath={regular.avatar_url}
-                        username={regular.username}
-                        reviewCount={regular.passport_points}
-                        size={32}
-                      />
+                      <MemberAvatar member={regular} size={32} />
                     </View>
                   ))}
                 </View>

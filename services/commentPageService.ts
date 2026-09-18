@@ -1,5 +1,5 @@
 import { publicContentService } from "@/services/public-content-service";
-import type { Comment } from "@/types/types";
+import { decodeCommentList, type DecodedComment } from "@/utils/commentDecoder";
 import { supabase } from "@/utils/supabase";
 import { hydrateCommentMentions } from "@/services/mentionService";
 import { warn } from "@/utils/log";
@@ -10,7 +10,7 @@ export interface CommentCursor {
 }
 
 export interface CommentPage {
-  comments: Comment[];
+  comments: DecodedComment[];
   nextCursor: CommentCursor | null;
   hasMore: boolean;
   totalCount: number;
@@ -43,21 +43,10 @@ const decodeCursor = (value: unknown): CommentCursor | null => {
   return id && insertedAt ? { insertedAt, id } : null;
 };
 
-const decodeComment = (value: unknown): Comment | null => {
-  if (!isRecord(value) || typeof value.id !== "number") return null;
-  if (typeof value.body !== "string" || typeof value.inserted_at !== "string") {
-    return null;
-  }
-  return value as unknown as Comment;
-};
-
 const decodePage = (value: unknown): CommentPage => {
   if (!isRecord(value)) throw new Error("Comments returned an invalid page.");
-  const rawComments = Array.isArray(value.comments) ? value.comments : [];
   return {
-    comments: rawComments
-      .map(decodeComment)
-      .filter((comment): comment is Comment => comment !== null),
+    comments: decodeCommentList(value.comments),
     nextCursor: decodeCursor(value.nextCursor),
     hasMore: value.hasMore === true,
     totalCount:

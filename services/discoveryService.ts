@@ -1,4 +1,6 @@
-import type { LocationRating, Profile } from "@/types/types";
+import { decodeMemberSummary, type MemberSummary } from "@/utils/memberSummary";
+import { decodeRegulars, type Regular } from "@/services/regularsService";
+import type { LocationRating } from "@/types/types";
 import { supabase } from "@/utils/supabase";
 
 export type DiscoveryCursor = Record<string, string | number>;
@@ -9,13 +11,13 @@ export interface DiscoveryPage<T> {
   hasMore: boolean;
 }
 
-export interface DiscoveredProfile extends Profile {
+export interface DiscoveredProfile extends MemberSummary {
   follower_count: number;
   review_count: number;
 }
 
 export interface DiscoveredLocation extends LocationRating {
-  regulars: unknown[];
+  regulars: Regular[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -54,7 +56,25 @@ export async function getDiscoverProfilesPage({
     p_search: query?.trim() || null,
   });
   if (error) throw error;
-  return decodePage<DiscoveredProfile>(data);
+  const page = decodePage<unknown>(data);
+  return {
+    ...page,
+    items: page.items.flatMap((item) => {
+      const member = decodeMemberSummary(item);
+      if (!member || !isRecord(item)) return [];
+      return [
+        {
+          ...member,
+          review_count: member.review_count ?? 0,
+          follower_count:
+            typeof item.follower_count === "number" &&
+            Number.isFinite(item.follower_count)
+              ? item.follower_count
+              : 0,
+        },
+      ];
+    }),
+  };
 }
 
 export async function getDiscoverLocationsPage({
@@ -78,6 +98,10 @@ export async function getDiscoverLocationsPage({
   });
   if (error) throw error;
   const page = decodePage<DiscoveredLocation>(data);
+  page.items = page.items.map((item) => ({
+    ...item,
+    regulars: decodeRegulars(item.regulars),
+  }));
   const locationIds = page.items
     .filter(
       (item) =>

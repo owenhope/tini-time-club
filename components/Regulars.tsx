@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { MemberAvatar, VerifiedName } from "@/components/shared";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { makeStyles } from "@/theme";
@@ -96,12 +96,7 @@ const Regulars: React.FC<RegularsProps> = ({
                     : `View ${regular.username}'s profile`
                 }
               >
-                <Avatar
-                  avatarPath={regular.avatar_url}
-                  username={regular.username}
-                  size={compactAvatarSize}
-                  reviewCount={regular.passport_points}
-                />
+                <MemberAvatar member={regular} size={compactAvatarSize} />
               </Pressable>
             ))}
           </View>
@@ -144,13 +139,7 @@ const Regulars: React.FC<RegularsProps> = ({
               }
               accessibilityLabel={`${regular.username}, regular with ${regular.review_count} reviews`}
             >
-              <Avatar
-                avatarPath={regular.avatar_url}
-                username={regular.username}
-                size={42}
-                reviewCount={regular.passport_points}
-                onInk={onInk}
-              />
+              <MemberAvatar member={regular} size={42} onInk={onInk} />
               <Text
                 style={[styles.railUsername, onInk && styles.onInkText]}
                 numberOfLines={1}
@@ -182,12 +171,7 @@ const Regulars: React.FC<RegularsProps> = ({
           accessibilityLabel={`${regular.username}, number ${regular.rank} regular with ${regular.review_count} reviews`}
         >
           <Text style={styles.rank}>#{regular.rank}</Text>
-          <Avatar
-            avatarPath={regular.avatar_url}
-            username={regular.username}
-            size={34}
-            reviewCount={regular.passport_points}
-          />
+          <MemberAvatar member={regular} size={34} />
           <View style={styles.identity}>
             <VerifiedName
               name={regular.username}

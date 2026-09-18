@@ -24,7 +24,7 @@ import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { formatRelativeDate } from "@/utils/helpers";
 import { Ionicons } from "@expo/vector-icons";
 import ReportModal from "@/components/ReportModal";
-import { Avatar, VerifiedName } from "@/components/shared";
+import { MemberAvatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
 import { Comment, Review } from "@/types/types";
@@ -496,7 +496,6 @@ export default function CommentsSlider({
   const renderComment = ({ item }: { item: Comment }) => {
     const username = item.profile?.username || "Unknown";
     const relativeDate = formatRelativeDate(item.inserted_at);
-    const avatarPath = item.profile?.avatar_url || null;
     const likesCount = item.likes_count ?? 0;
     const hasLiked = Boolean(item.has_liked);
 
@@ -512,12 +511,7 @@ export default function CommentsSlider({
             <TouchableOpacity
               onPress={() => navigateToUserProfile(username, item.user_id)}
             >
-              <Avatar
-                avatarPath={avatarPath}
-                username={username}
-                size={32}
-                reviewCount={item.profile?.passport_points}
-              />
+              <MemberAvatar member={item.profile} size={32} />
             </TouchableOpacity>
             <View style={styles.commentContent}>
               <View style={styles.commentHeaderRow}>

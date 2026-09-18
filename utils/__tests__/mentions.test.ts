@@ -13,10 +13,10 @@ const claire: MentionCandidate = {
   id: "claire-id",
   username: "Clairebear",
   name: "Claire",
-  avatarUrl: null,
-  isVerified: false,
-  reviewCount: 4,
-  passportPoints: 0,
+  avatar_url: null,
+  is_verified: false,
+  review_count: 4,
+  passport_points: 0,
   relationship: "mutual",
 };
 

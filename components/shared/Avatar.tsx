@@ -2,7 +2,6 @@ import React, { useState, useMemo, memo } from "react";
 import { View, Image, Text } from "react-native";
 import imageCache from "@/utils/imageCache";
 import { makeStyles, useTheme } from "@/theme";
-import AvatarRing from "./AvatarRing";
 import OliveIcon from "./OliveIcon";
 
 interface AvatarProps {
@@ -12,12 +11,6 @@ interface AvatarProps {
   size?: number;
   style?: any;
   showInitials?: boolean;
-  showRing?: boolean;
-  /**
-   * Active review count for the ranking ring. Every avatar is ringed — the
-   * first tier starts at zero — so a missing count just means the base tier.
-   */
-  reviewCount?: number | null;
   /**
    * Sits on a green ground. The initials disc is normally the brand green,
    * which on a green surface leaves the ring wrapped around nothing; on ink it
@@ -33,8 +26,6 @@ const Avatar: React.FC<AvatarProps> = ({
   size = 40,
   style,
   showInitials = true,
-  showRing = true,
-  reviewCount,
   onInk = false,
 }) => {
   const styles = useStyles();
@@ -107,13 +98,7 @@ const Avatar: React.FC<AvatarProps> = ({
     );
   }
 
-  return showRing ? (
-    <AvatarRing reviewCount={reviewCount} size={size}>
-      {face}
-    </AvatarRing>
-  ) : (
-    face
-  );
+  return face;
 };
 
 const useStyles = makeStyles((t) => ({

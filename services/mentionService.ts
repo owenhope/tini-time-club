@@ -1,3 +1,4 @@
+import { decodeMemberSummary } from "@/utils/memberSummary";
 import type {
   Comment,
   MentionCandidate,
@@ -17,9 +18,6 @@ const pendingSearches = new Map<string, Promise<MentionCandidate[]>>();
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const numberValue = (value: unknown, fallback = 0) =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
-
 const relationships = new Set<MentionRelationship>([
   "mutual",
   "following",
@@ -30,22 +28,28 @@ const relationships = new Set<MentionRelationship>([
 
 const decodeCandidate = (value: unknown): MentionCandidate | null => {
   if (!isRecord(value)) return null;
-  if (typeof value.id !== "string" || typeof value.username !== "string") {
+  // A mention needs a usable handle; avatars alone can use the Unknown fallback.
+  if (typeof value.username !== "string" || !value.username.trim()) {
     return null;
   }
+  const member = decodeMemberSummary({
+    id: value.id,
+    username: value.username,
+    avatar_url: value.avatarUrl,
+    is_verified: value.isVerified,
+    passport_points: value.passportPoints,
+    review_count: value.reviewCount,
+  });
+  if (!member) return null;
   const relationship = relationships.has(
     value.relationship as MentionRelationship
   )
     ? (value.relationship as MentionRelationship)
     : "everyone";
   return {
-    id: value.id,
-    username: value.username,
+    ...member,
     name: typeof value.name === "string" ? value.name : null,
-    avatarUrl: typeof value.avatarUrl === "string" ? value.avatarUrl : null,
-    isVerified: value.isVerified === true,
-    reviewCount: numberValue(value.reviewCount),
-    passportPoints: numberValue(value.passportPoints),
+    review_count: member.review_count ?? 0,
     relationship,
   };
 };
@@ -173,9 +177,9 @@ export const hydrateReviewMentions = async (
   }));
 };
 
-export const hydrateCommentMentions = async (
-  comments: Comment[]
-): Promise<Comment[]> => {
+export const hydrateCommentMentions = async <T extends Comment>(
+  comments: T[]
+): Promise<T[]> => {
   if (!comments.length) return comments;
   const rows = await fetchMentionSpans({
     commentIds: comments.map((comment) => comment.id),

@@ -20,7 +20,7 @@ jest.mock("@/utils/native-tab-bar-insets", () => ({
 }));
 
 jest.mock("@/components/shared", () => ({
-  Avatar: () => null,
+  MemberAvatar: () => null,
   MartiniIcon: () => null,
   RatingPips: () => null,
 }));

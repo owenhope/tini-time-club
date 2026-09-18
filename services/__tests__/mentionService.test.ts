@@ -71,6 +71,7 @@ describe("mentionService", () => {
         id: "member-1",
         username: "olive",
         relationship: "mutual",
+        passport_points: null,
       }),
     ]);
     await searchMentionCandidates("olive");
@@ -79,6 +80,94 @@ describe("mentionService", () => {
     expect(mockRpc).toHaveBeenCalledWith("search_mention_candidates_v1", {
       p_limit: 5,
       p_query: "olive",
+    });
+  });
+
+  it("preserves confirmed zero Passport points", async () => {
+    mockRpc.mockResolvedValue({
+      data: [{ id: "member-1", username: "olive", passportPoints: 0 }],
+      error: null,
+    });
+    await expect(searchMentionCandidates("olive")).resolves.toEqual([
+      expect.objectContaining({ passport_points: 0 }),
+    ]);
+  });
+
+  it.each([undefined, null, 0, 500, "500", NaN, -1])(
+    "decodes member rank inputs independently from review counts (%s)",
+    async (passportPoints) => {
+      mockRpc.mockResolvedValue({
+        data: [
+          {
+            id: "member-1",
+            username: "olive",
+            name: "Olive Fan",
+            avatarUrl: "avatar.jpg",
+            isVerified: true,
+            reviewCount: 12,
+            passportPoints,
+            relationship: "following",
+          },
+        ],
+        error: null,
+      });
+      await expect(searchMentionCandidates("olive")).resolves.toEqual([
+        {
+          id: "member-1",
+          username: "olive",
+          name: "Olive Fan",
+          avatar_url: "avatar.jpg",
+          is_verified: true,
+          review_count: 12,
+          passport_points:
+            typeof passportPoints === "number" &&
+            Number.isFinite(passportPoints) &&
+            passportPoints >= 0
+              ? passportPoints
+              : null,
+          relationship: "following",
+        },
+      ]);
+    }
+  );
+
+  it("filters unusable identities while preserving candidate order and safe avatar defaults", async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { id: " ", username: "invalid" },
+        { id: "member-1", username: "" },
+        { id: "member-2", username: "   " },
+        {
+          id: "member-3",
+          username: "olive",
+          avatarUrl: {},
+          isVerified: "true",
+          passportPoints: 0,
+          relationship: "future-value",
+        },
+        {
+          id: "member-4",
+          username: "twist",
+          passportPoints: 500,
+          relationship: "mutual",
+        },
+      ],
+      error: null,
+    });
+    const candidates = await searchMentionCandidates("");
+    expect(candidates.map((candidate) => candidate.id)).toEqual([
+      "member-3",
+      "member-4",
+    ]);
+    expect(candidates[0]).toMatchObject({
+      avatar_url: null,
+      is_verified: false,
+      passport_points: 0,
+      relationship: "everyone",
+    });
+    expect(candidates[1]).toMatchObject({
+      passport_points: 500,
+      relationship: "mutual",
     });
   });
 
