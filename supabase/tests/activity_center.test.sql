@@ -2,6 +2,11 @@ begin;
 
 select plan(15);
 
+-- Trigger dependencies must exist even in a freshly migrated, unseeded DB.
+INSERT INTO public.notification_types (id, name)
+VALUES (1, 'Review'), (2, 'Comment'), (3, 'Like')
+ON CONFLICT (id) DO NOTHING;
+
 select has_table('public', 'activity_receipts', 'Activity receipts table exists');
 select has_table('public', 'activity_withdrawals', 'Activity withdrawals table exists');
 select has_function(

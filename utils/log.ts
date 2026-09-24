@@ -48,12 +48,15 @@ export const isNetworkError = (value: unknown): boolean => {
   while (current && typeof current === "object" && !seen.has(current)) {
     seen.add(current);
     const record = current as {
+      name?: unknown;
       message?: unknown;
       details?: unknown;
       hint?: unknown;
       cause?: unknown;
       originalError?: unknown;
     };
+    // functions-js reserves this type for fetch rejection, not HTTP responses.
+    if (record.name === "FunctionsFetchError") return true;
     // Supabase clients surface transport failures as plain objects; the
     // original fetch rejection often only appears in details or hint.
     if (

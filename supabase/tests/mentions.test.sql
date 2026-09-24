@@ -4,6 +4,10 @@ SET LOCAL search_path = public, extensions;
 
 SELECT plan(27);
 
+-- Review creation emits an activity notification before mention delivery.
+INSERT INTO public.notification_types (id, name)
+VALUES (1, 'Review') ON CONFLICT (id) DO NOTHING;
+
 SELECT has_table('public', 'review_mentions', 'Review mention metadata exists');
 SELECT has_table('public', 'comment_mentions', 'Comment mention metadata exists');
 SELECT has_table(

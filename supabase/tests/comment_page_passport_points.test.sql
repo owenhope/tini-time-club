@@ -8,7 +8,7 @@ VALUES ('77700000-0000-0000-0000-000000000017', 'authenticated', 'authenticated'
 INSERT INTO public.review_states (id, name)
 VALUES (1, 'Active') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.notification_types (id, name)
-VALUES (2, 'Comment') ON CONFLICT (id) DO NOTHING;
+VALUES (1, 'Review'), (2, 'Comment') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.reviews (id, user_id, taste, presentation, state, comment)
 VALUES (937017, '77700000-0000-0000-0000-000000000017', 4, 4, 1, '');
 INSERT INTO public.comments (user_id, review_id, body)

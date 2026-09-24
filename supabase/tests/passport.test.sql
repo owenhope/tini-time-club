@@ -1,6 +1,10 @@
 BEGIN;
 SELECT plan(31);
 
+-- Passport reconciliation emits notifications in a fresh database too.
+INSERT INTO public.notification_types (id, name)
+VALUES (2, 'Comment') ON CONFLICT (id) DO NOTHING;
+
 -- A member whose favorites survive from the legacy shape: jsonb string
 -- scalars holding a stringified array, which the app parses but strict
 -- jsonb_array_length calls reject.

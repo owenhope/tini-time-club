@@ -56,8 +56,8 @@ const normalizeLocation = <T extends LocationRating>(location: T): T => ({
 });
 
 class PublicContentError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "PublicContentError";
   }
 }
@@ -67,7 +67,7 @@ const invoke = async <T>(request: PublicContentRequest): Promise<T> => {
     body: request,
   });
 
-  if (error) throw new PublicContentError(error.message);
+  if (error) throw new PublicContentError(error.message, { cause: error });
   if (!data || data.error) {
     throw new PublicContentError(
       data?.error ?? "Public content is unavailable"

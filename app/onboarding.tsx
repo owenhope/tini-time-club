@@ -25,16 +25,20 @@ import { v4 as uuidv4 } from "uuid";
 import {
   AppText,
   Avatar,
+  AvatarRing,
   Button,
   Input,
-  RatingPips,
 } from "@/components/shared";
 import AppHeader from "@/components/nav/AppHeader";
-import Regulars from "@/components/Regulars";
+import { GoldenGlassIntroduction } from "@/components/onboarding/golden-glass-introduction";
+import { RegularsIntroduction } from "@/components/onboarding/regulars-introduction";
 import { useProfile } from "@/context/profile-context";
 import { deleteCurrentAccount } from "@/services/accountService";
 import AnalyticService from "@/services/analyticsService";
-import { unregisterPushNotificationsAsync } from "@/services/pushNotificationService";
+import {
+  isUsernameAvailable,
+  signOutAfterDecliningTerms,
+} from "@/services/onboardingService";
 import { clearUserCaches } from "@/utils/signOut";
 import { runExpectedSignOut } from "@/utils/authTelemetry";
 import { supabase } from "@/utils/supabase";
@@ -46,11 +50,9 @@ import { PassportStamp } from "@/components/passport/passport-stamp";
 import { RankTierList } from "@/components/passport/rank-tier-list";
 import type { PassportStampShape } from "@/services/passportService";
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-// Example first stamps for the Passport education step — one from every
-// stamp family, at its real first milestone, so new members see the full
-// range of what they'll collect.
+// Six example stamps at their first milestones for the Passport introduction.
 const PREVIEW_STAMPS: {
   shape: PassportStampShape;
   label: string;
@@ -63,8 +65,6 @@ const PREVIEW_STAMPS: {
   { shape: "type_reviews", label: "Classics", milestone: 10, points: 10 },
   { shape: "regulars", label: "Regular", milestone: 1, points: 10 },
   { shape: "comments", label: "Comment", milestone: 1, points: 10 },
-  { shape: "likes_received", label: "Like", milestone: 1, points: 10 },
-  { shape: "shares", label: "Share", milestone: 1, points: 10 },
 ];
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
@@ -90,7 +90,11 @@ export default function Onboarding() {
   const router = useRouter();
   const params = useLocalSearchParams<{ previewStep?: string }>();
   const previewStep = __DEV__ ? Number(params.previewStep) : 0;
-  const isDevelopmentPreview = previewStep >= 2 && previewStep <= 4;
+  const isDevelopmentPreview =
+    __DEV__ &&
+    Number.isInteger(previewStep) &&
+    previewStep >= 1 &&
+    previewStep <= 6;
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
   const [step, setStep] = useState<OnboardingStep>(() =>
@@ -101,16 +105,22 @@ export default function Onboarding() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const [saving, setSaving] = useState(false);
+  const decliningTerms = useRef(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const termsViewportHeight = useRef(0);
   const termsContentHeight = useRef(0);
 
   useEffect(() => {
-    if (!profile || initializedProfileId.current === profile.id) return;
+    if (
+      isDevelopmentPreview ||
+      !profile ||
+      initializedProfileId.current === profile.id
+    )
+      return;
     initializedProfileId.current = profile.id;
     setUsername(profile.username ?? "");
     setAvatarUri(null);
-  }, [profile]);
+  }, [isDevelopmentPreview, profile]);
 
   useEffect(() => {
     if (!isDevelopmentPreview && profile?.username && profile.eula_accepted) {
@@ -121,24 +131,14 @@ export default function Onboarding() {
   const checkUsernameAvailability = useCallback(
     async (candidate: string) => {
       if (!profile) return false;
-      const { data: matchingProfiles, error: availabilityError } =
-        await supabase
-          .from("profiles")
-          .select("id")
-          .ilike("username", candidate)
-          .eq("deleted", false)
-          .neq("id", profile.id)
-          .limit(1);
-
-      if (availabilityError) throw availabilityError;
-      return !matchingProfiles?.length;
+      return isUsernameAvailable(candidate, profile.id);
     },
     [profile]
   );
 
   useEffect(() => {
     const candidate = username.trim();
-    if (!profile || getUsernameError(candidate)) return;
+    if (isDevelopmentPreview || !profile || getUsernameError(candidate)) return;
 
     let active = true;
     const timeout = setTimeout(() => {
@@ -166,7 +166,7 @@ export default function Onboarding() {
       active = false;
       clearTimeout(timeout);
     };
-  }, [checkUsernameAvailability, profile, username]);
+  }, [checkUsernameAvailability, isDevelopmentPreview, profile, username]);
 
   const usernameIsAvailable = useCallback(async () => {
     const candidate = username.trim();
@@ -229,6 +229,10 @@ export default function Onboarding() {
   }, [avatarUri, profile]);
 
   const saveProfile = useCallback(async () => {
+    if (isDevelopmentPreview) {
+      setStep(2);
+      return;
+    }
     if (!profile || saving || usernameStatus !== "available") return;
 
     let uploadedAvatarPath: string | null = null;
@@ -289,6 +293,7 @@ export default function Onboarding() {
       setSaving(false);
     }
   }, [
+    isDevelopmentPreview,
     profile,
     router,
     saving,
@@ -300,6 +305,10 @@ export default function Onboarding() {
   ]);
 
   const acceptTerms = useCallback(async () => {
+    if (isDevelopmentPreview) {
+      router.replace(routes.welcome());
+      return;
+    }
     if (saving) return;
     setSaving(true);
     try {
@@ -314,13 +323,26 @@ export default function Onboarding() {
     } finally {
       setSaving(false);
     }
-  }, [acceptEULA, router, saving]);
+  }, [acceptEULA, isDevelopmentPreview, router, saving]);
 
   const declineTerms = useCallback(async () => {
-    await unregisterPushNotificationsAsync();
-    await clearUserCaches();
-    await runExpectedSignOut("declined-terms", () => supabase.auth.signOut());
-  }, []);
+    if (saving || decliningTerms.current) return;
+    decliningTerms.current = true;
+    setSaving(true);
+    try {
+      await signOutAfterDecliningTerms();
+      router.replace(routes.welcome());
+    } catch (error) {
+      reportError("Error leaving sign-up:", error);
+      Alert.alert(
+        "Couldn't leave sign-up",
+        "Please check your connection and try again."
+      );
+    } finally {
+      decliningTerms.current = false;
+      setSaving(false);
+    }
+  }, [router, saving]);
 
   // The header's X: abandoning sign-up deletes the half-made account (same
   // edge function as Settings → Delete Account, including Apple token
@@ -352,6 +374,10 @@ export default function Onboarding() {
   }, [router, saving]);
 
   const confirmQuitSignup = useCallback(() => {
+    if (isDevelopmentPreview) {
+      router.replace(routes.welcome());
+      return;
+    }
     if (saving) return;
     Alert.alert(
       "Quit sign-up?",
@@ -365,23 +391,29 @@ export default function Onboarding() {
         },
       ]
     );
-  }, [quitSignup, saving]);
+  }, [isDevelopmentPreview, quitSignup, router, saving]);
 
   const confirmDeclineTerms = useCallback(() => {
     if (saving) return;
     Alert.alert(
-      "Terms Required",
-      "You must accept the terms and conditions to use Tini Time Club. Would you like to read them again?",
+      "Agreement required",
+      "You cannot join Tini Time Club unless you agree to the Terms & Guidelines.",
       [
-        { text: "Read Again", style: "cancel" },
+        { text: "Review terms", style: "cancel" },
         {
-          text: "Exit App",
+          text: "Leave sign-up",
           style: "destructive",
-          onPress: () => void declineTerms(),
+          onPress: () => {
+            if (isDevelopmentPreview) {
+              router.replace(routes.welcome());
+            } else {
+              void declineTerms();
+            }
+          },
         },
       ]
     );
-  }, [declineTerms, saving]);
+  }, [declineTerms, isDevelopmentPreview, router, saving]);
 
   const markTermsReadIfContentFits = useCallback(() => {
     if (
@@ -423,7 +455,7 @@ export default function Onboarding() {
     []
   );
 
-  if (loading || !profile) {
+  if (!isDevelopmentPreview && (loading || !profile)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -448,8 +480,7 @@ export default function Onboarding() {
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
-              title="Create your profile"
-              meta="How you'll show up in the club"
+              title="Welcome to the Club"
               trailing={{
                 icon: "close",
                 onPress: confirmQuitSignup,
@@ -457,86 +488,85 @@ export default function Onboarding() {
                 disabled: saving,
               }}
             />
-
             <View style={styles.profileContent}>
               <ScrollView
                 contentContainerStyle={styles.questionContent}
                 keyboardShouldPersistTaps="handled"
                 contentInsetAdjustmentBehavior="automatic"
               >
-                <View style={styles.avatarStep}>
+                <View style={styles.profileSetup}>
+                  <AppText variant="bodyStrong">Profile photo</AppText>
                   <Pressable
                     onPress={pickAvatar}
-                    style={({ pressed }) => [
-                      styles.avatarPicker,
-                      pressed && styles.pressed,
-                    ]}
+                    disabled={saving}
                     accessibilityRole="button"
-                    accessibilityLabel={
-                      avatarUri
-                        ? "Change profile photo"
-                        : "Choose profile photo"
-                    }
+                    accessibilityLabel="Choose profile photo"
                   >
-                    {avatarUri ? (
-                      <Image
-                        source={{ uri: avatarUri }}
-                        style={styles.avatarPreview}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <Avatar
-                        username={username.trim()}
-                        fallbackText="TT"
-                        size={112}
-                      />
-                    )}
+                    <AvatarRing passportPoints={0} size={120}>
+                      {avatarUri ? (
+                        <Image
+                          source={{ uri: avatarUri }}
+                          style={styles.avatarPreview}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <Avatar
+                          avatarPath={
+                            isDevelopmentPreview ? null : profile?.avatar_url
+                          }
+                          username={username.trim()}
+                          fallbackText="TT"
+                          size={120}
+                        />
+                      )}
+                    </AvatarRing>
                     <View style={styles.avatarBadge}>
                       <Ionicons
                         name="camera"
-                        size={18}
+                        size={16}
                         color={colors.onAccent}
                       />
                     </View>
                   </Pressable>
-                  <AppText variant="caption" tone="secondary">
-                    Add a photo (optional)
+                  <AppText tone="secondary">
+                    Tap to add your profile picture (optional)
                   </AppText>
+                  <View style={styles.usernameSection}>
+                    <Input
+                      label="Username"
+                      value={username}
+                      onChangeText={(value) => {
+                        setUsername(value);
+                        setUsernameError(null);
+                        setUsernameStatus("idle");
+                      }}
+                      placeholder="e.g. martini_mike"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={20}
+                      error={displayedUsernameError ?? undefined}
+                      supportingText={
+                        usernameStatus === "checking"
+                          ? "Checking availability..."
+                          : usernameStatus === "available"
+                            ? "Username available"
+                            : undefined
+                      }
+                      supportingTone={
+                        usernameStatus === "available" ? "success" : "secondary"
+                      }
+                      supportingIcon={
+                        usernameStatus === "available"
+                          ? "checkmark-circle"
+                          : undefined
+                      }
+                      reserveErrorSpace
+                      size="medium"
+                      style={styles.profileInput}
+                      containerStyle={styles.usernameInputContainer}
+                    />
+                  </View>
                 </View>
-
-                <Input
-                  label="Username"
-                  value={username}
-                  onChangeText={(value) => {
-                    setUsername(value);
-                    setUsernameError(null);
-                    setUsernameStatus("idle");
-                  }}
-                  placeholder="e.g. martini_mike"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={20}
-                  error={displayedUsernameError ?? undefined}
-                  supportingText={
-                    usernameStatus === "checking"
-                      ? "Checking availability..."
-                      : usernameStatus === "available"
-                        ? "Username available"
-                        : undefined
-                  }
-                  supportingTone={
-                    usernameStatus === "available" ? "success" : "secondary"
-                  }
-                  supportingIcon={
-                    usernameStatus === "available"
-                      ? "checkmark-circle"
-                      : undefined
-                  }
-                  reserveErrorSpace
-                  size="medium"
-                  style={styles.profileInput}
-                  containerStyle={styles.usernameInputContainer}
-                />
               </ScrollView>
             </View>
 
@@ -551,14 +581,18 @@ export default function Onboarding() {
             >
               <View style={styles.navigation}>
                 <Button
-                  title={profile.eula_accepted ? "Finish" : "Create profile"}
+                  title={
+                    !isDevelopmentPreview && profile?.eula_accepted
+                      ? "Finish"
+                      : "Create profile"
+                  }
                   onPress={saveProfile}
                   icon="chevron-forward"
                   iconPosition="right"
                   size="medium"
                   fullWidth
                   loading={saving}
-                  disabled={saving || !usernameReady}
+                  disabled={saving || (!isDevelopmentPreview && !usernameReady)}
                 />
               </View>
             </View>
@@ -676,7 +710,27 @@ export default function Onboarding() {
                 <AppText variant="eyebrow" tone="secondary">
                   Rings to unlock
                 </AppText>
-                <RankTierList />
+                <RankTierList
+                  avatar={
+                    avatarUri ? (
+                      <Image
+                        source={{ uri: avatarUri }}
+                        style={styles.rankAvatar}
+                        contentFit="cover"
+                        accessibilityLabel="Your profile photo"
+                      />
+                    ) : (
+                      <Avatar
+                        avatarPath={
+                          isDevelopmentPreview ? null : profile?.avatar_url
+                        }
+                        username={username.trim()}
+                        fallbackText="TT"
+                        size={52}
+                      />
+                    )
+                  }
+                />
               </View>
             </ScrollView>
 
@@ -730,81 +784,10 @@ export default function Onboarding() {
               contentContainerStyle={styles.educationContent}
               contentInsetAdjustmentBehavior="automatic"
             >
-              <View style={styles.educationIntro}>
-                <AppText variant="heading">
-                  Every location has its Regulars.
-                </AppText>
-                <AppText tone="secondary">
-                  The three members with the most active reviews at a location
-                  hold its Regular spots. Keep exploring and reviewing to join
-                  them.
-                </AppText>
-              </View>
-              <View style={styles.regularsLocationCard}>
-                <View style={styles.regularsLocationTitleRow}>
-                  <AppText
-                    variant="heading"
-                    style={styles.regularsLocationTitle}
-                  >
-                    The Keefer Bar
-                  </AppText>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={colors.accent}
-                  />
-                </View>
-                <AppText variant="caption" tone="secondary">
-                  Vancouver, BC
-                </AppText>
-                <View style={styles.regularsRating}>
-                  <RatingPips value={4.8} size={18} accessibilityLabel="" />
-                  <View style={styles.regularsRatingMeta}>
-                    <AppText variant="title" style={styles.regularsScore}>
-                      4.8
-                    </AppText>
-                    <AppText variant="mono" tone="secondary">
-                      86 reviews
-                    </AppText>
-                  </View>
-                </View>
-                <Regulars
-                  variant="compact"
-                  interactive={false}
-                  regulars={[
-                    {
-                      location_id: 1,
-                      rank: 1,
-                      profile_id: profile.id,
-                      username: profile.username ?? (username.trim() || "You"),
-                      avatar_url: profile.avatar_url,
-                      profile_review_count: 156,
-                      passport_points: 1050,
-                      review_count: 12,
-                    },
-                    {
-                      location_id: 1,
-                      rank: 2,
-                      profile_id: "onboarding-regular-2",
-                      username: "OliveHour",
-                      avatar_url: null,
-                      profile_review_count: 64,
-                      passport_points: 640,
-                      review_count: 9,
-                    },
-                    {
-                      location_id: 1,
-                      rank: 3,
-                      profile_id: "onboarding-regular-3",
-                      username: "LastCall",
-                      avatar_url: null,
-                      profile_review_count: 18,
-                      passport_points: 120,
-                      review_count: 7,
-                    },
-                  ]}
-                />
-              </View>
+              <RegularsIntroduction
+                username={username.trim()}
+                avatarPath={isDevelopmentPreview ? null : profile?.avatar_url}
+              />
             </ScrollView>
             <View
               style={[
@@ -829,7 +812,7 @@ export default function Onboarding() {
                   <Ionicons name="chevron-back" size={22} color={colors.text} />
                 </Pressable>
                 <Button
-                  title="Terms"
+                  title="Golden Glass"
                   onPress={() => setStep(5)}
                   icon="chevron-forward"
                   iconPosition="right"
@@ -841,6 +824,58 @@ export default function Onboarding() {
         ) : null}
 
         {step === 5 ? (
+          <View style={styles.profileFlow}>
+            <AppHeader
+              variant="large"
+              title="Golden Glass"
+              trailing={{
+                icon: "close",
+                onPress: confirmQuitSignup,
+                accessibilityLabel: "Quit sign-up",
+                disabled: saving,
+              }}
+            />
+            <ScrollView
+              contentContainerStyle={styles.educationContent}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              <GoldenGlassIntroduction />
+            </ScrollView>
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(insets.bottom, 10) + 6,
+                  minHeight: 70 + Math.max(insets.bottom, 10),
+                },
+              ]}
+            >
+              <View style={styles.navigation}>
+                <Pressable
+                  onPress={() => setStep(4)}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to Regulars"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
+                <Button
+                  title="Terms"
+                  onPress={() => setStep(6)}
+                  icon="chevron-forward"
+                  iconPosition="right"
+                  size="medium"
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {step === 6 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
@@ -1045,6 +1080,20 @@ export default function Onboarding() {
               ]}
             >
               <View style={styles.termsNavigation}>
+                <Pressable
+                  onPress={() => setStep(5)}
+                  disabled={saving}
+                  style={({ pressed }) => [
+                    styles.backButton,
+                    pressed && styles.backButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to Golden Glass"
+                  accessibilityState={{ disabled: saving }}
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </Pressable>
                 <Button
                   title="Decline"
                   onPress={confirmDeclineTerms}
@@ -1086,15 +1135,10 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     overflow: "hidden" as const,
   },
-  // One decision per screen: the avatar-and-name block floats in the upper
-  // third rather than hugging the header, so the page reads as an invitation
-  // instead of a form.
   questionContent: {
     flexGrow: 1,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingTop: t.spacing.xxl,
     paddingBottom: t.spacing.xl,
-    gap: t.spacing.lg,
+    gap: t.spacing.xl,
   },
   educationContent: {
     flexGrow: 1,
@@ -1117,40 +1161,8 @@ const useStyles = makeStyles((t) => ({
     paddingTop: t.spacing.sm,
   },
   stampCell: {
-    width: "23%" as const,
+    width: "33.333%" as const,
     alignItems: "center" as const,
-  },
-  regularsLocationCard: {
-    padding: t.spacing.lg,
-    backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderRadius: t.radius.card,
-    ...t.elevation.card,
-  },
-  regularsLocationTitleRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
-    marginBottom: 2,
-  },
-  regularsLocationTitle: {
-    flexShrink: 1,
-  },
-  regularsRating: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.md,
-    marginTop: t.spacing.xs,
-  },
-  regularsRatingMeta: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.sm,
-  },
-  regularsScore: {
-    color: t.colors.secondary,
-    fontVariant: ["tabular-nums"] as const,
   },
   termsScroll: {
     flex: 1,
@@ -1176,42 +1188,36 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center" as const,
     gap: t.spacing.sm,
   },
-  avatarStep: {
-    alignItems: "center" as const,
-    gap: t.spacing.md,
-    paddingVertical: t.spacing.sm,
+  rankAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: t.radius.pill,
   },
-  // The brand-purple ring previews the ring system members earn later.
-  avatarPicker: {
+  profileSetup: {
+    flexDirection: "column" as const,
+    alignItems: "flex-start" as const,
+    gap: t.spacing.lg,
+    paddingHorizontal: t.spacing.gutter,
+    paddingTop: t.spacing.xl,
+  },
+  usernameSection: { alignSelf: "stretch" as const, minWidth: 0 },
+  avatarPreview: {
     width: 120,
     height: 120,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.surfaceSunken,
-    borderWidth: 2,
-    borderColor: t.colors.accent,
-  },
-  avatarPreview: {
-    width: 112,
-    height: 112,
     borderRadius: t.radius.pill,
   },
   avatarBadge: {
     position: "absolute" as const,
-    right: 4,
-    bottom: 8,
-    width: 34,
-    height: 34,
+    right: 0,
+    bottom: 0,
+    width: 36,
+    height: 36,
     borderRadius: t.radius.pill,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     backgroundColor: t.colors.accent,
     borderWidth: 3,
     borderColor: t.colors.background,
-  },
-  pressed: {
-    opacity: 0.65,
   },
   profileInput: {
     borderRadius: t.radius.input,

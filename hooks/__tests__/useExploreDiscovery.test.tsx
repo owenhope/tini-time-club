@@ -49,6 +49,40 @@ describe("useExploreDiscovery loading state", () => {
     jest.useRealTimers();
   });
 
+  it.each(["profiles", "locations"] as const)(
+    "does not fetch %s when a hidden list reaches its end",
+    async (activeView) => {
+      jest.mocked(getDiscoverProfilesPage).mockResolvedValue(profilesPage);
+      jest.mocked(getDiscoverLocationsPage).mockResolvedValue(locationsPage);
+      let latest: ReturnType<typeof useExploreDiscovery> | undefined;
+      const Harness = () => {
+        latest = useExploreDiscovery({
+          enabled: false,
+          activeView,
+          query: "",
+          location: {
+            status: "idle",
+            coordinates: null,
+            canOpenSettings: false,
+          },
+          requestLocation: async () => undefined,
+        });
+        return null;
+      };
+      let tree: renderer.ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(<Harness />);
+      });
+      await act(async () => {
+        jest.runOnlyPendingTimers();
+        latest!.handleEndReached();
+      });
+      expect(getDiscoverProfilesPage).not.toHaveBeenCalled();
+      expect(getDiscoverLocationsPage).not.toHaveBeenCalled();
+      act(() => tree!.unmount());
+    }
+  );
+
   it("keeps the active view loading when an older view request resolves", async () => {
     const profilesRequest = deferred<DiscoveryPage<DiscoveredProfile>>();
     const locationsRequest = deferred<DiscoveryPage<DiscoveredLocation>>();

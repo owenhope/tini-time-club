@@ -198,7 +198,9 @@ export function useExploreDiscovery({
     activeView === "profiles" ? loadingMoreProfiles : loadingMoreLocations;
 
   const handleEndReached = useCallback(() => {
-    if (loading || loadingMore) return;
+    // Hidden lists remain mounted on Map, including in visitor sessions.
+    // FlatList can report its end during layout even when discovery is disabled.
+    if (!enabled || loading || loadingMore) return;
     if (activeView === "profiles") {
       if (hasMoreProfiles) void fetchProfiles(query, profileCursor);
     } else if (hasMoreLocations) {
@@ -206,6 +208,7 @@ export function useExploreDiscovery({
     }
   }, [
     activeView,
+    enabled,
     fetchLocations,
     fetchProfiles,
     hasMoreLocations,

@@ -71,41 +71,68 @@ export default function RegularsSlider({
           { paddingBottom: CONTENT_BOTTOM_PADDING + sheetBottomInset },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>Regulars</Text>
-          {locationName ? (
-            <Text style={styles.title} numberOfLines={2}>
-              {locationName}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.list}>
-          {topRegulars.map((regular) => (
-            <Pressable
-              key={regular.profile_id}
-              onPress={() => openRegular(regular)}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-              accessibilityRole="link"
-              accessibilityLabel={`View ${regular.username}'s profile`}
-            >
-              <MemberAvatar member={regular} size={42} />
-              <View style={styles.identity}>
-                <VerifiedName
-                  name={regular.username}
-                  isVerified={regular.is_verified}
-                  textStyle={styles.username}
-                />
-                <Text style={styles.meta}>
-                  {regular.review_count}{" "}
-                  {regular.review_count === 1 ? "review" : "reviews"}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+        <RegularsSheetContent
+          regulars={topRegulars}
+          locationName={locationName}
+          onOpenRegular={openRegular}
+        />
       </BottomSheetView>
     </BottomSheet>
+  );
+}
+
+/** Shared with the onboarding illustration so it matches the venue sheet. */
+export function RegularsSheetContent({
+  regulars,
+  locationName,
+  onOpenRegular,
+}: {
+  regulars: Regular[];
+  locationName?: string | null;
+  onOpenRegular?: (regular: Regular) => void;
+}) {
+  const styles = useStyles();
+  return (
+    <View style={styles.sheetContent}>
+      <View style={styles.header}>
+        <Text style={styles.eyebrow}>Regulars</Text>
+        {locationName ? (
+          <Text style={styles.title} numberOfLines={2}>
+            {locationName}
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.list}>
+        {regulars.slice(0, 3).map((regular) => (
+          <Pressable
+            key={regular.profile_id}
+            onPress={onOpenRegular ? () => onOpenRegular(regular) : undefined}
+            disabled={!onOpenRegular}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            accessibilityRole={onOpenRegular ? "link" : "text"}
+            accessibilityLabel={
+              onOpenRegular
+                ? `View ${regular.username}'s profile`
+                : `${regular.username}, ${regular.review_count} reviews`
+            }
+          >
+            <MemberAvatar member={regular} size={42} />
+            <View style={styles.identity}>
+              <VerifiedName
+                name={regular.username}
+                isVerified={regular.is_verified}
+                textStyle={styles.username}
+              />
+              <Text style={styles.meta}>
+                {regular.review_count}{" "}
+                {regular.review_count === 1 ? "review" : "reviews"}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -130,6 +157,7 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: CONTENT_BOTTOM_PADDING,
     gap: t.spacing.lg,
   },
+  sheetContent: { gap: t.spacing.lg },
   header: {
     gap: t.spacing.xs,
   },
