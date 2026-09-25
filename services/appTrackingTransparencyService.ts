@@ -4,6 +4,7 @@ import {
   PermissionStatus,
   requestTrackingPermissionsAsync,
 } from "expo-tracking-transparency";
+import { syncMetaAdvertiserTracking } from "@/services/metaAppEventsService";
 import { reportError } from "@/utils/log";
 
 export async function requestAppTrackingTransparencyAsync(): Promise<void> {
@@ -12,10 +13,14 @@ export async function requestAppTrackingTransparencyAsync(): Promise<void> {
   try {
     const currentPermission = await getTrackingPermissionsAsync();
     if (currentPermission.status !== PermissionStatus.UNDETERMINED) {
+      syncMetaAdvertiserTracking(
+        currentPermission.status === PermissionStatus.GRANTED
+      );
       return;
     }
 
-    await requestTrackingPermissionsAsync();
+    const { status } = await requestTrackingPermissionsAsync();
+    syncMetaAdvertiserTracking(status === PermissionStatus.GRANTED);
   } catch (error) {
     reportError("[TrackingTransparency] Permission request failed:", error);
   }

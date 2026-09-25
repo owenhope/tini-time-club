@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { v4 as uuidv4 } from "uuid";
 import { getInstallationId } from "@/services/installationIdentity";
+import { logMetaAppEvent } from "@/services/metaAppEventsService";
 import { log, warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 /**
@@ -54,6 +55,7 @@ const capture = async (
   properties?: Record<string, unknown>
 ): Promise<boolean> => {
   log(`[Analytics] ${event}`, properties ?? {});
+  logMetaAppEvent(event);
 
   try {
     const { error } = await supabase.functions.invoke("app-events", {
