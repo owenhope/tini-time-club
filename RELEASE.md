@@ -188,6 +188,7 @@ Each environment must define:
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - `EXPO_PUBLIC_META_APP_ID`
+- `EXPO_PUBLIC_META_CLIENT_TOKEN`
 - `EXPO_PUBLIC_SENTRY_DSN`
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
@@ -195,7 +196,12 @@ Each environment must define:
 
 The Supabase URL and anon key must **match** — the anon key is a JWT signed for
 one project ref, so a key from another project is rejected. The Meta app ID is
-required for the Instagram Stories handoff. Preview and production config
+required for the Instagram Stories handoff. The Meta app ID and client token
+(Meta app → Settings → Advanced → Security) configure the Meta SDK, which
+reports installs through SKAdNetwork/AEM so iOS 14+ app install campaigns can
+run. It forwards only `onboarding_completed`, `new_review`, and
+`view_location` as Meta standard events, without properties. Development
+builds may omit the client token; the SDK then records nothing from JS. Preview and production config
 generation fails when any of these variables is missing. Verify every EAS
 environment with:
 

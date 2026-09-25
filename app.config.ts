@@ -17,6 +17,7 @@ const REQUIRED_RELEASE_ENVIRONMENT_VARIABLES = [
   "EXPO_PUBLIC_SUPABASE_URL",
   "EXPO_PUBLIC_SUPABASE_ANON_KEY",
   "EXPO_PUBLIC_META_APP_ID",
+  "EXPO_PUBLIC_META_CLIENT_TOKEN",
   "EXPO_PUBLIC_SENTRY_DSN",
   "SENTRY_ORG",
   "SENTRY_PROJECT",
@@ -91,6 +92,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   );
   const { name, bundleIdentifier, icon, scheme } =
     getDynamicAppConfig(appEnvironment);
+  const metaAppId = process.env.EXPO_PUBLIC_META_APP_ID?.trim();
+  const metaClientToken = process.env.EXPO_PUBLIC_META_CLIENT_TOKEN?.trim();
 
   return {
     ...config,
@@ -98,7 +101,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "4.6.0",
+    version: "4.7.0",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
     platforms: ["ios", "web"], // The native app is iOS-only; Expo web remains available.
     orientation: "portrait",
@@ -175,9 +178,30 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-tracking-transparency",
         {
           userTrackingPermission:
-            "Allow Tini Time Club to use your app activity to measure and improve the app experience.",
+            "Allow Tini Time Club to use your app activity to measure how you found the app through ads and improve your experience.",
         },
       ],
+      // Meta SDK: reports installs and app events (SKAdNetwork/AEM) so Meta
+      // can run iOS 14+ app install campaigns. Release builds require the app
+      // ID and client token; development builds may omit the token.
+      ...(metaAppId
+        ? [
+            [
+              "react-native-fbsdk-next",
+              {
+                appID: metaAppId,
+                ...(metaClientToken ? { clientToken: metaClientToken } : {}),
+                displayName: APP_NAME,
+                scheme: `fb${metaAppId}`,
+                isAutoInitEnabled: true,
+                autoLogAppEventsEnabled: true,
+                advertiserIDCollectionEnabled: true,
+                // Keep expo-tracking-transparency's prompt copy above.
+                iosUserTrackingPermission: false,
+              },
+            ] as [string, Record<string, unknown>],
+          ]
+        : []),
       [
         "@react-native-google-signin/google-signin",
         {
@@ -222,6 +246,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.EXPO_PUBLIC_ENABLE_DEV_PUSH_NOTIFICATIONS === "1",
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      metaAppEventsEnabled: Boolean(metaAppId && metaClientToken),
     },
     experiments: {
       typedRoutes: true,

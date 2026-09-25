@@ -35,6 +35,10 @@ jest.mock("@/utils/supabase", () => ({
   },
 }));
 jest.mock("@/utils/log", () => ({ log: jest.fn(), warn: jest.fn() }));
+const mockLogMetaAppEvent = jest.fn();
+jest.mock("@/services/metaAppEventsService", () => ({
+  logMetaAppEvent: (event: string) => mockLogMetaAppEvent(event),
+}));
 
 import AnalyticService from "@/services/analyticsService";
 
@@ -73,4 +77,10 @@ it("contains delivery failures and reports false to observable callers", async (
   mockInvoke.mockResolvedValueOnce({ error: new Error("offline") });
 
   await expect(AnalyticService.capture("login")).resolves.toBe(false);
+});
+
+it("forwards the event name, without properties, to Meta app events", async () => {
+  await AnalyticService.capture("new_review", { reviewId: "private-review" });
+
+  expect(mockLogMetaAppEvent).toHaveBeenCalledWith("new_review");
 });

@@ -62,6 +62,7 @@ describe("release environment validation", () => {
   const originalSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const originalSupabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   const originalMetaAppId = process.env.EXPO_PUBLIC_META_APP_ID;
+  const originalMetaClientToken = process.env.EXPO_PUBLIC_META_CLIENT_TOKEN;
   const originalSentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
   const originalSentryOrg = process.env.SENTRY_ORG;
   const originalSentryProject = process.env.SENTRY_PROJECT;
@@ -83,6 +84,7 @@ describe("release environment validation", () => {
       EXPO_PUBLIC_SUPABASE_URL: originalSupabaseUrl,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: originalSupabaseAnonKey,
       EXPO_PUBLIC_META_APP_ID: originalMetaAppId,
+      EXPO_PUBLIC_META_CLIENT_TOKEN: originalMetaClientToken,
       EXPO_PUBLIC_SENTRY_DSN: originalSentryDsn,
       SENTRY_ORG: originalSentryOrg,
       SENTRY_PROJECT: originalSentryProject,
@@ -110,12 +112,54 @@ describe("release environment validation", () => {
     }
   );
 
+  it.each(["preview", "production"])(
+    "rejects a %s build without a Meta client token",
+    (appEnvironment) => {
+      jest.spyOn(console, "log").mockImplementation(() => {});
+      process.env.APP_ENV = appEnvironment;
+      process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+      process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+      setSentryReleaseEnvironment();
+      delete process.env.EXPO_PUBLIC_META_CLIENT_TOKEN;
+
+      expect(() => createAppConfig({ config: {} } as ConfigContext)).toThrow(
+        `Missing required ${appEnvironment} environment variables: EXPO_PUBLIC_META_CLIENT_TOKEN`
+      );
+    }
+  );
+
+  it("configures the Meta SDK for install attribution in release builds", () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    process.env.APP_ENV = "production";
+    process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+    process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
+    setSentryReleaseEnvironment();
+
+    const config = createAppConfig({ config: {} } as ConfigContext);
+
+    expect(pluginOptions(config.plugins, "react-native-fbsdk-next")).toEqual(
+      expect.objectContaining({
+        appID: "123456789",
+        clientToken: "test-client-token",
+        scheme: "fb123456789",
+        isAutoInitEnabled: true,
+        autoLogAppEventsEnabled: true,
+        iosUserTrackingPermission: false,
+      })
+    );
+    expect(config.extra?.metaAppEventsEnabled).toBe(true);
+  });
+
   it("accepts a preview build when every release variable is present", () => {
     jest.spyOn(console, "log").mockImplementation(() => {});
     process.env.APP_ENV = "preview";
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
 
     expect(
@@ -130,6 +174,7 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
     delete process.env.SENTRY_AUTH_TOKEN;
 
@@ -145,6 +190,7 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
     delete process.env.SENTRY_AUTH_TOKEN;
 
@@ -160,6 +206,7 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
 
     expect(
@@ -215,6 +262,7 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
     process.env.EXPO_PUBLIC_META_APP_ID = "123456789";
+    process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
     expect(
       createAppConfig({ config: {} } as ConfigContext).extra?.backendEnvironment
