@@ -13,11 +13,9 @@ side-by-side on one device.
 ## Branch flow
 
 ```
-working branch ──manual development/preview testing──▶ merge to main
-                                                        │
-                                                   main audit
-                                                        │
-                                          production build or OTA
+working branch ──npm run verify + development/preview testing──▶ merge to main
+                                                                   │
+                                                     production build or OTA
 ```
 
 There is no shared `development` release branch and there are no automated EAS
@@ -25,14 +23,18 @@ release integrations. Development happens on working branches and preview
 builds are created directly from the branch under test. `main` is always the
 latest live source, including production OTA fixes.
 
-GitHub Actions runs the repository audit on pull requests targeting `main` and
-again after a push reaches `main`. Branch and preview validation is still
-manual: run `npm run verify` before building.
+Validation is local. The GitHub Actions workflows (`Main audit` in `ci.yml`
+and `Database tests` in `db.yml`) are disabled, so pull requests and pushes to
+`main` run no checks. Run `npm run verify` before merging or building, and
+`supabase test db` for database changes. Root Jest excludes the separately
+tested admin application.
 
-Audit cancellation is scoped to each PR/ref. CI also exports an iOS bundle
-with placeholder configuration and source-map uploads disabled. This proves
-compilation only: that artifact must not be published or used to validate a
-real backend. Root Jest excludes the separately tested admin application.
+The workflow files remain in `.github/workflows/`. To re-enable one, run
+`gh workflow enable "Main audit"` or `gh workflow enable "Database tests"`.
+`ci.yml` validates release config with placeholder variables, so add a
+placeholder for any newly required release variable (currently
+`EXPO_PUBLIC_META_CLIENT_TOKEN` is missing) before re-enabling it. Its iOS
+bundle export proves compilation only and must never be published.
 
 ## Test policy
 
@@ -245,7 +247,7 @@ branch after pre-3.2 builds are retired.
 2. Confirm the required variables above exist in the target EAS environment.
 3. Run `npm run verify` and test against development Supabase.
 4. Create and test a preview build directly from the working branch when needed.
-5. Merge the tested branch into `main`; the main-only audit runs after the push.
+5. Merge the tested branch into `main` (no CI runs; step 3 is the check).
 6. Stage the reviewed Supabase production allowlist in an isolated workdir;
    dry-run it, apply it, and verify the live app remains compatible.
 7. Run `npm run start:prod` and test the same dev client against production.
