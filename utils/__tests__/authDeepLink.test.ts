@@ -2,6 +2,8 @@ import {
   createSessionFromAuthUrl,
   isAuthCallbackUrl,
 } from "@/utils/authDeepLink";
+import { AuthRetryableFetchError } from "@supabase/supabase-js";
+import { AppState, type AppStateStatus } from "react-native";
 import { supabase } from "@/utils/supabase";
 
 jest.mock("@/utils/supabase", () => ({
@@ -23,9 +25,24 @@ const setSession = supabase.auth.setSession as jest.Mock;
 
 const session = { user: { id: "user-1" } };
 
+const initialAppState = AppState.currentState;
+
+const cancelledFetch = () =>
+  new AuthRetryableFetchError(
+    "fetch failed: UnexpectedException: cancelled",
+    0
+  );
+
 beforeEach(() => {
   jest.clearAllMocks();
+  AppState.currentState = "active";
   setSession.mockResolvedValue({ data: { session }, error: null });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+  AppState.currentState = initialAppState;
 });
 
 describe("isAuthCallbackUrl", () => {
@@ -136,4 +153,61 @@ describe("createSessionFromAuthUrl", () => {
       expect(setSession).not.toHaveBeenCalled();
     }
   );
+
+  it("retries the token exchange when iOS cancels the request", async () => {
+    jest.useFakeTimers();
+    setSession
+      .mockResolvedValueOnce({
+        data: { session: null },
+        error: cancelledFetch(),
+      })
+      .mockResolvedValueOnce({ data: { session }, error: null });
+
+    const result = createSessionFromAuthUrl(
+      "tinitimeclub://auth#access_token=AT&refresh_token=RT"
+    );
+    await jest.advanceTimersByTimeAsync(500);
+
+    await expect(result).resolves.toBe(session);
+    expect(setSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after three cancelled attempts", async () => {
+    jest.useFakeTimers();
+    const failure = cancelledFetch();
+    setSession.mockResolvedValue({ data: { session: null }, error: failure });
+
+    const result = createSessionFromAuthUrl(
+      "tinitimeclub://auth#access_token=AT&refresh_token=RT"
+    );
+    const assertion = expect(result).rejects.toBe(failure);
+    await jest.advanceTimersByTimeAsync(1500);
+
+    await assertion;
+    expect(setSession).toHaveBeenCalledTimes(3);
+  });
+
+  it("waits for the app to reach the foreground before exchanging tokens", async () => {
+    let onChange: ((state: AppStateStatus) => void) | undefined;
+    const remove = jest.fn();
+    AppState.currentState = "background";
+    jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation((_, listener) => {
+        onChange = listener as (state: AppStateStatus) => void;
+        return { remove } as ReturnType<typeof AppState.addEventListener>;
+      });
+
+    const result = createSessionFromAuthUrl(
+      "tinitimeclub://auth#access_token=AT&refresh_token=RT"
+    );
+    await Promise.resolve();
+    expect(setSession).not.toHaveBeenCalled();
+
+    onChange?.("active");
+
+    await expect(result).resolves.toBe(session);
+    expect(remove).toHaveBeenCalled();
+    expect(setSession).toHaveBeenCalledTimes(1);
+  });
 });
