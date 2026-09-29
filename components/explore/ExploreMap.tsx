@@ -591,6 +591,8 @@ function ExploreMap({
     const requestId = ++fetchRequestRef.current;
 
     const fetchTimer = setTimeout(async () => {
+      // Region selection positions the camera; only the viewport limits pins.
+      // Keep both member and visitor requests free of a selected-region filter.
       const { data, error } = profile
         ? await supabase.rpc("locations_in_view", {
             min_lat: queryBounds.minLat,
@@ -616,9 +618,8 @@ function ExploreMap({
       } else {
         let rawLocations = (data ?? []).map(toMapLocation) as MapLocation[];
 
-        // A venue opened from its detail screen may be outside the selected
-        // Explore region. The viewport RPC intentionally filters by region,
-        // so load the routed venue directly to guarantee the map can show it.
+        // A routed venue may be outside the current viewport or absent from
+        // the reviewed-location results. Load it directly so its pin can open.
         if (
           focus.locationId &&
           !rawLocations.some(
@@ -681,7 +682,6 @@ function ExploreMap({
         const nextLocations = normalizeMapLocations(
           locationsWithAwards
         ) as MapLocation[];
-        fetchedBoundsRef.current = queryBounds;
         let committedLocations = nextLocations;
         try {
           const withTheirRegulars = await withRegulars(nextLocations);
@@ -692,6 +692,10 @@ function ExploreMap({
         }
 
         if (requestId !== fetchRequestRef.current) return;
+        // Cache only bounds whose pins are being published. A pan while
+        // regulars load cancels this request; caching earlier would make the
+        // next viewport skip fetching pins that were never displayed.
+        fetchedBoundsRef.current = queryBounds;
         // Publish one complete marker batch. Mounting an empty clustered map
         // and then replacing it during Fabric reconciliation can crash iOS.
         setLocations((currentLocations) =>
