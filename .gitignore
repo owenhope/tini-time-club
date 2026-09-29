@@ -54,3 +54,7 @@ android
 
 .env.local
 .vercel
+
+# Marketing working files (creative exports, prompts, scripts). Tracked notes such
+# as marketing/instagram/campaign-ready/campaign-status.md stay tracked.
+marketing/
