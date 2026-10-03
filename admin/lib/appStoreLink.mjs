@@ -28,9 +28,12 @@ export function isMetaAdVisit(search) {
 export function appStoreUrl({ providerToken, campaign }) {
   const token = providerToken?.trim();
   if (!token) return APP_STORE_BASE_URL;
-  const url = new URL(APP_STORE_BASE_URL);
-  url.searchParams.set("pt", token);
-  url.searchParams.set("ct", campaign);
-  url.searchParams.set("mt", "8");
-  return url.toString();
+  // Percent-encode (not URLSearchParams' `+`) to match App Store Connect's
+  // generated links, e.g. `ct=Meta%20Web`.
+  const query = [
+    `pt=${encodeURIComponent(token)}`,
+    `ct=${encodeURIComponent(campaign)}`,
+    "mt=8",
+  ].join("&");
+  return `${APP_STORE_BASE_URL}?${query}`;
 }

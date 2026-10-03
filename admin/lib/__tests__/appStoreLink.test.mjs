@@ -25,6 +25,13 @@ test("campaign links carry the provider token, campaign and media type", () => {
   assert.equal(url.searchParams.get("mt"), "8");
 });
 
+test("campaign names are percent-encoded like App Store Connect links", () => {
+  assert.equal(
+    appStoreUrl({ providerToken: "119407106", campaign: META_AD_CAMPAIGN }),
+    "https://apps.apple.com/app/tini-time-club/id6741620393?pt=119407106&ct=Meta%20Web&mt=8",
+  );
+});
+
 test("without a provider token the plain store URL is used", () => {
   for (const providerToken of [undefined, "", "  "]) {
     assert.equal(
