@@ -58,6 +58,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tinitimeclub.com"),
   title: "Martini Review App | Tini Time Club",
   description: siteDescription,
+  verification: {
+    other: {
+      // Meta Business Manager domain verification for tinitimeclub.com.
+      "facebook-domain-verification": "dlpnvtxm7dml2g1iyd2fmsds54xtvv",
+    },
+  },
   authors: [
     {
       name: "Hope Media House Inc.",
