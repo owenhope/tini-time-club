@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Suspense } from "react";
 import { siteDescription, siteShareImage } from "@/lib/seo";
 import AdminNavigationProgress from "@/components/AdminNavigationProgress";
+import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
 // Figtree stands in for the wordmark's geometric grotesque; DM Mono for
@@ -94,6 +95,7 @@ export default function RootLayout({
         <Suspense>
           <AdminNavigationProgress />
         </Suspense>
+        <MetaPixel />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-53R4Z4BZ3D"
           strategy="afterInteractive"
