@@ -21,7 +21,7 @@ test("campaign links carry the provider token, campaign and media type", () => {
   assert.equal(url.origin, "https://apps.apple.com");
   assert.equal(url.pathname, "/app/tini-time-club/id6741620393");
   assert.equal(url.searchParams.get("pt"), "118000");
-  assert.equal(url.searchParams.get("ct"), "meta-web");
+  assert.equal(url.searchParams.get("ct"), "Meta Web");
   assert.equal(url.searchParams.get("mt"), "8");
 });
 

@@ -3,7 +3,7 @@ export const APP_STORE_ID = "6741620393";
 const APP_STORE_BASE_URL = `https://apps.apple.com/app/tini-time-club/id${APP_STORE_ID}`;
 
 /** App Store Connect campaign token for visitors who arrived from a Meta ad. */
-export const META_AD_CAMPAIGN = "meta-web";
+export const META_AD_CAMPAIGN = "Meta Web";
 /** Campaign token for every other tinitimeclub.com visitor. */
 export const WEBSITE_CAMPAIGN = "website";
 
