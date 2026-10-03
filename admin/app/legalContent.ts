@@ -75,6 +75,7 @@ export const privacySections: LegalSection[] = [
       "User content, including reviews, captions, comments, photos, favorite places, and profile information you choose to share.",
       "Location information, including precise or approximate location when you grant location permission for nearby discovery features.",
       "Device and usage information, including diagnostics, app activity, notification tokens, and performance information.",
+      "Website usage information, such as pages viewed on tinitimeclub.com, whether you arrived from one of our ads, and taps on App Store links, collected with cookies and similar technologies.",
       "Support communications you send to us.",
     ],
   },
@@ -90,7 +91,7 @@ export const privacySections: LegalSection[] = [
   },
   {
     title: "3. Sharing",
-    body: "We may share information with service providers that help operate the app, including hosting, database, authentication, maps, storage, analytics, notifications, and app-store services. We do not sell personal information or share personal information with data brokers. If a data use requires App Tracking Transparency permission on iOS, we request that permission before using data for that purpose. We may also share information when required by law, to protect rights and safety, or in connection with a business transfer. We do not sell or serve alcohol.",
+    body: "We may share information with service providers that help operate the app, including hosting, database, authentication, maps, storage, analytics, notifications, and app-store services. We do not sell personal information or share personal information with data brokers. If a data use requires App Tracking Transparency permission on iOS, we request that permission before using data for that purpose. On our website, we use Google Analytics and the Meta Pixel to measure visits and the performance of our ads; Meta may use this information as described in its own privacy policy. You can limit website tracking with your browser's cookie and tracking settings, an ad blocker, or your Meta ad preferences. We may also share information when required by law, to protect rights and safety, or in connection with a business transfer. We do not sell or serve alcohol.",
   },
   {
     title: "4. Public Content",

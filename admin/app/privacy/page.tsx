@@ -46,7 +46,7 @@ export default function PrivacyPage() {
       <PublicLegalPage
         eyebrow="privacy"
         title="Privacy Policy"
-        effectiveDate="September 10, 2025"
+        effectiveDate="October 3, 2026"
         contactEmail="support@hopemediahouse.com"
         intro="This Privacy Policy explains how Hope Media House Inc. collects, uses, shares, and protects information when you use Tini Time Club and related websites."
         sections={privacySections}

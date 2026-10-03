@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AppStoreLink from "@/components/AppStoreLink";
 import type { MouseEvent } from "react";
 
 type PublicHeaderTone = "purple" | "cream" | "stone";
@@ -84,12 +85,12 @@ export default function PublicHeader({ tone = "cream" }: PublicHeaderProps) {
               {link.label}
             </Link>
           ))}
-          <a
-            href="https://apps.apple.com/app/tini-time-club/id6741620393"
+          <AppStoreLink
+            placement="header"
             className={`rounded-md border px-3 py-2 transition ${styles.cta}`}
           >
             Get iOS app
-          </a>
+          </AppStoreLink>
         </nav>
       </div>
     </header>

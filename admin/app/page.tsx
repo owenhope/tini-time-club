@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import AppStoreLink from "@/components/AppStoreLink";
 import {
   MartiniGlyph,
   PassportGlyph,
@@ -95,12 +96,12 @@ export default function PublicHomePage() {
                   place, and every person worth coming back to.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <a
-                    href="https://apps.apple.com/app/tini-time-club/id6741620393"
+                  <AppStoreLink
+                    placement="home_hero"
                     className="inline-flex min-h-12 items-center rounded-md bg-chartreuse px-5 py-3 text-sm font-black text-emerald-950 shadow-lg shadow-emerald-950/20 transition hover:bg-chartreuse-dark"
                   >
                     Download for iPhone
-                  </a>
+                  </AppStoreLink>
                   <a
                     href="#club"
                     className="inline-flex min-h-12 items-center rounded-md border border-white/32 px-5 py-3 text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/10"
@@ -338,12 +339,12 @@ export default function PublicHomePage() {
               later, and social enough to turn a good pour into a plan.
             </p>
           </div>
-          <a
-            href="https://apps.apple.com/app/tini-time-club/id6741620393"
+          <AppStoreLink
+            placement="home_footer_cta"
             className="inline-flex min-h-16 items-center justify-center rounded-[8px] border border-emerald-950 px-7 text-center text-base font-black text-emerald-950 transition hover:bg-emerald-950 hover:text-white"
           >
             Download on the App Store
-          </a>
+          </AppStoreLink>
         </div>
       </section>
 
