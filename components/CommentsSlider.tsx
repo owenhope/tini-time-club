@@ -288,7 +288,6 @@ export default function CommentsSlider({
         const data = await databaseService.createComment(
           {
             review_id: review.id,
-            user_id: profile.id,
             body: comment,
           },
           mentions

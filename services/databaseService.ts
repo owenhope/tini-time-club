@@ -700,54 +700,32 @@ class DatabaseService {
   }
 
   /**
-   * Create a comment
+   * Create a comment. Always goes through create_comment_v2, which enforces
+   * length, review visibility and blocks; members can't insert directly.
    */
   async createComment(
-    commentData: any,
-    mentions?: MentionSpan[]
+    commentData: { review_id: string | number; body: string },
+    mentions: MentionSpan[] = []
   ): Promise<DecodedComment> {
-    if (mentions) {
-      const comment = trimMentionBody(String(commentData.body ?? ""), mentions);
-      const { data, error } = await supabase.rpc("create_comment_v2", {
-        p_body: comment.text,
-        p_mentions: mentionPayload(comment.text, comment.mentions),
-        p_review_id: Number(commentData.review_id),
-      });
-      if (error) throw error;
-      if (comment.mentions.length) {
-        void AnalyticService.capture("mention_submitted", {
-          surface: "comment",
-          count: new Set(comment.mentions.map((mention) => mention.profileId))
-            .size,
-        });
-      }
-      this.queryCache.delete(`comments_${commentData.review_id}`);
-      requestPassportReconciliation();
-      const decoded = decodeComment(data);
-      if (!decoded) throw new Error("Comment returned an invalid response.");
-      return decoded;
-    }
-
-    const { data, error } = await supabase
-      .from("comments")
-      .insert(commentData)
-      .select(
-        `
-        *,
-        profile:profiles!comments_user_id_fkey(id, username, avatar_url, is_verified, review_count, passport_points)
-      `
-      )
-      .single();
-
+    const comment = trimMentionBody(String(commentData.body ?? ""), mentions);
+    const { data, error } = await supabase.rpc("create_comment_v2", {
+      p_body: comment.text,
+      p_mentions: mentionPayload(comment.text, comment.mentions),
+      p_review_id: Number(commentData.review_id),
+    });
     if (error) throw error;
-
-    // Invalidate comments cache
+    if (comment.mentions.length) {
+      void AnalyticService.capture("mention_submitted", {
+        surface: "comment",
+        count: new Set(comment.mentions.map((mention) => mention.profileId))
+          .size,
+      });
+    }
     this.queryCache.delete(`comments_${commentData.review_id}`);
     requestPassportReconciliation();
-
     const decoded = decodeComment(data);
     if (!decoded) throw new Error("Comment returned an invalid response.");
-    return { ...decoded, likes_count: 0, has_liked: false };
+    return decoded;
   }
 
   /**
