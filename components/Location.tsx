@@ -261,6 +261,17 @@ const Location = () => {
     }, [fetchSelectedLocation, locationIdParam])
   );
 
+  // Bumped when any review changes, so a review posted here (e.g. a member's
+  // second one, making them a Regular) re-reads the standings.
+  const [regularsVersion, setRegularsVersion] = useState(0);
+  useEffect(
+    () =>
+      subscribeToReviewUpdates(() =>
+        setRegularsVersion((version) => version + 1)
+      ),
+    []
+  );
+
   useEffect(() => {
     if (!displayLocation?.id) return;
 
@@ -289,7 +300,7 @@ const Location = () => {
     return () => {
       active = false;
     };
-  }, [displayLocation?.id, shouldOpenRegularsForScreenshot]);
+  }, [displayLocation?.id, regularsVersion, shouldOpenRegularsForScreenshot]);
 
   const handleLikeChanged = useCallback(
     (reviewId: string, hasLiked: boolean, likesCount: number) => {
