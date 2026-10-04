@@ -57,20 +57,18 @@ it("keeps venue placement and review totals independent from cached Passport poi
 it("refetches a location's regulars after a review changes", async () => {
   const rpc = supabase.rpc as jest.Mock;
   rpc.mockReset();
-  rpc
-    .mockResolvedValueOnce({ data: [], error: null })
-    .mockResolvedValueOnce({
-      data: [
-        {
-          location_id: 77,
-          rank: 1,
-          profile_id: "member-1",
-          username: "olive",
-          review_count: 2,
-        },
-      ],
-      error: null,
-    });
+  rpc.mockResolvedValueOnce({ data: [], error: null }).mockResolvedValueOnce({
+    data: [
+      {
+        location_id: 77,
+        rank: 1,
+        profile_id: "member-1",
+        username: "olive",
+        review_count: 2,
+      },
+    ],
+    error: null,
+  });
 
   expect((await getRegularsByLocation([77])).get("77") ?? []).toEqual([]);
   // A second read inside the cache window is served from cache...

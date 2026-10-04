@@ -421,7 +421,8 @@ describe("Feed startup loading", () => {
         id: `review-${n * 20 + index}`,
         user_id: "club-member",
       }));
-    for (let n = 0; n < 6; n += 1) mockGetReviews.mockResolvedValueOnce(page(n));
+    for (let n = 0; n < 6; n += 1)
+      mockGetReviews.mockResolvedValueOnce(page(n));
 
     await act(async () => {
       renderer = create(<Home />);
