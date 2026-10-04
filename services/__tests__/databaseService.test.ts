@@ -223,54 +223,31 @@ it("does not expose a personalized people feed to a visitor", async () => {
   expect(rpc).not.toHaveBeenCalled();
 });
 
-it("qualifies the profile relationship when creating a comment", async () => {
-  let selectedColumns = "";
-  const pgrst201 = {
-    code: "PGRST201",
-    message: "Could not embed because more than one relationship was found",
-  };
-  const newComment = {
-    id: 42,
-    inserted_at: "2026-09-18T00:00:00Z",
-    review_id: 9,
-    user_id: "author-1",
-    body: "Perfectly cold.",
-    profile: { id: "author-1", username: "olivefan" },
-  };
-
-  from.mockReturnValue({
-    insert: jest.fn(() => ({
-      select: jest.fn((columns: string) => {
-        selectedColumns = columns;
-        return {
-          single: jest.fn(async () =>
-            columns.includes("profile:profiles!comments_user_id_fkey")
-              ? { data: newComment, error: null }
-              : { data: null, error: pgrst201 }
-          ),
-        };
-      }),
-    })),
-  });
-
-  await expect(
-    databaseService.createComment({
+it("creates comments without mentions through the comment RPC", async () => {
+  rpc.mockResolvedValue({
+    data: {
+      id: 42,
       review_id: 9,
       user_id: "author-1",
       body: "Perfectly cold.",
-    })
-  ).resolves.toEqual({
-    ...newComment,
-    profile: {
-      ...newComment.profile,
-      avatar_url: null,
-      is_verified: false,
-      passport_points: null,
+      inserted_at: "2026-09-18T00:00:00Z",
+      profile: { id: "author-1", username: "olivefan" },
+      likes_count: 0,
+      has_liked: false,
+      mentions: [],
     },
-    likes_count: 0,
-    has_liked: false,
+    error: null,
   });
-  expect(selectedColumns).toContain("profile:profiles!comments_user_id_fkey");
+
+  await expect(
+    databaseService.createComment({ review_id: 9, body: "Perfectly cold." })
+  ).resolves.toMatchObject({ id: 42, body: "Perfectly cold." });
+  expect(rpc).toHaveBeenCalledWith("create_comment_v2", {
+    p_body: "Perfectly cold.",
+    p_mentions: [],
+    p_review_id: 9,
+  });
+  expect(from).not.toHaveBeenCalledWith("comments");
 });
 
 it.each([undefined, null, 0, 500])(
@@ -303,7 +280,7 @@ it.each([undefined, null, 0, 500])(
     });
     await expect(
       databaseService.createComment(
-        { review_id: 9, user_id: "author-1", body: "Cheers @twist" },
+        { review_id: 9, body: "Cheers @twist" },
         [mention]
       )
     ).resolves.toMatchObject({
