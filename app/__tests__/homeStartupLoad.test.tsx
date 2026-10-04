@@ -22,6 +22,7 @@ let mockProfile: {
   eula_accepted: true,
 };
 let mockAuthenticated = true;
+let mockPageHasMore = false;
 let mockReviewUpdateCallback: (() => void) | null = null;
 
 const deferred = <T,>() => {
@@ -81,8 +82,8 @@ jest.mock("@/services/databaseService", () => ({
 jest.mock("@/services/reviewFeedService", () => ({
   getReviewPage: async (options: Record<string, unknown>) => ({
     reviews: await mockGetReviews(options),
-    nextCursor: null,
-    hasMore: false,
+    nextCursor: mockPageHasMore ? { insertedAt: "cursor", id: "cursor" } : null,
+    hasMore: mockPageHasMore,
   }),
 }));
 
@@ -186,6 +187,7 @@ describe("Feed startup loading", () => {
   let renderer: ReactTestRenderer | undefined;
 
   beforeEach(() => {
+    mockPageHasMore = false;
     mockGetReviews.mockReset();
     mockGetReviews.mockImplementation(() => new Promise(() => undefined));
     mockOpenMembership.mockClear();
@@ -410,6 +412,38 @@ describe("Feed startup loading", () => {
         .findByType(FlatList)
         .props.data.map((review: { id: string }) => review.id)
     ).toEqual(["people-review"]);
+  });
+
+  it("never drops loaded reviews from the top as more pages load", async () => {
+    mockPageHasMore = true;
+    const page = (n: number) =>
+      Array.from({ length: 20 }, (_, index) => ({
+        id: `review-${n * 20 + index}`,
+        user_id: "club-member",
+      }));
+    for (let n = 0; n < 6; n += 1) mockGetReviews.mockResolvedValueOnce(page(n));
+
+    await act(async () => {
+      renderer = create(<Home />);
+    });
+    // Pagination is throttled between loads, so step the clock past it.
+    let now = Date.now();
+    const clock = jest.spyOn(Date, "now").mockImplementation(() => now);
+    for (let n = 1; n < 6; n += 1) {
+      now += 60_000;
+      await act(async () => {
+        renderer!.root.findByType(FlatList).props.onEndReached();
+      });
+    }
+    clock.mockRestore();
+
+    const ids = renderer!.root
+      .findByType(FlatList)
+      .props.data.map((review: { id: string }) => review.id);
+    expect(mockGetReviews).toHaveBeenCalledTimes(6);
+    expect(ids).toHaveLength(120);
+    expect(ids[0]).toBe("review-0");
+    expect(ids[119]).toBe("review-119");
   });
 
   it("keeps the newest reviews when a refresh exceeds the cache limit", async () => {

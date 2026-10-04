@@ -67,13 +67,11 @@ const WELCOME_STAMPS: { shape: PassportStampShape; label: string }[] = [
   { shape: "martinis", label: "Martini" },
   { shape: "regulars", label: "Regular" },
 ];
-// A refresh is newest-first, so keep the head; an appended page arrives at the
-// end, so keep the tail. Cursor pagination is independent of this retained
-// render window, unlike the old array-length-derived offsets.
+// A refresh is newest-first, so keep the head. Appended pages are never
+// trimmed: dropping the head mid-scroll shifted the list under the reader and
+// skipped a page's worth of reviews. FlatList virtualization bounds rendering.
 const limitRefreshedReviews = (items: Review[]) =>
   items.length > MAX_CACHED_ITEMS ? items.slice(0, MAX_CACHED_ITEMS) : items;
-const limitAppendedReviews = (items: Review[]) =>
-  items.length > MAX_CACHED_ITEMS ? items.slice(-MAX_CACHED_ITEMS) : items;
 
 // Simplified state management - no custom hook to avoid re-render issues
 
@@ -218,9 +216,7 @@ function Home() {
         if (refresh) {
           setReviews(limitRefreshedReviews(reviewsWithUrls));
         } else {
-          setReviews((prev) =>
-            limitAppendedReviews([...prev, ...reviewsWithUrls])
-          );
+          setReviews((prev) => [...prev, ...reviewsWithUrls]);
         }
 
         setPage(nextPage);
