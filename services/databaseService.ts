@@ -23,6 +23,7 @@ import AnalyticService from "@/services/analyticsService";
 import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 import { hydrateReviewMentions } from "@/services/mentionService";
 import { normalizeCommentLikeCounts } from "@/utils/commentLikeCounts";
+import { publishReviewUpdated } from "@/utils/reviewEvents";
 
 interface CachedQuery {
   data: any;
@@ -732,6 +733,26 @@ class DatabaseService {
     const decoded = decodeComment(data);
     if (!decoded) throw new Error("Comment returned an invalid response.");
     return decoded;
+  }
+
+  /**
+   * Delete (unpublish) the member's own review. Throws if nothing was deleted
+   * so the caller can tell the member; on success every screen showing the
+   * review (feed, location, profile) is told to reload.
+   */
+  async deleteReview(reviewId: string, userId: string): Promise<void> {
+    const { data, error } = await supabase
+      .from("reviews")
+      .update({ state: 3 })
+      .eq("id", reviewId)
+      .eq("user_id", userId)
+      .select("id");
+    if (error) throw error;
+    if (!data?.length) throw new Error("Review could not be deleted.");
+
+    await this.clearReviewCaches();
+    this.invalidateUserCaches(userId);
+    publishReviewUpdated(reviewId);
   }
 
   /**
