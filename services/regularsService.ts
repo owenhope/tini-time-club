@@ -1,6 +1,7 @@
 import { decodeMemberSummary } from "@/utils/memberSummary";
 import { supabase } from "@/utils/supabase";
 import { reportError } from "@/utils/log";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 
 export interface Regular {
   location_id: number;
@@ -65,10 +66,12 @@ export interface ProfileRegularPlace {
 }
 
 // Regulars change only when reviews land, but the places map asks for them
-// on every pan. A short per-location cache absorbs that chatter; callers
-// that need post-write freshness (the celebration check) pass maxAgeMs: 0.
+// on every pan. A short per-location cache absorbs that chatter, and is
+// dropped whenever a review is posted, edited or deleted so the next read
+// (location page, map pins, Golden Glass) reflects the new standings.
 const REGULARS_CACHE_TTL_MS = 2 * 60 * 1000;
 const regularsCache = new Map<string, { at: number; regulars: Regular[] }>();
+subscribeToReviewUpdates(() => regularsCache.clear());
 
 /**
  * Attach each location's regulars to it in one round trip.

@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase";
 import { getRegularsByLocation } from "../regularsService";
+import { publishReviewUpdated } from "@/utils/reviewEvents";
 jest.mock("@/utils/supabase", () => ({ supabase: { rpc: jest.fn() } }));
 jest.mock("@/utils/log", () => ({ reportError: jest.fn() }));
 
@@ -51,4 +52,34 @@ it("keeps venue placement and review totals independent from cached Passport poi
   const cached = await getRegularsByLocation([42]);
   expect(cached.get("42")).toEqual(regulars);
   expect(rpc).toHaveBeenCalledTimes(1);
+});
+
+it("refetches a location's regulars after a review changes", async () => {
+  const rpc = supabase.rpc as jest.Mock;
+  rpc.mockReset();
+  rpc
+    .mockResolvedValueOnce({ data: [], error: null })
+    .mockResolvedValueOnce({
+      data: [
+        {
+          location_id: 77,
+          rank: 1,
+          profile_id: "member-1",
+          username: "olive",
+          review_count: 2,
+        },
+      ],
+      error: null,
+    });
+
+  expect((await getRegularsByLocation([77])).get("77") ?? []).toEqual([]);
+  // A second read inside the cache window is served from cache...
+  expect((await getRegularsByLocation([77])).get("77") ?? []).toEqual([]);
+  expect(rpc).toHaveBeenCalledTimes(1);
+
+  // ...until a review is posted, edited or deleted.
+  publishReviewUpdated("review-1");
+  const regulars = (await getRegularsByLocation([77])).get("77");
+  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(regulars?.map((regular) => regular.username)).toEqual(["olive"]);
 });
