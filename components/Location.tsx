@@ -12,6 +12,7 @@ import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
 import {
+  Button,
   MemberAvatar,
   MartiniIcon,
   RatingPips,
@@ -80,6 +81,8 @@ const Location = () => {
     null
   );
   const loadedLocationIdRef = useRef<string | null>(null);
+  const [locationLoadFailed, setLocationLoadFailed] = useState(false);
+  const [retryingLocation, setRetryingLocation] = useState(false);
   // One value, both halves of the crossfade: variant C fades out on it as it
   // scrolls away and variant B fades in on the same number.
   const {
@@ -236,6 +239,7 @@ const Location = () => {
         };
 
         setSelectedLocation(formattedLocation);
+        setLocationLoadFailed(false);
 
         AnalyticService.capture("view_location", {
           locationId: formattedLocation.id,
@@ -243,8 +247,10 @@ const Location = () => {
         });
       } catch {
         // .single() rejects when the location isn't in the DB yet — fall back
-        // to the params-built minimal location via displayLocation.
-        setSelectedLocation(null);
+        // to the params-built minimal location via displayLocation. Keep the
+        // last good location so a transient refetch error (e.g. on focus)
+        // doesn't wipe a page that already loaded.
+        setLocationLoadFailed(true);
       }
     },
     [viewerId]
@@ -441,6 +447,28 @@ const Location = () => {
       loadLocationReviews();
     }
   }, [displayLocation?.id, loadLocationReviews]);
+
+  // Nothing to show: the fetch failed and no name param gives a fallback.
+  if (!displayLocation && locationLoadFailed && locationIdParam) {
+    return (
+      <View style={[styles.container, styles.errorState]}>
+        <Text style={styles.errorTitle}>
+          We couldn&rsquo;t load this place.
+        </Text>
+        <Button
+          title="Try again"
+          loading={retryingLocation}
+          onPress={() => {
+            setRetryingLocation(true);
+            void fetchSelectedLocation(locationIdParam).finally(() =>
+              setRetryingLocation(false)
+            );
+          }}
+        />
+        <Button title="Go back" variant="ghost" onPress={goBack} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -647,6 +675,17 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.isDark ? t.colors.background : t.colors.surface,
+  },
+  errorState: {
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    padding: t.spacing.xl,
+    gap: t.spacing.lg,
+  },
+  errorTitle: {
+    ...t.typography.body,
+    color: t.colors.textSecondary,
+    textAlign: "center" as const,
   },
   venueHeader: {
     backgroundColor: t.colors.headerBrand,

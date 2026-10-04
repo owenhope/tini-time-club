@@ -330,8 +330,8 @@ const UserProfile = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              // Through the service, not straight to the table: it owns the
-              // blocked-list cache the feed filters on.
+              // Through the service, not straight to the table: it clears the
+              // blocked-list cache and signals the home feed to refetch.
               await databaseService.blockUser(profile.id, displayProfile.id);
 
               // Also unfollow if currently following

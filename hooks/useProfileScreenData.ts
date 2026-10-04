@@ -56,6 +56,9 @@ export function useProfileScreenData({
   const reviewCursorRef = useRef<ReviewCursor | null>(null);
   const loadingMoreReviewsRef = useRef(false);
   const reviewsRequestRef = useRef(0);
+  // Paging has its own counter so a refresh can cancel it (and vice versa
+  // a page can't swallow a refresh's result).
+  const moreReviewsRequestRef = useRef(0);
   const [regularPlaces, setRegularPlaces] = useState<ProfileRegularPlace[]>([]);
   // True initially so the regulars tab shows its loading state instead of
   // flashing the empty message before the first load resolves.
@@ -79,6 +82,8 @@ export function useProfileScreenData({
     async (isRefresh = false) => {
       const requestId = ++reviewsRequestRef.current;
       const requestKey = profileDataKey;
+      moreReviewsRequestRef.current += 1;
+      loadingMoreReviewsRef.current = false;
       if (isRefresh) {
         setRefreshingReviews(true);
       } else {
@@ -104,6 +109,10 @@ export function useProfileScreenData({
           requestKey !== profileDataKeyRef.current
         )
           return;
+        // A page requested while this refresh was in flight used the old
+        // cursor; drop it so the list can't skip ahead.
+        moreReviewsRequestRef.current += 1;
+        loadingMoreReviewsRef.current = false;
         reviewCursorRef.current = page.nextCursor;
         setHasMoreReviews(page.hasMore);
         setUserReviews(page.reviews);
@@ -135,7 +144,7 @@ export function useProfileScreenData({
       return;
     }
 
-    const requestId = ++reviewsRequestRef.current;
+    const requestId = ++moreReviewsRequestRef.current;
     const requestKey = profileDataKey;
     const cursor = reviewCursorRef.current;
     loadingMoreReviewsRef.current = true;
@@ -148,7 +157,7 @@ export function useProfileScreenData({
         excludeBlocked: excludeBlocked ?? true,
       });
       if (
-        requestId !== reviewsRequestRef.current ||
+        requestId !== moreReviewsRequestRef.current ||
         requestKey !== profileDataKeyRef.current
       )
         return;
@@ -165,7 +174,7 @@ export function useProfileScreenData({
       reportError("Unexpected error while loading more reviews:", error);
     } finally {
       if (
-        requestId === reviewsRequestRef.current &&
+        requestId === moreReviewsRequestRef.current &&
         requestKey === profileDataKeyRef.current
       ) {
         loadingMoreReviewsRef.current = false;
@@ -188,6 +197,7 @@ export function useProfileScreenData({
 
   useEffect(() => {
     reviewsRequestRef.current += 1;
+    moreReviewsRequestRef.current += 1;
     regularsRequestRef.current += 1;
     followCountsRequestRef.current += 1;
     loadingMoreReviewsRef.current = false;
@@ -308,7 +318,9 @@ export function useProfileScreenData({
     return () => {
       active = false;
     };
-  }, [favoriteLocationId]);
+    // profileDataKey: the reset effect above clears the favorite whenever the
+    // key changes, so reload it then too.
+  }, [favoriteLocationId, profileDataKey]);
 
   useEffect(() => {
     let active = true;

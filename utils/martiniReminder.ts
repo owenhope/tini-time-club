@@ -4,8 +4,10 @@ import { warn } from "@/utils/log";
 
 /**
  * Friday-evening "tini time" nudges are device-local notifications, not
- * server pushes: local scheduling fires at 5pm in whatever timezone the
- * phone is in, so timezones need no server-side handling at all.
+ * server pushes: they fire at 4pm (REMINDER_HOUR) in the phone's timezone,
+ * so timezones need no server-side handling at all. DATE triggers are fixed
+ * instants, so each request records the instant it was computed for; when the
+ * phone's timezone (or the hour) changes, the stale ones are rescheduled.
  *
  * Each upcoming Friday is scheduled individually with its own message from
  * the rotating bank (utils/martiniReminders.ts), and the queue is topped up
@@ -57,20 +59,37 @@ async function ensureFridayMartiniReminder(): Promise<void> {
         .map((id) => Notifications.cancelScheduledNotificationAsync(id))
     );
 
-    const existing = new Set(
+    // identifier -> the instant it was scheduled for (missing on requests
+    // from before the instant was recorded, which then get rescheduled).
+    const existing = new Map(
       scheduled
-        .map((n) => n.identifier)
-        .filter((id) => id.startsWith(`${REMINDER_ID_PREFIX}-`))
+        .filter((n) => n.identifier.startsWith(`${REMINDER_ID_PREFIX}-`))
+        .map((n) => [n.identifier, n.content.data?.fireAt as unknown])
     );
 
     const fridays = upcomingFridays(new Date(), WEEKS_AHEAD, REMINDER_HOUR);
+    // A Friday that is no longer upcoming here (e.g. today's, already past
+    // 4pm in the new timezone) would otherwise fire at its old instant.
+    const expected = new Set(fridays.map(idForDate));
+    await Promise.all(
+      [...existing.keys()]
+        .filter((id) => !expected.has(id))
+        .map((id) => Notifications.cancelScheduledNotificationAsync(id))
+    );
     for (const friday of fridays) {
       const identifier = idForDate(friday);
-      if (existing.has(identifier)) continue;
+      if (existing.has(identifier)) {
+        // Same instant: still 4pm local. Otherwise the timezone moved.
+        if (existing.get(identifier) === friday.getTime()) continue;
+        await Notifications.cancelScheduledNotificationAsync(identifier);
+      }
 
       await Notifications.scheduleNotificationAsync({
         identifier,
-        content: reminderForDate(friday),
+        content: {
+          ...reminderForDate(friday),
+          data: { fireAt: friday.getTime() },
+        },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: friday,

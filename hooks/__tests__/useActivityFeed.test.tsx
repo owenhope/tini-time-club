@@ -178,4 +178,60 @@ describe("useActivityFeed initial loading", () => {
     act(() => tree!.unmount());
     mockActiveProfileId = "viewer-1";
   });
+  it("discards a load-more page that started before a refresh", async () => {
+    const initialRequest = deferred<ActivityPage>();
+    const loadMoreRequest = deferred<ActivityPage>();
+    const refreshRequest = deferred<ActivityPage>();
+    fetchPage.mockReset();
+    writeCache.mockReset();
+    writeCache.mockResolvedValue(undefined);
+    fetchPage
+      .mockReturnValueOnce(initialRequest.promise)
+      .mockReturnValueOnce(loadMoreRequest.promise)
+      .mockReturnValueOnce(refreshRequest.promise);
+
+    const cursor = { createdAt: page.events[0].createdAt, id: "page-1-end" };
+    const pagedFirst: ActivityPage = {
+      ...page,
+      nextCursor: cursor,
+      hasMore: true,
+    };
+
+    let latest: ActivityFeed | undefined;
+    const Harness = () => {
+      latest = useActivityFeed();
+      return null;
+    };
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<Harness />);
+    });
+    await act(async () => {
+      initialRequest.resolve(pagedFirst);
+      await initialRequest.promise;
+    });
+
+    await act(async () => {
+      void latest!.loadMore();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      void latest!.refresh();
+      refreshRequest.resolve(pagedFirst);
+      await refreshRequest.promise;
+    });
+    await act(async () => {
+      loadMoreRequest.resolve({
+        ...page,
+        events: [{ ...page.events[0], id: "stale-page-n" }],
+        nextCursor: null,
+        hasMore: false,
+      });
+      await loadMoreRequest.promise;
+    });
+
+    expect(JSON.stringify(latest?.sections)).not.toContain("stale-page-n");
+    expect(latest?.hasMore).toBe(true);
+    act(() => tree!.unmount());
+  });
 });
