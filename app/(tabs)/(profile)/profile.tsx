@@ -245,15 +245,21 @@ const MemberProfile = () => {
   };
 
   const deleteReview = async (id: string) => {
-    const { error } = await supabase
-      .from("reviews")
-      .update({ state: 3 })
-      .eq("id", id);
-    if (!error) {
-      setUserReviews((prev) => prev.filter((r) => r.id !== id));
-      // Track delete review event
-      AnalyticService.capture("delete_review", { reviewId: id });
+    if (!profile) return;
+    try {
+      await databaseService.deleteReview(id, profile.id);
+    } catch (error) {
+      reportError("Error deleting review:", error);
+      Alert.alert(
+        "Couldn't delete review",
+        "Please check your connection and try again."
+      );
+      return;
     }
+    setUserReviews((prev) => prev.filter((r) => r.id !== id));
+    AnalyticService.capture("delete_review", { reviewId: id });
+    // Keeps the header's review count and rank in step.
+    void refreshProfile();
   };
 
   const confirmDeleteReview = (id: string) => {

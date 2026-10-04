@@ -1,5 +1,6 @@
 import databaseService from "../databaseService";
 import { supabase } from "@/utils/supabase";
+import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 
 const mockGetPublicFeed = jest.fn();
 const mockGetPublicReview = jest.fn();
@@ -270,6 +271,50 @@ it("shows a member's own like on a single review and never serves it from cache"
   await expect(
     databaseService.getReview("42", "viewer-1")
   ).resolves.toMatchObject({ has_liked: false });
+});
+
+describe("deleteReview", () => {
+  const deleteQuery = (result: { data: unknown; error: unknown }) => {
+    const query = {
+      update: jest.fn(),
+      eq: jest.fn(),
+      select: jest.fn(async () => result),
+    };
+    query.update.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    from.mockReturnValue(query);
+    return query;
+  };
+
+  it("unpublishes the member's own review and tells other screens", async () => {
+    const query = deleteQuery({ data: [{ id: 42 }], error: null });
+    const updated: string[] = [];
+    const unsubscribe = subscribeToReviewUpdates((id) => updated.push(id));
+
+    await databaseService.deleteReview("42", "author-1");
+    unsubscribe();
+
+    expect(query.update).toHaveBeenCalledWith({ state: 3 });
+    expect(query.eq).toHaveBeenCalledWith("id", "42");
+    expect(query.eq).toHaveBeenCalledWith("user_id", "author-1");
+    expect(updated).toEqual(["42"]);
+  });
+
+  it.each([
+    ["the request fails", { data: null, error: new Error("offline") }],
+    ["no review was deleted", { data: [], error: null }],
+  ])("throws without notifying screens when %s", async (_case, result) => {
+    deleteQuery(result);
+    const updated: string[] = [];
+    const unsubscribe = subscribeToReviewUpdates((id) => updated.push(id));
+
+    await expect(
+      databaseService.deleteReview("42", "author-1")
+    ).rejects.toThrow();
+    unsubscribe();
+
+    expect(updated).toEqual([]);
+  });
 });
 
 it("creates comments without mentions through the comment RPC", async () => {
