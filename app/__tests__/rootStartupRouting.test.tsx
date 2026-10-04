@@ -1,6 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { AppState, Text, TouchableOpacity } from "react-native";
+import { Alert, AppState, Text, TouchableOpacity } from "react-native";
 import { ErrorBoundary, RootLayoutNav } from "../_layout";
 import Settings from "../(tabs)/(profile)/settings";
 import SharedTabLayout from "../(tabs)/(home,discover,profile)/_layout";
@@ -731,6 +731,25 @@ describe("root startup routing", () => {
 
     expect(mockReplace).toHaveBeenLastCalledWith("/home");
     expect(mockReplace).not.toHaveBeenCalledWith("/welcome");
+  });
+
+  it("reveals the auth screen when a signed-out launch opens a token-less auth link", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    mockInitialUrl = "tinitime://auth";
+    mockIsAuthCallbackUrl.mockReturnValue(true);
+    mockPathname = "/auth/callback";
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Sign-in link unavailable",
+      "This sign-in link is invalid or has expired."
+    );
+    expect(mockReplace).toHaveBeenLastCalledWith("/auth");
+    expect(mockHideAsync).toHaveBeenCalled();
   });
 
   it("clears member caches and returns to Welcome on automatic sign-out", async () => {

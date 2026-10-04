@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/utils/supabase";
@@ -13,6 +13,7 @@ export function AppleAuth() {
 
   // Check if Apple Sign-In is available
   const [isAvailable, setIsAvailable] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     const checkAvailability = async () => {
@@ -48,7 +49,10 @@ export function AppleAuth() {
             color={isDark ? "#000000" : "#FFFFFF"}
           />
         }
+        loading={loading}
         onPress={async () => {
+          if (loading) return;
+          setLoading(true);
           try {
             const credential = await AppleAuthentication.signInAsync({
               requestedScopes: [
@@ -79,6 +83,12 @@ export function AppleAuth() {
             // app failure — keep it out of telemetry.
             if (e?.code === "ERR_REQUEST_CANCELED") return;
             reportError("[AppleAuth] ❌ Apple Sign-In error:", e);
+            Alert.alert(
+              "Apple Sign-In Unavailable",
+              e?.message || "Please try again in a moment."
+            );
+          } finally {
+            setLoading(false);
           }
         }}
       />

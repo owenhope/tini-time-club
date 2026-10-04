@@ -415,8 +415,24 @@ export function RootLayoutNav() {
       }
 
       lastHandledAuthUrl.current = url;
+      const wasSignedIn = !!authSessionRef.current;
       try {
-        await createSessionFromAuthUrl(url);
+        const session = await createSessionFromAuthUrl(url);
+        if (!session) {
+          // A callback link without tokens never emits SIGNED_IN, so a
+          // signed-out launch would otherwise wait on the splash forever.
+          const {
+            data: { session: existingSession },
+          } = await supabase.auth.getSession();
+          if (!existingSession) {
+            throw new Error("This sign-in link is invalid or has expired.");
+          }
+        }
+        // Already signed in: no signed-out -> signed-in transition routes
+        // away from the callback screen expo-router pushed for this link.
+        if (wasSignedIn && pathnameRef.current === "/auth/callback") {
+          router.replace(routes.home());
+        }
       } catch (error: any) {
         reportError("[RootLayout] Auth callback failed:", error);
         Alert.alert(

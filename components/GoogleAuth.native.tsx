@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { Image } from "expo-image";
 import {
   GoogleSignin,
+  isCancelledResponse,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { supabase } from "@/utils/supabase";
@@ -27,6 +28,8 @@ export function GoogleAuth() {
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
+      // v13 resolves a dismissed sheet instead of throwing SIGN_IN_CANCELLED.
+      if (isCancelledResponse(userInfo)) return;
       if (userInfo.data && userInfo.data.idToken) {
         const { error: signInError } = await supabase.auth.signInWithIdToken({
           provider: "google",
