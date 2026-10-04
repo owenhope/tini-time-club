@@ -73,7 +73,7 @@ export const fetchPublicReview = async (
       location:locations!reviews_location_fkey(id,name,address),
       spirit:spirits(name),
       type:types(name),
-      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted,avatar_url,review_count,passport_points)
+      profile:profiles!reviews_user_id_fkey1(id,username,is_verified,deleted,is_public,avatar_url,review_count,passport_points)
     `
     )
     .eq("id", reviewId)
@@ -89,11 +89,22 @@ export const fetchPublicReview = async (
     | "profile"
   > & {
     profile:
-      | (NonNullable<PublicReview["profile"]> & { avatar_url: string | null })
+      | (NonNullable<PublicReview["profile"]> & {
+          avatar_url: string | null;
+          is_public: boolean | null;
+        })
       | null;
   };
 
-  if (error || !review || review.profile?.deleted) notFound();
+  // Members who turned off "Visible to visitors" stay members-only on the web,
+  // matching the app's visitor mode (public-content edge function).
+  if (
+    error ||
+    !review ||
+    review.profile?.deleted ||
+    review.profile?.is_public !== true
+  )
+    notFound();
 
   const [
     { count: likesCount },
@@ -108,12 +119,21 @@ export const fetchPublicReview = async (
       .eq("review_id", review.id),
     supabaseAdmin()
       .from("comments")
-      .select("id", { count: "exact", head: true })
-      .eq("review_id", review.id),
+      .select("id,profile:profiles!comments_user_id_fkey!inner(id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("review_id", review.id)
+      .eq("profile.is_public", true)
+      .eq("profile.deleted", false),
     supabaseAdmin()
       .from("comments")
-      .select("id,body,profile:profiles(username,is_verified,deleted)")
+      .select(
+        "id,body,profile:profiles!comments_user_id_fkey!inner(username,is_verified)"
+      )
       .eq("review_id", review.id)
+      .eq("profile.is_public", true)
+      .eq("profile.deleted", false)
       .order("inserted_at", { ascending: false })
       .limit(2),
     review.location?.id
@@ -145,7 +165,6 @@ export const fetchPublicReview = async (
   const comments: PublicReviewComment[] = (recentComments ?? [])
     .map((row) => {
       const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
-      if (profile?.deleted) return null;
       return {
         id: row.id as number,
         body: String(row.body ?? ""),
