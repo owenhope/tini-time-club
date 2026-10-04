@@ -42,6 +42,10 @@ const NOTIFICATION_TYPES = {
   USER: 2,
 } as const;
 
+// In-app-only notification categories: they appear in Activity but never
+// buzz the phone. Passport stamps arrive in bursts right after a review.
+const IN_APP_ONLY_CATEGORIES = new Set(["passport_achievement"]);
+
 const EXPO_PUSH_BATCH_SIZE = 100;
 const TOKEN_QUERY_BATCH_SIZE = 500;
 const RECEIPT_AGE_MS = 15 * 60 * 1000;
@@ -395,6 +399,11 @@ Deno.serve(async (req) => {
         { error: "Invalid notification webhook payload" },
         400
       );
+    }
+
+    const category = payload.record.data?.category;
+    if (typeof category === "string" && IN_APP_ONLY_CATEGORIES.has(category)) {
+      return jsonResponse({ message: "In-app only; push skipped" });
     }
 
     // Receipt failures should not prevent the current event from sending.
