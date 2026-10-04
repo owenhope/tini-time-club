@@ -70,11 +70,14 @@ export const fetchPublicLocation = async (
           image_url,
           taste,
           presentation,
-          profile:profiles!reviews_user_id_fkey1(username,deleted)
+          profile:profiles!reviews_user_id_fkey1!inner(username)
         `
         )
         .eq("location", locationId)
         .eq("state", 1)
+        // Members-only profiles stay off the public web, as in the app.
+        .eq("profile.is_public", true)
+        .eq("profile.deleted", false)
         .order("inserted_at", { ascending: false })
         .limit(30),
       client.rpc("get_regulars_for_locations", {
@@ -86,10 +89,7 @@ export const fetchPublicLocation = async (
   if (reviewsError) throw reviewsError;
   if (regularsResult.error) throw regularsResult.error;
 
-  const visibleReviews = (reviewRows ?? []).filter((row) => {
-    const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
-    return !profile?.deleted;
-  });
+  const visibleReviews = reviewRows ?? [];
   const imagePaths = visibleReviews
     .map((review) => review.image_url)
     .filter((path): path is string => Boolean(path));
