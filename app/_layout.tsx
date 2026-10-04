@@ -234,7 +234,11 @@ export function RootLayoutNav() {
     if (!initialAuth.shouldChooseDefaultRoute) return null;
     return initialAuth.membershipReturnPath ?? authenticatedTarget;
   })();
-  const isReady = isReadyOverride || isStartupResolved;
+  // Once startup has navigated, stay mounted: refreshProfile() flips
+  // profileLoading after every profile save, avatar change or review, and
+  // unmounting here would reset every navigation stack.
+  const isReady =
+    isReadyOverride || isStartupResolved || hasCompletedStartupNavigation;
   const rootNavigationState = useRootNavigationState();
   const hasHandledInitialSession = useRef(false);
   const hadStartupProfileError = useRef(false);
