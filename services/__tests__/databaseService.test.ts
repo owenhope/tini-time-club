@@ -373,10 +373,9 @@ it.each([undefined, null, 0, 500])(
       error: null,
     });
     await expect(
-      databaseService.createComment(
-        { review_id: 9, body: "Cheers @twist" },
-        [mention]
-      )
+      databaseService.createComment({ review_id: 9, body: "Cheers @twist" }, [
+        mention,
+      ])
     ).resolves.toMatchObject({
       profile: {
         id: "author-1",
@@ -416,4 +415,15 @@ it("normalizes member data on visitor review details and cached feeds", async ()
     avatar_url: null,
   });
   expect(cached).toEqual(first);
+});
+
+it("tells open review lists to refetch after a block", async () => {
+  from.mockReturnValue({ insert: jest.fn(async () => ({ error: null })) });
+  const updated: string[] = [];
+  const unsubscribe = subscribeToReviewUpdates((id) => updated.push(id));
+
+  await databaseService.blockUser("viewer-1", "member-2");
+  unsubscribe();
+
+  expect(updated).toHaveLength(1);
 });

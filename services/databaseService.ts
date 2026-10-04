@@ -807,9 +807,10 @@ class DatabaseService {
   /**
    * Block a user.
    *
-   * Go through here rather than writing to `blocks` directly: the blocked-id
-   * list is cached, and a write that skips the invalidation leaves the feed
-   * still showing the person you just blocked.
+   * Go through here rather than writing to `blocks` directly: this
+   * invalidates the cached blocked-id list and tells open review lists (the
+   * home feed included) to refetch, so the blocked member's reviews drop out
+   * immediately instead of after the feed's staleness window.
    */
   async blockUser(blockerId: string, blockedId: string): Promise<void> {
     const { error } = await supabase.from("blocks").insert([
@@ -824,6 +825,8 @@ class DatabaseService {
     // Invalidate caches
     this.queryCache.delete(`blocked_${blockerId}`);
     this.invalidateUserCaches(blockerId);
+    // No single review changed; listeners treat this as a refetch signal.
+    publishReviewUpdated("");
   }
 
   /** Undo a block, invalidating the same caches. */
@@ -838,6 +841,7 @@ class DatabaseService {
 
     this.queryCache.delete(`blocked_${blockerId}`);
     this.invalidateUserCaches(blockerId);
+    publishReviewUpdated("");
   }
 
   async reportReview(reviewId: string, reason: string): Promise<void> {

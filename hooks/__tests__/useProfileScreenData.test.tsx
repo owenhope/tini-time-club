@@ -33,7 +33,9 @@ function Probe(props: Options) {
 it("keeps a visitor's public follow counts when the visited profile loads", async () => {
   let tree!: renderer.ReactTestRenderer;
   await act(async () => {
-    tree = renderer.create(<Probe profileId={undefined} viewerId={undefined} />);
+    tree = renderer.create(
+      <Probe profileId={undefined} viewerId={undefined} />
+    );
   });
 
   // The profile and its public counts arrive together, as for a visitor.
@@ -63,5 +65,45 @@ it("still resets follow counts when switching profiles without known counts", as
   });
 
   expect(result.current!.followersCount).toBe(0);
+  act(() => tree.unmount());
+});
+
+it("lets a refresh cancel an in-flight page without stalling paging", async () => {
+  const { getReviewPage } = jest.requireMock("@/services/reviewFeedService");
+  const cursor = { createdAt: "2026-10-01T00:00:00Z", id: 1 };
+  const firstPage = { reviews: [{ id: 1 }], nextCursor: cursor, hasMore: true };
+  let releaseStalePage!: (value: unknown) => void;
+  getReviewPage
+    .mockResolvedValueOnce(firstPage)
+    .mockReturnValueOnce(new Promise((resolve) => (releaseStalePage = resolve)))
+    .mockResolvedValueOnce(firstPage)
+    .mockResolvedValueOnce({
+      reviews: [{ id: 2 }],
+      nextCursor: null,
+      hasMore: false,
+    });
+
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(<Probe profileId="member-1" viewerId="viewer-1" />);
+  });
+  await act(async () => result.current!.loadUserReviews());
+  await act(async () => {
+    void result.current!.loadMoreUserReviews();
+  });
+  await act(async () => result.current!.loadUserReviews(true));
+  await act(async () => {
+    releaseStalePage({
+      reviews: [{ id: 99 }],
+      nextCursor: null,
+      hasMore: false,
+    });
+  });
+
+  expect(result.current!.userReviews.map((r) => r.id)).toEqual([1]);
+  expect(result.current!.refreshingReviews).toBe(false);
+
+  await act(async () => result.current!.loadMoreUserReviews());
+  expect(result.current!.userReviews.map((r) => r.id)).toEqual([1, 2]);
   act(() => tree.unmount());
 });

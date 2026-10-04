@@ -105,6 +105,31 @@ const toMapLocation = (location: any): MapLocation => ({
   long: location.long ?? location.lon,
 });
 
+/** Load one routed venue directly (it may be unreviewed or off-screen). */
+const fetchRoutedLocation = async (
+  locationId: string | number,
+  isMember: boolean
+): Promise<MapLocation | null> => {
+  try {
+    const focused = isMember
+      ? await supabase
+          .from("location_ratings")
+          .select(
+            "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
+          )
+          .eq("id", locationId)
+          .maybeSingle()
+      : await publicContentService
+          .getLocation(locationId)
+          .then((focused) => ({ data: focused, error: null }))
+          .catch((error) => ({ data: null, error }));
+    return !focused.error && focused.data ? toMapLocation(focused.data) : null;
+  } catch (focusedError) {
+    reportError("Error fetching routed map location:", focusedError);
+    return null;
+  }
+};
+
 interface MapBounds {
   minLat: number;
   maxLat: number;
@@ -215,6 +240,7 @@ function ExploreMap({
   const fetchRequestRef = useRef(0);
   const centeredRegionIdRef = useRef<number | null | undefined>(undefined);
   const openedRouteLocationRef = useRef<string | null>(null);
+  const fetchedRouteLocationRef = useRef<string | null>(null);
   const focusedCoordinatesRef = useRef<string | null>(null);
   const initialLocationAppliedRef = useRef(false);
   const screenshotFocusRef = useRef<string | null>(null);
@@ -566,7 +592,33 @@ function ExploreMap({
     const target = locations.find(
       (location) => String(location.id) === routeLocationId
     );
-    if (!target) return;
+    if (!target) {
+      // The viewport fetch adds the routed venue, but it is skipped when the
+      // venue sits inside bounds already fetched (e.g. an unreviewed venue).
+      // Load it directly once the first pins are in.
+      if (
+        !locationsReady ||
+        fetchedRouteLocationRef.current === routeLocationId
+      )
+        return;
+      fetchedRouteLocationRef.current = routeLocationId;
+      let active = true;
+      void fetchRoutedLocation(routeLocationId, Boolean(profile)).then(
+        (focused) => {
+          if (!active || !focused) return;
+          const normalized = normalizeMapLocations([
+            { ...focused, is_golden_glass: focused.is_golden_glass ?? false },
+          ]) as MapLocation[];
+          if (!normalized.length) return;
+          setLocations((current) => mergeMapLocations(current, normalized));
+          setMapRevision((revision) => revision + 1);
+        }
+      );
+      return () => {
+        active = false;
+        fetchedRouteLocationRef.current = null;
+      };
+    }
 
     const openTimer = setTimeout(() => {
       openedRouteLocationRef.current = routeLocationId;
@@ -574,7 +626,14 @@ function ExploreMap({
     }, 0);
 
     return () => clearTimeout(openTimer);
-  }, [enabled, focus.locationId, handleMarkerPress, locations]);
+  }, [
+    enabled,
+    focus.locationId,
+    handleMarkerPress,
+    locations,
+    locationsReady,
+    profile,
+  ]);
 
   useEffect(() => {
     if (!enabled || !locationResolved) return;
@@ -626,26 +685,11 @@ function ExploreMap({
             (location) => String(location.id) === String(focus.locationId)
           )
         ) {
-          try {
-            const focused = profile
-              ? await supabase
-                  .from("location_ratings")
-                  .select(
-                    "id,name,address,lat,lon,rating,taste_avg,presentation_avg,total_ratings,is_golden_glass,is_location_verified"
-                  )
-                  .eq("id", focus.locationId)
-                  .maybeSingle()
-              : await publicContentService
-                  .getLocation(focus.locationId)
-                  .then((focused) => ({ data: focused, error: null }))
-                  .catch((error) => ({ data: null, error }));
-
-            if (!focused.error && focused.data) {
-              rawLocations = [...rawLocations, toMapLocation(focused.data)];
-            }
-          } catch (focusedError) {
-            reportError("Error fetching routed map location:", focusedError);
-          }
+          const focused = await fetchRoutedLocation(
+            focus.locationId,
+            Boolean(profile)
+          );
+          if (focused) rawLocations = [...rawLocations, focused];
         }
 
         const missingAwardIds = rawLocations

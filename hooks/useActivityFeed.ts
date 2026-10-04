@@ -147,13 +147,17 @@ export function useActivityFeed(): ActivityFeed {
   const loadMore = useCallback(async () => {
     if (!profileId || !hasMore || !cursor || loadingMoreRef.current) return;
     const profileRequestVersion = profileRequestVersionRef.current;
+    // A refresh replaces the list with page 1; a page fetched from the old
+    // cursor would then advance the cursor past pages 2..N-1.
+    const refreshToken = refreshTokenRef.current;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
       const page = await fetchActivityPage(cursor, 30);
       if (
         !mountedRef.current ||
-        profileRequestVersion !== profileRequestVersionRef.current
+        profileRequestVersion !== profileRequestVersionRef.current ||
+        refreshToken !== refreshTokenRef.current
       )
         return;
       mergeEvents(page.events, false);
@@ -170,7 +174,8 @@ export function useActivityFeed(): ActivityFeed {
       const cached = await readActivityCache(profileId);
       if (
         !mountedRef.current ||
-        profileRequestVersion !== profileRequestVersionRef.current
+        profileRequestVersion !== profileRequestVersionRef.current ||
+        refreshToken !== refreshTokenRef.current
       )
         return;
       if (cached) {

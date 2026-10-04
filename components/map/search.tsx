@@ -36,19 +36,32 @@ const Search = forwardRef<any, SearchProps>(
     const [, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sessionTokenRef = useRef<string | null>(null);
+    // Bumped on every keystroke and clear so a slower, older response can't
+    // overwrite newer results or bring them back after clearing.
+    const searchRequestRef = useRef(0);
+
+    const clearSearch = () => {
+      searchRequestRef.current += 1;
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      setSearchQuery("");
+      setSearchResults([]);
+      setIsSearching(false);
+    };
 
     // Expose clear method via ref
     React.useImperativeHandle(ref, () => ({
       setAddressText: (text: string) => {
-        setSearchQuery(text);
         if (!text) {
-          setSearchResults([]);
+          clearSearch();
+          return;
         }
+        setSearchQuery(text);
       },
     }));
 
     const performSearch = useCallback(
-      async (query: string) => {
+      async (query: string, requestId: number) => {
+        const isCurrent = () => requestId === searchRequestRef.current;
         if (query.length < 2) {
           setSearchResults([]);
           setIsSearching(false);
@@ -77,12 +90,13 @@ const Search = forwardRef<any, SearchProps>(
             );
           });
 
+          if (!isCurrent()) return;
           setSearchResults(filtered.slice(0, 5)); // Limit to 5 results for autocomplete
         } catch (error) {
           reportError("Error searching places:", error);
-          setSearchResults([]);
+          if (isCurrent()) setSearchResults([]);
         } finally {
-          setIsSearching(false);
+          if (isCurrent()) setIsSearching(false);
         }
       },
       [currentLocation]
@@ -93,12 +107,16 @@ const Search = forwardRef<any, SearchProps>(
       (query: string) => {
         setSearchQuery(query);
         if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        const requestId = ++searchRequestRef.current;
         if (query.length < 2) {
           setSearchResults([]);
           setIsSearching(false);
           return;
         }
-        searchTimeoutRef.current = setTimeout(() => performSearch(query), 300);
+        searchTimeoutRef.current = setTimeout(
+          () => performSearch(query, requestId),
+          300
+        );
       },
       [performSearch]
     );
@@ -143,8 +161,7 @@ const Search = forwardRef<any, SearchProps>(
       }
 
       onPlaceSelected(newRegion);
-      setSearchQuery("");
-      setSearchResults([]);
+      clearSearch();
     };
 
     return (
@@ -154,10 +171,7 @@ const Search = forwardRef<any, SearchProps>(
           onChangeText={handleSearch}
           autoFocus={autoFocus}
           placeholder="Search bars and neighbourhoods"
-          onClear={() => {
-            setSearchQuery("");
-            setSearchResults([]);
-          }}
+          onClear={clearSearch}
         />
         {searchResults.length > 0 && (
           <View style={styles.resultsContainer}>
