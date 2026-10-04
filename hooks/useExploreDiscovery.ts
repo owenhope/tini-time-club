@@ -158,11 +158,18 @@ export function useExploreDiscovery({
   useEffect(() => {
     if (!enabled) return;
 
+    // A reset abandons any in-flight page: bump the request id so it can't
+    // land in the new list, and clear its loading flag ourselves, since its
+    // own finally only does that while it is still the current request.
     if (activeView === "profiles") {
+      profileRequestId.current += 1;
+      setLoadingMoreProfiles(false);
       setProfiles([]);
       setProfileCursor(null);
       setHasMoreProfiles(true);
     } else {
+      locationRequestId.current += 1;
+      setLoadingMoreLocations(false);
       setLocations([]);
       setLocationCursor(null);
       setHasMoreLocations(true);
