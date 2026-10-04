@@ -48,7 +48,7 @@ export function RegularsIntroduction({
         <AppText variant="heading">Get to know the Regulars.</AppText>
         <AppText tone="secondary">
           The three members with the most published reviews at a bar are its
-          Regulars.
+          Regulars. It takes at least two reviews there to qualify.
         </AppText>
       </View>
       <View style={styles.sheet}>
@@ -58,8 +58,8 @@ export function RegularsIntroduction({
         />
       </View>
       <AppText variant="caption" tone="secondary">
-        Share reviews from your visits to earn a spot. Your first Regular spot
-        also earns a Passport stamp.
+        Come back and review the same bar again to earn a spot. Your first
+        Regular spot also earns a Passport stamp.
       </AppText>
     </View>
   );
