@@ -502,6 +502,37 @@ describe("root startup routing", () => {
     ).toBeDefined();
   });
 
+  it("reloads the member's profile when retrying a failed session restore", async () => {
+    mockProfileState = {
+      profile: null,
+      loading: false,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: new Error("session storage unavailable"),
+    });
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    // The profile context also saw "no session" at launch and settled on
+    // signed-out, so retrying the session alone would land a member on
+    // Welcome as a visitor.
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: { user: { id: "member-1" } } },
+      error: null,
+    });
+    await act(async () => {
+      renderer!.root
+        .findByProps({ accessibilityLabel: "Try restoring session again" })
+        .props.onPress();
+    });
+
+    expect(mockRefreshProfile).toHaveBeenCalled();
+  });
+
   it("does not animate from the empty startup gate to the resolved route", async () => {
     mockProfileState = {
       profile: {
