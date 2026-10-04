@@ -531,6 +531,38 @@ describe("root startup routing", () => {
     expect(mockStackScreenOptions?.animation).toBeUndefined();
   });
 
+  it("keeps the navigator mounted when the profile reloads after startup", async () => {
+    const member = { id: "member-1", username: "olive", eula_accepted: true };
+    mockProfileState = {
+      profile: member,
+      loading: false,
+      profileError: null,
+      refreshProfile: mockRefreshProfile,
+    };
+    mockPathname = "/home";
+
+    await act(async () => {
+      renderer = create(<RootLayoutNav />);
+    });
+    await act(async () => {
+      await mockAuthStateChange?.("INITIAL_SESSION", {
+        user: { id: "member-1" },
+      });
+    });
+    expect(mockHideAsync).toHaveBeenCalled();
+
+    // Saving Edit Profile (or an avatar, favorite bar, review) calls
+    // refreshProfile, which flips loading while the member stays signed in.
+    mockProfileState = { ...mockProfileState, loading: true };
+    await act(async () => {
+      renderer!.update(<RootLayoutNav />);
+    });
+
+    expect(
+      renderer!.root.findAllByType("MountedRoute" as React.ElementType)
+    ).not.toHaveLength(0);
+  });
+
   it("routes incomplete onboarding before revealing an authenticated deep link", async () => {
     mockInitialUrl = "tinitime://r/review-1";
     mockPathname = "/r/review-1";

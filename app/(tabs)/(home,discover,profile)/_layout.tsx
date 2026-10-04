@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stack, usePathname } from "expo-router";
 import AppHeader from "@/components/nav/AppHeader";
 import { useTheme } from "@/theme";
@@ -59,6 +59,7 @@ export default function SharedTabLayout() {
   const { openMembership } = useMembership();
   const pathname = usePathname();
   const visitorIntent = getVisitorGatedRouteIntent(pathname);
+  const [hasResolvedProfileOnce, setHasResolvedProfileOnce] = useState(false);
   const promptedPath = useRef<string | null>(null);
   const memberWasOnProtectedPath = useRef(false);
 
@@ -83,10 +84,20 @@ export default function SharedTabLayout() {
     }
   }, [loading, openMembership, pathname, profile, visitorIntent]);
 
+  // Latch the first completed profile read, as the tabs layout does: later
+  // refreshProfile() loading flips must not unmount (and reset) the stack.
+  useEffect(() => {
+    if (!loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasResolvedProfileOnce(true);
+    }
+  }, [loading]);
+
   // Keep member-only children from mounting before the contextual CTA. This
   // prevents activity/profile queries and settings writes from firing during
   // the navigation frame in which a visitor reaches a protected deep link.
-  if (loading || (!profile && visitorIntent)) return null;
+  if ((loading && !hasResolvedProfileOnce) || (!profile && visitorIntent))
+    return null;
 
   return (
     <Stack
