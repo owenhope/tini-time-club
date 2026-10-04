@@ -76,6 +76,10 @@ function CommentInputFooter({
   const { colors } = useTheme();
   const [commentText, setCommentText] = useState("");
   const [mentions, setMentions] = useState<MentionSpan[]>([]);
+  // The ref blocks a second Post/Return before the re-render lands; the state
+  // dims the button while the comment is sending.
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleCommentChange = useCallback(
     (text: string, nextMentions: MentionSpan[]) => {
@@ -87,11 +91,18 @@ function CommentInputFooter({
 
   const handleSubmit = useCallback(async () => {
     const comment = commentText.trim();
-    if (!comment) return;
+    if (!comment || submittingRef.current) return;
 
-    if (await onSubmit(commentText, mentions)) {
-      setCommentText("");
-      setMentions([]);
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      if (await onSubmit(commentText, mentions)) {
+        setCommentText("");
+        setMentions([]);
+      }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   }, [commentText, mentions, onSubmit]);
 
@@ -124,8 +135,19 @@ function CommentInputFooter({
               accessibilityLabel="Comment"
             />
           </View>
-          <TouchableOpacity onPress={handleSubmit} style={styles.sendButtonHit}>
-            <Text style={styles.sendButton}>Post</Text>
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={submitting}
+            accessibilityRole="button"
+            accessibilityLabel="Post comment"
+            accessibilityState={{ disabled: submitting }}
+            style={styles.sendButtonHit}
+          >
+            <Text
+              style={[styles.sendButton, submitting && styles.sendButtonBusy]}
+            >
+              Post
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -815,6 +837,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center" as const,
   },
   sendButton: { ...t.typography.bodyStrong, color: t.colors.text },
+  sendButtonBusy: { color: t.colors.disabledText },
   likeButton: {
     minWidth: 40,
     minHeight: 34,
