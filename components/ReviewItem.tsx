@@ -633,6 +633,7 @@ const ReviewItemComponent = ({
   onShowComments,
   onCommentAdded,
   onCommentDeleted,
+  onLikeChanged,
   onNavigate,
   previewMode = false,
 }: ReviewItemProps) => {
@@ -658,6 +659,7 @@ const ReviewItemComponent = ({
     review,
     profile,
     onShowLikes,
+    onLikeChanged,
   });
 
   // No double-tap-to-like: liking lives on the heart button, so a tap on the

@@ -13,6 +13,12 @@ export interface ReviewItemMemoProps {
   ) => void;
   onCommentAdded: (reviewId: string, newComment: any) => void;
   onCommentDeleted: (reviewId: string, commentId: number) => void;
+  /** Lets the owning list keep a confirmed like when the card remounts. */
+  onLikeChanged?: (
+    reviewId: string,
+    hasLiked: boolean,
+    likesCount: number
+  ) => void;
   /** Lets a native modal dismiss fully before the queued route action runs. */
   onNavigate?: (navigate: () => void) => void;
   previewMode?: boolean;
@@ -104,6 +110,7 @@ export const areReviewItemPropsEqual = (
     prevProps.onShowComments === nextProps.onShowComments &&
     prevProps.onCommentAdded === nextProps.onCommentAdded &&
     prevProps.onCommentDeleted === nextProps.onCommentDeleted &&
+    prevProps.onLikeChanged === nextProps.onLikeChanged &&
     prevProps.onNavigate === nextProps.onNavigate
   );
 };

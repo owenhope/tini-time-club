@@ -16,6 +16,7 @@ import { makeStyles, useTheme } from "@/theme";
 import {
   addReviewComment,
   deleteReviewComment,
+  setReviewLike,
 } from "@/utils/reviewCommentUpdates";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
@@ -81,6 +82,19 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
   const tabBarInset = useNativeTabBarContentInset();
   // The patch is read by the row on its next render; see useComments in
   // ReviewItem, which applies it idempotently.
+  const handleLikeChanged = useCallback(
+    (reviewId: string, hasLiked: boolean, likesCount: number) => {
+      setReviews((prev) =>
+        prev.map((r) =>
+          String(r.id) === String(reviewId)
+            ? setReviewLike(r, hasLiked, likesCount)
+            : r
+        )
+      );
+    },
+    [setReviews]
+  );
+
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
       setReviews((prev) =>
@@ -123,6 +137,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           onDelete={onDelete}
           onEdit={onEdit}
           onCommentAdded={handleCommentAdded}
+          onLikeChanged={handleLikeChanged}
           onCommentDeleted={handleCommentDeleted}
         />
       ) : (

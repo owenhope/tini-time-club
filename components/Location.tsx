@@ -39,6 +39,7 @@ import { useLocationShareMenu } from "@/hooks/useLocationShareMenu";
 import {
   addReviewComment,
   deleteReviewComment,
+  setReviewLike,
 } from "@/utils/reviewCommentUpdates";
 import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
 
@@ -290,6 +291,19 @@ const Location = () => {
     };
   }, [displayLocation?.id, shouldOpenRegularsForScreenshot]);
 
+  const handleLikeChanged = useCallback(
+    (reviewId: string, hasLiked: boolean, likesCount: number) => {
+      setLocationReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? setReviewLike(review, hasLiked, likesCount)
+            : review
+        )
+      );
+    },
+    []
+  );
+
   const handleCommentAdded = useCallback(
     (reviewId: string, newComment: any) => {
       setLocationReviews((prev) =>
@@ -462,6 +476,7 @@ const Location = () => {
         emptyComponent={renderEmpty()}
         onCommentAdded={handleCommentAdded}
         onCommentDeleted={handleCommentDeleted}
+        onLikeChanged={handleLikeChanged}
         contentTone={isDark ? "paper" : "surface"}
         tileLabel="reviewer"
         onEdit={(review) =>

@@ -51,6 +51,12 @@ export interface ReviewGridProps {
    */
   onCommentAdded?: (reviewId: string, newComment: any) => void;
   onCommentDeleted?: (reviewId: string, commentId: number) => void;
+  /** Patches the list's copy so reopening a tile shows the confirmed like. */
+  onLikeChanged?: (
+    reviewId: string,
+    hasLiked: boolean,
+    likesCount: number
+  ) => void;
   /** Lets place pages use the same white review well as expanded reviews. */
   contentTone?: "paper" | "surface";
   /** Profile grids identify the venue; venue grids identify the reviewer. */
@@ -80,6 +86,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
   onEdit,
   onCommentAdded,
   onCommentDeleted,
+  onLikeChanged,
   contentTone = "paper",
   tileLabel = "location",
 }) => {
@@ -278,6 +285,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
                 onShowComments={() => setCommentsFor(active)}
                 onCommentAdded={onCommentAdded ?? (() => {})}
                 onCommentDeleted={onCommentDeleted ?? (() => {})}
+                onLikeChanged={onLikeChanged}
                 onNavigate={handleReviewNavigation}
               />
             )}
