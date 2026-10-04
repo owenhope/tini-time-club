@@ -599,6 +599,11 @@ export function RootLayoutNav() {
           onPress={() => {
             setIsRetryingAuth(true);
             setAuthStartupAttempt((attempt) => attempt + 1);
+            // The profile context hit the same storage failure at launch and
+            // settled on signed-out; reload it too, or a member who retries
+            // successfully lands on Welcome as a visitor. Startup waits for
+            // this load before choosing a route.
+            void refreshProfile();
           }}
           style={({ pressed }) => [
             errorBoundaryStyles.button,
