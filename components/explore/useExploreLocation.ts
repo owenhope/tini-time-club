@@ -34,13 +34,29 @@ export type ExploreLocationRequest = (force?: boolean) => Promise<void>;
  * permission/location requests while the user switches between them.
  */
 export function useExploreLocation() {
-  const [state, setState] = useState<ExploreLocationState>(INITIAL_STATE);
+  const [state, setStateValue] = useState<ExploreLocationState>(INITIAL_STATE);
   const requestRef = useRef<Promise<void> | null>(null);
+  // Read through a ref so `request` keeps one identity: callers run it from
+  // mount effects, and a new identity per status change re-ran those effects
+  // into a request loop whenever location was unavailable.
+  const statusRef = useRef<ExploreLocationState["status"]>(
+    INITIAL_STATE.status
+  );
+  const setState = useCallback((next: ExploreLocationState) => {
+    statusRef.current = next.status;
+    setStateValue(next);
+  }, []);
 
   const request = useCallback<ExploreLocationRequest>(
     (force = false) => {
       if (requestRef.current) return requestRef.current;
-      if (!force && (state.status === "ready" || state.status === "denied")) {
+      // Every settled outcome waits for an explicit retry ("Use my location").
+      if (
+        !force &&
+        (statusRef.current === "ready" ||
+          statusRef.current === "denied" ||
+          statusRef.current === "unavailable")
+      ) {
         return Promise.resolve();
       }
 
@@ -91,7 +107,7 @@ export function useExploreLocation() {
       requestRef.current = pending;
       return pending;
     },
-    [state.status]
+    [setState]
   );
 
   return { state, request };
