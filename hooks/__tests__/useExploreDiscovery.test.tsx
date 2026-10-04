@@ -146,4 +146,86 @@ describe("useExploreDiscovery loading state", () => {
 
     act(() => tree!.unmount());
   });
+
+  it("keeps paging members after a search replaces an in-flight page", async () => {
+    const profile = (id: string) => ({ id, username: id }) as DiscoveredProfile;
+    const cursor = { value: 1, id: "c" } as never;
+    const staleAppend = deferred<DiscoveryPage<DiscoveredProfile>>();
+    jest
+      .mocked(getDiscoverProfilesPage)
+      .mockResolvedValueOnce({
+        items: [profile("a")],
+        nextCursor: cursor,
+        hasMore: true,
+      })
+      .mockReturnValueOnce(staleAppend.promise)
+      .mockResolvedValueOnce({
+        items: [profile("olive")],
+        nextCursor: cursor,
+        hasMore: true,
+      })
+      .mockResolvedValueOnce({
+        items: [profile("olive-2")],
+        nextCursor: null,
+        hasMore: false,
+      });
+
+    let query = "";
+    let latest: ReturnType<typeof useExploreDiscovery> | undefined;
+    const Harness = () => {
+      latest = useExploreDiscovery({
+        enabled: true,
+        activeView: "profiles",
+        query,
+        location: { status: "idle", coordinates: null, canOpenSettings: false },
+        requestLocation: jest.fn(async () => undefined),
+      });
+      return null;
+    };
+
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<Harness />);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+      await Promise.resolve();
+    });
+
+    // Reach the end: page 2 starts loading and is still in flight...
+    act(() => latest!.handleEndReached());
+    expect(getDiscoverProfilesPage).toHaveBeenCalledTimes(2);
+
+    // ...when the member searches, replacing the list.
+    query = "olive";
+    act(() => tree!.update(<Harness />));
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    // The abandoned page must not leak into the new results.
+    await act(async () => {
+      staleAppend.resolve({
+        items: [profile("stale")],
+        nextCursor: null,
+        hasMore: false,
+      });
+      await staleAppend.promise;
+    });
+    expect(latest?.profiles.map((item) => item.id)).toEqual(["olive"]);
+
+    // And paging still works for the new results.
+    await act(async () => {
+      latest!.handleEndReached();
+      await Promise.resolve();
+    });
+    expect(getDiscoverProfilesPage).toHaveBeenCalledTimes(4);
+    expect(latest?.profiles.map((item) => item.id)).toEqual([
+      "olive",
+      "olive-2",
+    ]);
+
+    act(() => tree!.unmount());
+  });
 });
