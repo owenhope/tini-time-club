@@ -394,3 +394,39 @@ it("shows a retry state when the initial comment load fails, and recovers", asyn
     tree.root.findAllByProps({ accessibilityLabel: "Retry loading comments" })
   ).toHaveLength(0);
 });
+
+it("posts a comment once when Post is tapped again while it is sending", async () => {
+  const createComment = databaseService.createComment as jest.Mock;
+  let finish!: (value: unknown) => void;
+  createComment.mockImplementation(
+    () => new Promise((resolve) => (finish = resolve))
+  );
+  const tree = await renderSlider();
+  const composer = tree.root
+    .findAllByProps({ placeholder: "Add a comment..." })
+    .find((node) => node.props.mentions !== undefined)!;
+  await act(async () => {
+    composer.props.onChange("Cheers", []);
+  });
+
+  const post = tree.root.findByProps({ accessibilityLabel: "Post comment" });
+  await act(async () => {
+    void post.props.onPress();
+    void post.props.onPress();
+    void composer.props.onSubmitEditing();
+  });
+
+  expect(createComment).toHaveBeenCalledTimes(1);
+  expect(
+    tree.root.findByProps({ accessibilityLabel: "Post comment" }).props
+      .accessibilityState
+  ).toEqual({ disabled: true });
+
+  await act(async () => {
+    finish({ ...comment, id: 23, body: "Cheers" });
+  });
+  expect(
+    tree.root.findByProps({ accessibilityLabel: "Post comment" }).props
+      .accessibilityState
+  ).toEqual({ disabled: false });
+});
