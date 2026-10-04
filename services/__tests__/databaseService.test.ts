@@ -223,6 +223,55 @@ it("does not expose a personalized people feed to a visitor", async () => {
   expect(rpc).not.toHaveBeenCalled();
 });
 
+it("shows a member's own like on a single review and never serves it from cache", async () => {
+  let likedByViewer = 1;
+  const chain = (result: () => unknown) => {
+    const query: Record<string, jest.Mock> & { then?: unknown } = {};
+    for (const method of ["select", "eq", "order", "limit"]) {
+      query[method] = jest.fn(() => query);
+    }
+    query.single = jest.fn(async () => result());
+    query.maybeSingle = jest.fn(async () => result());
+    query.then = (resolve: (value: unknown) => void) => resolve(result());
+    return query;
+  };
+  from.mockImplementation((table: string) => {
+    if (table === "reviews") {
+      return chain(() => ({
+        data: {
+          id: 42,
+          comment: "Cold",
+          image_url: null,
+          user_id: "author-1",
+          location: null,
+          profile: { id: "author-1", username: "olive", deleted: false },
+        },
+        error: null,
+      }));
+    }
+    if (table === "likes") {
+      const query = chain(() => ({ count: 3, error: null }));
+      query.eq = jest.fn((column: string) => {
+        if (column === "user_id") {
+          return chain(() => ({ count: likedByViewer, error: null }));
+        }
+        return query;
+      });
+      return query;
+    }
+    return chain(() => ({ data: [], count: 0, error: null }));
+  });
+
+  await expect(
+    databaseService.getReview("42", "viewer-1")
+  ).resolves.toMatchObject({ has_liked: true, likes_count: 3 });
+
+  likedByViewer = 0;
+  await expect(
+    databaseService.getReview("42", "viewer-1")
+  ).resolves.toMatchObject({ has_liked: false });
+});
+
 it("creates comments without mentions through the comment RPC", async () => {
   rpc.mockResolvedValue({
     data: {

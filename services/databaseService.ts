@@ -396,8 +396,10 @@ class DatabaseService {
         await publicContentService.getReview(reviewId)
       );
     }
+    // Not cached: this screen shows the viewer's like state and live counts,
+    // and a deleted review must stop opening immediately.
     const review = await this.query<any>(
-      `review_${reviewId}`,
+      `review_${reviewId}:${currentUserId}`,
       async () => {
         const { data, error } = await supabase
           .from("reviews")
@@ -428,12 +430,17 @@ class DatabaseService {
         const location = Array.isArray(data.location)
           ? (data.location[0] ?? null)
           : data.location;
-        const [likes, comments, recentComments, locationRating] =
+        const [likes, viewerLike, comments, recentComments, locationRating] =
           await Promise.all([
             supabase
               .from("likes")
               .select("review_id", { count: "exact", head: true })
               .eq("review_id", reviewId),
+            supabase
+              .from("likes")
+              .select("review_id", { count: "exact", head: true })
+              .eq("review_id", reviewId)
+              .eq("user_id", currentUserId),
             supabase
               .from("comments")
               .select("id", { count: "exact", head: true })
@@ -465,6 +472,7 @@ class DatabaseService {
           ]);
 
         if (likes.error) throw likes.error;
+        if (viewerLike.error) throw viewerLike.error;
         if (comments.error) throw comments.error;
         if (recentComments.error) throw recentComments.error;
         if (locationRating.error) throw locationRating.error;
@@ -485,11 +493,11 @@ class DatabaseService {
             : location,
           likes_count: likes.count ?? 0,
           comments_count: comments.count ?? 0,
-          has_liked: false,
+          has_liked: (viewerLike.count ?? 0) > 0,
           recent_comments: recentComments.data ?? [],
         };
       },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION }
+      { cache: false }
     );
 
     const imageUrls = await imageCache.getReviewImageUrls([review.image_url]);
@@ -677,7 +685,6 @@ class DatabaseService {
             .size,
         });
       }
-      this.queryCache.delete(`review_${reviewId}`);
       if (userId) this.invalidateUserCaches(userId);
       return data;
     }
@@ -691,7 +698,6 @@ class DatabaseService {
     if (error) throw error;
 
     // Invalidate related caches
-    this.queryCache.delete(`review_${reviewId}`);
     if (data?.user_id) {
       this.invalidateUserCaches(data.user_id);
     }
