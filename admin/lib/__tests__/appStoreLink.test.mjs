@@ -16,7 +16,7 @@ test("Meta ad visits are recognised by fbclid or a Meta UTM source", () => {
 
 test("campaign links carry the provider token, campaign and media type", () => {
   const url = new URL(
-    appStoreUrl({ providerToken: "118000", campaign: META_AD_CAMPAIGN }),
+    appStoreUrl({ providerToken: "118000", campaign: META_AD_CAMPAIGN })
   );
   assert.equal(url.origin, "https://apps.apple.com");
   assert.equal(url.pathname, "/app/tini-time-club/id6741620393");
@@ -28,7 +28,7 @@ test("campaign links carry the provider token, campaign and media type", () => {
 test("campaign names are percent-encoded like App Store Connect links", () => {
   assert.equal(
     appStoreUrl({ providerToken: "119407106", campaign: META_AD_CAMPAIGN }),
-    "https://apps.apple.com/app/tini-time-club/id6741620393?pt=119407106&ct=Meta%20Web&mt=8",
+    "https://apps.apple.com/app/tini-time-club/id6741620393?pt=119407106&ct=Meta%20Web&mt=8"
   );
 });
 
@@ -36,7 +36,7 @@ test("without a provider token the plain store URL is used", () => {
   for (const providerToken of [undefined, "", "  "]) {
     assert.equal(
       appStoreUrl({ providerToken, campaign: META_AD_CAMPAIGN }),
-      "https://apps.apple.com/app/tini-time-club/id6741620393",
+      "https://apps.apple.com/app/tini-time-club/id6741620393"
     );
   }
 });
