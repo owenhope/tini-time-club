@@ -16,6 +16,12 @@ interface UseProfileScreenDataOptions {
   /** The signed-in user (currentUserId for getReviews). */
   viewerId: string | undefined;
   favoriteLocationId?: number | null;
+  /**
+   * Counts the caller already has for this profile (visitors get them from the
+   * public profile response and can't query follows). Seeded on profile change
+   * instead of zero.
+   */
+  knownFollowCounts?: { followers: number; following: number } | null;
   reviewOptions?: {
     limit?: number;
     offset?: number;
@@ -38,6 +44,7 @@ export function useProfileScreenData({
   profileId,
   viewerId,
   favoriteLocationId,
+  knownFollowCounts,
   reviewOptions,
 }: UseProfileScreenDataOptions) {
   const [userReviews, setUserReviews] = useState<Review[]>([]);
@@ -66,6 +73,7 @@ export function useProfileScreenData({
   const profileDataKey = `${profileId ?? ""}:${viewerId ?? ""}:${limit ?? ""}:${excludeBlocked ?? ""}`;
   const profileDataKeyRef = useRef(profileDataKey);
   profileDataKeyRef.current = profileDataKey;
+  const knownFollowCountsRef = useRef(knownFollowCounts);
 
   const loadUserReviews = useCallback(
     async (isRefresh = false) => {
@@ -172,6 +180,12 @@ export function useProfileScreenData({
     viewerId,
   ]);
 
+  // Declared before the reset below so it sees counts that arrived in the
+  // same render as the new profile.
+  useEffect(() => {
+    knownFollowCountsRef.current = knownFollowCounts;
+  }, [knownFollowCounts]);
+
   useEffect(() => {
     reviewsRequestRef.current += 1;
     regularsRequestRef.current += 1;
@@ -184,8 +198,8 @@ export function useProfileScreenData({
     setLoadingReviews(Boolean(profileId));
     setLoadingRegulars(Boolean(profileId));
     setFavoriteLocation(null);
-    setFollowersCount(0);
-    setFollowingCount(0);
+    setFollowersCount(knownFollowCountsRef.current?.followers ?? 0);
+    setFollowingCount(knownFollowCountsRef.current?.following ?? 0);
   }, [profileDataKey, profileId]);
 
   const loadRegularPlaces = useCallback(async () => {

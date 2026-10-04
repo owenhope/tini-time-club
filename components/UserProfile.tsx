@@ -41,6 +41,12 @@ const UserProfile = () => {
   const styles = useStyles();
   const { isDark, colors } = useTheme();
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  // Visitors can't query follows, so the public profile response carries the
+  // counts; the data hook seeds them when this profile becomes current.
+  const [publicFollowCounts, setPublicFollowCounts] = useState<{
+    followers: number;
+    following: number;
+  } | null>(null);
   const [doesFollow, setDoesFollow] = useState<boolean>(false);
   const [followPending, setFollowPending] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -88,6 +94,7 @@ const UserProfile = () => {
     profileId: displayProfile?.id,
     viewerId: profile?.id,
     favoriteLocationId: displayProfile?.favorite_location_id,
+    knownFollowCounts: profile ? null : publicFollowCounts,
     // Don't exclude blocked users when viewing their profile.
     reviewOptions: { excludeBlocked: false },
   });
@@ -251,6 +258,10 @@ const UserProfile = () => {
           const result =
             await databaseService.getPublicProfileByUsername(username);
           if (requestId !== selectedProfileRequestRef.current) return;
+          setPublicFollowCounts({
+            followers: result.followersCount,
+            following: result.followingCount,
+          });
           setSelectedProfile(normalizeProfile(result.profile));
           setFollowersCount(result.followersCount);
           setFollowingCount(result.followingCount);
