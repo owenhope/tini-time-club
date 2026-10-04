@@ -7,11 +7,15 @@ import {
 
 const VISITOR_PREVIEW_KEY = "ttc.visitor-preview.accepted.v1";
 const MEMBERSHIP_RETURN_KEY = "ttc.membership-return.v1";
+// An abandoned "Join the Club" must not redirect a later, unrelated sign-in.
+const MEMBERSHIP_RETURN_TTL_MS = 30 * 60 * 1000;
 
 interface PendingMembershipReturn {
   intent: MembershipIntent;
   returnTo: string | null;
 }
+
+type StoredMembershipReturn = PendingMembershipReturn & { savedAt: number };
 
 export const hasAcceptedVisitorPreview = async (): Promise<boolean> =>
   (await SecureStore.getItemAsync(VISITOR_PREVIEW_KEY)) === "1";
@@ -24,9 +28,10 @@ export const savePendingMembershipReturn = async (
   intent: MembershipIntent,
   returnTo?: string | null
 ): Promise<void> => {
-  const value: PendingMembershipReturn = {
+  const value: StoredMembershipReturn = {
     intent,
     returnTo: safeMembershipReturnPath(returnTo),
+    savedAt: Date.now(),
   };
   await SecureStore.setItemAsync(MEMBERSHIP_RETURN_KEY, JSON.stringify(value));
 };
@@ -37,8 +42,14 @@ export const getPendingMembershipReturn =
     if (!stored) return null;
 
     try {
-      const parsed = JSON.parse(stored) as Partial<PendingMembershipReturn>;
+      const parsed = JSON.parse(stored) as Partial<StoredMembershipReturn>;
       if (!isMembershipIntent(parsed.intent)) return null;
+      if (
+        typeof parsed.savedAt !== "number" ||
+        Date.now() - parsed.savedAt > MEMBERSHIP_RETURN_TTL_MS
+      ) {
+        return null;
+      }
       return {
         intent: parsed.intent,
         returnTo: safeMembershipReturnPath(parsed.returnTo),

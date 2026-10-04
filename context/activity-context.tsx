@@ -45,6 +45,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const nextCount = await fetchUnseenActivityCount();
+      // A response that lands after sign-out or an account switch belongs
+      // to the previous member; never apply it to the current badge.
+      if (previousProfileIdRef.current !== profileId) return;
       setUnseenCount(nextCount);
       await setActivityBadgeCount(nextCount);
     } catch (error) {
@@ -54,16 +57,20 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     }
   }, [profileId]);
 
-  const markPushOpened = useCallback(async (notificationId: string) => {
-    try {
-      await markActivityRead([notificationId]);
-      const nextCount = await fetchUnseenActivityCount();
-      setUnseenCount(nextCount);
-      await setActivityBadgeCount(nextCount);
-    } catch (error) {
-      reportError("Failed to mark push Activity as read:", error);
-    }
-  }, []);
+  const markPushOpened = useCallback(
+    async (notificationId: string) => {
+      try {
+        await markActivityRead([notificationId]);
+        const nextCount = await fetchUnseenActivityCount();
+        if (!profileId || previousProfileIdRef.current !== profileId) return;
+        setUnseenCount(nextCount);
+        await setActivityBadgeCount(nextCount);
+      } catch (error) {
+        reportError("Failed to mark push Activity as read:", error);
+      }
+    },
+    [profileId]
+  );
 
   const clearUnseenIndicator = useCallback(() => {
     setUnseenCount(0);

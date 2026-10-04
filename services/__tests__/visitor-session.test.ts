@@ -52,3 +52,12 @@ it("drops an external auth return destination", async () => {
     returnTo: null,
   });
 });
+
+it("ignores a membership return abandoned more than 30 minutes ago", async () => {
+  const now = jest.spyOn(Date, "now").mockReturnValue(1_000_000);
+  await savePendingMembershipReturn("comment", "/r/42");
+  now.mockReturnValue(1_000_000 + 31 * 60 * 1000);
+
+  await expect(getPendingMembershipReturn()).resolves.toBeNull();
+  now.mockRestore();
+});

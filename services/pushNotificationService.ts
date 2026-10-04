@@ -19,6 +19,9 @@ let clearedDeniedRegistration = false;
 let registrationPromise: Promise<string | null> | null = null;
 let registrationRetryAfter = 0;
 let unregistrationPromise: Promise<boolean> | null = null;
+// Bumped by every explicit unregistration so a registration that was already
+// in flight (e.g. during sign-out) never re-attaches the token afterwards.
+let registrationGeneration = 0;
 
 const getProjectId = (): string | null =>
   Constants.expoConfig?.extra?.eas?.projectId ??
@@ -69,6 +72,7 @@ async function performPushRegistration({
     return null;
   }
 
+  const generation = registrationGeneration;
   try {
     await ensureAndroidChannel();
 
@@ -89,7 +93,7 @@ async function performPushRegistration({
 
     if (!permissions.granted) {
       if (!clearedDeniedRegistration) {
-        await unregisterPushNotificationsAsync();
+        await unregisterInstallationAsync();
         clearedDeniedRegistration = true;
       }
       return null;
@@ -107,7 +111,8 @@ async function performPushRegistration({
       return null;
     }
 
-    await retryPendingPushUnregistrationAsync();
+    await retryPendingUnregistration();
+    if (generation !== registrationGeneration) return null;
 
     const { error } = await supabase.rpc("register_push_token", {
       p_token: token,
@@ -157,6 +162,14 @@ export async function registerPushNotificationsAsync({
 
 export async function unregisterPushNotificationsAsync(): Promise<boolean> {
   if (!Device.isDevice) return true;
+  registrationGeneration += 1;
+  // Let an in-flight registration settle first; it sees the bumped
+  // generation and skips its RPC, so nothing re-registers after this.
+  if (registrationPromise) await registrationPromise.catch(() => null);
+  return unregisterInstallationAsync();
+}
+
+async function unregisterInstallationAsync(): Promise<boolean> {
   if (unregistrationPromise) return unregistrationPromise;
 
   unregistrationPromise = (async () => {
@@ -184,12 +197,15 @@ export async function unregisterPushNotificationsAsync(): Promise<boolean> {
 
 export async function retryPendingPushUnregistrationAsync(): Promise<void> {
   if (!Device.isDevice) return;
+  await retryPendingUnregistration();
+}
 
+async function retryPendingUnregistration(): Promise<void> {
   try {
     const isPending = await SecureStore.getItemAsync(
       UNREGISTRATION_PENDING_KEY
     );
-    if (isPending) await unregisterPushNotificationsAsync();
+    if (isPending) await unregisterInstallationAsync();
   } catch (error) {
     // iOS can temporarily reject Keychain reads while the device is locked or
     // transitioning back to the foreground. This retry is best-effort and
