@@ -22,6 +22,13 @@ export const addReviewComment = (
   _commentPatch: { action: "add", data: comment },
 });
 
+/** Record a confirmed like toggle on the list's copy of the review. */
+export const setReviewLike = <T extends Review>(
+  review: T,
+  hasLiked: boolean,
+  likesCount: number
+): T => ({ ...review, has_liked: hasLiked, likes_count: likesCount });
+
 export const deleteReviewComment = (
   review: ReviewWithCommentPatch,
   commentId: number

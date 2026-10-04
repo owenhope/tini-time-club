@@ -23,6 +23,7 @@ import { getReviewPage, type ReviewCursor } from "@/services/reviewFeedService";
 import {
   addReviewComment,
   deleteReviewComment,
+  setReviewLike,
 } from "@/utils/reviewCommentUpdates";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Button } from "@/components/shared";
@@ -619,6 +620,21 @@ function Home() {
     []
   );
 
+  // Cards scrolled far out of the window unmount; keep confirmed likes here
+  // so a remounted card doesn't fall back to the page it was fetched with.
+  const handleLikeChanged = useCallback(
+    (reviewId: string, hasLiked: boolean, likesCount: number) => {
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === reviewId
+            ? setReviewLike(review, hasLiked, likesCount)
+            : review
+        )
+      );
+    },
+    []
+  );
+
   const handleCommentDeleted = useCallback(
     (reviewId: string, commentId: number) => {
       setReviews((prev) =>
@@ -650,6 +666,7 @@ function Home() {
           onShowComments={() => handleShowComments(item)}
           onCommentAdded={handleCommentAdded}
           onCommentDeleted={handleCommentDeleted}
+          onLikeChanged={handleLikeChanged}
         />
       );
     },
@@ -660,6 +677,7 @@ function Home() {
       handleShowComments,
       handleCommentAdded,
       handleCommentDeleted,
+      handleLikeChanged,
     ]
   );
 

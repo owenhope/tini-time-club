@@ -13,11 +13,18 @@ import {
 } from "@/utils/reviewEngagement";
 import type { Comment, Profile } from "@/types/types";
 
+export type LikeChangedHandler = (
+  reviewId: string,
+  hasLiked: boolean,
+  likesCount: number
+) => void;
+
 const useLikes = (
   reviewId: string,
   userId: string | null,
   initialCount: number,
-  initialHasLiked: boolean
+  initialHasLiked: boolean,
+  onLikeChanged?: LikeChangedHandler
 ) => {
   const [hasLiked, setHasLiked] = useState(initialHasLiked);
   const [likesCount, setLikesCount] = useState(initialCount);
@@ -32,6 +39,7 @@ const useLikes = (
     if (!userId || loading) return;
 
     const wasLiked = hasLiked;
+    const nextCount = Math.max(0, likesCount + (wasLiked ? -1 : 1));
     setHasLiked(!wasLiked);
     setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -49,6 +57,9 @@ const useLikes = (
             .upsert([{ review_id: reviewId, user_id: userId }]);
 
       if (error) throw error;
+      // Cards unmount when they scroll out of a virtualized list; the owning
+      // list keeps the confirmed state so a remounted card doesn't revert.
+      onLikeChanged?.(reviewId, !wasLiked, nextCount);
     } catch (error) {
       reportError("Error toggling like:", error);
       setHasLiked(wasLiked);
@@ -56,7 +67,7 @@ const useLikes = (
     } finally {
       setLoading(false);
     }
-  }, [reviewId, userId, hasLiked, loading]);
+  }, [reviewId, userId, hasLiked, likesCount, loading, onLikeChanged]);
 
   return { hasLiked, likesCount, toggleLike };
 };
@@ -65,12 +76,14 @@ interface ReviewEngagementOptions {
   review: ReviewWithCommentPatch;
   profile: Profile | null;
   onShowLikes: (reviewId: string) => void;
+  onLikeChanged?: LikeChangedHandler;
 }
 
 export function useReviewEngagement({
   review,
   profile,
   onShowLikes,
+  onLikeChanged,
 }: ReviewEngagementOptions) {
   const { requireMembership } = useMembership();
   const shareReview = useReviewShareMenu(review);
@@ -78,7 +91,8 @@ export function useReviewEngagement({
     review.id,
     profile?.id || null,
     review.likes_count ?? 0,
-    review.has_liked ?? false
+    review.has_liked ?? false,
+    onLikeChanged
   );
   const [commentLikeState, setCommentLikeState] = useState<{
     reviewId: string;
