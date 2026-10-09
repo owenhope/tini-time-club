@@ -152,6 +152,8 @@ const LayoutContent = () => {
   return (
     <NativeTabs
       hidden={tabBarHidden}
+      labelVisibilityMode="labeled"
+      indicatorColor={colors.surface}
       tintColor={tabBarActiveColor}
       backgroundColor={colors.tabBar}
       shadowColor={colors.divider}

@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Pressable,
+  Platform,
   Text,
   View,
   type StyleProp,
@@ -64,6 +65,9 @@ const SegmentedControl = <Value extends string>({
             accessibilityLabel={option.label}
           >
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
               style={[
                 styles.label,
                 onInk && styles.labelInk,
@@ -110,7 +114,7 @@ const useStyles = makeStyles((t) => ({
     minHeight: 44,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    paddingHorizontal: t.spacing.lg,
+    paddingHorizontal: Platform.OS === "android" ? t.spacing.xs : t.spacing.lg,
     borderRadius: t.radius.pill,
     borderWidth: 2,
     borderColor: "transparent",

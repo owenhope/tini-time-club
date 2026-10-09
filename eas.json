@@ -4,6 +4,23 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "android-development": {
+      "extends": "development",
+      "android": { "buildType": "apk" },
+      "env": {
+        "APP_ENV": "development",
+        "BACKEND_ENV": "development"
+      }
+    },
+    "android-preview": {
+      "extends": "preview",
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "APP_ENV": "preview",
+        "BACKEND_ENV": "development"
+      }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal",

@@ -12,6 +12,9 @@ expo-env.d.ts
 # Native
 *.orig.*
 *.jks
+*.keystore
+google-services.json
+google-service-account*.json
 *.p8
 *.p12
 *.key

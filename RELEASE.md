@@ -101,6 +101,66 @@ npm run release:testflight
 `preview-adhoc` exists for the occasional ad-hoc install on a registered
 device without going through TestFlight review.
 
+### Android development and preview
+
+Android uses the same environment identities in the table above as package
+names. The `android-development` profile produces a development-client APK;
+`android-preview` produces a standalone APK against development Supabase.
+Both explicitly declare their app and backend environments.
+
+```bash
+# Cloud development build; install the APK on an emulator or physical device.
+npm run build:android:dev
+npm run start:dev
+# Press a in Metro to open the installed client on a connected Android device.
+
+# Alternatively, compile and launch locally with Android SDK and Java installed.
+npm run android
+
+# Standalone preview APK, without Metro.
+npm run build:android:preview
+```
+
+Use a supported Node runtime in the shell that launches Gradle (Node 24 is
+verified locally). If Expo's config generation fails with `parseEnv is not a
+function`, check `which -a node`: an older system Node can be selected by a
+previously started Gradle daemon. Stop that daemon with `cd android &&
+./gradlew --stop`, select the supported Node runtime, then rerun `npm run android`.
+The local build installs missing SDK/NDK components on its first run and needs
+an emulator with a complete system image or a connected device.
+
+Before testing native integrations, configure these in the matching EAS
+environment:
+
+- `GOOGLE_MAPS_API_KEY_ANDROID`: enable Maps SDK for Android and restrict the
+  key to the package name and signing certificate used by that build.
+- `GOOGLE_SERVICES_JSON`: an EAS file variable containing the Firebase Android
+  app configuration for that package. Upload the FCM v1 service-account
+  credential separately through EAS credentials for push delivery.
+
+These are optional for the initial development build, but maps and remote push
+must not be considered working until configured and tested. Development push
+also requires `EXPO_PUBLIC_ENABLE_DEV_PUSH_NOTIFICATIONS=1`.
+Never commit Firebase or service-account credential files.
+
+Android Google sign-in also needs OAuth clients registered for each package
+and signing certificate. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in each EAS
+environment to an OAuth client of type **Web application** in the same Google
+project, and include that client ID in Supabase's Google provider allowlist.
+Restart Metro after changing it; an OTA or rebuilt binary is needed for
+standalone apps. The iOS client ID must not be used as Android's web client ID.
+Include the
+Play App Signing certificate when testing a future Play-distributed build.
+
+Android is not yet production-qualified. Before publishing, test startup,
+visitor discovery, email/Google login, auth callback links, onboarding,
+review/photo publishing, maps/location, push-open routing, sharing, account
+deletion, system back navigation, and keyboard/safe-area layout on devices.
+Resolve access for existing Apple-only accounts, configure Play submission,
+and validate a Play-installed release. The existing production profile remains
+the production-backend target; preview APKs must never be uploaded as the
+production package.
+
 ### 4.0 visitor preview backend
 
 The signed-out **Discover Martinis** path requires the `is_public` profile
