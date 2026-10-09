@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Animated,
+  Platform,
   View,
   Text,
   FlatList,
@@ -756,7 +757,8 @@ function Home() {
         variant="compact"
         compactContent={<Text style={styles.wordmark}>tini time club</Text>}
         compactContentCentered
-        transparent
+        transparent={Platform.OS !== "android"}
+        ground={Platform.OS === "android" ? "brand" : undefined}
         leading={passportAction}
         actions={headerActions}
         progress={progress}

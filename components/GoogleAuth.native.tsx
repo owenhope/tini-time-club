@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { Image } from "expo-image";
 import {
   GoogleSignin,
@@ -12,12 +12,6 @@ import { AuthProviderButton } from "@/components/AuthProviderButton";
 import { useTheme } from "@/theme";
 
 export function GoogleAuth() {
-  GoogleSignin.configure({
-    webClientId:
-      "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
-    iosClientId:
-      "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
-  });
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +20,22 @@ export function GoogleAuth() {
     setLoading(true);
 
     try {
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
+      if (Platform.OS === "android" && !webClientId) {
+        throw new Error(
+          "Google sign-in is not configured for this Android build yet. Please use email sign-in."
+        );
+      }
+      GoogleSignin.configure({
+        // Android requires an OAuth client of type Web application here.
+        // Keep the existing iOS configuration until its migration is tested.
+        webClientId:
+          Platform.OS === "android"
+            ? webClientId
+            : "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
+        iosClientId:
+          "732397011472-41tr3sghlftkc5kcsr57v3570l9uot05.apps.googleusercontent.com",
+      });
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       // v13 resolves a dismissed sheet instead of throwing SIGN_IN_CANCELLED.

@@ -101,9 +101,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Bump this for every native release; see RELEASE.md. runtimeVersion
     // follows it, so shipping two different native builds under one version
     // would let an OTA update reach an incompatible binary.
-    version: "4.8.0",
+    version: "4.9.0",
     slug: PROJECT_SLUG, // Must be consistent across all environments.
-    platforms: ["ios", "web"], // The native app is iOS-only; Expo web remains available.
+    platforms: ["ios", "android", "web"],
     orientation: "portrait",
     userInterfaceStyle: "automatic",
     icon: icon,
@@ -120,6 +120,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           "Allow Tini Time Club to save a review card for sharing to Instagram.",
       },
     },
+    android: {
+      package: bundleIdentifier,
+      // EAS file variable: keep Firebase configuration out of source control.
+      ...(process.env.GOOGLE_SERVICES_JSON
+        ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON }
+        : {}),
+      config: {
+        googleMaps: {
+          apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,
+        },
+      },
+    },
     web: {
       bundler: "metro",
       output: "static",
@@ -132,6 +144,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           image: "./assets/images/splash-icon.png",
           imageWidth: 400,
+          // Android masks the splash to a circle; keep the wordmark inside
+          // its safe area instead of cropping the larger iOS artwork.
+          android: {
+            imageWidth: 160,
+          },
           resizeMode: "contain",
           backgroundColor: "#B6A3E2",
         },

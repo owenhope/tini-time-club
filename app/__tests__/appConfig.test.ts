@@ -26,9 +26,8 @@ describe("native app permissions", () => {
 
     const config = createAppConfig({ config: {} } as ConfigContext);
 
-    // The native app is iOS-only; the separate Expo web target stays intact.
-    expect(config.platforms).toEqual(["ios", "web"]);
-    expect(config.android).toBeUndefined();
+    expect(config.platforms).toEqual(["ios", "android", "web"]);
+    expect(config.android?.package).toBe("com.ohope.tinitimeclub.dev");
     expect(config.web).toMatchObject({
       bundler: "metro",
       output: "static",
@@ -162,9 +161,9 @@ describe("release environment validation", () => {
     process.env.EXPO_PUBLIC_META_CLIENT_TOKEN = "test-client-token";
     setSentryReleaseEnvironment();
 
-    expect(
-      createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
-    ).toBe("com.ohope.tinitimeclub.preview");
+    const config = createAppConfig({ config: {} } as ConfigContext);
+    expect(config.ios?.bundleIdentifier).toBe("com.ohope.tinitimeclub.preview");
+    expect(config.android?.package).toBe("com.ohope.tinitimeclub.preview");
   });
 
   it("rejects a release build on the EAS builder without the Sentry upload token", () => {
@@ -194,9 +193,9 @@ describe("release environment validation", () => {
     setSentryReleaseEnvironment();
     delete process.env.SENTRY_AUTH_TOKEN;
 
-    expect(
-      createAppConfig({ config: {} } as ConfigContext).ios?.bundleIdentifier
-    ).toBe("com.ohope.tinitimeclub");
+    const config = createAppConfig({ config: {} } as ConfigContext);
+    expect(config.ios?.bundleIdentifier).toBe("com.ohope.tinitimeclub");
+    expect(config.android?.package).toBe("com.ohope.tinitimeclub");
   });
 
   it("copies the configured backend environment into runtime metadata", () => {
