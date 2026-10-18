@@ -9,6 +9,7 @@ import { Pressable, View, Text } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import ReviewGrid from "@/components/ReviewGrid";
 import LocationViewCount from "@/components/LocationViewCount";
+import { useLocationFavorite } from "@/hooks/useLocationFavorite";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
@@ -122,6 +123,7 @@ const Location = () => {
     locationIdParam,
   ]);
   const reviewLocationId = displayLocation?.id;
+  const favorite = useLocationFavorite(selectedLocation?.id);
   const viewerId = profile?.id;
 
   const strippedAddress = displayLocation?.address
@@ -158,6 +160,25 @@ const Location = () => {
     if (!displayLocation) return [];
 
     const actions: HeaderAction[] = [
+      ...(favorite.available
+        ? [
+            {
+              icon: favorite.saved
+                ? ("star" as const)
+                : ("star-outline" as const),
+              iconColor: favorite.saved ? colors.awardGold : undefined,
+              accessibilityLabel: favorite.needsRetry
+                ? "Retry loading favorite"
+                : favorite.saved
+                  ? `Remove ${displayLocation.name} from Favorites`
+                  : `Add ${displayLocation.name} to Favorites`,
+              disabled: favorite.busy,
+              onPress: () => {
+                void favorite.toggle();
+              },
+            },
+          ]
+        : []),
       {
         icon: "paper-plane-outline",
         accessibilityLabel: `Share ${displayLocation.name}`,
@@ -211,7 +232,14 @@ const Location = () => {
     }
 
     return actions;
-  }, [displayLocation, openVerificationInfo, router, shareLocation]);
+  }, [
+    displayLocation,
+    openVerificationInfo,
+    router,
+    shareLocation,
+    favorite,
+    colors.awardGold,
+  ]);
 
   const fetchSelectedLocation = useCallback(
     async (locationId: string) => {

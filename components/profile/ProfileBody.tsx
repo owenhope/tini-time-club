@@ -7,6 +7,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import RegularPlaceRow from "@/components/RegularPlaceRow";
+import ProfileFavorites from "@/components/profile/ProfileFavorites";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Skeleton } from "@/components/shared";
 import type { ProfileContentTab } from "@/components/ProfileContentTabs";
@@ -23,6 +24,7 @@ import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 export interface ProfileBodyProps {
   /** Which tab the header's segmented control is on. */
   activeTab: ProfileContentTab;
+  favoritesProfileId?: string;
   /** The identity block and tabs; scrolls away with the content. */
   header: React.ReactElement;
 
@@ -59,6 +61,7 @@ export interface ProfileBodyProps {
  */
 const ProfileBody: React.FC<ProfileBodyProps> = ({
   activeTab,
+  favoritesProfileId,
   header,
   reviews,
   setReviews,
@@ -123,7 +126,13 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 
   return (
     <>
-      {activeTab === "reviews" ? (
+      {activeTab === "favorites" ? (
+        <ProfileFavorites
+          profileId={favoritesProfileId}
+          header={header}
+          onScroll={onScroll}
+        />
+      ) : activeTab === "reviews" ? (
         <ReviewGrid
           reviews={reviews}
           header={header}

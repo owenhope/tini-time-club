@@ -1,5 +1,11 @@
 import { View } from "react-native";
-import Svg, { Circle, Polygon, Text as SvgText, TSpan } from "react-native-svg";
+import Svg, {
+  Circle,
+  Path,
+  Polygon,
+  Text as SvgText,
+  TSpan,
+} from "react-native-svg";
 import type { PassportStampShape } from "@/services/passportService";
 import { makeStyles, useTheme } from "@/theme";
 
@@ -16,7 +22,9 @@ type PassportStampProps = {
 };
 
 type StampGeometry =
-  { kind: "circle" } | { kind: "polygon"; sides: number; notched?: boolean };
+  | { kind: "circle" }
+  | { kind: "shield" }
+  | { kind: "polygon"; sides: number; notched?: boolean };
 
 const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   locations: { kind: "circle" },
@@ -25,6 +33,7 @@ const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   type_reviews: { kind: "circle" },
   spirit_reviews: { kind: "circle" },
   regulars: { kind: "polygon", sides: 18, notched: true },
+  favorites: { kind: "shield" },
   comments: { kind: "polygon", sides: 8 },
   likes_received: { kind: "polygon", sides: 18, notched: true },
   shares: { kind: "polygon", sides: 8 },
@@ -114,6 +123,15 @@ function StampOutline({
     const spec = STAMP_GEOMETRY[shape];
     if (spec.kind === "circle") {
       return <Circle cx="50" cy="50" r={inset ? 40 : 45} {...props} />;
+    }
+    if (spec.kind === "shield") {
+      return (
+        <Path
+          d="M 14 7 H 86 Q 92 7 92 13 V 48 Q 92 78 50 95 Q 8 78 8 48 V 13 Q 8 7 14 7 Z"
+          transform={inset ? "translate(5 5) scale(0.9)" : undefined}
+          {...props}
+        />
+      );
     }
     return (
       <Polygon
@@ -218,12 +236,12 @@ export function PassportStamp({
 const useStyles = makeStyles(() => ({
   container: { width: "100%" as const, alignItems: "center" as const },
   stamp: {
-    width: "100%" as const,
-    maxWidth: 112,
+    width: 112,
+    maxWidth: "100%" as const,
     aspectRatio: 1,
     position: "relative" as const,
   },
-  profileStamp: { maxWidth: 104 },
+  profileStamp: { width: 104 },
   outline: {
     position: "absolute" as const,
     top: 0,

@@ -2,7 +2,7 @@ import React from "react";
 import { SegmentedControl } from "@/components/shared";
 import { makeStyles } from "@/theme";
 
-export type ProfileContentTab = "reviews" | "regulars";
+export type ProfileContentTab = "reviews" | "regulars" | "favorites";
 
 interface ProfileContentTabsProps {
   activeTab: ProfileContentTab;
@@ -12,6 +12,7 @@ interface ProfileContentTabsProps {
 const TABS = [
   { value: "reviews", label: "Reviews" },
   { value: "regulars", label: "Regulars" },
+  { value: "favorites", label: "Favorites" },
 ] as const;
 
 /**

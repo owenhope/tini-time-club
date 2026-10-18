@@ -12,9 +12,11 @@ import {
 import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
-const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
-  place,
-}) => {
+type PlaceSummary = Omit<ProfileRegularPlace, "rank" | "review_count"> & {
+  review_count?: number;
+};
+
+const RegularPlaceRow: React.FC<{ place: PlaceSummary }> = ({ place }) => {
   const styles = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
@@ -29,7 +31,11 @@ const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
       onPress={() => router.push(routes.place(place.location_id))}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       accessibilityRole="link"
-      accessibilityLabel={`${place.location_name}, ${place.review_count} ${place.review_count === 1 ? "review" : "reviews"}`}
+      accessibilityLabel={
+        place.review_count == null
+          ? place.location_name
+          : `${place.location_name}, ${place.review_count} ${place.review_count === 1 ? "review" : "reviews"}`
+      }
     >
       <View style={styles.content}>
         <View style={styles.nameRow}>
@@ -44,8 +50,10 @@ const RegularPlaceRow: React.FC<{ place: ProfileRegularPlace }> = ({
           ) : null}
         </View>
         <AppText variant="caption" tone="secondary" numberOfLines={1}>
-          {subtitle ? `${subtitle} · ` : ""}
-          {place.review_count} {place.review_count === 1 ? "review" : "reviews"}
+          {subtitle}
+          {place.review_count != null
+            ? `${subtitle ? " · " : ""}${place.review_count} ${place.review_count === 1 ? "review" : "reviews"}`
+            : ""}
         </AppText>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
