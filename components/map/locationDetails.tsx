@@ -13,15 +13,18 @@ import { makeStyles, useTheme } from "@/theme";
 import { formatRating } from "@/utils/ratingUtils";
 import { routes } from "@/utils/routes";
 import { useMembership } from "@/context/membership-context";
+import LocationViewCount from "@/components/LocationViewCount";
 
 interface LocationDetailsProps {
   loc: any;
   onRegularsPress?: () => void;
+  enabled?: boolean;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
   loc,
   onRegularsPress,
+  enabled = true,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -95,18 +98,18 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       </View>
 
       <View style={styles.detailRow}>
-        <View
-          style={styles.metricBlock}
-          accessible
-          accessibilityRole="summary"
-          accessibilityLabel={
-            hasRating
-              ? `Overall ${formatRating(loc.rating)} from ${reviewLabel}`
-              : "Not yet rated"
-          }
-        >
+        <View style={styles.metricBlock}>
           <Text style={styles.eyebrow}>OVERALL</Text>
-          <View style={styles.ratingRow}>
+          <View
+            style={styles.ratingRow}
+            accessible
+            accessibilityRole="summary"
+            accessibilityLabel={
+              hasRating
+                ? `Overall ${formatRating(loc.rating)} from ${reviewLabel}`
+                : "Not yet rated"
+            }
+          >
             <Text style={styles.score}>
               {hasRating ? formatRating(loc.rating) : "--"}
             </Text>
@@ -122,6 +125,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           </View>
           <Text style={styles.reviewCount} numberOfLines={1}>
             {reviewLabel}
+            <LocationViewCount locationId={loc.id} enabled={enabled} />
           </Text>
         </View>
 

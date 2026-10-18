@@ -3,6 +3,8 @@ import renderer, { act } from "react-test-renderer";
 import LocationDetails from "../locationDetails";
 import { ThemeProvider } from "@/theme";
 
+jest.mock("@/components/LocationViewCount", () => "LocationViewCount");
+
 jest.mock("react-native", () => {
   const actual = jest.requireActual("react-native");
   return new Proxy(actual, {
