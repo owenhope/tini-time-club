@@ -65,6 +65,8 @@ const FETCH_PADDING = 0.35;
 const CLUSTER_FIT_PADDING = 1.8;
 const CLUSTER_MIN_DELTA = 0.002;
 const CLUSTER_FALLBACK_ZOOM = 0.4;
+// Roughly 39 km north-to-south keeps gold pins clustered until a closer city view.
+const GOLDEN_GLASS_CITY_LATITUDE_DELTA = 0.35;
 const MARKER_PRESS_GUARD_MS = 250;
 const ROUTE_LOCATION_FOCUS_DELTA = 0.001;
 
@@ -380,6 +382,9 @@ function ExploreMap({
     mapRef.current?.animateToRegion(nextRegion, 350);
   }, []);
 
+  const showIndividualGoldenGlassPins =
+    region.latitudeDelta <= GOLDEN_GLASS_CITY_LATITUDE_DELTA;
+
   const markerElements = useMemo(
     () =>
       locations.map((location) => {
@@ -388,18 +393,31 @@ function ExploreMap({
         return (
           <Marker
             key={`${String(location.id)}-${mapRevision}`}
+            // The clustering library reads this extra prop before passing
+            // excluded markers through to the native map unchanged.
+            {...{
+              cluster: !(
+                location.is_golden_glass && showIndividualGoldenGlassPins
+              ),
+            }}
             coordinate={{ latitude: location.lat, longitude: location.long }}
             anchor={{ x: 0.5, y: 1 }}
             tracksViewChanges={false}
             stopPropagation
-            zIndex={isSelected ? 10 : 1}
+            zIndex={isSelected ? 10 : location.is_golden_glass ? 8 : 1}
             onPress={() => handleMarkerPress(location)}
           >
             <LocationPin loc={location} selected={isSelected} />
           </Marker>
         );
       }),
-    [handleMarkerPress, locations, mapRevision, selectedLocationId]
+    [
+      handleMarkerPress,
+      locations,
+      mapRevision,
+      selectedLocationId,
+      showIndividualGoldenGlassPins,
+    ]
   );
 
   const renderCluster = useCallback((cluster: any) => {

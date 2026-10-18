@@ -9,7 +9,8 @@ import ClusteredMapView from "react-native-map-clustering";
  * function" and the whole map screen fails to render.
  *
  * This wrapper re-applies the library's own defaults explicitly. Keep in sync
- * with ClusteredMapView.defaultProps if the dependency is ever upgraded.
+ * with ClusteredMapView.defaultProps if the dependency is ever upgraded,
+ * except for intentional app overrides such as the minimum cluster size.
  */
 const CLUSTERING_DEFAULTS = {
   clusteringEnabled: true,
@@ -24,7 +25,7 @@ const CLUSTERING_DEFAULTS = {
   radius: Dimensions.get("window").width * 0.06,
   maxZoom: 20,
   minZoom: 1,
-  minPoints: 2,
+  minPoints: 3,
   extent: 512,
   nodeSize: 64,
   // Map parameters
