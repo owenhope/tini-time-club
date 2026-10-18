@@ -501,6 +501,7 @@ const MemberProfile = () => {
         statusBar="light"
       />
       <ProfileBody
+        favoritesProfileId={profile?.id}
         activeTab={activeTab}
         header={header}
         onScroll={handleScroll}

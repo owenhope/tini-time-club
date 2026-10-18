@@ -49,7 +49,13 @@ const passportSection = (metric: string, series: string) => {
   return series;
 };
 
-const SECTION_ORDER = ["Profile", "Venues", "Martinis", "Community"];
+const SECTION_ORDER = [
+  "Profile",
+  "Venues",
+  "Favorites",
+  "Martinis",
+  "Community",
+];
 // Sections outside SECTION_ORDER (a new server-side series, say) sort after
 // the known ones instead of jumping above "Venues".
 const sectionRank = (title: string) => {

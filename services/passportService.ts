@@ -14,6 +14,7 @@ export const PASSPORT_STAMP_SHAPES = [
   "type_reviews",
   "spirit_reviews",
   "regulars",
+  "favorites",
   "comments",
   "likes_received",
   "shares",
