@@ -8,6 +8,7 @@ import React, {
 import { Pressable, View, Text } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import ReviewGrid from "@/components/ReviewGrid";
+import LocationViewCount from "@/components/LocationViewCount";
 import { Review } from "@/types/types";
 import { stripNameFromAddress, formatCityRegion } from "@/utils/helpers";
 import { useProfile } from "@/context/profile-context";
@@ -558,20 +559,20 @@ const Location = () => {
 
               <View style={styles.venueHeaderContent}>
                 <View style={styles.venueStatsRow}>
-                  <View
-                    style={styles.metricBlock}
-                    accessible
-                    accessibilityRole="summary"
-                    accessibilityLabel={
-                      hasRating
-                        ? `Overall ${formatRating(
-                            displayLocation?.rating
-                          )} from ${reviewLabel}`
-                        : "Not yet rated"
-                    }
-                  >
+                  <View style={styles.metricBlock}>
                     <Text style={styles.venueEyebrow}>Overall</Text>
-                    <View style={styles.venueRatingRow}>
+                    <View
+                      style={styles.venueRatingRow}
+                      accessible
+                      accessibilityRole="summary"
+                      accessibilityLabel={
+                        hasRating
+                          ? `Overall ${formatRating(
+                              displayLocation?.rating
+                            )} from ${reviewLabel}`
+                          : "Not yet rated"
+                      }
+                    >
                       <Text style={styles.venueScore}>
                         {hasRating
                           ? formatRating(displayLocation?.rating)
@@ -587,7 +588,15 @@ const Location = () => {
                         </View>
                       ) : null}
                     </View>
-                    <Text style={styles.venueReviewCount}>{reviewLabel}</Text>
+                    <Text style={styles.venueReviewCount}>
+                      {reviewLabel}
+                      {selectedLocation ? (
+                        <LocationViewCount
+                          locationId={selectedLocation.id}
+                          onBrand
+                        />
+                      ) : null}
+                    </Text>
                   </View>
 
                   {loadingRegulars ? (

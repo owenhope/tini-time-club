@@ -52,6 +52,10 @@ import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
 import { canOpenMapPinDetails } from "@/utils/mapPinAccess";
 import type { ExploreRegion } from "@/services/regionService";
 import { mergeMapLocations, normalizeMapLocations } from "@/utils/mapLocations";
+import {
+  groupGoldenGlassPins,
+  getGoldenGlassGroupRegion,
+} from "@/utils/goldenGlassMapGroups";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -237,6 +241,8 @@ function ExploreMap({
     useState<boolean>(false);
   const mapRef = useRef<any>(null);
   const mapHeightRef = useRef(0);
+  const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
+  const [goldenChoices, setGoldenChoices] = useState<MapLocation[]>([]);
   const regionRef = useRef<Region>(INITIAL_REGION);
   const fetchedBoundsRef = useRef<MapBounds | null>(null);
   const fetchRequestRef = useRef(0);
@@ -273,6 +279,13 @@ function ExploreMap({
     [locations, selectedLocationId]
   );
 
+  const guardMarkerPress = useCallback(() => {
+    if (markerPressGuardRef.current) clearTimeout(markerPressGuardRef.current);
+    markerPressGuardRef.current = setTimeout(() => {
+      markerPressGuardRef.current = null;
+    }, MARKER_PRESS_GUARD_MS);
+  }, []);
+
   const handleMarkerPress = useCallback(
     (location: MapLocation, focusDelta?: number) => {
       // Gate before any selection, camera movement, or detail-sheet render.
@@ -280,12 +293,7 @@ function ExploreMap({
         requireMembership("location-details");
         return;
       }
-      if (markerPressGuardRef.current) {
-        clearTimeout(markerPressGuardRef.current);
-      }
-      markerPressGuardRef.current = setTimeout(() => {
-        markerPressGuardRef.current = null;
-      }, MARKER_PRESS_GUARD_MS);
+      guardMarkerPress();
 
       const mapHeight = mapHeightRef.current;
       const sheetCoveredHeight =
@@ -309,18 +317,19 @@ function ExploreMap({
       regionRef.current = centeredRegion;
       mapRef.current?.animateToRegion(centeredRegion, 350);
       setRegularsSheetOpen(false);
+      setGoldenChoices([]);
       setSelectedLocationId(location.id);
     },
-    [profile, requireMembership, sheetBottomInset]
+    [profile, requireMembership, sheetBottomInset, guardMarkerPress]
   );
 
   const handleSheetContentLayout = useCallback(() => {
-    if (!selectedLocation) return;
+    if (!selectedLocation && goldenChoices.length === 0) return;
 
     // Dynamic sizing receives the content measurement in BottomSheetView's
     // own layout handler. Open on the following frame so that detent exists.
     requestAnimationFrame(() => sheetRef.current?.expand());
-  }, [selectedLocation]);
+  }, [selectedLocation, goldenChoices]);
 
   const handleSheetChange = useCallback((index: number, position: number) => {
     if (index < 0 || mapHeightRef.current <= 0) return;
@@ -375,6 +384,7 @@ function ExploreMap({
 
     Keyboard.dismiss();
     setSelectedLocationId(null);
+    setGoldenChoices([]);
     setRegularsSheetOpen(false);
     sheetRef.current?.close();
 
@@ -385,38 +395,95 @@ function ExploreMap({
   const showIndividualGoldenGlassPins =
     region.latitudeDelta <= GOLDEN_GLASS_CITY_LATITUDE_DELTA;
 
+  const goldenGroups = useMemo(
+    () =>
+      showIndividualGoldenGlassPins
+        ? groupGoldenGlassPins(
+            locations.filter((location) => location.is_golden_glass),
+            region,
+            mapSize,
+            selectedLocationId
+          )
+        : [],
+    [
+      locations,
+      region,
+      mapSize,
+      selectedLocationId,
+      showIndividualGoldenGlassPins,
+    ]
+  );
+
+  const handleGoldenGroupPress = useCallback(
+    (members: MapLocation[]) => {
+      guardMarkerPress();
+      Keyboard.dismiss();
+      setSelectedLocationId(null);
+      setRegularsSheetOpen(false);
+      const nextRegion = getGoldenGlassGroupRegion(members, regionRef.current);
+      const sameCoordinate = members.every(
+        (member) =>
+          member.lat === members[0].lat && member.long === members[0].long
+      );
+      // At identical coordinates (or the practical zoom limit), zoom alone
+      // cannot expose both venues. Keep each venue reachable from the sheet.
+      const showChoices =
+        sameCoordinate || regionRef.current.latitudeDelta < 0.0002;
+      if (showChoices && canOpenMapPinDetails(Boolean(profile))) {
+        setGoldenChoices(members);
+      } else {
+        setGoldenChoices([]);
+        sheetRef.current?.close();
+        if (showChoices) requireMembership("location-details");
+      }
+      regionRef.current = nextRegion;
+      mapRef.current?.animateToRegion(nextRegion, 350);
+    },
+    [profile, requireMembership, guardMarkerPress]
+  );
+
   const markerElements = useMemo(
     () =>
-      locations.map((location) => {
-        const isSelected = String(location.id) === String(selectedLocationId);
+      locations
+        .filter(
+          (location) =>
+            !goldenGroups.some(
+              (group) =>
+                group.length > 1 &&
+                group.some((member) => member.id === location.id)
+            )
+        )
+        .map((location) => {
+          const isSelected = String(location.id) === String(selectedLocationId);
 
-        return (
-          <Marker
-            key={`${String(location.id)}-${mapRevision}`}
-            // The clustering library reads this extra prop before passing
-            // excluded markers through to the native map unchanged.
-            {...{
-              cluster: !(
-                location.is_golden_glass && showIndividualGoldenGlassPins
-              ),
-            }}
-            coordinate={{ latitude: location.lat, longitude: location.long }}
-            anchor={{ x: 0.5, y: 1 }}
-            tracksViewChanges={false}
-            stopPropagation
-            zIndex={isSelected ? 10 : location.is_golden_glass ? 8 : 1}
-            onPress={() => handleMarkerPress(location)}
-          >
-            <LocationPin loc={location} selected={isSelected} />
-          </Marker>
-        );
-      }),
+          return (
+            <Marker
+              key={`${String(location.id)}-${mapRevision}`}
+              // The clustering library reads this extra prop before passing
+              // excluded markers through to the native map unchanged.
+              {...{
+                cluster: !(
+                  location.is_golden_glass && showIndividualGoldenGlassPins
+                ),
+              }}
+              coordinate={{ latitude: location.lat, longitude: location.long }}
+              anchor={{ x: 0.5, y: 1 }}
+              tracksViewChanges={false}
+              stopPropagation
+              zIndex={isSelected ? 10 : location.is_golden_glass ? 8 : 1}
+              onPress={() => handleMarkerPress(location)}
+            >
+              <LocationPin loc={location} selected={isSelected} />
+            </Marker>
+          );
+        }),
     [
       handleMarkerPress,
       locations,
       mapRevision,
       selectedLocationId,
       showIndividualGoldenGlassPins,
+      goldenGroups,
     ]
   );
 
@@ -816,6 +883,12 @@ function ExploreMap({
         style={styles.mapFrame}
         onLayout={(event) => {
           mapHeightRef.current = event.nativeEvent.layout.height;
+          const { width, height } = event.nativeEvent.layout;
+          setMapSize((previous) =>
+            previous.width === width && previous.height === height
+              ? previous
+              : { width, height }
+          );
         }}
       >
         {locationNotice && (
@@ -847,6 +920,7 @@ function ExploreMap({
             showsPointsOfInterests={false}
             showsBuildings={false}
             rotateEnabled={false}
+            pitchEnabled={false}
             initialRegion={region}
             onRegionChangeComplete={onRegionChangeComplete}
             customMapStyle={isDark ? darkMapStyle : mapStyle}
@@ -858,8 +932,9 @@ function ExploreMap({
               }
 
               Keyboard.dismiss();
-              if (selectedLocationId !== null) {
+              if (selectedLocationId !== null || goldenChoices.length > 0) {
                 setRegularsSheetOpen(false);
+                setGoldenChoices([]);
                 sheetRef.current?.close();
               }
             }}
@@ -874,13 +949,39 @@ function ExploreMap({
               </Marker>
             ) : null}
             {markerElements}
+            {goldenGroups
+              .filter((group) => group.length > 1)
+              .map((members) => {
+                const center = getGoldenGlassGroupRegion(members, region);
+                return (
+                  <Marker
+                    key={`gold-${members
+                      .map((member) => member.id)
+                      .sort()
+                      .join("-")}-${mapRevision}`}
+                    {...{ cluster: false }}
+                    coordinate={{
+                      latitude: center.latitude,
+                      longitude: center.longitude,
+                    }}
+                    anchor={{ x: 0.5, y: 1 }}
+                    tracksViewChanges={false}
+                    stopPropagation
+                    zIndex={8}
+                    accessibilityLabel={`${members.length} Golden Glass locations. Tap to zoom in.`}
+                    onPress={() => handleGoldenGroupPress(members)}
+                  >
+                    <LocationPin loc={members[0]} count={members.length} />
+                  </Marker>
+                );
+              })}
           </MapView>
         ) : (
           <View style={styles.mapLoading}>
             <ActivityIndicator size="small" />
           </View>
         )}
-        {selectedLocation ? (
+        {selectedLocation || goldenChoices.length > 0 ? (
           <View
             pointerEvents="none"
             style={[styles.sheetTabBarUnderlay, { height: sheetBottomInset }]}
@@ -896,6 +997,7 @@ function ExploreMap({
           onClose={() => {
             setRegularsSheetOpen(false);
             setSelectedLocationId(null);
+            setGoldenChoices([]);
           }}
           style={styles.sheetShadow}
           backgroundStyle={styles.sheetBackground}
@@ -905,9 +1007,21 @@ function ExploreMap({
             onLayout={handleSheetContentLayout}
             style={styles.sheetContent}
           >
+            {goldenChoices.map((location) => (
+              <TouchableOpacity
+                key={location.id}
+                onPress={() => handleMarkerPress(location)}
+                accessibilityRole="button"
+                accessibilityLabel={`View ${location.name}`}
+                style={styles.goldenChoice}
+              >
+                <Text style={styles.goldenChoiceName}>{location.name}</Text>
+              </TouchableOpacity>
+            ))}
             {selectedLocation && (
               <LocationDetails
                 loc={selectedLocation}
+                enabled={enabled}
                 onRegularsPress={() => setRegularsSheetOpen(true)}
               />
             )}
@@ -926,6 +1040,13 @@ function ExploreMap({
 }
 
 const useStyles = makeStyles((t) => ({
+  goldenChoice: {
+    paddingVertical: t.spacing.md,
+  },
+  goldenChoiceName: {
+    ...t.typography.bodyStrong,
+    color: t.colors.text,
+  },
   screen: {
     flex: 1,
     backgroundColor: t.colors.background,

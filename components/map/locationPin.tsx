@@ -19,6 +19,7 @@ interface LocationPinProps {
     is_location_verified?: boolean;
   };
   selected?: boolean;
+  count?: number;
 }
 
 /**
@@ -28,7 +29,7 @@ interface LocationPinProps {
  * pin; verification deepens the purple (plus the check overlay), and Golden
  * Glass goes gold, which wins when both apply.
  */
-function LocationPin({ loc, selected = false }: LocationPinProps) {
+function LocationPin({ loc, selected = false, count }: LocationPinProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   if (loc.lat == null || loc.long == null) return null;
@@ -46,7 +47,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
           loc.is_golden_glass && styles.pinGolden,
         ]}
       >
-        {showRating ? (
+        {count != null || showRating ? (
           <Text
             style={[
               styles.pinRating,
@@ -55,7 +56,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
               loc.is_golden_glass && styles.pinRatingGolden,
             ]}
           >
-            {loc.rating?.toFixed(1)}
+            {count ?? loc.rating?.toFixed(1)}
           </Text>
         ) : (
           <MartiniIcon
@@ -69,7 +70,7 @@ function LocationPin({ loc, selected = false }: LocationPinProps) {
             }
           />
         )}
-        {loc.is_location_verified ? (
+        {loc.is_location_verified && count == null ? (
           <View
             style={styles.verificationOverlay}
             accessible
@@ -202,6 +203,7 @@ export default memo(
   LocationPin,
   (previous, next) =>
     previous.selected === next.selected &&
+    previous.count === next.count &&
     previous.loc.id === next.loc.id &&
     previous.loc.lat === next.loc.lat &&
     previous.loc.long === next.loc.long &&
