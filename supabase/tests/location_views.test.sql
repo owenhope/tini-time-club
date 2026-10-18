@@ -5,6 +5,9 @@ INSERT INTO auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_d
 VALUES
   ('61000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'views-one@example.test', '{"provider":"email"}', '{}'),
   ('61000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'views-two@example.test', '{"provider":"email"}', '{}');
+INSERT INTO public.profiles (id)
+VALUES ('61000000-0000-0000-0000-000000000001'), ('61000000-0000-0000-0000-000000000002')
+ON CONFLICT DO NOTHING;
 INSERT INTO public.locations (id, name, location, created_by)
 VALUES (961001, 'View counter test', 'SRID=4326;POINT(-123.1 49.28)', '61000000-0000-0000-0000-000000000001');
 
