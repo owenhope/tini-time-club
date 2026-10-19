@@ -29,7 +29,10 @@ jest.mock("@/components/shared", () => ({ AppText: "AppText" }));
 jest.mock("@/utils/native-tab-bar-insets", () => ({
   useNativeTabBarContentInset: () => 0,
 }));
-jest.mock("@/theme", () => ({ makeStyles: () => () => ({}) }));
+jest.mock("@/theme", () => ({
+  makeStyles: () => () => ({}),
+  useTheme: () => ({ colors: { accent: "green" } }),
+}));
 let renderer: ReactTestRenderer;
 const list = () => renderer.root.findByType("FlatList" as React.ElementType);
 const place = (id: number) => ({

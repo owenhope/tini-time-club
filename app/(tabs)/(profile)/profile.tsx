@@ -1,3 +1,4 @@
+import ProfileEmptyState from "@/components/profile/profile-empty-state";
 import "react-native-get-random-values";
 import React, { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
@@ -278,11 +279,10 @@ const MemberProfile = () => {
   };
 
   const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyCtaIcon}>
-        <MartiniIcon size={28} color={colors.accent} />
-      </View>
-      <Text style={styles.emptyCtaTitle}>Share your first Martini</Text>
+    <ProfileEmptyState
+      icon={<MartiniIcon size={28} color={colors.accent} />}
+      title="Share your first Martini"
+    >
       <TouchableOpacity
         style={styles.reviewLink}
         onPress={() => router.navigate(routes.review())}
@@ -293,7 +293,7 @@ const MemberProfile = () => {
       >
         <Text style={styles.reviewLinkText}>Write a review</Text>
       </TouchableOpacity>
-    </View>
+    </ProfileEmptyState>
   );
 
   // Follow relationships can change anywhere in the app, so their two cheap
@@ -516,21 +516,15 @@ const MemberProfile = () => {
         loadingRegulars={loadingRegulars}
         onRefreshRegulars={() => profile?.id && loadRegularPlaces()}
         emptyRegulars={
-          <View style={styles.emptyContainer}>
-            <View style={styles.regularsEmptyContent}>
-              <View style={styles.emptyCtaIcon}>
-                <Ionicons
-                  name="ribbon-outline"
-                  size={28}
-                  color={colors.accent}
-                />
-              </View>
-              <Text style={styles.regularsEmptyBody}>
-                Review the same place often to earn a spot among its top three
-                Regulars.
-              </Text>
-            </View>
-          </View>
+          <ProfileEmptyState
+            icon={
+              <Ionicons name="ribbon-outline" size={28} color={colors.accent} />
+            }
+          >
+            {
+              "Review the same place often to earn a spot among its top three Regulars."
+            }
+          </ProfileEmptyState>
         }
         canDelete
         onDelete={(review) => confirmDeleteReview(review.id)}
@@ -619,25 +613,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     color: t.colors.highlight,
   },
-  emptyContainer: {
-    alignItems: "center" as const,
-    paddingHorizontal: t.spacing.gutter,
-    paddingVertical: t.spacing.xxl,
-    gap: t.spacing.md,
-  },
-  emptyCtaIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: t.colors.accentSubtle,
-  },
-  emptyCtaTitle: {
-    ...t.typography.heading,
-    color: t.colors.text,
-    textAlign: "center" as const,
-  },
   reviewLink: {
     minHeight: 44,
     justifyContent: "center" as const,
@@ -646,18 +621,6 @@ const useStyles = makeStyles((t) => ({
   reviewLinkText: {
     ...t.typography.bodyStrong,
     color: t.colors.accent,
-  },
-  regularsEmptyContent: {
-    width: "100%" as const,
-    maxWidth: 300,
-    alignItems: "center" as const,
-    gap: t.spacing.md,
-    paddingVertical: t.spacing.md,
-  },
-  regularsEmptyBody: {
-    ...t.typography.body,
-    color: t.colors.textSecondary,
-    textAlign: "center" as const,
   },
 }));
 

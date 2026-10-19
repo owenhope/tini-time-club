@@ -1,3 +1,4 @@
+import ProfileEmptyState from "@/components/profile/profile-empty-state";
 import { normalizeProfile } from "@/utils/normalizeProfile";
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -8,7 +9,7 @@ import {
   Platform,
   ActionSheetIOS,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { PassportEntry } from "@/components/passport/passport-entry";
 import { supabase } from "@/utils/supabase";
 import { useProfile } from "@/context/profile-context";
@@ -392,9 +393,13 @@ const UserProfile = () => {
     }
     if (userReviews.length === 0) {
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Nothing poured here yet.</Text>
-        </View>
+        <ProfileEmptyState
+          icon={
+            <Ionicons name="wine-outline" size={28} color={colors.accent} />
+          }
+        >
+          {"Nothing poured here yet."}
+        </ProfileEmptyState>
       );
     }
     return null;
@@ -561,11 +566,13 @@ const UserProfile = () => {
         loadingRegulars={loadingRegulars}
         onRefreshRegulars={() => displayProfile?.id && loadRegularPlaces()}
         emptyRegulars={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No stool with their name on it — yet.
-            </Text>
-          </View>
+          <ProfileEmptyState
+            icon={
+              <Ionicons name="ribbon-outline" size={28} color={colors.accent} />
+            }
+          >
+            {"No stool with their name on it — yet."}
+          </ProfileEmptyState>
         }
         onEdit={(review) =>
           profile && String(profile.id) === String(review.user_id)
@@ -610,14 +617,6 @@ const useStyles = makeStyles((t) => ({
   },
   errorLink: {
     ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  emptyContainer: {
-    alignItems: "center" as const,
-    padding: 20,
-  },
-  emptyText: {
-    ...t.typography.body,
     color: t.colors.textSecondary,
   },
   // The header owns the screen gutter now, so its children sit flush.

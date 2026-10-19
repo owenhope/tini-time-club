@@ -1,12 +1,11 @@
 import React, { useCallback } from "react";
 import {
-  FlatList,
   RefreshControl,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import RegularPlaceRow from "@/components/RegularPlaceRow";
+import ProfilePlaceList from "@/components/profile/profile-place-list";
 import ProfileFavorites from "@/components/profile/ProfileFavorites";
 import ReviewGrid from "@/components/ReviewGrid";
 import { Skeleton } from "@/components/shared";
@@ -19,7 +18,6 @@ import {
   deleteReviewComment,
   setReviewLike,
 } from "@/utils/reviewCommentUpdates";
-import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 
 export interface ProfileBodyProps {
   /** Which tab the header's segmented control is on. */
@@ -81,8 +79,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  // The native tab bar floats over content, so the list pads its own tail.
-  const tabBarInset = useNativeTabBarContentInset();
   // The patch is read by the row on its next render; see useComments in
   // ReviewItem, which applies it idempotently.
   const handleLikeChanged = useCallback(
@@ -150,12 +146,9 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
           onCommentDeleted={handleCommentDeleted}
         />
       ) : (
-        <FlatList
+        <ProfilePlaceList
           data={regularPlaces}
-          keyExtractor={(place) => String(place.location_id)}
-          renderItem={({ item }) => <RegularPlaceRow place={item} />}
           ListHeaderComponent={header}
-          ListHeaderComponentStyle={styles.regularsHeader}
           ListEmptyComponent={
             loadingRegulars ? (
               <View>
@@ -182,9 +175,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
             />
           }
           onScroll={onScroll}
-          scrollEventThrottle={16}
-          contentContainerStyle={{ paddingBottom: tabBarInset }}
-          showsVerticalScrollIndicator={false}
         />
       )}
     </>
@@ -192,9 +182,6 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
-  regularsHeader: {
-    paddingBottom: t.spacing.md,
-  },
   skeletonRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
