@@ -1,23 +1,22 @@
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
-  View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { AppText } from "@/components/shared";
-import RegularPlaceRow from "@/components/RegularPlaceRow";
+import { Ionicons } from "@expo/vector-icons";
+import ProfilePlaceList from "@/components/profile/profile-place-list";
+import ProfileEmptyState from "@/components/profile/profile-empty-state";
 import {
   getProfileFavorites,
   type FavoritePlace,
   type FavoritesCursor,
 } from "@/services/locationFavoritesService";
 import { useProfile } from "@/context/profile-context";
-import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 export default function ProfileFavorites({
   profileId,
@@ -31,7 +30,7 @@ export default function ProfileFavorites({
   const styles = useStyles();
   const viewerId = useProfile().profile?.id;
   const key = `${viewerId}:${profileId}`;
-  const inset = useNativeTabBarContentInset();
+  const { colors } = useTheme();
   const request = useRef(0);
   const pending = useRef(false);
   const [result, setResult] = useState<{
@@ -100,20 +99,20 @@ export default function ProfileFavorites({
   );
 
   return (
-    <FlatList
+    <ProfilePlaceList
       data={current && viewerId ? result.items : []}
-      keyExtractor={(item) => String(item.location_id)}
-      renderItem={({ item }) => <RegularPlaceRow place={item} />}
       ListHeaderComponent={header}
       ListEmptyComponent={
         !loading && !error ? (
-          <View style={styles.message}>
-            <AppText tone="secondary">
-              {viewerId === profileId
-                ? "Star a location to save it here. Your favorites are visible to other members."
-                : "No favorite places yet."}
-            </AppText>
-          </View>
+          <ProfileEmptyState
+            icon={
+              <Ionicons name="star-outline" size={28} color={colors.accent} />
+            }
+          >
+            {viewerId === profileId
+              ? "Star a location to save it here. Your favorites are visible to other members."
+              : "No favorite places yet."}
+          </ProfileEmptyState>
         ) : null
       }
       ListFooterComponent={
@@ -136,8 +135,6 @@ export default function ProfileFavorites({
       }}
       onEndReachedThreshold={0.4}
       onScroll={onScroll}
-      scrollEventThrottle={16}
-      contentContainerStyle={{ paddingBottom: inset }}
     />
   );
 }
