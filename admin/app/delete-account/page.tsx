@@ -4,7 +4,7 @@ import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
 import { siteShareImage } from "@/lib/seo";
 
-const supportEmail = "owen@hopemediahouse.com";
+const supportEmail = "info@tinitimeclub.com";
 const deleteSubject = "Tini Time Club - Delete My Account";
 
 const description =
