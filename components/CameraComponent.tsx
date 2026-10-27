@@ -1,5 +1,6 @@
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   Button,
   Pressable,
@@ -50,12 +51,17 @@ export default function CameraComponent({
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>("back");
 
-  useEffect(() => {
-    if (!permission) return;
-    if (!permission.granted) {
-      requestPermission();
-    }
-  }, [permission, requestPermission]);
+  // Focus-gated: Android's native tabs mount the Review tab in the background
+  // right after sign-in, and a mount-time request would prompt for the camera
+  // before the member ever opened Review.
+  useFocusEffect(
+    useCallback(() => {
+      if (!permission) return;
+      if (!permission.granted) {
+        requestPermission();
+      }
+    }, [permission, requestPermission])
+  );
 
   if (!permission) {
     return null;
