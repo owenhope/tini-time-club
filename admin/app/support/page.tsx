@@ -219,7 +219,16 @@ export default function SupportPage() {
             />
             <QuestionAnswer
               question="How do I delete my account?"
-              answer="You can delete your account in Settings, then Delete Account. You can also email support@hopemediahouse.com from the address on your account with the subject: Tini Time Club - Delete My Account. We will confirm and complete deletion within 30 days."
+              answer={
+                <>
+                  You can delete your account in Settings, then Delete Account,
+                  or request deletion by email. See{" "}
+                  <Link className="font-bold underline" href="/delete-account">
+                    Delete your account
+                  </Link>{" "}
+                  for the steps and what data is deleted.
+                </>
+              }
             />
           </div>
         </section>
