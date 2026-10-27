@@ -8,6 +8,10 @@ const AUTH_MESSAGES = {
     error: "Magic Link Error",
     invalidEmail: "Please enter a valid email address",
   },
+  password: {
+    error: "Sign In Error",
+    missing: "Please enter your password",
+  },
   general: {
     unexpectedError: "An unexpected error occurred",
   },
@@ -55,5 +59,43 @@ export const useAuth = () => {
     }
   }, []);
 
-  return { loading, continueWithEmail };
+  // Reviewer accounts only (see utils/reviewerAccount). The root layout's
+  // SIGNED_IN handler routes onward, same as after a magic link.
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      if (!password) {
+        Alert.alert(
+          AUTH_MESSAGES.password.error,
+          AUTH_MESSAGES.password.missing
+        );
+        return false;
+      }
+
+      setLoading(true);
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+
+        if (error) {
+          Alert.alert(AUTH_MESSAGES.password.error, error.message);
+          return false;
+        }
+
+        return true;
+      } catch (err: any) {
+        Alert.alert(
+          AUTH_MESSAGES.password.error,
+          err.message || AUTH_MESSAGES.general.unexpectedError
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { loading, continueWithEmail, signInWithPassword };
 };

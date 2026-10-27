@@ -15,6 +15,7 @@ import AppHeader from "@/components/nav/AppHeader";
 import { Button, Input } from "@/components/shared";
 import { useAuth } from "@/hooks/useAuth";
 import { makeStyles, useTheme } from "@/theme";
+import { isReviewerEmail } from "@/utils/reviewerAccount";
 
 const RESEND_SECONDS = 30;
 
@@ -26,8 +27,10 @@ const RESEND_SECONDS = 30;
 export default function EmailAuth() {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { loading, continueWithEmail } = useAuth();
+  const { loading, continueWithEmail, signInWithPassword } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const isReviewer = isReviewerEmail(email);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
 
@@ -47,6 +50,10 @@ export default function EmailAuth() {
       setResendIn(RESEND_SECONDS);
     }
   }, [continueWithEmail, email]);
+
+  const signInReviewer = useCallback(() => {
+    void signInWithPassword(email, password);
+  }, [email, password, signInWithPassword]);
 
   const changeEmail = useCallback(() => {
     setSentTo(null);
@@ -127,10 +134,24 @@ export default function EmailAuth() {
                   containerStyle={styles.inputOuter}
                 />
 
+                {isReviewer && (
+                  <Input
+                    label="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    type="password"
+                    showPasswordToggle
+                    size="medium"
+                    variant="default"
+                    style={styles.input}
+                    containerStyle={styles.inputOuter}
+                  />
+                )}
+
                 <View style={styles.actions}>
                   <Button
-                    title="Continue with Email"
-                    onPress={sendLink}
+                    title={isReviewer ? "Sign In" : "Continue with Email"}
+                    onPress={isReviewer ? signInReviewer : sendLink}
                     variant="primary"
                     size="medium"
                     fullWidth
