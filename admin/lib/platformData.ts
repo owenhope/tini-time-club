@@ -2,10 +2,13 @@ import "server-only";
 import { toAdminDataError } from "@/lib/dataErrors";
 import {
   platformsByUser,
+  summarizeDeviceUsage,
   summarizePlatformMix,
+  type DailyUsageRow,
   type PresenceRow,
   type UserPlatform,
 } from "@/lib/platformMix.mjs";
+import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type { UserPlatform } from "@/lib/platformMix.mjs";
@@ -54,4 +57,30 @@ export const fetchUserPlatforms = async (
     .in("user_id", userIds);
   if (error) throw toAdminDataError(error, "load member platforms");
   return platformsByUser((data ?? []) as PresenceRow[]);
+};
+
+export type DeviceUsage = ReturnType<typeof summarizeDeviceUsage>;
+
+/** Platform and app-version breakdown for every day in `range`. */
+export const fetchDeviceUsage = async (
+  range: DateRange
+): Promise<DeviceUsage> => {
+  const rows: DailyUsageRow[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await db()
+      .from("app_usage_daily")
+      .select(
+        "installation_id,audience,user_id,platform,app_version,usage_date"
+      )
+      .gte("usage_date", range.since.toISOString().slice(0, 10))
+      .lte("usage_date", range.until.toISOString().slice(0, 10))
+      .order("usage_date")
+      .order("installation_id")
+      .order("audience")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw toAdminDataError(error, "load device usage");
+    rows.push(...((data ?? []) as DailyUsageRow[]));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return summarizeDeviceUsage(rows);
 };

@@ -109,3 +109,77 @@ export const platformsByUser = (rows) => {
     ])
   );
 };
+
+/**
+ * @typedef {object} DailyUsageRow
+ * @property {string} installation_id
+ * @property {"visitor" | "member"} audience
+ * @property {string | null} user_id
+ * @property {string} platform
+ * @property {string | null} app_version
+ * @property {string} usage_date
+ */
+
+/**
+ * Device breakdown for a date range from app_usage_daily: distinct members
+ * and anonymous installations per platform, plus installations per app
+ * version (each installation counted at the newest version it ran).
+ *
+ * @param {DailyUsageRow[]} rows
+ */
+export const summarizeDeviceUsage = (rows) => {
+  const members = emptyCounts();
+  const visitors = emptyCounts();
+  const memberKeys = new Set();
+  const visitorKeys = new Set();
+  /** @type {Map<string, {platform: string, version: string | null, usageDate: string}>} */
+  const latestByInstallation = new Map();
+
+  for (const row of rows) {
+    const bucket = platformBucket(row.platform);
+    if (row.audience === "member" && row.user_id) {
+      const key = `${row.user_id}:${bucket}`;
+      if (!memberKeys.has(key)) {
+        memberKeys.add(key);
+        members[bucket] += 1;
+      }
+    } else if (row.audience === "visitor") {
+      if (!visitorKeys.has(row.installation_id)) {
+        visitorKeys.add(row.installation_id);
+        visitors[bucket] += 1;
+      }
+    }
+
+    const latest = latestByInstallation.get(row.installation_id);
+    if (!latest || latest.usageDate < row.usage_date) {
+      latestByInstallation.set(row.installation_id, {
+        platform: row.platform,
+        version: row.app_version,
+        usageDate: row.usage_date,
+      });
+    }
+  }
+
+  /** @type {Map<string, {platform: string, version: string, installations: number}>} */
+  const versionCounts = new Map();
+  for (const { platform, version } of latestByInstallation.values()) {
+    const label = version ?? "Unknown";
+    const key = `${platform}:${label}`;
+    const entry = versionCounts.get(key) ?? {
+      platform,
+      version: label,
+      installations: 0,
+    };
+    entry.installations += 1;
+    versionCounts.set(key, entry);
+  }
+
+  const versions = [...versionCounts.values()].sort(
+    (a, b) =>
+      a.platform.localeCompare(b.platform) ||
+      Number(a.version === "Unknown") - Number(b.version === "Unknown") ||
+      b.version.localeCompare(a.version, undefined, { numeric: true })
+  );
+
+  return { members, visitors, versions };
+};

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   platformLabel,
   platformsByUser,
+  summarizeDeviceUsage,
   summarizePlatformMix,
 } from "../platformMix.mjs";
 
@@ -69,4 +70,36 @@ test("labels platforms for display", () => {
   assert.equal(platformLabel("android"), "Android");
   assert.equal(platformLabel("web"), "Web");
   assert.equal(platformLabel("something"), "Unknown");
+});
+
+test("summarizes devices across a date range", () => {
+  const daily = (overrides) => row({ usage_date: "2026-10-20", ...overrides });
+  const usage = summarizeDeviceUsage([
+    daily({ installation_id: "a", user_id: "u1", app_version: "4.8.0" }),
+    daily({
+      installation_id: "a",
+      user_id: "u1",
+      app_version: "4.9.0",
+      usage_date: "2026-10-27",
+    }),
+    daily({ installation_id: "b", user_id: "u1", platform: "android" }),
+    daily({
+      installation_id: "c",
+      audience: "visitor",
+      user_id: null,
+      platform: "android",
+      app_version: null,
+    }),
+  ]);
+
+  assert.deepEqual(usage.members, { ios: 1, android: 1, other: 0 });
+  assert.deepEqual(usage.visitors, { ios: 0, android: 1, other: 0 });
+  assert.deepEqual(
+    usage.versions.map((v) => [v.platform, v.version, v.installations]),
+    [
+      ["android", "4.9.0", 1],
+      ["android", "Unknown", 1],
+      ["ios", "4.9.0", 1],
+    ]
+  );
 });

@@ -29,10 +29,13 @@ export default function DonutChart({
   title,
   rows,
   total,
+  unit = "reviews",
 }: {
   title: string;
   rows: DonutRow[];
   total: number;
+  /** Plural noun for the counted things. */
+  unit?: string;
 }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const hovered = rows.find((row) => row.key === hoveredKey) ?? null;
@@ -48,7 +51,7 @@ export default function DonutChart({
           >
             <span className="block text-sm font-bold">{hovered.label}</span>
             <span className="block text-xs text-stone-300">
-              {hovered.count.toLocaleString()} reviews ·{" "}
+              {hovered.count.toLocaleString()} {unit} ·{" "}
               {Math.round(hovered.share * 100)}%
             </span>
           </div>
@@ -57,7 +60,7 @@ export default function DonutChart({
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           className="h-52 w-52"
           role="img"
-          aria-label={`${title}: ${total.toLocaleString()} reviews`}
+          aria-label={`${title}: ${total.toLocaleString()} ${unit}`}
         >
           <circle
             cx={CENTER}
@@ -87,7 +90,7 @@ export default function DonutChart({
                     className="cursor-pointer transition-opacity hover:opacity-80"
                     onMouseEnter={() => setHoveredKey(row.key)}
                     onMouseLeave={() => setHoveredKey(null)}
-                    aria-label={`${row.label}: ${row.count} reviews, ${Math.round(
+                    aria-label={`${row.label}: ${row.count} ${unit}, ${Math.round(
                       row.share * 100
                     )}%`}
                   />
@@ -110,7 +113,7 @@ export default function DonutChart({
             textAnchor="middle"
             className="fill-stone-500 text-[11px] font-bold uppercase tracking-[0.14em]"
           >
-            reviews
+            {unit}
           </text>
         </svg>
       </div>
