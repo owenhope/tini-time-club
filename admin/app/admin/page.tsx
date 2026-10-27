@@ -5,6 +5,8 @@ import UserBadge from "@/components/UserBadge";
 import { PageHeader, Panel, StatusPill } from "@/components/AdminPrimitives";
 import { fetchDashboardKpis } from "@/lib/analyticsData";
 import { fetchDashboardActivity } from "@/lib/dashboardActivityData";
+import { fetchUserPlatforms } from "@/lib/platformData";
+import { platformLabel } from "@/lib/platformMix.mjs";
 import {
   formatCityRegion,
   formatOverallRating,
@@ -32,6 +34,9 @@ export default async function Dashboard() {
     fetchDashboardActivity(LATEST_COUNT),
   ]);
   const { latest, top } = activity;
+  const memberPlatforms = await fetchUserPlatforms(
+    latest.members.map((member) => member.id)
+  );
 
   return (
     <AdminShell active="dashboard">
@@ -105,10 +110,18 @@ export default async function Dashboard() {
                     <span className="min-w-0">
                       <UserBadge profile={member} size="compact" />
                     </span>
-                    <span className="shrink-0 text-xs text-stone-400">
-                      {member.created_at
-                        ? formatRelativeDate(member.created_at)
-                        : "—"}
+                    <span className="flex shrink-0 flex-col items-end gap-0.5 text-xs text-stone-400">
+                      <span className="font-bold text-stone-600">
+                        {memberPlatforms
+                          .get(member.id)
+                          ?.map((p) => platformLabel(p.platform))
+                          .join(" · ") ?? "Not seen"}
+                      </span>
+                      <span>
+                        {member.created_at
+                          ? formatRelativeDate(member.created_at)
+                          : "—"}
+                      </span>
                     </span>
                   </Link>
                 </li>
