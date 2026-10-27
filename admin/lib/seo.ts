@@ -1,3 +1,5 @@
+import { ANDROID_AVAILABLE, GOOGLE_PLAY_URL } from "@/lib/appStoreLink.mjs";
+
 export const siteAuthor = {
   "@type": "Organization",
   name: "Hope Media House Inc.",
@@ -10,6 +12,7 @@ export const siteAuthor = {
   },
   sameAs: [
     "https://apps.apple.com/us/app/tini-time-club-martini-finder/id6741620393",
+    ...(ANDROID_AVAILABLE ? [GOOGLE_PLAY_URL] : []),
     "https://ca.linkedin.com/company/hope-media-house",
   ],
   contactPoint: {
@@ -21,8 +24,9 @@ export const siteAuthor = {
   },
 };
 
-export const siteDescription =
-  "Tini Time Club is an iPhone app for logging Martini reviews, rating taste and presentation, saving locations, and following friends.";
+export const siteDescription = ANDROID_AVAILABLE
+  ? "Tini Time Club is an iPhone and Android app for logging Martini reviews, rating taste and presentation, saving locations, and following friends."
+  : "Tini Time Club is an iPhone app for logging Martini reviews, rating taste and presentation, saving locations, and following friends. Android is coming soon.";
 
 export const siteShareImage = {
   url: "https://tinitimeclub.com/tini-time-share.png",

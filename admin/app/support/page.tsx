@@ -3,6 +3,7 @@ import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
+import { ANDROID_AVAILABLE } from "@/lib/appStoreLink.mjs";
 import { siteAuthor, siteShareImage } from "@/lib/seo";
 
 const description =
@@ -50,8 +51,9 @@ const appFeatures = [
 const faqs = [
   {
     question: "Which devices are supported?",
-    answer:
-      "Tini Time Club is currently listed for iPhone. See the App Store listing for the minimum iOS version.",
+    answer: ANDROID_AVAILABLE
+      ? "Tini Time Club is available for iPhone on the App Store and for Android on Google Play. See each listing for the minimum supported version."
+      : "Tini Time Club is currently listed for iPhone. See the App Store listing for the minimum iOS version. The Android app is coming soon to Google Play.",
   },
   {
     question: "How do I reset my password?",

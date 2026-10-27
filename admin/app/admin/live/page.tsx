@@ -11,24 +11,23 @@ import {
 } from "@/components/AdminPrimitives";
 import { fetchAudienceUsage, fetchLiveActivity } from "@/lib/analyticsData";
 import { formatRelativeDate } from "@/lib/format";
+import { fetchPlatformMix } from "@/lib/platformData";
+import { platformLabel } from "@/lib/platformMix.mjs";
 import { parseRange } from "@/lib/range";
 
 export const dynamic = "force-dynamic";
 
-const platformLabel = (platform: string) =>
-  platform === "ios"
-    ? "iOS"
-    : platform === "android"
-      ? "Android"
-      : platform === "web"
-        ? "Web"
-        : "Unknown";
+/** Matches the audience RPC's "active now" heartbeat window. */
+const ACTIVE_NOW_MS = 15 * 60 * 1000;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default async function LivePage() {
   const liveRange = parseRange({ days: "7" });
-  const [audience, activity] = await Promise.all([
+  const [audience, activity, platformsNow, platformsWeek] = await Promise.all([
     fetchAudienceUsage(liveRange),
     fetchLiveActivity(),
+    fetchPlatformMix(ACTIVE_NOW_MS),
+    fetchPlatformMix(WEEK_MS),
   ]);
 
   return (
@@ -73,6 +72,32 @@ export default async function LivePage() {
                   label="Visitor → member"
                   value={audience.convertedInRange}
                   hint="installations seen before and after sign-in"
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-12 gap-3 border-t border-stone-100 p-4">
+                <MetricTile
+                  label="iOS members now"
+                  value={platformsNow.members.ios}
+                  hint={`${platformsWeek.members.ios} this week`}
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="Android members now"
+                  value={platformsNow.members.android}
+                  hint={`${platformsWeek.members.android} this week`}
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="iOS anonymous this week"
+                  value={platformsWeek.visitors.ios}
+                  hint={`${platformsNow.visitors.ios} active now`}
+                  className="col-span-12 md:col-span-6 xl:col-span-3"
+                />
+                <MetricTile
+                  label="Android anonymous this week"
+                  value={platformsWeek.visitors.android}
+                  hint={`${platformsNow.visitors.android} active now`}
                   className="col-span-12 md:col-span-6 xl:col-span-3"
                 />
               </div>

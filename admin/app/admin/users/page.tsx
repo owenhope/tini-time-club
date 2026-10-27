@@ -14,6 +14,8 @@ import { passportTierFor } from "@/lib/ranking";
 import { formatAdminDate } from "@/lib/format";
 import { fetchProfileCounts, fetchProfiles } from "@/lib/profileData";
 import { fetchTierDistribution } from "@/lib/analyticsData";
+import { fetchPlatformMix, fetchUserPlatforms } from "@/lib/platformData";
+import { platformLabel } from "@/lib/platformMix.mjs";
 import { parsePagination } from "@/lib/pagination";
 import type { ProfileSort, SortDirection } from "@/lib/profileTypes";
 
@@ -27,6 +29,8 @@ const SORTS = [
   "last_review_at",
 ] as const;
 const DIRECTIONS = ["asc", "desc"] as const;
+const PLATFORM_WINDOW_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 type VisibleProfileSort = (typeof SORTS)[number];
 
 const parseSort = (value?: string): ProfileSort =>
@@ -101,11 +105,16 @@ export default async function UsersPage({
   const { page, perPage } = parsePagination({ page: pageParam, per: perParam });
   const sort = parseSort(sortParam);
   const direction = parseDirection(dir);
-  const [{ profiles, total }, counts, tierDistribution] = await Promise.all([
-    fetchProfiles(q, page, perPage, status, sort, direction),
-    fetchProfileCounts(),
-    fetchTierDistribution(),
-  ]);
+  const [{ profiles, total }, counts, tierDistribution, platformMix] =
+    await Promise.all([
+      fetchProfiles(q, page, perPage, status, sort, direction),
+      fetchProfileCounts(),
+      fetchTierDistribution(),
+      fetchPlatformMix(PLATFORM_WINDOW_DAYS * DAY_MS),
+    ]);
+  const userPlatforms = await fetchUserPlatforms(
+    profiles.map((profile) => profile.id)
+  );
   const tierTotal = Math.max(
     1,
     tierDistribution.reduce((sum, tier) => sum + tier.count, 0)
@@ -147,8 +156,13 @@ export default async function UsersPage({
             value: counts.deleted.toLocaleString(),
             tone: "muted",
           },
+          {
+            label: `iOS · Android (${PLATFORM_WINDOW_DAYS}d)`,
+            value: `${platformMix.members.ios.toLocaleString()} · ${platformMix.members.android.toLocaleString()}`,
+            tone: "muted",
+          },
         ]}
-        statColumns={3}
+        statColumns={4}
         surface="transparent"
         density="compact"
       />
@@ -229,6 +243,7 @@ export default async function UsersPage({
               baseQuery={headerQuery}
               defaultDirection="desc"
             />,
+            "Platform",
             <SortHeader
               key="reviews"
               label="Reviews"
@@ -279,6 +294,12 @@ export default async function UsersPage({
                 </td>
                 <td className="px-4 py-3">
                   <span className="font-bold text-stone-900">{tier.name}</span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-stone-600">
+                  {userPlatforms
+                    .get(profile.id)
+                    ?.map((p) => platformLabel(p.platform))
+                    .join(" · ") ?? <span className="text-stone-400">—</span>}
                 </td>
                 <td className="px-4 py-3 font-mono font-semibold tabular-nums text-stone-700">
                   {(profile.review_count ?? 0).toLocaleString()}

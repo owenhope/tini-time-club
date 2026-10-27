@@ -13,6 +13,8 @@ import UserBadge from "@/components/UserBadge";
 import { passportTierFor } from "@/lib/ranking";
 import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchProfile } from "@/lib/profileData";
+import { fetchUserPlatforms } from "@/lib/platformData";
+import { platformLabel } from "@/lib/platformMix.mjs";
 import { setDeleted, setVerified } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,7 @@ export default async function UserDetailPage({
   if (!result) notFound();
   const { profile, reviews } = result;
   const tier = passportTierFor(profile.passport_points);
+  const platforms = (await fetchUserPlatforms([profile.id])).get(profile.id);
 
   const toggleVerified = setVerified.bind(
     null,
@@ -115,6 +118,26 @@ export default async function UserDetailPage({
                 </dt>
                 <dd className="mt-1 break-all text-stone-900">
                   {profile.email ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-black uppercase tracking-[0.14em] text-stone-400">
+                  Platform
+                </dt>
+                <dd className="mt-1 space-y-0.5 text-stone-900">
+                  {platforms?.length ? (
+                    platforms.map((p) => (
+                      <p key={p.platform}>
+                        {platformLabel(p.platform)}
+                        <span className="text-stone-500">
+                          {p.appVersion ? ` · v${p.appVersion}` : ""} · seen{" "}
+                          {formatAdminDate(p.lastSeenAt)}
+                        </span>
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-stone-500">Not seen in the app yet</p>
+                  )}
                 </dd>
               </div>
               <div>

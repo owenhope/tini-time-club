@@ -1,6 +1,6 @@
 # Tini Time Club
 
-> Tini Time Club is an iPhone app for reviewing Martinis, saving favorite locations, and sharing trusted recommendations with friends and followers.
+> Tini Time Club is an iPhone app (Android coming soon to Google Play) for reviewing Martinis, saving favorite locations, and sharing trusted recommendations with friends and followers.
 
 This file points agents and language models to the public pages that explain Tini Time Club, its publisher, support resources, and legal policies. The canonical website is https://tinitimeclub.com.
 

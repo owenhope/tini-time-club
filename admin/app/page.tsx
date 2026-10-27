@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import AppStoreLink from "@/components/AppStoreLink";
+import GooglePlayLink from "@/components/GooglePlayLink";
+import { ANDROID_AVAILABLE } from "@/lib/appStoreLink.mjs";
 import {
   MartiniGlyph,
   PassportGlyph,
@@ -102,6 +104,13 @@ export default function PublicHomePage() {
                   >
                     Download for iPhone
                   </AppStoreLink>
+                  <GooglePlayLink
+                    placement="home_hero"
+                    className="inline-flex min-h-12 items-center rounded-md bg-chartreuse px-5 py-3 text-sm font-black text-emerald-950 shadow-lg shadow-emerald-950/20 transition hover:bg-chartreuse-dark"
+                    comingSoonClassName="inline-flex min-h-12 items-center rounded-md border border-dashed border-white/40 px-5 py-3 text-sm font-bold text-white/80"
+                  >
+                    Download for Android
+                  </GooglePlayLink>
                   <a
                     href="#club"
                     className="inline-flex min-h-12 items-center rounded-md border border-white/32 px-5 py-3 text-sm font-bold text-white transition hover:border-white/60 hover:bg-white/10"
@@ -329,7 +338,9 @@ export default function PublicHomePage() {
         <div className="mx-auto grid w-full max-w-6xl gap-8 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <p className="font-mono text-xs font-black uppercase">
-              Available on iOS
+              {ANDROID_AVAILABLE
+                ? "Available on iOS and Android"
+                : "Available on iOS · Android coming soon"}
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
               Where is the best Martini near you?
@@ -345,6 +356,14 @@ export default function PublicHomePage() {
           >
             Download on the App Store
           </AppStoreLink>
+          {ANDROID_AVAILABLE ? (
+            <GooglePlayLink
+              placement="home_footer_cta"
+              className="inline-flex min-h-16 items-center justify-center rounded-[8px] border border-emerald-950 px-7 text-center text-base font-black text-emerald-950 transition hover:bg-emerald-950 hover:text-white"
+            >
+              Get it on Google Play
+            </GooglePlayLink>
+          ) : null}
         </div>
       </section>
 

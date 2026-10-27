@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
 import PublicShareHeader from "@/components/PublicShareHeader";
+import ShareStoreLinks from "@/components/ShareStoreLinks";
+import { ANDROID_PACKAGE } from "@/lib/appStoreLink.mjs";
 import ReviewShareCard from "@/components/ReviewShareCard";
 import {
   fetchPublicReview,
@@ -63,6 +65,9 @@ export async function generateMetadata({
     other: {
       "al:ios:url": nativeReviewUrl(review.id),
       "al:ios:app_name": "Tini Time Club",
+      "al:android:url": nativeReviewUrl(review.id),
+      "al:android:package": ANDROID_PACKAGE,
+      "al:android:app_name": "Tini Time Club",
       "al:web:url": canonicalUrl,
     },
   };
@@ -86,6 +91,7 @@ export default async function PublicReviewPage({
 
         <div className="px-5 pt-3 sm:px-0 sm:pt-0">
           <ReviewShareCard review={review} />
+          <ShareStoreLinks placement="review_share" />
         </div>
       </div>
     </main>

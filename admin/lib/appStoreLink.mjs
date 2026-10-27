@@ -2,6 +2,16 @@ export const APP_STORE_ID = "6741620393";
 
 const APP_STORE_BASE_URL = `https://apps.apple.com/app/tini-time-club/id${APP_STORE_ID}`;
 
+export const ANDROID_PACKAGE = "com.ohope.tinitimeclub";
+
+/**
+ * Flip once the Play listing is public. Until then the site says Android is
+ * coming soon instead of linking to a listing that 404s.
+ */
+export const ANDROID_AVAILABLE = false;
+
+export const GOOGLE_PLAY_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+
 /** App Store Connect campaign token for visitors who arrived from a Meta ad. */
 export const META_AD_CAMPAIGN = "Meta Web";
 /** Campaign token for every other tinitimeclub.com visitor. */

@@ -3,6 +3,8 @@ import Link from "next/link";
 import LocationShareCard from "@/components/LocationShareCard";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
 import PublicShareHeader from "@/components/PublicShareHeader";
+import ShareStoreLinks from "@/components/ShareStoreLinks";
+import { ANDROID_PACKAGE } from "@/lib/appStoreLink.mjs";
 import { fetchPublicLocation, nativeLocationUrl } from "@/lib/publicLocation";
 import { formatRating } from "@/lib/format";
 
@@ -56,6 +58,9 @@ export async function generateMetadata({
     other: {
       "al:ios:url": nativeLocationUrl(location.id),
       "al:ios:app_name": "Tini Time Club",
+      "al:android:url": nativeLocationUrl(location.id),
+      "al:android:package": ANDROID_PACKAGE,
+      "al:android:app_name": "Tini Time Club",
       "al:web:url": canonicalUrl,
     },
   };
@@ -79,6 +84,7 @@ export default async function PublicLocationPage({
 
         <div className="px-[10px] pb-8 pt-3 sm:px-0 sm:pt-0">
           <LocationShareCard location={location} />
+          <ShareStoreLinks placement="place_share" />
           <p className="pt-4 text-center text-[13px] text-[#6E7472]">
             Own this place?{" "}
             <Link

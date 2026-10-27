@@ -94,3 +94,12 @@ export function trackAppStoreClick(placement: string) {
   });
   window.gtag?.("event", "app_store_click", { placement });
 }
+
+/** Report a Google Play tap to Meta and Google Analytics. */
+export function trackGooglePlayClick(placement: string) {
+  window.fbq?.("track", "Lead", {
+    content_name: "Google Play",
+    content_category: placement,
+  });
+  window.gtag?.("event", "google_play_click", { placement });
+}
