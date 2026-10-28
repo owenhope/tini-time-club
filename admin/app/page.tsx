@@ -46,26 +46,29 @@ const homeBreadcrumbJsonLd = {
 
 const features = [
   {
-    title: "Remember the pour",
-    body: "Snap the Martini, score taste and presentation, and keep the detail you will want when someone asks where to go.",
-    eyebrow: "Reviews",
+    title: "Find your next Martini",
+    body: "Explore bars, restaurants, and hotel lounges on the map. See where the club is drinking, whether you’re close to home or discovering a new city.",
+    eyebrow: "01 · Explore",
   },
   {
-    title: "Find your regular spots",
-    body: "Build a living map of the bars, restaurants, and hotel lobbies that actually know how to make the drink.",
-    eyebrow: "Locations",
+    title: "Check the Reviews",
+    body: "Browse photos, tasting notes, and ratings for taste and presentation. Get a feel for the Martini before you choose where to order one.",
+    eyebrow: "02 · Compare",
   },
   {
-    title: "Trust the club",
-    body: "Follow the Martini people you trust, trade recommendations, and keep the good finds moving around the table.",
-    eyebrow: "Friends",
+    title: "Save the good ones",
+    body: "Keep your favorite locations close and follow people whose taste you trust. Turn their recommendations into your next night out.",
+    eyebrow: "03 · Plan",
   },
   {
-    title: "Earn the repeat visit",
-    body: "Regulars status makes the places you keep coming back to feel a little more yours.",
-    eyebrow: "Regulars",
+    title: "Let the club know",
+    body: "Add a photo, rate your Martini, and share what made it memorable. Your review could help someone else find their new favorite spot.",
+    eyebrow: "04 · Share",
   },
 ];
+
+const downloadButtonClassName =
+  "inline-flex min-h-16 w-full items-center justify-center rounded-[8px] border border-emerald-950 px-6 py-4 text-center text-base font-black text-emerald-950 transition hover:bg-emerald-950 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-950";
 
 export default function PublicHomePage() {
   return (
@@ -168,18 +171,12 @@ export default function PublicHomePage() {
           <div className="grid gap-7 md:grid-cols-[0.9fr_1.1fr] md:items-end">
             <div>
               <p className="font-mono text-xs font-bold uppercase text-violet-700">
-                Built for the table
+                How it works
               </p>
               <h2 className="mt-3 text-4xl font-black leading-none sm:text-5xl">
-                A tiny ritual for every Martini worth remembering.
+                Your next great Martini starts here.
               </h2>
             </div>
-            <p className="max-w-2xl text-lg leading-8 text-emerald-950/72">
-              Tini Time Club is part tasting journal, part city guide, and part
-              social club for Martini drinkers. Reviews capture the details
-              people actually ask about: the venue, drink style, score, notes,
-              and the regulars who keep coming back.
-            </p>
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -339,7 +336,7 @@ export default function PublicHomePage() {
           <div>
             <p className="font-mono text-xs font-black uppercase">
               {ANDROID_AVAILABLE
-                ? "Available on iOS and Android"
+                ? "Available on iPhone and Android"
                 : "Available on iOS · Android coming soon"}
             </p>
             <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
@@ -350,20 +347,22 @@ export default function PublicHomePage() {
               later, and social enough to turn a good pour into a plan.
             </p>
           </div>
-          <AppStoreLink
-            placement="home_footer_cta"
-            className="inline-flex min-h-16 items-center justify-center rounded-[8px] border border-emerald-950 px-7 text-center text-base font-black text-emerald-950 transition hover:bg-emerald-950 hover:text-white"
-          >
-            Download on the App Store
-          </AppStoreLink>
-          {ANDROID_AVAILABLE ? (
-            <GooglePlayLink
+          <div className="grid w-full gap-3 md:w-72">
+            <AppStoreLink
               placement="home_footer_cta"
-              className="inline-flex min-h-16 items-center justify-center rounded-[8px] border border-emerald-950 px-7 text-center text-base font-black text-emerald-950 transition hover:bg-emerald-950 hover:text-white"
+              className={downloadButtonClassName}
             >
-              Get it on Google Play
-            </GooglePlayLink>
-          ) : null}
+              Download for iPhone
+            </AppStoreLink>
+            {ANDROID_AVAILABLE && (
+              <GooglePlayLink
+                placement="home_footer_cta"
+                className={downloadButtonClassName}
+              >
+                Download for Android
+              </GooglePlayLink>
+            )}
+          </div>
         </div>
       </section>
 
