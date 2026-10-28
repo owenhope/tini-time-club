@@ -26,14 +26,14 @@ const homeJsonLd = {
   url: "https://tinitimeclub.com/",
   description: siteDescription,
   datePublished: "2026-08-11",
-  dateModified: "2026-08-11",
+  dateModified: "2026-10-28",
   author: siteAuthor,
   publisher: siteAuthor,
   about: {
     "@type": "SoftwareApplication",
     name: "Tini Time Club",
     applicationCategory: "LifestyleApplication",
-    operatingSystem: "iOS",
+    operatingSystem: ANDROID_AVAILABLE ? "iOS, Android" : "iOS",
   },
 };
 

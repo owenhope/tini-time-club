@@ -35,7 +35,7 @@ export const termsSections: LegalSection[] = [
   },
   {
     title: "8. Location, Camera, Photos, and Notifications",
-    body: "Features like nearby discovery, photo uploads, and alerts require device permissions. You can change permissions in iOS Settings. Some features may not work without them.",
+    body: "Features like nearby discovery, photo uploads, and alerts require device permissions. You can change permissions in your device settings. Some features may not work without them.",
   },
   {
     title: "9. Disclaimers",
@@ -99,7 +99,7 @@ export const privacySections: LegalSection[] = [
   },
   {
     title: "5. Permissions and Choices",
-    body: "You can manage location, camera, photos, and notification permissions from iOS Settings. You can update your profile in the app and contact us for account or privacy requests.",
+    body: "You can manage location, camera, photos, and notification permissions from your device settings. You can update your profile in the app and contact us for account or privacy requests.",
   },
   {
     title: "6. Retention",

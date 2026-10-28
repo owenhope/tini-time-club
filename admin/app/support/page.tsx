@@ -7,10 +7,10 @@ import { ANDROID_AVAILABLE } from "@/lib/appStoreLink.mjs";
 import { siteAuthor, siteShareImage } from "@/lib/seo";
 
 const description =
-  "Support for Tini Time Club covering iPhone setup, reviews, profiles, locations, notifications, account deletion, and reporting.";
+  "Support for Tini Time Club covering iPhone and Android setup, reviews, profiles, locations, notifications, account deletion, and reporting.";
 
 const gettingStarted = [
-  "Download Tini Time Club from the App Store.",
+  "Download Tini Time Club from the App Store or Google Play.",
   "Create an account, finish onboarding, and choose your Martini preferences.",
   "Tap + to add a review with a photo, location, spirit, type, Taste and Presentation ratings, and notes.",
   "Use Explore's map, Golden Glass, Members, profiles, regulars, and favorite locations to find new places.",
@@ -83,7 +83,7 @@ const faqs = [
 ];
 
 export const metadata: Metadata = {
-  title: "iPhone App Support | Tini Time Club",
+  title: "iPhone & Android App Support | Tini Time Club",
   description,
   alternates: {
     canonical: "https://tinitimeclub.com/support",
@@ -92,7 +92,7 @@ export const metadata: Metadata = {
     siteName: "Tini Time Club",
     type: "website",
     url: "https://tinitimeclub.com/support",
-    title: "iPhone App Support | Tini Time Club",
+    title: "iPhone & Android App Support | Tini Time Club",
     description,
     images: [siteShareImage],
   },
@@ -101,11 +101,11 @@ export const metadata: Metadata = {
 const supportJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  name: "iPhone App Support | Tini Time Club",
+  name: "iPhone & Android App Support | Tini Time Club",
   url: "https://tinitimeclub.com/support",
   description,
   datePublished: "2026-08-11",
-  dateModified: "2026-08-11",
+  dateModified: "2026-10-28",
   author: siteAuthor,
   publisher: siteAuthor,
   mainEntity: [...appFeatures, ...faqs].map((item) => ({

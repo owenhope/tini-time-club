@@ -7,7 +7,7 @@ import { createBreadcrumbList, siteAuthor, siteShareImage } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "About Hope Media House | Tini Time Club",
   description:
-    "About the organization that publishes Tini Time Club, the Martini review app for iPhone.",
+    "About the organization that publishes Tini Time Club, the Martini review app for iPhone and Android.",
   alternates: {
     canonical: "https://tinitimeclub.com/about",
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     url: "https://tinitimeclub.com/about",
     title: "About Hope Media House | Tini Time Club",
     description:
-      "About the organization that publishes Tini Time Club, the Martini review app for iPhone.",
+      "About the organization that publishes Tini Time Club, the Martini review app for iPhone and Android.",
     images: [siteShareImage],
   },
 };
@@ -28,9 +28,9 @@ const aboutJsonLd = {
   name: "About Hope Media House | Tini Time Club",
   url: "https://tinitimeclub.com/about",
   description:
-    "About the organization that publishes Tini Time Club, the Martini review app for iPhone.",
+    "About the organization that publishes Tini Time Club, the Martini review app for iPhone and Android.",
   datePublished: "2026-08-11",
-  dateModified: "2026-08-11",
+  dateModified: "2026-10-28",
   author: siteAuthor,
   publisher: siteAuthor,
   about: siteAuthor,
@@ -54,9 +54,9 @@ export default function AboutPage() {
             About Hope Media House
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-white/76">
-            Hope Media House Inc. publishes Tini Time Club, an iPhone app for
-            reviewing Martinis, saving favorite locations, and sharing trusted
-            recommendations with friends and followers.
+            Hope Media House Inc. publishes Tini Time Club, an iPhone and
+            Android app for reviewing Martinis, saving favorite locations, and
+            sharing trusted recommendations with friends and followers.
           </p>
         </div>
       </section>

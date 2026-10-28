@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import GooglePlayLink from "@/components/GooglePlayLink";
+import { ANDROID_AVAILABLE } from "@/lib/appStoreLink.mjs";
 import AppStoreLink from "@/components/AppStoreLink";
 import type { MouseEvent } from "react";
 
@@ -91,6 +93,14 @@ export default function PublicHeader({ tone = "cream" }: PublicHeaderProps) {
           >
             Get iOS app
           </AppStoreLink>
+          {ANDROID_AVAILABLE && (
+            <GooglePlayLink
+              placement="header"
+              className={`rounded-md border px-3 py-2 transition ${styles.cta}`}
+            >
+              Get Android app
+            </GooglePlayLink>
+          )}
         </nav>
       </div>
     </header>
