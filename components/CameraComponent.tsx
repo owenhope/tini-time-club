@@ -2,6 +2,7 @@ import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import {
+  AppState,
   Button,
   Pressable,
   Text,
@@ -20,7 +21,7 @@ import {
 } from "react-native-safe-area-context";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
 import { makeStyles, useTheme } from "@/theme";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 import type { ReviewImageSource } from "@/utils/reviewImage";
 
 interface CameraComponentProps {
@@ -114,6 +115,13 @@ export default function CameraComponent({
         setCapturedUri(photo.uri); // For preview purposes
       }
     } catch (error) {
+      // Android closes the camera when the app leaves the foreground, which
+      // fails a capture still in flight. The member already left; there is
+      // nothing to report or tell them.
+      if (AppState.currentState !== "active") {
+        warn("Picture capture interrupted by backgrounding:", error);
+        return;
+      }
       reportError("Error taking picture:", error);
       Alert.alert("Error", "An error occurred while taking the picture.");
     }
