@@ -347,9 +347,7 @@ export default function EmailComposer({
                   className={buttonStyle}
                   disabled={busy || !totalRecipients}
                 >
-                  {busy
-                    ? "Saving…"
-                    : `Review email · ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
+                  {`Review email · ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
                 </AdminSubmitButton>
               </fieldset>
             </form>
@@ -445,22 +443,18 @@ export default function EmailComposer({
                 disabled={busy || !ready}
                 onClick={send}
               >
-                {busy
-                  ? "Sending…"
-                  : detail.campaign.started_at
-                    ? "Resume sending"
-                    : `Send to ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
+                {`Send to ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
               </AdminSubmitButton>
-              {busy && (
-                <button
-                  className="text-sm font-bold underline"
-                  onClick={() => {
-                    stop.current = true;
-                  }}
-                >
-                  Pause after this batch
-                </button>
-              )}
+              <button
+                disabled={!busy}
+                aria-hidden={!busy}
+                className={`text-sm font-bold underline ${busy ? "" : "invisible"}`}
+                onClick={() => {
+                  stop.current = true;
+                }}
+              >
+                Pause after this batch
+              </button>
               <p className="text-xs text-stone-500">
                 Keep this page open while sending. Saved campaigns can be
                 resumed from history.

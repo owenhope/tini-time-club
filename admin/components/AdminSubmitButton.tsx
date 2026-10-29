@@ -29,13 +29,27 @@ export default function AdminSubmitButton({
       aria-busy={pending}
       className={`${className} disabled:cursor-wait disabled:opacity-70`}
     >
-      {pending && (
+      <span
+        className="inline-grid items-center align-middle"
+        aria-live="polite"
+      >
         <span
-          aria-hidden="true"
-          className="mr-2 inline-block size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent align-middle"
-        />
-      )}
-      <span aria-live="polite">{pending ? pendingLabel : children}</span>
+          className={`[grid-area:1/1] ${pending ? "invisible" : ""}`}
+          aria-hidden={pending}
+        >
+          {children}
+        </span>
+        <span
+          className={`inline-flex items-center justify-center gap-2 [grid-area:1/1] ${pending ? "" : "invisible"}`}
+          aria-hidden={!pending}
+        >
+          <span
+            aria-hidden="true"
+            className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent"
+          />
+          {pendingLabel}
+        </span>
+      </span>
     </button>
   );
 }
