@@ -33,6 +33,9 @@ export interface MapPinLayout<T> {
   groups: T[][];
 }
 
+/** The user's location dot, in points. */
+const USER_DOT_SIZE = 40;
+
 /** The cluster bubble's diameter, which grows with its count. */
 export const clusterBubbleSize = (count: number) =>
   count >= 25 ? 66 : count >= 10 ? 58 : 48;
@@ -216,4 +219,25 @@ export function layoutMapPins<T extends MapPlace>({
     pins,
     groups,
   };
+}
+
+/** Whether a centred marker (the user's location dot) would cover a cluster. */
+export function overlapsCluster(
+  point: { lat: number; long: number },
+  layout: MapPinLayout<MapPlace>,
+  region: Region,
+  viewport: MapViewport,
+  size = USER_DOT_SIZE
+) {
+  if (viewport.width <= 0 || viewport.height <= 0) return false;
+  const { x, y } = projectToViewport(point, region, viewport);
+  return layout.clusters.some((cluster) => {
+    const center = projectToViewport(
+      { lat: cluster.latitude, long: cluster.longitude },
+      region,
+      viewport
+    );
+    const reach = size / 2 + clusterBubbleSize(cluster.members.length) / 2;
+    return Math.abs(x - center.x) < reach && Math.abs(y - center.y) < reach;
+  });
 }

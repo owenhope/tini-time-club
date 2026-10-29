@@ -60,6 +60,7 @@ import { getGoldenGlassGroupRegion } from "@/utils/goldenGlassMapGroups";
 import {
   clusterBubbleSize,
   layoutMapPins,
+  overlapsCluster,
   type MapCluster,
 } from "@/utils/mapPinLayout";
 
@@ -982,7 +983,15 @@ function ExploreMap({
               }
             }}
           >
-            {userCoordinate ? (
+            {/* Apple Maps draws the dot over markers whatever their zIndex,
+                so it steps aside rather than hide a cluster's count. */}
+            {userCoordinate &&
+            !overlapsCluster(
+              { lat: userCoordinate.latitude, long: userCoordinate.longitude },
+              pinLayout,
+              region,
+              mapSize
+            ) ? (
               <Marker
                 coordinate={userCoordinate}
                 anchor={{ x: 0.5, y: 0.5 }}

@@ -1,4 +1,4 @@
-import { layoutMapPins } from "@/utils/mapPinLayout";
+import { layoutMapPins, overlapsCluster } from "@/utils/mapPinLayout";
 
 const place = (
   id: number,
@@ -118,5 +118,23 @@ describe("layoutMapPins", () => {
 
     expect(layout.clusters).toEqual([]);
     expect(layout.pins).toBe(quay);
+  });
+
+  it("tells when the location dot would cover a cluster", () => {
+    const layout = layoutMapPins({
+      places: quay,
+      favoriteIds: new Set(),
+      region: city,
+      viewport,
+      selectedId: null,
+      specialsStandAlone: true,
+    });
+
+    expect(
+      overlapsCluster({ lat: 49.31, long: -123.08 }, layout, city, viewport)
+    ).toBe(true);
+    expect(
+      overlapsCluster({ lat: 49.3, long: -123.06 }, layout, city, viewport)
+    ).toBe(false);
   });
 });
