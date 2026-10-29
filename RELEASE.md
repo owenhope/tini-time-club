@@ -305,10 +305,44 @@ These values are server-only and must never use an `EXPO_PUBLIC_` prefix or be
 committed to the repository. Do not deploy the updated deletion function until
 all three are configured in both the development and production Supabase
 projects. The function creates a five-minute client secret for each deletion;
-the private key itself does not leave Supabase. Builds before 3.2 do not send
-the fresh Apple authorization payload, so the Edge Function temporarily keeps
-their previous deletion path working during rollout. Remove that compatibility
-branch after pre-3.2 builds are retired.
+the private key itself does not leave Supabase. Every Apple-linked deletion must
+include the fresh authorization payload; the pre-3.2 path that skipped
+revocation was retired in 4.9.2.
+
+## Minimum supported version
+
+`app_release_policy` holds one row per platform: the minimum supported app
+version and its store URL. Builds from 4.9.2 read it through
+`get_app_release_policy_v1` at launch and on every return to the foreground,
+and show a blocking "Update required" screen when their `version` is lower.
+Equal passes, and the check fails open: offline, a missing or malformed
+policy, or an unparsable version never blocks. Builds before 4.9.2 have no
+check and are not affected by the floor.
+
+The floor is always the **oldest version that still works against the current
+backend**. Do not raise it for a new feature that older builds can live
+without. Raise it only when a backend change breaks older builds (a dropped
+RPC, a changed response shape, a newly required field), and set it to the first
+version that works with that change.
+
+When a release needs a higher floor, per platform:
+
+1. Ship the new version and wait until it is live in that platform's store.
+2. Raise the floor with the service role:
+
+   ```sql
+   update app_release_policy
+   set min_supported_version = '4.10.0', updated_at = now()
+   where platform = 'ios';
+   ```
+
+3. Only then deploy the backend change that breaks older builds.
+
+Raising the floor before the store has the version strands users on a store
+page with nothing to install; deploying the breaking change first breaks older
+builds without telling them to update. Until most installs run 4.9.2 or newer,
+keep backend changes compatible with older builds anyway, because those builds
+never see the gate.
 
 ## Release checklist
 
@@ -325,6 +359,9 @@ branch after pre-3.2 builds are retired.
 9. From `main`, run `npm run release:testflight` for a native production build,
    or publish an OTA update for a compatible JS-only fix.
 10. Verify the TestFlight build or OTA update, then tag the release.
+11. If the release drops support for older builds, raise the minimum supported
+    version once the store has it, before deploying the breaking backend change
+    (see [Minimum supported version](#minimum-supported-version)).
 
 ## App privacy answers
 
