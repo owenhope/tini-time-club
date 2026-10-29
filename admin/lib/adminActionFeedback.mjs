@@ -19,7 +19,9 @@ export function adminActionFeedback(params) {
     return {
       kind: "error",
       message:
-        errors[params.get("error")] ??
+        (Object.hasOwn(errors, params.get("error"))
+          ? errors[params.get("error")]
+          : null) ??
         "The action could not be completed. Check your entries and try again.",
     };
   }
@@ -46,7 +48,9 @@ export function adminActionFeedback(params) {
     };
     return {
       kind: "success",
-      message: messages[updated] ?? "Changes saved successfully.",
+      message:
+        (Object.hasOwn(messages, updated) ? messages[updated] : null) ??
+        "Changes saved successfully.",
     };
   }
   if (params.get("refreshed") === "1")

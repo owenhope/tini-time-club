@@ -140,3 +140,12 @@ test("redirects retain Next navigation behavior without a false success", async 
   );
   assert.deepEqual(h.events, [null]);
 });
+
+test("query parameter prototype names remain plain feedback text", () => {
+  for (const query of ["error=__proto__", "updated=constructor"]) {
+    assert.equal(
+      typeof adminActionFeedback(new URLSearchParams(query)).message,
+      "string"
+    );
+  }
+});
