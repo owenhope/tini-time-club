@@ -142,7 +142,6 @@ export interface ThemeColors {
   headerFavorite: string; // soft pink — a liked place's header, dark ink only
   onHeaderFavorite: string; // text and controls on `headerFavorite`
   headerFavoriteHeart: string; // the filled heart on `headerFavorite`
-  headerFavoriteGold: string; // the Golden Glass mark on `headerFavorite`
   /**
    * Ink for the purple surface. Green on purple is the system's approved
    * *lockup* pairing, but at 2.9:1 it fails as text — so a purple block takes
@@ -273,8 +272,6 @@ export const lightColors: ThemeColors = {
   headerFavorite: palette.blush300,
   onHeaderFavorite: palette.ink900, // 9.9:1 on blush-300
   headerFavoriteHeart: palette.blush700,
-  // Award gold is 1.2:1 on the pink; the gold-text step reads (4.9:1).
-  headerFavoriteGold: "#6A4300",
   onBrand: palette.ink900,
   surfaceInk: palette.green700,
   surfaceInkDeep: palette.green900,
@@ -370,7 +367,6 @@ export const darkColors: ThemeColors = {
   headerFavorite: palette.blush300,
   onHeaderFavorite: palette.ink900,
   headerFavoriteHeart: palette.blush700,
-  headerFavoriteGold: "#6A4300",
   onBrand: palette.paper050, // 5.82:1 on purple-700
   surfaceInk: palette.green800,
   surfaceInkDeep: palette.green700,

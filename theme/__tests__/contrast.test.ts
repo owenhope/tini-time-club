@@ -106,11 +106,6 @@ const largePairs = (c: ThemeColors): [string, string, string][] => [
   ["like on surface", c.like, c.surface],
   ["favorite on surface", c.favorite, c.surface],
   [
-    "headerFavoriteGold on headerFavorite",
-    c.headerFavoriteGold,
-    c.headerFavorite,
-  ],
-  [
     "headerFavoriteHeart on headerFavorite",
     c.headerFavoriteHeart,
     c.headerFavorite,
