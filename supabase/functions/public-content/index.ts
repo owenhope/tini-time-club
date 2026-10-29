@@ -27,12 +27,6 @@ const clampLimit = (value: unknown, fallback = 20) => {
   return Math.max(1, Math.min(Math.floor(numeric), MAX_PAGE_SIZE));
 };
 
-const clampOffset = (value: unknown) => {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(Math.floor(numeric), 10_000));
-};
-
 const parseCursor = (value: unknown) => {
   if (!value || typeof value !== "object") return null;
   const raw = value as { insertedAt?: unknown; id?: unknown };
@@ -220,25 +214,6 @@ async function hydrateReviews(
   return signReviewImages(client, hydrated);
 }
 
-async function getFeed(client: ReturnType<typeof createClient>, body: any) {
-  let query = client
-    .from("reviews")
-    .select(publicReviewSelect)
-    .eq("state", 1)
-    .eq("profile.is_public", true)
-    .eq("profile.deleted", false)
-    .order("inserted_at", { ascending: false })
-    .range(
-      clampOffset(body.offset),
-      clampOffset(body.offset) + clampLimit(body.limit) - 1
-    );
-  if (body.userId) query = query.eq("user_id", String(body.userId));
-  if (body.locationId) query = query.eq("location", Number(body.locationId));
-  const { data, error } = await query;
-  if (error) throw error;
-  return hydrateReviews(client, data ?? []);
-}
-
 async function getFeedPage(client: ReturnType<typeof createClient>, body: any) {
   const limit = clampLimit(body.limit);
   let query = client
@@ -288,39 +263,6 @@ async function getReview(client: ReturnType<typeof createClient>, body: any) {
     .single();
   if (error) throw error;
   return (await hydrateReviews(client, [data]))[0];
-}
-
-async function getComments(client: ReturnType<typeof createClient>, body: any) {
-  const { data: review } = await client
-    .from("reviews")
-    .select(
-      "id,profile:profiles!reviews_user_id_fkey1!inner(is_public,deleted)"
-    )
-    .eq("id", Number(body.reviewId))
-    .eq("state", 1)
-    .eq("profile.is_public", true)
-    .eq("profile.deleted", false)
-    .maybeSingle();
-  if (!review) return [];
-
-  const { data, error } = await client
-    .from("comments")
-    .select(
-      "id,user_id,review_id,body,inserted_at,profile:profiles!comments_user_id_fkey!inner(id,username,avatar_url,is_verified,review_count,passport_points,is_public,deleted)"
-    )
-    .eq("review_id", Number(body.reviewId))
-    .eq("profile.is_public", true)
-    .eq("profile.deleted", false)
-    .order("inserted_at", { ascending: true })
-    .limit(200);
-  if (error) throw error;
-  const likes = await getCommentLikeCounts(
-    client,
-    (data ?? []).map((comment) => comment.id)
-  );
-  return (data ?? []).map((comment) =>
-    sanitizePublicComment(comment, likes.get(String(comment.id)) ?? 0)
-  );
 }
 
 async function getCommentPage(
@@ -568,17 +510,11 @@ Deno.serve(async (request) => {
     const client = getClient();
     let data: unknown;
     switch (body.operation) {
-      case "feed":
-        data = await getFeed(client, body);
-        break;
       case "feed-page-v1":
         data = await getFeedPage(client, body);
         break;
       case "review":
         data = await getReview(client, body);
-        break;
-      case "comments":
-        data = await getComments(client, body);
         break;
       case "comment-page-v1":
         data = await getCommentPage(client, body);

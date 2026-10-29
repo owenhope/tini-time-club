@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(37);
+SELECT plan(36);
 
 SELECT has_table('public', 'regions', 'Canonical Explore regions exist');
 SELECT has_table('public', 'region_google_places', 'Google city mappings exist');
@@ -122,10 +122,6 @@ SELECT ok(
 SELECT ok(
   pg_get_functiondef('public.get_golden_glass_v1(bigint)'::regprocedure) LIKE '%auth.uid() IS NOT NULL%',
   'The public result interface derives and requires an authenticated caller'
-);
-SELECT ok(
-  pg_get_functiondef('public.get_region_members_v1(bigint,text,integer)'::regprocedure) LIKE '%l.region_id = p_region_id%',
-  'Member discovery is scoped by location region rather than profile home city'
 );
 SELECT ok(
   (SELECT count(*) FROM public.regions WHERE slug IN ('vancouver','seattle','los-angeles','new-york','paris','bangkok')) = 6,

@@ -149,49 +149,43 @@ SELECT is(
   'Blocking does not hide unrelated published reviews'
 );
 SELECT is(
-  (
-    SELECT count(*)
-    FROM public.feed_reviews(
+  jsonb_array_length(public.get_feed_page_v1(
       '10000000-0000-0000-0000-000000000001',
       20,
-      0,
+      NULL,
+      NULL,
       '10000000-0000-0000-0000-000000000002',
       NULL,
       false
-    )
-  ),
+    )->'reviews')::bigint,
   0::bigint,
   'A client cannot disable server-side blocking in the feed RPC'
 );
 SELECT is(
-  (
-    SELECT count(*)
-    FROM public.feed_reviews_followed(
+  jsonb_array_length(public.get_feed_page_v1(
       '10000000-0000-0000-0000-000000000001',
       20,
-      0,
+      NULL,
+      NULL,
       NULL,
       NULL,
       true,
       true
-    )
-  ),
+    )->'reviews')::bigint,
   1::bigint,
   'The followed feed returns reviews from members the viewer follows'
 );
 SELECT is(
-  (
-    SELECT count(*)
-    FROM public.feed_reviews_followed(
+  COALESCE(jsonb_array_length(public.get_feed_page_v1(
       '10000000-0000-0000-0000-000000000003',
       20,
-      0,
+      NULL,
+      NULL,
       NULL,
       NULL,
       true,
       true
-    )
-  ),
+    )->'reviews')::bigint, 0),
   0::bigint,
   'A client cannot request another member followed feed'
 );
@@ -223,17 +217,15 @@ SELECT is(
   'A blocked member can still read their own published review'
 );
 SELECT is(
-  (
-    SELECT count(*)
-    FROM public.feed_reviews(
+  jsonb_array_length(public.get_feed_page_v1(
       '10000000-0000-0000-0000-000000000002',
       20,
-      0,
+      NULL,
+      NULL,
       '10000000-0000-0000-0000-000000000001',
       NULL,
       false
-    )
-  ),
+    )->'reviews')::bigint,
   0::bigint,
   'A blocked client cannot disable reciprocal server-side blocking'
 );

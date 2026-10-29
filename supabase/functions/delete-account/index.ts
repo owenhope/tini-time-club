@@ -86,15 +86,9 @@ const revokeAppleAuthorizationIfNeeded = async (
       ? body.appleAuthorization
       : null;
 
-  // Builds released before 3.2 do not send Apple authorization. Keep their
-  // existing deletion path working during the client rollout; every 3.2+
-  // client sends this object and therefore takes the enforced revocation path
-  // below. Remove this compatibility branch once pre-3.2 builds are retired.
+  // Every supported app build sends this for Sign in with Apple accounts.
   if (!appleAuthorization) {
-    console.warn(
-      "Apple authorization revocation skipped for a legacy app build"
-    );
-    return;
+    throw new Error("Fresh Sign in with Apple authorization is required");
   }
 
   const authorizationCode =
