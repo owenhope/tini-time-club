@@ -123,7 +123,8 @@ const Location = () => {
     locationIdParam,
   ]);
   const reviewLocationId = displayLocation?.id;
-  const favorite = useLocationFavorite(selectedLocation?.id);
+  // The route already carries the id: ask now rather than after the place loads.
+  const favorite = useLocationFavorite(selectedLocation?.id ?? locationIdParam);
   // A liked place trades the purple header for soft pink, which takes ink.
   const liked = favorite.available && favorite.saved;
   const headerGround = liked ? "favorite" : "brand";

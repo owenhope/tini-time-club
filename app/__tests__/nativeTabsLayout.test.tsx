@@ -42,6 +42,9 @@ const memberProfile = {
 };
 let mockProfile: typeof memberProfile | null = memberProfile;
 
+jest.mock("@/hooks/useFavoriteLocationIds", () => ({
+  useFavoriteLocationIds: () => new Set(),
+}));
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
     loading: false,

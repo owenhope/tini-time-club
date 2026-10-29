@@ -7,6 +7,10 @@ import {
   getLocationFavorite,
   setLocationFavorite,
 } from "@/services/locationFavoritesService";
+import {
+  knownFavorite,
+  rememberFavorite,
+} from "@/services/favoritePlacesCache";
 
 export function useLocationFavorite(
   locationId: string | number | undefined,
@@ -29,9 +33,13 @@ export function useLocationFavorite(
     if (!memberId || !valid || !enabled) return;
     const request = ++epoch.current;
     pending.current = true;
-    setState({ key, saved: null, busy: true });
+    // Show what the session already knows while the server confirms it, so a
+    // liked place doesn't open looking unliked. Only an unknown answer waits.
+    const known = knownFavorite(memberId, id);
+    setState({ key, saved: known, busy: known == null });
     try {
       const saved = await getLocationFavorite(id);
+      rememberFavorite(memberId, id, saved);
       if (request === epoch.current) setState({ key, saved, busy: false });
     } catch {
       if (request === epoch.current)
@@ -51,7 +59,12 @@ export function useLocationFavorite(
     }, [refresh])
   );
 
-  const saved = state.key === key ? state.saved : null;
+  const saved =
+    state.key === key
+      ? state.saved
+      : memberId && valid && enabled
+        ? knownFavorite(memberId, id)
+        : null;
   const busy = state.key === key && state.busy;
   const toggle = useCallback(async () => {
     if (!memberId) {
@@ -68,6 +81,7 @@ export function useLocationFavorite(
     setState({ key, saved, busy: true });
     try {
       const confirmed = await setLocationFavorite(id, !saved);
+      rememberFavorite(memberId, id, confirmed);
       if (request === epoch.current)
         setState({ key, saved: confirmed, busy: false });
     } catch {

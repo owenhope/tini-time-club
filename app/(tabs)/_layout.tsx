@@ -3,6 +3,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { useProfile } from "@/context/profile-context";
+import { useFavoriteLocationIds } from "@/hooks/useFavoriteLocationIds";
 import * as Notifications from "expo-notifications";
 import { typography, useTheme } from "@/theme";
 import {
@@ -62,6 +63,9 @@ const LayoutContent = () => {
     },
     [requireMembership]
   );
+  // Warm the liked-places cache once the tabs mount, so a place opened from
+  // any tab — not just Explore — knows its colour before the server answers.
+  useFavoriteLocationIds();
   const tabBarAccent = getTabBarAccentForPath(pathname);
   const tabBarActiveColor =
     tabBarAccent === "purple" ? colors.accent : colors.secondary;

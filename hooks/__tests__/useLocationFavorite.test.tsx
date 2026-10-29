@@ -2,6 +2,10 @@ import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { Alert } from "react-native";
 import { useLocationFavorite } from "../useLocationFavorite";
+import {
+  clearFavoritePlacesCache,
+  rememberFavorite,
+} from "@/services/favoritePlacesCache";
 
 const mockRead = jest.fn();
 const mockSave = jest.fn();
@@ -33,6 +37,7 @@ function Harness({ id }: { id: number }) {
   return null;
 }
 beforeEach(() => {
+  clearFavoritePlacesCache();
   mockMember = "member";
   mockRead.mockReset().mockResolvedValue(false);
   mockSave.mockReset().mockResolvedValue(true);
@@ -101,4 +106,26 @@ it("gates visitors without calling a member RPC", async () => {
   expect(mockGate).toHaveBeenCalledWith("location-details");
   expect(mockRead).not.toHaveBeenCalled();
   expect(mockSave).not.toHaveBeenCalled();
+});
+
+it("opens with a liked place already known, then confirms with the server", async () => {
+  rememberFavorite("member", 1, true);
+  let answer!: (saved: boolean) => void;
+  mockRead.mockImplementation(
+    () =>
+      new Promise<boolean>((resolve) => {
+        answer = resolve;
+      })
+  );
+
+  await act(async () => {
+    renderer = create(<Harness id={1} />);
+  });
+  // Still waiting on the server, but already liked and not dimmed.
+  expect(latest.saved).toBe(true);
+  expect(latest.busy).toBe(false);
+
+  await act(async () => answer(true));
+  expect(mockRead).toHaveBeenCalledWith("1");
+  expect(latest.saved).toBe(true);
 });

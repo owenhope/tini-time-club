@@ -5,6 +5,7 @@ import {
   getProfileFavorites,
   type FavoritesCursor,
 } from "@/services/locationFavoritesService";
+import { rememberFavoriteList } from "@/services/favoritePlacesCache";
 import { reportError } from "@/utils/log";
 
 const EMPTY: ReadonlySet<string> = new Set();
@@ -41,6 +42,8 @@ export function useFavoriteLocationIds(): ReadonlySet<string> {
           cursor = result.cursor;
           if (!cursor) break;
         }
+        // Only a whole list can say a place is not liked.
+        if (!cursor) rememberFavoriteList(memberId, ids);
         if (!active) return;
         // Keep the previous set when nothing changed so map pins, keyed on
         // their favorite state, don't remount on every focus.
