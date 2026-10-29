@@ -14,7 +14,12 @@ import ClusteredMapView from "react-native-map-clustering";
  */
 const CLUSTERING_DEFAULTS = {
   clusteringEnabled: true,
-  spiralEnabled: true,
+  // The library's spiderfy pass looks up cluster ids from `markers` in a
+  // separately stored SuperCluster index. Explore rebuilds the index on every
+  // pan, so a region event between the rebuild and its re-render pairs old ids
+  // with the new index and getLeaves throws "No cluster with the specified id",
+  // taking down the screen. Cluster taps zoom in via onClusterPress instead.
+  spiralEnabled: false,
   // The map remains mounted while Explore switches between map and lists, so
   // cluster transitions no longer race a native map teardown.
   animationEnabled: true,

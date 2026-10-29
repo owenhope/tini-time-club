@@ -31,4 +31,17 @@ describe("ClusteredMap", () => {
         .props.animationEnabled
     ).toBe(true);
   });
+
+  it("disables spiderfying, which can query a stale cluster index", () => {
+    let mapRenderer: ReactTestRenderer;
+    act(() => {
+      mapRenderer = create(<ClusteredMap />);
+      renderer = mapRenderer;
+    });
+
+    expect(
+      mapRenderer!.root.findByType("ClusteredMapView" as React.ElementType)
+        .props.spiralEnabled
+    ).toBe(false);
+  });
 });
