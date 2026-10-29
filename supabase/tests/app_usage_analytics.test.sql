@@ -71,14 +71,14 @@ SELECT ok(
 SELECT has_function(
   'public',
   'get_app_usage_summary',
-  ARRAY['date', 'date', 'timestamp with time zone'],
+  ARRAY['date', 'date', 'timestamp with time zone', 'text'],
   'The dashboard has an aggregate audience function'
 );
 
 SELECT ok(
   NOT has_function_privilege(
     'authenticated',
-    'public.get_app_usage_summary(date,date,timestamptz)',
+    'public.get_app_usage_summary(date,date,timestamptz,text)',
     'EXECUTE'
   ),
   'Members cannot query aggregate operator analytics'
@@ -87,7 +87,7 @@ SELECT ok(
 SELECT ok(
   has_function_privilege(
     'service_role',
-    'public.get_app_usage_summary(date,date,timestamptz)',
+    'public.get_app_usage_summary(date,date,timestamptz,text)',
     'EXECUTE'
   ),
   'The server-side dashboard can query aggregate audience analytics'

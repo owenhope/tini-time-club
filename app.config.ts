@@ -263,7 +263,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.EXPO_PUBLIC_ENABLE_DEV_PUSH_NOTIFICATIONS === "1",
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      metaAppEventsEnabled: Boolean(metaAppId && metaClientToken),
+      // Only store builds report to Meta: a development client running
+      // against production (start:prod) loads production's Meta keys too.
+      metaAppEventsEnabled:
+        appEnvironment === "production" &&
+        Boolean(metaAppId && metaClientToken),
     },
     experiments: {
       typedRoutes: true,

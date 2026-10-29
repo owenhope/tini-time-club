@@ -7,6 +7,7 @@ import { fetchAnalyticsOverview } from "./analytics/overview";
 import { dashboardKpisFromOverview, type DashboardKpis } from "./dashboardKpis";
 import type { DateRange } from "@/lib/range";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { usageEnvironment } from "@/lib/featureUsageCatalog.mjs";
 import {
   buildTierDistributionFromCounts,
   type TierDistributionRow,
@@ -33,6 +34,17 @@ const db = supabaseAdmin;
  * Authenticated figures can safely deduplicate by member account. "Active now"
  * means a heartbeat was received in the last 15 minutes.
  */
+/**
+ * The app environment this dashboard reports on: production on the Vercel
+ * production deployment, development locally. Development and preview builds
+ * can run against the production backend, so their activity is tagged and
+ * kept out of the production numbers.
+ */
+const reportingEnvironment = () =>
+  usageEnvironment(
+    process.env.ADMIN_ANALYTICS_ENVIRONMENT ?? process.env.VERCEL_ENV
+  );
+
 export const fetchAudienceUsage = async (
   range: DateRange
 ): Promise<AudienceUsage> => {
@@ -41,6 +53,7 @@ export const fetchAudienceUsage = async (
     p_since: range.since.toISOString().slice(0, 10),
     p_until: range.until.toISOString().slice(0, 10),
     p_active_since: activeSince.toISOString(),
+    p_environment: reportingEnvironment(),
   });
   return resolveAudienceUsageResponse(data, error);
 };
@@ -80,6 +93,13 @@ export const fetchLiveActivity = async (
       "id,event_name,user_id,platform,app_version,app_environment,occurred_at"
     )
     .gte("occurred_at", since)
+    // This dashboard's environment only. Untagged rows predate environment
+    // tagging, when only production builds existed.
+    .or(
+      reportingEnvironment() === "production"
+        ? "app_environment.is.null,app_environment.eq.production"
+        : `app_environment.eq.${reportingEnvironment()}`
+    )
     .order("occurred_at", { ascending: false })
     .limit(limit);
 
@@ -122,6 +142,7 @@ export const fetchProductTelemetry = async (
   const { data, error } = await db().rpc("get_product_analytics_summary", {
     p_since: range.since.toISOString().slice(0, 10),
     p_until: range.until.toISOString().slice(0, 10),
+    p_environment: reportingEnvironment(),
   });
   return resolveProductTelemetryResponse(data, error);
 };

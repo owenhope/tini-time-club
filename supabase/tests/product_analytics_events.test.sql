@@ -33,14 +33,14 @@ SELECT ok(
 SELECT has_function(
   'public',
   'get_product_analytics_summary',
-  ARRAY['date', 'date'],
+  ARRAY['date', 'date', 'text'],
   'The dashboard has a privacy-safe product summary function'
 );
 
 SELECT ok(
   NOT has_function_privilege(
     'authenticated',
-    'public.get_product_analytics_summary(date,date)',
+    'public.get_product_analytics_summary(date,date,text)',
     'EXECUTE'
   ),
   'Members cannot query operator product analytics'
@@ -49,7 +49,7 @@ SELECT ok(
 SELECT ok(
   has_function_privilege(
     'service_role',
-    'public.get_product_analytics_summary(date,date)',
+    'public.get_product_analytics_summary(date,date,text)',
     'EXECUTE'
   ),
   'The server-side dashboard can query product analytics'
