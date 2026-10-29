@@ -1,15 +1,19 @@
 "use server";
 
+import { checkBotId } from "botid/server";
 import { redirect } from "next/navigation";
 import { notifyOperator } from "@/lib/operatorNotify.mjs";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-/**
- * The one deliberately public server action: a business owner claiming their
- * place from the public website, with no member account. Validation is
- * enforced again inside submit_web_location_claim; this layer maps failures
- * to form feedback and swallows bot submissions via the honeypot field.
- */
+// Verification errors must fail closed, before any database write or email.
+async function requireHuman(path: string) {
+  const verification = await checkBotId().catch(() => null);
+  if (!verification || verification.isBot) {
+    redirect(`${path}?error=verification`);
+  }
+}
+
+/** Public business-owner claim, with validation repeated in Postgres. */
 export async function submitPublicLocationClaim(formData: FormData) {
   const locationId = String(formData.get("location_id") ?? "").trim();
   const path = `/p/${encodeURIComponent(locationId)}/claim`;
@@ -19,6 +23,8 @@ export async function submitPublicLocationClaim(formData: FormData) {
   if (String(formData.get("website") ?? "").trim()) {
     redirect(`${path}?submitted=1`);
   }
+
+  await requireHuman(path);
 
   const contactName = String(formData.get("contact_name") ?? "").trim();
   const businessRole = String(formData.get("business_role") ?? "").trim();
@@ -87,6 +93,8 @@ export async function submitBusinessInquiry(formData: FormData) {
   if (String(formData.get("website") ?? "").trim()) {
     redirect(`${path}?submitted=1`);
   }
+
+  await requireHuman(path);
 
   const contactName = String(formData.get("contact_name") ?? "").trim();
   const businessName = String(formData.get("business_name") ?? "").trim();

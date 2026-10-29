@@ -1,3 +1,4 @@
+import PublicSubmissionForm from "@/components/PublicSubmissionForm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import PublicShareHeader from "@/components/PublicShareHeader";
@@ -7,6 +8,8 @@ import { submitPublicLocationClaim } from "@/lib/publicClaimAction";
 export const dynamic = "force-dynamic";
 
 const ERROR_MESSAGES: Record<string, string> = {
+  verification:
+    "We could not verify your browser. Enable JavaScript, reload this page, and try again.",
   name: "Enter your name.",
   role: "Enter your role at the business.",
   email: "Enter a valid business email.",
@@ -102,7 +105,7 @@ export default async function ClaimLocationPage({
                   </p>
                 ) : null}
 
-                <form
+                <PublicSubmissionForm
                   action={submitPublicLocationClaim}
                   className="mt-5 flex flex-col gap-4"
                 >
@@ -205,7 +208,7 @@ export default async function ClaimLocationPage({
                     business claim. It is not an endorsement. We only use these
                     details to review your claim.
                   </p>
-                </form>
+                </PublicSubmissionForm>
               </>
             )}
           </div>

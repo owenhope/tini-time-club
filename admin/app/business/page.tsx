@@ -1,3 +1,4 @@
+import PublicSubmissionForm from "@/components/PublicSubmissionForm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import PublicFooter from "@/components/PublicFooter";
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
+  verification:
+    "We could not verify your browser. Enable JavaScript, reload this page, and try again.",
   name: "Enter your name.",
   business: "Enter the business name.",
   email: "Enter a valid business email.",
@@ -77,7 +80,7 @@ export default async function BusinessInquiryPage({
                 </p>
               ) : null}
 
-              <form
+              <PublicSubmissionForm
                 action={submitBusinessInquiry}
                 className="mt-10 flex flex-col gap-5"
               >
@@ -181,7 +184,7 @@ export default async function BusinessInquiryPage({
                   Verification means Tini Time Club manually reviewed a business
                   claim; it is never an endorsement and cannot be bought.
                 </p>
-              </form>
+              </PublicSubmissionForm>
             </>
           )}
         </div>
