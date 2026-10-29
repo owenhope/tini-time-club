@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(31);
+SELECT plan(33);
 
 -- Passport reconciliation emits notifications in a fresh database too.
 INSERT INTO public.notification_types (id, name)
@@ -82,6 +82,8 @@ SELECT ok(pg_get_functiondef('public.passport_progress_v1(uuid)'::regprocedure) 
 SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) LIKE '%pg_advisory_xact_lock%','Reconciliation serializes per member');
 SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) LIKE '%revoked_at IS NULL%','Revoked awards do not contribute points');
 SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) LIKE '%passport_achievement%','New stamps append a Passport Activity event');
+SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) NOT LIKE '%Passport Stamp%','Stamp Activity rows carry no "Passport Stamp" prefix');
+SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) LIKE '%new stamps · +%','A batch of stamps reads as "N new stamps"');
 SELECT ok(pg_get_functiondef('public.reconcile_passport_for_v1(uuid)'::regprocedure) LIKE '%awarded_at%','Reconciliation returns complete stamp display data');
 SELECT ok(pg_get_functiondef('public.reconcile_my_passport_v1()'::regprocedure) LIKE '%reconcile_passport_for_v1%','Member reconcile delegates to the shared core');
 SELECT ok(
