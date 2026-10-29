@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getDiscoverLocationsPage,
@@ -84,6 +85,8 @@ export function useExploreDiscovery({
           limit: DISCOVERY_PAGE_SIZE,
         });
         if (requestId !== profileRequestId.current) return;
+        if (!append && searchQuery.trim())
+          void AnalyticService.capture("directory_search");
         setProfiles((current) =>
           append ? [...current, ...page.items] : page.items
         );

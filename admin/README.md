@@ -103,3 +103,40 @@ creation alone is not recorded as marketing consent by this feature.
 
 Validation: `npm --prefix admin test`, `npm --prefix admin run typecheck`,
 and `supabase test db supabase/tests/admin_email_campaigns.test.sql`.
+
+## Feature usage
+
+`/admin/analytics/features` ranks app screens and actions separately from admin
+pages and operations. Date windows use UTC; filters retain the selected surface,
+environment, and sort order when changing the date range. Unique app reach means
+signed-in member accounts; installations include visitors and must not be added
+to member counts. Admin reach counts signed-in sessions because the shared login
+cannot identify individual operators. Events contain allowlisted names only,
+without URLs, search text, form contents, or target member/content IDs.
+
+Deployment order:
+
+1. Apply `20261029020000_feature_usage_ranking.sql` to the intended backend,
+   following the environment verification and dry-run rules in `RELEASE.md`.
+2. Deploy the updated `app-events` Edge Function to that same backend.
+3. Deploy the admin and publish the compatible app update.
+
+Admin events use `ADMIN_ANALYTICS_ENVIRONMENT` when set, otherwise `VERCEL_ENV`,
+and default to `development` locally. Valid values are `production`, `preview`,
+and `development`. Set the override on non-Vercel hosts. The ranking defaults to
+production even when browsing a development backend; select Development to see
+local testing. App events retain their app build environment.
+
+Screen coverage begins with this release; older app versions and pre-deployment
+admin visits cannot be backfilled. Existing allowlisted app actions retain their
+history. Legacy Index/share tables are excluded from this ranking because they
+lack environment labels. Automatic Activity loads and Passport awards are not
+screen visits. Share attempts are not confirmed deliveries. Admin actions record
+successful server operations, not browser button clicks; email processing counts
+batches and notification submission does not imply push delivery. Tracking is
+best effort; failures must not interrupt app or admin operations.
+
+The new tables and aggregate RPC are service-role-only. The admin ingestion route
+checks the signed session and same-origin POST, only accepts page events, and uses
+UUID event IDs for duplicate delivery protection. Server action tracking hashes
+the session cookie and never stores the credential itself.

@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import React, {
   useCallback,
   useEffect,
@@ -355,6 +356,7 @@ function ExploreMap({
 
   /** A search hit recentres the map; the pins for it arrive with the region. */
   const handleSearchPlaceSelected = useCallback((newRegion: Region) => {
+    void AnalyticService.capture("map_search_selected");
     Keyboard.dismiss();
     regionRef.current = newRegion;
     mapRef.current?.animateToRegion(newRegion, 350);

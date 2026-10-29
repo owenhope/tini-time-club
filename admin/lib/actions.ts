@@ -1,5 +1,6 @@
 "use server";
 
+import { recordAdminUsage } from "@/lib/adminUsage";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -62,6 +63,7 @@ export async function setVerified(profileId: string, verified: boolean) {
     .update({ is_verified: verified })
     .eq("id", profileId);
   if (error) throw toAdminDataError(error, "update profile verification");
+  await recordAdminUsage("action_member_verified");
   revalidatePath(`/admin/users/${profileId}`);
   revalidatePath("/admin/users");
 }
@@ -138,6 +140,7 @@ export async function sendNotification(formData: FormData) {
   }
 
   if (sent === 0) redirect("/admin/notifications?error=audience");
+  await recordAdminUsage("action_notification_sent");
 
   revalidatePath("/admin/notifications");
   redirect(`/admin/notifications?sent=${sent}`);
@@ -153,6 +156,7 @@ export async function setDeleted(profileId: string, deleted: boolean) {
     })
     .eq("id", profileId);
   if (error) throw toAdminDataError(error, "update profile deletion");
+  await recordAdminUsage("action_member_deleted");
   revalidatePath(`/admin/users/${profileId}`);
   revalidatePath("/admin/users");
 }
@@ -169,6 +173,7 @@ export async function setReviewActive(reviewId: string, active: boolean) {
     .maybeSingle();
   if (error) throw toAdminDataError(error, "update review status");
   if (!data) throw new Error("Review not found");
+  await recordAdminUsage("action_review_status");
 
   revalidatePath(`/admin/reviews/${reviewId}`);
   revalidatePath("/admin/reviews");
@@ -194,6 +199,7 @@ export async function setReportStatus(
     .update({ status })
     .eq("id", reportId);
   if (error) throw toAdminDataError(error, "update report status");
+  await recordAdminUsage("action_report_status");
 
   revalidatePath("/admin/reports");
 }
@@ -250,6 +256,7 @@ export async function deleteReportedContentAndResolve(reportId: string) {
     .update({ status: "resolved" })
     .eq("id", reportId);
   if (resolveError) throw toAdminDataError(resolveError, "resolve report");
+  await recordAdminUsage("action_report_resolved");
 
   revalidatePath("/admin/reports");
   revalidatePath("/admin/reviews");
@@ -293,6 +300,7 @@ export async function updateLocation(locationId: string, formData: FormData) {
     .eq("id", locationId);
   if (error?.code === "23505") redirect(`${path}?error=placeId`);
   if (error) throw toAdminDataError(error, "update location");
+  await recordAdminUsage("action_place_updated");
 
   revalidatePath(path);
   revalidatePath("/admin/places");
@@ -309,6 +317,7 @@ export async function approveLocationClaim(claimId: string) {
     p_claim_id: claimId,
   });
   if (error) throw toAdminDataError(error, "approve location claim");
+  await recordAdminUsage("action_claim_approved");
   revalidatePath(claimsPath);
   revalidatePath(`/admin/claims/${claimId}`);
   revalidatePath("/admin/places");
@@ -332,6 +341,7 @@ export async function verifyLocationDirect(
     p_reason: reason,
   });
   if (error) throw toAdminDataError(error, "verify location directly");
+  await recordAdminUsage("action_place_verified");
   revalidatePath(claimsPath);
   revalidatePath(path);
   revalidatePath("/admin/places");
@@ -351,6 +361,7 @@ export async function rejectLocationClaim(claimId: string, formData: FormData) {
     p_admin_notes: notes || null,
   });
   if (error) throw toAdminDataError(error, "reject location claim");
+  await recordAdminUsage("action_claim_rejected");
   revalidatePath(claimsPath);
   revalidatePath(`/admin/claims/${claimId}`);
   const { data: claim } = await supabaseAdmin()
@@ -375,6 +386,7 @@ export async function revokeLocationVerification(
     p_reason: reason,
   });
   if (error) throw toAdminDataError(error, "revoke location verification");
+  await recordAdminUsage("action_verification_revoked");
   revalidatePath(claimsPath);
   revalidatePath(`/admin/places/${locationId}`);
   redirect(`${claimsPath}?updated=revoked`);
@@ -392,6 +404,7 @@ export async function restoreLocationVerification(
     p_reason: reason,
   });
   if (error) throw toAdminDataError(error, "restore location verification");
+  await recordAdminUsage("action_verification_restored");
   revalidatePath(claimsPath);
   revalidatePath(`/admin/places/${locationId}`);
   redirect(`${claimsPath}?updated=restored`);
@@ -421,6 +434,7 @@ export async function addLocationManager(
   });
   if (result.error)
     throw toAdminDataError(result.error, "add location manager");
+  await recordAdminUsage("action_manager_added");
   revalidatePath(path);
   redirect(`${path}?updated=manager-added`);
 }
@@ -437,6 +451,7 @@ export async function removeLocationManager(
     p_reason: reason || null,
   });
   if (error) throw toAdminDataError(error, "remove location manager");
+  await recordAdminUsage("action_manager_removed");
   revalidatePath(`/admin/claims/${claimId}`);
   redirect(`/admin/claims/${claimId}?updated=manager-removed`);
 }
@@ -539,6 +554,7 @@ export async function upsertRegion(formData: FormData) {
     }
   }
 
+  await recordAdminUsage("action_region_saved");
   revalidatePath("/admin/places/regions");
   if (savedId) {
     revalidatePath(`/admin/places/golden-glass/regions/${savedId}`);
@@ -565,6 +581,7 @@ export async function refreshGoldenGlass() {
   await requireAdminSession();
   const { error } = await supabaseAdmin().rpc("refresh_golden_glass_v1");
   if (error) throw toAdminDataError(error, "refresh Golden Glass");
+  await recordAdminUsage("action_golden_glass_refreshed");
   revalidatePath("/admin/places/golden-glass");
   revalidatePath("/admin/places");
   redirect("/admin/places/golden-glass?refreshed=1");
@@ -580,6 +597,7 @@ export async function setBusinessInquiryHandled(formData: FormData) {
     p_handled: handled,
   });
   if (error) throw toAdminDataError(error, "update business inquiry");
+  await recordAdminUsage("action_inquiry_updated");
   revalidatePath("/admin/inquiries");
   redirect("/admin/inquiries?updated=1");
 }

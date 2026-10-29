@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useFocusEffect } from "expo-router";
+import AnalyticService from "@/services/analyticsService";
 import { SegmentedControl } from "@/components/shared";
 import { makeStyles } from "@/theme";
 
@@ -24,6 +26,14 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
   onChange,
 }) => {
   const styles = useStyles();
+  useFocusEffect(
+    useCallback(() => {
+      if (activeTab === "favorites")
+        void AnalyticService.capture("profile_favorites_open");
+      if (activeTab === "regulars")
+        void AnalyticService.capture("profile_regulars_open");
+    }, [activeTab])
+  );
 
   return (
     <SegmentedControl

@@ -2,6 +2,11 @@ import { logReviewShare, reviewShareText } from "../reviewShare";
 import { supabase } from "@/utils/supabase";
 import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => true) },
+}));
+
 jest.mock("react-native", () => ({
   Alert: {},
   Linking: {},

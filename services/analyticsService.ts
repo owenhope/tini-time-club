@@ -10,11 +10,46 @@ import { supabase } from "@/utils/supabase";
  *
  * Product events cross one privacy-safe seam: callers name an allowlisted
  * event, while this module owns installation/session metadata, transport, and
- * failure isolation. Arbitrary properties are logged locally for diagnosis but
- * are deliberately not sent to the analytics backend.
+ * failure isolation. Arbitrary properties are deliberately neither logged nor sent to the
+ * analytics backend.
  */
 
 export type AnalyticEventType =
+  | "screen_home"
+  | "screen_discover"
+  | "screen_profile"
+  | "screen_passport"
+  | "screen_settings"
+  | "screen_favorite_location"
+  | "screen_edit_profile"
+  | "screen_notifications"
+  | "screen_martini_index"
+  | "screen_activity"
+  | "screen_review"
+  | "screen_review_share_preview"
+  | "screen_golden_glass_info"
+  | "screen_location_verification_info"
+  | "screen_passport_info"
+  | "screen_location_claim"
+  | "screen_place_info"
+  | "screen_delete_account"
+  | "screen_terms"
+  | "screen_venue"
+  | "screen_member"
+  | "screen_review_detail"
+  | "screen_followers"
+  | "screen_following"
+  | "discover_map_open"
+  | "discover_golden_glass_open"
+  | "discover_members_open"
+  | "map_search_selected"
+  | "directory_search"
+  | "index_filter"
+  | "index_generate"
+  | "favorite_saved"
+  | "favorite_removed"
+  | "profile_favorites_open"
+  | "profile_regulars_open"
   | "login"
   | "create_account"
   | "shared_app"
@@ -52,9 +87,9 @@ const SESSION_ID = uuidv4();
 
 const capture = async (
   event: AnalyticEventType,
-  properties?: Record<string, unknown>
+  _properties?: Record<string, unknown>
 ): Promise<boolean> => {
-  log(`[Analytics] ${event}`, properties ?? {});
+  log(`[Analytics] ${event}`);
   logMetaAppEvent(event);
 
   try {

@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import { Alert } from "react-native";
 import type { Review } from "@/types/types";
 import { warn } from "@/utils/log";
@@ -36,6 +37,7 @@ export const logReviewShare = async (
   const numericReviewId = Number(reviewId);
   if (!Number.isFinite(numericReviewId)) return;
 
+  void AnalyticService.capture("share_review");
   const { error } = await supabase.rpc("log_review_share", {
     p_review_id: numericReviewId,
     p_channel: channel,

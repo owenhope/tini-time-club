@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import { supabase } from "@/utils/supabase";
 import { getMyPassport } from "@/services/passportService";
 import { reportError } from "@/utils/log";
@@ -40,6 +41,7 @@ export async function setLocationFavorite(
   if (error) throw error;
   if (typeof data !== "boolean")
     throw new Error("Favorite status is unavailable.");
+  void AnalyticService.capture(data ? "favorite_saved" : "favorite_removed");
   // The write awards stamps atomically. Refresh shared points without treating
   // a follow-up read failure as a failed save.
   if (data)

@@ -12,9 +12,11 @@ const toInputDate = (d: Date) => d.toISOString().slice(0, 10);
 export default function RangePicker({
   path,
   range,
+  extraQuery = "",
 }: {
   path: string;
   range: DateRange;
+  extraQuery?: string;
 }) {
   const router = useRouter();
 
@@ -22,7 +24,7 @@ export default function RangePicker({
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(extraQuery);
     params.set("from", String(formData.get("from") ?? ""));
     params.set("to", String(formData.get("to") ?? ""));
 
@@ -38,7 +40,7 @@ export default function RangePicker({
         return (
           <Link
             key={days}
-            href={`${path}?days=${days}`}
+            href={`${path}?days=${days}${extraQuery ? `&${extraQuery}` : ""}`}
             scroll={false}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               active

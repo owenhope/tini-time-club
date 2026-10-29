@@ -1,8 +1,14 @@
+import AnalyticService from "@/services/analyticsService";
 import {
   getLocationFavorite,
   getProfileFavorites,
   setLocationFavorite,
 } from "../locationFavoritesService";
+
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => true) },
+}));
 
 const mockRpc = jest.fn();
 const mockPassport = jest.fn();
@@ -14,6 +20,7 @@ jest.mock("@/services/passportService", () => ({
 }));
 jest.mock("@/utils/log", () => ({ reportError: jest.fn() }));
 beforeEach(() => {
+  jest.mocked(AnalyticService.capture).mockClear();
   mockRpc.mockReset();
   mockPassport.mockReset().mockResolvedValue({});
 });
@@ -26,6 +33,7 @@ it("saves an explicit state without allowing a caller-supplied member identity",
     p_saved: true,
   });
   expect(mockPassport).toHaveBeenCalledTimes(1);
+  expect(AnalyticService.capture).toHaveBeenCalledWith("favorite_saved");
 });
 it("does not turn a Passport refresh failure into a failed save", async () => {
   mockRpc.mockResolvedValue({ data: true, error: null });
@@ -36,6 +44,7 @@ it("propagates failed writes and unknown status instead of guessing", async () =
   mockRpc.mockResolvedValue({ data: null, error: new Error("denied") });
   await expect(setLocationFavorite(42, true)).rejects.toThrow("denied");
   expect(mockPassport).not.toHaveBeenCalled();
+  expect(AnalyticService.capture).not.toHaveBeenCalled();
   mockRpc.mockResolvedValue({ data: null, error: null });
   await expect(getLocationFavorite(42)).rejects.toThrow("unavailable");
 });

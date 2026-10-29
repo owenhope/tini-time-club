@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import { warn } from "@/utils/log";
 import { supabase } from "@/utils/supabase";
 
@@ -12,6 +13,10 @@ export const logMartiniIndexEvent = async (
   kind: MartiniIndexEventKind,
   value?: string
 ): Promise<void> => {
+  if (kind !== "view")
+    void AnalyticService.capture(
+      kind === "filter" ? "index_filter" : "index_generate"
+    );
   try {
     const { error } = await supabase.rpc("log_martini_index_event", {
       p_kind: kind,

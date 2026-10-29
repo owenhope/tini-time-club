@@ -1,4 +1,5 @@
 import "react-native-get-random-values";
+import AppUsageTracker from "@/components/AppUsageTracker";
 import { Sentry } from "@/utils/sentry";
 import { useEffect, useState, useRef } from "react";
 import {
@@ -675,6 +676,7 @@ export function RootLayoutNav() {
 
   return (
     <>
+      <AppUsageTracker />
       <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{

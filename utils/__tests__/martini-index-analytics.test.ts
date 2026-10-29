@@ -1,6 +1,11 @@
 import { logMartiniIndexEvent } from "@/utils/martini-index-analytics";
 import { supabase } from "@/utils/supabase";
 
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => true) },
+}));
+
 jest.mock("@/utils/supabase", () => ({
   supabase: { rpc: jest.fn() },
 }));

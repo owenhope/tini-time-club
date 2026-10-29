@@ -1,3 +1,5 @@
+import { useFocusEffect } from "expo-router";
+import AnalyticService from "@/services/analyticsService";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -63,6 +65,17 @@ export default function ExploreScreen({
     "golden-glass": "",
     members: "",
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      const events = {
+        map: "discover_map_open",
+        "golden-glass": "discover_golden_glass_open",
+        members: "discover_members_open",
+      } as const;
+      void AnalyticService.capture(events[displayedView]);
+    }, [displayedView])
+  );
 
   const handleViewChange = useCallback(
     (nextView: ExploreView) => {

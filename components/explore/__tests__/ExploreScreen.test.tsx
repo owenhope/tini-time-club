@@ -2,6 +2,17 @@ import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import ExploreScreen from "@/components/explore/ExploreScreen";
 
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => true) },
+}));
+jest.mock("expo-router", () => ({
+  useFocusEffect: (callback: () => void) => {
+    const React = jest.requireActual<typeof import("react")>("react");
+    React.useEffect(callback, [callback]);
+  },
+}));
+
 jest.mock("@/components/nav/AppHeader", () => {
   const React = jest.requireActual<typeof import("react")>("react");
   return function MockAppHeader({

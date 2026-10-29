@@ -9,6 +9,11 @@ import {
 } from "@/services/discoveryService";
 import { useExploreDiscovery } from "@/hooks/useExploreDiscovery";
 
+jest.mock("@/services/analyticsService", () => ({
+  __esModule: true,
+  default: { capture: jest.fn(async () => true) },
+}));
+
 jest.mock("@/services/discoveryService", () => ({
   getDiscoverLocationsPage: jest.fn(),
   getDiscoverProfilesPage: jest.fn(),

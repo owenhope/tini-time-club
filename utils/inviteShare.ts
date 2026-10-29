@@ -1,3 +1,4 @@
+import AnalyticService from "@/services/analyticsService";
 import { Platform, Share } from "react-native";
 import type { Profile } from "@/types/types";
 import { TTC_WEB_ORIGIN } from "@/utils/reviewShare";
@@ -34,6 +35,7 @@ const logInviteShare = async (
   outcome: "shared" | "dismissed",
   targetUrl: string
 ) => {
+  if (outcome === "shared") void AnalyticService.capture("shared_app");
   const { error } = await supabase.rpc("log_invite_share", {
     p_channel: channel,
     p_outcome: outcome,

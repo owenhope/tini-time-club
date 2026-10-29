@@ -5,6 +5,11 @@ import type { DateRange } from "@/lib/range";
 
 const SCREENS = [
   { href: "/admin/analytics", label: "Overview", key: "overview" },
+  {
+    href: "/admin/analytics/features",
+    label: "Feature usage",
+    key: "features",
+  },
   { href: "/admin/analytics/growth", label: "Growth", key: "growth" },
   {
     href: "/admin/analytics/engagement",
@@ -28,11 +33,13 @@ export default function AnalyticsHeader({
   range,
   title,
   description,
+  extraQuery,
 }: {
   active: (typeof SCREENS)[number]["key"];
   range: DateRange;
   title: string;
   description: string;
+  extraQuery?: string;
 }) {
   const path =
     SCREENS.find((screen) => screen.key === active)?.href ?? SCREENS[0].href;
@@ -42,7 +49,9 @@ export default function AnalyticsHeader({
         eyebrow="Analytics"
         title={title}
         description={description}
-        actions={<RangePicker path={path} range={range} />}
+        actions={
+          <RangePicker path={path} range={range} extraQuery={extraQuery} />
+        }
         density="compact"
         surface="transparent"
       />

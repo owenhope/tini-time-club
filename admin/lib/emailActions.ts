@@ -1,5 +1,6 @@
 "use server";
 
+import { recordAdminUsage } from "@/lib/adminUsage";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
@@ -78,6 +79,7 @@ export async function prepareEmailDraft(input: {
       throw new Error(
         "Unable to save the draft. Check the email migration and select at least one eligible member."
       );
+    await recordAdminUsage("action_email_draft_saved");
     revalidatePath("/admin/emails");
     return { detail: await emailCampaign(input.id) };
   } catch (error) {
@@ -115,6 +117,7 @@ export async function sendEmailChunk(id: string) {
       .is("started_at", null);
     if (error) throw new Error("Unable to start this campaign.");
     const result = await processEmailCampaign(id);
+    await recordAdminUsage("action_email_batch_processed");
     revalidatePath("/admin/emails");
     return result;
   } catch (error) {

@@ -1,3 +1,4 @@
+import AdminUsageTracker from "@/components/AdminUsageTracker";
 import type { Metadata } from "next";
 import Script from "next/script";
 import localFont from "next/font/local";
@@ -100,6 +101,7 @@ export default function RootLayout({
         {children}
         <Suspense>
           <AdminNavigationProgress />
+          <AdminUsageTracker />
         </Suspense>
         <MetaPixel />
         <Script
