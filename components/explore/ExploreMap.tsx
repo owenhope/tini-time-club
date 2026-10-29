@@ -34,6 +34,8 @@ import { withRegulars, type Regular } from "@/services/regularsService";
 import RegularsSlider from "@/components/RegularsSlider";
 import Search from "@/components/map/search";
 import { makeStyles, useTheme } from "@/theme";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MartiniIcon from "@/components/shared/MartiniIcon";
 import { reportError } from "@/utils/log";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
 import { getScreenshotSeed } from "@/utils/screenshotMode";
@@ -48,15 +50,18 @@ import {
 import { ExploreSearchArea } from "@/components/explore/ExploreSearchField";
 import { useProfile } from "@/context/profile-context";
 import { useMembership } from "@/context/membership-context";
+import { useFavoriteLocationIds } from "@/hooks/useFavoriteLocationIds";
 import { publicContentService } from "@/services/public-content-service";
 import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
 import { canOpenMapPinDetails } from "@/utils/mapPinAccess";
 import type { ExploreRegion } from "@/services/regionService";
 import { mergeMapLocations, normalizeMapLocations } from "@/utils/mapLocations";
+import { getGoldenGlassGroupRegion } from "@/utils/goldenGlassMapGroups";
 import {
-  groupGoldenGlassPins,
-  getGoldenGlassGroupRegion,
-} from "@/utils/goldenGlassMapGroups";
+  clusterBubbleSize,
+  layoutMapPins,
+  type MapCluster,
+} from "@/utils/mapPinLayout";
 
 const INITIAL_REGION: Region = {
   ...EXPLORE_DEFAULT_COORDINATES,
@@ -162,23 +167,71 @@ const containsBounds = (outer: MapBounds, inner: MapBounds) =>
   outer.minLong <= inner.minLong &&
   outer.maxLong >= inner.maxLong;
 
-const ClusterPin = ({ count }: { count: number }) => {
+const describeCluster = (cluster: MapCluster<MapLocation>) =>
+  [
+    `${cluster.members.length} locations`,
+    cluster.goldenCount > 0 ? `${cluster.goldenCount} Golden Glass` : null,
+    cluster.favoriteCount > 0 ? `${cluster.favoriteCount} favorite` : null,
+  ]
+    .filter(Boolean)
+    .join(", ") + ". Tap to zoom in.";
+
+/**
+ * A cluster bubble. Golden Glass and liked places folded into it ride its
+ * top edge as badges, so a buried favorite is still visible from the map.
+ */
+const ClusterPin = ({
+  count,
+  goldenCount = 0,
+  favoriteCount = 0,
+}: {
+  count: number;
+  goldenCount?: number;
+  favoriteCount?: number;
+}) => {
   const styles = useStyles();
-  const size = count >= 25 ? 66 : count >= 10 ? 58 : 48;
+  const { colors } = useTheme();
+  const size = clusterBubbleSize(count);
 
   return (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.clusterPin,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}
-    >
-      <Text style={styles.clusterCount}>{count}</Text>
+    // Padded so the badges sit inside the marker's snapshot, not clipped by it.
+    <View pointerEvents="none" style={styles.clusterFrame}>
+      <View
+        style={[
+          styles.clusterPin,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+          },
+        ]}
+      >
+        <Text style={styles.clusterCount}>{count}</Text>
+      </View>
+      {goldenCount > 0 || favoriteCount > 0 ? (
+        <View style={styles.clusterBadges}>
+          {goldenCount > 0 ? (
+            <View style={[styles.clusterBadge, styles.clusterBadgeGolden]}>
+              <MartiniIcon size={11} color={colors.onAwardGold} filled />
+              <Text style={styles.clusterBadgeGoldenText}>{goldenCount}</Text>
+            </View>
+          ) : null}
+          {favoriteCount > 0 ? (
+            <View style={[styles.clusterBadge, styles.clusterBadgeFavorite]}>
+              <Ionicons
+                name="heart"
+                size={11}
+                color={colors.headerFavoriteHeart}
+              />
+              {favoriteCount > 1 ? (
+                <Text style={styles.clusterBadgeFavoriteText}>
+                  {favoriteCount}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -362,20 +415,17 @@ function ExploreMap({
     mapRef.current?.animateToRegion(newRegion, 350);
   }, []);
 
-  const handleClusterPress = useCallback((_cluster: any, children?: any[]) => {
-    const coordinates =
-      children
-        ?.map((child) => child.geometry?.coordinates)
-        .filter(
-          (coordinate): coordinate is ClusterCoordinate =>
-            Array.isArray(coordinate) &&
-            Number.isFinite(coordinate[0]) &&
-            Number.isFinite(coordinate[1])
-        ) ?? [];
+  const handleClusterPress = useCallback((cluster: MapCluster<MapLocation>) => {
+    const coordinates = cluster.members
+      .map((member): ClusterCoordinate => [member.long, member.lat])
+      .filter(
+        (coordinate) =>
+          Number.isFinite(coordinate[0]) && Number.isFinite(coordinate[1])
+      );
 
     const nextRegion = getClusterPressRegion({
       childCoordinates: coordinates,
-      clusterCoordinate: _cluster?.geometry?.coordinates,
+      clusterCoordinate: [cluster.longitude, cluster.latitude],
       currentRegion: regionRef.current,
       fitPadding: CLUSTER_FIT_PADDING,
       minDelta: CLUSTER_MIN_DELTA,
@@ -396,18 +446,22 @@ function ExploreMap({
 
   const showIndividualGoldenGlassPins =
     region.latitudeDelta <= GOLDEN_GLASS_CITY_LATITUDE_DELTA;
+  // Liked places get Golden Glass's treatment: at city zoom they stand alone
+  // instead of folding into a cluster.
+  const favoriteIds = useFavoriteLocationIds();
 
-  const goldenGroups = useMemo(
+  const pinLayout = useMemo(
     () =>
-      showIndividualGoldenGlassPins
-        ? groupGoldenGlassPins(
-            locations.filter((location) => location.is_golden_glass),
-            region,
-            mapSize,
-            selectedLocationId
-          )
-        : [],
+      layoutMapPins({
+        places: locations,
+        favoriteIds,
+        region,
+        viewport: mapSize,
+        selectedId: selectedLocationId,
+        specialsStandAlone: showIndividualGoldenGlassPins,
+      }),
     [
+      favoriteIds,
       locations,
       region,
       mapSize,
@@ -446,71 +500,60 @@ function ExploreMap({
 
   const markerElements = useMemo(
     () =>
-      locations
-        .filter(
-          (location) =>
-            !goldenGroups.some(
-              (group) =>
-                group.length > 1 &&
-                group.some((member) => member.id === location.id)
-            )
-        )
-        .map((location) => {
-          const isSelected = String(location.id) === String(selectedLocationId);
+      pinLayout.pins.map((location) => {
+        const isSelected = String(location.id) === String(selectedLocationId);
+        const isFavorite = favoriteIds.has(String(location.id));
+        const standsAlone = Boolean(location.is_golden_glass) || isFavorite;
 
-          return (
-            <Marker
-              key={`${String(location.id)}-${mapRevision}`}
-              // The clustering library reads this extra prop before passing
-              // excluded markers through to the native map unchanged.
-              {...{
-                cluster: !(
-                  location.is_golden_glass && showIndividualGoldenGlassPins
-                ),
-              }}
-              coordinate={{ latitude: location.lat, longitude: location.long }}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-              stopPropagation
-              zIndex={isSelected ? 10 : location.is_golden_glass ? 8 : 1}
-              onPress={() => handleMarkerPress(location)}
-            >
-              <LocationPin loc={location} selected={isSelected} />
-            </Marker>
-          );
-        }),
-    [
-      handleMarkerPress,
-      locations,
-      mapRevision,
-      selectedLocationId,
-      showIndividualGoldenGlassPins,
-      goldenGroups,
-    ]
+        return (
+          <Marker
+            // Pins don't track view changes, so the native snapshot only
+            // picks up a new favorite ring when the marker remounts.
+            key={`${String(location.id)}-${isFavorite ? "fav-" : ""}${mapRevision}`}
+            coordinate={{ latitude: location.lat, longitude: location.long }}
+            anchor={{ x: 0.5, y: 1 }}
+            tracksViewChanges={false}
+            stopPropagation
+            zIndex={isSelected ? 10 : standsAlone ? 8 : 1}
+            onPress={() => handleMarkerPress(location)}
+          >
+            <LocationPin
+              loc={location}
+              selected={isSelected}
+              favorite={isFavorite}
+            />
+          </Marker>
+        );
+      }),
+    [favoriteIds, handleMarkerPress, mapRevision, pinLayout, selectedLocationId]
   );
 
-  const renderCluster = useCallback((cluster: any) => {
-    const [longitude, latitude] = cluster.geometry.coordinates;
-    const count = cluster.properties.point_count;
-    const handlePress = () => {
-      cluster.onPress?.();
-    };
-
-    return (
-      <Marker
-        key={`cluster-${cluster.id}`}
-        coordinate={{ latitude, longitude }}
-        anchor={{ x: 0.5, y: 0.5 }}
-        tracksViewChanges={false}
-        onPress={handlePress}
-        tappable
-        stopPropagation
-        zIndex={5}
-      >
-        <ClusterPin count={count} />
-      </Marker>
-    );
-  }, []);
+  const clusterElements = useMemo(
+    () =>
+      pinLayout.clusters.map((cluster) => (
+        <Marker
+          key={`${cluster.key}-${mapRevision}`}
+          coordinate={{
+            latitude: cluster.latitude,
+            longitude: cluster.longitude,
+          }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          tracksViewChanges={false}
+          onPress={() => handleClusterPress(cluster)}
+          tappable
+          stopPropagation
+          zIndex={5}
+          accessibilityLabel={describeCluster(cluster)}
+        >
+          <ClusterPin
+            count={cluster.members.length}
+            goldenCount={cluster.goldenCount}
+            favoriteCount={cluster.favoriteCount}
+          />
+        </Marker>
+      )),
+    [handleClusterPress, mapRevision, pinLayout]
+  );
 
   useEffect(() => {
     if (!enabled || !isScreenshotMap) return;
@@ -911,11 +954,9 @@ function ExploreMap({
             }
             mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
             userInterfaceStyle={isDark ? "dark" : "light"}
-            clusteringEnabled={true}
-            animationEnabled
-            preserveClusterPressBehavior
-            onClusterPress={handleClusterPress}
-            renderCluster={renderCluster}
+            // Explore lays out its own clusters (see layoutMapPins) so gold
+            // and pink places can fold into them as badges.
+            clusteringEnabled={false}
             style={StyleSheet.absoluteFill}
             showsUserLocation={false}
             showsMyLocationButton={false}
@@ -950,33 +991,38 @@ function ExploreMap({
                 <UserDot />
               </Marker>
             ) : null}
+            {clusterElements}
             {markerElements}
-            {goldenGroups
-              .filter((group) => group.length > 1)
-              .map((members) => {
-                const center = getGoldenGlassGroupRegion(members, region);
-                return (
-                  <Marker
-                    key={`gold-${members
-                      .map((member) => member.id)
-                      .sort()
-                      .join("-")}-${mapRevision}`}
-                    {...{ cluster: false }}
-                    coordinate={{
-                      latitude: center.latitude,
-                      longitude: center.longitude,
-                    }}
-                    anchor={{ x: 0.5, y: 1 }}
-                    tracksViewChanges={false}
-                    stopPropagation
-                    zIndex={8}
-                    accessibilityLabel={`${members.length} Golden Glass locations. Tap to zoom in.`}
-                    onPress={() => handleGoldenGroupPress(members)}
-                  >
-                    <LocationPin loc={members[0]} count={members.length} />
-                  </Marker>
-                );
-              })}
+            {pinLayout.groups.map((members) => {
+              const center = getGoldenGlassGroupRegion(members, region);
+              const golden = members.find((member) => member.is_golden_glass);
+              return (
+                <Marker
+                  key={`gold-${members
+                    .map((member) => member.id)
+                    .sort()
+                    .join("-")}-${mapRevision}`}
+                  coordinate={{
+                    latitude: center.latitude,
+                    longitude: center.longitude,
+                  }}
+                  anchor={{ x: 0.5, y: 1 }}
+                  tracksViewChanges={false}
+                  stopPropagation
+                  zIndex={8}
+                  accessibilityLabel={`${members.length} ${
+                    golden ? "Golden Glass" : "favorite"
+                  } locations. Tap to zoom in.`}
+                  onPress={() => handleGoldenGroupPress(members)}
+                >
+                  <LocationPin
+                    loc={golden ?? members[0]}
+                    count={members.length}
+                    favorite={!golden}
+                  />
+                </Marker>
+              );
+            })}
           </MapView>
         ) : (
           <View style={styles.mapLoading}>
@@ -1107,6 +1153,46 @@ const useStyles = makeStyles((t) => ({
     position: "absolute" as const,
     color: t.colors.onAccentTonal,
     textAlign: "center" as const,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  clusterFrame: {
+    padding: 10,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  clusterBadges: {
+    position: "absolute" as const,
+    top: 0,
+    right: 0,
+    flexDirection: "row" as const,
+    gap: 3,
+  },
+  clusterBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 5,
+    borderRadius: t.radius.pill,
+    borderWidth: 2,
+    borderColor: t.colors.background,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 2,
+  },
+  clusterBadgeGolden: {
+    backgroundColor: t.colors.awardGold,
+  },
+  clusterBadgeGoldenText: {
+    ...t.typography.label,
+    color: t.colors.onAwardGold,
+    fontVariant: ["tabular-nums"] as const,
+  },
+  clusterBadgeFavorite: {
+    backgroundColor: t.colors.headerFavorite,
+  },
+  clusterBadgeFavoriteText: {
+    ...t.typography.label,
+    color: t.colors.onHeaderFavorite,
     fontVariant: ["tabular-nums"] as const,
   },
   userHalo: {

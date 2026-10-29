@@ -20,6 +20,8 @@ interface LocationPinProps {
   };
   selected?: boolean;
   count?: number;
+  /** One of the viewer's liked places: the ring and pointer turn pink. */
+  favorite?: boolean;
 }
 
 /**
@@ -27,9 +29,15 @@ interface LocationPinProps {
  * ring colour so pins stand off the basemap in either theme, with the ring's
  * colour carried into the rating and pointer. Brand purple is the standard
  * pin; verification deepens the purple (plus the check overlay), and Golden
- * Glass goes gold, which wins when both apply.
+ * Glass goes gold, which wins when both apply. A liked place goes pink the
+ * same way — tonal fill, ring, rating and pointer — over any of the others.
  */
-function LocationPin({ loc, selected = false, count }: LocationPinProps) {
+function LocationPin({
+  loc,
+  selected = false,
+  count,
+  favorite = false,
+}: LocationPinProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   if (loc.lat == null || loc.long == null) return null;
@@ -45,6 +53,7 @@ function LocationPin({ loc, selected = false, count }: LocationPinProps) {
           selected && styles.pinSelected,
           loc.is_location_verified && styles.pinVerified,
           loc.is_golden_glass && styles.pinGolden,
+          favorite && styles.pinFavorite,
         ]}
       >
         {count != null || showRating ? (
@@ -54,6 +63,7 @@ function LocationPin({ loc, selected = false, count }: LocationPinProps) {
               selected && styles.pinRatingSelected,
               loc.is_location_verified && styles.pinRatingVerified,
               loc.is_golden_glass && styles.pinRatingGolden,
+              favorite && styles.pinRatingFavorite,
             ]}
           >
             {count ?? loc.rating?.toFixed(1)}
@@ -62,11 +72,13 @@ function LocationPin({ loc, selected = false, count }: LocationPinProps) {
           <MartiniIcon
             size={selected ? 23 : 17}
             color={
-              loc.is_golden_glass
-                ? colors.awardGoldForeground
-                : loc.is_location_verified
-                  ? colors.onAccentTonal
-                  : colors.accent
+              favorite
+                ? colors.onFavoriteSurface
+                : loc.is_golden_glass
+                  ? colors.awardGoldForeground
+                  : loc.is_location_verified
+                    ? colors.onAccentTonal
+                    : colors.accent
             }
           />
         )}
@@ -93,6 +105,7 @@ function LocationPin({ loc, selected = false, count }: LocationPinProps) {
             selected && styles.pointerSelected,
             loc.is_location_verified && styles.pointerVerified,
             loc.is_golden_glass && styles.pointerGolden,
+            favorite && styles.pointerFavorite,
           ]}
         />
       </View>
@@ -134,6 +147,10 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.awardGoldSurface,
     borderColor: t.colors.awardGold,
   },
+  pinFavorite: {
+    backgroundColor: t.colors.favoriteSurface,
+    borderColor: t.colors.favorite,
+  },
   pinRating: {
     ...t.typography.label,
     position: "absolute" as const,
@@ -153,6 +170,9 @@ const useStyles = makeStyles((t) => ({
   },
   pinRatingGolden: {
     color: t.colors.awardGoldForeground,
+  },
+  pinRatingFavorite: {
+    color: t.colors.onFavoriteSurface,
   },
   pointerFrame: {
     width: 18,
@@ -186,6 +206,9 @@ const useStyles = makeStyles((t) => ({
   pointerGolden: {
     borderTopColor: t.colors.awardGold,
   },
+  pointerFavorite: {
+    borderTopColor: t.colors.favorite,
+  },
   verificationOverlay: {
     position: "absolute" as const,
     right: -5,
@@ -204,6 +227,7 @@ export default memo(
   (previous, next) =>
     previous.selected === next.selected &&
     previous.count === next.count &&
+    previous.favorite === next.favorite &&
     previous.loc.id === next.loc.id &&
     previous.loc.lat === next.loc.lat &&
     previous.loc.long === next.loc.long &&

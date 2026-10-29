@@ -8,6 +8,7 @@ const mockPublicViewport = jest.fn();
 const mockRegulars = jest.fn();
 const mockMember = { id: "member" };
 let mockSignedIn = true;
+let mockFavoriteIds: ReadonlySet<string> = new Set();
 
 jest.mock("@/utils/supabase", () => ({
   supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
@@ -19,6 +20,9 @@ jest.mock("@/services/public-content-service", () => ({
 }));
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({ profile: mockSignedIn ? mockMember : null }),
+}));
+jest.mock("@/hooks/useFavoriteLocationIds", () => ({
+  useFavoriteLocationIds: () => mockFavoriteIds,
 }));
 jest.mock("@/context/membership-context", () => ({
   useMembership: () => ({ requireMembership: () => true }),
@@ -125,6 +129,39 @@ describe("Explore map viewport discovery", () => {
   afterEach(() => {
     act(() => renderer?.unmount());
     jest.useRealTimers();
+    mockFavoriteIds = new Set();
+  });
+
+  it("draws a liked place's pin pink", async () => {
+    mockSignedIn = true;
+    mockFavoriteIds = new Set(["2"]);
+    await act(async () => {
+      renderer = create(
+        <ExploreMap
+          enabled
+          focus={{}}
+          location={{
+            status: "denied",
+            coordinates: null,
+            canOpenSettings: false,
+          }}
+          requestLocation={async () => undefined}
+          exploreRegion={whistler}
+          searchVisible={false}
+        />
+      );
+    });
+    await settle();
+    act(() => map().props.onRegionChangeComplete(vancouver));
+    await settle();
+
+    const pinFor = (name: string) =>
+      renderer.root
+        .findAllByType("LocationPin" as React.ElementType)
+        .find((pin) => pin.props.loc.name === name);
+    expect(pinFor("Vancouver bar")?.props.favorite).toBe(true);
+    // The map clusters for itself; the library's own clustering stays off.
+    expect(map().props.clusteringEnabled).toBe(false);
   });
 
   it.each([true, false])(

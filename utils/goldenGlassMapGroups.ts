@@ -13,34 +13,51 @@ const mercatorY = (latitude: number) => {
 const longitudeOffset = (longitude: number, center: number) =>
   ((longitude - center + 540) % 360) - 180;
 
-/** Group touching pin footprints, not venues within a fixed geographic radius.
+export interface MapViewport {
+  width: number;
+  height: number;
+}
+
+/** A pin's footprint on screen, in points: it is anchored at its bottom. */
+export const pinFootprint = (selected: boolean) =>
+  selected ? { width: 52, height: 68 } : { width: 38, height: 51 };
+
+/**
+ * Where a coordinate lands in the map view, in points from its top-left.
  * Map rotation and pitch are disabled so the viewport has a 2D projection.
  */
+export function projectToViewport(
+  point: { lat: number; long: number },
+  region: Region,
+  viewport: MapViewport
+) {
+  const north = mercatorY(region.latitude + region.latitudeDelta / 2);
+  const south = mercatorY(region.latitude - region.latitudeDelta / 2);
+  const longitudeSpan = Math.abs(region.longitudeDelta) || 360;
+  return {
+    x:
+      (longitudeOffset(point.long, region.longitude) / longitudeSpan) *
+      viewport.width,
+    y:
+      ((north - mercatorY(point.lat)) / Math.max(north - south, 1e-10)) *
+      viewport.height,
+  };
+}
+
+/** Group touching pin footprints, not venues within a fixed geographic radius. */
 export function groupGoldenGlassPins<T extends MapPoint>(
   locations: T[],
   region: Region,
-  viewport: { width: number; height: number },
+  viewport: MapViewport,
   selectedId: string | number | null
 ): T[][] {
   if (viewport.width <= 0 || viewport.height <= 0) {
     return locations.map((location) => [location]);
   }
-  const north = mercatorY(region.latitude + region.latitudeDelta / 2);
-  const south = mercatorY(region.latitude - region.latitudeDelta / 2);
-  const longitudeSpan = Math.abs(region.longitudeDelta) || 360;
-  const points = locations.map((location) => {
-    const selected = String(location.id) === String(selectedId);
-    return {
-      x:
-        (longitudeOffset(location.long, region.longitude) / longitudeSpan) *
-        viewport.width,
-      y:
-        ((north - mercatorY(location.lat)) / Math.max(north - south, 1e-10)) *
-        viewport.height,
-      width: selected ? 52 : 38,
-      height: selected ? 68 : 51,
-    };
-  });
+  const points = locations.map((location) => ({
+    ...projectToViewport(location, region, viewport),
+    ...pinFootprint(String(location.id) === String(selectedId)),
+  }));
   const roots = points.map((_, index) => index);
   const root = (index: number): number => {
     while (roots[index] !== index) index = roots[index];
