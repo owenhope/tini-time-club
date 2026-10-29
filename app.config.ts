@@ -236,7 +236,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ["expo-localization"],
       "expo-image",
       ["expo-secure-store", { faceIDPermission: false }],
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          // R8 shrinking and obfuscation for Android release builds. Google
+          // Play flags bundles below 25% obfuscation (deadline Feb 2027).
+          // Native SDKs that use reflection need -keep rules via
+          // extraProguardRules if a release build breaks.
+          android: {
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+          },
+        },
+      ],
       [
         "react-native-share",
         {
