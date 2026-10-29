@@ -1,3 +1,4 @@
+import AdminSelect from "@/components/AdminSelect";
 import Form from "next/form";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import AdminShell from "@/components/AdminShell";
@@ -37,7 +38,7 @@ export default async function FeatureUsagePage({
   const rows = data ? rankFeatureUsage(data, filters) : [];
   const isApp = filters.surface === "app";
   const selectClass =
-    "rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
+    "rounded-lg border border-stone-300 bg-white py-2 text-sm text-stone-900";
   return (
     <AdminShell active="analytics">
       <AnalyticsHeader
@@ -54,18 +55,18 @@ export default async function FeatureUsagePage({
           ))}
           <label className="flex flex-col gap-1 text-sm font-bold">
             Surface
-            <select
+            <AdminSelect
               name="surface"
               defaultValue={filters.surface}
               className={selectClass}
             >
               <option value="app">Member app</option>
               <option value="admin">Admin panel</option>
-            </select>
+            </AdminSelect>
           </label>
           <label className="flex flex-col gap-1 text-sm font-bold">
             Environment
-            <select
+            <AdminSelect
               name="environment"
               defaultValue={filters.environment}
               className={selectClass}
@@ -73,22 +74,22 @@ export default async function FeatureUsagePage({
               <option value="production">Production</option>
               <option value="preview">Preview</option>
               <option value="development">Development</option>
-            </select>
+            </AdminSelect>
           </label>
           <label className="flex flex-col gap-1 text-sm font-bold">
             Measure
-            <select
+            <AdminSelect
               name="kind"
               defaultValue={filters.kind}
               className={selectClass}
             >
               <option value="screen">Screen visits</option>
               <option value="action">Actions</option>
-            </select>
+            </AdminSelect>
           </label>
           <label className="flex flex-col gap-1 text-sm font-bold">
             Rank by
-            <select
+            <AdminSelect
               name="sort"
               defaultValue={filters.sort}
               className={selectClass}
@@ -96,7 +97,7 @@ export default async function FeatureUsagePage({
               <option value="reach">Unique reach</option>
               <option value="events">Event count</option>
               <option value="installations">Installations (app)</option>
-            </select>
+            </AdminSelect>
           </label>
           <AdminSubmitButton
             pendingLabel="Applying…"
