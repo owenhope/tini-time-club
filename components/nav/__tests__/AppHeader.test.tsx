@@ -239,6 +239,42 @@ describe("AppHeader", () => {
     act(() => tree!.unmount());
   });
 
+  it("draws a liked place's pink ground with dark ink", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <AppHeader
+            variant="media"
+            ground="favorite"
+            title="The Olive Room"
+            onBack={jest.fn()}
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const block = tree!.root
+      .findAllByType(View)
+      .find(
+        (node) =>
+          StyleSheet.flatten(node.props.style)?.backgroundColor ===
+          darkColors.headerFavorite
+      );
+    const title = tree!.root
+      .findAllByType(Text)
+      .find((node) => node.props.children === "The Olive Room");
+    const backIcon = tree!.root.findByType("Ionicons" as React.ElementType);
+
+    expect(block).toBeDefined();
+    expect(StyleSheet.flatten(title?.props.style)?.color).toBe(
+      darkColors.onHeaderFavorite
+    );
+    expect(backIcon.props.color).toBe(darkColors.onHeaderFavorite);
+
+    act(() => tree!.unmount());
+  });
+
   it("renders compact back chevrons in the dark theme foreground", () => {
     let tree: renderer.ReactTestRenderer;
     act(() => {

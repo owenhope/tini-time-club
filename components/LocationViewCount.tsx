@@ -8,10 +8,13 @@ import { makeStyles, useTheme } from "@/theme";
 export default function LocationViewCount({
   locationId,
   onBrand = false,
+  color: colorOverride,
   enabled = true,
 }: {
   locationId: string | number;
   onBrand?: boolean;
+  /** Overrides the ground-derived colour, e.g. on a liked place's pink. */
+  color?: string;
   enabled?: boolean;
 }) {
   const styles = useStyles();
@@ -41,7 +44,8 @@ export default function LocationViewCount({
 
   if (!result || result.id !== id || result.memberId !== memberId) return null;
   const label = `${result.count.toLocaleString()} ${result.count === 1 ? "view" : "views"}`;
-  const color = onBrand ? colors.onHeaderBrand : colors.textMuted;
+  const color =
+    colorOverride ?? (onBrand ? colors.onHeaderBrand : colors.textMuted);
 
   return (
     <Text style={[styles.label, { color }]} accessibilityLabel={label}>

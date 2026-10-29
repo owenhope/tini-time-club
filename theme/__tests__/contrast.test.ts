@@ -92,12 +92,24 @@ const bodyPairs = (c: ThemeColors): [string, string, string][] => [
   // lockup pairing but only 2.9:1, so the ink is deliberately not `accent`.
   ["onBrand on surfaceBrand", c.onBrand, c.surfaceBrand],
   ["onHeaderBrand on headerBrand", c.onHeaderBrand, c.headerBrand],
+  ["onHeaderFavorite on headerFavorite", c.onHeaderFavorite, c.headerFavorite],
+  [
+    "onFavoriteSurface on favoriteSurface",
+    c.onFavoriteSurface,
+    c.favoriteSurface,
+  ],
   ["onInk on surfaceInk", c.onInk, c.surfaceInk],
   ["onInk on surfaceInkDeep", c.onInk, c.surfaceInkDeep],
 ];
 
 const largePairs = (c: ThemeColors): [string, string, string][] => [
   ["like on surface", c.like, c.surface],
+  ["favorite on surface", c.favorite, c.surface],
+  [
+    "headerFavoriteHeart on headerFavorite",
+    c.headerFavoriteHeart,
+    c.headerFavorite,
+  ],
   ["success on surface", c.success, c.surface],
   ["warning on surface", c.warning, c.surface],
   // The bar fill must be distinguishable from its track, since the bar is a

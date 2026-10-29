@@ -106,11 +106,15 @@ export default function ProfileFavorites({
         !loading && !error ? (
           <ProfileEmptyState
             icon={
-              <Ionicons name="star-outline" size={28} color={colors.accent} />
+              <Ionicons
+                name="heart-outline"
+                size={28}
+                color={colors.favorite}
+              />
             }
           >
             {viewerId === profileId
-              ? "Star a location to save it here. Your favorites are visible to other members."
+              ? "Like a location to save it here. Your favorites are visible to other members."
               : "No favorite places yet."}
           </ProfileEmptyState>
         ) : null

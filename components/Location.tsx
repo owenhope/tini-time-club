@@ -124,6 +124,10 @@ const Location = () => {
   ]);
   const reviewLocationId = displayLocation?.id;
   const favorite = useLocationFavorite(selectedLocation?.id);
+  // A liked place trades the purple header for soft pink, which takes ink.
+  const liked = favorite.available && favorite.saved;
+  const headerGround = liked ? "favorite" : "brand";
+  const onHeaderColor = liked ? colors.onHeaderFavorite : colors.onHeaderBrand;
   const viewerId = profile?.id;
 
   const strippedAddress = displayLocation?.address
@@ -164,9 +168,11 @@ const Location = () => {
         ? [
             {
               icon: favorite.saved
-                ? ("star" as const)
-                : ("star-outline" as const),
-              iconColor: favorite.saved ? colors.awardGold : undefined,
+                ? ("heart" as const)
+                : ("heart-outline" as const),
+              iconColor: favorite.saved
+                ? colors.headerFavoriteHeart
+                : undefined,
               accessibilityLabel: favorite.needsRetry
                 ? "Retry loading favorite"
                 : favorite.saved
@@ -238,7 +244,7 @@ const Location = () => {
     router,
     shareLocation,
     favorite,
-    colors.awardGold,
+    colors.headerFavoriteHeart,
   ]);
 
   const fetchSelectedLocation = useCallback(
@@ -517,18 +523,18 @@ const Location = () => {
         }
         titleAccessory={
           displayLocation?.is_location_verified ? (
-            <LocationVerifiedBadge compact color={colors.onHeaderBrand} />
+            <LocationVerifiedBadge compact color={onHeaderColor} />
           ) : null
         }
         onBack={goBack}
-        ground="brand"
+        ground={headerGround}
         progress={progress}
         collapsed={isCollapsed}
         overlay
         // This screen has two headers, so one of them has to speak for the
         // status bar: light glyphs over the purple block and its collapsed
-        // purple bar.
-        statusBar="light"
+        // purple bar, dark ones over a liked place's pink.
+        statusBar={liked ? "dark" : "light"}
       />
 
       {/* Everything above the grid scrolls with it, the way the profile's
@@ -554,12 +560,14 @@ const Location = () => {
         }
         header={
           <View>
-            <View style={styles.venueHeader}>
+            <View
+              style={[styles.venueHeader, liked && styles.venueHeaderLiked]}
+            >
               {/* Like profile, the venue identity and its stats live together
                   on the purple header ground. */}
               <AppHeader
                 variant="media"
-                ground="brand"
+                ground={headerGround}
                 title={displayLocation?.name ?? ""}
                 titleLeadingAccessory={
                   displayLocation?.is_golden_glass ? (
@@ -570,10 +578,7 @@ const Location = () => {
                 }
                 titleAccessory={
                   displayLocation?.is_location_verified ? (
-                    <LocationVerifiedBadge
-                      compact
-                      color={colors.onHeaderBrand}
-                    />
+                    <LocationVerifiedBadge compact color={onHeaderColor} />
                   ) : null
                 }
                 mediaTitleSize="compact"
@@ -588,7 +593,11 @@ const Location = () => {
               <View style={styles.venueHeaderContent}>
                 <View style={styles.venueStatsRow}>
                   <View style={styles.metricBlock}>
-                    <Text style={styles.venueEyebrow}>Overall</Text>
+                    <Text
+                      style={[styles.venueEyebrow, { color: onHeaderColor }]}
+                    >
+                      Overall
+                    </Text>
                     <View
                       style={styles.venueRatingRow}
                       accessible
@@ -601,13 +610,20 @@ const Location = () => {
                           : "Not yet rated"
                       }
                     >
-                      <Text style={styles.venueScore}>
+                      <Text
+                        style={[styles.venueScore, { color: onHeaderColor }]}
+                      >
                         {hasRating
                           ? formatRating(displayLocation?.rating)
                           : "--"}
                       </Text>
                       {hasRating ? (
-                        <View style={styles.venuePips}>
+                        <View
+                          style={[
+                            styles.venuePips,
+                            liked && styles.venuePipsLiked,
+                          ]}
+                        >
                           <RatingPips
                             value={displayLocation?.rating}
                             size={15}
@@ -616,12 +632,17 @@ const Location = () => {
                         </View>
                       ) : null}
                     </View>
-                    <Text style={styles.venueReviewCount}>
+                    <Text
+                      style={[
+                        styles.venueReviewCount,
+                        { color: onHeaderColor },
+                      ]}
+                    >
                       {reviewLabel}
                       {selectedLocation ? (
                         <LocationViewCount
                           locationId={selectedLocation.id}
-                          onBrand
+                          color={onHeaderColor}
                         />
                       ) : null}
                     </Text>
@@ -629,13 +650,18 @@ const Location = () => {
 
                   {loadingRegulars ? (
                     <View style={styles.regularsBlock}>
-                      <Text style={styles.venueEyebrow}>Regulars</Text>
+                      <Text
+                        style={[styles.venueEyebrow, { color: onHeaderColor }]}
+                      >
+                        Regulars
+                      </Text>
                       <View style={styles.regularAvatars}>
                         {[0, 1, 2].map((index) => (
                           <View
                             key={index}
                             style={[
                               styles.regularAvatar,
+                              liked && styles.venueHeaderLiked,
                               index > 0 && styles.regularAvatarOverlap,
                             ]}
                           >
@@ -654,7 +680,11 @@ const Location = () => {
                       accessibilityRole="button"
                       accessibilityLabel={`Show regulars at ${displayLocation?.name}`}
                     >
-                      <Text style={styles.venueEyebrow}>Regulars</Text>
+                      <Text
+                        style={[styles.venueEyebrow, { color: onHeaderColor }]}
+                      >
+                        Regulars
+                      </Text>
                       <View
                         style={styles.regularAvatars}
                         accessibilityLabel={`${regularPreview.length} regulars`}
@@ -667,6 +697,7 @@ const Location = () => {
                             }
                             style={[
                               styles.regularAvatar,
+                              liked && styles.venueHeaderLiked,
                               index > 0 && styles.regularAvatarOverlap,
                             ]}
                           >
@@ -727,6 +758,9 @@ const useStyles = makeStyles((t) => ({
   venueHeader: {
     backgroundColor: t.colors.headerBrand,
   },
+  venueHeaderLiked: {
+    backgroundColor: t.colors.headerFavorite,
+  },
   venueHeaderContent: {
     paddingHorizontal: t.spacing.gutter,
     paddingBottom: t.spacing.xl,
@@ -750,6 +784,9 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: 5,
     borderRadius: t.radius.input,
     backgroundColor: "rgba(250,249,246,0.10)",
+  },
+  venuePipsLiked: {
+    backgroundColor: "rgba(20,26,23,0.06)",
   },
   venueEyebrow: {
     ...t.typography.eyebrow,

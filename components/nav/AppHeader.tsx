@@ -95,8 +95,11 @@ export interface AppHeaderProps {
   preserveCase?: boolean;
   /** Variant C only: reduce a dense media title by one point. */
   mediaTitleSize?: "default" | "compact";
-  /** The coloured ground under variant A/C. `brand` uses the app's purple. */
-  ground?: "ink" | "inkDeep" | "brand";
+  /**
+   * The coloured ground under variant A/C. `brand` uses the app's purple;
+   * `favorite` is a liked place's soft pink, which takes dark ink (B and C).
+   */
+  ground?: "ink" | "inkDeep" | "brand" | "favorite";
   /** 0→1 over 120pt of scroll. Drives the crossfade in both directions. */
   progress?: Animated.Value;
   /** True past the midpoint — what makes the faded-in bar tappable. */
@@ -130,7 +133,7 @@ const ACTION_GAP = 9;
 const TAP_SLOP = { top: 2, bottom: 2, left: 2, right: 2 };
 const MEDIA_HEIGHT = 210;
 
-type CircleTone = "onInk" | "outline" | "scrim";
+type CircleTone = "onInk" | "onFavorite" | "outline" | "scrim";
 
 const getActionKey = (action: HeaderAction) =>
   `${action.customIcon ?? action.icon ?? action.label ?? "action"}-${action.accessibilityLabel}`;
@@ -160,6 +163,7 @@ const NavActionControl = ({
     action.iconColor ??
     {
       onInk: colors.onInk,
+      onFavorite: colors.onHeaderFavorite,
       outline: colors.accent,
       scrim: colors.textOnImage,
     }[tone];
@@ -283,6 +287,12 @@ const CompactBar = ({
   const insets = useSafeAreaInsets();
   const onInk = ground === "ink" || ground === "inkDeep";
   const onBrand = ground === "brand";
+  const onFavorite = ground === "favorite";
+  const groundTone: CircleTone = onFavorite
+    ? "onFavorite"
+    : onInk || onBrand
+      ? "onInk"
+      : "outline";
 
   const right = actions ?? (trailing ? [trailing] : []);
   const left =
@@ -290,7 +300,10 @@ const CompactBar = ({
     (onBack
       ? {
           icon: "chevron-back" as const,
-          iconColor: isDark && !onInk && !onBrand ? colors.text : undefined,
+          iconColor:
+            isDark && !onInk && !onBrand && !onFavorite
+              ? colors.text
+              : undefined,
           onPress: onBack,
           accessibilityLabel: "Back",
         }
@@ -317,6 +330,7 @@ const CompactBar = ({
         styles.compact,
         onInk && styles.compactInk,
         onBrand && styles.compactBrand,
+        onFavorite && styles.compactFavorite,
         { paddingTop: insets.top + 8 },
         overlay && styles.compactOverlay,
         transparent && styles.compactTransparent,
@@ -348,6 +362,7 @@ const CompactBar = ({
             styles.compactFill,
             onInk && styles.compactFillInk,
             onBrand && styles.compactFillBrand,
+            onFavorite && styles.compactFillFavorite,
           ]}
           pointerEvents="none"
         />
@@ -357,9 +372,7 @@ const CompactBar = ({
           <View style={[styles.compactEnd, { width: leadingWidth }]}>
             {left ? (
               <NavActionControl
-                tone={
-                  transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
-                }
+                tone={transparent ? "scrim" : groundTone}
                 action={left}
               />
             ) : null}
@@ -373,12 +386,7 @@ const CompactBar = ({
       ) : (
         <>
           <View style={[styles.compactEnd, { width: leadingWidth }]}>
-            {left ? (
-              <NavActionControl
-                tone={onInk || onBrand ? "onInk" : "outline"}
-                action={left}
-              />
-            ) : null}
+            {left ? <NavActionControl tone={groundTone} action={left} /> : null}
           </View>
           <View style={styles.compactTitleRow}>
             {titleLeadingAccessory}
@@ -387,6 +395,7 @@ const CompactBar = ({
                 styles.compactTitle,
                 onInk && styles.compactTitleOnInk,
                 onBrand && styles.compactTitleOnBrand,
+                onFavorite && styles.compactTitleOnFavorite,
                 preserveCase && styles.titlePlain,
                 titleColor ? { color: titleColor } : null,
               ]}
@@ -408,9 +417,7 @@ const CompactBar = ({
         {right.map((action) => (
           <NavActionControl
             key={getActionKey(action)}
-            tone={
-              transparent ? "scrim" : onInk || onBrand ? "onInk" : "outline"
-            }
+            tone={transparent ? "scrim" : groundTone}
             action={action}
             size={19}
           />
@@ -579,13 +586,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     : null;
 
   if (variant === "media") {
-    const controlTone: CircleTone = imageUri ? "scrim" : "onInk";
+    const onFavorite = ground === "favorite";
+    const controlTone: CircleTone = imageUri
+      ? "scrim"
+      : onFavorite
+        ? "onFavorite"
+        : "onInk";
 
     return (
       <View
         style={[
           styles.media,
           ground === "brand" && styles.mediaBrand,
+          ground === "favorite" && styles.mediaFavorite,
           imageUri ? styles.mediaWithPhoto : null,
         ]}
       >
@@ -663,6 +676,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               style={[
                 styles.mediaTitle,
                 mediaTitleSize === "compact" && styles.mediaTitleCompact,
+                onFavorite && !imageUri && styles.mediaTitleOnFavorite,
                 preserveCase && styles.titlePlain,
                 titleColor ? { color: titleColor } : null,
               ]}
@@ -675,7 +689,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             {titleAccessory}
           </View>
           {meta ? (
-            <Text style={styles.mediaMeta} numberOfLines={1}>
+            <Text
+              style={[
+                styles.mediaMeta,
+                onFavorite && !imageUri && styles.mediaTitleOnFavorite,
+              ]}
+              numberOfLines={1}
+            >
               {meta}
             </Text>
           ) : null}
@@ -760,6 +780,9 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1.5,
     borderColor: t.colors.border,
   },
+  circle_onFavorite: {
+    backgroundColor: "rgba(20,26,23,0.08)",
+  },
   circle_scrim: {
     backgroundColor: t.colors.overlay,
   },
@@ -779,6 +802,9 @@ const useStyles = makeStyles((t) => ({
   actionPill_outline: {
     borderWidth: 1.5,
     borderColor: t.colors.border,
+  },
+  actionPill_onFavorite: {
+    backgroundColor: "rgba(20,26,23,0.08)",
   },
   actionPill_scrim: {
     backgroundColor: t.colors.overlay,
@@ -900,6 +926,9 @@ const useStyles = makeStyles((t) => ({
   compactBrand: {
     borderBottomColor: t.colors.ratingTrackOnInk,
   },
+  compactFavorite: {
+    borderBottomColor: "rgba(20,26,23,0.12)",
+  },
   compactOverlay: {
     ...({ position: "absolute" } as const),
     top: 0,
@@ -928,6 +957,9 @@ const useStyles = makeStyles((t) => ({
   },
   compactFillBrand: {
     backgroundColor: t.colors.headerBrand,
+  },
+  compactFillFavorite: {
+    backgroundColor: t.colors.headerFavorite,
   },
   compactEnd: {
     flexDirection: "row" as const,
@@ -969,6 +1001,9 @@ const useStyles = makeStyles((t) => ({
   compactTitleOnBrand: {
     color: t.colors.onHeaderBrand,
   },
+  compactTitleOnFavorite: {
+    color: t.colors.onHeaderFavorite,
+  },
 
   // C · over media
   media: {
@@ -977,6 +1012,9 @@ const useStyles = makeStyles((t) => ({
   },
   mediaBrand: {
     backgroundColor: t.colors.headerBrand,
+  },
+  mediaFavorite: {
+    backgroundColor: t.colors.headerFavorite,
   },
   // The drawn height is the photo's. Without one the block sizes to the name
   // it carries rather than holding open 210pt of empty green — a venue with no
@@ -1013,6 +1051,9 @@ const useStyles = makeStyles((t) => ({
   },
   mediaTitleCompact: {
     ...compactDisplayTypography,
+  },
+  mediaTitleOnFavorite: {
+    color: t.colors.onHeaderFavorite,
   },
   mediaMeta: {
     ...t.typography.mono,

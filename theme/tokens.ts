@@ -56,6 +56,14 @@ const palette = {
   pimento500: "#E8763D",
   pimentoPink500: "#EA6363",
 
+  // Blush — a liked place. The soft pink is a ground for dark ink only (it
+  // carries no light text). The rose steps are the heart: blush-700 on the
+  // pink (3.6:1 on blush-300), blush-600 on light surfaces (5.3:1 on white).
+  blush700: "#A8325A",
+  blush600: "#B83F67",
+  blush300: "#F4AFC5",
+  blush100: "#FBE3EB",
+
   // Neutrals: warm paper greys from the brand sheets.
   white: "#FFFFFF",
   paper050: "#FAF9F6",
@@ -131,6 +139,9 @@ export interface ThemeColors {
   surfaceInkDeep: string; // green-900
   onInk: string; // text on green surfaces
   onHeaderBrand: string; // text on `headerBrand`
+  headerFavorite: string; // soft pink — a liked place's header, dark ink only
+  onHeaderFavorite: string; // text and controls on `headerFavorite`
+  headerFavoriteHeart: string; // the filled heart on `headerFavorite`
   /**
    * Ink for the purple surface. Green on purple is the system's approved
    * *lockup* pairing, but at 2.9:1 it fails as text — so a purple block takes
@@ -208,6 +219,11 @@ export interface ThemeColors {
   imagePlaceholder: string;
   skeleton: string;
   like: string;
+  /** The heart for a liked place on ordinary surfaces. */
+  favorite: string;
+  /** A liked place's map pin fill — the pink twin of `accentTonal`. */
+  favoriteSurface: string;
+  onFavoriteSurface: string; // rating and glyph on `favoriteSurface`
 }
 
 export const lightColors: ThemeColors = {
@@ -253,6 +269,9 @@ export const lightColors: ThemeColors = {
   surfaceBrand: palette.purple500,
   headerBrand: palette.purple700,
   onHeaderBrand: palette.paper050,
+  headerFavorite: palette.blush300,
+  onHeaderFavorite: palette.ink900, // 9.9:1 on blush-300
+  headerFavoriteHeart: palette.blush700,
   onBrand: palette.ink900,
   surfaceInk: palette.green700,
   surfaceInkDeep: palette.green900,
@@ -293,6 +312,9 @@ export const lightColors: ThemeColors = {
   imagePlaceholder: palette.purple100,
   skeleton: palette.paper100,
   like: palette.pimentoPink500,
+  favorite: palette.blush600,
+  favoriteSurface: palette.blush100,
+  onFavoriteSurface: palette.blush700, // 5.3:1 on blush-100
 };
 
 export const darkColors: ThemeColors = {
@@ -341,6 +363,10 @@ export const darkColors: ThemeColors = {
   surfaceBrand: palette.purple700,
   headerBrand: palette.purple700,
   onHeaderBrand: palette.paper050,
+  // The same pastel block in both schemes, like the purple header it swaps for.
+  headerFavorite: palette.blush300,
+  onHeaderFavorite: palette.ink900,
+  headerFavoriteHeart: palette.blush700,
   onBrand: palette.paper050, // 5.82:1 on purple-700
   surfaceInk: palette.green800,
   surfaceInkDeep: palette.green700,
@@ -383,6 +409,9 @@ export const darkColors: ThemeColors = {
   imagePlaceholder: "#2A3B33",
   skeleton: "#1E3229",
   like: palette.red400,
+  favorite: palette.blush300, // the soft pink itself reads on dark grounds
+  favoriteSurface: "#3A2230", // a plum step, like the dark accentTonal
+  onFavoriteSurface: palette.blush300, // 8.1:1 on the plum fill
 };
 
 /**
