@@ -1,10 +1,11 @@
 BEGIN;
-SELECT plan(16);
+SELECT plan(17);
 
 SELECT ok(NOT has_table_privilege('anon','public.admin_usage_events','INSERT'), 'Visitors cannot forge admin events');
 SELECT ok(NOT has_table_privilege('authenticated','public.admin_usage_events','SELECT'), 'Members cannot read admin sessions');
 SELECT ok(NOT has_function_privilege('authenticated','public.get_feature_usage_ranking(date,date,text,text)','EXECUTE'), 'Ranking is private');
 SELECT ok(has_function_privilege('service_role','public.get_feature_usage_ranking(date,date,text,text)','EXECUTE'), 'Admin server can rank features');
+SELECT is((SELECT count(*)::integer FROM public.feature_usage_catalog WHERE surface='app' AND event_name IN ('screen_location_claim','screen_location_verification_info')), 0, 'Venue claim screens are not ranked as app features');
 
 INSERT INTO auth.users(id) VALUES ('ca100000-0000-4000-8000-000000000001'), ('ca100000-0000-4000-8000-000000000002');
 INSERT INTO public.app_analytics_events(id,installation_id,session_id,user_id,event_name,platform,app_environment,occurred_at) VALUES
