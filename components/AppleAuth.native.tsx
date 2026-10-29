@@ -6,7 +6,7 @@ import { supabase } from "@/utils/supabase";
 import AnalyticService from "@/services/analyticsService";
 import { AuthProviderButton } from "@/components/AuthProviderButton";
 import { useTheme } from "@/theme";
-import { reportError } from "@/utils/log";
+import { reportError, warn } from "@/utils/log";
 
 export function AppleAuth() {
   const { isDark } = useTheme();
@@ -82,6 +82,18 @@ export function AppleAuth() {
             // Dismissing Apple's sheet is a deliberate user action, not an
             // app failure — keep it out of telemetry.
             if (e?.code === "ERR_REQUEST_CANCELED") return;
+            // Apple fails instantly with its generic "unknown" error when the
+            // device has no Apple Account signed in (App Review devices hit
+            // this). It is the device's setup, not the app's: explain it
+            // instead of showing Apple's raw message.
+            if (e?.code === "ERR_REQUEST_UNKNOWN") {
+              warn("[AppleAuth] Apple Sign-In unavailable on device:", e);
+              Alert.alert(
+                "Apple Sign-In Unavailable",
+                "Make sure you're signed in to your Apple Account in Settings, or continue with email."
+              );
+              return;
+            }
             reportError("[AppleAuth] ❌ Apple Sign-In error:", e);
             Alert.alert(
               "Apple Sign-In Unavailable",
