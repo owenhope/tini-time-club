@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { supabase } from "@/utils/supabase";
 
 const APP_STORE_LOOKUP_URL = "https://itunes.apple.com/lookup";
 const CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
@@ -120,6 +121,56 @@ export async function checkForAppStoreUpdate({
     return null;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+export type RequiredUpdate = {
+  installedVersion: string;
+  minSupportedVersion: string;
+  storeUrl: string;
+};
+
+type ReleasePolicyRpc = (
+  platform: string
+) => PromiseLike<{ data: unknown; error: unknown }>;
+
+const fetchReleasePolicy: ReleasePolicyRpc = (platform) =>
+  supabase.rpc("get_app_release_policy_v1", { p_platform: platform });
+
+/**
+ * The server's minimum supported version for this platform. Returns the
+ * update this build must install before it can be used, or null when it is
+ * supported. Any failure (offline, bad response, unparsable version) fails
+ * open: a minimum version must never lock out a member by accident.
+ */
+export async function checkMinimumSupportedVersion({
+  platform = Platform.OS,
+  installedVersion = Constants.expoConfig?.version,
+  rpc = fetchReleasePolicy,
+}: {
+  platform?: string;
+  installedVersion?: string;
+  rpc?: ReleasePolicyRpc;
+} = {}): Promise<RequiredUpdate | null> {
+  if ((platform !== "ios" && platform !== "android") || !installedVersion) {
+    return null;
+  }
+  try {
+    const { data, error } = await rpc(platform);
+    if (error || !data || typeof data !== "object") return null;
+    const { minSupportedVersion, storeUrl } = data as Record<string, unknown>;
+    if (
+      typeof minSupportedVersion !== "string" ||
+      typeof storeUrl !== "string" ||
+      !storeUrl.startsWith("https://")
+    ) {
+      return null;
+    }
+    return compareAppVersions(installedVersion, minSupportedVersion) < 0
+      ? { installedVersion, minSupportedVersion, storeUrl }
+      : null;
+  } catch {
+    return null;
   }
 }
 

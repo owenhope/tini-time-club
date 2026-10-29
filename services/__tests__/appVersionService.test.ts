@@ -1,8 +1,11 @@
 import {
   checkForAppStoreUpdate,
+  checkMinimumSupportedVersion,
   compareAppVersions,
   resetAppVersionCheckForTests,
 } from "@/services/appVersionService";
+
+jest.mock("@/utils/supabase", () => ({ supabase: { rpc: jest.fn() } }));
 
 describe("appVersionService", () => {
   const runtime = {
@@ -147,5 +150,75 @@ describe("appVersionService", () => {
       await checkForAppStoreUpdate({ ...runtime, now: 1, fetchImpl })
     ).toEqual(update);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  describe("minimum supported version", () => {
+    const policy = (data: unknown, error: unknown = null) =>
+      jest.fn(async () => ({ data, error }));
+    const storeUrl = "https://apps.apple.com/app/id6741620393";
+
+    it("requires an update below the server's minimum", async () => {
+      const rpc = policy({ minSupportedVersion: "4.9.2", storeUrl });
+      await expect(
+        checkMinimumSupportedVersion({
+          platform: "ios",
+          installedVersion: "4.9.1",
+          rpc,
+        })
+      ).resolves.toEqual({
+        installedVersion: "4.9.1",
+        minSupportedVersion: "4.9.2",
+        storeUrl,
+      });
+      expect(rpc).toHaveBeenCalledWith("ios");
+    });
+
+    it("lets a build at or above the minimum through", async () => {
+      for (const installedVersion of ["4.9.2", "4.10.0"]) {
+        await expect(
+          checkMinimumSupportedVersion({
+            platform: "android",
+            installedVersion,
+            rpc: policy({ minSupportedVersion: "4.9.2", storeUrl }),
+          })
+        ).resolves.toBeNull();
+      }
+    });
+
+    it.each([
+      ["a server error", policy(null, new Error("down"))],
+      ["no policy row", policy(null)],
+      ["a malformed policy", policy({ minSupportedVersion: 5, storeUrl })],
+      [
+        "a non-https store link",
+        policy({ minSupportedVersion: "9.0.0", storeUrl: "http://x" }),
+      ],
+      [
+        "a thrown request",
+        jest.fn(async () => {
+          throw new Error("offline");
+        }),
+      ],
+    ])("fails open on %s", async (_label, rpc) => {
+      await expect(
+        checkMinimumSupportedVersion({
+          platform: "ios",
+          installedVersion: "4.0.0",
+          rpc,
+        })
+      ).resolves.toBeNull();
+    });
+
+    it("never gates platforms without a store", async () => {
+      const rpc = policy({ minSupportedVersion: "9.0.0", storeUrl });
+      await expect(
+        checkMinimumSupportedVersion({
+          platform: "web",
+          installedVersion: "1.0.0",
+          rpc,
+        })
+      ).resolves.toBeNull();
+      expect(rpc).not.toHaveBeenCalled();
+    });
   });
 });

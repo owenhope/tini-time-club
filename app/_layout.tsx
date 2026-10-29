@@ -55,6 +55,7 @@ import {
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { trackAppUsage } from "@/services/appUsageService";
 import { useAppUpdatePrompt } from "@/hooks/useAppUpdatePrompt";
+import { useMinimumVersionGate } from "@/hooks/useMinimumVersionGate";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/types";
 import {
@@ -283,6 +284,7 @@ export function RootLayoutNav() {
   ]);
 
   useAppUpdatePrompt(isReady && fontsLoaded && Boolean(initialAuth));
+  const requiredUpdate = useMinimumVersionGate(isReady && fontsLoaded);
 
   // A heartbeat on startup and every five foreground minutes powers the
   // visitor/member audience snapshot in the operator dashboard. The server
@@ -639,6 +641,40 @@ export function RootLayoutNav() {
   // Also wait on the brand fonts so first paint isn't in the system face.
   if (!isReady || !fontsLoaded) {
     return null;
+  }
+
+  // Below the server's minimum version: nothing else is usable until the
+  // member updates, so this replaces the whole app rather than prompting.
+  if (requiredUpdate) {
+    return (
+      <View
+        style={[
+          errorBoundaryStyles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
+          Update required
+        </Text>
+        <Text style={[errorBoundaryStyles.body, { color: colors.textMuted }]}>
+          This version of Tini Time Club ({requiredUpdate.installedVersion}) is
+          no longer supported. Update to {requiredUpdate.minSupportedVersion} or
+          later to keep using the club.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open the store to update Tini Time Club"
+          onPress={() => void Linking.openURL(requiredUpdate.storeUrl)}
+          style={({ pressed }) => [
+            errorBoundaryStyles.button,
+            pressed && errorBoundaryStyles.buttonPressed,
+          ]}
+        >
+          <Text style={errorBoundaryStyles.buttonText}>Update</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   if (initialAuth?.session && !profile && profileError) {
