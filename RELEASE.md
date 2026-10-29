@@ -96,7 +96,16 @@ npx eas submit --profile production --platform ios --latest
 
 # Or build and submit the production TestFlight build in one command
 npm run release:testflight
+
+# Production Android → Google Play production track (auto-submit)
+npm run release:android
 ```
+
+Android submission uses a Google Play service account whose JSON key is
+stored in EAS credentials (Android → production → Google Service Account), not
+in the repo. The `production` submit profile publishes to the production track
+as a completed release, so it goes live once Google's review passes; change
+`releaseStatus` to `draft` in `eas.json` to stage it in Play Console instead.
 
 `preview-adhoc` exists for the occasional ad-hoc install on a registered
 device without going through TestFlight review.

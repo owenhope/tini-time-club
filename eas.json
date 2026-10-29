@@ -71,6 +71,10 @@
         "appleId": "owen@hopemediahouse.com",
         "ascAppId": "6741620393",
         "appleTeamId": "687P6W5CZU"
+      },
+      "android": {
+        "track": "production",
+        "releaseStatus": "completed"
       }
     }
   }
