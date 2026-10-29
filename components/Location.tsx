@@ -145,16 +145,6 @@ const Location = () => {
   const hasRating = displayLocation?.rating != null && reviewCount > 0;
   const regularPreview = regulars.slice(0, 3);
   const shareLocation = useLocationShareMenu(displayLocation);
-  const openVerificationInfo = useCallback(() => {
-    if (!displayLocation) return;
-    router.push(
-      routes.locationVerificationInfo({
-        locationId: displayLocation.id,
-        name: displayLocation.name,
-        address: displayLocation.address,
-      })
-    );
-  }, [displayLocation, router]);
 
   /**
    * The two controls the venue carries, in the order the drawing puts them.
@@ -191,15 +181,6 @@ const Location = () => {
         accessibilityLabel: `Share ${displayLocation.name}`,
         onPress: shareLocation,
       },
-      ...(!displayLocation.is_location_verified
-        ? [
-            {
-              customIcon: "verified-business" as const,
-              accessibilityLabel: "Learn about business verification",
-              onPress: openVerificationInfo,
-            },
-          ]
-        : []),
       {
         icon: "information-circle-outline",
         accessibilityLabel: "Location information",
@@ -241,7 +222,6 @@ const Location = () => {
     return actions;
   }, [
     displayLocation,
-    openVerificationInfo,
     router,
     shareLocation,
     favorite,

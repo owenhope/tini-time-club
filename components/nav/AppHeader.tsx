@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setStatusBarStyle } from "expo-status-bar";
@@ -43,7 +43,7 @@ export type AppHeaderVariant = "large" | "compact" | "media" | "modal";
 
 export interface HeaderAction {
   icon?: keyof typeof Ionicons.glyphMap;
-  customIcon?: "martini-shaker" | "verified-business" | "passport";
+  customIcon?: "martini-shaker" | "passport";
   label?: string;
   onPress: () => void;
   accessibilityLabel: string;
@@ -173,8 +173,6 @@ const NavActionControl = ({
       <MartiniShakerIcon size={iconSize} color={glyph} />
     ) : action.customIcon === "passport" ? (
       <PassportIcon size={iconSize} color={glyph} />
-    ) : action.customIcon === "verified-business" ? (
-      <MaterialIcons name="verified" size={iconSize} color={glyph} />
     ) : action.icon ? (
       <Ionicons name={action.icon} size={iconSize} color={glyph} />
     ) : null;
