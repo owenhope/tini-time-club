@@ -20,12 +20,17 @@ import { formatCityRegion } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 const parseLocationSort = (value?: string): LocationSort =>
-  value === "area" || value === "rating" || value === "reviews"
+  value === "area" ||
+  value === "rating" ||
+  value === "reviews" ||
+  value === "favorites"
     ? value
     : "place";
 
 const defaultDirectionFor = (sort: LocationSort): SortDirection =>
-  sort === "rating" || sort === "reviews" ? "desc" : "asc";
+  sort === "rating" || sort === "reviews" || sort === "favorites"
+    ? "desc"
+    : "asc";
 
 const parseDirection = (
   value: string | undefined,
@@ -228,6 +233,15 @@ export default async function PlacesPage({
               baseQuery={headerQuery}
               defaultDirection="desc"
             />,
+            <SortHeader
+              key="favorites"
+              label="Favorites"
+              field="favorites"
+              sort={sort}
+              direction={direction}
+              baseQuery={headerQuery}
+              defaultDirection="desc"
+            />,
             "Actions",
           ]}
           empty={
@@ -275,6 +289,9 @@ export default async function PlacesPage({
               </td>
               <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
                 {location.total_ratings}
+              </td>
+              <td className="px-4 py-3 font-mono tabular-nums text-stone-700">
+                {location.favorites_count ?? 0}
               </td>
               <td className="px-4 py-3">
                 <ActionLink href={`/admin/places/${location.id}`}>

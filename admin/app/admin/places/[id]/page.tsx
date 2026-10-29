@@ -97,6 +97,11 @@ export default async function PlaceDetailPage({
             tone: "chartreuse",
           },
           {
+            label: "Favorites",
+            value: location.favorites_count ?? 0,
+            tone: "blue",
+          },
+          {
             label: "Added",
             value: formatAdminDate(location.inserted_at),
             tone: "muted",

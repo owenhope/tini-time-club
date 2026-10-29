@@ -7,6 +7,8 @@ export interface AdminLocation {
   address: string | null;
   rating: number | null;
   total_ratings: number;
+  /** Members who have liked the place. */
+  favorites_count?: number;
   is_golden_glass?: boolean;
   is_location_verified?: boolean;
   neighborhood?: string | null;
@@ -15,7 +17,8 @@ export interface AdminLocation {
   golden_glass_ineligibility_reason?: string | null;
 }
 
-export type LocationSort = "place" | "area" | "rating" | "reviews";
+export type LocationSort =
+  "place" | "area" | "rating" | "reviews" | "favorites";
 
 export interface MapPlace {
   id: number;

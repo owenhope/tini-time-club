@@ -188,38 +188,47 @@ export const fetchAdminLocation = async (
 ): Promise<AdminLocationDetail | null> => {
   if (!/^\d+$/.test(id)) return null;
 
-  const [locationResult, ratingResult, reviewsResult, claimsResult] =
-    await Promise.all([
-      db()
-        .from("locations")
-        .select(
-          "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      db()
-        .from("location_ratings")
-        .select("rating,total_ratings,is_golden_glass,is_location_verified")
-        .eq("id", id)
-        .maybeSingle(),
-      db()
-        .from("reviews")
-        .select(
-          `id,comment,taste,presentation,inserted_at,state,
+  const [
+    locationResult,
+    ratingResult,
+    reviewsResult,
+    claimsResult,
+    favoritesResult,
+  ] = await Promise.all([
+    db()
+      .from("locations")
+      .select(
+        "id,name,address,place_id,neighborhood,region_id,golden_glass_eligible,golden_glass_ineligibility_reason,inserted_at,created_by"
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("location_ratings")
+      .select("rating,total_ratings,is_golden_glass,is_location_verified")
+      .eq("id", id)
+      .maybeSingle(),
+    db()
+      .from("reviews")
+      .select(
+        `id,comment,taste,presentation,inserted_at,state,
          profile:profiles!reviews_user_id_fkey1(id,username,name,avatar_url,is_verified,deleted,deleted_at,review_count,passport_points,bio)`,
-          { count: "exact" }
-        )
-        .eq("location", id)
-        .order("inserted_at", { ascending: false })
-        .limit(50),
-      db()
-        .from("location_claims")
-        .select(
-          "id,location_id,requester_profile_id,contact_name,account_email,business_email,business_role,phone,explanation,status,submitted_at,decided_at,rejection_reason,admin_notes,superseded_by_claim_id,requester_redacted_at"
-        )
-        .eq("location_id", id)
-        .order("submitted_at", { ascending: false }),
-    ]);
+        { count: "exact" }
+      )
+      .eq("location", id)
+      .order("inserted_at", { ascending: false })
+      .limit(50),
+    db()
+      .from("location_claims")
+      .select(
+        "id,location_id,requester_profile_id,contact_name,account_email,business_email,business_role,phone,explanation,status,submitted_at,decided_at,rejection_reason,admin_notes,superseded_by_claim_id,requester_redacted_at"
+      )
+      .eq("location_id", id)
+      .order("submitted_at", { ascending: false }),
+    db()
+      .from("location_favorites")
+      .select("location_id", { count: "exact", head: true })
+      .eq("location_id", id),
+  ]);
   if (locationResult.error)
     throw toAdminDataError(locationResult.error, "load location detail");
   if (ratingResult.error)
@@ -228,6 +237,8 @@ export const fetchAdminLocation = async (
     throw toAdminDataError(reviewsResult.error, "load location reviews");
   if (claimsResult.error)
     throw toAdminDataError(claimsResult.error, "load location claims");
+  if (favoritesResult.error)
+    throw toAdminDataError(favoritesResult.error, "load location favorites");
   if (!locationResult.data) return null;
 
   const location = locationResult.data;
@@ -245,6 +256,7 @@ export const fetchAdminLocation = async (
       location.golden_glass_ineligibility_reason ?? null,
     rating: ratingResult.data?.rating ?? null,
     total_ratings: ratingResult.data?.total_ratings ?? 0,
+    favorites_count: favoritesResult.count ?? 0,
     is_golden_glass: Boolean(ratingResult.data?.is_golden_glass),
     is_location_verified: Boolean(ratingResult.data?.is_location_verified),
     all_reviews: reviewsResult.count ?? 0,
