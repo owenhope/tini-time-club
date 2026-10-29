@@ -53,6 +53,7 @@ import { useMembership } from "@/context/membership-context";
 import { useFavoriteLocationIds } from "@/hooks/useFavoriteLocationIds";
 import { publicContentService } from "@/services/public-content-service";
 import { getMarkerFocusRegion } from "@/utils/mapMarkerFocus";
+import { toQueryBounds, type MapBounds } from "@/utils/mapQueryBounds";
 import { canOpenMapPinDetails } from "@/utils/mapPinAccess";
 import type { ExploreRegion } from "@/services/regionService";
 import { mergeMapLocations, normalizeMapLocations } from "@/utils/mapLocations";
@@ -142,13 +143,6 @@ const fetchRoutedLocation = async (
     return null;
   }
 };
-
-interface MapBounds {
-  minLat: number;
-  maxLat: number;
-  minLong: number;
-  maxLong: number;
-}
 
 const getBounds = (region: Region, padding = 0): MapBounds => {
   const latitudeRadius = region.latitudeDelta * (0.5 + padding);
@@ -783,22 +777,31 @@ function ExploreMap({
     const fetchTimer = setTimeout(async () => {
       // Region selection positions the camera; only the viewport limits pins.
       // Keep both member and visitor requests free of a selected-region filter.
-      const { data, error } = profile
-        ? await supabase.rpc("locations_in_view", {
-            min_lat: queryBounds.minLat,
-            min_long: queryBounds.minLong,
-            max_lat: queryBounds.maxLat,
-            max_long: queryBounds.maxLong,
-          })
-        : await publicContentService
-            .getLocationsInView({
-              minLat: queryBounds.minLat,
-              minLong: queryBounds.minLong,
-              maxLat: queryBounds.maxLat,
-              maxLong: queryBounds.maxLong,
+      const fetchSlice = async (slice: MapBounds) =>
+        profile
+          ? await supabase.rpc("locations_in_view", {
+              min_lat: slice.minLat,
+              min_long: slice.minLong,
+              max_lat: slice.maxLat,
+              max_long: slice.maxLong,
             })
-            .then((data) => ({ data, error: null }))
-            .catch((error) => ({ data: null, error }));
+          : await publicContentService
+              .getLocationsInView(slice)
+              .then((data) => ({ data, error: null }))
+              .catch((error) => ({ data: null, error }));
+      // A zoomed-out view becomes several slices the query can answer; a
+      // place on a shared edge comes back from both, so keep it once.
+      const results = await Promise.all(
+        toQueryBounds(queryBounds).map(fetchSlice)
+      );
+      const error = results.find((result) => result.error)?.error ?? null;
+      const data = [
+        ...new Map(
+          results
+            .flatMap((result) => result.data ?? [])
+            .map((row) => [String(row.id), row])
+        ).values(),
+      ];
 
       if (requestId !== fetchRequestRef.current) return;
 

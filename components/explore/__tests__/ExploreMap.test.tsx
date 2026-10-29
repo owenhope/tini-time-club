@@ -277,6 +277,63 @@ describe("Explore map viewport discovery", () => {
       }
     }
   );
+  it.each([true, false])(
+    "queries a fully zoomed-out map in valid slices and keeps each place once (signed in: %s)",
+    async (signedIn) => {
+      mockSignedIn = signedIn;
+      await act(async () => {
+        renderer = create(
+          <ExploreMap
+            enabled
+            focus={{}}
+            location={{
+              status: "denied",
+              coordinates: null,
+              canOpenSettings: false,
+            }}
+            requestLocation={async () => undefined}
+            exploreRegion={whistler}
+            searchVisible={false}
+          />
+        );
+      });
+      await settle();
+      mockRpc.mockClear();
+      mockPublicViewport.mockClear();
+
+      act(() =>
+        map().props.onRegionChangeComplete({
+          latitude: 20,
+          longitude: -100,
+          latitudeDelta: 140,
+          longitudeDelta: 360,
+        })
+      );
+      await settle();
+
+      // One geography envelope 180° or wider errors or flips to the far side
+      // of the world, so the view must arrive as narrower slices.
+      const requests = signedIn
+        ? mockRpc.mock.calls.map(([, args]) => ({
+            minLat: args.min_lat,
+            maxLat: args.max_lat,
+            minLong: args.min_long,
+            maxLong: args.max_long,
+          }))
+        : mockPublicViewport.mock.calls.map(([args]) => args);
+      expect(requests.length).toBeGreaterThan(1);
+      for (const bounds of requests) {
+        expect(bounds.maxLong - bounds.minLong).toBeLessThan(180);
+        expect(bounds.minLong).toBeGreaterThanOrEqual(-180);
+        expect(bounds.maxLong).toBeLessThanOrEqual(180);
+        expect(bounds.minLat).toBeGreaterThan(-90);
+        expect(bounds.maxLat).toBeLessThan(90);
+      }
+      // Every slice matched both venues here; each is kept once.
+      expect(mockRegulars).toHaveBeenLastCalledWith(venues);
+    }
+  );
+
   it("leaves room below the search bar for its results", async () => {
     await act(async () => {
       renderer = create(
