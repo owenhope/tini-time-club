@@ -311,13 +311,6 @@ describe("authCache.loadFromStorage", () => {
     expect(await AsyncStorage.getItem(PROFILE_CACHE_KEY)).toBeNull();
     expect(authCache.getCacheStats().hasProfile).toBe(false);
   });
-
-  it("always scrubs the legacy plaintext caches", async () => {
-    await authCache.loadFromStorage();
-
-    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("auth_cache");
-    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("profile_cache");
-  });
 });
 
 it("requests First Steps reconciliation only after a successful profile save", async () => {

@@ -164,51 +164,24 @@ describe("LargeSecureStore", () => {
     expect(await new LargeSecureStore().getItem(STORAGE_KEY)).toBe(SESSION);
   });
 
-  it("migrates a legacy v1 record and keeps the user signed in", async () => {
+  it("discards a pre-envelope v1 record and its per-key secret", async () => {
     await seedLegacyV1(SESSION);
-    const store = new LargeSecureStore();
 
-    expect(await store.getItem(STORAGE_KEY)).toBe(SESSION);
-    // Re-stored as v2 and the per-key legacy mockKeychain entry cleaned up.
-    expect(
-      JSON.parse((await AsyncStorage.getItem(STORAGE_KEY))!)
-    ).toMatchObject({ v: 2 });
+    expect(await new LargeSecureStore().getItem(STORAGE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(mockKeychain.has(STORAGE_KEY)).toBe(false);
-    expect(await new LargeSecureStore().getItem(STORAGE_KEY)).toBe(SESSION);
   });
 
-  it("reads a legacy v1 record while locked without deleting it", async () => {
-    await seedLegacyV1(SESSION);
-
-    mockKeychainState.locked = true;
-    await expect(new LargeSecureStore().getItem(STORAGE_KEY)).rejects.toThrow(
-      "Keychain unavailable"
-    );
-
-    mockKeychainState.locked = false;
-    expect(await new LargeSecureStore().getItem(STORAGE_KEY)).toBe(SESSION);
-  });
-
-  it("migrates a legacy plaintext session", async () => {
-    await AsyncStorage.setItem(STORAGE_KEY, SESSION);
-    const store = new LargeSecureStore();
-
-    expect(await store.getItem(STORAGE_KEY)).toBe(SESSION);
-    expect(
-      JSON.parse((await AsyncStorage.getItem(STORAGE_KEY))!)
-    ).toMatchObject({ v: 2 });
-  });
-
-  it("migrates a legacy plaintext JSON scalar", async () => {
+  it("discards a plaintext record from the original adapter", async () => {
     const codeVerifierKey = `${STORAGE_KEY}-code-verifier`;
-    const codeVerifier = JSON.stringify("legacy-verifier");
-    await AsyncStorage.setItem(codeVerifierKey, codeVerifier);
-
+    await AsyncStorage.setItem(STORAGE_KEY, SESSION);
+    await AsyncStorage.setItem(codeVerifierKey, JSON.stringify("verifier"));
     const store = new LargeSecureStore();
-    expect(await store.getItem(codeVerifierKey)).toBe(codeVerifier);
-    expect(
-      JSON.parse((await AsyncStorage.getItem(codeVerifierKey))!)
-    ).toMatchObject({ v: 2 });
+
+    expect(await store.getItem(STORAGE_KEY)).toBeNull();
+    expect(await store.getItem(codeVerifierKey)).toBeNull();
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(await AsyncStorage.getItem(codeVerifierKey)).toBeNull();
   });
 
   it("rejects a malformed versioned envelope instead of treating it as plaintext", async () => {

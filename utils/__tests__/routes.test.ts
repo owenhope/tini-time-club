@@ -8,20 +8,6 @@ describe("Explore routes", () => {
     });
   });
 
-  it("maps the old places helper onto Explore's map view", () => {
-    expect(
-      routes.places({ lat: "49.3", lon: "-123.1", locationId: 42 })
-    ).toEqual({
-      pathname: "/discover",
-      params: {
-        view: "map",
-        lat: "49.3",
-        lon: "-123.1",
-        locationId: 42,
-      },
-    });
-  });
-
   it("keeps place profiles on their existing public path", () => {
     expect(routes.place(42)).toBe("/places/42");
   });

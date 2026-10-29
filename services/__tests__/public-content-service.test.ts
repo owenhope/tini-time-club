@@ -22,7 +22,7 @@ describe("publicContentService", () => {
     );
     mockInvoke.mockResolvedValue({ data: null, error: cause });
     const error = await publicContentService
-      .getFeed()
+      .getFeedPage()
       .catch((value: unknown) => value);
     expect(isNetworkError(error)).toBe(true);
     expect(error).toMatchObject({ name: "PublicContentError", cause });
@@ -32,7 +32,7 @@ describe("publicContentService", () => {
     const cause = new FunctionsHttpError({ status: 500 });
     mockInvoke.mockResolvedValue({ data: null, error: cause });
     const error = await publicContentService
-      .getFeed()
+      .getFeedPage()
       .catch((value: unknown) => value);
     expect(isNetworkError(error)).toBe(false);
     expect(error).toMatchObject({ name: "PublicContentError", cause });

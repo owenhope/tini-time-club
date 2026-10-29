@@ -11,12 +11,8 @@ interface CachedProfile {
   version: number;
 }
 
-const LEGACY_PROFILE_CACHE_KEY = "profile_cache";
 const PROFILE_CACHE_KEY = `profile_cache_${supabaseProjectRef}`;
 const PROFILE_CACHE_VERSION = 4;
-// Legacy key that used to hold the full session (access + refresh tokens) in
-// plaintext AsyncStorage. Always removed on startup.
-const LEGACY_AUTH_CACHE_KEY = "auth_cache";
 
 /**
  * Profile cache. Sessions and users are NOT cached here — supabase-js is the
@@ -236,17 +232,10 @@ class AuthCache {
    */
   async onAppStateChange(_nextAppState: string): Promise<void> {}
 
-  /**
-   * Load cached profile from storage on app start, and scrub the legacy
-   * plaintext session cache if present.
-   */
+  /** Load the cached profile from storage on app start. */
   async loadFromStorage(): Promise<void> {
     const generation = this.cacheGeneration;
     try {
-      // Remove the legacy cache that stored tokens in plaintext.
-      await AsyncStorage.removeItem(LEGACY_AUTH_CACHE_KEY);
-      await AsyncStorage.removeItem(LEGACY_PROFILE_CACHE_KEY);
-
       const data = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
       if (
         generation !== this.cacheGeneration ||

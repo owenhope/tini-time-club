@@ -19,10 +19,6 @@ import { warn } from "@/utils/log";
  */
 
 const REMINDER_ID_PREFIX = "tini-friday";
-// Earlier id schemes ("friday-martini-reminder" single-repeat, then
-// "friday-martini-<date>" at 5pm); cancelled on upgrade so nobody gets
-// double or stale-time nudges.
-const LEGACY_ID_PREFIX = "friday-martini";
 const REMINDER_HOUR = 16;
 const WEEKS_AHEAD = 40;
 
@@ -51,13 +47,6 @@ async function ensureFridayMartiniReminder(): Promise<void> {
     if (!permissions.granted) return;
 
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-
-    await Promise.all(
-      scheduled
-        .map((n) => n.identifier)
-        .filter((id) => id.startsWith(LEGACY_ID_PREFIX))
-        .map((id) => Notifications.cancelScheduledNotificationAsync(id))
-    );
 
     // identifier -> the instant it was scheduled for (missing on requests
     // from before the instant was recorded, which then get rescheduled).
@@ -117,11 +106,7 @@ async function cancelFridayMartiniReminder(): Promise<void> {
     await Promise.all(
       scheduled
         .map((n) => n.identifier)
-        .filter(
-          (id) =>
-            id.startsWith(`${REMINDER_ID_PREFIX}-`) ||
-            id.startsWith(LEGACY_ID_PREFIX)
-        )
+        .filter((id) => id.startsWith(`${REMINDER_ID_PREFIX}-`))
         .map((id) => Notifications.cancelScheduledNotificationAsync(id))
     );
   } catch (error) {

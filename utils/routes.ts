@@ -42,13 +42,6 @@ export type PlaceInfoParams = {
   isLocationVerified?: "0" | "1";
 };
 
-/** Params that focus the places map on a location. */
-export type PlacesMapParams = {
-  lat: string;
-  lon: string;
-  locationId: string | number;
-};
-
 /** Params that tell the feed to force-refresh after a new post. */
 export type HomeParams = {
   postedReviewId?: string;
@@ -193,15 +186,6 @@ export const routes = {
   /** Place details/info sheet. */
   placeInfo: (params: PlaceInfoParams) =>
     ({ pathname: "/place-info", params }) as const satisfies Href,
-
-  /** Compatibility alias for callers that still think in terms of the map. */
-  places: (params?: PlacesMapParams) =>
-    (params
-      ? ({ pathname: "/discover", params: { view: "map", ...params } } as const)
-      : ({
-          pathname: "/discover",
-          params: { view: "map" },
-        } as const)) satisfies Href,
 
   /** Another user's profile. */
   user: (username: string) => `/users/${username}` as const satisfies Href,

@@ -195,104 +195,6 @@ class DatabaseService {
   }
 
   /**
-   * Get reviews with optimized joins
-   */
-  async getReviews(
-    options: {
-      userId?: string;
-      locationId?: string;
-      limit?: number;
-      offset?: number;
-      excludeBlocked?: boolean;
-      currentUserId?: string;
-      /** Restrict the page to reviews by members the authenticated viewer follows. */
-      followedOnly?: boolean;
-      /** Bypass the cached page (pull-to-refresh); the fresh result still gets cached. */
-      forceRefresh?: boolean;
-    } = {}
-  ): Promise<Review[]> {
-    const {
-      userId,
-      locationId,
-      limit = 20,
-      offset = 0,
-      excludeBlocked = true,
-      currentUserId,
-      followedOnly = false,
-      forceRefresh = false,
-    } = options;
-
-    // forceRefresh must not change the cache key, or refreshed data would be
-    // stored under a different key than normal reads look up.
-    const cacheKey = `reviews_${JSON.stringify({
-      userId,
-      locationId,
-      limit,
-      offset,
-      excludeBlocked,
-      currentUserId,
-      followedOnly,
-    })}`;
-
-    const reviews = await this.query<any[]>(
-      cacheKey,
-      async () => {
-        if (!currentUserId) {
-          if (followedOnly) return [];
-          return publicContentService.getFeed({
-            userId,
-            locationId,
-            limit,
-            offset,
-          });
-        }
-
-        // One round trip: the feed_reviews function joins locations/spirits/
-        // types/profiles and computes likes_count, comments_count and
-        // has_liked server-side, and does the blocked/deleted filtering in
-        // SQL so pages are never short.
-        const { data, error } = await supabase.rpc("feed_reviews_followed", {
-          p_viewer: currentUserId ?? null,
-          p_limit: limit,
-          p_offset: offset,
-          p_user_id: userId ?? null,
-          p_location_id: locationId ? Number(locationId) : null,
-          p_exclude_blocked: excludeBlocked,
-          p_followed_only: followedOnly,
-        });
-
-        if (error) throw error;
-        return data ?? [];
-      },
-      { cacheDuration: this.USER_DATA_CACHE_DURATION, forceRefresh }
-    );
-
-    // Visitor rows already carry short-lived, transformed signed URLs from
-    // the public-content gateway. Attempting to sign them again would treat a
-    // URL as a storage path and fail under the intentionally locked anon role.
-    if (!currentUserId) return (reviews ?? []).map(decodeReviewMembers);
-
-    // Hydrate image paths into signed URLs on the way out — after the cache,
-    // because signed URLs expire on their own schedule. Every review surface
-    // needs this, so it lives here instead of copy-pasted at each call site.
-    if (!reviews?.length) return reviews ?? [];
-    const reviewsWithLocationRatings = await this.hydrateReviewLocationRatings(
-      reviews.map(decodeReviewMembers)
-    );
-    const reviewsWithCommentLikes = await this.hydrateRecentCommentLikes(
-      reviewsWithLocationRatings,
-      currentUserId
-    );
-    const imageUrls = await imageCache.getReviewImageUrls(
-      reviewsWithCommentLikes.map((review) => review.image_url)
-    );
-    return reviewsWithCommentLikes.map((review) => ({
-      ...review,
-      image_url: imageUrls[review.image_url] || review.image_url,
-    }));
-  }
-
-  /**
    * Feed rows should already include the venue aggregate from feed_reviews.
    * Older cached rows and stale RPC definitions may not, so repair the shape
    * here before the review card decides whether to show the place score.
@@ -629,26 +531,6 @@ class DatabaseService {
       },
       { cacheDuration: this.USER_DATA_CACHE_DURATION }
     );
-  }
-
-  /**
-   * Get comments for a review
-   */
-  async getComments(
-    reviewId: string,
-    currentUserId?: string
-  ): Promise<DecodedComment[]> {
-    if (!currentUserId) {
-      return decodeCommentList(
-        await publicContentService.getComments(reviewId)
-      );
-    }
-    const { data, error } = await supabase.rpc("get_review_comments", {
-      p_review_id: Number(reviewId),
-    });
-
-    if (error) throw error;
-    return decodeCommentList(data);
   }
 
   /** Update the editable fields of an owned review. Passing `null` mentions

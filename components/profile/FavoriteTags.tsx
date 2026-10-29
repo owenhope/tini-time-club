@@ -4,21 +4,10 @@ import { makeStyles } from "@/theme";
 import type { NamedOption } from "@/types/types";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 
-/**
- * favorite_spirits / favorite_types are id arrays, but legacy rows may hold a
- * JSON string — parse defensively either way.
- */
+/** favorite_spirits / favorite_types are id arrays; anything else is empty. */
 export const parseFavoriteIds = (
   value: (number | string)[] | string | null | undefined
-): (number | string)[] => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return [];
-  }
-};
+): (number | string)[] => (Array.isArray(value) ? value : []);
 
 interface FavoriteTagsProps {
   profile: {

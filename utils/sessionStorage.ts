@@ -175,28 +175,6 @@ export class LargeSecureStore {
     }
   }
 
-  /** The shipped original adapter: per-key AES key in SecureStore, hex payload. */
-  private async readLegacyV1(
-    key: string,
-    storedHex: string
-  ): Promise<string | null> {
-    const legacyKeyHex = await this.readSecureValue(key);
-    if (!legacyKeyHex || !isHex(legacyKeyHex) || !isHex(storedHex)) return null;
-
-    try {
-      const cipher = new aesjs.ModeOfOperation.ctr(
-        aesjs.utils.hex.toBytes(legacyKeyHex),
-        new aesjs.Counter(1)
-      );
-      const plaintext = aesjs.utils.utf8.fromBytes(
-        cipher.decrypt(aesjs.utils.hex.toBytes(storedHex))
-      );
-      return parseJson(plaintext).ok ? plaintext : null;
-    } catch {
-      return null;
-    }
-  }
-
   async getItem(key: string): Promise<string | null> {
     try {
       const stored = await AsyncStorage.getItem(key);
@@ -221,20 +199,13 @@ export class LargeSecureStore {
         return null;
       }
 
-      if (parsed.ok) {
-        // Original plaintext adapter. Supabase may persist any JSON value,
-        // including string code verifiers, not only session objects.
-        await this.migrate(key, stored);
-        return stored;
-      }
-
-      const legacy = await this.readLegacyV1(key, stored);
-      if (legacy === null) {
-        reportError("[SessionStore] Legacy v1 session is unreadable.");
-        return null;
-      }
-      await this.migrate(key, legacy);
-      return legacy;
+      // Anything else predates the encrypted envelope: the original plaintext
+      // adapter or the per-key AES format. Every supported build migrated
+      // those on first read, so a survivor is treated as signed out and
+      // deleted rather than left on disk.
+      warn("[SessionStore] Discarding a pre-envelope session record.");
+      await this.removeItem(key).catch(() => {});
+      return null;
     } catch (error) {
       if (error instanceof KeychainUnavailableError) {
         warn(
@@ -247,16 +218,6 @@ export class LargeSecureStore {
       // Do not translate a temporary read failure into "no session". Supabase
       // callers can retry while the valid encrypted payload remains untouched.
       throw error;
-    }
-  }
-
-  private async migrate(key: string, plaintext: string): Promise<void> {
-    try {
-      await this.setItem(key, plaintext);
-      await SecureStore.deleteItemAsync(key).catch(() => {});
-    } catch {
-      // Best effort: continue serving the readable legacy value and retry on
-      // a later access rather than forcing the member to sign in again.
     }
   }
 

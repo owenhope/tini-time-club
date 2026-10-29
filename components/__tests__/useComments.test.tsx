@@ -57,7 +57,7 @@ jest.mock("@/context/membership-context", () => ({
 
 jest.mock("@/services/databaseService", () => ({
   __esModule: true,
-  default: { getComments: jest.fn(), setCommentLiked: jest.fn() },
+  default: { setCommentLiked: jest.fn() },
 }));
 
 jest.mock("@/services/analyticsService", () => ({
@@ -109,7 +109,6 @@ jest.mock("@/components/ActionSheet", () => ({
   default: () => null,
 }));
 
-const getComments = databaseService.getComments as jest.Mock;
 const setCommentLiked = databaseService.setCommentLiked as jest.Mock;
 
 const COMMENT_BODY = "Great martini!";
@@ -213,7 +212,6 @@ const countOccurrences = (
 
 beforeEach(() => {
   jest.clearAllMocks();
-  getComments.mockResolvedValue([comment]);
   setCommentLiked.mockResolvedValue(undefined);
 });
 
@@ -358,7 +356,6 @@ describe("ReviewItem comment previews", () => {
     expect(
       StyleSheet.flatten(likedButton.props.children[1].props.style)
     ).toEqual(expect.objectContaining(typography.label));
-    expect(getComments).not.toHaveBeenCalled();
     act(() => tree.unmount());
   });
 

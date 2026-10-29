@@ -5,13 +5,6 @@ import type { CommentCursor, CommentPage } from "@/services/commentPageService";
 
 type PublicContentRequest =
   | {
-      operation: "feed";
-      limit?: number;
-      offset?: number;
-      userId?: string;
-      locationId?: string | number;
-    }
-  | {
       operation: "feed-page-v1";
       cursor?: ReviewCursor | null;
       limit?: number;
@@ -19,7 +12,6 @@ type PublicContentRequest =
       locationId?: string | number;
     }
   | { operation: "review"; reviewId: string | number }
-  | { operation: "comments"; reviewId: string | number }
   | {
       operation: "comment-page-v1";
       reviewId: string | number;
@@ -77,13 +69,6 @@ const invoke = async <T>(request: PublicContentRequest): Promise<T> => {
 };
 
 export const publicContentService = {
-  getFeed: (
-    request: Omit<
-      Extract<PublicContentRequest, { operation: "feed" }>,
-      "operation"
-    > = {}
-  ) => invoke<Review[]>({ operation: "feed", ...request }),
-
   getFeedPage: (
     request: Omit<
       Extract<PublicContentRequest, { operation: "feed-page-v1" }>,
@@ -93,9 +78,6 @@ export const publicContentService = {
 
   getReview: (reviewId: string | number) =>
     invoke<Review>({ operation: "review", reviewId }),
-
-  getComments: (reviewId: string | number) =>
-    invoke<Comment[]>({ operation: "comments", reviewId }),
 
   getCommentPage: (
     request: Omit<

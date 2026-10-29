@@ -73,11 +73,6 @@ class ImageCache {
       .publicUrl;
   }
 
-  /** @deprecated Use getAvatarUrlSync — this never did any async work. */
-  async getAvatarUrl(avatarPath: string | null): Promise<string | null> {
-    return this.getAvatarUrlSync(avatarPath);
-  }
-
   /**
    * Get signed URL for review images with caching
    * Optimized: Removed slow URL validation check for better performance

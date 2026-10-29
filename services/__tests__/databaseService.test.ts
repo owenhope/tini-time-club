@@ -2,7 +2,6 @@ import databaseService from "../databaseService";
 import { supabase } from "@/utils/supabase";
 import { subscribeToReviewUpdates } from "@/utils/reviewEvents";
 
-const mockGetPublicFeed = jest.fn();
 const mockGetPublicReview = jest.fn();
 
 jest.mock("@/utils/supabase", () => ({
@@ -22,7 +21,6 @@ jest.mock("@/utils/imageCache", () => ({
 
 jest.mock("@/services/public-content-service", () => ({
   publicContentService: {
-    getFeed: (...args: unknown[]) => mockGetPublicFeed(...args),
     getReview: (...args: unknown[]) => mockGetPublicReview(...args),
   },
 }));
@@ -170,58 +168,6 @@ it("refreshes location verification state instead of caching it", async () => {
   });
 
   expect(single).toHaveBeenCalledTimes(2);
-});
-
-it("loads a followed-members page with one feed RPC", async () => {
-  rpc.mockResolvedValue({ data: [], error: null });
-
-  await expect(
-    databaseService.getReviews({
-      currentUserId: "viewer-1",
-      followedOnly: true,
-      limit: 20,
-      offset: 40,
-    })
-  ).resolves.toEqual([]);
-
-  expect(rpc).toHaveBeenCalledTimes(1);
-  expect(rpc).toHaveBeenCalledWith("feed_reviews_followed", {
-    p_viewer: "viewer-1",
-    p_limit: 20,
-    p_offset: 40,
-    p_user_id: null,
-    p_location_id: null,
-    p_exclude_blocked: true,
-    p_followed_only: true,
-  });
-  expect(from).not.toHaveBeenCalled();
-});
-
-it("loads the club feed through the sanitized gateway for a visitor", async () => {
-  const publicReviews = [{ id: "42", comment: "Cold and bright." }];
-  mockGetPublicFeed.mockResolvedValue(publicReviews);
-
-  await expect(
-    databaseService.getReviews({ limit: 12, offset: 24 })
-  ).resolves.toEqual(publicReviews);
-
-  expect(mockGetPublicFeed).toHaveBeenCalledWith({
-    userId: undefined,
-    locationId: undefined,
-    limit: 12,
-    offset: 24,
-  });
-  expect(rpc).not.toHaveBeenCalled();
-  expect(from).not.toHaveBeenCalled();
-});
-
-it("does not expose a personalized people feed to a visitor", async () => {
-  await expect(
-    databaseService.getReviews({ followedOnly: true })
-  ).resolves.toEqual([]);
-
-  expect(mockGetPublicFeed).not.toHaveBeenCalled();
-  expect(rpc).not.toHaveBeenCalled();
 });
 
 it("shows a member's own like on a single review and never serves it from cache", async () => {
@@ -389,7 +335,7 @@ it.each([undefined, null, 0, 500])(
   }
 );
 
-it("normalizes member data on visitor review details and cached feeds", async () => {
+it("normalizes member data on visitor review details", async () => {
   const review = {
     id: "42",
     user_id: "member-1",
@@ -402,19 +348,11 @@ it("normalizes member data on visitor review details and cached feeds", async ()
     },
   };
   mockGetPublicReview.mockResolvedValue(review);
-  mockGetPublicFeed.mockResolvedValue([review]);
   expect((await databaseService.getReview("42")).profile).toMatchObject({
     passport_points: 500,
     review_count: 2,
     avatar_url: null,
   });
-  const first = await databaseService.getReviews({});
-  const cached = await databaseService.getReviews({});
-  expect(first[0].profile).toMatchObject({
-    passport_points: 500,
-    avatar_url: null,
-  });
-  expect(cached).toEqual(first);
 });
 
 it("tells open review lists to refetch after a block", async () => {
