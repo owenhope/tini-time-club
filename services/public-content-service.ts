@@ -54,12 +54,28 @@ class PublicContentError extends Error {
   }
 }
 
+/** The HTTP status of a FunctionsHttpError, whose context is the Response. */
+const httpStatus = (error: unknown): number | undefined => {
+  const status = (error as { context?: { status?: unknown } }).context?.status;
+  return typeof status === "number" ? status : undefined;
+};
+
 const invoke = async <T>(request: PublicContentRequest): Promise<T> => {
   const { data, error } = await supabase.functions.invoke("public-content", {
     body: request,
   });
 
-  if (error) throw new PublicContentError(error.message, { cause: error });
+  if (error) {
+    // functions-js only says "non-2xx"; name the status and operation so a
+    // report tells a 429 from a 500 without the function logs.
+    const status = httpStatus(error);
+    throw new PublicContentError(
+      status
+        ? `${error.message} (HTTP ${status}, ${request.operation})`
+        : error.message,
+      { cause: error }
+    );
+  }
   if (!data || data.error) {
     throw new PublicContentError(
       data?.error ?? "Public content is unavailable"

@@ -38,6 +38,19 @@ describe("publicContentService", () => {
     expect(error).toMatchObject({ name: "PublicContentError", cause });
   });
 
+  it("names the HTTP status and operation of a failed call", async () => {
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError({ status: 429 }),
+    });
+    const error = await publicContentService
+      .getLocationsInView({ minLat: 0, minLong: 0, maxLat: 1, maxLong: 1 })
+      .catch((value: unknown) => value);
+    expect((error as Error).message).toBe(
+      "Edge Function returned a non-2xx status code (HTTP 429, locations-in-view)"
+    );
+  });
+
   it("keeps map viewport reads global instead of attaching the selected region", async () => {
     await publicContentService.getLocationsInView({
       minLat: 49.2,
