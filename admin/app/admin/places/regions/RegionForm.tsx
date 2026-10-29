@@ -1,5 +1,7 @@
 "use client";
 
+import AdminSubmitButton from "@/components/AdminSubmitButton";
+
 import { useState } from "react";
 import { upsertRegion } from "@/lib/actions";
 import type { AdminRegion } from "@/lib/placeTypes";
@@ -158,12 +160,13 @@ export default function RegionForm({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
+        <AdminSubmitButton
+          pendingLabel="Saving…"
           type="submit"
           className="rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800"
         >
           {region ? "Save region" : "Create region"}
-        </button>
+        </AdminSubmitButton>
         <span className="text-xs text-stone-500">
           Changes affect region availability, catchment matching, and Explore.
         </span>

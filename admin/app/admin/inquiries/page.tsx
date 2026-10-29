@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import AdminShell from "@/components/AdminShell";
 import {
   DataTable,
@@ -158,12 +159,13 @@ export default async function InquiriesPage({
                     name="handled"
                     value={inquiry.status === "new" ? "1" : "0"}
                   />
-                  <button
+                  <AdminSubmitButton
+                    pendingLabel="Updating…"
                     type="submit"
                     className="text-sm font-bold text-violet-700 hover:text-violet-800"
                   >
                     {inquiry.status === "new" ? "Mark handled" : "Reopen"}
-                  </button>
+                  </AdminSubmitButton>
                 </form>
               </td>
             </tr>

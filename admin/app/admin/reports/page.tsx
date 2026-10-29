@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import UserBadge from "@/components/UserBadge";
@@ -229,9 +230,9 @@ export default async function ReportsPage({
                           "reviewed"
                         )}
                       >
-                        <button className="text-xs font-bold text-violet-700 hover:text-violet-900">
+                        <AdminSubmitButton className="text-xs font-bold text-violet-700 hover:text-violet-900">
                           Mark Reviewed
-                        </button>
+                        </AdminSubmitButton>
                       </form>
                     ) : null}
                     {report.status !== "dismissed" ? (
@@ -242,9 +243,9 @@ export default async function ReportsPage({
                           "dismissed"
                         )}
                       >
-                        <button className="text-xs font-bold text-stone-500 hover:text-stone-900">
+                        <AdminSubmitButton className="text-xs font-bold text-stone-500 hover:text-stone-900">
                           Dismiss
-                        </button>
+                        </AdminSubmitButton>
                       </form>
                     ) : null}
                     {hasLiveContent ? (
@@ -254,9 +255,9 @@ export default async function ReportsPage({
                           report.id
                         )}
                       >
-                        <button className="text-left text-xs font-bold text-red-600 hover:text-red-800">
+                        <AdminSubmitButton className="text-left text-xs font-bold text-red-600 hover:text-red-800">
                           Delete {isComment ? "Comment" : "Review"} & Resolve
-                        </button>
+                        </AdminSubmitButton>
                       </form>
                     ) : null}
                   </div>

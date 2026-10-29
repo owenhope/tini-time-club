@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
+import AdminSubmitButton from "@/components/AdminSubmitButton";
+import { useTransition, type FormEvent } from "react";
 import { startAdminNavigation } from "@/components/AdminNavigationProgress";
 import { RANGE_PRESETS, type DateRange } from "@/lib/range";
 
@@ -19,6 +20,7 @@ export default function RangePicker({
   extraQuery?: string;
 }) {
   const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   const submitCustomRange = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -30,7 +32,7 @@ export default function RangePicker({
 
     const href = `${path}?${params}`;
     startAdminNavigation(href);
-    router.push(href, { scroll: false });
+    startTransition(() => router.push(href, { scroll: false }));
   };
 
   return (
@@ -68,12 +70,14 @@ export default function RangePicker({
           className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-600"
           required
         />
-        <button
+        <AdminSubmitButton
+          pending={pending}
+          pendingLabel="Applying…"
           type="submit"
           className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100"
         >
           Apply
-        </button>
+        </AdminSubmitButton>
       </form>
     </div>
   );

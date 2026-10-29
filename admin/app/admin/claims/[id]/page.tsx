@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
 import {
@@ -99,9 +100,9 @@ export default async function ClaimDetailPage({
             {claim.status === "pending" ? (
               <div className="flex gap-2 pt-2">
                 <form action={approve}>
-                  <button className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
+                  <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                     Approve
-                  </button>
+                  </AdminSubmitButton>
                 </form>
                 <form action={reject} className="flex gap-2">
                   <input
@@ -115,9 +116,9 @@ export default async function ClaimDetailPage({
                     placeholder="Private note"
                     className="rounded-md border border-stone-300 px-3 text-sm"
                   />
-                  <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
+                  <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Reject
-                  </button>
+                  </AdminSubmitButton>
                 </form>
               </div>
             ) : null}
@@ -138,9 +139,9 @@ export default async function ClaimDetailPage({
                 placeholder="Exact email or username"
                 className="min-w-0 flex-1 rounded-md border border-stone-300 px-3 py-2 text-sm"
               />
-              <button className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
+              <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                 Add
-              </button>
+              </AdminSubmitButton>
             </form>
             {detail.managers.map((manager) => (
               <div
@@ -158,9 +159,9 @@ export default async function ClaimDetailPage({
                 {manager.status === "active" ? (
                   <form action={removeLocationManager.bind(null, manager.id)}>
                     <input type="hidden" name="claim_id" value={claim.id} />
-                    <button className="text-sm font-bold text-red-700">
+                    <AdminSubmitButton className="text-sm font-bold text-red-700">
                       Remove
-                    </button>
+                    </AdminSubmitButton>
                   </form>
                 ) : null}
               </div>
@@ -208,9 +209,9 @@ export default async function ClaimDetailPage({
                     placeholder="Private revocation reason"
                     className="rounded-md border border-stone-300 px-3 py-2 text-sm"
                   />
-                  <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
+                  <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Revoke
-                  </button>
+                  </AdminSubmitButton>
                 </form>
               ) : null}
               {detail.verifications.length > 0 &&
@@ -230,9 +231,9 @@ export default async function ClaimDetailPage({
                     placeholder="Restoration reason"
                     className="rounded-md border border-stone-300 px-3 py-2 text-sm"
                   />
-                  <button className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
+                  <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                     Restore
-                  </button>
+                  </AdminSubmitButton>
                 </form>
               ) : null}
             </div>

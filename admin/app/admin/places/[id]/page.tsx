@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
 import ClickableRow from "@/components/ClickableRow";
@@ -220,12 +221,12 @@ export default async function PlaceDetailPage({
                   className="mt-1.5 w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
                 />
               </label>
-              <button
+              <AdminSubmitButton
                 type="submit"
                 className="h-9 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800"
               >
                 Save place
-              </button>
+              </AdminSubmitButton>
             </form>
           </Panel>
 
@@ -250,9 +251,9 @@ export default async function PlaceDetailPage({
                     placeholder="Private revocation reason"
                     className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
                   />
-                  <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
+                  <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Revoke verification
-                  </button>
+                  </AdminSubmitButton>
                 </form>
               ) : (
                 <form
@@ -269,9 +270,9 @@ export default async function PlaceDetailPage({
                       className="mt-1.5 h-10 w-full rounded-md border border-stone-200 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
                     />
                   </label>
-                  <button className="h-10 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800">
+                  <AdminSubmitButton className="h-10 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800">
                     Verify place
-                  </button>
+                  </AdminSubmitButton>
                   <p className="text-xs leading-5 text-stone-500 lg:col-span-2">
                     This creates an internal verification record and does not
                     grant business manager access.
@@ -341,9 +342,9 @@ export default async function PlaceDetailPage({
                             <form
                               action={approveLocationClaim.bind(null, claim.id)}
                             >
-                              <button className="rounded-md bg-emerald-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">
+                              <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">
                                 Approve
-                              </button>
+                              </AdminSubmitButton>
                             </form>
                             <form
                               action={rejectLocationClaim.bind(null, claim.id)}
@@ -360,9 +361,9 @@ export default async function PlaceDetailPage({
                                 placeholder="Private note"
                                 className="min-w-32 flex-1 rounded-md border border-stone-300 px-2 py-2 text-xs"
                               />
-                              <button className="rounded-md border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
+                              <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
                                 Reject
-                              </button>
+                              </AdminSubmitButton>
                             </form>
                           </div>
                         ) : null}

@@ -1,3 +1,5 @@
+import Form from "next/form";
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import { ActionLink, PageHeader } from "@/components/AdminPrimitives";
@@ -130,7 +132,7 @@ export default async function SharePreviewPage({
           </div>
 
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-            <form className="flex items-end gap-2">
+            <Form action="" className="flex items-end gap-2">
               <input type="hidden" name="kind" value={kind} />
               <input type="hidden" name="mode" value={mode} />
               <label className="block min-w-0 flex-1 text-sm font-medium text-stone-700">
@@ -167,15 +169,16 @@ export default async function SharePreviewPage({
                   ) : null}
                 </select>
               </label>
-              <button
+              <AdminSubmitButton
+                pendingLabel="Loading…"
                 type="submit"
                 className="rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800"
               >
                 Preview
-              </button>
-            </form>
+              </AdminSubmitButton>
+            </Form>
 
-            <form className="flex items-end gap-2">
+            <Form action="" className="flex items-end gap-2">
               <input type="hidden" name="kind" value={kind} />
               <input type="hidden" name="mode" value={mode} />
               <label className="block text-sm font-medium text-stone-700">
@@ -187,15 +190,16 @@ export default async function SharePreviewPage({
                     placeholder="123"
                     className="w-32 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
                   />
-                  <button
+                  <AdminSubmitButton
+                    pendingLabel="Loading…"
                     type="submit"
                     className="rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800"
                   >
                     Preview
-                  </button>
+                  </AdminSubmitButton>
                 </div>
               </label>
-            </form>
+            </Form>
           </div>
 
           {publicUrl ? (

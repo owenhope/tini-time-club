@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
 import GoldenGlassMark from "@/components/GoldenGlassMark";
@@ -36,12 +37,13 @@ export default async function GoldenGlassPage({
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <form action={refreshGoldenGlass}>
-              <button
+              <AdminSubmitButton
+                pendingLabel="Refreshing…"
                 type="submit"
                 className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
               >
                 Refresh snapshot
-              </button>
+              </AdminSubmitButton>
             </form>
             <Link
               href="/admin/places/golden-glass/regions/new"

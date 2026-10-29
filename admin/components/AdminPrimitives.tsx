@@ -1,3 +1,5 @@
+import Form from "next/form";
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 
 export type HeaderStat = {
@@ -129,7 +131,7 @@ export function FilterBar({
       : "flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2";
 
   return (
-    <form action={action} className={formClass}>
+    <Form action={action} className={formClass}>
       <input
         type="search"
         name={searchName}
@@ -138,13 +140,14 @@ export function FilterBar({
         className="h-9 min-w-80 rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
       />
       {children}
-      <button
+      <AdminSubmitButton
+        pendingLabel="Applying…"
         type="submit"
         className="h-9 rounded-md bg-emerald-900 px-4 text-sm font-bold text-white transition hover:bg-emerald-800"
       >
         Apply
-      </button>
-    </form>
+      </AdminSubmitButton>
+    </Form>
   );
 }
 

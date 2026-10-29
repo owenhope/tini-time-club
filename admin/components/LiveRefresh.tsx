@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
@@ -43,14 +44,16 @@ export default function LiveRefresh() {
         </span>
         {isPending ? "Refreshing…" : `Live · ${secondsUntilRefresh}s`}
       </span>
-      <button
+      <AdminSubmitButton
+        pending={isPending}
+        pendingLabel="Refreshing…"
         type="button"
         onClick={refreshNow}
         disabled={isPending}
         className="h-8 rounded-md border border-stone-200 bg-white px-3 text-xs font-bold text-stone-700 transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-50"
       >
         Refresh now
-      </button>
+      </AdminSubmitButton>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import Form from "next/form";
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import AdminShell from "@/components/AdminShell";
 import AnalyticsHeader from "@/components/AnalyticsHeader";
 import { DataTable, EmptyState } from "@/components/AdminPrimitives";
@@ -45,12 +47,8 @@ export default async function FeatureUsagePage({
         description="See which screens and actions get used, ranked by reach or frequency."
         extraQuery={new URLSearchParams(filters).toString()}
       />
-      <main className="space-y-6 px-8 pb-32 pt-6">
-        <form
-          key={JSON.stringify(filters)}
-          className="flex flex-wrap items-end gap-4"
-          method="get"
-        >
+      <main key={JSON.stringify(filters)} className="space-y-6 px-8 pb-32 pt-6">
+        <Form className="flex flex-wrap items-end gap-4" action="">
           {Array.from(new URLSearchParams(range.query)).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
@@ -100,13 +98,14 @@ export default async function FeatureUsagePage({
               <option value="installations">Installations (app)</option>
             </select>
           </label>
-          <button
+          <AdminSubmitButton
+            pendingLabel="Applying…"
             className="rounded-lg bg-emerald-900 px-4 py-2 text-sm font-bold text-white"
             type="submit"
           >
             Apply
-          </button>
-        </form>
+          </AdminSubmitButton>
+        </Form>
         <FeatureSection
           id="ranking"
           title={`${isApp ? "App" : "Admin"} feature ranking`}

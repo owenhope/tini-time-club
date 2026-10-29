@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { useEffect, useState } from "react";
 import { sendNotification } from "@/lib/actions";
 import type { NotificationAudienceMember } from "@/lib/profileTypes";
@@ -164,12 +165,13 @@ export default function NotificationComposer({
               className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
             />
           </label>
-          <button
+          <AdminSubmitButton
+            pendingLabel="Sending…"
             type="submit"
             className="mt-4 w-full rounded-md bg-emerald-900 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800"
           >
             Send
-          </button>
+          </AdminSubmitButton>
         </form>
       </div>
     </details>

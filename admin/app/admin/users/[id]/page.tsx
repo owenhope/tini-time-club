@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
 import ClickableRow from "@/components/ClickableRow";
@@ -68,15 +69,15 @@ export default async function UserDetailPage({
         actions={
           <div className="flex gap-2">
             <form action={toggleVerified}>
-              <button
+              <AdminSubmitButton
                 type="submit"
                 className="h-9 rounded-md border border-stone-200 bg-white px-3 text-xs font-bold text-stone-700 transition hover:border-violet-300 hover:text-violet-700"
               >
                 {profile.is_verified ? "Remove verification" : "Verify"}
-              </button>
+              </AdminSubmitButton>
             </form>
             <form action={toggleDeleted}>
-              <button
+              <AdminSubmitButton
                 type="submit"
                 className={`h-9 rounded-md px-3 text-xs font-bold text-white transition ${
                   profile.deleted
@@ -85,7 +86,7 @@ export default async function UserDetailPage({
                 }`}
               >
                 {profile.deleted ? "Restore account" : "Soft-delete account"}
-              </button>
+              </AdminSubmitButton>
             </form>
           </div>
         }

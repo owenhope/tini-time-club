@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
@@ -74,7 +75,7 @@ export default async function ReviewDetailPage({
               View public
             </ActionLink>
             <form action={toggleActive}>
-              <button
+              <AdminSubmitButton
                 type="submit"
                 className={`h-8 rounded-md px-3 text-xs font-bold text-white transition ${
                   active
@@ -83,7 +84,7 @@ export default async function ReviewDetailPage({
                 }`}
               >
                 {active ? "Deactivate review" : "Restore review"}
-              </button>
+              </AdminSubmitButton>
             </form>
           </div>
         }

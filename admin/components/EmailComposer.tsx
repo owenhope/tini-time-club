@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
@@ -340,14 +341,16 @@ export default function EmailComposer({
                   Active accounts with confirmed emails only. Unsubscribed
                   members are excluded. Each person receives a separate email.
                 </p>
-                <button
+                <AdminSubmitButton
+                  pending={busy}
+                  pendingLabel="Saving…"
                   className={buttonStyle}
                   disabled={busy || !totalRecipients}
                 >
                   {busy
                     ? "Saving…"
                     : `Review email · ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
-                </button>
+                </AdminSubmitButton>
               </fieldset>
             </form>
             <EmailSidePanel
@@ -434,7 +437,10 @@ export default function EmailComposer({
           )}
           {detail.counts.pending + detail.counts.sending > 0 && (
             <div className="flex flex-wrap items-center gap-4">
-              <button
+              <AdminSubmitButton
+                type="button"
+                pending={busy}
+                pendingLabel="Sending…"
                 className={buttonStyle}
                 disabled={busy || !ready}
                 onClick={send}
@@ -444,7 +450,7 @@ export default function EmailComposer({
                   : detail.campaign.started_at
                     ? "Resume sending"
                     : `Send to ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}`}
-              </button>
+              </AdminSubmitButton>
               {busy && (
                 <button
                   className="text-sm font-bold underline"

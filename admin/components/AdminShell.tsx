@@ -1,3 +1,4 @@
+import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import { logout } from "@/lib/actions";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -140,12 +141,13 @@ export default function AdminShell({
               </p>
               <ThemeToggle />
               <form action={logout}>
-                <button
+                <AdminSubmitButton
+                  pendingLabel="Signing out…"
                   type="submit"
                   className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
                 >
                   Sign out
-                </button>
+                </AdminSubmitButton>
               </form>
             </div>
           </nav>
@@ -160,12 +162,13 @@ export default function AdminShell({
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
             <form action={logout}>
-              <button
+              <AdminSubmitButton
+                pendingLabel="Signing out…"
                 type="submit"
                 className="text-sm font-bold text-stone-500 hover:text-stone-900"
               >
                 Sign out
-              </button>
+              </AdminSubmitButton>
             </form>
           </div>
         </div>
