@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
@@ -129,7 +130,7 @@ export default async function PlaceDetailPage({
       <div className="grid grid-cols-12 gap-5 px-8 py-6">
         <div className="col-span-12 space-y-5 xl:col-span-6">
           <Panel title="Place details">
-            <form action={saveLocation} className="space-y-4 p-4">
+            <AdminActionForm action={saveLocation} className="space-y-4 p-4">
               {query.updated ? (
                 <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950 ring-1 ring-inset ring-emerald-200">
                   {query.updated === "verified"
@@ -227,7 +228,7 @@ export default async function PlaceDetailPage({
               >
                 Save place
               </AdminSubmitButton>
-            </form>
+            </AdminActionForm>
           </Panel>
 
           <Panel title="Business verification">
@@ -238,7 +239,7 @@ export default async function PlaceDetailPage({
                   : "This place is not currently verified."}
               </p>
               {location.is_location_verified ? (
-                <form
+                <AdminActionForm
                   action={revokeLocationVerification.bind(
                     null,
                     String(location.id)
@@ -254,9 +255,9 @@ export default async function PlaceDetailPage({
                   <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Revoke verification
                   </AdminSubmitButton>
-                </form>
+                </AdminActionForm>
               ) : (
-                <form
+                <AdminActionForm
                   action={verifyLocationDirect.bind(null, String(location.id))}
                   className="grid gap-3 rounded-md border border-stone-200 bg-stone-50 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end"
                 >
@@ -277,7 +278,7 @@ export default async function PlaceDetailPage({
                     This creates an internal verification record and does not
                     grant business manager access.
                   </p>
-                </form>
+                </AdminActionForm>
               )}
               <div className="border-t border-stone-200 pt-4">
                 <div className="flex items-center justify-between gap-3">
@@ -339,14 +340,14 @@ export default async function PlaceDetailPage({
                         </div>
                         {claim.status === "pending" ? (
                           <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-100 pt-3">
-                            <form
+                            <AdminActionForm
                               action={approveLocationClaim.bind(null, claim.id)}
                             >
                               <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">
                                 Approve
                               </AdminSubmitButton>
-                            </form>
-                            <form
+                            </AdminActionForm>
+                            <AdminActionForm
                               action={rejectLocationClaim.bind(null, claim.id)}
                               className="flex min-w-0 flex-1 flex-wrap gap-2"
                             >
@@ -364,7 +365,7 @@ export default async function PlaceDetailPage({
                               <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
                                 Reject
                               </AdminSubmitButton>
-                            </form>
+                            </AdminActionForm>
                           </div>
                         ) : null}
                       </div>

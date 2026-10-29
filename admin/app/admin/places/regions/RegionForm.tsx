@@ -1,4 +1,5 @@
 "use client";
+import AdminActionForm from "@/components/AdminActionForm";
 
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 
@@ -46,7 +47,7 @@ export default function RegionForm({
   };
 
   return (
-    <form
+    <AdminActionForm
       action={upsertRegion}
       className="space-y-5 rounded-lg border border-stone-200 bg-stone-50 p-4"
     >
@@ -171,6 +172,6 @@ export default function RegionForm({
           Changes affect region availability, catchment matching, and Explore.
         </span>
       </div>
-    </form>
+    </AdminActionForm>
   );
 }

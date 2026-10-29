@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { notFound } from "next/navigation";
 import AdminShell from "@/components/AdminShell";
@@ -99,12 +100,12 @@ export default async function ClaimDetailPage({
             ) : null}
             {claim.status === "pending" ? (
               <div className="flex gap-2 pt-2">
-                <form action={approve}>
+                <AdminActionForm action={approve}>
                   <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                     Approve
                   </AdminSubmitButton>
-                </form>
-                <form action={reject} className="flex gap-2">
+                </AdminActionForm>
+                <AdminActionForm action={reject} className="flex gap-2">
                   <input
                     name="rejection_reason"
                     required
@@ -119,7 +120,7 @@ export default async function ClaimDetailPage({
                   <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Reject
                   </AdminSubmitButton>
-                </form>
+                </AdminActionForm>
               </div>
             ) : null}
             {query.error === "reason" ? (
@@ -131,7 +132,7 @@ export default async function ClaimDetailPage({
         </Panel>
         <Panel title="Manager access" className="col-span-12 xl:col-span-5">
           <div className="space-y-4 p-4">
-            <form action={addManager} className="flex gap-2">
+            <AdminActionForm action={addManager} className="flex gap-2">
               <input type="hidden" name="claim_id" value={claim.id} />
               <input
                 name="profile_query"
@@ -142,7 +143,7 @@ export default async function ClaimDetailPage({
               <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                 Add
               </AdminSubmitButton>
-            </form>
+            </AdminActionForm>
             {detail.managers.map((manager) => (
               <div
                 key={manager.id}
@@ -157,12 +158,14 @@ export default async function ClaimDetailPage({
                   </p>
                 </div>
                 {manager.status === "active" ? (
-                  <form action={removeLocationManager.bind(null, manager.id)}>
+                  <AdminActionForm
+                    action={removeLocationManager.bind(null, manager.id)}
+                  >
                     <input type="hidden" name="claim_id" value={claim.id} />
                     <AdminSubmitButton className="text-sm font-bold text-red-700">
                       Remove
                     </AdminSubmitButton>
-                  </form>
+                  </AdminActionForm>
                 ) : null}
               </div>
             ))}
@@ -196,7 +199,7 @@ export default async function ClaimDetailPage({
               {detail.verifications.some(
                 (verification) => !verification.revoked_at
               ) ? (
-                <form
+                <AdminActionForm
                   action={revokeLocationVerification.bind(
                     null,
                     String(detail.location.id)
@@ -212,13 +215,13 @@ export default async function ClaimDetailPage({
                   <AdminSubmitButton className="rounded-md border border-red-200 px-3 py-2 text-sm font-bold text-red-700">
                     Revoke
                   </AdminSubmitButton>
-                </form>
+                </AdminActionForm>
               ) : null}
               {detail.verifications.length > 0 &&
               detail.verifications.every(
                 (verification) => verification.revoked_at
               ) ? (
-                <form
+                <AdminActionForm
                   action={restoreLocationVerification.bind(
                     null,
                     String(detail.location.id)
@@ -234,7 +237,7 @@ export default async function ClaimDetailPage({
                   <AdminSubmitButton className="rounded-md bg-emerald-900 px-3 py-2 text-sm font-bold text-white">
                     Restore
                   </AdminSubmitButton>
-                </form>
+                </AdminActionForm>
               ) : null}
             </div>
           </div>

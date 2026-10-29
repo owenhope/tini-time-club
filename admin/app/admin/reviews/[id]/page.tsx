@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -74,7 +75,7 @@ export default async function ReviewDetailPage({
             <ActionLink href={`/r/${encodeURIComponent(review.id)}`} external>
               View public
             </ActionLink>
-            <form action={toggleActive}>
+            <AdminActionForm action={toggleActive}>
               <AdminSubmitButton
                 type="submit"
                 className={`h-8 rounded-md px-3 text-xs font-bold text-white transition ${
@@ -85,7 +86,7 @@ export default async function ReviewDetailPage({
               >
                 {active ? "Deactivate review" : "Restore review"}
               </AdminSubmitButton>
-            </form>
+            </AdminActionForm>
           </div>
         }
       />

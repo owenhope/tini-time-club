@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import AdminShell from "@/components/AdminShell";
@@ -223,7 +224,7 @@ export default async function ReportsPage({
                 <td className="px-4 py-3">
                   <div className="flex min-w-36 flex-col gap-2">
                     {report.status !== "reviewed" ? (
-                      <form
+                      <AdminActionForm
                         action={setReportStatus.bind(
                           null,
                           report.id,
@@ -233,10 +234,10 @@ export default async function ReportsPage({
                         <AdminSubmitButton className="text-xs font-bold text-violet-700 hover:text-violet-900">
                           Mark Reviewed
                         </AdminSubmitButton>
-                      </form>
+                      </AdminActionForm>
                     ) : null}
                     {report.status !== "dismissed" ? (
-                      <form
+                      <AdminActionForm
                         action={setReportStatus.bind(
                           null,
                           report.id,
@@ -246,10 +247,10 @@ export default async function ReportsPage({
                         <AdminSubmitButton className="text-xs font-bold text-stone-500 hover:text-stone-900">
                           Dismiss
                         </AdminSubmitButton>
-                      </form>
+                      </AdminActionForm>
                     ) : null}
                     {hasLiveContent ? (
-                      <form
+                      <AdminActionForm
                         action={deleteReportedContentAndResolve.bind(
                           null,
                           report.id
@@ -258,7 +259,7 @@ export default async function ReportsPage({
                         <AdminSubmitButton className="text-left text-xs font-bold text-red-600 hover:text-red-800">
                           Delete {isComment ? "Comment" : "Review"} & Resolve
                         </AdminSubmitButton>
-                      </form>
+                      </AdminActionForm>
                     ) : null}
                   </div>
                 </td>

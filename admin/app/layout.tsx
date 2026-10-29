@@ -1,3 +1,4 @@
+import AdminActionNotice from "@/components/AdminActionNotice";
 import AdminUsageTracker from "@/components/AdminUsageTracker";
 import type { Metadata } from "next";
 import Script from "next/script";
@@ -102,6 +103,7 @@ export default function RootLayout({
         <Suspense>
           <AdminNavigationProgress />
           <AdminUsageTracker />
+          <AdminActionNotice />
         </Suspense>
         <MetaPixel />
         <Script

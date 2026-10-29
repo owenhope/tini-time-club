@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import Link from "next/link";
 import { logout } from "@/lib/actions";
@@ -140,7 +141,7 @@ export default function AdminShell({
                 Account
               </p>
               <ThemeToggle />
-              <form action={logout}>
+              <AdminActionForm action={logout}>
                 <AdminSubmitButton
                   pendingLabel="Signing out…"
                   type="submit"
@@ -148,7 +149,7 @@ export default function AdminShell({
                 >
                   Sign out
                 </AdminSubmitButton>
-              </form>
+              </AdminActionForm>
             </div>
           </nav>
         </div>
@@ -161,7 +162,7 @@ export default function AdminShell({
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
-            <form action={logout}>
+            <AdminActionForm action={logout}>
               <AdminSubmitButton
                 pendingLabel="Signing out…"
                 type="submit"
@@ -169,7 +170,7 @@ export default function AdminShell({
               >
                 Sign out
               </AdminSubmitButton>
-            </form>
+            </AdminActionForm>
           </div>
         </div>
         <nav

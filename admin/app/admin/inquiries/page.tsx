@@ -1,3 +1,4 @@
+import AdminActionForm from "@/components/AdminActionForm";
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import AdminShell from "@/components/AdminShell";
 import {
@@ -152,7 +153,7 @@ export default async function InquiriesPage({
                 </StatusPill>
               </td>
               <td className="px-4 py-3">
-                <form action={setBusinessInquiryHandled}>
+                <AdminActionForm action={setBusinessInquiryHandled}>
                   <input type="hidden" name="inquiry_id" value={inquiry.id} />
                   <input
                     type="hidden"
@@ -166,7 +167,7 @@ export default async function InquiriesPage({
                   >
                     {inquiry.status === "new" ? "Mark handled" : "Reopen"}
                   </AdminSubmitButton>
-                </form>
+                </AdminActionForm>
               </td>
             </tr>
           ))}

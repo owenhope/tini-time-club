@@ -1,4 +1,5 @@
 "use client";
+import AdminActionForm from "@/components/AdminActionForm";
 
 import AdminSubmitButton from "@/components/AdminSubmitButton";
 import { useEffect, useState } from "react";
@@ -64,7 +65,7 @@ export default function NotificationComposer({
         + Send notification
       </summary>
       <div className="absolute right-0 z-10 mt-2 w-[26rem] max-w-[90vw] rounded-lg border border-stone-200 bg-white p-5 shadow-xl">
-        <form action={sendNotification}>
+        <AdminActionForm action={sendNotification}>
           <label className="block text-sm font-medium text-stone-700">
             Audience
             <input type="hidden" name="audience" value={audience} />
@@ -172,7 +173,7 @@ export default function NotificationComposer({
           >
             Send
           </AdminSubmitButton>
-        </form>
+        </AdminActionForm>
       </div>
     </details>
   );
