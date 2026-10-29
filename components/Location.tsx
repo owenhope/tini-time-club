@@ -128,6 +128,7 @@ const Location = () => {
   const liked = favorite.available && favorite.saved;
   const headerGround = liked ? "favorite" : "brand";
   const onHeaderColor = liked ? colors.onHeaderFavorite : colors.onHeaderBrand;
+  const headerGold = liked ? colors.headerFavoriteGold : colors.awardGold;
   const viewerId = profile?.id;
 
   const strippedAddress = displayLocation?.address
@@ -517,7 +518,7 @@ const Location = () => {
         titleLeadingAccessory={
           displayLocation?.is_golden_glass ? (
             <View accessible accessibilityLabel="Golden Glass">
-              <MartiniIcon size={18} color={colors.awardGold} filled />
+              <MartiniIcon size={18} color={headerGold} filled />
             </View>
           ) : null
         }
@@ -572,7 +573,7 @@ const Location = () => {
                 titleLeadingAccessory={
                   displayLocation?.is_golden_glass ? (
                     <View accessible accessibilityLabel="Golden Glass">
-                      <MartiniIcon size={22} color={colors.awardGold} filled />
+                      <MartiniIcon size={22} color={headerGold} filled />
                     </View>
                   ) : null
                 }

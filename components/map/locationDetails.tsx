@@ -19,12 +19,15 @@ interface LocationDetailsProps {
   loc: any;
   onRegularsPress?: () => void;
   enabled?: boolean;
+  /** One of the viewer's liked places: a heart joins the name's marks. */
+  favorite?: boolean;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
   loc,
   onRegularsPress,
   enabled = true,
+  favorite = false,
 }) => {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -61,7 +64,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           ]}
           onPress={openLocation}
           accessibilityRole="link"
-          accessibilityLabel={`View ${loc.name}${loc.is_golden_glass ? ", Golden Glass" : ""}`}
+          accessibilityLabel={`View ${loc.name}${loc.is_golden_glass ? ", Golden Glass" : ""}${favorite ? ", in your Favorites" : ""}`}
           accessibilityHint="Opens the location page"
           hitSlop={6}
         >
@@ -73,6 +76,15 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 accessibilityLabel="Golden Glass"
               >
                 <MartiniIcon size={20} color={colors.awardGold} filled />
+              </View>
+            ) : null}
+            {favorite ? (
+              <View
+                style={styles.goldenGlassIcon}
+                accessible
+                accessibilityLabel="In your Favorites"
+              >
+                <Ionicons name="heart" size={18} color={colors.favorite} />
               </View>
             ) : null}
             <Text style={styles.name} numberOfLines={2}>

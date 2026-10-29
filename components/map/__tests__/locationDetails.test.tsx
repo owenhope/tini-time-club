@@ -40,6 +40,7 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("@/components/shared", () => ({
   MemberAvatar: () => null,
   RatingPips: () => null,
+  MartiniIcon: () => null,
 }));
 
 describe("location details", () => {
@@ -140,6 +141,39 @@ describe("location details", () => {
 
     expect(mockPush).toHaveBeenCalledWith("/places/1");
     expect(onRegularsPress).toHaveBeenCalledTimes(1);
+
+    act(() => tree!.unmount());
+  });
+
+  it("marks a liked Golden Glass place with both its glass and a heart", () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <ThemeProvider>
+          <LocationDetails
+            loc={{ id: 2, name: "Little Vesper", is_golden_glass: true }}
+            favorite
+          />
+        </ThemeProvider>
+      );
+    });
+
+    const marks = tree!.root
+      .findAll(
+        (node) =>
+          node.props.accessible === true &&
+          (node.props.accessibilityLabel === "Golden Glass" ||
+            node.props.accessibilityLabel === "In your Favorites")
+      )
+      .map((node) => node.props.accessibilityLabel);
+    expect([...new Set(marks)]).toEqual(["Golden Glass", "In your Favorites"]);
+    expect(
+      tree!.root.findAll(
+        (node) =>
+          node.props.accessibilityLabel ===
+          "View Little Vesper, Golden Glass, in your Favorites"
+      ).length
+    ).toBeGreaterThan(0);
 
     act(() => tree!.unmount());
   });

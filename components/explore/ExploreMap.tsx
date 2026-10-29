@@ -996,12 +996,15 @@ function ExploreMap({
             {pinLayout.groups.map((members) => {
               const center = getGoldenGlassGroupRegion(members, region);
               const golden = members.find((member) => member.is_golden_glass);
+              const liked = members.some((member) =>
+                favoriteIds.has(String(member.id))
+              );
               return (
                 <Marker
                   key={`gold-${members
                     .map((member) => member.id)
                     .sort()
-                    .join("-")}-${mapRevision}`}
+                    .join("-")}-${liked ? "fav-" : ""}${mapRevision}`}
                   coordinate={{
                     latitude: center.latitude,
                     longitude: center.longitude,
@@ -1018,7 +1021,7 @@ function ExploreMap({
                   <LocationPin
                     loc={golden ?? members[0]}
                     count={members.length}
-                    favorite={!golden}
+                    favorite={liked}
                   />
                 </Marker>
               );
@@ -1069,6 +1072,7 @@ function ExploreMap({
             {selectedLocation && (
               <LocationDetails
                 loc={selectedLocation}
+                favorite={favoriteIds.has(String(selectedLocation.id))}
                 enabled={enabled}
                 onRegularsPress={() => setRegularsSheetOpen(true)}
               />
