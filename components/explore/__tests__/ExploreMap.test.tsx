@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import ExploreMap from "@/components/explore/ExploreMap";
 import type { ExploreRegion } from "@/services/regionService";
@@ -35,10 +36,21 @@ jest.mock("@/utils/screenshotMode", () => ({ getScreenshotSeed: () => null }));
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-jest.mock("@/theme", () => ({
-  makeStyles: () => () => ({}),
-  useTheme: () => ({ isDark: false, spacing: { xl: 24 } }),
-}));
+jest.mock("@/theme", () => {
+  const tokens = jest.requireActual("@/theme/tokens");
+  const theme = {
+    colors: tokens.lightColors,
+    spacing: tokens.spacing,
+    radius: tokens.radius,
+    typography: tokens.typography,
+    elevation: tokens.elevation.light,
+    isDark: false,
+  };
+  return {
+    makeStyles: (factory: (t: typeof theme) => unknown) => () => factory(theme),
+    useTheme: () => theme,
+  };
+});
 jest.mock("@/components/map/ClusteredMap", () => "MapView");
 jest.mock("react-native-maps", () => ({ Marker: "Marker" }));
 jest.mock("@gorhom/bottom-sheet", () => ({
@@ -265,4 +277,31 @@ describe("Explore map viewport discovery", () => {
       }
     }
   );
+  it("leaves room below the search bar for its results", async () => {
+    await act(async () => {
+      renderer = create(
+        <ExploreMap
+          enabled
+          focus={{}}
+          location={{
+            status: "denied",
+            coordinates: null,
+            canOpenSettings: false,
+          }}
+          requestLocation={async () => undefined}
+          exploreRegion={whistler}
+          searchVisible
+        />
+      );
+    });
+
+    // The results list hangs below the field, outside the overlay's own
+    // height, so nothing wrapping the search may clip its overflow.
+    let node = renderer.root.findByType("Search" as React.ElementType).parent;
+    while (node) {
+      const style = StyleSheet.flatten(node.props.style);
+      expect(style?.overflow).not.toBe("hidden");
+      node = node.parent;
+    }
+  });
 });

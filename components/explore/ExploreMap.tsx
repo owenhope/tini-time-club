@@ -1118,7 +1118,6 @@ const useStyles = makeStyles((t) => ({
     left: 0,
     right: 0,
     zIndex: 30,
-    overflow: "hidden" as const,
   },
   mapFrame: {
     flex: 1,
