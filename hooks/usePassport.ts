@@ -34,8 +34,18 @@ export function usePassport(profileId?: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isMember = Boolean(profile);
+
   const refresh = useCallback(async () => {
     const request = ++requestRef.current;
+    // Passports are member-only server-side; a visitor's request would only
+    // come back as a permission error.
+    if (!isMember) {
+      setResult(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -55,7 +65,7 @@ export function usePassport(profileId?: string | null) {
     } finally {
       if (request === requestRef.current) setLoading(false);
     }
-  }, [profileId, ownerId]);
+  }, [isMember, profileId, ownerId]);
 
   useFocusEffect(
     useCallback(() => {

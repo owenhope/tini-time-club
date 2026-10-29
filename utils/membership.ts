@@ -146,6 +146,7 @@ export const getVisitorGatedRouteIntent = (
   if (pathname === "/review") return "review";
   if (pathname === "/review-share-preview") return "share-review";
   if (pathname === "/activity") return "activity";
+  if (pathname === "/passport") return "profile";
   if (/^\/users\/[^/]+\/(followers|following)$/.test(pathname)) {
     return "social-list";
   }

@@ -112,6 +112,16 @@ async function performPushRegistration({
     }
 
     await retryPendingUnregistration();
+    // A failed token refresh (e.g. flaky network on resume) leaves no session,
+    // and supabase-js then calls this member-only RPC as anon. Wait for the
+    // session to come back instead of reporting the permission error.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      registrationRetryAfter = Date.now() + REGISTRATION_RETRY_DELAY_MS;
+      return null;
+    }
     if (generation !== registrationGeneration) return null;
 
     const { error } = await supabase.rpc("register_push_token", {

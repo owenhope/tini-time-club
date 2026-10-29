@@ -295,7 +295,8 @@ export function useProfileScreenData({
   useEffect(() => {
     let active = true;
     const loadFavoriteLocation = async () => {
-      if (!favoriteLocationId) {
+      // location_ratings is member-only, so a visitor sees no favorite.
+      if (!favoriteLocationId || !viewerId) {
         if (active) setFavoriteLocation(null);
         return;
       }
@@ -320,7 +321,7 @@ export function useProfileScreenData({
     };
     // profileDataKey: the reset effect above clears the favorite whenever the
     // key changes, so reload it then too.
-  }, [favoriteLocationId, profileDataKey]);
+  }, [favoriteLocationId, profileDataKey, viewerId]);
 
   useEffect(() => {
     let active = true;

@@ -34,6 +34,8 @@ describe("membership prompt contract", () => {
       "share-review"
     );
     expect(getVisitorGatedRouteIntent("/activity")).toBe("activity");
+    expect(getVisitorGatedRouteIntent("/passport")).toBe("profile");
+    expect(getVisitorGatedRouteIntent("/passport-info")).toBeNull();
     expect(getVisitorGatedRouteIntent("/users/olive/followers")).toBe(
       "social-list"
     );

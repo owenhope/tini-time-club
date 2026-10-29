@@ -494,7 +494,8 @@ const UserProfile = () => {
         followingCount={followingCount}
         isOwnProfile={isViewingOwnProfile}
         rankAction={
-          displayProfile ? (
+          // Passports are member-only; visitors get the join prompt elsewhere.
+          displayProfile && profile ? (
             <PassportEntry
               profileId={isViewingOwnProfile ? undefined : displayProfile.id}
               username={displayProfile.username}

@@ -107,3 +107,33 @@ it("lets a refresh cancel an in-flight page without stalling paging", async () =
   expect(result.current!.userReviews.map((r) => r.id)).toEqual([1, 2]);
   act(() => tree.unmount());
 });
+
+it("only reads the favorite place (member-only) for a signed-in viewer", async () => {
+  const { supabase } = jest.requireMock("@/utils/supabase");
+  const place = { id: 7, name: "The Bar" };
+  const query = {
+    select: () => query,
+    eq: () => query,
+    maybeSingle: async () => ({ data: place, error: null }),
+  };
+  supabase.from.mockReset();
+  supabase.from.mockImplementation(() => query);
+
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(
+      <Probe profileId="member-2" viewerId={undefined} favoriteLocationId={7} />
+    );
+  });
+  expect(supabase.from).not.toHaveBeenCalledWith("location_ratings");
+  expect(result.current!.favoriteLocation).toBeNull();
+
+  await act(async () => {
+    tree.update(
+      <Probe profileId="member-2" viewerId="viewer-1" favoriteLocationId={7} />
+    );
+  });
+  expect(supabase.from).toHaveBeenCalledWith("location_ratings");
+  expect(result.current!.favoriteLocation).toEqual(place);
+  act(() => tree.unmount());
+});

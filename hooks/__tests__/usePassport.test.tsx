@@ -17,8 +17,9 @@ jest.mock("@/utils/supabase", () => ({
   },
 }));
 jest.mock("@/utils/log", () => ({ reportError: jest.fn() }));
+let mockProfile: { id: string } | null = { id: "self" };
 jest.mock("@/context/profile-context", () => ({
-  useProfile: () => ({ profile: { id: "self" } }),
+  useProfile: () => ({ profile: mockProfile }),
 }));
 jest.mock("expo-router", () => ({
   useFocusEffect: (callback: () => void) => {
@@ -34,6 +35,20 @@ function Probe({ id }: { id?: string }) {
 beforeEach(() => {
   clearMemberPoints();
   mockRpc.mockReset();
+  mockProfile = { id: "self" };
+});
+
+it("does not request a member's Passport for a signed-out visitor", async () => {
+  mockProfile = null;
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(<Probe id="member-2" />);
+  });
+  expect(mockRpc).not.toHaveBeenCalled();
+  expect(latest.passport).toBeNull();
+  expect(latest.loading).toBe(false);
+  expect(latest.error).toBeNull();
+  act(() => tree.unmount());
 });
 
 it("does not replace the selected member's Passport with a late previous member response", async () => {
