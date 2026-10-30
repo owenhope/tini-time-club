@@ -131,6 +131,42 @@ interface SeasonalRule {
 const inWindow = (date: Date, month: number, from: number, to: number) =>
   date.getMonth() === month && date.getDate() >= from && date.getDate() <= to;
 
+/**
+ * Evening of the first Hanukkah candle (24 Kislev), [month, day] by year.
+ * The Hebrew calendar moves it every year, and Hermes has no Hebrew Intl
+ * calendar, so the dates are tabled. A test fails when the table runs short.
+ */
+export const HANUKKAH_FIRST_NIGHTS: Readonly<Record<number, [number, number]>> =
+  {
+    2026: [11, 4],
+    2027: [11, 24],
+    2028: [11, 12],
+    2029: [11, 1],
+    2030: [11, 20],
+    2031: [11, 9],
+    2032: [10, 27],
+    2033: [11, 16],
+    2034: [11, 6],
+    2035: [11, 25],
+    2036: [11, 13],
+    2037: [11, 2],
+    2038: [11, 21],
+    2039: [11, 11],
+    2040: [10, 29],
+  };
+
+/** The Friday in the first week of Hanukkah (first night through day 7). */
+const inHanukkahWeek = (date: Date) => {
+  const firstNight = HANUKKAH_FIRST_NIGHTS[date.getFullYear()];
+  if (!firstNight) return false;
+  const start = new Date(date.getFullYear(), firstNight[0], firstNight[1]);
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const offset = Math.round((day.getTime() - start.getTime()) / 86_400_000);
+  return offset >= 0 && offset <= 6;
+};
+
+const inChristmasWeek = (date: Date) => inWindow(date, 11, 19, 25);
+
 /** First matching rule wins; windows are chosen so at most one Friday hits each. */
 export const SEASONAL_REMINDERS: readonly SeasonalRule[] = [
   {
@@ -174,11 +210,43 @@ export const SEASONAL_REMINDERS: readonly SeasonalRule[] = [
     },
   },
   {
+    // Hanukkah and Christmas share a Friday (e.g. 2027, 2030).
+    matches: (d) => inChristmasWeek(d) && inHanukkahWeek(d),
+    message: {
+      title: "Happy everything 🕎🎄",
+      body: "Eight nights, one Christmas, and a martini for each.",
+    },
+  },
+  {
+    // The Friday before Christmas, or Christmas itself.
+    matches: inChristmasWeek,
+    message: {
+      title: "Merry & bright 🎄",
+      body: "Deck the halls with gin and olives.",
+    },
+  },
+  {
+    // Boxing Day, when it lands on a Friday.
+    matches: (d) => inWindow(d, 11, 26, 26),
+    message: {
+      title: "Boxing Day 🎁",
+      body: "Leftovers can wait. The bar is open.",
+    },
+  },
+  {
     // New Year's Eve week.
-    matches: (d) => inWindow(d, 11, 26, 31),
+    matches: (d) => inWindow(d, 11, 27, 31),
     message: {
       title: "One last tini 🥂",
       body: "End the year Top Shelf style.",
+    },
+  },
+  {
+    // Start of Hanukkah; the holidays above win a shared Friday.
+    matches: inHanukkahWeek,
+    message: {
+      title: "Happy Hanukkah 🕎",
+      body: "Light the candles, then pour something clear.",
     },
   },
 ];

@@ -48,12 +48,13 @@ async function ensureFridayMartiniReminder(): Promise<void> {
 
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
 
-    // identifier -> the instant it was scheduled for (missing on requests
-    // from before the instant was recorded, which then get rescheduled).
+    // identifier -> the request's content, whose data.fireAt is the instant
+    // it was scheduled for (missing on requests from before the instant was
+    // recorded, which then get rescheduled).
     const existing = new Map(
       scheduled
         .filter((n) => n.identifier.startsWith(`${REMINDER_ID_PREFIX}-`))
-        .map((n) => [n.identifier, n.content.data?.fireAt as unknown])
+        .map((n) => [n.identifier, n.content])
     );
 
     const fridays = upcomingFridays(new Date(), WEEKS_AHEAD, REMINDER_HOUR);
@@ -67,16 +68,25 @@ async function ensureFridayMartiniReminder(): Promise<void> {
     );
     for (const friday of fridays) {
       const identifier = idForDate(friday);
-      if (existing.has(identifier)) {
-        // Same instant: still 4pm local. Otherwise the timezone moved.
-        if (existing.get(identifier) === friday.getTime()) continue;
+      const message = reminderForDate(friday);
+      const current = existing.get(identifier);
+      if (current) {
+        // Same instant (still 4pm local) and same copy: nothing to do. A
+        // moved timezone or an edited message bank reschedules it.
+        if (
+          current.data?.fireAt === friday.getTime() &&
+          current.title === message.title &&
+          current.body === message.body
+        ) {
+          continue;
+        }
         await Notifications.cancelScheduledNotificationAsync(identifier);
       }
 
       await Notifications.scheduleNotificationAsync({
         identifier,
         content: {
-          ...reminderForDate(friday),
+          ...message,
           data: { fireAt: friday.getTime() },
         },
         trigger: {

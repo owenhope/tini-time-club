@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { syncFridayMartiniReminder } from "../martiniReminder";
-import { upcomingFridays } from "../martiniReminders";
+import { reminderForDate, upcomingFridays } from "../martiniReminders";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(async () => ({ granted: true })),
@@ -17,6 +17,8 @@ const idFor = (date: Date) =>
     "0"
   )}-${String(date.getDate()).padStart(2, "0")}`;
 
+beforeEach(() => jest.clearAllMocks());
+
 it("reschedules reminders computed for a different instant (timezone change)", async () => {
   const [first, second] = upcomingFridays(new Date(), 2, 16);
   (
@@ -25,12 +27,15 @@ it("reschedules reminders computed for a different instant (timezone change)", a
     // Still 4pm local: kept.
     {
       identifier: idFor(first),
-      content: { data: { fireAt: first.getTime() } },
+      content: { ...reminderForDate(first), data: { fireAt: first.getTime() } },
     },
     // Scheduled for 4pm in another zone: replaced.
     {
       identifier: idFor(second),
-      content: { data: { fireAt: second.getTime() + 3 * 3600_000 } },
+      content: {
+        ...reminderForDate(second),
+        data: { fireAt: second.getTime() + 3 * 3600_000 },
+      },
     },
   ]);
 
@@ -47,4 +52,30 @@ it("reschedules reminders computed for a different instant (timezone change)", a
   ).mock.calls.map(([request]) => request.identifier);
   expect(scheduledIds).toContain(idFor(second));
   expect(scheduledIds).not.toContain(idFor(first));
+});
+
+it("reschedules reminders whose copy changed in the message bank", async () => {
+  const [first] = upcomingFridays(new Date(), 1, 16);
+  (
+    Notifications.getAllScheduledNotificationsAsync as jest.Mock
+  ).mockResolvedValue([
+    {
+      identifier: idFor(first),
+      content: {
+        title: "Old title",
+        body: "Old body",
+        data: { fireAt: first.getTime() },
+      },
+    },
+  ]);
+
+  await syncFridayMartiniReminder(true);
+
+  expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+    idFor(first)
+  );
+  const request = (
+    Notifications.scheduleNotificationAsync as jest.Mock
+  ).mock.calls.find(([r]) => r.identifier === idFor(first))?.[0];
+  expect(request.content.title).toBe(reminderForDate(first).title);
 });

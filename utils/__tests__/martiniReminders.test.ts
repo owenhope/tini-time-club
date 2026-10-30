@@ -1,5 +1,7 @@
 import {
   EVERGREEN_REMINDERS,
+  HANUKKAH_FIRST_NIGHTS,
+  SEASONAL_REMINDERS,
   reminderForDate,
   upcomingFridays,
 } from "../martiniReminders";
@@ -34,6 +36,39 @@ describe("reminderForDate", () => {
     expect(reminderForDate(new Date(2027, 11, 31)).title).toContain(
       "One last tini"
     );
+  });
+
+  it("covers the December holidays", () => {
+    // 2026-12-04 is Hanukkah's first night.
+    expect(reminderForDate(new Date(2026, 11, 4)).title).toContain("Hanukkah");
+    // 2026-12-25 is Christmas Day.
+    expect(reminderForDate(new Date(2026, 11, 25)).title).toContain(
+      "Merry & bright"
+    );
+    // 2031-12-26 is Boxing Day on a Friday.
+    expect(reminderForDate(new Date(2031, 11, 26)).title).toContain(
+      "Boxing Day"
+    );
+    // 2027-12-24 is both Christmas Eve and Hanukkah's first night.
+    expect(reminderForDate(new Date(2027, 11, 24)).title).toContain(
+      "Happy everything"
+    );
+    // 2031-12-12 is Hanukkah's fourth day, the Friday after it starts.
+    expect(reminderForDate(new Date(2031, 11, 12)).title).toContain("Hanukkah");
+  });
+
+  it("keeps seasonal copy short enough for an iOS banner", () => {
+    for (const { message } of SEASONAL_REMINDERS) {
+      expect(message.body.length).toBeLessThanOrEqual(90);
+      expect(message.title.length).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it("has Hanukkah dates for the next five years", () => {
+    const year = new Date().getFullYear();
+    for (let y = year; y < year + 5; y++) {
+      expect(HANUKKAH_FIRST_NIGHTS[y]).toBeDefined();
+    }
   });
 
   it("rotates evergreen messages by week and is deterministic", () => {
