@@ -1,6 +1,7 @@
 import AdminShell from "@/components/AdminShell";
 import { PageHeader } from "@/components/AdminPrimitives";
 import NotificationComposer from "@/components/NotificationComposer";
+import Pagination from "@/components/Pagination";
 import { fetchNotificationAudienceCount } from "@/lib/profileData";
 import {
   fetchNotificationAnalytics,
@@ -10,8 +11,22 @@ import {
   formatNotificationSentValue,
   humanizeNotificationKind,
 } from "@/lib/notificationKinds";
+import {
+  SEASONAL_REMINDERS,
+  reminderForDate,
+  upcomingFridays,
+} from "@/lib/martiniReminders";
+import { parsePagination } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
+
+// Mirrors REMINDER_HOUR in the app's utils/martiniReminder.ts. Reminders are
+// device-local, so this list is the shared message bank, not a server queue.
+const REMINDER_HOUR = 16;
+const REMINDER_WEEKS = 52;
+const SEASONAL_TITLES = new Set(
+  SEASONAL_REMINDERS.map((rule) => rule.message.title)
+);
 
 const ERRORS: Record<string, string> = {
   body: "Message is required and must be under 180 characters.",
@@ -25,10 +40,21 @@ export default async function NotificationsPage({
   searchParams: Promise<{
     sent?: string;
     error?: string;
+    upage?: string;
+    uper?: string;
   }>;
 }) {
   const params = await searchParams;
   const { sent, error } = params;
+  const { page: upcomingPage, perPage: upcomingPer } = parsePagination({
+    page: params.upage,
+    per: params.uper,
+  });
+  const allFridays = upcomingFridays(new Date(), REMINDER_WEEKS, REMINDER_HOUR);
+  const fridays = allFridays.slice(
+    (upcomingPage - 1) * upcomingPer,
+    upcomingPage * upcomingPer
+  );
 
   const [members, pushSubscriberCount, analytics] = await Promise.all([
     fetchNotificationAudienceCount(),
@@ -131,6 +157,67 @@ export default async function NotificationsPage({
             </table>
           </div>
         ) : null}
+
+        <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+          <h2 className="border-b border-stone-200 px-5 py-3 font-semibold">
+            Upcoming Tini Time reminders{" "}
+            <span className="font-normal text-stone-400">
+              (Fridays 4pm, member-local time)
+            </span>
+          </h2>
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-stone-200 bg-stone-100 text-[11px] uppercase tracking-[0.14em] text-stone-500">
+              <tr>
+                <th className="px-5 py-2.5">Friday</th>
+                <th className="px-5 py-2.5">Message</th>
+                <th className="px-5 py-2.5">Type</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {fridays.map((friday) => {
+                const message = reminderForDate(friday);
+                const seasonal = SEASONAL_TITLES.has(message.title);
+                return (
+                  <tr key={friday.toISOString()}>
+                    <td className="w-36 whitespace-nowrap px-5 py-2.5 text-stone-500">
+                      {friday.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <span className="block font-bold text-stone-900">
+                        {message.title}
+                      </span>
+                      <span className="block text-stone-600">
+                        {message.body}
+                      </span>
+                    </td>
+                    <td className="w-28 px-5 py-2.5">
+                      {seasonal ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                          Seasonal
+                        </span>
+                      ) : (
+                        <span className="text-xs text-stone-400">Rotating</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <Pagination
+            path="/admin/notifications"
+            pageParam="upage"
+            perParam="uper"
+            page={upcomingPage}
+            perPage={upcomingPer}
+            total={allFridays.length}
+            noun="upcoming reminders"
+          />
+        </div>
       </div>
     </AdminShell>
   );
