@@ -23,11 +23,11 @@ const META_EVENT_BY_ANALYTIC_EVENT: Partial<
 };
 
 const isMetaAppEventsEnabled = () =>
-  Platform.OS === "ios" &&
+  (Platform.OS === "ios" || Platform.OS === "android") &&
   Constants.expoConfig?.extra?.metaAppEventsEnabled === true;
 
 // Loaded lazily: the SDK wires native event emitters at import time, which
-// only exist in iOS builds configured with a Meta app ID.
+// only exist in native builds configured with a Meta app ID.
 const loadFacebookSdk = (): typeof FacebookSdk =>
   require("react-native-fbsdk-next");
 
@@ -44,8 +44,9 @@ export function logMetaAppEvent(event: AnalyticEventType): void {
 }
 
 // iOS 14.5–16 Meta SDKs rely on this flag; iOS 17+ reads ATT directly.
+// Android has no App Tracking Transparency, so this is iOS-only.
 export function syncMetaAdvertiserTracking(trackingGranted: boolean): void {
-  if (!isMetaAppEventsEnabled()) return;
+  if (Platform.OS !== "ios" || !isMetaAppEventsEnabled()) return;
 
   try {
     void loadFacebookSdk().Settings.setAdvertiserTrackingEnabled(

@@ -3,6 +3,7 @@ const mockSetAdvertiserTrackingEnabled = jest.fn(
   async (_enabled: boolean) => true
 );
 let mockMetaAppEventsEnabled = true;
+let mockPlatformOS = "ios";
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -12,7 +13,13 @@ jest.mock("expo-constants", () => ({
     },
   },
 }));
-jest.mock("react-native", () => ({ Platform: { OS: "ios" } }));
+jest.mock("react-native", () => ({
+  Platform: {
+    get OS() {
+      return mockPlatformOS;
+    },
+  },
+}));
 jest.mock("react-native-fbsdk-next", () => ({
   AppEventsLogger: {
     AppEvents: {
@@ -37,6 +44,7 @@ import {
 beforeEach(() => {
   jest.clearAllMocks();
   mockMetaAppEventsEnabled = true;
+  mockPlatformOS = "ios";
 });
 
 it("maps completed onboarding to Meta's registration event without parameters", () => {
@@ -65,4 +73,28 @@ it("passes the App Tracking Transparency result to the Meta SDK", () => {
   syncMetaAdvertiserTracking(false);
 
   expect(mockSetAdvertiserTrackingEnabled).toHaveBeenCalledWith(false);
+});
+
+it("sends the same allowlisted events on Android", () => {
+  mockPlatformOS = "android";
+
+  logMetaAppEvent("new_review");
+
+  expect(mockLogEvent).toHaveBeenCalledWith("fb_mobile_rate");
+});
+
+it("skips the iOS-only tracking sync on Android", () => {
+  mockPlatformOS = "android";
+
+  syncMetaAdvertiserTracking(true);
+
+  expect(mockSetAdvertiserTrackingEnabled).not.toHaveBeenCalled();
+});
+
+it("stays silent on web", () => {
+  mockPlatformOS = "web";
+
+  logMetaAppEvent("new_review");
+
+  expect(mockLogEvent).not.toHaveBeenCalled();
 });
