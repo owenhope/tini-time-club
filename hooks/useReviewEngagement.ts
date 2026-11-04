@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import * as Haptics from "expo-haptics";
 import { supabase } from "@/utils/supabase";
+import { requestRatingAfterEngagement } from "@/services/ratingPrompt";
 import { reportError } from "@/utils/log";
 import AnalyticService from "@/services/analyticsService";
 import databaseService from "@/services/databaseService";
@@ -60,6 +61,7 @@ const useLikes = (
       // Cards unmount when they scroll out of a virtualized list; the owning
       // list keeps the confirmed state so a remounted card doesn't revert.
       onLikeChanged?.(reviewId, !wasLiked, nextCount);
+      if (!wasLiked) void requestRatingAfterEngagement();
     } catch (error) {
       reportError("Error toggling like:", error);
       setHasLiked(wasLiked);

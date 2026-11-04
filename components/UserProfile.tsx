@@ -12,6 +12,7 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { PassportEntry } from "@/components/passport/passport-entry";
 import { supabase } from "@/utils/supabase";
+import { requestRatingAfterEngagement } from "@/services/ratingPrompt";
 import { useProfile } from "@/context/profile-context";
 import { Profile } from "@/types/types";
 import AvatarViewer from "@/components/profile/AvatarViewer";
@@ -196,6 +197,7 @@ const UserProfile = () => {
       await loadFollowCounts();
 
       if (!wasFollowing) {
+        void requestRatingAfterEngagement();
         AnalyticService.capture("follow_user", {
           targetUserId: displayProfile.id,
           targetUsername: displayProfile.username,

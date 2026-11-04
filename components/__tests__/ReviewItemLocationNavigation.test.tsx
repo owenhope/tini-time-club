@@ -4,6 +4,10 @@ import renderer, { act, type ReactTestRenderer } from "react-test-renderer";
 import ReviewItem from "@/components/ReviewItem";
 import type { Review } from "@/types/types";
 
+const mockRequestRating = jest.fn();
+jest.mock("@/services/ratingPrompt", () => ({
+  requestRatingAfterEngagement: () => mockRequestRating(),
+}));
 const mockPush = jest.fn();
 const mockOpenProfile = jest.fn();
 

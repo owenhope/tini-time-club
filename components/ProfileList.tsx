@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { supabase } from "@/utils/supabase";
+import { requestRatingAfterEngagement } from "@/services/ratingPrompt";
 import { useProfile } from "@/context/profile-context";
 import { MemberAvatar, VerifiedName } from "@/components/shared";
 import AnalyticService from "@/services/analyticsService";
@@ -124,6 +125,7 @@ export default function ProfileList({
       } else {
         databaseService.clearFollowCaches(profile.id);
         setFollowedIds((prev) => [...prev, targetProfileId]);
+        void requestRatingAfterEngagement();
         // Track follow event
         const targetProfile = profiles.find((p) => p.id === targetProfileId);
         if (targetProfile) {

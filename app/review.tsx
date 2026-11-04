@@ -58,6 +58,7 @@ import {
 } from "@/utils/reviewComposerSteps";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 import { completePostReview } from "@/utils/reviewSubmission";
+import { requestRatingAfterReview } from "@/services/ratingPrompt";
 import {
   publishReview,
   ReviewPublishingError,
@@ -238,6 +239,8 @@ function ReviewComposer() {
     number | null
   >(null);
   const [postedReviewId, setPostedReviewId] = useState<string | null>(null);
+  // Includes the review just posted; read once the member is back on the feed.
+  const postedReviewCountRef = useRef(0);
   const [captionMentions, setCaptionMentions] = useState<MentionSpan[]>([]);
   /** True when the edit flow could not load the review's stored mentions. */
   const captionMentionsUnavailableRef = useRef(false);
@@ -775,6 +778,7 @@ function ReviewComposer() {
 
     setSubmissionMessage("Review created successfully!");
     setPostedReviewId(submission.reviewId);
+    postedReviewCountRef.current = (profile.review_count ?? 0) + 1;
     await databaseService.clearReviewCaches();
     publishReviewUpdated(submission.reviewId);
 
@@ -800,8 +804,10 @@ function ReviewComposer() {
           setCelebrationPassportPoints(submission.passportPoints);
           setAchievements(earnedAchievements);
         },
-        navigateToFeed: () =>
-          router.dismissTo(feedRouteAfterPost(submission.reviewId)),
+        navigateToFeed: () => {
+          router.dismissTo(feedRouteAfterPost(submission.reviewId));
+          void requestRatingAfterReview(postedReviewCountRef.current);
+        },
         refreshProfile,
       });
     } catch (error) {
@@ -818,6 +824,7 @@ function ReviewComposer() {
     requestAnimationFrame(() => {
       router.dismissTo(feedRouteAfterPost(reviewId));
       void refreshProfile();
+      void requestRatingAfterReview(postedReviewCountRef.current);
     });
   };
 

@@ -7,6 +7,10 @@ import {
   rememberFavorite,
 } from "@/services/favoritePlacesCache";
 
+const mockRequestRating = jest.fn();
+jest.mock("@/services/ratingPrompt", () => ({
+  requestRatingAfterEngagement: () => mockRequestRating(),
+}));
 const mockRead = jest.fn();
 const mockSave = jest.fn();
 const mockGate = jest.fn();
@@ -42,6 +46,7 @@ beforeEach(() => {
   mockRead.mockReset().mockResolvedValue(false);
   mockSave.mockReset().mockResolvedValue(true);
   mockGate.mockClear();
+  mockRequestRating.mockClear();
 });
 afterEach(() => {
   act(() => renderer?.unmount());
@@ -67,6 +72,7 @@ it("serializes rapid taps and waits for a confirmed save", async () => {
   expect(latest.saved).toBe(false);
   await act(async () => finish(true));
   expect(latest.saved).toBe(true);
+  expect(mockRequestRating).toHaveBeenCalledTimes(1);
 });
 
 it("keeps the confirmed state on a failed unstar", async () => {
@@ -79,6 +85,7 @@ it("keeps the confirmed state on a failed unstar", async () => {
   await act(async () => latest.toggle());
   expect(latest.saved).toBe(true);
   expect(alert).toHaveBeenCalled();
+  expect(mockRequestRating).not.toHaveBeenCalled();
 });
 
 it("does not apply an old location's response to a new location", async () => {

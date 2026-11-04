@@ -11,6 +11,7 @@ import {
   knownFavorite,
   rememberFavorite,
 } from "@/services/favoritePlacesCache";
+import { requestRatingAfterEngagement } from "@/services/ratingPrompt";
 
 export function useLocationFavorite(
   locationId: string | number | undefined,
@@ -84,6 +85,7 @@ export function useLocationFavorite(
       rememberFavorite(memberId, id, confirmed);
       if (request === epoch.current)
         setState({ key, saved: confirmed, busy: false });
+      if (confirmed && !saved) void requestRatingAfterEngagement();
     } catch {
       if (request === epoch.current) {
         setState({ key, saved, busy: false });

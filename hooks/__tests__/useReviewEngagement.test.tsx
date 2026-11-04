@@ -2,6 +2,10 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { useReviewEngagement } from "../useReviewEngagement";
 
+const mockRequestRating = jest.fn();
+jest.mock("@/services/ratingPrompt", () => ({
+  requestRatingAfterEngagement: () => mockRequestRating(),
+}));
 const mockUpsert = jest.fn();
 jest.mock("@/utils/supabase", () => ({
   supabase: {
@@ -52,6 +56,7 @@ function Probe({ onLikeChanged }: { onLikeChanged: jest.Mock }) {
 }
 
 it("reports a confirmed like so the list can keep it", async () => {
+  mockRequestRating.mockClear();
   mockUpsert.mockResolvedValue({ error: null });
   const onLikeChanged = jest.fn();
   let tree!: renderer.ReactTestRenderer;
@@ -64,10 +69,12 @@ it("reports a confirmed like so the list can keep it", async () => {
   });
 
   expect(onLikeChanged).toHaveBeenCalledWith("42", true, 4);
+  expect(mockRequestRating).toHaveBeenCalledTimes(1);
   act(() => tree.unmount());
 });
 
 it("does not report a like that failed to save", async () => {
+  mockRequestRating.mockClear();
   mockUpsert.mockResolvedValue({ error: new Error("offline") });
   const onLikeChanged = jest.fn();
   let tree!: renderer.ReactTestRenderer;
@@ -80,6 +87,7 @@ it("does not report a like that failed to save", async () => {
   });
 
   expect(onLikeChanged).not.toHaveBeenCalled();
+  expect(mockRequestRating).not.toHaveBeenCalled();
   expect(result.current!.hasLiked).toBe(false);
   expect(result.current!.likesCount).toBe(3);
   act(() => tree.unmount());

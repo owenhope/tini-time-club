@@ -11,6 +11,10 @@ const mockTargetProfile = {
   deleted: false,
 };
 
+const mockRequestRating = jest.fn();
+jest.mock("@/services/ratingPrompt", () => ({
+  requestRatingAfterEngagement: () => mockRequestRating(),
+}));
 const mockLoad = jest.fn(async () => undefined);
 const mockSignedInProfile = { id: "member-1", username: "olive" };
 const mockSetFollowersCount = jest.fn();

@@ -54,6 +54,7 @@ import {
 } from "@/utils/authTelemetry";
 import { retryPendingPushUnregistrationAsync } from "@/services/pushNotificationService";
 import { trackAppUsage } from "@/services/appUsageService";
+import { recordAppOpenDay } from "@/services/ratingPrompt";
 import { useAppUpdatePrompt } from "@/hooks/useAppUpdatePrompt";
 import { useMinimumVersionGate } from "@/hooks/useMinimumVersionGate";
 import { isAuthApiError, type Session } from "@supabase/supabase-js";
@@ -289,12 +290,17 @@ export function RootLayoutNav() {
   // A heartbeat on startup and every five foreground minutes powers the
   // visitor/member audience snapshot in the operator dashboard. The server
   // derives the audience from auth, so this effect sends no profile data.
+  // The same ticks count the days the app is used, which lets readers who
+  // never post qualify for the store rating prompt.
   useEffect(() => {
     if (!isReady || !fontsLoaded || !initialAuth) return;
 
     void trackAppUsage();
+    void recordAppOpenDay();
     const interval = setInterval(() => {
-      if (AppState.currentState === "active") void trackAppUsage();
+      if (AppState.currentState !== "active") return;
+      void trackAppUsage();
+      void recordAppOpenDay();
     }, APP_USAGE_HEARTBEAT_MS);
 
     return () => clearInterval(interval);
