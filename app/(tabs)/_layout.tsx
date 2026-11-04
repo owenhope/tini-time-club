@@ -99,7 +99,10 @@ const LayoutContent = () => {
       if (route) router.push(route as Href);
     };
 
-    syncToken(true);
+    // Registers silently for members who already allowed notifications. The
+    // permission itself is asked after a member posts a review or turns a
+    // notification setting on, not the moment the tabs mount after sign-in.
+    syncToken();
 
     const tokenSubscription = subscribeToPushTokenChanges(() => syncToken());
     const retrySubscription = subscribeToPushRegistrationRetry(() =>

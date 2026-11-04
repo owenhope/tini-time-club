@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { SafeAreaView, Switch, Text, View } from "react-native";
 import { makeStyles, useTheme } from "@/theme";
 import { setFridayMartiniReminderEnabled } from "@/utils/martiniReminder";
+import { requestNotificationsFromSettings } from "@/services/notificationPrompt";
 import { useProfile } from "@/context/profile-context";
 
 /**
@@ -41,6 +42,7 @@ const Notifications = () => {
         return;
       }
 
+      if (enabled) await requestNotificationsFromSettings(true);
       await setFridayMartiniReminderEnabled(enabled);
     } catch {
       setError("Your preference was saved, but the reminder couldn't update.");
@@ -60,6 +62,8 @@ const Notifications = () => {
       });
       if (result.error) {
         setError("We couldn't save your mention preference. Try again.");
+      } else if (enabled) {
+        await requestNotificationsFromSettings(reminderEnabled);
       }
     } catch {
       setError("We couldn't save your mention preference. Try again.");

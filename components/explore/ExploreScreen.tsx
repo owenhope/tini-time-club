@@ -52,8 +52,17 @@ export default function ExploreScreen({
   const promptedView = useRef<ExploreListView | null>(null);
   // The map's search bar hides behind the header's magnifier toggle.
   const [searchOpen, setSearchOpen] = useState(false);
+  // Native tabs mount every tab right after sign-in. Explore stays dormant
+  // until the member first opens it, so the location prompt arrives when they
+  // are looking at the map instead of on top of the login flow.
+  const [hasBeenFocused, setHasBeenFocused] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setHasBeenFocused(true);
+    }, [])
+  );
   const { state: location, request: requestLocation } = useExploreLocation();
-  const region = useExploreRegion(location, requestLocation);
+  const region = useExploreRegion(location, requestLocation, hasBeenFocused);
   const displayedView: ExploreView = isMember ? view : "map";
   const activeListView: ExploreListView =
     displayedView === "members"
@@ -157,7 +166,7 @@ export default function ExploreScreen({
           pointerEvents={displayedView === "map" ? "auto" : "none"}
         >
           <ExploreMap
-            enabled={displayedView === "map"}
+            enabled={hasBeenFocused && displayedView === "map"}
             focus={mapFocus}
             location={location}
             requestLocation={requestLocation}
@@ -171,7 +180,7 @@ export default function ExploreScreen({
           pointerEvents={displayedView === "map" ? "none" : "auto"}
         >
           <ExploreLists
-            enabled={displayedView !== "map"}
+            enabled={hasBeenFocused && displayedView !== "map"}
             activeView={activeListView}
             query={queries[activeListView]}
             onQueryChange={(query) =>

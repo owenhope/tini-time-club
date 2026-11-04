@@ -6,10 +6,13 @@ jest.mock("@/services/analyticsService", () => ({
   __esModule: true,
   default: { capture: jest.fn(async () => true) },
 }));
+let mockFocused = true;
 jest.mock("expo-router", () => ({
   useFocusEffect: (callback: () => void) => {
     const React = jest.requireActual<typeof import("react")>("react");
-    React.useEffect(callback, [callback]);
+    React.useEffect(() => {
+      if (mockFocused) callback();
+    }, [callback]);
   },
 }));
 
@@ -75,18 +78,23 @@ jest.mock("@/context/membership-context", () => ({
   }),
 }));
 
+const mockUseExploreRegion = jest.fn();
 jest.mock("@/hooks/useExploreRegion", () => ({
-  useExploreRegion: () => ({
-    state: {
-      status: "ready",
-      regions: [],
-      selectedRegion: null,
-      locationStatus: "idle",
-    },
-    selectRegion: jest.fn(async () => undefined),
-    useMyLocation: jest.fn(async () => undefined),
-  }),
+  useExploreRegion: (...args: unknown[]) => {
+    mockUseExploreRegion(...args);
+    return mockRegionResult;
+  },
 }));
+const mockRegionResult = {
+  state: {
+    status: "ready",
+    regions: [],
+    selectedRegion: null,
+    locationStatus: "idle",
+  },
+  selectRegion: jest.fn(async () => undefined),
+  useMyLocation: jest.fn(async () => undefined),
+};
 
 jest.mock("@/theme", () => ({
   makeStyles: (factory: (theme: object) => object) => () =>
@@ -102,6 +110,8 @@ describe("ExploreScreen", () => {
   let renderer: ReactTestRenderer | undefined;
 
   beforeEach(() => {
+    mockFocused = true;
+    mockUseExploreRegion.mockClear();
     mockIsMember = true;
     mockRequireMembership.mockReset();
     mockRequireMembership.mockReturnValue(true);
@@ -109,6 +119,27 @@ describe("ExploreScreen", () => {
 
   afterEach(() => {
     act(() => renderer?.unmount());
+  });
+
+  it("stays dormant, with no location request, until Explore is opened", () => {
+    mockFocused = false;
+    act(() => {
+      renderer = create(
+        <ExploreScreen view="map" onViewChange={jest.fn()} mapFocus={{}} />
+      );
+    });
+
+    expect(renderer!.root.findByType("ExploreMap" as never).props.enabled).toBe(
+      false
+    );
+    expect(
+      renderer!.root.findByType("ExploreLists" as never).props.enabled
+    ).toBe(false);
+    expect(mockUseExploreRegion).toHaveBeenLastCalledWith(
+      expect.anything(),
+      mockRequestLocation,
+      false
+    );
   });
 
   it("keeps both panels mounted and enables only the selected mode", () => {

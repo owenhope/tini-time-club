@@ -139,16 +139,9 @@ export default function CameraComponent({
     pickerOpenRef.current = true;
 
     try {
-      const mediaPermission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!mediaPermission.granted) {
-        Alert.alert(
-          "Permission Required",
-          "Permission to access your photo library is required!"
-        );
-        return;
-      }
-
+      // The system photo picker (PHPicker on iOS, Photo Picker on Android)
+      // runs out of process and needs no photo-library permission, so there
+      // is no prompt here; the profile photo pickers work the same way.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         base64: false,

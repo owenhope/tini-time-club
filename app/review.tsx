@@ -58,6 +58,7 @@ import {
 } from "@/utils/reviewComposerSteps";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 import { completePostReview } from "@/utils/reviewSubmission";
+import { offerNotificationsAfterReview } from "@/services/notificationPrompt";
 import {
   publishReview,
   ReviewPublishingError,
@@ -246,6 +247,8 @@ function ReviewComposer() {
   const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile, refreshProfile } = useProfile();
+  const fridayReminderEnabled =
+    profile?.weekly_push_notifications_enabled ?? true;
   const { showPassportStamps } = useContext(PassportToastContext);
   const rawEditReviewId = params.editReviewId;
   const editReviewId = Array.isArray(rawEditReviewId)
@@ -800,8 +803,10 @@ function ReviewComposer() {
           setCelebrationPassportPoints(submission.passportPoints);
           setAchievements(earnedAchievements);
         },
-        navigateToFeed: () =>
-          router.dismissTo(feedRouteAfterPost(submission.reviewId)),
+        navigateToFeed: () => {
+          router.dismissTo(feedRouteAfterPost(submission.reviewId));
+          void offerNotificationsAfterReview({ fridayReminderEnabled });
+        },
         refreshProfile,
       });
     } catch (error) {
@@ -818,6 +823,7 @@ function ReviewComposer() {
     requestAnimationFrame(() => {
       router.dismissTo(feedRouteAfterPost(reviewId));
       void refreshProfile();
+      void offerNotificationsAfterReview({ fridayReminderEnabled });
     });
   };
 

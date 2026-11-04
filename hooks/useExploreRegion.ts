@@ -24,7 +24,9 @@ export interface ExploreRegionState {
 
 export function useExploreRegion(
   location: ExploreLocationState,
-  requestLocation: ExploreLocationRequest
+  requestLocation: ExploreLocationRequest,
+  /** False until Explore is first opened; holds back the location prompt. */
+  canRequestLocation = true
 ): {
   state: ExploreRegionState;
   selectRegion: (region: ExploreRegion) => Promise<void>;
@@ -61,11 +63,14 @@ export function useExploreRegion(
         reportError("Unable to load Explore regions:", error);
       }
     })();
-    void requestLocation();
     return () => {
       active = false;
     };
-  }, [requestLocation]);
+  }, []);
+
+  useEffect(() => {
+    if (canRequestLocation) void requestLocation();
+  }, [canRequestLocation, requestLocation]);
 
   useEffect(() => {
     if (location.status === "idle" || location.status === "loading") return;
