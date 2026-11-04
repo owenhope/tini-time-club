@@ -59,6 +59,7 @@ import {
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 import { completePostReview } from "@/utils/reviewSubmission";
 import { requestRatingAfterReview } from "@/services/ratingPrompt";
+import { offerNotificationsAfterReview } from "@/services/notificationPrompt";
 import {
   publishReview,
   ReviewPublishingError,
@@ -249,6 +250,8 @@ function ReviewComposer() {
   const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile, refreshProfile } = useProfile();
+  const fridayReminderEnabled =
+    profile?.weekly_push_notifications_enabled ?? true;
   const { showPassportStamps } = useContext(PassportToastContext);
   const rawEditReviewId = params.editReviewId;
   const editReviewId = Array.isArray(rawEditReviewId)
@@ -806,13 +809,25 @@ function ReviewComposer() {
         },
         navigateToFeed: () => {
           router.dismissTo(feedRouteAfterPost(submission.reviewId));
-          void requestRatingAfterReview(postedReviewCountRef.current);
+          void promptAfterPosting();
         },
         refreshProfile,
       });
     } catch (error) {
       reportError("Review created but post-submit processing failed:", error);
       router.dismissTo(feedRouteAfterPost(submission.reviewId));
+    }
+  };
+
+  // One system prompt per post: the notifications offer comes first while
+  // notifications are still unanswered, and the store rating prompt waits
+  // for a later review rather than stacking on top of it.
+  const promptAfterPosting = async () => {
+    const offeredNotifications = await offerNotificationsAfterReview({
+      fridayReminderEnabled,
+    });
+    if (!offeredNotifications) {
+      void requestRatingAfterReview(postedReviewCountRef.current);
     }
   };
 
@@ -824,7 +839,7 @@ function ReviewComposer() {
     requestAnimationFrame(() => {
       router.dismissTo(feedRouteAfterPost(reviewId));
       void refreshProfile();
-      void requestRatingAfterReview(postedReviewCountRef.current);
+      void promptAfterPosting();
     });
   };
 
