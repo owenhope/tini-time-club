@@ -73,3 +73,29 @@ it("records production usage without changing the request contract", async () =>
     }),
   });
 });
+
+it("sends a follow-up heartbeat when called while one is in flight", async () => {
+  // A heartbeat started before sign-in carries the visitor token. A call made
+  // after SIGNED_IN must not be satisfied by that stale request, or the new
+  // member is never recorded with a platform.
+  let releaseFirst!: () => void;
+  mockInvoke.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        releaseFirst = () => resolve({ error: null });
+      })
+  );
+
+  const visitorHeartbeat = trackAppUsage();
+  const memberHeartbeat = trackAppUsage();
+  const anotherMemberHeartbeat = trackAppUsage();
+  await Promise.resolve();
+  await Promise.resolve();
+  releaseFirst();
+
+  await expect(
+    Promise.all([visitorHeartbeat, memberHeartbeat, anotherMemberHeartbeat])
+  ).resolves.toEqual([true, true, true]);
+  // One follow-up covers every call made while the first was in flight.
+  expect(mockInvoke).toHaveBeenCalledTimes(2);
+});
