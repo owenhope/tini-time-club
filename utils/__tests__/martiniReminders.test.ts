@@ -1,9 +1,11 @@
 import {
   EVERGREEN_REMINDERS,
+  FRIDAY_SEASONAL_REMINDERS,
   HANUKKAH_FIRST_NIGHTS,
-  SEASONAL_REMINDERS,
+  HOLIDAY_REMINDERS,
   reminderForDate,
   upcomingFridays,
+  upcomingReminders,
 } from "../martiniReminders";
 
 describe("EVERGREEN_REMINDERS", () => {
@@ -21,44 +23,38 @@ describe("EVERGREEN_REMINDERS", () => {
 });
 
 describe("reminderForDate", () => {
-  it("pins seasonal messages to their Fridays", () => {
-    // 2027-01-01 is the first Friday of 2027.
-    expect(reminderForDate(new Date(2027, 0, 1)).title).toContain("New year");
-    // 2027-02-12 is the Friday nearest Valentine's Day.
-    expect(reminderForDate(new Date(2027, 1, 12)).title).toContain("Roses");
-    // 2027-06-25 is the first Friday of summer.
-    expect(reminderForDate(new Date(2027, 5, 25)).title).toContain("Patio");
-    // 2027-10-29 falls in Halloween week.
-    expect(reminderForDate(new Date(2027, 9, 29)).title).toContain("wicked");
-    // 2027-11-26 falls in Thanksgiving week.
-    expect(reminderForDate(new Date(2027, 10, 26)).title).toContain("thanks");
-    // 2027-12-31 falls in New Year's Eve week.
-    expect(reminderForDate(new Date(2027, 11, 31)).title).toContain(
-      "One last tini"
-    );
+  const titleOn = (y: number, m: number, d: number) =>
+    reminderForDate(new Date(y, m, d, 16))?.title;
+
+  it("sends holidays on their own date, whatever the weekday", () => {
+    expect(titleOn(2027, 0, 1)).toContain("New year"); // Friday
+    expect(titleOn(2027, 1, 14)).toContain("Roses"); // Sunday
+    expect(titleOn(2026, 9, 31)).toContain("wicked"); // Saturday
+    expect(titleOn(2026, 10, 26)).toContain("thanks"); // Thursday
+    expect(titleOn(2026, 11, 4)).toContain("Hanukkah"); // Friday
+    expect(titleOn(2027, 11, 24)).toContain("Hanukkah"); // Friday
+    expect(titleOn(2026, 11, 25)).toContain("Merry"); // Friday
+    expect(titleOn(2026, 11, 26)).toContain("Boxing Day"); // Saturday
+    expect(titleOn(2026, 11, 31)).toContain("One last tini"); // Thursday
   });
 
-  it("covers the December holidays", () => {
-    // 2026-12-04 is Hanukkah's first night.
-    expect(reminderForDate(new Date(2026, 11, 4)).title).toContain("Hanukkah");
-    // 2026-12-25 is Christmas Day.
-    expect(reminderForDate(new Date(2026, 11, 25)).title).toContain(
-      "Merry & bright"
-    );
-    // 2031-12-26 is Boxing Day on a Friday.
-    expect(reminderForDate(new Date(2031, 11, 26)).title).toContain(
-      "Boxing Day"
-    );
-    // 2027-12-24 is both Christmas Eve and Hanukkah's first night.
-    expect(reminderForDate(new Date(2027, 11, 24)).title).toContain(
-      "Happy everything"
-    );
-    // 2031-12-12 is Hanukkah's fourth day, the Friday after it starts.
-    expect(reminderForDate(new Date(2031, 11, 12)).title).toContain("Hanukkah");
+  it("combines Hanukkah and Christmas when they share a date", () => {
+    expect(titleOn(2035, 11, 25)).toContain("Happy everything");
   });
 
-  it("keeps seasonal copy short enough for an iOS banner", () => {
-    for (const { message } of SEASONAL_REMINDERS) {
+  it("sends nothing on an ordinary weekday", () => {
+    expect(titleOn(2027, 2, 3)).toBeUndefined(); // Wednesday
+  });
+
+  it("keeps Friday-only seasonal messages on Fridays", () => {
+    expect(titleOn(2027, 5, 25)).toContain("Patio");
+  });
+
+  it("keeps holiday and seasonal copy short enough for an iOS banner", () => {
+    for (const { message } of [
+      ...HOLIDAY_REMINDERS,
+      ...FRIDAY_SEASONAL_REMINDERS,
+    ]) {
       expect(message.body.length).toBeLessThanOrEqual(90);
       expect(message.title.length).toBeLessThanOrEqual(40);
     }
@@ -80,10 +76,38 @@ describe("reminderForDate", () => {
     expect(nextWeek).not.toEqual(a);
   });
 
-  it("always returns a message", () => {
+  it("always has a message for a Friday", () => {
     for (const friday of upcomingFridays(new Date(2027, 0, 1), 104, 17)) {
-      expect(reminderForDate(friday).title.length).toBeGreaterThan(0);
+      expect(reminderForDate(friday)?.title.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("upcomingReminders", () => {
+  it("adds holidays between Fridays, in date order", () => {
+    // From Wed 2026-12-23 through the 2nd Friday (2027-01-01).
+    const reminders = upcomingReminders(new Date(2026, 11, 23, 9), 2, 16);
+    expect(
+      reminders.map(({ date, kind }) => [date.getMonth(), date.getDate(), kind])
+    ).toEqual([
+      [11, 25, "holiday"],
+      [11, 26, "holiday"],
+      [11, 31, "holiday"],
+      [0, 1, "holiday"],
+    ]);
+  });
+
+  it("stays under the 64 pending local notifications iOS allows", () => {
+    for (let month = 0; month < 12; month++) {
+      const reminders = upcomingReminders(new Date(2027, month, 1), 40, 16);
+      expect(reminders.length).toBeLessThan(64);
+    }
+  });
+
+  it("skips today's reminder once its hour has passed", () => {
+    // Christmas 2026 at 5pm: the 4pm reminder is gone.
+    const [first] = upcomingReminders(new Date(2026, 11, 25, 17), 1, 16);
+    expect(first.date.getDate()).toBe(26);
   });
 });
 

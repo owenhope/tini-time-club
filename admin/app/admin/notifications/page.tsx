@@ -11,11 +11,7 @@ import {
   formatNotificationSentValue,
   humanizeNotificationKind,
 } from "@/lib/notificationKinds";
-import {
-  SEASONAL_REMINDERS,
-  reminderForDate,
-  upcomingFridays,
-} from "@/lib/martiniReminders";
+import { upcomingReminders } from "@/lib/martiniReminders";
 import { parsePagination } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +20,12 @@ export const dynamic = "force-dynamic";
 // device-local, so this list is the shared message bank, not a server queue.
 const REMINDER_HOUR = 16;
 const REMINDER_WEEKS = 52;
-const SEASONAL_TITLES = new Set(
-  SEASONAL_REMINDERS.map((rule) => rule.message.title)
-);
+
+const KIND_BADGES = {
+  holiday: { label: "Holiday", className: "bg-red-100 text-red-800" },
+  seasonal: { label: "Seasonal", className: "bg-amber-100 text-amber-800" },
+  rotating: { label: "Rotating", className: "text-stone-400" },
+} as const;
 
 const ERRORS: Record<string, string> = {
   body: "Message is required and must be under 180 characters.",
@@ -50,8 +49,12 @@ export default async function NotificationsPage({
     page: params.upage,
     per: params.uper,
   });
-  const allFridays = upcomingFridays(new Date(), REMINDER_WEEKS, REMINDER_HOUR);
-  const fridays = allFridays.slice(
+  const allReminders = upcomingReminders(
+    new Date(),
+    REMINDER_WEEKS,
+    REMINDER_HOUR
+  );
+  const reminders = allReminders.slice(
     (upcomingPage - 1) * upcomingPer,
     upcomingPage * upcomingPer
   );
@@ -162,25 +165,25 @@ export default async function NotificationsPage({
           <h2 className="border-b border-stone-200 px-5 py-3 font-semibold">
             Upcoming Tini Time reminders{" "}
             <span className="font-normal text-stone-400">
-              (Fridays 4pm, member-local time)
+              (Fridays and holidays, 4pm member-local time)
             </span>
           </h2>
           <table className="w-full text-left text-sm">
             <thead className="border-b border-stone-200 bg-stone-100 text-[11px] uppercase tracking-[0.14em] text-stone-500">
               <tr>
-                <th className="px-5 py-2.5">Friday</th>
+                <th className="px-5 py-2.5">Date</th>
                 <th className="px-5 py-2.5">Message</th>
                 <th className="px-5 py-2.5">Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {fridays.map((friday) => {
-                const message = reminderForDate(friday);
-                const seasonal = SEASONAL_TITLES.has(message.title);
+              {reminders.map(({ date, kind, message }) => {
+                const badge = KIND_BADGES[kind];
                 return (
-                  <tr key={friday.toISOString()}>
-                    <td className="w-36 whitespace-nowrap px-5 py-2.5 text-stone-500">
-                      {friday.toLocaleDateString("en-US", {
+                  <tr key={date.toISOString()}>
+                    <td className="w-44 whitespace-nowrap px-5 py-2.5 text-stone-500">
+                      {date.toLocaleDateString("en-US", {
+                        weekday: "short",
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -195,13 +198,11 @@ export default async function NotificationsPage({
                       </span>
                     </td>
                     <td className="w-28 px-5 py-2.5">
-                      {seasonal ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                          Seasonal
-                        </span>
-                      ) : (
-                        <span className="text-xs text-stone-400">Rotating</span>
-                      )}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -214,7 +215,7 @@ export default async function NotificationsPage({
             perParam="uper"
             page={upcomingPage}
             perPage={upcomingPer}
-            total={allFridays.length}
+            total={allReminders.length}
             noun="upcoming reminders"
           />
         </div>

@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { reminderForDate, upcomingFridays } from "@/utils/martiniReminders";
+import { upcomingReminders } from "@/utils/martiniReminders";
 import { warn } from "@/utils/log";
 
 /**
@@ -9,15 +9,17 @@ import { warn } from "@/utils/log";
  * instants, so each request records the instant it was computed for; when the
  * phone's timezone (or the hour) changes, the stale ones are rescheduled.
  *
- * Each upcoming Friday is scheduled individually with its own message from
- * the rotating bank (utils/martiniReminders.ts), and the queue is topped up
- * whenever the app runs. iOS caps pending local notifications at 64, so the
- * horizon stays well under that.
+ * Each upcoming Friday, and each holiday on its own date, is scheduled
+ * individually with its own message from the bank (utils/martiniReminders.ts),
+ * and the queue is topped up whenever the app runs. iOS caps pending local
+ * notifications at 64; 40 weeks of Fridays plus holidays stays under that.
  *
  * Scheduled only when notification permission is already granted (the push
  * registration flow owns the permission prompt).
  */
 
+// Holidays share the "tini-friday" prefix so one id per date covers both and
+// requests queued by older builds are still found and replaced.
 const REMINDER_ID_PREFIX = "tini-friday";
 const REMINDER_HOUR = 16;
 const WEEKS_AHEAD = 40;
@@ -57,24 +59,23 @@ async function ensureFridayMartiniReminder(): Promise<void> {
         .map((n) => [n.identifier, n.content])
     );
 
-    const fridays = upcomingFridays(new Date(), WEEKS_AHEAD, REMINDER_HOUR);
-    // A Friday that is no longer upcoming here (e.g. today's, already past
-    // 4pm in the new timezone) would otherwise fire at its old instant.
-    const expected = new Set(fridays.map(idForDate));
+    const reminders = upcomingReminders(new Date(), WEEKS_AHEAD, REMINDER_HOUR);
+    // A day that is no longer upcoming here (e.g. today's, already past 4pm
+    // in the new timezone) would otherwise fire at its old instant.
+    const expected = new Set(reminders.map(({ date }) => idForDate(date)));
     await Promise.all(
       [...existing.keys()]
         .filter((id) => !expected.has(id))
         .map((id) => Notifications.cancelScheduledNotificationAsync(id))
     );
-    for (const friday of fridays) {
-      const identifier = idForDate(friday);
-      const message = reminderForDate(friday);
+    for (const { date, message } of reminders) {
+      const identifier = idForDate(date);
       const current = existing.get(identifier);
       if (current) {
         // Same instant (still 4pm local) and same copy: nothing to do. A
         // moved timezone or an edited message bank reschedules it.
         if (
-          current.data?.fireAt === friday.getTime() &&
+          current.data?.fireAt === date.getTime() &&
           current.title === message.title &&
           current.body === message.body
         ) {
@@ -87,11 +88,11 @@ async function ensureFridayMartiniReminder(): Promise<void> {
         identifier,
         content: {
           ...message,
-          data: { fireAt: friday.getTime() },
+          data: { fireAt: date.getTime() },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: friday,
+          date,
         },
       });
     }

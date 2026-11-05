@@ -1,10 +1,13 @@
 /**
- * The Friday reminder message bank. Pure data + date logic (no Expo imports)
- * so the picker is unit-testable and the copy is easy to edit in one place.
+ * The Tini Time reminder message bank. Pure data + date logic (no Expo
+ * imports) so the picker is unit-testable and the copy is easy to edit in one
+ * place.
  *
- * Every user sees the same message on a given Friday: seasonal messages are
- * pinned to date windows, and the evergreen bank rotates by week-of-year.
- * Bodies stay under ~90 characters so iOS banners don't truncate them.
+ * Every user sees the same message on a given day. Reminders go out every
+ * Friday, plus on each holiday's own date whatever the weekday; a holiday on a
+ * Friday replaces that Friday's message. Other Fridays get a Friday-only
+ * seasonal message or the evergreen bank, rotated by week-of-year. Bodies stay
+ * under ~90 characters so iOS banners don't truncate them.
  */
 
 export interface ReminderMessage {
@@ -122,11 +125,14 @@ export const EVERGREEN_REMINDERS: readonly ReminderMessage[] = [
   { title: "Don't make us ask twice", body: "It's tini time 🍸" },
 ] as const;
 
-interface SeasonalRule {
+interface DateRule {
   message: ReminderMessage;
-  /** Whether this Friday falls in the rule's window. */
-  matches: (fridayDate: Date) => boolean;
+  /** Whether the rule applies on this date. */
+  matches: (date: Date) => boolean;
 }
+
+const isDay = (date: Date, month: number, day: number) =>
+  date.getMonth() === month && date.getDate() === day;
 
 const inWindow = (date: Date, month: number, from: number, to: number) =>
   date.getMonth() === month && date.getDate() >= from && date.getDate() <= to;
@@ -155,98 +161,93 @@ export const HANUKKAH_FIRST_NIGHTS: Readonly<Record<number, [number, number]>> =
     2040: [10, 29],
   };
 
-/** The Friday in the first week of Hanukkah (first night through day 7). */
-const inHanukkahWeek = (date: Date) => {
+const isHanukkahFirstNight = (date: Date) => {
   const firstNight = HANUKKAH_FIRST_NIGHTS[date.getFullYear()];
-  if (!firstNight) return false;
-  const start = new Date(date.getFullYear(), firstNight[0], firstNight[1]);
-  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const offset = Math.round((day.getTime() - start.getTime()) / 86_400_000);
-  return offset >= 0 && offset <= 6;
+  return Boolean(firstNight) && isDay(date, firstNight[0], firstNight[1]);
 };
 
-const inChristmasWeek = (date: Date) => inWindow(date, 11, 19, 25);
+const isChristmas = (date: Date) => isDay(date, 11, 25);
 
-/** First matching rule wins; windows are chosen so at most one Friday hits each. */
-export const SEASONAL_REMINDERS: readonly SeasonalRule[] = [
+/** (US) Thanksgiving: the fourth Thursday of November. */
+const isThanksgiving = (date: Date) =>
+  date.getDay() === 4 && inWindow(date, 10, 22, 28);
+
+/** Sent on the holiday's own date. First matching rule wins. */
+export const HOLIDAY_REMINDERS: readonly DateRule[] = [
   {
-    // First Friday of the year.
-    matches: (d) => inWindow(d, 0, 1, 7),
+    matches: (d) => isDay(d, 0, 1),
     message: {
       title: "New year, new rank 🥂",
       body: "The climb to Top Shelf starts tonight.",
     },
   },
   {
-    // The Friday nearest Valentine's Day.
-    matches: (d) => inWindow(d, 1, 11, 17),
+    matches: (d) => isDay(d, 1, 14),
     message: {
       title: "Roses are red 🌹",
       body: "Martinis are clear — happy tini time, my dear.",
     },
   },
   {
-    // First Friday of summer.
-    matches: (d) => inWindow(d, 5, 20, 26),
-    message: {
-      title: "Patio season ☀️",
-      body: "Patio + martini = correct.",
-    },
-  },
-  {
-    // Halloween week.
-    matches: (d) => inWindow(d, 9, 25, 31),
+    matches: (d) => isDay(d, 9, 31),
     message: {
       title: "Something wicked 🎃",
       body: "This way pours.",
     },
   },
   {
-    // (US) Thanksgiving week.
-    matches: (d) => inWindow(d, 10, 22, 28),
+    matches: isThanksgiving,
     message: {
       title: "Giving thanks 🦃",
       body: "For cold gin and good company.",
     },
   },
   {
-    // Hanukkah and Christmas share a Friday (e.g. 2027, 2030).
-    matches: (d) => inChristmasWeek(d) && inHanukkahWeek(d),
+    // Hanukkah starts on Christmas Day (e.g. 2035).
+    matches: (d) => isChristmas(d) && isHanukkahFirstNight(d),
     message: {
       title: "Happy everything 🕎🎄",
       body: "Eight nights, one Christmas, and a martini for each.",
     },
   },
   {
-    // The Friday before Christmas, or Christmas itself.
-    matches: inChristmasWeek,
+    matches: isHanukkahFirstNight,
+    message: {
+      title: "Happy Hanukkah 🕎",
+      body: "Light the candles, then pour something clear.",
+    },
+  },
+  {
+    matches: isChristmas,
     message: {
       title: "Merry & bright 🎄",
       body: "Deck the halls with gin and olives.",
     },
   },
   {
-    // Boxing Day, when it lands on a Friday.
-    matches: (d) => inWindow(d, 11, 26, 26),
+    matches: (d) => isDay(d, 11, 26),
     message: {
       title: "Boxing Day 🎁",
       body: "Leftovers can wait. The bar is open.",
     },
   },
   {
-    // New Year's Eve week.
-    matches: (d) => inWindow(d, 11, 27, 31),
+    matches: (d) => isDay(d, 11, 31),
     message: {
       title: "One last tini 🥂",
       body: "End the year Top Shelf style.",
     },
   },
+];
+
+/** Friday-only seasonal messages; windows hold exactly one Friday each. */
+export const FRIDAY_SEASONAL_REMINDERS: readonly DateRule[] = [
   {
-    // Start of Hanukkah; the holidays above win a shared Friday.
-    matches: inHanukkahWeek,
+    // First Friday of summer.
+    matches: (d) => inWindow(d, 5, 20, 26),
     message: {
-      title: "Happy Hanukkah 🕎",
-      body: "Light the candles, then pour something clear.",
+      title: "Patio season ☀️",
+      body: "Patio + martini = correct.",
     },
   },
 ];
@@ -258,14 +259,38 @@ const dayOfYear = (date: Date): number => {
   );
 };
 
-/** The message every member sees on a given Friday. */
-export const reminderForDate = (fridayDate: Date): ReminderMessage => {
-  const seasonal = SEASONAL_REMINDERS.find((rule) => rule.matches(fridayDate));
-  if (seasonal) return seasonal.message;
+export type ReminderKind = "holiday" | "seasonal" | "rotating";
 
-  const week = Math.floor((dayOfYear(fridayDate) - 1) / 7);
-  return EVERGREEN_REMINDERS[week % EVERGREEN_REMINDERS.length];
+export interface ScheduledReminder {
+  date: Date;
+  kind: ReminderKind;
+  message: ReminderMessage;
+}
+
+const reminderOn = (
+  date: Date
+): Omit<ScheduledReminder, "date"> | undefined => {
+  const holiday = HOLIDAY_REMINDERS.find((rule) => rule.matches(date));
+  if (holiday) return { kind: "holiday", message: holiday.message };
+  // 5 = Friday in JS Date#getDay numbering.
+  if (date.getDay() !== 5) return undefined;
+
+  const seasonal = FRIDAY_SEASONAL_REMINDERS.find((rule) => rule.matches(date));
+  if (seasonal) return { kind: "seasonal", message: seasonal.message };
+
+  const week = Math.floor((dayOfYear(date) - 1) / 7);
+  return {
+    kind: "rotating",
+    message: EVERGREEN_REMINDERS[week % EVERGREEN_REMINDERS.length],
+  };
 };
+
+/**
+ * The message every member sees on a given date: the holiday's on a holiday,
+ * otherwise the Friday message. Undefined on any other day.
+ */
+export const reminderForDate = (date: Date): ReminderMessage | undefined =>
+  reminderOn(date)?.message;
 
 /** The next `count` Fridays at `hour` local time, starting after `from`. */
 export const upcomingFridays = (
@@ -276,7 +301,6 @@ export const upcomingFridays = (
   const fridays: Date[] = [];
   const cursor = new Date(from);
   cursor.setHours(hour, 0, 0, 0);
-  // 5 = Friday in JS Date#getDay numbering.
   while (cursor.getDay() !== 5 || cursor <= from) {
     cursor.setDate(cursor.getDate() + 1);
     cursor.setHours(hour, 0, 0, 0);
@@ -286,4 +310,29 @@ export const upcomingFridays = (
     cursor.setDate(cursor.getDate() + 7);
   }
   return fridays;
+};
+
+/**
+ * Every reminder at `hour` local time after `from`, through the `weeks`th
+ * upcoming Friday: each Friday plus each holiday in between, in date order.
+ */
+export const upcomingReminders = (
+  from: Date,
+  weeks: number,
+  hour: number
+): ScheduledReminder[] => {
+  const fridays = upcomingFridays(from, weeks, hour);
+  const last = fridays[fridays.length - 1];
+  if (!last) return [];
+
+  const reminders: ScheduledReminder[] = [];
+  const cursor = new Date(from);
+  cursor.setHours(hour, 0, 0, 0);
+  while (cursor <= last) {
+    const reminder = cursor > from ? reminderOn(cursor) : undefined;
+    if (reminder) reminders.push({ date: new Date(cursor), ...reminder });
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(hour, 0, 0, 0);
+  }
+  return reminders;
 };

@@ -77,5 +77,5 @@ it("reschedules reminders whose copy changed in the message bank", async () => {
   const request = (
     Notifications.scheduleNotificationAsync as jest.Mock
   ).mock.calls.find(([r]) => r.identifier === idFor(first))?.[0];
-  expect(request.content.title).toBe(reminderForDate(first).title);
+  expect(request.content.title).toBe(reminderForDate(first)?.title);
 });
