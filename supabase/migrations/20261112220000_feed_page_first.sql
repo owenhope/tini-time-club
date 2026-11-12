@@ -1,0 +1,260 @@
+BEGIN;
+
+-- The cursor feed joined public.location_ratings, a GROUP BY view over every
+-- location and review. Inside this function the planner could not push the
+-- per-row location id into the view, so it recomputed the whole view once per
+-- published review and only then applied the page limit: quadratic in the
+-- review count (1.3 s for 207 reviews in production).
+--
+-- Pick the page rows first, then decorate only those rows, and compute each
+-- location's rating directly. The location object also carries the Golden
+-- Glass and verified flags, so clients no longer need a second request for
+-- them. The response shape is otherwise unchanged.
+
+CREATE OR REPLACE FUNCTION public.get_feed_page_v1(
+  p_viewer uuid,
+  p_limit integer DEFAULT 20,
+  p_cursor_inserted_at timestamptz DEFAULT NULL,
+  p_cursor_id bigint DEFAULT NULL,
+  p_user_id uuid DEFAULT NULL,
+  p_location_id bigint DEFAULT NULL,
+  p_exclude_blocked boolean DEFAULT true,
+  p_followed_only boolean DEFAULT false
+)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+  WITH request AS (
+    SELECT greatest(1, least(COALESCE(p_limit, 20), 50)) AS page_size
+  ),
+  -- Choose the page before decorating it. MATERIALIZED keeps the planner from
+  -- folding the decoration joins back into this scan.
+  page AS MATERIALIZED (
+    SELECT
+      r.id,
+      r.comment,
+      r.image_url,
+      r.inserted_at,
+      r.taste,
+      r.presentation,
+      r.user_id,
+      r.location,
+      r.spirit,
+      r.type
+    FROM public.reviews r
+    JOIN public.profiles author
+      ON author.id = r.user_id
+     AND author.deleted = false
+    WHERE p_viewer = auth.uid()
+      AND r.state = 1
+      AND (p_user_id IS NULL OR r.user_id = p_user_id)
+      AND (p_location_id IS NULL OR r.location = p_location_id)
+      AND (
+        p_cursor_inserted_at IS NULL
+        OR r.inserted_at < p_cursor_inserted_at
+        OR (
+          r.inserted_at = p_cursor_inserted_at
+          AND r.id < p_cursor_id
+        )
+      )
+      AND (
+        NOT COALESCE(p_followed_only, false)
+        OR EXISTS (
+          SELECT 1
+          FROM public.followers follower
+          WHERE follower.follower_id = p_viewer
+            AND follower.following_id = r.user_id
+        )
+      )
+      AND (
+        NOT COALESCE(p_exclude_blocked, true)
+        OR NOT EXISTS (
+          SELECT 1
+          FROM public.blocks block
+          WHERE (
+            block.blocker_id = p_viewer
+            AND block.blocked_id = r.user_id
+          ) OR (
+            block.blocker_id = r.user_id
+            AND block.blocked_id = p_viewer
+          )
+        )
+      )
+    ORDER BY r.inserted_at DESC, r.id DESC
+    LIMIT greatest(1, least(COALESCE(p_limit, 20), 50)) + 1
+  ),
+  feed_rows AS (
+    SELECT
+      r.id,
+      r.comment,
+      r.image_url,
+      r.inserted_at,
+      r.taste,
+      r.presentation,
+      r.user_id,
+      jsonb_build_object(
+        'id', l.id,
+        'name', l.name,
+        'address', l.address,
+        'rating', lr.rating,
+        'total_ratings', COALESCE(lr.total_ratings, 0),
+        'is_golden_glass', public.is_golden_glass_location(l.id),
+        'is_location_verified', public.is_location_verified(l.id)
+      ) AS location,
+      jsonb_build_object('name', s.name) AS spirit,
+      jsonb_build_object('name', t.name) AS type,
+      jsonb_build_object(
+        'id', p.id,
+        'username', p.username,
+        'avatar_url', p.avatar_url,
+        'is_verified', p.is_verified,
+        'review_count', p.review_count,
+        'passport_points', p.passport_points
+      ) AS profile,
+      COALESCE(lk.likes_count, 0) AS likes_count,
+      COALESCE(cm.comments_count, 0) AS comments_count,
+      (viewer_like.user_id IS NOT NULL) AS has_liked,
+      COALESCE(recent.items, '[]'::jsonb) AS recent_comments
+    FROM page r
+    JOIN public.profiles p
+      ON p.id = r.user_id
+     AND p.deleted = false
+    LEFT JOIN public.locations l ON l.id = r.location
+    -- Same numbers as public.location_ratings, computed for this row's
+    -- location only.
+    LEFT JOIN LATERAL (
+      SELECT
+        COALESCE(
+          round(avg((rated.taste + rated.presentation) / 2.0), 1),
+          0
+        )::numeric AS rating,
+        count(rated.id)::integer AS total_ratings
+      FROM public.reviews rated
+      WHERE rated.location = r.location
+        AND rated.state = 1
+    ) lr ON true
+    LEFT JOIN public.spirits s ON s.id = r.spirit
+    LEFT JOIN public.types t ON t.id = r.type
+    LEFT JOIN LATERAL (
+      SELECT count(*) AS comments_count
+      FROM public.comments c
+      WHERE c.review_id = r.id
+    ) cm ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*) AS likes_count
+      FROM public.likes review_like
+      WHERE review_like.review_id = r.id
+    ) lk ON true
+    LEFT JOIN public.likes viewer_like
+      ON viewer_like.review_id = r.id
+     AND viewer_like.user_id = p_viewer
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', preview.id,
+          'body', preview.body,
+          'inserted_at', preview.inserted_at,
+          'review_id', preview.review_id,
+          'user_id', preview.user_id,
+          'profile', jsonb_build_object(
+            'id', preview.profile_id,
+            'username', preview.username,
+            'avatar_url', preview.avatar_url,
+            'is_verified', preview.is_verified,
+            'review_count', preview.profile_review_count,
+            'passport_points', preview.profile_passport_points
+          ),
+          'likes_count', preview.likes_count,
+          'has_liked', preview.has_liked
+        )
+        ORDER BY preview.inserted_at DESC, preview.id DESC
+      ) AS items
+      FROM (
+        SELECT
+          c.id,
+          c.body,
+          c.inserted_at,
+          c.review_id,
+          c.user_id,
+          cp.id AS profile_id,
+          cp.username,
+          cp.avatar_url,
+          cp.is_verified,
+          cp.review_count AS profile_review_count,
+          cp.passport_points AS profile_passport_points,
+          (
+            SELECT count(*)
+            FROM public.comment_likes comment_like
+            WHERE comment_like.comment_id = c.id
+          ) AS likes_count,
+          EXISTS (
+            SELECT 1
+            FROM public.comment_likes comment_like
+            WHERE comment_like.comment_id = c.id
+              AND comment_like.user_id = p_viewer
+          ) AS has_liked
+        FROM public.comments c
+        JOIN public.profiles cp
+          ON cp.id = c.user_id
+         AND cp.deleted = false
+        WHERE c.review_id = r.id
+        ORDER BY c.inserted_at DESC, c.id DESC
+        LIMIT 2
+      ) preview
+    ) recent ON true
+    ORDER BY r.inserted_at DESC, r.id DESC
+  ),
+  numbered AS (
+    SELECT
+      feed_rows.*,
+      row_number() OVER (
+        ORDER BY feed_rows.inserted_at DESC, feed_rows.id DESC
+      ) AS ordinal
+    FROM feed_rows
+  ),
+  visible AS (
+    SELECT numbered.*
+    FROM numbered, request
+    WHERE numbered.ordinal <= request.page_size
+  )
+  SELECT jsonb_build_object(
+    'reviews', COALESCE(
+      (
+        SELECT jsonb_agg(
+          to_jsonb(visible) - 'ordinal'
+          ORDER BY visible.inserted_at DESC, visible.id DESC
+        )
+        FROM visible
+      ),
+      '[]'::jsonb
+    ),
+    'nextCursor', CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM numbered, request
+        WHERE numbered.ordinal > request.page_size
+      ) THEN (
+        SELECT jsonb_build_object(
+          'insertedAt', visible.inserted_at,
+          'id', visible.id
+        )
+        FROM visible
+        ORDER BY visible.inserted_at ASC, visible.id ASC
+        LIMIT 1
+      )
+      ELSE NULL
+    END,
+    'hasMore', EXISTS (
+      SELECT 1
+      FROM numbered, request
+      WHERE numbered.ordinal > request.page_size
+    )
+  );
+$$;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
