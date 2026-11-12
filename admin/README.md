@@ -140,3 +140,12 @@ The new tables and aggregate RPC are service-role-only. The admin ingestion rout
 checks the signed session and same-origin POST, only accepts page events, and uses
 UUID event IDs for duplicate delivery protection. Server action tracking hashes
 the session cookie and never stores the credential itself.
+
+## App store reviews
+
+The admin page at `/admin/store-reviews` reads written reviews directly from the stores. Configure these server environment variables in the admin hosting environment or in `admin/.env.local` for local use.
+
+- App Store Connect team API key with access to customer reviews for app 6741620393: `APP_STORE_ISSUER_ID`, `APP_STORE_KEY_ID`, and `APP_STORE_PRIVATE_KEY` (the .p8 contents).
+- Google Play service account with the Android Publisher API enabled and review access to `com.ohope.tinitimeclub` in Play Console: `GOOGLE_PLAY_CLIENT_EMAIL` and `GOOGLE_PLAY_PRIVATE_KEY` (client_email and private_key from the service account credentials).
+
+Private keys accept PEM newlines or escaped newline characters. Google Play's reviews API covers the last seven days of activity. The dashboard does not archive reviews.

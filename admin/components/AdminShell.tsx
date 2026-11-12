@@ -9,6 +9,7 @@ type ActiveSection =
   | "live"
   | "health"
   | "users"
+  | "store-reviews"
   | "reviews"
   | "locations"
   | "claims"
@@ -26,6 +27,7 @@ const CORE_NAV = [
   { href: "/admin/health", key: "health", label: "Health" },
   { href: "/admin/users", key: "users", label: "Members" },
   { href: "/admin/reviews", key: "reviews", label: "Reviews" },
+  { href: "/admin/store-reviews", key: "store-reviews", label: "App store reviews" },
   {
     href: "/admin/places",
     key: "locations",
