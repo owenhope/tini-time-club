@@ -1,10 +1,6 @@
 import { normalizeProfile } from "@/utils/normalizeProfile";
 import { decodeReviewMembers } from "@/utils/reviewMembers";
-import {
-  decodeComment,
-  decodeCommentList,
-  type DecodedComment,
-} from "@/utils/commentDecoder";
+import { decodeComment, type DecodedComment } from "@/utils/commentDecoder";
 import { supabase } from "@/utils/supabase";
 import { publicContentService } from "@/services/public-content-service";
 import imageCache from "@/utils/imageCache";
@@ -22,7 +18,6 @@ import { getSupportedSpirits, getSupportedTypes } from "@/utils/reviewOptions";
 import AnalyticService from "@/services/analyticsService";
 import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 import { hydrateReviewMentions } from "@/services/mentionService";
-import { normalizeCommentLikeCounts } from "@/utils/commentLikeCounts";
 import { publishReviewUpdated } from "@/utils/reviewEvents";
 
 interface CachedQuery {
@@ -192,98 +187,6 @@ class DatabaseService {
     requestPassportReconciliation();
 
     return normalizeProfile(data);
-  }
-
-  /**
-   * Feed rows should already include the venue aggregate from feed_reviews.
-   * Older cached rows and stale RPC definitions may not, so repair the shape
-   * here before the review card decides whether to show the place score.
-   */
-  private async hydrateReviewLocationRatings<T extends Review>(
-    reviews: T[]
-  ): Promise<T[]> {
-    const missingLocationIds = [
-      ...new Set(
-        reviews
-          .filter((review) => {
-            const location = review.location;
-            return (
-              location?.id != null &&
-              (location.rating == null ||
-                (location.total_ratings ?? 0) <= 0 ||
-                location.is_golden_glass == null ||
-                location.is_location_verified == null)
-            );
-          })
-          .map((review) => Number(review.location.id))
-          .filter((id) => Number.isFinite(id))
-      ),
-    ];
-
-    if (missingLocationIds.length === 0) return reviews;
-
-    try {
-      const { data, error } = await supabase
-        .from("location_ratings")
-        .select("id,rating,total_ratings,is_golden_glass,is_location_verified")
-        .in("id", missingLocationIds);
-
-      if (error) throw error;
-      const ratingsByLocationId = new Map(
-        (data ?? []).map((rating) => [String(rating.id), rating])
-      );
-
-      reviews.forEach((review) => {
-        const rating = ratingsByLocationId.get(String(review.location?.id));
-        if (!rating) return;
-
-        review.location = {
-          ...review.location,
-          rating: rating.rating ?? null,
-          total_ratings: rating.total_ratings ?? 0,
-          is_golden_glass: Boolean(rating.is_golden_glass),
-          is_location_verified: Boolean(rating.is_location_verified),
-        };
-      });
-    } catch (error) {
-      warn("Unable to hydrate feed location ratings:", error);
-    }
-
-    return reviews;
-  }
-
-  private async hydrateRecentCommentLikes<T extends Review>(
-    reviews: T[],
-    currentUserId?: string
-  ): Promise<T[]> {
-    const commentIds = [
-      ...new Set(
-        reviews.flatMap((review) =>
-          (review.recent_comments ?? []).map((comment) => comment.id)
-        )
-      ),
-    ];
-    if (commentIds.length === 0) return reviews;
-
-    try {
-      const { data, error } = await supabase.rpc("get_comment_like_counts_v1", {
-        p_comment_ids: commentIds,
-      });
-      if (error) throw error;
-      const counts = normalizeCommentLikeCounts(data);
-
-      return reviews.map((review) => ({
-        ...review,
-        recent_comments: (review.recent_comments ?? []).map((comment) => ({
-          ...comment,
-          likes_count: counts.get(comment.id)?.count ?? 0,
-          has_liked: counts.get(comment.id)?.has_liked ?? false,
-        })),
-      }));
-    } catch (error) {
-      warn("Unable to hydrate feed comment likes:", error);
-      return reviews;
-    }
   }
 
   /**

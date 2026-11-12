@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase";
-import type { LocationRating, Profile, Review, Comment } from "@/types/types";
+import type { LocationRating, Profile, Review } from "@/types/types";
 import type { ReviewCursor, ReviewPage } from "@/services/reviewFeedService";
 import type { CommentCursor, CommentPage } from "@/services/commentPageService";
 
