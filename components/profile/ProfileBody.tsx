@@ -1,6 +1,8 @@
+import { CLUB_HOST_ID } from "@/utils/clubHost";
 import React, { useCallback } from "react";
 import {
   RefreshControl,
+  ScrollView,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -119,6 +121,14 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
     },
     [setReviews]
   );
+
+  if (favoritesProfileId === CLUB_HOST_ID) {
+    return (
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
+        {header}
+      </ScrollView>
+    );
+  }
 
   return (
     <>

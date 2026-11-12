@@ -1,3 +1,4 @@
+import { CLUB_HOST_ID } from "@/utils/clubHost";
 import { useMemberPoints } from "@/hooks/useMemberPoints";
 import React from "react";
 import {
@@ -124,6 +125,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const passportPoints = useMemberPoints(profile);
   if (!profile) return null;
 
+  const isClubHost = profile.id === CLUB_HOST_ID;
   const reviewCount = profile.review_count ?? reviewsCount;
   // Passport awards are permanent and now provide the club-wide rank score.
   const displayedPassportPoints = rankPreviewPassportPoints ?? passportPoints;
@@ -263,16 +265,18 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             ) : null}
             {action ? <View style={styles.identityFoot}>{action}</View> : null}
             <View style={styles.compactMetrics}>
-              {metrics.map((m) => (
-                <StatCard
-                  key={m.key}
-                  tone="ink"
-                  size="compact"
-                  value={m.value}
-                  label={m.label}
-                  onPress={m.onPress}
-                />
-              ))}
+              {metrics
+                .filter((metric) => !isClubHost || metric.key !== "reviews")
+                .map((m) => (
+                  <StatCard
+                    key={m.key}
+                    tone="ink"
+                    size="compact"
+                    value={m.value}
+                    label={m.label}
+                    onPress={m.onPress}
+                  />
+                ))}
             </View>
             {profile.bio ? (
               <Text style={styles.bio} numberOfLines={3}>
@@ -286,7 +290,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
         {/* The rank progress and Passport entry show on every member's
             profile — the journey is public — not just your own. */}
-        {rank?.next || rankAction ? (
+        {!isClubHost && (rank?.next || rankAction) ? (
           <View style={styles.rankStack}>
             {rank?.next ? (
               <View style={styles.rankProgress}>
@@ -328,7 +332,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
         ) : null}
 
-        {(children || tags) && (
+        {!isClubHost && (children || tags) && (
           <View style={styles.tasteProfile}>
             <Text style={styles.tasteProfileLabel}>Taste Profile</Text>
             <View style={styles.favoritesRow}>
@@ -342,7 +346,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
         {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
       </View>
-      {below ? <View style={styles.below}>{below}</View> : null}
+      {!isClubHost && below ? <View style={styles.below}>{below}</View> : null}
     </View>
   );
 };
