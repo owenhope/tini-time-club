@@ -826,39 +826,8 @@ function ExploreMap({
           if (focused) rawLocations = [...rawLocations, focused];
         }
 
-        const missingAwardIds = rawLocations
-          .filter((location) => location.is_golden_glass == null)
-          .map((location) => Number(location.id))
-          .filter((id) => Number.isFinite(id));
-        let locationsWithAwards = rawLocations;
-        if (missingAwardIds.length > 0) {
-          const { data: awards } = await supabase
-            .from("location_ratings")
-            .select("id,is_golden_glass,is_location_verified")
-            .in("id", missingAwardIds);
-          if (requestId !== fetchRequestRef.current) return;
-          const awardsByLocation = new Map(
-            (awards ?? []).map((row) => [
-              String(row.id),
-              Boolean(row.is_golden_glass),
-            ])
-          );
-          locationsWithAwards = rawLocations.map((location) => ({
-            ...location,
-            is_golden_glass:
-              location.is_golden_glass ??
-              awardsByLocation.get(String(location.id)) ??
-              false,
-            is_location_verified: Boolean(
-              location.is_location_verified ??
-              (awards ?? []).find(
-                (row) => String(row.id) === String(location.id)
-              )?.is_location_verified
-            ),
-          }));
-        }
         const nextLocations = normalizeMapLocations(
-          locationsWithAwards
+          rawLocations
         ) as MapLocation[];
         let committedLocations = nextLocations;
         try {

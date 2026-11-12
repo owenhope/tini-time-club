@@ -31,19 +31,6 @@ export async function getGoldenGlassRecipients(
   const regulars = await getRegularsByLocation(
     rows.map((row) => Number(row.location_id))
   );
-  const { data: verificationRows } = await supabase
-    .from("location_ratings")
-    .select("id,is_location_verified")
-    .in(
-      "id",
-      rows.map((row) => Number(row.location_id))
-    );
-  const verifiedByLocation = new Map(
-    (verificationRows ?? []).map((row) => [
-      String(row.id),
-      Boolean(row.is_location_verified),
-    ])
-  );
 
   return rows.map((row) => ({
     regionId: Number(row.region_id),
@@ -57,7 +44,6 @@ export async function getGoldenGlassRecipients(
     refreshedAt: String(row.refreshed_at),
     regulars: regulars.get(String(row.location_id)) ?? [],
     isGoldenGlass: true,
-    is_location_verified:
-      verifiedByLocation.get(String(row.location_id)) ?? false,
+    is_location_verified: Boolean(row.is_location_verified),
   }));
 }

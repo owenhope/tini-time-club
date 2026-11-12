@@ -1,12 +1,10 @@
 const mockRpc = jest.fn();
 const mockGetReviewImageUrls = jest.fn();
 const mockGetFeedPage = jest.fn();
-const mockAwards = jest.fn();
 
 jest.mock("@/utils/supabase", () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
-    from: () => ({ select: () => ({ in: mockAwards }) }),
   },
 }));
 
@@ -67,7 +65,6 @@ describe("getReviewPage", () => {
     mockRpc.mockReset();
     mockGetReviewImageUrls.mockReset();
     mockGetFeedPage.mockReset();
-    mockAwards.mockReset();
     mockGetReviewImageUrls.mockResolvedValue({
       "member-1/review.jpg": "https://signed.test/review.jpg",
     });
@@ -217,34 +214,5 @@ describe("getReviewPage", () => {
       p_review_ids: [91],
     });
     expect(mockGetReviewImageUrls).toHaveBeenCalledTimes(1);
-    expect(mockAwards).not.toHaveBeenCalled();
   });
-
-  it.each([false, true])(
-    "handles missing award metadata with lookup failure=%s",
-    async (fails) => {
-      const { is_location_verified: _verified, ...location } = review.location;
-      mockRpc.mockImplementation(async (name: string) => ({
-        data:
-          name === "get_mention_spans_v1"
-            ? { mentions: [] }
-            : { reviews: [{ ...review, location }], hasMore: false },
-        error: null,
-      }));
-      mockAwards.mockResolvedValue({
-        data: fails
-          ? null
-          : [{ id: 42, is_golden_glass: true, is_location_verified: true }],
-        error: fails ? new Error("awards unavailable") : null,
-      });
-      const page = await getReviewPage({ viewerId: "viewer-1" });
-      expect(mockAwards).toHaveBeenCalledWith("id", [42]);
-      expect(page.reviews).toHaveLength(1);
-      expect(page.reviews[0].location?.is_location_verified).toBe(
-        fails ? undefined : true
-      );
-      // Existing page metadata wins over optional hydration.
-      expect(page.reviews[0].location?.is_golden_glass).toBe(false);
-    }
-  );
 });

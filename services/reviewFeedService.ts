@@ -74,55 +74,6 @@ const decodePage = (value: unknown): ReviewPage => {
   };
 };
 
-const hydrateReviewLocationAwards = async (reviews: Review[]) => {
-  const locationIds = [
-    ...new Set(
-      reviews
-        .filter(
-          (review) =>
-            review.location?.is_golden_glass == null ||
-            review.location?.is_location_verified == null
-        )
-        .map((review) => Number(review.location?.id))
-        .filter((id) => Number.isFinite(id))
-    ),
-  ];
-  if (!locationIds.length) return reviews;
-
-  try {
-    const { data, error } = await supabase
-      .from("location_ratings")
-      .select("id,is_golden_glass,is_location_verified")
-      .in("id", locationIds);
-    if (error) throw error;
-
-    const awardsByLocation = new Map(
-      (data ?? []).map((row) => [String(row.id), Boolean(row.is_golden_glass)])
-    );
-    return reviews.map((review) => ({
-      ...review,
-      location: review.location
-        ? {
-            ...review.location,
-            is_golden_glass:
-              review.location.is_golden_glass ??
-              awardsByLocation.get(String(review.location.id)) ??
-              false,
-            is_location_verified: Boolean(
-              review.location.is_location_verified ??
-              (data ?? []).find(
-                (row) => String(row.id) === String(review.location?.id)
-              )?.is_location_verified
-            ),
-          }
-        : review.location,
-    }));
-  } catch (error) {
-    warn("Unable to hydrate review Golden Glass flags", error);
-    return reviews;
-  }
-};
-
 /** Load one stable feed page. All relational data is supplied by one RPC. */
 export async function getReviewPage({
   viewerId,
@@ -158,22 +109,23 @@ export async function getReviewPage({
   const page = decodePage(data);
   if (!page.reviews.length) return page;
 
-  const reviewsWithAwards = await hydrateReviewLocationAwards(page.reviews);
-  const imageUrls = await imageCache.getReviewImageUrls(
-    reviewsWithAwards.map((review) => review.image_url)
-  );
-  const reviews = reviewsWithAwards.map((review) => ({
+  // Signing photo URLs and loading mention metadata are independent, so they
+  // share one round trip's wait instead of running back to back.
+  const [imageUrls, reviewsWithMentions] = await Promise.all([
+    imageCache.getReviewImageUrls(
+      page.reviews.map((review) => review.image_url)
+    ),
+    hydrateReviewMentions(page.reviews).catch((error) => {
+      // Mention metadata is an enhancement; stale/offline search must never
+      // empty an otherwise valid feed page.
+      warn("Could not hydrate review mentions", error);
+      return page.reviews;
+    }),
+  ]);
+  const hydratedReviews = reviewsWithMentions.map((review) => ({
     ...review,
     image_url: imageUrls[review.image_url] || review.image_url,
   }));
-  let hydratedReviews = reviews;
-  try {
-    hydratedReviews = await hydrateReviewMentions(reviews);
-  } catch (error) {
-    // Mention metadata is an enhancement; stale/offline search must never
-    // empty an otherwise valid feed page.
-    warn("Could not hydrate review mentions", error);
-  }
   return {
     ...page,
     reviews: hydratedReviews,
