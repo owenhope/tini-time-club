@@ -124,7 +124,11 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 
   if (favoritesProfileId === CLUB_HOST_ID) {
     return (
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
+      <ScrollView
+        style={styles.hostBody}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
         {header}
       </ScrollView>
     );
@@ -192,6 +196,10 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
 };
 
 const useStyles = makeStyles((t) => ({
+  hostBody: {
+    flex: 1,
+    backgroundColor: t.colors.headerBrand,
+  },
   skeletonRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
