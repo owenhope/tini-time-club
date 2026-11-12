@@ -28,11 +28,6 @@ const CORE_NAV = [
   { href: "/admin/users", key: "users", label: "Members" },
   { href: "/admin/reviews", key: "reviews", label: "Reviews" },
   {
-    href: "/admin/store-reviews",
-    key: "store-reviews",
-    label: "App store reviews",
-  },
-  {
     href: "/admin/places",
     key: "locations",
     label: "Places",
@@ -57,6 +52,11 @@ const MODERATION_NAV = [
 ] as const;
 
 const SECONDARY_NAV = [
+  {
+    href: "/admin/store-reviews",
+    key: "store-reviews",
+    label: "App store reviews",
+  },
   { href: "/admin/emails", key: "emails", label: "Emails" },
   {
     href: "/admin/share-preview",
