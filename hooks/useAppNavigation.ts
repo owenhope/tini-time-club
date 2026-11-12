@@ -31,7 +31,9 @@ export const useOpenProfile = () => {
       }
 
       // Shared route: resolves inside whichever tab stack is rendering.
-      router.push(routes.user(username));
+      router.push(
+        routes.user(username, profileId == null ? null : String(profileId))
+      );
     },
     [router, profile?.id, profile?.username]
   );

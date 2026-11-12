@@ -15,6 +15,7 @@ const mockRequestRating = jest.fn();
 jest.mock("@/services/ratingPrompt", () => ({
   requestRatingAfterEngagement: () => mockRequestRating(),
 }));
+let mockRouteParams: Record<string, string> = { username: "stellavale" };
 const mockLoad = jest.fn(async () => undefined);
 const mockSignedInProfile = { id: "member-1", username: "olive" };
 const mockSetFollowersCount = jest.fn();
@@ -33,7 +34,7 @@ jest.mock("@/utils/supabase", () => {
 });
 
 jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => ({ username: "stellavale" }),
+  useLocalSearchParams: () => mockRouteParams,
   useRouter: () => ({ push: jest.fn() }),
 }));
 
@@ -158,4 +159,33 @@ it("renders another member's Reviews and Regulars tabs inside the profile header
     header.findAllByProps({ testID: "profile-content-tabs" }).length
   ).toBeGreaterThan(0);
   act(() => tree!.unmount());
+});
+
+it("opens a renamed member by profile id when the tapped username is stale", async () => {
+  const { supabase } = jest.requireMock("@/utils/supabase");
+  const { reportError } = jest.requireMock("@/utils/log");
+  const relation = supabase.from();
+  relation.eq.mockClear();
+  reportError.mockClear();
+  relation.single.mockResolvedValueOnce({
+    data: null,
+    error: { code: "PGRST116", message: "no rows" },
+  });
+  mockRouteParams = { username: "old-handle", profileId: "member-2" };
+
+  let tree: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(<UserProfile />);
+  });
+
+  expect(relation.eq).toHaveBeenCalledWith("username", "old-handle");
+  expect(relation.eq).toHaveBeenCalledWith("id", "member-2");
+  expect(reportError).not.toHaveBeenCalled();
+  expect(
+    tree!.root
+      .findByProps({ testID: "profile-header" })
+      .findAllByProps({ testID: "profile-content-tabs" }).length
+  ).toBeGreaterThan(0);
+  act(() => tree!.unmount());
+  mockRouteParams = { username: "stellavale" };
 });

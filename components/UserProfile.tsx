@@ -70,6 +70,10 @@ const UserProfile = () => {
   } = useCollapsibleHeader();
   const params = useLocalSearchParams();
   const usernameParam = params.username as string | undefined;
+  const profileIdParam =
+    typeof params.profileId === "string" && params.profileId.length > 0
+      ? params.profileId
+      : undefined;
 
   // For this screen, we always show the other user's profile.
   const displayProfile = selectedProfile;
@@ -253,7 +257,7 @@ const UserProfile = () => {
   };
 
   const fetchSelectedProfile = React.useCallback(
-    async (username: string) => {
+    async (username: string, profileId?: string) => {
       const requestId = ++selectedProfileRequestRef.current;
       setProfileError(null);
       try {
@@ -271,12 +275,22 @@ const UserProfile = () => {
           return;
         }
 
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("profiles")
           .select("*")
           .eq("username", username)
           .eq("deleted", false)
           .single();
+        // A member can rename while another screen still shows the old
+        // handle. The id the tap came from still identifies them.
+        if (error?.code === "PGRST116" && profileId) {
+          ({ data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", profileId)
+            .eq("deleted", false)
+            .single());
+        }
         if (error) {
           reportError("Error fetching selected profile:", error);
           // Without this the screen stays blank forever with no way back.
@@ -313,12 +327,12 @@ const UserProfile = () => {
     if (usernameParam) {
       // The route parameter owns the selected external profile snapshot.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      void fetchSelectedProfile(usernameParam);
+      void fetchSelectedProfile(usernameParam, profileIdParam);
     }
     return () => {
       selectedProfileRequestRef.current += 1;
     };
-  }, [fetchSelectedProfile, usernameParam]);
+  }, [fetchSelectedProfile, profileIdParam, usernameParam]);
 
   const handleBlockUser = async () => {
     if (!profile || !displayProfile) return;
@@ -430,7 +444,8 @@ const UserProfile = () => {
         <TouchableOpacity
           style={styles.errorButton}
           onPress={() => {
-            if (usernameParam) fetchSelectedProfile(String(usernameParam));
+            if (usernameParam)
+              fetchSelectedProfile(String(usernameParam), profileIdParam);
           }}
         >
           <Text style={styles.errorButtonText}>Try again</Text>

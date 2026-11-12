@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { AppState } from "react-native";
 import { LargeSecureStore } from "./sessionStorage";
 import { log } from "./log";
+import { createSessionRetryFetch } from "./sessionRetryFetch";
 
 const expoExtra = Constants.expoConfig?.extra as
   Record<string, unknown> | undefined;
@@ -39,7 +40,28 @@ const serverAuthStorage = {
   removeItem: async () => undefined,
 };
 
+/**
+ * Restore the member's session after a failed token refresh. The auth client
+ * caches a refresh failure for a minute and answers every caller from that
+ * cache, so a request that just failed as anonymous could not recover until
+ * the cooldown passed. Clearing the cached failure lets this one attempt
+ * reach the server. `lastRefreshFailure` is internal to auth-js; if a future
+ * version renames it this becomes a no-op and recovery waits out the cooldown.
+ */
+const recoverAccessToken = async (): Promise<string | null> => {
+  const auth = supabase.auth as unknown as { lastRefreshFailure?: unknown };
+  if ("lastRefreshFailure" in auth) auth.lastRefreshFailure = null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: createSessionRetryFetch({
+      anonKey: supabaseAnonKey,
+      recoverAccessToken: () => recoverAccessToken(),
+    }),
+  },
   auth: {
     storage:
       typeof window === "undefined"

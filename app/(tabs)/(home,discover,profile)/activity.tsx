@@ -51,7 +51,7 @@ export default function ActivityScreen() {
         return;
       }
 
-      router.push(routes.user(row.actor.username));
+      router.push(routes.user(row.actor.username, row.actor.id));
     },
     [recordOpen, router]
   );

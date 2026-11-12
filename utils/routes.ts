@@ -187,8 +187,15 @@ export const routes = {
   placeInfo: (params: PlaceInfoParams) =>
     ({ pathname: "/place-info", params }) as const satisfies Href,
 
-  /** Another user's profile. */
-  user: (username: string) => `/users/${username}` as const satisfies Href,
+  /**
+   * Another user's profile. Usernames can change while a screen still shows
+   * the old one, so pass the profile id when the caller has it: the profile
+   * screen falls back to it when the username no longer resolves.
+   */
+  user: (username: string, profileId?: string | null) =>
+    (profileId
+      ? `/users/${username}?profileId=${encodeURIComponent(profileId)}`
+      : `/users/${username}`) as Href,
 
   /** A user's followers list. */
   followers: (username: string) =>
