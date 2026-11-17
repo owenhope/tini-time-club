@@ -383,9 +383,8 @@ export default function EmailComposer({
                   </div>
                 </div>
                 <p className="border-t border-[#e7e5e4] px-6 py-4 text-xs text-[#78716c]">
-                  Tini Time Club ·{" "}
-                  <span className="underline">App Store</span> ·{" "}
-                  <span className="underline">Google Play</span> ·{" "}
+                  Tini Time Club · <span className="underline">App Store</span>{" "}
+                  · <span className="underline">Google Play</span> ·{" "}
                   <span className="underline">
                     Unsubscribe from member emails
                   </span>
