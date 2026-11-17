@@ -223,7 +223,9 @@ export function PassportToastProvider({
               />
             </View>
             <View style={styles.copy}>
-              <AppText variant="heading" numberOfLines={1}>
+              {/* Two lines: a stamp label like "Gin · Classic" pushed the
+                  points — the part members care about — past one line. */}
+              <AppText variant="heading" numberOfLines={2}>
                 {current.key === "summary"
                   ? `Passport Stamps · ${current.threshold} new · +${current.points} pts`
                   : `Passport Stamp · ${current.label} · +${current.points} pts`}
