@@ -1,6 +1,7 @@
 import {
   buildAdminNotificationRows,
   chunkNotificationRows,
+  parseBroadcastId,
 } from "../notificationBroadcast";
 
 describe("admin notification broadcast", () => {
@@ -41,5 +42,13 @@ describe("admin notification broadcast", () => {
       [2, 2, 1]
     );
     expect(chunkNotificationRows(rows, 2).flat()).toEqual(rows);
+  });
+
+  it("accepts only a UUID as the broadcast id", () => {
+    const id = "3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b";
+    expect(parseBroadcastId(id)).toBe(id);
+    expect(parseBroadcastId("")).toBeNull();
+    expect(parseBroadcastId("not-a-uuid")).toBeNull();
+    expect(parseBroadcastId(null)).toBeNull();
   });
 });

@@ -9,12 +9,18 @@ import type { NotificationAudienceMember } from "@/lib/profileTypes";
 interface NotificationComposerProps {
   memberCount: number;
   open: boolean;
+  /** Minted by the server so SSR and hydration agree on it. */
+  initialBroadcastId: string;
 }
 
 export default function NotificationComposer({
   memberCount,
   open,
+  initialBroadcastId,
 }: NotificationComposerProps) {
+  // One id per composed message: a retry after a failure reuses it, so
+  // members who already got the push are skipped, not notified twice.
+  const [broadcastId] = useState(initialBroadcastId);
   const [audience, setAudience] = useState("all");
   const [query, setQuery] = useState("");
   const [members, setMembers] = useState<NotificationAudienceMember[]>([]);
@@ -69,6 +75,7 @@ export default function NotificationComposer({
           <label className="block text-sm font-medium text-stone-700">
             Audience
             <input type="hidden" name="audience" value={audience} />
+            <input type="hidden" name="broadcast_id" value={broadcastId} />
             <div className="mt-1 space-y-2">
               <button
                 type="button"

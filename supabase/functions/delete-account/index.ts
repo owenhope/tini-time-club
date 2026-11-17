@@ -194,12 +194,16 @@ Deno.serve(async (request) => {
     // revocation leaves the account intact and retryable.
     await revokeAppleAuthorizationIfNeeded(request, user);
 
-    await deleteOwnedStorage(admin, user.id);
-
+    // Rows first, files second. delete_account_data is safe to re-run and
+    // the auth user survives until the end, so a failure at either step is
+    // retryable — whereas deleting files first could leave live reviews
+    // pointing at photos that no longer exist.
     const { error: dataError } = await admin.rpc("delete_account_data", {
       p_user_id: user.id,
     });
     if (dataError) throw dataError;
+
+    await deleteOwnedStorage(admin, user.id);
 
     const { error: authError } = await admin.auth.admin.deleteUser(user.id);
     if (authError) throw authError;

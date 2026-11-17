@@ -8,10 +8,34 @@
 export const SESSION_COOKIE = "ttc-admin-session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// The signing key folds in ADMIN_PASSWORD, so rotating the password revokes
+// every outstanding session cookie without a session store.
 const getSecret = (): string => {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET must be set");
-  return secret;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) throw new Error("ADMIN_PASSWORD must be set");
+  return `${secret}\u0000${password}`;
+};
+
+/**
+ * Constant-time string comparison. Both sides are hashed first so the loop
+ * length never depends on the secret's length either.
+ */
+export const timingSafeEqual = async (
+  a: string,
+  b: string
+): Promise<boolean> => {
+  const encoder = new TextEncoder();
+  const [left, right] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(a)),
+    crypto.subtle.digest("SHA-256", encoder.encode(b)),
+  ]);
+  const x = new Uint8Array(left);
+  const y = new Uint8Array(right);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
 };
 
 const hmac = async (payload: string): Promise<string> => {
@@ -46,5 +70,5 @@ export const verifySessionToken = async (
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return false;
   if (Number(payload) < Date.now()) return false;
-  return (await hmac(payload)) === signature;
+  return timingSafeEqual(await hmac(payload), signature);
 };

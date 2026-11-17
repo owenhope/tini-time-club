@@ -5,9 +5,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { toAdminDataError } from "@/lib/dataErrors";
+import { checkBotId } from "botid/server";
 import {
   SESSION_COOKIE,
   createSessionToken,
+  timingSafeEqual,
   verifySessionToken,
 } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -15,6 +17,7 @@ import {
   buildAdminNotificationRows,
   chunkNotificationRows,
   NOTIFICATION_BATCH_SIZE,
+  parseBroadcastId,
 } from "@/lib/notificationBroadcast";
 
 /**
@@ -29,11 +32,19 @@ async function requireAdminSession() {
 }
 
 export async function login(formData: FormData) {
+  // Scripted guessing is stopped before the password is even compared; the
+  // delay below only slows a human. Verification errors fail closed.
+  const verification = await checkBotId().catch(() => null);
+  if (!verification || verification.isBot) {
+    redirect("/admin/login?error=1");
+  }
+
   const password = formData.get("password");
+  const expected = process.env.ADMIN_PASSWORD;
   if (
     typeof password !== "string" ||
-    !process.env.ADMIN_PASSWORD ||
-    password !== process.env.ADMIN_PASSWORD
+    !expected ||
+    !(await timingSafeEqual(password, expected))
   ) {
     // Blunt but effective brute-force damper for a single-operator tool.
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -87,8 +98,10 @@ export async function sendNotification(formData: FormData) {
     redirect("/admin/notifications?error=url");
   }
 
+  const broadcastId = parseBroadcastId(formData.get("broadcast_id"));
+  if (!broadcastId) redirect("/admin/notifications?error=body");
+
   const admin = supabaseAdmin();
-  const broadcastId = crypto.randomUUID();
   let sent = 0;
 
   const insertRows = async (userIds: string[]) => {
@@ -143,7 +156,9 @@ export async function sendNotification(formData: FormData) {
   await recordAdminUsage("action_notification_sent");
 
   revalidatePath("/admin/notifications");
-  redirect(`/admin/notifications?sent=${sent}`);
+  // The id in the URL remounts the composer, so the next message gets a
+  // fresh broadcast id; a failed send keeps the form and its id for retry.
+  redirect(`/admin/notifications?sent=${sent}&broadcast=${broadcastId}`);
 }
 
 export async function setDeleted(profileId: string, deleted: boolean) {

@@ -1,5 +1,17 @@
 export const NOTIFICATION_BATCH_SIZE = 500;
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The composer mints a broadcast id when it renders and posts it with the
+ * form, so retrying a failed or half-finished send reuses it and the
+ * `event_key` upsert skips members who were already notified. Anything that
+ * isn't a UUID is rejected rather than trusted as a key.
+ */
+export const parseBroadcastId = (value: unknown): string | null =>
+  typeof value === "string" && UUID_PATTERN.test(value) ? value : null;
+
 export interface AdminNotificationRow {
   user_id: string;
   body: string;

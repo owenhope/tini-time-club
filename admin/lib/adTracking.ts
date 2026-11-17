@@ -13,6 +13,7 @@ type Fbq = ((...args: unknown[]) => void) & {
   push: Fbq;
   loaded: boolean;
   version: string;
+  disablePushState?: boolean;
 };
 
 declare global {
@@ -29,10 +30,9 @@ const APP_STORE_PROVIDER_TOKEN =
 
 const META_VISIT_KEY = "ttc:meta-ad-visit";
 
-/** The operator dashboard is never tracked; everything else is public. */
-export function isTrackedPath(pathname: string) {
-  return pathname !== "/admin" && !pathname.startsWith("/admin/");
-}
+export { isTrackedPath } from "@/lib/trackedPaths.mjs";
+
+export const GA_MEASUREMENT_ID = "G-53R4Z4BZ3D";
 
 /**
  * Meta's base-code stub, installed directly so the queue exists before the
@@ -48,6 +48,10 @@ export function loadMetaPixel(pixelId: string) {
   fbq.loaded = true;
   fbq.version = "2.0";
   fbq.queue = [];
+  // MetaPixel reports each PageView itself, only on tracked paths. Without
+  // this the Pixel also auto-tracks every history change, double counting
+  // public pages and reporting untracked ones (/admin, /email/unsubscribe).
+  fbq.disablePushState = true;
   window.fbq = fbq;
   window._fbq = fbq;
 

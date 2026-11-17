@@ -38,6 +38,7 @@ export default async function NotificationsPage({
 }: {
   searchParams: Promise<{
     sent?: string;
+    broadcast?: string;
     error?: string;
     upage?: string;
     uper?: string;
@@ -101,6 +102,8 @@ export default async function NotificationsPage({
         density="compact"
         actions={
           <NotificationComposer
+            key={params.broadcast ?? "compose"}
+            initialBroadcastId={crypto.randomUUID()}
             memberCount={members}
             open={Boolean(sent) || Boolean(error)}
           />

@@ -139,7 +139,9 @@ export async function processEmailCampaign(id: string) {
       process.env.RESEND_API_KEY ?? ""
     );
     if (!result.ok) {
-      // Ambiguous/transient failures retain their lease and original key.
+      // A permanent failure (a hard bounce, an invalid address) belongs to
+      // this one recipient: record it and keep going, or a single bad
+      // address would stop the whole batch.
       if (result.permanent) {
         const { error: saveError } = await db
           .from("admin_email_recipients")
@@ -149,7 +151,10 @@ export async function processEmailCampaign(id: string) {
           throw new Error(
             "Unable to save delivery status. Resume this campaign later."
           );
+        continue;
       }
+      // Ambiguous/transient failures retain their lease and original key,
+      // and stop the run so the operator resumes once the provider recovers.
       throw new Error(result.message);
     }
     const { error: saveError } = await db

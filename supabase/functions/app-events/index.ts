@@ -1,6 +1,7 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
 import { createClient } from "@supabase/supabase-js";
+import { createRateLimiter } from "../_shared/rateLimit.ts";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -80,9 +81,7 @@ const ALLOWED_EVENTS = new Set([
   "mention_selected",
   "mention_submitted",
 ]);
-const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT = 120;
-const requestWindows = new Map<string, { count: number; startedAt: number }>();
+const isRateLimited = createRateLimiter({ limit: 120, windowMs: 60_000 });
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -99,19 +98,6 @@ const bearerToken = (request: Request) => {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ")) return null;
   return authorization.slice("Bearer ".length).trim() || null;
-};
-
-const isRateLimited = (request: Request) => {
-  const key =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const now = Date.now();
-  const current = requestWindows.get(key);
-  if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
-    requestWindows.set(key, { count: 1, startedAt: now });
-    return false;
-  }
-  current.count += 1;
-  return current.count > RATE_LIMIT;
 };
 
 const getAdminClient = () => {
