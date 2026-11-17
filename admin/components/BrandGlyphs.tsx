@@ -2,7 +2,8 @@
  * Inline copies of the exact glyphs the app renders for these concepts, so
  * the website and the app agree: MaterialIcons "verified"
  * (LocationVerifiedBadge), Ionicons "wine" (MartiniIcon, filled, award gold
- * for Golden Glass), and Ionicons "ribbon-outline" (the Passport info hero).
+ * for Golden Glass), Ionicons "ribbon-outline" (the Passport info hero), and
+ * Ionicons "book-outline" (the Martini Index tab).
  */
 
 interface GlyphProps {
@@ -58,6 +59,25 @@ export function PassportGlyph({ size = 24, className }: GlyphProps) {
       <path d="M143.65 227.82L48 400l86.86-.42a16 16 0 0113.82 7.8L192 480l88.33-194.32" />
       <path d="M366.54 224L464 400l-86.86-.42a16 16 0 00-13.82 7.8L320 480l-64-140.8" />
       <circle cx="256" cy="160" r="64" />
+    </svg>
+  );
+}
+
+export function IndexGlyph({ size = 24, className }: GlyphProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={32}
+      className={className}
+      aria-hidden
+    >
+      <path d="M256 160c16-63.16 76.43-95.41 208-96a15.94 15.94 0 0116 16v288a16 16 0 01-16 16c-128 0-177.45 25.81-208 64-30.37-38-80-64-208-64-9.88 0-16-8.05-16-17.93V80a15.94 15.94 0 0116-16c131.57.59 192 32.84 208 96zM256 160v288" />
     </svg>
   );
 }

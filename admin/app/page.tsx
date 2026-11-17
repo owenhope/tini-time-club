@@ -4,6 +4,7 @@ import AppStoreLink from "@/components/AppStoreLink";
 import GooglePlayLink from "@/components/GooglePlayLink";
 import { ANDROID_AVAILABLE } from "@/lib/appStoreLink.mjs";
 import {
+  IndexGlyph,
   MartiniGlyph,
   PassportGlyph,
   VerifiedGlyph,
@@ -26,7 +27,7 @@ const homeJsonLd = {
   url: "https://tinitimeclub.com/",
   description: siteDescription,
   datePublished: "2026-08-11",
-  dateModified: "2026-10-28",
+  dateModified: "2026-11-17",
   author: siteAuthor,
   publisher: siteAuthor,
   about: {
@@ -65,6 +66,22 @@ const features = [
     body: "Add a photo, rate your Martini, and share what made it memorable. Your review could help someone else find their new favorite spot.",
     eyebrow: "04 · Share",
   },
+];
+
+// Mirrors utils/ranking.ts in the app: the bar's liquor-shelf ladder, with
+// the same thresholds and medal colors members see on their avatar rings.
+const rankTiers = [
+  { name: "Well", points: "0", color: "#B4783A" },
+  { name: "Call", points: "50", color: "#9BA6B2" },
+  { name: "Premium", points: "500", color: "#D4AF37" },
+  { name: "Top Shelf", points: "1,000", color: "#8E7CE8" },
+];
+
+const indexTopics = [
+  "Shaken or stirred?",
+  "Dry, wet, or 50/50?",
+  "Dirty, extra-dirty, filthy?",
+  "Twist or olive?",
 ];
 
 const downloadButtonClassName =
@@ -251,6 +268,66 @@ export default function PublicHomePage() {
               spirit-and-style combination, leave your fiftieth comment, become
               a Regular — each milestone stamps the book.
             </p>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-emerald-950/72">
+              Every stamp is worth points, and points move you up the shelf.
+              Everyone starts in the Well; your rank shows as a ring around your
+              avatar, so the club can tell a regular from a rookie at a glance.
+            </p>
+            <ol className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+              {rankTiers.map((tier) => (
+                <li
+                  key={tier.name}
+                  className="rounded-[8px] border border-emerald-950/10 bg-white p-4 shadow-sm shadow-emerald-950/5"
+                >
+                  <span
+                    className="block h-8 w-8 rounded-full border-[3px] bg-white"
+                    style={{ borderColor: tier.color }}
+                    aria-hidden
+                  />
+                  <p className="mt-3 text-lg font-black leading-6">
+                    {tier.name}
+                  </p>
+                  <p className="font-mono text-xs font-bold uppercase text-emerald-950/58">
+                    {tier.points} pts
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="index"
+        className="bg-paper px-5 py-20 text-emerald-950 sm:px-6 sm:py-24 lg:px-8"
+      >
+        <div className="mx-auto grid w-full max-w-6xl gap-10 md:grid-cols-[auto_1fr] md:items-start">
+          <div className="flex h-24 w-24 items-center justify-center rounded-[8px] bg-emerald-950 text-chartreuse">
+            <IndexGlyph size={52} />
+          </div>
+          <div>
+            <p className="font-mono text-xs font-bold uppercase text-violet-700">
+              The Martini Index
+            </p>
+            <h2 className="mt-3 max-w-2xl text-4xl font-black leading-none sm:text-5xl">
+              Know your order. Or let fate hold the shaker.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-950/72">
+              A pocket field guide to the classics — from a bone-dry Gin Martini
+              to the Gibson, the Vesper, and the Espresso Martini — with the
+              questions a good bartender will ask before they pour. Can&apos;t
+              decide? Tap the glass and the club will pick one for you.
+            </p>
+            <ul className="mt-8 flex max-w-2xl flex-wrap gap-2">
+              {indexTopics.map((topic) => (
+                <li
+                  key={topic}
+                  className="rounded-full border border-emerald-950/15 bg-white px-4 py-2 text-sm font-bold"
+                >
+                  {topic}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
