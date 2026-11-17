@@ -21,7 +21,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, useWatch } from "react-hook-form";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import {
+  useRouter,
+  useLocalSearchParams,
+  useFocusEffect,
+  useSegments,
+} from "expo-router";
 import { Image as ExpoImage } from "expo-image";
 import { useGoBack } from "@/hooks/useAppNavigation";
 import AppHeader, { type HeaderAction } from "@/components/nav/AppHeader";
@@ -247,6 +252,10 @@ function ReviewComposer() {
   const captionMentionsUnavailableRef = useRef(false);
   const [opacity] = useState(() => new Animated.Value(1));
   const router = useRouter();
+  const segments = useSegments();
+  // The composer runs both as the Review tab and as the full-screen modal
+  // opened from a place or an edit.
+  const openedAsTab = segments[0] === "(tabs)";
   const goBack = useGoBack();
   const params = useLocalSearchParams();
   const { profile, refreshProfile } = useProfile();
@@ -639,6 +648,19 @@ function ReviewComposer() {
       feedRefresh: String(Date.now()),
     });
 
+  const goToFeedAfterPost = (reviewId: string | null) => {
+    const href = feedRouteAfterPost(reviewId);
+    if (openedAsTab) {
+      // dismissTo dispatches POP_TO, which the native tab router ignores, so
+      // from the Review tab it left members on a fresh camera. NAVIGATE
+      // switches to the Feed tab; clear the composer for the next visit.
+      router.navigate(href);
+      if (!isEditMode) discardReview();
+      return;
+    }
+    router.dismissTo(href);
+  };
+
   const resolveLocationId = async (userId: string) => {
     if (watchedValues.location?.id && !watchedValues.location.coordinates) {
       return watchedValues.location.id;
@@ -808,14 +830,14 @@ function ReviewComposer() {
           setAchievements(earnedAchievements);
         },
         navigateToFeed: () => {
-          router.dismissTo(feedRouteAfterPost(submission.reviewId));
+          goToFeedAfterPost(submission.reviewId);
           void promptAfterPosting();
         },
         refreshProfile,
       });
     } catch (error) {
       reportError("Review created but post-submit processing failed:", error);
-      router.dismissTo(feedRouteAfterPost(submission.reviewId));
+      goToFeedAfterPost(submission.reviewId);
     }
   };
 
@@ -837,7 +859,7 @@ function ReviewComposer() {
     setAchievements([]);
     setCelebrationPassportPoints(null);
     requestAnimationFrame(() => {
-      router.dismissTo(feedRouteAfterPost(reviewId));
+      goToFeedAfterPost(reviewId);
       void refreshProfile();
       void promptAfterPosting();
     });

@@ -18,6 +18,12 @@ type PassportStampProps = {
   earned: boolean;
   label: string;
   appearance?: "default" | "profile";
+  /**
+   * Explicit edge length. Pass it whenever the stamp sits in a box narrower
+   * than its default: Yoga derives the height from the unclamped width, so a
+   * maxWidth-squeezed stamp stays 112pt tall and draws below its frame.
+   */
+  size?: number;
   accessibilityLabel?: string;
 };
 
@@ -206,6 +212,7 @@ export function PassportStamp({
   earned,
   label,
   appearance = "default",
+  size,
   accessibilityLabel,
 }: PassportStampProps) {
   const styles = useStyles();
@@ -217,7 +224,13 @@ export function PassportStamp({
       accessible={Boolean(accessibilityLabel)}
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={[styles.stamp, onProfile && styles.profileStamp]}>
+      <View
+        style={[
+          styles.stamp,
+          onProfile && styles.profileStamp,
+          size !== undefined && { width: size },
+        ]}
+      >
         <View style={styles.outline}>
           <StampOutline
             shape={shape}

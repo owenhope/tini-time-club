@@ -40,6 +40,7 @@ export const PassportToastContext = createContext<PassportToastContextValue>({
 });
 
 const AUTO_DISMISS_MS = 6500;
+const TOAST_STAMP_SIZE = 72;
 const SWIPE_DISMISS_Y = -38;
 // Four or more stamps at once (a first reconcile after an update, a catalog
 // expansion) collapse into one summary toast instead of a long parade —
@@ -218,6 +219,7 @@ export function PassportToastProvider({
                 pointAward={current.points}
                 earned
                 label={current.label}
+                size={TOAST_STAMP_SIZE}
               />
             </View>
             <View style={styles.copy}>
@@ -259,6 +261,6 @@ const useStyles = makeStyles((t) => ({
     boxShadow: "0 8px 28px rgba(0, 0, 0, 0.24)",
   },
   pressed: { opacity: 0.86 },
-  stamp: { width: 72, height: 72 },
+  stamp: { width: TOAST_STAMP_SIZE, height: TOAST_STAMP_SIZE },
   copy: { flex: 1, minWidth: 0, gap: 2 },
 }));
