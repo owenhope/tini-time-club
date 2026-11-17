@@ -6,7 +6,6 @@ import React, {
   createContext,
   useCallback,
   useEffect,
-  useRef,
   useMemo,
   useState,
 } from "react";
@@ -75,7 +74,9 @@ export function PassportToastProvider({
     profileId: string;
     stamps: PassportStampRecord[];
   }>({ profileId: "", stamps: [] });
-  const translateY = useRef(new Animated.Value(-140)).current;
+  // Lazy state, not a ref: the value is read during render (styles,
+  // gestures), which React only allows for state.
+  const [translateY] = useState(() => new Animated.Value(-140));
   const current =
     queue.profileId === profileId ? (queue.stamps[0] ?? null) : null;
 
@@ -162,7 +163,7 @@ export function PassportToastProvider({
     return () => clearTimeout(timer);
   }, [current, dismiss, translateY]);
 
-  const panResponder = useRef(
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
         gesture.dy < -6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
@@ -182,7 +183,7 @@ export function PassportToastProvider({
         }).start();
       },
     })
-  ).current;
+  );
 
   return (
     <PassportToastContext.Provider value={{ showPassportStamps }}>

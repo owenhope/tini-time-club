@@ -44,7 +44,6 @@ export type PlaceInfoParams = {
 
 /** Params that tell the feed to force-refresh after a new post. */
 export type HomeParams = {
-  postedReviewId?: string;
   feedRefresh?: string;
 };
 

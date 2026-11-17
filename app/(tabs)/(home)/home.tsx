@@ -88,7 +88,6 @@ function Home() {
   const { requireMembership } = useMembership();
   const router = useRouter();
   const params = useLocalSearchParams<{
-    postedReviewId?: string;
     feedRefresh?: string;
     screenshotSeed?: string;
   }>();

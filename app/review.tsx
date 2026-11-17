@@ -244,7 +244,6 @@ function ReviewComposer() {
   const [celebrationPassportPoints, setCelebrationPassportPoints] = useState<
     number | null
   >(null);
-  const [postedReviewId, setPostedReviewId] = useState<string | null>(null);
   // Includes the review just posted; read once the member is back on the feed.
   const postedReviewCountRef = useRef(0);
   const [captionMentions, setCaptionMentions] = useState<MentionSpan[]>([]);
@@ -642,14 +641,9 @@ function ReviewComposer() {
     await Promise.all([getTypes(), getSpirits()]);
   };
 
-  const feedRouteAfterPost = (reviewId: string | null) =>
-    routes.home({
-      ...(reviewId ? { postedReviewId: reviewId } : {}),
-      feedRefresh: String(Date.now()),
-    });
-
-  const goToFeedAfterPost = (reviewId: string | null) => {
-    const href = feedRouteAfterPost(reviewId);
+  // The feed reloads newest-first on this token, so the new post lands on top.
+  const goToFeedAfterPost = () => {
+    const href = routes.home({ feedRefresh: String(Date.now()) });
     if (openedAsTab) {
       // dismissTo dispatches POP_TO, which the native tab router ignores, so
       // from the Review tab it left members on a fresh camera. NAVIGATE
@@ -802,7 +796,6 @@ function ReviewComposer() {
     }
 
     setSubmissionMessage("Review created successfully!");
-    setPostedReviewId(submission.reviewId);
     postedReviewCountRef.current = (profile.review_count ?? 0) + 1;
     await databaseService.clearReviewCaches();
     publishReviewUpdated(submission.reviewId);
@@ -830,14 +823,14 @@ function ReviewComposer() {
           setAchievements(earnedAchievements);
         },
         navigateToFeed: () => {
-          goToFeedAfterPost(submission.reviewId);
+          goToFeedAfterPost();
           void promptAfterPosting();
         },
         refreshProfile,
       });
     } catch (error) {
       reportError("Review created but post-submit processing failed:", error);
-      goToFeedAfterPost(submission.reviewId);
+      goToFeedAfterPost();
     }
   };
 
@@ -854,12 +847,10 @@ function ReviewComposer() {
   };
 
   const finishCelebration = () => {
-    const reviewId = postedReviewId;
-
     setAchievements([]);
     setCelebrationPassportPoints(null);
     requestAnimationFrame(() => {
-      goToFeedAfterPost(reviewId);
+      goToFeedAfterPost();
       void refreshProfile();
       void promptAfterPosting();
     });
