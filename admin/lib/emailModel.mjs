@@ -43,6 +43,10 @@ export function validateEmailDraft(input) {
 export const APP_STORE_URL =
   "https://apps.apple.com/app/tini-time-club/id6741620393";
 
+/** Android has been live on Google Play since 4.9.0. */
+export const GOOGLE_PLAY_URL =
+  "https://play.google.com/store/apps/details?id=com.ohope.tinitimeclub";
+
 /** The review-share card's palette, so member emails wear the same brand. */
 export const EMAIL_BRAND = {
   ink: "#10241B",
@@ -62,7 +66,7 @@ export function emailPayload(campaign, recipient) {
     from: `Tini Time Club <${campaign.sender}>`,
     to: [recipient.email],
     subject: campaign.subject,
-    text: `${campaign.body}\n\nGet the app: ${APP_STORE_URL}\n\nTini Time Club\nUnsubscribe from member emails: ${unsubscribe}`,
+    text: `${campaign.body}\n\nGet the app:\nApp Store: ${APP_STORE_URL}\nGoogle Play: ${GOOGLE_PLAY_URL}\n\nTini Time Club\nUnsubscribe from member emails: ${unsubscribe}`,
     html: [
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${EMAIL_BRAND.paper};padding:24px 12px"><tr><td align="center">`,
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;border-radius:16px;overflow:hidden;background-color:#ffffff;border:1px solid #e7e5e4">`,
@@ -75,10 +79,12 @@ export function emailPayload(campaign, recipient) {
       // App download call to action: the chartreuse chip from the share card.
       `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px"><tr>`,
       `<td style="border-radius:999px;background-color:${EMAIL_BRAND.chartreuse}"><a href="${APP_STORE_URL}" style="display:inline-block;padding:12px 24px;font-family:${EMAIL_FONTS};font-size:14px;font-weight:bold;color:${EMAIL_BRAND.ink};text-decoration:none">Download on the App Store</a></td>`,
+      `<td style="width:8px"></td>`,
+      `<td style="border-radius:999px;background-color:${EMAIL_BRAND.chartreuse}"><a href="${GOOGLE_PLAY_URL}" style="display:inline-block;padding:12px 24px;font-family:${EMAIL_FONTS};font-size:14px;font-weight:bold;color:${EMAIL_BRAND.ink};text-decoration:none">Get it on Google Play</a></td>`,
       `</tr></table></td></tr>`,
       // Footer.
       `<tr><td style="padding:20px 28px;border-top:1px solid #e7e5e4;font-family:${EMAIL_FONTS};font-size:12px;line-height:1.6;color:${EMAIL_BRAND.muted}">`,
-      `Tini Time Club · <a href="${APP_STORE_URL}" style="color:${EMAIL_BRAND.muted}">Get the app</a> · <a href="${escapeEmailHtml(unsubscribe)}" style="color:${EMAIL_BRAND.muted}">Unsubscribe from member emails</a>`,
+      `Tini Time Club · <a href="${APP_STORE_URL}" style="color:${EMAIL_BRAND.muted}">App Store</a> · <a href="${GOOGLE_PLAY_URL}" style="color:${EMAIL_BRAND.muted}">Google Play</a> · <a href="${escapeEmailHtml(unsubscribe)}" style="color:${EMAIL_BRAND.muted}">Unsubscribe from member emails</a>`,
       `</td></tr></table></td></tr></table>`,
     ].join(""),
     headers: {

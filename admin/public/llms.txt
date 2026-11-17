@@ -8,6 +8,7 @@ This file points agents and language models to the public pages that explain Tin
 
 - [Tini Time Club homepage](https://tinitimeclub.com/): Product overview for the Martini review app, including core features and the iOS and Android download links.
 - [About Hope Media House](https://tinitimeclub.com/about): Publisher information, editorial responsibility, and contact context for Tini Time Club.
+- [For bars and restaurants](https://tinitimeclub.com/business): How venues get in touch with the Tini Time Club team.
 - [Support](https://tinitimeclub.com/support): App support, account help, feature answers, reporting guidance, and accessibility contact information.
 - [Privacy Policy](https://tinitimeclub.com/privacy): How Hope Media House Inc. collects, uses, shares, and protects information for Tini Time Club.
 - [Terms of Service](https://tinitimeclub.com/terms): Terms, community guidelines, user content rules, and legal conditions for using Tini Time Club.

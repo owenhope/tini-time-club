@@ -373,13 +373,19 @@ export default function EmailComposer({
                   <div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#1c1917]">
                     {body || "Your message will appear here."}
                   </div>
-                  <span className="mt-7 inline-block rounded-full bg-[#F2FF71] px-6 py-3 text-sm font-bold text-[#10241B]">
-                    Download on the App Store
-                  </span>
+                  <div className="mt-7 flex flex-wrap gap-2">
+                    <span className="inline-block rounded-full bg-[#F2FF71] px-6 py-3 text-sm font-bold text-[#10241B]">
+                      Download on the App Store
+                    </span>
+                    <span className="inline-block rounded-full bg-[#F2FF71] px-6 py-3 text-sm font-bold text-[#10241B]">
+                      Get it on Google Play
+                    </span>
+                  </div>
                 </div>
                 <p className="border-t border-[#e7e5e4] px-6 py-4 text-xs text-[#78716c]">
                   Tini Time Club ·{" "}
-                  <span className="underline">Get the app</span> ·{" "}
+                  <span className="underline">App Store</span> ·{" "}
+                  <span className="underline">Google Play</span> ·{" "}
                   <span className="underline">
                     Unsubscribe from member emails
                   </span>

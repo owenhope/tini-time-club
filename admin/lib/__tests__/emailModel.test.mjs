@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   APP_STORE_URL,
+  GOOGLE_PLAY_URL,
   emailPayload,
   validateEmailDraft,
   resendFailure,
@@ -86,6 +87,9 @@ test("messages carry the brand header and App Store download link", () => {
   assert.ok(payload.html.includes(`href="${APP_STORE_URL}"`));
   assert.ok(payload.html.includes("Download on the App Store"));
   assert.ok(payload.text.includes(APP_STORE_URL));
+  assert.ok(payload.html.includes(`href="${GOOGLE_PLAY_URL}"`));
+  assert.ok(payload.html.includes("Get it on Google Play"));
+  assert.ok(payload.text.includes(GOOGLE_PLAY_URL));
 });
 
 test("provider failures give actionable messages without exposing provider response data", () => {

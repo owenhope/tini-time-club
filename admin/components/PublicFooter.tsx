@@ -26,7 +26,7 @@ export default function PublicFooter() {
             </Link>
           ))}
         </nav>
-        <p>&copy; 2026 Hope Media House Inc.</p>
+        <p>&copy; {new Date().getFullYear()} Hope Media House Inc.</p>
       </div>
     </footer>
   );

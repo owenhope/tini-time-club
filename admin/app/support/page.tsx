@@ -14,6 +14,7 @@ const gettingStarted = [
   "Create an account, finish onboarding, and choose your Martini preferences.",
   "Tap + to add a review with a photo, location, spirit, type, Taste and Presentation ratings, and notes.",
   "Use Explore's map, Golden Glass, Members, profiles, regulars, and favorite locations to find new places.",
+  "Browse the Index to learn the spirits and Martini types, and collect Passport stamps and points as you review.",
 ];
 
 const appFeatures = [
@@ -24,7 +25,7 @@ const appFeatures = [
   {
     question: "Can I add photos and notes?",
     answer:
-      "Yes. Attach a photo, add a caption, and edit the caption later from your profile.",
+      "Yes. Attach a photo and add a caption. You can edit the whole review later from its options menu.",
   },
   {
     question: "How does discovery work?",
@@ -56,14 +57,14 @@ const faqs = [
       : "Tini Time Club is currently listed for iPhone. See the App Store listing for the minimum iOS version. The Android app is coming soon to Google Play.",
   },
   {
-    question: "How do I reset my password?",
+    question: "How do I sign in with email?",
     answer:
-      "On the sign-in screen, tap Forgot password? and follow the email link. If the message does not arrive, check spam or email support@hopemediahouse.com.",
+      "There is no password to remember. Enter your email address and tap the one-time sign-in link we send you. If the message does not arrive, check spam or email support@hopemediahouse.com.",
   },
   {
     question: "How do I edit or delete a review?",
     answer:
-      "From your profile, open the review options to edit its caption or delete the review. You can also discard an in-progress review with the trash icon before posting.",
+      "Open the review's options menu (•••) and choose Edit Review or Delete Review. You can also discard an in-progress review before posting.",
   },
   {
     question: "How do I report inappropriate content?",
