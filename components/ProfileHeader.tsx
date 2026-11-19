@@ -1,3 +1,6 @@
+import FeatureHelpButton from "@/components/shared/FeatureHelpButton";
+import { routes } from "@/utils/routes";
+import { cityLabel, type HomeCity } from "@/utils/homeCity";
 import { CLUB_HOST_ID } from "@/utils/clubHost";
 import { useMemberPoints } from "@/hooks/useMemberPoints";
 import React from "react";
@@ -21,6 +24,7 @@ interface ProfileHeaderProps {
     username: string;
     name?: string | null;
     bio?: string | null;
+    home_city?: HomeCity | null;
     avatar_url?: string | null;
     review_count?: number | null;
     passport_points?: number | null;
@@ -278,6 +282,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   />
                 ))}
             </View>
+            {profile.home_city ? (
+              <Text style={styles.bio}>{cityLabel(profile.home_city)}</Text>
+            ) : null}
             {profile.bio ? (
               <Text style={styles.bio} numberOfLines={3}>
                 {profile.bio}
@@ -292,6 +299,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             profile — the journey is public — not just your own. */}
         {!isClubHost && (rank?.next || rankAction) ? (
           <View style={styles.rankStack}>
+            <View style={styles.rankLabels}>
+              <Text style={styles.rankPoints}>Rankings</Text>
+              <FeatureHelpButton
+                label="How rankings work"
+                href={routes.passportInfo()}
+                color={colors.onHeaderBrand}
+              />
+            </View>
             {rank?.next ? (
               <View style={styles.rankProgress}>
                 <View style={styles.rankLabels}>

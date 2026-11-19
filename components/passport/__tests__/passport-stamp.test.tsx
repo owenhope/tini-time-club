@@ -40,6 +40,7 @@ describe("PassportStamp", () => {
     ["favorite_location", "favorite bar"],
     ["taste_profile", "taste profile"],
     ["bio", "bio"],
+    ["home_city", "home city"],
   ] as const)("shows %s as a label-only action", (shape, label) => {
     const tree = renderStamp(shape, label);
 

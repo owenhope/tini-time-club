@@ -17,6 +17,7 @@ export interface Profile {
   username: string;
   name?: string | null;
   bio?: string | null;
+  home_city?: import("@/utils/homeCity").HomeCity | null;
   avatar_url?: string | null;
   is_verified?: boolean;
   favorite_spirits?: (number | string)[] | string | null;

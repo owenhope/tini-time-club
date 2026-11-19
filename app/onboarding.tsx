@@ -30,8 +30,6 @@ import {
   Input,
 } from "@/components/shared";
 import AppHeader from "@/components/nav/AppHeader";
-import { GoldenGlassIntroduction } from "@/components/onboarding/golden-glass-introduction";
-import { RegularsIntroduction } from "@/components/onboarding/regulars-introduction";
 import { useProfile } from "@/context/profile-context";
 import { deleteCurrentAccount } from "@/services/accountService";
 import AnalyticService from "@/services/analyticsService";
@@ -46,26 +44,11 @@ import { routes } from "@/utils/routes";
 import { consumePendingMembershipReturn } from "@/services/visitor-session";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { PassportStamp } from "@/components/passport/passport-stamp";
-import { RankTierList } from "@/components/passport/rank-tier-list";
-import type { PassportStampShape } from "@/services/passportService";
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
+import HomeCityPicker from "@/components/profile/HomeCityPicker";
 
-// Six example stamps at their first milestones for the Passport introduction.
-const PREVIEW_STAMPS: {
-  shape: PassportStampShape;
-  label: string;
-  milestone: number;
-  points: number;
-}[] = [
-  { shape: "locations", label: "Location", milestone: 1, points: 10 },
-  { shape: "martinis", label: "Martini", milestone: 1, points: 10 },
-  { shape: "combination", label: "Vodka Twist", milestone: 1, points: 10 },
-  { shape: "type_reviews", label: "Classics", milestone: 10, points: 10 },
-  { shape: "regulars", label: "Regular", milestone: 1, points: 10 },
-  { shape: "comments", label: "Comment", milestone: 1, points: 10 },
-];
+type OnboardingStep = 1 | 2 | 3;
+
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
 
@@ -94,7 +77,7 @@ export default function Onboarding() {
     __DEV__ &&
     Number.isInteger(previewStep) &&
     previewStep >= 1 &&
-    previewStep <= 6;
+    previewStep <= 3;
   const { profile, loading, updateProfile, acceptEULA } = useProfile();
   const initializedProfileId = useRef<string | null>(null);
   const [step, setStep] = useState<OnboardingStep>(() =>
@@ -543,6 +526,8 @@ export default function Onboarding() {
                       placeholder="e.g. martini_mike"
                       autoCapitalize="none"
                       autoCorrect={false}
+                      returnKeyType="next"
+                      onSubmitEditing={saveProfile}
                       maxLength={20}
                       error={displayedUsernameError ?? undefined}
                       supportingText={
@@ -603,7 +588,7 @@ export default function Onboarding() {
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
-              title="Martini Passport"
+              title="Home city"
               trailing={{
                 icon: "close",
                 onPress: confirmQuitSignup,
@@ -611,271 +596,75 @@ export default function Onboarding() {
                 disabled: saving,
               }}
             />
-
-            <ScrollView
-              contentContainerStyle={styles.educationContent}
-              contentInsetAdjustmentBehavior="automatic"
-            >
-              <View style={styles.educationIntro}>
-                <AppText variant="heading">
-                  Every discovery builds your Passport.
-                </AppText>
-                <AppText variant="body" tone="secondary">
-                  Explore locations, Martini styles, and club milestones to earn
-                  stamps. Each stamp permanently adds its listed points.
-                </AppText>
-              </View>
-
-              <View style={styles.educationSection}>
-                <AppText variant="eyebrow" tone="secondary">
-                  Collect stamps
-                </AppText>
-                <View style={styles.stampRow}>
-                  {PREVIEW_STAMPS.map((stamp) => (
-                    <View key={stamp.shape} style={styles.stampCell}>
-                      <PassportStamp
-                        shape={stamp.shape}
-                        milestone={stamp.milestone}
-                        pointAward={stamp.points}
-                        earned
-                        label={stamp.label}
-                        accessibilityLabel={`Example stamp: ${stamp.milestone} ${stamp.label.toLowerCase()}, ${stamp.points} points`}
+            <HomeCityPicker
+              origin="onboarding"
+              autoDetect
+              preview={isDevelopmentPreview}
+              onBusyChange={setSaving}
+              onContinue={() => setStep(3)}
+              renderLayout={({ content, busy, canSave, onSave, onSkip }) => (
+                <>
+                  <ScrollView
+                    style={styles.profileContent}
+                    contentContainerStyle={styles.educationContent}
+                    keyboardShouldPersistTaps="handled"
+                    contentInsetAdjustmentBehavior="automatic"
+                  >
+                    {content}
+                  </ScrollView>
+                  <View
+                    style={[
+                      styles.footer,
+                      {
+                        paddingBottom: Math.max(insets.bottom, 10) + 6,
+                        minHeight: 70 + Math.max(insets.bottom, 10),
+                      },
+                    ]}
+                  >
+                    <View style={styles.navigation}>
+                      <Pressable
+                        onPress={() => setStep(1)}
+                        disabled={busy}
+                        style={({ pressed }) => [
+                          styles.backButton,
+                          pressed && styles.backButtonPressed,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Back to profile setup"
+                        accessibilityState={{ disabled: busy }}
+                        hitSlop={8}
+                      >
+                        <Ionicons
+                          name="chevron-back"
+                          size={22}
+                          color={colors.text}
+                        />
+                      </Pressable>
+                      <Button
+                        title="Skip"
+                        variant="ghost"
+                        size="medium"
+                        disabled={busy}
+                        onPress={onSkip}
+                      />
+                      <Button
+                        title="Continue"
+                        icon="chevron-forward"
+                        iconPosition="right"
+                        size="medium"
+                        disabled={!canSave}
+                        loading={busy}
+                        onPress={onSave}
                       />
                     </View>
-                  ))}
-                </View>
-              </View>
-            </ScrollView>
-
-            <View
-              style={[
-                styles.footer,
-                {
-                  paddingBottom: Math.max(insets.bottom, 10) + 6,
-                  minHeight: 70 + Math.max(insets.bottom, 10),
-                },
-              ]}
-            >
-              <View style={styles.navigation}>
-                <Pressable
-                  onPress={() => setStep(1)}
-                  style={({ pressed }) => [
-                    styles.backButton,
-                    pressed && styles.backButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to profile setup"
-                  hitSlop={8}
-                >
-                  <Ionicons name="chevron-back" size={22} color={colors.text} />
-                </Pressable>
-                <Button
-                  title="Rankings"
-                  onPress={() => setStep(3)}
-                  icon="chevron-forward"
-                  iconPosition="right"
-                  size="medium"
-                />
-              </View>
-            </View>
+                  </View>
+                </>
+              )}
+            />
           </View>
         ) : null}
 
         {step === 3 ? (
-          <View style={styles.profileFlow}>
-            <AppHeader
-              variant="large"
-              title="Rankings"
-              trailing={{
-                icon: "close",
-                onPress: confirmQuitSignup,
-                accessibilityLabel: "Quit sign-up",
-                disabled: saving,
-              }}
-            />
-
-            <ScrollView
-              contentContainerStyle={styles.educationContent}
-              contentInsetAdjustmentBehavior="automatic"
-            >
-              <View style={styles.educationIntro}>
-                <AppText variant="heading">Your points set your rank.</AppText>
-                <AppText variant="body" tone="secondary">
-                  As your Passport point total grows, you rank up and unlock a
-                  new animated ring around your member avatar.
-                </AppText>
-              </View>
-
-              <View style={styles.educationSection}>
-                <AppText variant="eyebrow" tone="secondary">
-                  Rings to unlock
-                </AppText>
-                <RankTierList
-                  avatar={
-                    avatarUri ? (
-                      <Image
-                        source={{ uri: avatarUri }}
-                        style={styles.rankAvatar}
-                        contentFit="cover"
-                        accessibilityLabel="Your profile photo"
-                      />
-                    ) : (
-                      <Avatar
-                        avatarPath={
-                          isDevelopmentPreview ? null : profile?.avatar_url
-                        }
-                        username={username.trim()}
-                        fallbackText="TT"
-                        size={52}
-                      />
-                    )
-                  }
-                />
-              </View>
-            </ScrollView>
-
-            <View
-              style={[
-                styles.footer,
-                {
-                  paddingBottom: Math.max(insets.bottom, 10) + 6,
-                  minHeight: 70 + Math.max(insets.bottom, 10),
-                },
-              ]}
-            >
-              <View style={styles.navigation}>
-                <Pressable
-                  onPress={() => setStep(2)}
-                  style={({ pressed }) => [
-                    styles.backButton,
-                    pressed && styles.backButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to the Passport"
-                  hitSlop={8}
-                >
-                  <Ionicons name="chevron-back" size={22} color={colors.text} />
-                </Pressable>
-                <Button
-                  title="Regulars"
-                  onPress={() => setStep(4)}
-                  icon="chevron-forward"
-                  iconPosition="right"
-                  size="medium"
-                />
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {step === 4 ? (
-          <View style={styles.profileFlow}>
-            <AppHeader
-              variant="large"
-              title="Regulars"
-              trailing={{
-                icon: "close",
-                onPress: confirmQuitSignup,
-                accessibilityLabel: "Quit sign-up",
-                disabled: saving,
-              }}
-            />
-            <ScrollView
-              contentContainerStyle={styles.educationContent}
-              contentInsetAdjustmentBehavior="automatic"
-            >
-              <RegularsIntroduction
-                username={username.trim()}
-                avatarPath={isDevelopmentPreview ? null : profile?.avatar_url}
-              />
-            </ScrollView>
-            <View
-              style={[
-                styles.footer,
-                {
-                  paddingBottom: Math.max(insets.bottom, 10) + 6,
-                  minHeight: 70 + Math.max(insets.bottom, 10),
-                },
-              ]}
-            >
-              <View style={styles.navigation}>
-                <Pressable
-                  onPress={() => setStep(3)}
-                  style={({ pressed }) => [
-                    styles.backButton,
-                    pressed && styles.backButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to the rankings"
-                  hitSlop={8}
-                >
-                  <Ionicons name="chevron-back" size={22} color={colors.text} />
-                </Pressable>
-                <Button
-                  title="Golden Glass"
-                  onPress={() => setStep(5)}
-                  icon="chevron-forward"
-                  iconPosition="right"
-                  size="medium"
-                />
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {step === 5 ? (
-          <View style={styles.profileFlow}>
-            <AppHeader
-              variant="large"
-              title="Golden Glass"
-              trailing={{
-                icon: "close",
-                onPress: confirmQuitSignup,
-                accessibilityLabel: "Quit sign-up",
-                disabled: saving,
-              }}
-            />
-            <ScrollView
-              contentContainerStyle={styles.educationContent}
-              contentInsetAdjustmentBehavior="automatic"
-            >
-              <GoldenGlassIntroduction />
-            </ScrollView>
-            <View
-              style={[
-                styles.footer,
-                {
-                  paddingBottom: Math.max(insets.bottom, 10) + 6,
-                  minHeight: 70 + Math.max(insets.bottom, 10),
-                },
-              ]}
-            >
-              <View style={styles.navigation}>
-                <Pressable
-                  onPress={() => setStep(4)}
-                  style={({ pressed }) => [
-                    styles.backButton,
-                    pressed && styles.backButtonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to Regulars"
-                  hitSlop={8}
-                >
-                  <Ionicons name="chevron-back" size={22} color={colors.text} />
-                </Pressable>
-                <Button
-                  title="Terms"
-                  onPress={() => setStep(6)}
-                  icon="chevron-forward"
-                  iconPosition="right"
-                  size="medium"
-                />
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {step === 6 ? (
           <View style={styles.profileFlow}>
             <AppHeader
               variant="large"
@@ -1081,14 +870,14 @@ export default function Onboarding() {
             >
               <View style={styles.termsNavigation}>
                 <Pressable
-                  onPress={() => setStep(5)}
+                  onPress={() => setStep(2)}
                   disabled={saving}
                   style={({ pressed }) => [
                     styles.backButton,
                     pressed && styles.backButtonPressed,
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel="Back to Golden Glass"
+                  accessibilityLabel="Back to Home City"
                   accessibilityState={{ disabled: saving }}
                   hitSlop={8}
                 >
@@ -1146,23 +935,6 @@ const useStyles = makeStyles((t) => ({
     paddingTop: t.spacing.xl,
     paddingBottom: t.spacing.xl,
     gap: t.spacing.xxl,
-  },
-  educationIntro: {
-    gap: t.spacing.sm,
-  },
-  educationSection: {
-    gap: t.spacing.md,
-  },
-  stampRow: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    justifyContent: "space-between" as const,
-    rowGap: t.spacing.lg,
-    paddingTop: t.spacing.sm,
-  },
-  stampCell: {
-    width: "33.333%" as const,
-    alignItems: "center" as const,
   },
   termsScroll: {
     flex: 1,

@@ -22,6 +22,7 @@ export const PASSPORT_STAMP_SHAPES = [
   "favorite_location",
   "taste_profile",
   "bio",
+  "home_city",
 ] as const;
 export type PassportStampShape = (typeof PASSPORT_STAMP_SHAPES)[number];
 

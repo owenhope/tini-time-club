@@ -331,7 +331,7 @@ async function getProfile(client: ReturnType<typeof createClient>, body: any) {
   const { data: profile, error } = await client
     .from("profiles")
     .select(
-      "id,username,name,bio,avatar_url,is_verified,favorite_spirits,favorite_types,favorite_location_id,review_count,passport_points,is_public"
+      "id,username,name,bio,home_city,avatar_url,is_verified,favorite_spirits,favorite_types,favorite_location_id,review_count,passport_points,is_public"
     )
     .eq("username", String(body.username ?? ""))
     .eq("is_public", true)

@@ -37,7 +37,9 @@ const HEADERLESS = new Set([
 
 const TITLES: Record<string, string> = {
   passport: "Martini Passport",
-  "passport-info": "Passport ranks",
+  "passport-info": "Rankings",
+  "passport-stamps-info": "Martini Passport",
+  "regulars-info": "Regulars",
   "users/[username]/followers": "Followers",
   "users/[username]/following": "Following",
   settings: "Settings",

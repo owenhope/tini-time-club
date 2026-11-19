@@ -5,8 +5,8 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  TextInput,
 } from "react-native";
+import LocationSearchField from "@/components/shared/LocationSearchField";
 import { Ionicons } from "@expo/vector-icons";
 import { Controller } from "react-hook-form";
 import * as Haptics from "expo-haptics";
@@ -411,28 +411,13 @@ const LocationInput = ({
       render={({ field: { onChange, value } }) => (
         <View style={styles.inputContainer}>
           <View style={styles.searchInputContainer}>
-            <TextInput
-              style={styles.searchInput}
+            <LocationSearchField
               placeholder="Search bars, lounges, or cocktail spots..."
-              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={handleSearch}
-              returnKeyType="search"
-              editable={!disabled}
+              onClear={handleClearSearch}
+              disabled={disabled}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={handleClearSearch}
-                disabled={disabled}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            )}
           </View>
           {selectionError ? (
             <Text style={styles.selectionError}>{selectionError}</Text>
@@ -496,20 +481,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     marginBottom: t.spacing.sm,
   },
-  searchInput: {
-    ...t.typography.input,
-    backgroundColor: t.colors.surfaceSunken,
-    height: 50,
-    borderRadius: t.radius.pill,
-    paddingHorizontal: t.spacing.xl - 4,
-    paddingVertical: 0,
-    paddingRight: 50,
-    textAlignVertical: "center" as const,
-    includeFontPadding: false,
-    color: t.colors.inputText,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
   currentLocation: {
     minHeight: 64,
     flexDirection: "row" as const,
@@ -529,12 +500,6 @@ const useStyles = makeStyles((t) => ({
   currentLocationAddress: {
     ...t.typography.caption,
     color: t.colors.onAccent,
-  },
-  clearButton: {
-    position: "absolute" as const,
-    right: 15,
-    top: 15,
-    padding: 2,
   },
   placesContainer: {
     maxHeight: 450,

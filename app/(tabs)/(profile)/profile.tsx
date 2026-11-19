@@ -13,7 +13,6 @@ import { MartiniIcon } from "@/components/shared";
 import {
   Redirect,
   useRouter,
-  useNavigation,
   useFocusEffect,
   useLocalSearchParams,
 } from "expo-router";
@@ -63,7 +62,6 @@ const MemberProfile = () => {
   const { colors } = useTheme();
   const { profile, updateProfile, refreshProfile } = useProfile();
   const router = useRouter();
-  const navigation = useNavigation();
   const params = useLocalSearchParams<{
     screenshotSeed?: string;
     tab?: ProfileContentTab;
@@ -329,6 +327,15 @@ const MemberProfile = () => {
 
   const favoriteChips = (
     <View style={styles.favoritesSection}>
+      {!profile?.home_city ? (
+        <TouchableOpacity
+          onPress={() => router.push(routes.homeCity())}
+          style={styles.ctaContainer}
+          accessibilityRole="button"
+        >
+          <Text style={styles.ctaText}>Add your city · Earn 10 points</Text>
+        </TouchableOpacity>
+      ) : null}
       {!hasFavoriteTags && (
         <TouchableOpacity
           onPress={() => router.push(routes.editProfile())}
@@ -369,7 +376,7 @@ const MemberProfile = () => {
 
   const settingsAction = {
     icon: "settings-outline" as const,
-    onPress: () => navigation.navigate("settings" as never),
+    onPress: () => router.navigate(routes.settings()),
     accessibilityLabel: "Profile settings",
   };
 

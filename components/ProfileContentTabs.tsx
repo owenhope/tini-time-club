@@ -1,8 +1,11 @@
+import { View } from "react-native";
+import FeatureHelpButton from "@/components/shared/FeatureHelpButton";
+import { routes } from "@/utils/routes";
 import React, { useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import AnalyticService from "@/services/analyticsService";
 import { SegmentedControl } from "@/components/shared";
-import { makeStyles } from "@/theme";
+import { makeStyles, useTheme } from "@/theme";
 
 export type ProfileContentTab = "reviews" | "regulars" | "favorites";
 
@@ -26,6 +29,7 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
   onChange,
 }) => {
   const styles = useStyles();
+  const { colors } = useTheme();
   useFocusEffect(
     useCallback(() => {
       if (activeTab === "favorites")
@@ -36,17 +40,29 @@ const ProfileContentTabs: React.FC<ProfileContentTabsProps> = ({
   );
 
   return (
-    <SegmentedControl
-      value={activeTab}
-      options={TABS}
-      onChange={onChange}
-      tone="brand"
-      style={styles.tabs}
-    />
+    <View>
+      <SegmentedControl
+        value={activeTab}
+        options={TABS}
+        onChange={onChange}
+        tone="brand"
+        style={styles.tabs}
+      />
+      {activeTab === "regulars" ? (
+        <View style={styles.help}>
+          <FeatureHelpButton
+            label="How Regulars works"
+            href={routes.regularsInfo()}
+            color={colors.onHeaderBrand}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 };
 
 const useStyles = makeStyles((t) => ({
+  help: { alignItems: "flex-end" as const, marginHorizontal: t.spacing.gutter },
   tabs: {
     marginHorizontal: t.spacing.gutter,
     marginTop: 0,

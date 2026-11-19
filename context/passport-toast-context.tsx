@@ -11,12 +11,12 @@ import React, {
 } from "react";
 import { Animated, PanResponder, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useRouter, usePathname, useGlobalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/components/shared";
 import { PassportStamp } from "@/components/passport/passport-stamp";
 import type { PassportStampRecord } from "@/services/passportService";
-import { reconcileMyPassport } from "@/services/passportService";
+import { getMyPassport, reconcileMyPassport } from "@/services/passportService";
 import { useProfile } from "@/context/profile-context";
 import { reportError } from "@/utils/log";
 import { subscribeToPassportReconciliationRequests } from "@/utils/passport-reconciliation-events";
@@ -66,6 +66,13 @@ export function PassportToastProvider({
   const router = useRouter();
   const { profile } = useProfile();
   const profileId = profile?.id;
+  const pathname = usePathname();
+  const params = useGlobalSearchParams<{ previewStamp?: string }>();
+  const canPresent = Boolean(
+    profile?.eula_accepted && pathname !== "/onboarding"
+  );
+  const isHome = pathname === "/home";
+  const previewStamp = __DEV__ && isHome ? params.previewStamp : undefined;
   const scope = useMemo(
     () => (profileId ? beginMemberPointsRead() : null),
     [profileId]
@@ -78,7 +85,9 @@ export function PassportToastProvider({
   // gestures), which React only allows for state.
   const [translateY] = useState(() => new Animated.Value(-140));
   const current =
-    queue.profileId === profileId ? (queue.stamps[0] ?? null) : null;
+    canPresent && queue.profileId === profileId
+      ? (queue.stamps[0] ?? null)
+      : null;
 
   const dismiss = useCallback(() => {
     Animated.timing(translateY, {
@@ -113,7 +122,7 @@ export function PassportToastProvider({
   );
 
   useEffect(() => {
-    if (!profileId) return;
+    if (!profileId || !canPresent) return;
     let active = true;
     let running = false;
     let again = false;
@@ -137,6 +146,7 @@ export function PassportToastProvider({
         running = false;
       }
     };
+    if (isHome) void reconcile();
     const unsubscribe = subscribeToPassportReconciliationRequests(
       () => void reconcile()
     );
@@ -144,7 +154,24 @@ export function PassportToastProvider({
       active = false;
       unsubscribe();
     };
-  }, [profileId, showPassportStamps]);
+  }, [profileId, canPresent, isHome, showPassportStamps]);
+
+  // Development-only replay for visual review, without granting another award.
+  useEffect(() => {
+    if (!previewStamp || !profileId || !canPresent) return;
+    let active = true;
+    void getMyPassport()
+      .then((passport) => {
+        const stamp = passport.stamps.find(
+          (item) => item.key === previewStamp && item.earned
+        );
+        if (active && stamp) showPassportStamps([stamp], profileId);
+      })
+      .catch((error) => reportError("Unable to preview stamp:", error));
+    return () => {
+      active = false;
+    };
+  }, [previewStamp, profileId, canPresent, showPassportStamps]);
 
   useEffect(() => {
     if (!current) return;
@@ -159,9 +186,10 @@ export function PassportToastProvider({
     if (process.env.EXPO_OS === "ios") {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
+    if (previewStamp) return;
     const timer = setTimeout(dismiss, AUTO_DISMISS_MS);
     return () => clearTimeout(timer);
-  }, [current, dismiss, translateY]);
+  }, [current, dismiss, translateY, previewStamp]);
 
   const [panResponder] = useState(() =>
     PanResponder.create({
@@ -200,8 +228,8 @@ export function PassportToastProvider({
             accessibilityRole="button"
             accessibilityLabel={
               current.key === "summary"
-                ? `Passport Stamps: ${current.threshold} new, ${current.points} points earned. Open Passport.`
-                : `Passport Stamp: ${current.label}, ${current.points} points earned. Open Passport.`
+                ? `${current.threshold} new stamps, ${current.points} points earned. Open Passport.`
+                : `${current.label}, ${current.points} points earned. Open Passport.`
             }
             onPress={() => {
               dismiss();
@@ -228,8 +256,8 @@ export function PassportToastProvider({
                   points — the part members care about — past one line. */}
               <AppText variant="heading" numberOfLines={2}>
                 {current.key === "summary"
-                  ? `Passport Stamps · ${current.threshold} new · +${current.points} pts`
-                  : `Passport Stamp · ${current.label} · +${current.points} pts`}
+                  ? `${current.threshold} new stamps · +${current.points} pts`
+                  : `${current.label} · +${current.points} pts`}
               </AppText>
               <AppText variant="caption" tone="secondary">
                 Tap to view your Passport

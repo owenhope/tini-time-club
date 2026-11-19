@@ -9,6 +9,7 @@ export interface AdminProfile {
   review_count: number | null;
   passport_points?: number | null;
   bio: string | null;
+  home_city?: { name: string; region: string; country: string } | null;
   email?: string;
   created_at?: string;
   last_sign_in_at?: string;

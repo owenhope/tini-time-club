@@ -4,6 +4,7 @@ import {
   TextInput,
   ViewStyle,
   TextStyle,
+  type TextInputProps,
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,6 +44,9 @@ export interface InputProps {
   inputStyle?: TextStyle;
   containerStyle?: ViewStyle;
   testID?: string;
+  accessibilityLabel?: string;
+  returnKeyType?: TextInputProps["returnKeyType"];
+  onSubmitEditing?: TextInputProps["onSubmitEditing"];
 }
 
 const Input: React.FC<InputProps> = ({
@@ -74,6 +78,9 @@ const Input: React.FC<InputProps> = ({
   inputStyle,
   containerStyle,
   testID,
+  accessibilityLabel,
+  returnKeyType,
+  onSubmitEditing,
 }) => {
   const styles = useStyles();
   const { colors, typography } = useTheme();
@@ -246,6 +253,9 @@ const Input: React.FC<InputProps> = ({
 
         <TextInput
           testID={testID}
+          accessibilityLabel={accessibilityLabel ?? label}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           placeholder={placeholder}
           placeholderTextColor={getPlaceholderColor()}
           value={value}

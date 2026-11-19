@@ -48,6 +48,19 @@ export default async function UserDetailPage({
         title={profile.username ?? "Unknown member"}
         description={profile.bio ?? "No profile bio."}
         stats={[
+          {
+            label: "Home city",
+            value: profile.home_city
+              ? [
+                  profile.home_city.name,
+                  profile.home_city.region,
+                  profile.home_city.country,
+                ]
+                  .filter(Boolean)
+                  .join(", ")
+              : "Not added",
+            tone: "muted",
+          },
           { label: "Rank", value: tier.name, tone: "purple" },
           {
             label: "Reviews",

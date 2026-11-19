@@ -48,6 +48,7 @@ const STAMP_GEOMETRY: Record<PassportStampShape, StampGeometry> = {
   favorite_location: { kind: "polygon", sides: 12 },
   taste_profile: { kind: "polygon", sides: 12 },
   bio: { kind: "polygon", sides: 12 },
+  home_city: { kind: "polygon", sides: 12 },
 };
 
 const FIRST_STEPS_SHAPES = new Set<PassportStampShape>([
@@ -55,6 +56,7 @@ const FIRST_STEPS_SHAPES = new Set<PassportStampShape>([
   "favorite_location",
   "taste_profile",
   "bio",
+  "home_city",
 ]);
 
 const polygonPoints = (sides: number, outer = 45, inner?: number) => {

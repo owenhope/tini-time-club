@@ -1,3 +1,4 @@
-import PassportInfoScreen from "@/components/passport/passport-info-screen";
-
-export default PassportInfoScreen;
+import FeatureIntroductionScreen from "@/components/onboarding/feature-introduction-screen";
+export default function InfoScreen() {
+  return <FeatureIntroductionScreen feature="rankings" />;
+}

@@ -86,7 +86,7 @@ export default function GoldenGlassList({
           accessibilityHint="Opens an explanation of how locations qualify and are ranked"
         >
           <Ionicons
-            name="information-circle-outline"
+            name="help-circle-outline"
             size={22}
             color={colors.awardGold}
           />

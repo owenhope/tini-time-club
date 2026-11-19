@@ -1,3 +1,4 @@
+import FeatureHelpButton from "@/components/shared/FeatureHelpButton";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,90 +31,102 @@ export function PassportEntry({ profileId, username }: PassportEntryProps) {
     .slice(0, 3);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${ownerLabel} Martini Passport, ${displayedPassport?.points == null ? "points unavailable" : `${displayedPassport.points} points`}`}
-      onPress={() => {
-        if (longPressHandled.current) {
-          longPressHandled.current = false;
-          return;
-        }
-        router.push(
-          routes.passport(profileId ? { profileId, username } : undefined)
-        );
-      }}
-      onLongPress={
-        __DEV__
-          ? () => {
-              longPressHandled.current = true;
-              setPreview((current) =>
-                current === "live"
-                  ? "empty"
-                  : current === "empty"
-                    ? "loading"
-                    : "live"
-              );
-            }
-          : undefined
-      }
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-    >
-      <View style={styles.header}>
-        <AppText variant="eyebrow" style={styles.eyebrow}>
-          {ownerLabel} Passport
+    <View>
+      <View style={styles.helpHeading}>
+        <AppText variant="label" style={styles.text}>
+          Martini Passport
         </AppText>
-        {showSkeleton ? (
-          <View style={[styles.headerSkeleton, styles.points]} />
-        ) : (
-          <AppText variant="label" style={[styles.text, styles.points]}>
-            {displayedPassport?.points ?? "—"} pts
-          </AppText>
-        )}
-        <Ionicons
-          name="chevron-forward"
-          size={14}
+        <FeatureHelpButton
+          label="How Passport stamps work"
+          href={routes.passportStampsInfo()}
           color={colors.onHeaderBrand}
         />
       </View>
-      {showSkeleton ? (
-        <PassportEntrySkeleton />
-      ) : recent.length ? (
-        <View
-          style={styles.grid}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          {recent.map((stamp) => (
-            <View key={stamp.id} style={styles.cell}>
-              <PassportStamp
-                shape={stamp.metric}
-                milestone={stamp.threshold}
-                pointAward={stamp.points}
-                earned
-                label={(stamp.label || stamp.title).replace(/^\d+\s+/, "")}
-                appearance="profile"
-              />
-            </View>
-          ))}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${ownerLabel} Martini Passport, ${displayedPassport?.points == null ? "points unavailable" : `${displayedPassport.points} points`}`}
+        onPress={() => {
+          if (longPressHandled.current) {
+            longPressHandled.current = false;
+            return;
+          }
+          router.push(
+            routes.passport(profileId ? { profileId, username } : undefined)
+          );
+        }}
+        onLongPress={
+          __DEV__
+            ? () => {
+                longPressHandled.current = true;
+                setPreview((current) =>
+                  current === "live"
+                    ? "empty"
+                    : current === "empty"
+                      ? "loading"
+                      : "live"
+                );
+              }
+            : undefined
+        }
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      >
+        <View style={styles.header}>
+          <AppText variant="eyebrow" style={styles.eyebrow}>
+            {ownerLabel} Passport
+          </AppText>
+          {showSkeleton ? (
+            <View style={[styles.headerSkeleton, styles.points]} />
+          ) : (
+            <AppText variant="label" style={[styles.text, styles.points]}>
+              {displayedPassport?.points ?? "—"} pts
+            </AppText>
+          )}
+          <Ionicons
+            name="chevron-forward"
+            size={14}
+            color={colors.onHeaderBrand}
+          />
         </View>
-      ) : (
-        <View style={styles.empty}>
-          <PassportIcon size={23} color={colors.onHeaderBrand} />
-          <View style={styles.emptyCopy}>
-            <AppText variant="label" style={styles.text}>
-              {profileId
-                ? "No stamps earned yet"
-                : "Your first stamp is waiting"}
-            </AppText>
-            <AppText variant="caption" style={styles.muted}>
-              {profileId
-                ? "Their Passport starts with their first review."
-                : "Publish a review to start your Passport."}
-            </AppText>
+        {showSkeleton ? (
+          <PassportEntrySkeleton />
+        ) : recent.length ? (
+          <View
+            style={styles.grid}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            {recent.map((stamp) => (
+              <View key={stamp.id} style={styles.cell}>
+                <PassportStamp
+                  shape={stamp.metric}
+                  milestone={stamp.threshold}
+                  pointAward={stamp.points}
+                  earned
+                  label={(stamp.label || stamp.title).replace(/^\d+\s+/, "")}
+                  appearance="profile"
+                />
+              </View>
+            ))}
           </View>
-        </View>
-      )}
-    </Pressable>
+        ) : (
+          <View style={styles.empty}>
+            <PassportIcon size={23} color={colors.onHeaderBrand} />
+            <View style={styles.emptyCopy}>
+              <AppText variant="label" style={styles.text}>
+                {profileId
+                  ? "No stamps earned yet"
+                  : "Your first stamp is waiting"}
+              </AppText>
+              <AppText variant="caption" style={styles.muted}>
+                {profileId
+                  ? "Their Passport starts with their first review."
+                  : "Publish a review to start your Passport."}
+              </AppText>
+            </View>
+          </View>
+        )}
+      </Pressable>
+    </View>
   );
 }
 
@@ -156,6 +169,11 @@ function PassportEntrySkeleton() {
 }
 
 const useStyles = makeStyles((t) => ({
+  helpHeading: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+  },
   card: {
     width: "100%" as const,
     padding: t.spacing.md,

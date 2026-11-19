@@ -166,7 +166,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           locationAlwaysAndWhenInUsePermission: false,
           locationAlwaysPermission: false,
           locationWhenInUsePermission:
-            "Tini Time Club needs access to your location to show you nearby bars and restaurants where you can discover amazing Martinis. We'll help you find the best cocktail spots in your area!",
+            "Use your location to find your home city and nearby Martinis.",
           // Must be a string, not false: expo-location's binary references
           // CoreMotion APIs regardless, and App Store Connect rejects uploads
           // missing NSMotionUsageDescription (ITMS-90683). `false` would also

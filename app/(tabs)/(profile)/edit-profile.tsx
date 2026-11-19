@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -45,7 +45,9 @@ const EditProfile = () => {
   const [saving, setSaving] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
 
+  const initializedProfile = useRef<string | null>(null);
   const loadData = useCallback(async () => {
+    if (profile && initializedProfile.current === profile.id) return;
     try {
       setLoading(true);
 
@@ -60,6 +62,7 @@ const EditProfile = () => {
 
       // Load current profile data
       if (profile) {
+        initializedProfile.current = profile.id;
         setName(profile.name || "");
         setBio(profile.bio || "");
         setIsPublic(profile.is_public ?? true);
@@ -228,6 +231,15 @@ const EditProfile = () => {
             onSelectionChange={setSelectedTypes}
             maxSelections={1}
           />
+
+          <TouchableOpacity
+            onPress={() => router.push(routes.homeCity())}
+            accessibilityRole="button"
+          >
+            <Text style={styles.label}>
+              {profile?.home_city ? "Edit home city" : "Add your home city"}
+            </Text>
+          </TouchableOpacity>
 
           <Text style={styles.label}>Favorite Location</Text>
           <FavoriteLocationPicker

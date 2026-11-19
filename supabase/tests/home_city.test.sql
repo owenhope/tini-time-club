@@ -1,0 +1,26 @@
+BEGIN;
+SELECT plan(12);
+INSERT INTO auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
+VALUES ('00000000-0000-0000-0000-000000000000','43000000-0000-0000-0000-000000000001','authenticated','authenticated','city@example.test','',now(),'{"provider":"email","providers":["email"]}','{}',now(),now());
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims','{"sub":"43000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+SELECT throws_ok($$UPDATE public.profiles SET home_city='{}' WHERE id=auth.uid()$$,'42501',NULL,'Direct city writes are not granted');
+SELECT throws_ok($$SELECT public.set_my_home_city_v1('{"name":"","region":"BC","country":"Canada","place_id":null,"source":"device"}')$$,'23514',NULL,'Blank cities cannot earn a stamp');
+SELECT throws_ok($$SELECT public.set_my_home_city_v1('{"name":"Vancouver","region":"BC","country":"Canada","place_id":null,"source":"device","latitude":49}')$$,'23514',NULL,'Precise coordinates cannot be stored');
+SELECT lives_ok($$SELECT public.set_my_home_city_v1('{"name":"Vancouver","region":"BC","country":"Canada","place_id":null,"source":"device"}')$$,'Onboarding saves the city without awarding it');
+RESET ROLE;
+SELECT is((SELECT count(*)::integer FROM public.passport_awards WHERE profile_id='43000000-0000-0000-0000-000000000001'),0,'No awards during onboarding');
+SELECT is((SELECT count(*)::integer FROM public.notifications WHERE user_id='43000000-0000-0000-0000-000000000001'),0,'No award notifications during onboarding');
+UPDATE public.profiles SET eula_accepted=true WHERE id='43000000-0000-0000-0000-000000000001';
+SET LOCAL ROLE authenticated;
+SELECT lives_ok($$SELECT public.set_my_home_city_v1('{"name":"Vancouver","region":"BC","country":"Canada","place_id":null,"source":"device"}')$$,'A member can save their own city');
+SELECT lives_ok($$SELECT public.set_my_home_city_v1('{"name":"Paris","region":"","country":"France","place_id":"paris","source":"manual"}')$$,'Manual selection can override the detected city');
+SELECT lives_ok($$SELECT public.set_my_home_city_v1(NULL)$$,'A member can remove their city');
+RESET ROLE;
+SELECT is((SELECT count(*)::integer FROM public.passport_awards a JOIN public.passport_definitions d ON d.id=a.definition_id WHERE a.profile_id='43000000-0000-0000-0000-000000000001' AND d.key='first-home-city'),1,'City reward is permanent and awarded exactly once');
+SELECT is((SELECT points::integer FROM public.passport_definitions WHERE key='first-home-city'),10,'City reward is ten points');
+SET LOCAL ROLE anon;
+SELECT throws_ok($$SELECT public.set_my_home_city_v1(NULL)$$,'42501',NULL,'Anonymous callers cannot set a city');
+RESET ROLE;
+SELECT * FROM finish();
+ROLLBACK;

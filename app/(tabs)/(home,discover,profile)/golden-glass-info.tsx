@@ -1,3 +1,4 @@
-import GoldenGlassInfoScreen from "@/components/GoldenGlassInfoScreen";
-
-export default GoldenGlassInfoScreen;
+import FeatureIntroductionScreen from "@/components/onboarding/feature-introduction-screen";
+export default function InfoScreen() {
+  return <FeatureIntroductionScreen feature="golden-glass" />;
+}

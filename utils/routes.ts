@@ -115,6 +115,10 @@ export const routes = {
       ? ({ pathname: "/passport", params } as const)
       : ("/passport" as const)) satisfies Href,
 
+  /** Explanation of how Passport stamps are earned. */
+  passportStampsInfo: () => "/passport-stamps-info" as const satisfies Href,
+  /** Explanation of how a member becomes a Regular at a place. */
+  regularsInfo: () => "/regulars-info" as const satisfies Href,
   /** Explanation of Passport points, ranks, and avatar rings. */
   passportInfo: () => "/passport-info" as const satisfies Href,
 
@@ -134,6 +138,7 @@ export const routes = {
   deleteAccount: () => "/delete-account" as const satisfies Href,
 
   /** Edit-profile form. */
+  homeCity: () => "/home-city" as const satisfies Href,
   editProfile: () => "/edit-profile" as const satisfies Href,
 
   /** Shared review deep link, also used by public web links. */
