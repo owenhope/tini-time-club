@@ -1,53 +1,23 @@
-import React, { useCallback, useMemo } from "react";
+import React from "react";
 import { Pressable, Text, View } from "react-native";
-import BottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
 import { MemberAvatar, VerifiedName } from "@/components/shared";
+import NativeSheet from "@/components/shared/NativeSheet";
 import type { Regular } from "@/services/regularsService";
 import { useOpenProfile } from "@/hooks/useAppNavigation";
 import { makeStyles } from "@/theme";
-import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-
-const REGULARS_SHEET_VISIBLE_HEIGHT = 430;
-const CONTENT_BOTTOM_PADDING = 16;
 
 interface RegularsSliderProps {
   regulars: Regular[];
   locationName?: string | null;
-  bottomContentInset?: number;
   onClose: () => void;
 }
 
 export default function RegularsSlider({
   regulars,
   locationName,
-  bottomContentInset,
   onClose,
 }: RegularsSliderProps) {
-  const styles = useStyles();
   const openProfile = useOpenProfile();
-  const topRegulars = regulars.slice(0, 3);
-  const nativeTabBarInset = useNativeTabBarContentInset();
-  const sheetBottomInset = bottomContentInset ?? nativeTabBarInset;
-  const snapPoints = useMemo(
-    () => [REGULARS_SHEET_VISIBLE_HEIGHT + sheetBottomInset],
-    [sheetBottomInset]
-  );
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   const openRegular = (regular: Regular) => {
     onClose();
@@ -55,29 +25,13 @@ export default function RegularsSlider({
   };
 
   return (
-    <BottomSheet
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
-      enablePanDownToClose
-      onClose={onClose}
-      backdropComponent={renderBackdrop}
-      style={styles.sheetShadow}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetHandle}
-    >
-      <BottomSheetView
-        style={[
-          styles.content,
-          { paddingBottom: CONTENT_BOTTOM_PADDING + sheetBottomInset },
-        ]}
-      >
-        <RegularsSheetContent
-          regulars={topRegulars}
-          locationName={locationName}
-          onOpenRegular={openRegular}
-        />
-      </BottomSheetView>
-    </BottomSheet>
+    <NativeSheet onClose={onClose} testID="regulars-sheet">
+      <RegularsSheetContent
+        regulars={regulars.slice(0, 3)}
+        locationName={locationName}
+        onOpenRegular={openRegular}
+      />
+    </NativeSheet>
   );
 }
 
@@ -137,26 +91,6 @@ export function RegularsSheetContent({
 }
 
 const useStyles = makeStyles((t) => ({
-  sheetShadow: {
-    ...t.elevation.raised,
-    shadowOffset: { width: 0, height: -2 },
-  },
-  sheetBackground: {
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.sheet,
-    borderTopRightRadius: t.radius.sheet,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: t.colors.borderStrong,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: CONTENT_BOTTOM_PADDING,
-    gap: t.spacing.lg,
-  },
   sheetContent: { gap: t.spacing.lg },
   header: {
     gap: t.spacing.xs,

@@ -1,59 +1,50 @@
 import React, {
   memo,
   useCallback,
-  useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import BottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import NativeSheet from "@/components/shared/NativeSheet";
 import {
   ShareMenuContext,
   type ShareMenuConfig,
   type ShareMenuItem,
 } from "@/components/share/shareMenuContext";
 import { makeStyles, useTheme } from "@/theme";
-import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-
-const SHARE_SHEET_VISIBLE_HEIGHT = 295;
-const CONTENT_BOTTOM_PADDING = 16;
 const INSTAGRAM_DESTINATIONS = new Set(["instagram_story", "instagram_post"]);
 const OTHER_DESTINATIONS = new Set(["whatsapp", "message", "copy_link"]);
 
 export const ShareMenuProvider = ({ children }: { children: ReactNode }) => {
   const styles = useStyles();
   const { colors } = useTheme();
-  const bottomContentInset = useNativeTabBarContentInset();
   const [config, setConfig] = useState<ShareMenuConfig | null>(null);
-  const snapPoints = useMemo(
-    () => [SHARE_SHEET_VISIBLE_HEIGHT + bottomContentInset],
-    [bottomContentInset]
-  );
+  const [presented, setPresented] = useState(false);
+  // The chosen action runs only after the sheet has finished dismissing:
+  // most open other native UI (the share sheet, Instagram), which iOS won't
+  // present over a sheet that is still animating away.
+  const pendingAction = useRef<(() => void) | null>(null);
 
   const showShareMenu = useCallback((nextConfig: ShareMenuConfig) => {
+    pendingAction.current = null;
     setConfig(nextConfig);
+    setPresented(true);
   }, []);
 
   const close = useCallback(() => {
-    setConfig(null);
+    setPresented(false);
   }, []);
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
+  const handleDismissed = useCallback(() => {
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    setPresented(false);
+    setConfig(null);
+    action?.();
+  }, []);
+
   const instagramActions =
     config?.actions.filter((action) =>
       INSTAGRAM_DESTINATIONS.has(action.destination)
@@ -64,30 +55,20 @@ export const ShareMenuProvider = ({ children }: { children: ReactNode }) => {
     ) ?? [];
 
   const selectAction = (action: ShareMenuItem) => {
+    pendingAction.current = action.onPress;
     close();
-    requestAnimationFrame(action.onPress);
   };
 
   return (
     <ShareMenuContext.Provider value={showShareMenu}>
       {children}
       {config ? (
-        <BottomSheet
-          snapPoints={snapPoints}
-          enableDynamicSizing={false}
-          enablePanDownToClose
-          onClose={close}
-          backdropComponent={renderBackdrop}
-          style={styles.sheetShadow}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.sheetHandle}
+        <NativeSheet
+          isPresented={presented}
+          onClose={handleDismissed}
+          testID="share-menu-sheet"
         >
-          <BottomSheetView
-            style={[
-              styles.content,
-              { paddingBottom: CONTENT_BOTTOM_PADDING + bottomContentInset },
-            ]}
-          >
+          <View style={styles.content}>
             <View style={styles.header}>
               <View style={styles.headerSpacer} />
               <Text style={styles.title}>{config.title}</Text>
@@ -124,8 +105,8 @@ export const ShareMenuProvider = ({ children }: { children: ReactNode }) => {
                 ))}
               </View>
             </View>
-          </BottomSheetView>
-        </BottomSheet>
+          </View>
+        </NativeSheet>
       ) : null}
     </ShareMenuContext.Provider>
   );
@@ -175,23 +156,7 @@ const ShareMenuTile = memo(
 ShareMenuTile.displayName = "ShareMenuTile";
 
 const useStyles = makeStyles((t) => ({
-  sheetShadow: {
-    ...t.elevation.raised,
-    shadowOffset: { width: 0, height: -2 },
-  },
-  sheetBackground: {
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.sheet,
-    borderTopRightRadius: t.radius.sheet,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: t.colors.borderStrong,
-  },
   content: {
-    flex: 1,
-    paddingHorizontal: t.spacing.sheetGutter,
     gap: t.spacing.md,
   },
   header: {

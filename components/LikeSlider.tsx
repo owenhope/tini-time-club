@@ -1,19 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import BottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import NativeSheet from "@/components/shared/NativeSheet";
 import { getReviewLikers } from "@/services/memberListService";
 import type { MemberSummary } from "@/utils/memberSummary";
 import ProfileList from "@/components/ProfileList";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
-import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
-
-const LIKES_SHEET_VISIBLE_HEIGHT = 420;
-const CONTENT_BOTTOM_PADDING = 16;
 
 interface LikesSliderProps {
   reviewId: string;
@@ -29,11 +21,6 @@ export default function LikesSlider({
 }: LikesSliderProps) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const bottomContentInset = useNativeTabBarContentInset();
-  const snapPoints = React.useMemo(
-    () => [LIKES_SHEET_VISIBLE_HEIGHT + bottomContentInset],
-    [bottomContentInset]
-  );
   const [likesUsers, setLikesUsers] = useState<MemberSummary[]>([]);
   // An in-flight fetch and an unliked review both left the list empty, which
   // read as "nobody" for as long as the query took.
@@ -59,38 +46,10 @@ export default function LikesSlider({
     };
   }, [reviewId]);
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
   return (
-    <BottomSheet
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
-      enablePanDownToClose
-      onClose={onClose}
-      // ProfileList brings its own FlatList; let it scroll and leave sheet
-      // dragging to the handle and backdrop.
-      enableContentPanningGesture={false}
-      backdropComponent={renderBackdrop}
-      style={styles.sheetShadow}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetHandle}
-    >
-      <BottomSheetView
-        style={[
-          styles.content,
-          { paddingBottom: CONTENT_BOTTOM_PADDING + bottomContentInset },
-        ]}
-      >
+    // ProfileList brings its own FlatList, so the sheet fills and scrolls.
+    <NativeSheet onClose={onClose} scrollable testID="likes-sheet">
+      <View style={styles.content}>
         {loading ? (
           <View style={styles.state}>
             <ActivityIndicator color={colors.accent} />
@@ -110,31 +69,13 @@ export default function LikesSlider({
             onNavigate={onNavigate}
           />
         )}
-      </BottomSheetView>
-    </BottomSheet>
+      </View>
+    </NativeSheet>
   );
 }
 
 const useStyles = makeStyles((t) => ({
-  sheetShadow: {
-    ...t.elevation.raised,
-    shadowOffset: { width: 0, height: -2 },
-  },
-  sheetBackground: {
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: t.radius.sheet,
-    borderTopRightRadius: t.radius.sheet,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: t.colors.borderStrong,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: t.spacing.sheetGutter,
-    paddingBottom: CONTENT_BOTTOM_PADDING,
-  },
+  content: { flex: 1 },
   state: {
     alignItems: "center" as const,
     paddingTop: t.spacing.xxl,
