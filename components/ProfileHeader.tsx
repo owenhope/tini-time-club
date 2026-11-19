@@ -136,13 +136,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const displayedPassportPoints = rankPreviewPassportPoints ?? passportPoints;
   const rank = getRankProgress(displayedPassportPoints);
   const canPressAvatar = Boolean(onAvatarPress);
-  const displayName = profile.name?.trim();
-  const shouldShowDisplayName =
-    Boolean(displayName) &&
-    displayName?.localeCompare(profile.username, undefined, {
-      sensitivity: "accent",
-    }) !== 0;
-
   const metrics: Metric[] = [
     {
       key: "reviews",
@@ -258,16 +251,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
 
           <View style={styles.identity}>
-            {shouldShowDisplayName ? (
-              <Text
-                style={styles.name}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.55}
-              >
-                {displayName}
-              </Text>
-            ) : null}
             {action ? <View style={styles.identityFoot}>{action}</View> : null}
             <View style={styles.compactMetrics}>
               {metrics
@@ -497,11 +480,6 @@ const useStyles = makeStyles((t) => ({
     flexShrink: 1,
     maxWidth: "58%" as const,
     alignItems: "flex-end" as const,
-  },
-  name: {
-    ...t.typography.title,
-    letterSpacing: 0,
-    color: t.colors.onHeaderBrand,
   },
   // Handles are data — they set in mono, like every other identifier.
   bio: {

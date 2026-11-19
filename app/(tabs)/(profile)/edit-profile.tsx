@@ -33,7 +33,6 @@ const EditProfile = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const { profile, refreshProfile } = useProfile();
-  const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
     []
@@ -65,7 +64,6 @@ const EditProfile = () => {
       // Load current profile data
       if (profile) {
         initializedProfile.current = profile.id;
-        setName(profile.name || "");
         setBio(profile.bio || "");
         setIsPublic(profile.is_public ?? true);
 
@@ -148,7 +146,6 @@ const EditProfile = () => {
     try {
       setSaving(true);
       await databaseService.updateUserProfile(profile.id, {
-        name: name.trim(),
         bio: bio.trim(),
         favorite_spirits: selectedSpirits,
         favorite_types: selectedTypes,
@@ -194,17 +191,6 @@ const EditProfile = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Your name"
-            placeholderTextColor={colors.textMuted}
-            value={name}
-            onChangeText={setName}
-            maxLength={50}
-            autoCapitalize="words"
-          />
-
           <Text style={styles.label}>Bio</Text>
           <TextInput
             style={[styles.input, styles.bioInput]}
