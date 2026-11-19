@@ -91,7 +91,7 @@ npx eas build --profile preview --platform ios
 npx eas submit --profile preview --platform ios --latest
 
 # Production → TestFlight → App Store
-npx eas build --profile production --platform ios
+EXPO_NO_DOTENV=1 npx eas build --profile production --platform ios
 npx eas submit --profile production --platform ios --latest
 
 # Or build and submit the production TestFlight build in one command
@@ -100,6 +100,13 @@ npm run release:testflight
 # Production Android → Google Play production track (auto-submit)
 npm run release:android
 ```
+
+Production builds must not read `.env.local`. Expo CLI loads it while
+evaluating `app.config.ts` on your machine, and its `BACKEND_ENV=development`
+pairs the production app with the dev backend, which the config rejects
+("Release app identity does not match its required backend environment").
+The release scripts set `EXPO_NO_DOTENV=1`; add it to any production
+`eas build` you run by hand.
 
 Android submission uses a Google Play service account whose JSON key is
 stored in EAS credentials (Android → production → Google Service Account), not
