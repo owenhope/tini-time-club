@@ -1,5 +1,11 @@
 import React from "react";
-import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  View,
+  type HostInstance,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/theme";
 import { RATING_MIN, RATING_STEP } from "@/utils/ratingUtils";
@@ -137,7 +143,7 @@ const RatingPips: React.FC<RatingPipsProps> = ({
   style,
   accessibilityLabel,
 }) => {
-  const interactiveRowRef = React.useRef<View>(null);
+  const interactiveRowRef = React.useRef<HostInstance>(null);
   const interactiveRowPageX = React.useRef<number | null>(null);
   const lastInteractionValue = React.useRef<number | null>(null);
   const minimumValue = onRate ? Math.min(RATING_MIN, max) : 0;

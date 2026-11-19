@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  NativeSyntheticEvent,
-  TextInputSelectionChangeEventData,
-} from "react-native";
+import type { TextInputSelectionChangeEvent } from "react-native";
 import { searchMentionCandidates } from "@/services/mentionService";
 import type { MentionCandidate, MentionSpan } from "@/types/types";
 import {
@@ -94,7 +91,7 @@ export const useMentionComposer = ({
   );
 
   const changeSelection = useCallback(
-    (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+    (event: TextInputSelectionChangeEvent) => {
       setSelection(event.nativeEvent.selection);
     },
     []

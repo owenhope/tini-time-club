@@ -1,10 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
-import type { ColorValue } from "react-native";
 
 export interface MartiniIconProps {
   size: number;
-  color: ColorValue;
+  color: string;
   filled?: boolean;
 }
 

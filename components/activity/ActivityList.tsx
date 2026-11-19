@@ -74,7 +74,7 @@ export default function ActivityList({
           <View style={styles.footer}>
             <Text style={styles.footerText}>Loading earlier activity…</Text>
           </View>
-        ) : null
+        ) : undefined
       }
     />
   );

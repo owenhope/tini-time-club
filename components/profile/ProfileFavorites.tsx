@@ -117,7 +117,7 @@ export default function ProfileFavorites({
               ? "Like a location to save it here. Your favorites are visible to other members."
               : "No favorite places yet."}
           </ProfileEmptyState>
-        ) : null
+        ) : undefined
       }
       ListFooterComponent={
         error ? (
@@ -130,7 +130,7 @@ export default function ProfileFavorites({
           </Pressable>
         ) : loading ? (
           <ActivityIndicator />
-        ) : null
+        ) : undefined
       }
       refreshing={loading && (!current || result.items.length === 0)}
       onRefresh={() => void load()}

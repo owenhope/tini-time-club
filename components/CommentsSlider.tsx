@@ -634,7 +634,7 @@ export default function CommentsSlider({
                     {loadingEarlierComments ? "Loading…" : "Earlier comments"}
                   </Text>
                 </TouchableOpacity>
-              ) : null
+              ) : undefined
             }
             ListEmptyComponent={
               initialLoadFailed ? (

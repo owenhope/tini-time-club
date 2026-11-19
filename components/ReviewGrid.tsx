@@ -214,7 +214,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
         style={[styles.list, contentTone === "surface" && styles.listSurface]}
-        ListHeaderComponent={header}
+        ListHeaderComponent={header ?? undefined}
         ListEmptyComponent={
           loading ? (
             <View style={styles.skeletonGrid}>
@@ -228,7 +228,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
               ))}
             </View>
           ) : (
-            emptyComponent
+            (emptyComponent ?? undefined)
           )
         }
         onScroll={onScroll}

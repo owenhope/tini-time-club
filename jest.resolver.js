@@ -1,21 +1,18 @@
 "use strict";
 
 const rnResolver = require("@react-native/jest-preset/jest/resolver");
+const reanimatedResolver = require("react-native-reanimated/jest/resolver");
 
-// react-native-worklets has no native runtime under Jest; its shipped resolver
-// (react-native-worklets/jest/resolver.js) strips ".native" extensions so the
-// JS implementation is used. Jest allows one resolver, so replicate that here
-// and delegate to the React Native preset resolver the Expo preset expects.
+// Reanimated and worklets have no native runtime under Jest. Their shipped
+// resolver (which also applies the worklets one) drops ".native" extensions
+// for those packages so the JS implementations load. Jest allows one
+// resolver, so run theirs with the React Native preset resolver — which the
+// Expo preset expects — standing in as the default.
 module.exports = (request, options) => {
-  if (
-    options.basedir.includes("react-native-worklets") ||
-    request.includes("react-native-worklets")
-  ) {
-    options = {
-      ...options,
-      extensions: options.extensions?.filter((ext) => !ext.includes("native")),
-    };
-  }
-
-  return rnResolver(request, options);
+  const jestDefault = options.defaultResolver;
+  return reanimatedResolver(request, {
+    ...options,
+    defaultResolver: (path, resolved) =>
+      rnResolver(path, { ...resolved, defaultResolver: jestDefault }),
+  });
 };

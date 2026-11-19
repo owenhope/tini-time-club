@@ -9,6 +9,7 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type HostInstance,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -53,7 +54,7 @@ function MemberReviewSharePreviewScreen() {
   const [imageError, setImageError] = useState(false);
   const [imageReady, setImageReady] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<HostInstance>(null);
   const trackedFormats = useRef(new Set<ReviewShareFormat>());
   const [positions, setPositions] = useState<
     Record<ReviewShareFormat, ReviewSharePhotoPosition>

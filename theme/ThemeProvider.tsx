@@ -6,7 +6,14 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { Appearance, StyleSheet, useColorScheme } from "react-native";
+import {
+  Appearance,
+  StyleSheet,
+  useColorScheme,
+  type ImageStyle,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   darkColors,
@@ -117,9 +124,12 @@ export const useTheme = (): ThemeContextValue => {
  *   const useStyles = makeStyles((t) => ({ card: { backgroundColor: t.colors.surface } }));
  *   const styles = useStyles();
  */
-export function makeStyles<
-  T extends StyleSheet.NamedStyles<T> | StyleSheet.NamedStyles<any>,
->(factory: (theme: Theme) => T): () => T {
+// RN 0.88 no longer exports StyleSheet.NamedStyles; this is its old shape.
+type NamedStyles<T> = { [P in keyof T]: ViewStyle | TextStyle | ImageStyle };
+
+export function makeStyles<T extends NamedStyles<T> | NamedStyles<any>>(
+  factory: (theme: Theme) => T
+): () => T {
   const cache = new WeakMap<object, T>();
 
   return function useStyles(): T {

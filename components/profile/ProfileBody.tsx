@@ -177,7 +177,7 @@ const ProfileBody: React.FC<ProfileBodyProps> = ({
                 ))}
               </View>
             ) : (
-              emptyRegulars
+              (emptyRegulars ?? undefined)
             )
           }
           refreshControl={

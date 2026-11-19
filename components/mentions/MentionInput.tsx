@@ -3,7 +3,6 @@ import {
   StyleSheet,
   TextInput,
   View,
-  type TextInputScrollEvent,
   type TextInputProps,
   type TextStyle,
   type StyleProp,
@@ -130,7 +129,7 @@ export default function MentionInput({
     ],
   } satisfies TextStyle;
 
-  const handleScroll = (event: TextInputScrollEvent) => {
+  const handleScroll: NonNullable<TextInputProps["onScroll"]> = (event) => {
     setScrollOffset(event.nativeEvent.contentOffset);
     inputProps.onScroll?.(event);
   };

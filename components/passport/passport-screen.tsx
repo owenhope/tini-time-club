@@ -4,8 +4,10 @@ import {
   Pressable,
   ScrollView,
   View,
+  type HostInstance,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -81,8 +83,8 @@ export default function PassportScreen() {
   const ownerLabel = isMemberView ? `${username ?? "Member"}'s` : "Your";
   const { passport, error, refresh } = usePassport(profileId);
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  const scrollRef = useRef<ScrollView>(null);
-  const linkedGroupRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const linkedGroupRef = useRef<HostInstance>(null);
   const scrollOffsetRef = useRef(0);
   const scrolledStampKeyRef = useRef<string | undefined>(undefined);
   const styles = useStyles();
