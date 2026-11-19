@@ -189,6 +189,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           color: "#336654",
           defaultChannel: "default",
+          // Android shows the full-colour app mark beside the text (resized
+          // to 64dp); the small monochrome status-bar icon is unchanged.
+          largeIcon: icon,
         },
       ],
       [
