@@ -64,6 +64,7 @@ import {
   consumePendingMembershipReturn,
   getPendingMembershipReturn,
 } from "@/services/visitor-session";
+import ScreenErrorBoundary from "@/components/ScreenErrorBoundary";
 
 const APP_USAGE_HEARTBEAT_MS = 5 * 60 * 1000;
 
@@ -101,7 +102,16 @@ type InitialAuthResolution = {
 };
 
 /**
- * Last-resort catch for render-time throws anywhere in the app — without it
+ * Each screen gets its own boundary (inherited by every nested layout), so a
+ * screen that throws shows ScreenErrorBoundary in place while the tabs and
+ * the rest of the app keep working.
+ */
+export const unstable_settings = {
+  screenErrorBoundary: ScreenErrorBoundary,
+};
+
+/**
+ * Last-resort catch for render-time throws in the layouts themselves — without it
  * a production render error is a frozen white screen with no way out.
  * Deliberately unthemed: it must render even if the theme provider is what
  * broke. expo-router picks this export up automatically.
