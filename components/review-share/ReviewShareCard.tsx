@@ -23,6 +23,7 @@ import {
 } from "@/utils/reviewShareCrop";
 import { getReviewTagColors } from "@/utils/reviewTagColors";
 import type { ReviewShareFormat } from "@/utils/routes";
+import { fadeIn } from "@/utils/imageTransitions";
 
 export interface ReviewSharePhotoPosition {
   /** Normalized offset within the available cover-crop overflow. */
@@ -247,7 +248,7 @@ const ReviewShareCard = ({
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             cachePolicy="memory-disk"
-            transition={150}
+            transition={fadeIn(150)}
             onLoad={({ source }) => {
               if (source.width > 0 && source.height > 0) {
                 setImageAspect(source.width / source.height);

@@ -7,6 +7,7 @@ import ReviewTag from "@/components/shared/review-tag";
 import { makeStyles, useTheme } from "@/theme";
 import type { MartiniIndexEntry } from "@/utils/martini-index";
 import MartiniImagePreview from "@/components/martini-index/martini-image-preview";
+import { fadeIn } from "@/utils/imageTransitions";
 
 interface MartiniIndexCardProps {
   item: MartiniIndexEntry;
@@ -58,7 +59,7 @@ export default function MartiniIndexCard({
             source={item.image}
             style={styles.image}
             contentFit="cover"
-            transition={180}
+            transition={fadeIn(180)}
             accessibilityLabel={`${item.title} in a martini glass`}
           />
         </Pressable>

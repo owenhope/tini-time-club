@@ -27,6 +27,7 @@ import {
 } from "@/components/shared";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import { useNativeTabBarContentInset } from "@/utils/native-tab-bar-insets";
+import { fadeIn } from "@/utils/imageTransitions";
 
 const COLUMNS = 3;
 const GAP = 2;
@@ -170,7 +171,7 @@ const ReviewGrid: React.FC<ReviewGridProps> = ({
             source={{ uri: item.image_url }}
             style={styles.tileImage}
             contentFit="cover"
-            transition={150}
+            transition={fadeIn(150)}
             cachePolicy="memory-disk"
             recyclingKey={String(item.id)}
           />

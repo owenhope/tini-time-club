@@ -42,6 +42,7 @@ import {
 } from "@/utils/reviewItemMemo";
 import MentionText from "@/components/mentions/MentionText";
 import type { MentionSpan } from "@/types/types";
+import { fadeIn } from "@/utils/imageTransitions";
 
 /**
  * 16:11, the aspect the card is drawn at. A taller photo pushed the like /
@@ -676,7 +677,7 @@ const ReviewItemComponent = ({
             source={{ uri: review.image_url }}
             style={styles.reviewImage}
             contentFit="cover"
-            transition={previewMode ? 200 : 0}
+            transition={previewMode ? fadeIn(200) : 0}
             placeholderContentFit="cover"
             cachePolicy="memory-disk"
             recyclingKey={review.id}
@@ -741,7 +742,7 @@ const ReviewItemComponent = ({
               source={{ uri: review.image_url }}
               style={styles.reviewImage}
               contentFit="cover"
-              transition={previewMode ? 200 : 0}
+              transition={previewMode ? fadeIn(200) : 0}
               placeholderContentFit="cover"
               cachePolicy="memory-disk"
               recyclingKey={review.id}

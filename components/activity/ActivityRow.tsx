@@ -14,6 +14,7 @@ import VerifiedName from "@/components/shared/VerifiedName";
 import { formatRelativeDate } from "@/utils/helpers";
 import { makeStyles, useTheme } from "@/theme";
 import PassportIcon from "@/components/shared/passport-icon";
+import { fadeIn } from "@/utils/imageTransitions";
 
 interface ActivityRowProps {
   row: ActivityDisplayRow;
@@ -182,7 +183,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({
             source={{ uri: imageUri }}
             style={styles.thumbnail}
             contentFit="cover"
-            transition={120}
+            transition={fadeIn(120)}
           />
         </Pressable>
       ) : row.kind === "admin_message" ? null : (

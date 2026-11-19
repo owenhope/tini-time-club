@@ -16,6 +16,7 @@ import { useFocusEffect } from "expo-router";
 import MartiniShakerIcon from "@/components/shared/martini-shaker-icon";
 import PassportIcon from "@/components/shared/passport-icon";
 import { compactDisplayTypography, makeStyles, useTheme } from "@/theme";
+import { fadeIn } from "@/utils/imageTransitions";
 
 /**
  * The app's top bar — four variants, no fifth.
@@ -605,7 +606,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             source={{ uri: imageUri }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            transition={180}
+            transition={fadeIn(180)}
           />
         ) : null}
         {/* Top and bottom scrims from one gradient, so the controls read on a
