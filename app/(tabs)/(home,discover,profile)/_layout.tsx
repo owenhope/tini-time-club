@@ -16,9 +16,9 @@ import { getVisitorGatedRouteIntent } from "@/utils/membership";
 
 // Deep links straight to a nested screen still get a tab root underneath.
 export const unstable_settings = {
-  initialRouteName: "home",
-  discover: { initialRouteName: "discover" },
-  profile: { initialRouteName: "profile" },
+  anchor: "home",
+  discover: { anchor: "discover" },
+  profile: { anchor: "profile" },
 };
 
 /**

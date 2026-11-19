@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { usePathname, useRouter, type Href } from "expo-router";
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/native-tabs";
 import { useProfile } from "@/context/profile-context";
 import { useFavoriteLocationIds } from "@/hooks/useFavoriteLocationIds";
 import * as Notifications from "expo-notifications";

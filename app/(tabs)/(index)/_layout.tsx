@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useTheme } from "@/theme";
 
 export const unstable_settings = {
-  initialRouteName: "martini-index",
+  anchor: "martini-index",
 };
 
 /** The Index owns its large tab-root header, just like Feed and Explore. */

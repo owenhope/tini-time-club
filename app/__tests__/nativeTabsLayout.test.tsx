@@ -10,7 +10,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
-jest.mock("expo-router/unstable-native-tabs", () => {
+jest.mock("expo-router/native-tabs", () => {
   const React = jest.requireActual<typeof import("react")>("react");
   const NativeTabs = ({ children }: { children: React.ReactNode }) =>
     React.createElement("NativeTabs", null, children);
