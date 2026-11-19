@@ -45,6 +45,7 @@ const TITLES: Record<string, string> = {
   settings: "Settings",
   "edit-profile": "Edit Profile",
   "favorite-location": "Favorite Location",
+  "home-city": "Home City",
   notifications: "Notifications",
   activity: "Activity",
   "place-info": "Information",

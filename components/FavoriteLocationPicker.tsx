@@ -1,10 +1,9 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import type { FavoriteLocationValue } from "@/services/favoriteLocationSelection";
 import { LocationVerifiedBadge, MartiniIcon } from "@/components/shared";
-import { makeStyles, useTheme } from "@/theme";
+import PickerRow from "@/components/shared/PickerRow";
+import { useTheme } from "@/theme";
 
 interface FavoriteLocationPickerProps {
   value: FavoriteLocationValue | null;
@@ -15,111 +14,34 @@ const FavoriteLocationPicker: React.FC<FavoriteLocationPickerProps> = ({
   value,
   onPress,
 }) => {
-  const styles = useStyles();
   const { colors } = useTheme();
-  const selected = Boolean(value);
   const subtitle =
     value?.address && value.name
       ? formatCityRegion(stripNameFromAddress(value.name, value.address))
       : null;
 
   return (
-    <Pressable
+    <PickerRow
+      title={value?.name ?? null}
+      placeholder="Add favorite location"
+      subtitle={subtitle}
+      leading={
+        value?.is_golden_glass ? (
+          <MartiniIcon size={20} color={colors.awardGold} filled />
+        ) : null
+      }
+      trailing={
+        value?.is_location_verified ? <LocationVerifiedBadge compact /> : null
+      }
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.container,
-        selected && styles.containerSelected,
-        pressed && styles.pressed,
-      ]}
-      accessibilityRole="button"
       accessibilityLabel={
         value
           ? `Change favorite location, currently ${value.name}`
           : "Add favorite location"
       }
       accessibilityHint="Opens the location chooser"
-    >
-      <View style={styles.text}>
-        <View style={styles.nameRow}>
-          {value?.is_golden_glass ? (
-            <MartiniIcon size={20} color={colors.awardGold} filled />
-          ) : null}
-          <Text
-            style={[styles.name, selected && styles.textSelected]}
-            numberOfLines={1}
-          >
-            {value?.name ?? "Add favorite location"}
-          </Text>
-          {value?.is_location_verified ? (
-            <LocationVerifiedBadge compact />
-          ) : null}
-        </View>
-        {subtitle ? (
-          <Text
-            style={[styles.address, selected && styles.textSelected]}
-            numberOfLines={1}
-          >
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      <Text style={[styles.action, selected && styles.textSelected]}>
-        {value ? "Change" : "Add"}
-      </Text>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={selected ? "#FFFFFF" : colors.textMuted}
-      />
-    </Pressable>
+    />
   );
 };
-
-const useStyles = makeStyles((t) => ({
-  container: {
-    minHeight: 58,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.sm,
-    paddingHorizontal: t.spacing.md,
-    paddingVertical: t.spacing.sm,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderRadius: t.radius.thumb,
-    backgroundColor: t.colors.background,
-  },
-  containerSelected: {
-    borderColor: t.colors.tabBarActive,
-    backgroundColor: t.colors.tabBarActive,
-  },
-  pressed: {
-    opacity: 0.65,
-  },
-  text: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: t.spacing.xs,
-    minWidth: 0,
-  },
-  name: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
-  },
-  address: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-  },
-  action: {
-    ...t.typography.label,
-    color: t.colors.accent,
-  },
-  textSelected: {
-    color: "#FFFFFF",
-  },
-}));
 
 export default FavoriteLocationPicker;

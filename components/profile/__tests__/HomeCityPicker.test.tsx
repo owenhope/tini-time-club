@@ -29,9 +29,12 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(async () => null),
   setItem: jest.fn(async () => {}),
 }));
+let mockProfile: { id: string; home_city?: typeof city | null } = {
+  id: "member",
+};
 jest.mock("@/context/profile-context", () => ({
   useProfile: () => ({
-    profile: { id: "member" },
+    profile: mockProfile,
     refreshProfile: jest.fn(async () => {}),
   }),
 }));
@@ -72,6 +75,12 @@ async function enterWithAutoDetect() {
 }
 beforeEach(async () => {
   jest.clearAllMocks();
+  mockProfile = { id: "member" };
+  // A test below restores its own AppState spy; keep every render's
+  // subscription removable regardless of order.
+  jest
+    .spyOn(AppState, "addEventListener")
+    .mockReturnValue({ remove: jest.fn() });
   jest.useFakeTimers();
   jest
     .mocked(searchCities)
@@ -253,4 +262,32 @@ it("offers Settings after denial and fills the input when access is enabled", as
   expect(saveHomeCity).not.toHaveBeenCalled();
   subscription.mockRestore();
   openSettings.mockRestore();
+});
+
+async function openFromProfile() {
+  await act(async () => {
+    tree.unmount();
+    tree = renderer.create(
+      <ThemeProvider>
+        <HomeCityPicker origin="profile" autoDetect />
+      </ThemeProvider>
+    );
+  });
+}
+
+it("shows the saved city on the profile screen without asking for location", async () => {
+  mockProfile = { id: "member", home_city: { ...city, name: "Toronto" } };
+  await openFromProfile();
+  expect(detectHomeCity).not.toHaveBeenCalled();
+  expect(tree.root.findByType(TextInput).props.value).toBe("Toronto");
+  expect(button("Use my location")).toBeUndefined();
+});
+
+it("falls back to the device location on the profile screen when no city is saved", async () => {
+  jest.mocked(detectHomeCity).mockResolvedValue(city);
+  await openFromProfile();
+  expect(detectHomeCity).toHaveBeenCalledTimes(1);
+  expect(tree.root.findByType(TextInput).props.value).toBe("Vancouver");
+  expect(saveHomeCity).not.toHaveBeenCalled();
+  expect(button("Save home city").props.disabled).toBe(false);
 });

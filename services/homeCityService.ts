@@ -7,7 +7,7 @@ import AnalyticService from "@/services/analyticsService";
 import { decodePassportStamp } from "@/services/passportService";
 import { requestPassportReconciliation } from "@/utils/passport-reconciliation-events";
 
-import type { HomeCity } from "@/utils/homeCity";
+import { cityLabel, type HomeCity } from "@/utils/homeCity";
 export { cityLabel, type HomeCity } from "@/utils/homeCity";
 export interface CitySuggestion {
   id: string;
@@ -103,6 +103,32 @@ export async function selectCity(
   );
   void AnalyticService.capture("home_city_selected");
   return city;
+}
+
+/**
+ * Map centre for a saved home city, looked up on demand: profiles store the
+ * city only, never coordinates. Returns null when it can't be found.
+ */
+export async function getHomeCityCoordinates(
+  city: HomeCity
+): Promise<{ lat: number; lon: number } | null> {
+  const params = new URLSearchParams({ key: GOOGLE_MAPS_API_KEY });
+  if (city.place_id) params.set("place_id", city.place_id);
+  else params.set("address", cityLabel(city));
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?${params}`
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    const location = data.results?.[0]?.geometry?.location;
+    return typeof location?.lat === "number" &&
+      typeof location?.lng === "number"
+      ? { lat: location.lat, lon: location.lng }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export class HomeCityPermissionDeniedError extends Error {

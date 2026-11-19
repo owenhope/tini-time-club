@@ -325,17 +325,20 @@ const MemberProfile = () => {
     <FavoriteTags profile={profile} spirits={spirits} types={types} />
   ) : null;
 
+  // One prompt for whatever the header is still missing; both live in Edit Profile.
+  const missingBio = !profile?.bio?.trim();
+  const missingCity = !profile?.home_city;
+  const profilePrompt =
+    missingBio && missingCity
+      ? "Add a bio & home city"
+      : missingBio
+        ? "Add a short bio"
+        : missingCity
+          ? "Add your home city"
+          : null;
+
   const favoriteChips = (
     <View style={styles.favoritesSection}>
-      {!profile?.home_city ? (
-        <TouchableOpacity
-          onPress={() => router.push(routes.homeCity())}
-          style={styles.ctaContainer}
-          accessibilityRole="button"
-        >
-          <Text style={styles.ctaText}>Add your city · Earn 10 points</Text>
-        </TouchableOpacity>
-      ) : null}
       {!hasFavoriteTags && (
         <TouchableOpacity
           onPress={() => router.push(routes.editProfile())}
@@ -413,16 +416,16 @@ const MemberProfile = () => {
           profile?.username && router.push(routes.following(profile.username))
         }
         tags={favoriteTags}
-        bioAction={
-          !profile?.bio ? (
+        profileAction={
+          profilePrompt ? (
             <TouchableOpacity
               onPress={() => router.push(routes.editProfile())}
               style={styles.bioCta}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel="Add a bio to your profile"
+              accessibilityLabel={`${profilePrompt} on your profile`}
             >
-              <Text style={styles.bioCtaText}>Add a short bio</Text>
+              <Text style={styles.bioCtaText}>{profilePrompt}</Text>
             </TouchableOpacity>
           ) : null
         }

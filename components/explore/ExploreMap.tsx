@@ -86,6 +86,8 @@ export interface ExploreMapFocus {
   lat?: string;
   lon?: string;
   locationId?: string;
+  /** "city" frames a whole city; otherwise the focus is a single venue. */
+  scope?: string;
   screenshotSeed?: string;
 }
 
@@ -681,7 +683,7 @@ function ExploreMap({
   useEffect(() => {
     if (!enabled || !focus.lat || !focus.lon) return;
 
-    const focusKey = `${focus.lat}:${focus.lon}`;
+    const focusKey = `${focus.lat}:${focus.lon}:${focus.scope ?? ""}`;
     if (focusedCoordinatesRef.current === focusKey) return;
 
     const lat = parseFloat(focus.lat);
@@ -689,11 +691,15 @@ function ExploreMap({
 
     if (!isNaN(lat) && !isNaN(lon)) {
       focusedCoordinatesRef.current = focusKey;
+      const delta =
+        focus.scope === "city"
+          ? GOLDEN_GLASS_CITY_LATITUDE_DELTA
+          : ROUTE_LOCATION_FOCUS_DELTA;
       const targetRegion: Region = {
         latitude: lat,
         longitude: lon,
-        latitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
-        longitudeDelta: ROUTE_LOCATION_FOCUS_DELTA,
+        latitudeDelta: delta,
+        longitudeDelta: delta,
       };
       const animationTimer = setTimeout(() => {
         regionRef.current = targetRegion;
@@ -703,7 +709,7 @@ function ExploreMap({
 
       return () => clearTimeout(animationTimer);
     }
-  }, [enabled, focus.lat, focus.lon]);
+  }, [enabled, focus.lat, focus.lon, focus.scope]);
 
   useEffect(() => {
     if (!enabled || !focus.locationId) {

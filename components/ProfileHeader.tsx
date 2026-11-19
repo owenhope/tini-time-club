@@ -1,6 +1,7 @@
 import FeatureHelpButton from "@/components/shared/FeatureHelpButton";
 import { routes } from "@/utils/routes";
-import { cityLabel, type HomeCity } from "@/utils/homeCity";
+import type { HomeCity } from "@/utils/homeCity";
+import HomeCityLink from "@/components/profile/HomeCityLink";
 import { CLUB_HOST_ID } from "@/utils/clubHost";
 import { useMemberPoints } from "@/hooks/useMemberPoints";
 import React from "react";
@@ -51,8 +52,8 @@ interface ProfileHeaderProps {
   tags?: React.ReactNode;
   /** Favorite-location content shown inside the taste-profile panel. */
   children?: React.ReactNode;
-  /** Own-profile prompt shown where a missing bio would otherwise sit. */
-  bioAction?: React.ReactNode;
+  /** Own-profile prompt for a missing bio or home city, shown below them. */
+  profileAction?: React.ReactNode;
   /**
    * The one thing you can do to this person — Follow, on someone else's
    * profile. It sits in the block rather than the nav bar: iOS 26 wraps
@@ -113,7 +114,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onFollowingPress,
   tags,
   children,
-  bioAction,
+  profileAction,
   action,
   titleAction,
   below,
@@ -283,14 +284,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 ))}
             </View>
             {profile.home_city ? (
-              <Text style={styles.bio}>{cityLabel(profile.home_city)}</Text>
+              <HomeCityLink city={profile.home_city} />
             ) : null}
             {profile.bio ? (
               <Text style={styles.bio} numberOfLines={3}>
                 {profile.bio}
               </Text>
-            ) : bioAction ? (
-              <View style={styles.bioAction}>{bioAction}</View>
+            ) : null}
+            {profileAction ? (
+              <View style={styles.profileAction}>{profileAction}</View>
             ) : null}
           </View>
         </View>
@@ -299,21 +301,24 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             profile — the journey is public — not just your own. */}
         {!isClubHost && (rank?.next || rankAction) ? (
           <View style={styles.rankStack}>
-            <View style={styles.rankLabels}>
-              <Text style={styles.rankPoints}>Rankings</Text>
-              <FeatureHelpButton
-                label="How rankings work"
-                href={routes.passportInfo()}
-                color={colors.onHeaderBrand}
-              />
-            </View>
             {rank?.next ? (
               <View style={styles.rankProgress}>
                 <View style={styles.rankLabels}>
-                  <Text style={styles.rankPoints}>
-                    {rank.tier?.name ?? "Well"} · {displayedPassportPoints}{" "}
-                    {displayedPassportPoints === 1 ? "point" : "points"}
-                  </Text>
+                  <View style={styles.rankTitle}>
+                    <Text style={styles.rankPoints}>
+                      {rank.tier?.name ?? "Well"} · {displayedPassportPoints}{" "}
+                      {displayedPassportPoints === 1 ? "point" : "points"}
+                    </Text>
+                    {/* Keeps its 44pt target without making the row taller. */}
+                    <View style={styles.rankHelp}>
+                      <FeatureHelpButton
+                        label="How rankings work"
+                        href={routes.passportInfo()}
+                        color={colors.onHeaderBrand}
+                        size={16}
+                      />
+                    </View>
+                  </View>
                   <Text style={styles.rankRemaining}>
                     {rank.remaining} pts to {rank.next.name}
                   </Text>
@@ -437,6 +442,12 @@ const useStyles = makeStyles((t) => ({
     alignItems: "baseline" as const,
     gap: t.spacing.sm,
   },
+  rankTitle: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  // Same muted tone as the Passport eyebrow below.
+  rankHelp: { marginVertical: -14, marginHorizontal: -10, opacity: 0.72 },
   rankPoints: {
     ...t.typography.label,
     color: t.colors.onHeaderBrand,
@@ -499,7 +510,7 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.onHeaderBrand,
     opacity: 0.85,
   },
-  bioAction: {
+  profileAction: {
     alignSelf: "flex-start" as const,
   },
   error: {

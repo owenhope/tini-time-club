@@ -7,10 +7,13 @@ export default function FeatureHelpButton({
   label,
   href,
   color,
+  size = 22,
 }: {
   label: string;
   href: Href;
   color?: string;
+  /** Icon size; the 44pt tap target stays the same. */
+  size?: number;
 }) {
   const router = useRouter();
   const styles = useStyles();
@@ -24,7 +27,7 @@ export default function FeatureHelpButton({
     >
       <Ionicons
         name="help-circle-outline"
-        size={22}
+        size={size}
         color={color ?? colors.textSecondary}
       />
     </Pressable>

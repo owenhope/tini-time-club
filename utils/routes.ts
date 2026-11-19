@@ -59,6 +59,8 @@ export type DiscoverParams = {
   lat?: string;
   lon?: string;
   locationId?: string | number;
+  /** "city" zooms the map out to a whole city instead of one venue. */
+  scope?: "city";
   screenshotSeed?: string;
 };
 

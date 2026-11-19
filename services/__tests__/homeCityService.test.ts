@@ -1,5 +1,6 @@
 import {
   detectHomeCity,
+  getHomeCityCoordinates,
   searchCities,
   selectCity,
   saveHomeCity,
@@ -164,3 +165,55 @@ it.each(["position", "geocoding"])(
     );
   }
 );
+
+describe("getHomeCityCoordinates", () => {
+  const city = {
+    name: "Vancouver",
+    region: "BC",
+    country: "Canada",
+    place_id: null,
+    source: "device" as const,
+  };
+
+  it("geocodes the city label when no place id was saved", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        status: "OK",
+        results: [{ geometry: { location: { lat: 49.28, lng: -123.12 } } }],
+      }),
+    });
+    await expect(getHomeCityCoordinates(city)).resolves.toEqual({
+      lat: 49.28,
+      lon: -123.12,
+    });
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe("/maps/api/geocode/json");
+    expect(url.searchParams.get("address")).toBe("Vancouver, BC, Canada");
+    expect(url.searchParams.get("place_id")).toBeNull();
+  });
+
+  it("prefers the saved place id over the label", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        status: "OK",
+        results: [{ geometry: { location: { lat: 43.65, lng: -79.38 } } }],
+      }),
+    });
+    await getHomeCityCoordinates({ ...city, place_id: "toronto" });
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get("place_id")).toBe("toronto");
+    expect(url.searchParams.get("address")).toBeNull();
+  });
+
+  it("returns null when the city cannot be found", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: "ZERO_RESULTS", results: [] }),
+    });
+    await expect(getHomeCityCoordinates(city)).resolves.toBeNull();
+    fetchMock.mockRejectedValueOnce(new Error("offline"));
+    await expect(getHomeCityCoordinates(city)).resolves.toBeNull();
+  });
+});

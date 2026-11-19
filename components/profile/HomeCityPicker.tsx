@@ -243,21 +243,6 @@ export default function HomeCityPicker({
       <AppText tone="secondary">
         Set your home city to find Martinis near you.
       </AppText>
-      {origin === "profile" ? (
-        <Button
-          title="Use my location"
-          icon="location-outline"
-          variant="secondary"
-          disabled={busy}
-          onPress={() => {
-            void run(async () => {
-              const city = await detectHomeCity();
-              setSelected(city);
-              updateQuery("");
-            });
-          }}
-        />
-      ) : null}
       <View style={styles.fieldGroup}>
         <AppText variant="bodyStrong" tone="secondary">
           Home City

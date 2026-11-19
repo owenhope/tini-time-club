@@ -32,16 +32,6 @@ export function PassportEntry({ profileId, username }: PassportEntryProps) {
 
   return (
     <View>
-      <View style={styles.helpHeading}>
-        <AppText variant="label" style={styles.text}>
-          Martini Passport
-        </AppText>
-        <FeatureHelpButton
-          label="How Passport stamps work"
-          href={routes.passportStampsInfo()}
-          color={colors.onHeaderBrand}
-        />
-      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${ownerLabel} Martini Passport, ${displayedPassport?.points == null ? "points unavailable" : `${displayedPassport.points} points`}`}
@@ -74,6 +64,15 @@ export function PassportEntry({ profileId, username }: PassportEntryProps) {
           <AppText variant="eyebrow" style={styles.eyebrow}>
             {ownerLabel} Passport
           </AppText>
+          {/* Keeps its 44pt target without making the header row taller. */}
+          <View style={styles.help}>
+            <FeatureHelpButton
+              label="How Passport stamps work"
+              href={routes.passportStampsInfo()}
+              color={colors.onHeaderBrand}
+              size={16}
+            />
+          </View>
           {showSkeleton ? (
             <View style={[styles.headerSkeleton, styles.points]} />
           ) : (
@@ -169,10 +168,14 @@ function PassportEntrySkeleton() {
 }
 
 const useStyles = makeStyles((t) => ({
-  helpHeading: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
+  // Same muted tone as the "Passport" eyebrow beside it.
+  // Pulls the 44pt target in so the icon sits beside the eyebrow, past the
+  // header's gap.
+  help: {
+    marginVertical: -12,
+    marginLeft: -t.spacing.sm - 10,
+    marginRight: -10,
+    opacity: 0.72,
   },
   card: {
     width: "100%" as const,

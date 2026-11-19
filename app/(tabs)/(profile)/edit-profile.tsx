@@ -1,3 +1,5 @@
+import PickerRow from "@/components/shared/PickerRow";
+import { cityLabel } from "@/utils/homeCity";
 import React, { useCallback, useState, useEffect, useRef } from "react";
 import {
   View,
@@ -232,14 +234,25 @@ const EditProfile = () => {
             maxSelections={1}
           />
 
-          <TouchableOpacity
+          <Text style={styles.label}>Home City</Text>
+          <PickerRow
+            title={profile?.home_city?.name ?? null}
+            placeholder="Add home city"
+            subtitle={
+              profile?.home_city
+                ? [profile.home_city.region, profile.home_city.country]
+                    .filter(Boolean)
+                    .join(", ")
+                : null
+            }
             onPress={() => router.push(routes.homeCity())}
-            accessibilityRole="button"
-          >
-            <Text style={styles.label}>
-              {profile?.home_city ? "Edit home city" : "Add your home city"}
-            </Text>
-          </TouchableOpacity>
+            accessibilityLabel={
+              profile?.home_city
+                ? `Change home city, currently ${cityLabel(profile.home_city)}`
+                : "Add home city"
+            }
+            accessibilityHint="Opens the city chooser"
+          />
 
           <Text style={styles.label}>Favorite Location</Text>
           <FavoriteLocationPicker

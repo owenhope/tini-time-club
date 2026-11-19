@@ -13,6 +13,7 @@ type ExploreRouteParams = {
   lat?: string | string[];
   lon?: string | string[];
   locationId?: string | string[];
+  scope?: string | string[];
   screenshotSeed?: string | string[];
 };
 
@@ -36,6 +37,7 @@ export default function ExploreRoute() {
         lat: getFirstExploreParam(params.lat),
         lon: getFirstExploreParam(params.lon),
         locationId: getFirstExploreParam(params.locationId),
+        scope: getFirstExploreParam(params.scope),
         screenshotSeed: getFirstExploreParam(params.screenshotSeed),
       }}
     />
