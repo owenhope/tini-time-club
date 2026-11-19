@@ -451,16 +451,21 @@ export const radius = {
 export const PRESS_SCALE = 0.97;
 
 /**
- * Font families. Figtree stands in for the wordmark's
- * heavy geometric grotesque; DM Mono for measurements, ABV, prices, coords.
- * On React Native the weight lives in the family name, so styles set
- * `fontFamily` rather than `fontWeight`.
+ * Figtree stands in for the wordmark's heavy geometric grotesque. It loads
+ * as one variable font (assets/fonts/Figtree-Variable.ttf), so a face is the
+ * "Figtree" family plus a weight, and expo-font instances that weight on
+ * iOS, Android and web. Spread a face into a style rather than setting
+ * fontFamily/fontWeight by hand.
  */
+export const fontFaces = {
+  regular: { fontFamily: "Figtree", fontWeight: "400" },
+  semibold: { fontFamily: "Figtree", fontWeight: "600" },
+  bold: { fontFamily: "Figtree", fontWeight: "700" },
+  black: { fontFamily: "Figtree", fontWeight: "900" },
+} as const;
+
+/** DM Mono for measurements, ABV, prices and coords (a static font file). */
 export const fonts = {
-  regular: "Figtree_400Regular",
-  semibold: "Figtree_600SemiBold",
-  bold: "Figtree_700Bold",
-  black: "Figtree_900Black",
   mono: "DMMono_400Regular",
 } as const;
 
@@ -468,7 +473,7 @@ export const typography = {
   // Seven sizes, five faces, and ten semantic roles. Theme mode never changes
   // geometry; light/dark hierarchy belongs to the colour tones above.
   display: {
-    fontFamily: fonts.black,
+    ...fontFaces.black,
     fontSize: 32,
     lineHeight: 36,
     letterSpacing: -0.8,
@@ -476,44 +481,44 @@ export const typography = {
   // The lowercase brand lockup — same geometry as the public site header's
   // "tini time club" (Figtree Black 20/28, -0.5 tracking).
   wordmark: {
-    fontFamily: fonts.black,
+    ...fontFaces.black,
     fontSize: 20,
     lineHeight: 28,
     letterSpacing: -0.5,
   },
   title: {
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.2,
   },
   heading: {
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     fontSize: 18,
     lineHeight: 24,
     letterSpacing: -0.1,
   },
-  body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24 },
+  body: { ...fontFaces.regular, fontSize: 16, lineHeight: 24 },
   /** TextInput text. Body's font WITHOUT a lineHeight: iOS TextInputs render
    *  typed text lower than the placeholder when lineHeight exceeds the
    *  font's natural height, so the text visibly drops on the first
    *  keystroke. Pair with colors.inputText. */
-  input: { fontFamily: fonts.regular, fontSize: 16 },
+  input: { ...fontFaces.regular, fontSize: 16 },
   bodyStrong: {
-    fontFamily: fonts.semibold,
+    ...fontFaces.semibold,
     fontSize: 16,
     lineHeight: 24,
   },
-  caption: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20 },
+  caption: { ...fontFaces.regular, fontSize: 14, lineHeight: 20 },
   label: {
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0,
   },
   // Eyebrow — tiny uppercase tracked utility type.
   eyebrow: {
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 1.2,

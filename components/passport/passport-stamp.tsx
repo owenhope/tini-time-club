@@ -167,6 +167,7 @@ function StampOutline({
         y={POINTS_BASELINE_Y}
         fill={textColor}
         fontFamily={typography.label.fontFamily}
+        fontWeight={typography.label.fontWeight}
         fontSize="8"
         textAnchor="middle"
       >
@@ -178,6 +179,7 @@ function StampOutline({
           y={MILESTONE_BASELINE_Y}
           fill={textColor}
           fontFamily={typography.title.fontFamily}
+          fontWeight={typography.title.fontWeight}
           fontSize="22"
           textAnchor="middle"
         >
@@ -189,6 +191,7 @@ function StampOutline({
         y={isLabelOnly ? (labelLines.length === 1 ? 59 : 54) : LABEL_BASELINE_Y}
         fill={textColor}
         fontFamily={typography.eyebrow.fontFamily}
+        fontWeight={typography.eyebrow.fontWeight}
         fontSize={isLabelOnly ? "10" : "7"}
         letterSpacing={isLabelOnly ? "0.5" : "0.7"}
         textAnchor="middle"

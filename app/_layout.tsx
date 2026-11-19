@@ -24,13 +24,7 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  useFonts,
-  Figtree_400Regular,
-  Figtree_600SemiBold,
-  Figtree_700Bold,
-  Figtree_900Black,
-} from "@expo-google-fonts/figtree";
+import { useFonts } from "expo-font";
 import { DMMono_400Regular } from "@expo-google-fonts/dm-mono";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -211,10 +205,8 @@ export function RootLayoutNav() {
     refreshProfile,
   } = useProfile();
   const [fontsLoaded] = useFonts({
-    Figtree_400Regular,
-    Figtree_600SemiBold,
-    Figtree_700Bold,
-    Figtree_900Black,
+    // One variable file covers every Figtree weight; see fontFaces.
+    Figtree: require("../assets/fonts/Figtree-Variable.ttf"),
     DMMono_400Regular,
   });
   const router = useRouter();

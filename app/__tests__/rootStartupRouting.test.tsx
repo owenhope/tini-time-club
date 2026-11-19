@@ -193,16 +193,11 @@ jest.mock("expo-status-bar", () => ({
       .requireActual<typeof import("react")>("react")
       .createElement("StatusBar"),
 }));
-jest.mock("@expo-google-fonts/figtree", () => ({
+jest.mock("expo-font", () => ({
+  ...jest.requireActual("expo-font"),
   useFonts: () => [true],
-  Figtree_300Light: {},
-  Figtree_400Regular: {},
-  Figtree_500Medium: {},
-  Figtree_600SemiBold: {},
-  Figtree_700Bold: {},
-  Figtree_800ExtraBold: {},
-  Figtree_900Black: {},
 }));
+jest.mock("../../assets/fonts/Figtree-Variable.ttf", () => 1);
 jest.mock("@expo-google-fonts/dm-mono", () => ({
   DMMono_400Regular: {},
   DMMono_500Medium: {},

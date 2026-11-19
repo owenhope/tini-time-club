@@ -13,6 +13,7 @@ export {
   typography,
   compactDisplayTypography,
   fonts,
+  fontFaces,
   elevation,
   PRESS_SCALE,
   HIT_SLOP,

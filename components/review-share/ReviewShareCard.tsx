@@ -11,7 +11,7 @@ import Animated, {
 import { MartiniIcon, RatingPips } from "@/components/shared";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Review } from "@/types/types";
-import { fonts, typography } from "@/theme";
+import { fontFaces, fonts, typography } from "@/theme";
 import { formatCityRegion, stripNameFromAddress } from "@/utils/helpers";
 import { calculateOverallRating, formatRating } from "@/utils/ratingUtils";
 import {
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tagText: {
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     letterSpacing: 0,
   },
   logo: {
@@ -549,14 +549,14 @@ const styles = StyleSheet.create({
   },
   username: {
     color: CARD.paper,
-    fontFamily: fonts.bold,
+    ...fontFaces.bold,
     letterSpacing: 0,
     opacity: 0.94,
     flexShrink: 1,
   },
   headline: {
     color: CARD.paper,
-    fontFamily: fonts.black,
+    ...fontFaces.black,
     letterSpacing: 0,
   },
   shareHeadlineRow: {
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   overallValue: {
     color: CARD.paper,
-    fontFamily: fonts.black,
+    ...fontFaces.black,
     fontVariant: ["tabular-nums"],
     letterSpacing: 0,
   },
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   breakdown: {
     color: CARD.paper,
-    fontFamily: fonts.regular,
+    ...fontFaces.regular,
     letterSpacing: 0,
     opacity: 0.9,
     textAlign: "right",
