@@ -109,17 +109,6 @@ export default async function Dashboard() {
                   >
                     <span className="min-w-0">
                       <UserBadge profile={member} size="compact" />
-                      {member.home_city ? (
-                        <span className="text-xs text-stone-500">
-                          {[
-                            member.home_city.name,
-                            member.home_city.region,
-                            member.home_city.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </span>
-                      ) : null}
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-0.5 text-xs text-stone-400">
                       <span className="font-bold text-stone-600">
@@ -231,17 +220,6 @@ export default async function Dashboard() {
                     <span className="flex min-w-0 items-center gap-3">
                       <Rank index={index} />
                       <UserBadge profile={member} size="compact" />
-                      {member.home_city ? (
-                        <span className="text-xs text-stone-500">
-                          {[
-                            member.home_city.name,
-                            member.home_city.region,
-                            member.home_city.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </span>
-                      ) : null}
                     </span>
                     <span className="font-mono text-sm font-semibold tabular-nums">
                       {member.review_count ?? 0}

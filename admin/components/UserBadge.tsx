@@ -14,6 +14,9 @@ export default function UserBadge({
   const username = profile.username ?? "Unknown member";
   const initial = username.charAt(0).toUpperCase();
   const avatarUrl = avatarPublicUrl(profile.avatar_url);
+  // Members no longer have display names, so the line under the handle
+  // carries their home city — the city alone, to stay one short line.
+  const homeCity = profile.home_city?.name?.trim() || null;
   const usernameClass =
     size === "compact"
       ? "flex items-center gap-1.5 truncate text-sm font-bold text-stone-900"
@@ -41,9 +44,9 @@ export default function UserBadge({
           {username}
           {profile.is_verified ? <VerifiedBadge /> : null}
         </span>
-        {profile.name ? (
+        {homeCity ? (
           <span className="block truncate text-xs text-stone-500">
-            {profile.name}
+            {homeCity}
           </span>
         ) : null}
       </span>

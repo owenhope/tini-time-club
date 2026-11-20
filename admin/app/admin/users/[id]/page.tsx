@@ -12,6 +12,7 @@ import {
   StatusPill,
 } from "@/components/AdminPrimitives";
 import UserBadge from "@/components/UserBadge";
+import { formatHomeCity } from "@/lib/homeCity";
 import { passportTierFor } from "@/lib/ranking";
 import { formatAdminDate, formatOverallRating } from "@/lib/format";
 import { fetchProfile } from "@/lib/profileData";
@@ -50,15 +51,7 @@ export default async function UserDetailPage({
         stats={[
           {
             label: "Home city",
-            value: profile.home_city
-              ? [
-                  profile.home_city.name,
-                  profile.home_city.region,
-                  profile.home_city.country,
-                ]
-                  .filter(Boolean)
-                  .join(", ")
-              : "Not added",
+            value: formatHomeCity(profile.home_city) ?? "Not added",
             tone: "muted",
           },
           { label: "Rank", value: tier.name, tone: "purple" },

@@ -2,6 +2,18 @@ import { count, nullableNumber, record } from "./analytics/model.mjs";
 
 const rows = (value) => (Array.isArray(value) ? value : []);
 
+const homeCity = (value) => {
+  const row = record(value);
+  if (typeof row.name !== "string" || typeof row.country !== "string") {
+    return null;
+  }
+  return {
+    name: row.name,
+    region: typeof row.region === "string" ? row.region : "",
+    country: row.country,
+  };
+};
+
 const profile = (value) => {
   const row = record(value);
   if (Object.keys(row).length === 0) return null;
@@ -16,6 +28,7 @@ const profile = (value) => {
     review_count: nullableNumber(row.review_count),
     passport_points: nullableNumber(row.passport_points),
     bio: row.bio ?? null,
+    home_city: homeCity(row.home_city),
     ...(row.created_at ? { created_at: String(row.created_at) } : {}),
   };
 };

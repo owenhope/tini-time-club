@@ -38,3 +38,29 @@ test("normalizes bounded dashboard activity rows", () => {
   assert.equal(result.top.locations[0].rating, 4.8);
   assert.equal(result.top.locations[0].total_ratings, 3);
 });
+
+test("keeps each member's home city for the member badge", () => {
+  const city = { name: "Vancouver", region: "BC", country: "Canada" };
+  const result = resolveDashboardActivityResponse({
+    latest: {
+      members: [
+        {
+          id: "member-1",
+          home_city: { ...city, place_id: null, source: "manual" },
+        },
+        { id: "member-2", home_city: null },
+      ],
+      reviews: [],
+      locations: [],
+    },
+    top: {
+      members: [{ id: "member-1", home_city: city }],
+      reviews: [],
+      locations: [],
+    },
+  });
+
+  assert.deepEqual(result.latest.members[0].home_city, city);
+  assert.equal(result.latest.members[1].home_city, null);
+  assert.deepEqual(result.top.members[0].home_city, city);
+});

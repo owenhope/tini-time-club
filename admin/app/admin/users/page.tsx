@@ -243,7 +243,6 @@ export default async function UsersPage({
               baseQuery={headerQuery}
               defaultDirection="desc"
             />,
-            "Home city",
             "Platform",
             <SortHeader
               key="reviews"
@@ -295,17 +294,6 @@ export default async function UsersPage({
                 </td>
                 <td className="px-4 py-3">
                   <span className="font-bold text-stone-900">{tier.name}</span>
-                </td>
-                <td className="px-4 py-3 text-stone-600">
-                  {profile.home_city
-                    ? [
-                        profile.home_city.name,
-                        profile.home_city.region,
-                        profile.home_city.country,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")
-                    : "—"}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-stone-600">
                   {userPlatforms
