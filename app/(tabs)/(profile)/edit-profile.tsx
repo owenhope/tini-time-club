@@ -5,7 +5,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
@@ -13,7 +12,9 @@ import {
   ScrollView,
   Switch,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import AppHeader from "@/components/nav/AppHeader";
+import { useUsernameCheck } from "@/hooks/useUsernameCheck";
 import { useProfile } from "@/context/profile-context";
 import databaseService from "@/services/databaseService";
 import { isAccountGoneError } from "@/utils/accountErrors";
@@ -27,10 +28,8 @@ import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
-import { isUsernameAvailable } from "@/services/onboardingService";
 import {
   formatUsernameChangeDate,
-  getUsernameError,
   nextUsernameChangeAt,
   USERNAME_CHANGE_MONTHS,
 } from "@/utils/username";
@@ -71,7 +70,13 @@ const EditProfile = () => {
   const { profile, refreshProfile } = useProfile();
   const [bio, setBio] = useState("");
   const [username, setUsername] = useState("");
+  // A refusal from the server on save; the live check covers the rest.
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const usernameCheck = useUsernameCheck(
+    username,
+    profile?.username,
+    profile?.id
+  );
   const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
     []
   );
@@ -189,19 +194,8 @@ const EditProfile = () => {
       setSaving(true);
 
       if (renaming) {
-        if (renameLockedUntil) {
-          setUsername(profile.username);
-          return;
-        }
-        const validationError = getUsernameError(nextUsername);
-        if (validationError) {
-          setUsernameError(validationError);
-          return;
-        }
-        if (!(await isUsernameAvailable(nextUsername, profile.id))) {
-          setUsernameError("That username is already taken");
-          return;
-        }
+        // Save stays disabled otherwise; the database rechecks on write.
+        if (renameLockedUntil || usernameCheck.status !== "available") return;
         if (!(await confirmRename(profile.username, nextUsername))) return;
       }
 
@@ -239,15 +233,53 @@ const EditProfile = () => {
   };
 
   const renameLockedUntil = nextUsernameChangeAt(profile?.username_changed_at);
-  const usernameHelp =
+  const usernameProblem =
     usernameError ??
-    (renameLockedUntil
-      ? `You can change your username again on ${formatUsernameChangeDate(renameLockedUntil)}.`
-      : `You can change your username once every ${USERNAME_CHANGE_MONTHS} months.`);
+    (usernameCheck.status === "invalid"
+      ? usernameCheck.message
+      : usernameCheck.status === "taken"
+        ? "That username is already taken"
+        : usernameCheck.status === "error"
+          ? "Couldn't check that username. Please try again."
+          : null);
+  const usernameHelp =
+    usernameProblem ??
+    (usernameCheck.status === "checking"
+      ? "Checking availability…"
+      : usernameCheck.status === "available"
+        ? `${username.trim()} is available`
+        : renameLockedUntil
+          ? `You can change your username again on ${formatUsernameChangeDate(renameLockedUntil)}.`
+          : `You can change your username once every ${USERNAME_CHANGE_MONTHS} months.`);
+  const canSave =
+    !saving &&
+    (usernameCheck.status === "unchanged" ||
+      (usernameCheck.status === "available" && !usernameError));
+
+  const header = (
+    <Stack.Screen
+      options={{
+        header: ({ navigation, back }) => (
+          <AppHeader
+            variant="compact"
+            title="Edit Profile"
+            onBack={back ? navigation.goBack : undefined}
+            trailing={{
+              label: saving ? "Saving" : "Save",
+              onPress: () => void handleSave(),
+              accessibilityLabel: "Save profile",
+              disabled: loading || !canSave,
+            }}
+          />
+        ),
+      }}
+    />
+  );
 
   if (loading) {
     return (
       <View style={styles.container}>
+        {header}
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
@@ -259,6 +291,7 @@ const EditProfile = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      {header}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -271,7 +304,7 @@ const EditProfile = () => {
               style={[
                 styles.input,
                 renameLockedUntil ? styles.inputLocked : null,
-                usernameError ? styles.inputInvalid : null,
+                usernameProblem ? styles.inputInvalid : null,
               ]}
               value={username}
               onChangeText={(value) => {
@@ -287,11 +320,17 @@ const EditProfile = () => {
               placeholder="username"
               placeholderTextColor={colors.textMuted}
               accessibilityLabel="Username"
-              accessibilityHint={usernameError ? undefined : usernameHelp}
+              accessibilityHint={usernameProblem ? undefined : usernameHelp}
             />
             <Text
-              style={[styles.help, usernameError ? styles.helpError : null]}
-              accessibilityLiveRegion={usernameError ? "polite" : "none"}
+              style={[
+                styles.help,
+                usernameCheck.status === "available" ? styles.helpOk : null,
+                usernameProblem ? styles.helpError : null,
+              ]}
+              accessibilityLiveRegion={
+                usernameCheck.status === "unchanged" ? "none" : "polite"
+              }
             >
               {usernameHelp}
             </Text>
@@ -383,31 +422,6 @@ const EditProfile = () => {
               accessibilityLabel="Visible to signed-out visitors"
             />
           </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => router.back()}
-              disabled={saving}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.saveButton,
-                saving && styles.saveButtonDisabled,
-              ]}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.onAccent} />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -484,6 +498,9 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     color: t.colors.textSecondary,
   },
+  helpOk: {
+    color: t.colors.success,
+  },
   helpError: {
     color: t.colors.danger,
   },
@@ -495,35 +512,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.mono,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
-  },
-  buttonContainer: {
-    flexDirection: "row" as const,
-    gap: t.spacing.md,
-    marginBottom: 20,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: t.radius.pill,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  cancelButton: {
-    backgroundColor: t.colors.surfaceSunken,
-  },
-  cancelButtonText: {
-    ...t.typography.bodyStrong,
-    color: t.colors.text,
-  },
-  saveButton: {
-    backgroundColor: t.colors.accent,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    ...t.typography.bodyStrong,
-    color: t.colors.onAccent,
   },
 }));
 
