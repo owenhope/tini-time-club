@@ -24,9 +24,12 @@ export const siteAuthor = {
   },
 };
 
-export const siteDescription = ANDROID_AVAILABLE
-  ? "Tini Time Club is an iPhone and Android app for logging Martini reviews, rating taste and presentation, saving locations, and following friends."
-  : "Tini Time Club is an iPhone app for logging Martini reviews, rating taste and presentation, saving locations, and following friends. Android is coming soon.";
+// Mirror the App Store listing so invite and share previews read the same as
+// the store: its title, and the opening line of its description.
+export const siteTitle = "Tini Time Club, Martini Guide";
+
+export const siteDescription =
+  "Find your next great martini. Tini Time Club brings together martini reviews, a map of bars and restaurants, and a guide to finding your order.";
 
 export const siteShareImage = {
   url: "https://tinitimeclub.com/tini-time-share.png",

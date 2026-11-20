@@ -3,7 +3,7 @@ import AdminUsageTracker from "@/components/AdminUsageTracker";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Suspense } from "react";
-import { siteDescription, siteShareImage } from "@/lib/seo";
+import { siteDescription, siteShareImage, siteTitle } from "@/lib/seo";
 import AdminNavigationProgress from "@/components/AdminNavigationProgress";
 import MetaPixel from "@/components/MetaPixel";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
@@ -58,7 +58,7 @@ const dmMono = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tinitimeclub.com"),
-  title: "Martini Review App | Tini Time Club",
+  title: siteTitle,
   description: siteDescription,
   verification: {
     other: {
@@ -76,13 +76,13 @@ export const metadata: Metadata = {
     siteName: "Tini Time Club",
     type: "website",
     url: "https://tinitimeclub.com/",
-    title: "Martini Review App | Tini Time Club",
+    title: siteTitle,
     description: siteDescription,
     images: [siteShareImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Martini Review App | Tini Time Club",
+    title: siteTitle,
     description: siteDescription,
     images: ["/tini-time-share.png"],
   },
