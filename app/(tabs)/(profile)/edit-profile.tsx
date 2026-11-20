@@ -27,6 +27,42 @@ import { supabase } from "@/utils/supabase";
 import { makeStyles, useTheme } from "@/theme";
 import { reportError } from "@/utils/log";
 import { routes } from "@/utils/routes";
+import { isUsernameAvailable } from "@/services/onboardingService";
+import {
+  formatUsernameChangeDate,
+  getUsernameError,
+  nextUsernameChangeAt,
+  USERNAME_CHANGE_MONTHS,
+} from "@/utils/username";
+
+/** Asks before a rename, since it locks the username for 3 months. */
+function confirmRename(from: string, to: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      `Change your username to ${to}?`,
+      `You can only change your username once every ${USERNAME_CHANGE_MONTHS} months, and links to @${from} will stop working.`,
+      [
+        { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+        { text: "Change", onPress: () => resolve(true) },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) }
+    );
+  });
+}
+
+/** Turns the database's rename refusals into the message to show. */
+function renameErrorMessage(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const { code, hint, message } = error as {
+    code?: string;
+    hint?: string;
+    message?: string;
+  };
+  if (hint === "username_change_limit" && message) return message;
+  if (code === "23505") return "That username is already taken";
+  if (code === "22023") return "Use only letters, numbers, and underscores";
+  return null;
+}
 
 const EditProfile = () => {
   const styles = useStyles();
@@ -34,6 +70,8 @@ const EditProfile = () => {
   const router = useRouter();
   const { profile, refreshProfile } = useProfile();
   const [bio, setBio] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [selectedSpirits, setSelectedSpirits] = useState<(number | string)[]>(
     []
   );
@@ -65,6 +103,7 @@ const EditProfile = () => {
       if (profile) {
         initializedProfile.current = profile.id;
         setBio(profile.bio || "");
+        setUsername(profile.username || "");
         setIsPublic(profile.is_public ?? true);
 
         // Handle favorite_spirits (could be array or JSON string)
@@ -143,9 +182,31 @@ const EditProfile = () => {
   const handleSave = async () => {
     if (!profile?.id) return;
 
+    const nextUsername = username.trim();
+    const renaming = nextUsername !== profile.username;
+
     try {
       setSaving(true);
+
+      if (renaming) {
+        if (renameLockedUntil) {
+          setUsername(profile.username);
+          return;
+        }
+        const validationError = getUsernameError(nextUsername);
+        if (validationError) {
+          setUsernameError(validationError);
+          return;
+        }
+        if (!(await isUsernameAvailable(nextUsername, profile.id))) {
+          setUsernameError("That username is already taken");
+          return;
+        }
+        if (!(await confirmRename(profile.username, nextUsername))) return;
+      }
+
       await databaseService.updateUserProfile(profile.id, {
+        ...(renaming ? { username: nextUsername } : null),
         bio: bio.trim(),
         favorite_spirits: selectedSpirits,
         favorite_types: selectedTypes,
@@ -158,6 +219,12 @@ const EditProfile = () => {
 
       router.back();
     } catch (error) {
+      const renameError = renaming ? renameErrorMessage(error) : null;
+      if (renameError) {
+        // Nothing was saved; keep the form open so they can pick another.
+        setUsernameError(renameError);
+        return;
+      }
       reportError("Error updating profile:", error);
       if (isAccountGoneError(error)) {
         // refreshProfile() -> the context signs out and explains; don't stack
@@ -170,6 +237,13 @@ const EditProfile = () => {
       setSaving(false);
     }
   };
+
+  const renameLockedUntil = nextUsernameChangeAt(profile?.username_changed_at);
+  const usernameHelp =
+    usernameError ??
+    (renameLockedUntil
+      ? `You can change your username again on ${formatUsernameChangeDate(renameLockedUntil)}.`
+      : `You can change your username once every ${USERNAME_CHANGE_MONTHS} months.`);
 
   if (loading) {
     return (
@@ -191,18 +265,88 @@ const EditProfile = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text style={styles.label}>Bio</Text>
-          <TextInput
-            style={[styles.input, styles.bioInput]}
-            multiline
-            placeholder="Tell us about yourself..."
-            placeholderTextColor={colors.textMuted}
-            value={bio}
-            onChangeText={setBio}
-            maxLength={150}
-            textAlignVertical="top"
-          />
-          <Text style={styles.characterCount}>{bio.length}/150</Text>
+          <View style={styles.field}>
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              style={[
+                styles.input,
+                renameLockedUntil ? styles.inputLocked : null,
+                usernameError ? styles.inputInvalid : null,
+              ]}
+              value={username}
+              onChangeText={(value) => {
+                setUsername(value);
+                setUsernameError(null);
+              }}
+              editable={!renameLockedUntil && !saving}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username-new"
+              textContentType="username"
+              maxLength={20}
+              placeholder="username"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Username"
+              accessibilityHint={usernameError ? undefined : usernameHelp}
+            />
+            <Text
+              style={[styles.help, usernameError ? styles.helpError : null]}
+              accessibilityLiveRegion={usernameError ? "polite" : "none"}
+            >
+              {usernameHelp}
+            </Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Bio</Text>
+            <TextInput
+              style={[styles.input, styles.bioInput]}
+              multiline
+              placeholder="Tell us about yourself..."
+              placeholderTextColor={colors.textMuted}
+              value={bio}
+              onChangeText={setBio}
+              maxLength={150}
+              textAlignVertical="top"
+            />
+            <Text style={styles.characterCount}>{bio.length}/150</Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Home City</Text>
+            <PickerRow
+              title={profile?.home_city?.name ?? null}
+              placeholder="Add home city"
+              subtitle={
+                profile?.home_city
+                  ? [profile.home_city.region, profile.home_city.country]
+                      .filter(Boolean)
+                      .join(", ")
+                  : null
+              }
+              onPress={() => router.push(routes.homeCity())}
+              accessibilityLabel={
+                profile?.home_city
+                  ? `Change home city, currently ${cityLabel(profile.home_city)}`
+                  : "Add home city"
+              }
+              accessibilityHint="Opens the city chooser"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Favorite Location</Text>
+            <FavoriteLocationPicker
+              value={favoriteLocation}
+              onPress={() =>
+                router.push(
+                  routes.favoriteLocation({
+                    hasFavoriteLocation: favoriteLocation ? "1" : "0",
+                  })
+                )
+              }
+            />
+          </View>
 
           <MultiSelectInput
             label="Favorite Spirit"
@@ -218,38 +362,6 @@ const EditProfile = () => {
             selectedIds={selectedTypes}
             onSelectionChange={setSelectedTypes}
             maxSelections={1}
-          />
-
-          <Text style={styles.label}>Home City</Text>
-          <PickerRow
-            title={profile?.home_city?.name ?? null}
-            placeholder="Add home city"
-            subtitle={
-              profile?.home_city
-                ? [profile.home_city.region, profile.home_city.country]
-                    .filter(Boolean)
-                    .join(", ")
-                : null
-            }
-            onPress={() => router.push(routes.homeCity())}
-            accessibilityLabel={
-              profile?.home_city
-                ? `Change home city, currently ${cityLabel(profile.home_city)}`
-                : "Add home city"
-            }
-            accessibilityHint="Opens the city chooser"
-          />
-
-          <Text style={styles.label}>Favorite Location</Text>
-          <FavoriteLocationPicker
-            value={favoriteLocation}
-            onPress={() =>
-              router.push(
-                routes.favoriteLocation({
-                  hasFavoriteLocation: favoriteLocation ? "1" : "0",
-                })
-              )
-            }
           />
 
           <View style={styles.privacyRow}>
@@ -319,13 +431,17 @@ const useStyles = makeStyles((t) => ({
   content: {
     flex: 1,
     padding: 20,
+    // One rhythm between every field; each field spaces its own label.
+    gap: t.spacing.xl,
+  },
+  field: {
+    gap: t.spacing.sm,
   },
   privacyRow: {
     minHeight: 72,
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: t.spacing.lg,
-    marginTop: t.spacing.xl,
     padding: t.spacing.lg,
     borderRadius: t.radius.card,
     backgroundColor: t.colors.background,
@@ -347,8 +463,6 @@ const useStyles = makeStyles((t) => ({
   label: {
     ...t.typography.eyebrow,
     color: t.colors.textSecondary,
-    marginBottom: t.spacing.sm,
-    marginTop: t.spacing.lg,
   },
   input: {
     ...t.typography.input,
@@ -359,6 +473,20 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.border,
     color: t.colors.inputText,
   },
+  inputLocked: {
+    backgroundColor: t.colors.disabledSurface,
+    color: t.colors.textSecondary,
+  },
+  inputInvalid: {
+    borderColor: t.colors.danger,
+  },
+  help: {
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
+  },
+  helpError: {
+    color: t.colors.danger,
+  },
   bioInput: {
     minHeight: 100,
   },
@@ -367,12 +495,10 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.mono,
     color: t.colors.textSecondary,
     textAlign: "right" as const,
-    marginTop: t.spacing.xs,
   },
   buttonContainer: {
     flexDirection: "row" as const,
     gap: t.spacing.md,
-    marginTop: t.spacing.xl,
     marginBottom: 20,
   },
   button: {

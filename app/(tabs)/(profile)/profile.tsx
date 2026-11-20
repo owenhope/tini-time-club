@@ -325,17 +325,16 @@ const MemberProfile = () => {
     <FavoriteTags profile={profile} spirits={spirits} types={types} />
   ) : null;
 
-  // One prompt for whatever the header is still missing; both live in Edit Profile.
+  // Each missing header field gets its own prompt, sitting where it would show.
   const missingBio = !profile?.bio?.trim();
   const missingCity = !profile?.home_city;
-  const profilePrompt =
-    missingBio && missingCity
-      ? "Add a bio & home city"
-      : missingBio
-        ? "Add a short bio"
-        : missingCity
-          ? "Add your home city"
-          : null;
+
+  // Home City lives inside Edit Profile, so the prompt opens it there: Back
+  // lands on Edit Profile rather than skipping straight to the profile.
+  const openHomeCity = () => {
+    router.push(routes.editProfile());
+    router.push(routes.homeCity());
+  };
 
   const favoriteChips = (
     <View style={styles.favoritesSection}>
@@ -417,15 +416,28 @@ const MemberProfile = () => {
         }
         tags={favoriteTags}
         profileAction={
-          profilePrompt ? (
+          missingBio ? (
             <TouchableOpacity
               onPress={() => router.push(routes.editProfile())}
               style={styles.bioCta}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel={`${profilePrompt} on your profile`}
+              accessibilityLabel="Add a short bio on your profile"
             >
-              <Text style={styles.bioCtaText}>{profilePrompt}</Text>
+              <Text style={styles.bioCtaText}>Add a short bio</Text>
+            </TouchableOpacity>
+          ) : null
+        }
+        homeCityAction={
+          missingCity ? (
+            <TouchableOpacity
+              onPress={openHomeCity}
+              style={styles.bioCta}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Add your home city"
+            >
+              <Text style={styles.bioCtaText}>Add your home city</Text>
             </TouchableOpacity>
           ) : null
         }

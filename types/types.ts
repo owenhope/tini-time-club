@@ -15,6 +15,8 @@ export interface NamedOption {
 export interface Profile {
   id: string;
   username: string;
+  /** When the member last renamed themselves; null until their first rename. */
+  username_changed_at?: string | null;
   name?: string | null;
   bio?: string | null;
   home_city?: import("@/utils/homeCity").HomeCity | null;

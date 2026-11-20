@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { decode } from "base64-arraybuffer";
-import { Filter } from "bad-words";
+import { getUsernameError } from "@/utils/username";
 import { v4 as uuidv4 } from "uuid";
 import {
   AppText,
@@ -51,20 +51,6 @@ type OnboardingStep = 1 | 2 | 3;
 
 type UsernameStatus =
   "idle" | "checking" | "available" | "unavailable" | "error";
-
-const usernameFilter = new Filter();
-
-const getUsernameError = (username: string) => {
-  if (username.length < 3) return "Username must be at least 3 characters";
-  if (username.length > 20) return "Username must be 20 characters or less";
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    return "Use only letters, numbers, and underscores";
-  }
-  if (usernameFilter.isProfane(username)) {
-    return "Please choose a different username";
-  }
-  return null;
-};
 
 export default function Onboarding() {
   const styles = useStyles();

@@ -52,8 +52,10 @@ interface ProfileHeaderProps {
   tags?: React.ReactNode;
   /** Favorite-location content shown inside the taste-profile panel. */
   children?: React.ReactNode;
-  /** Own-profile prompt for a missing bio or home city, shown below them. */
+  /** Own-profile prompt for a missing bio, shown where the bio would be. */
   profileAction?: React.ReactNode;
+  /** Own-profile prompt for a missing home city, shown under the bio. */
+  homeCityAction?: React.ReactNode;
   /**
    * The one thing you can do to this person — Follow, on someone else's
    * profile. It sits in the block rather than the nav bar: iOS 26 wraps
@@ -115,6 +117,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   tags,
   children,
   profileAction,
+  homeCityAction,
   action,
   titleAction,
   below,
@@ -266,9 +269,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   />
                 ))}
             </View>
-            {profile.home_city ? (
-              <HomeCityLink city={profile.home_city} />
-            ) : null}
             {profile.bio ? (
               <Text style={styles.bio} numberOfLines={3}>
                 {profile.bio}
@@ -276,6 +276,11 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             ) : null}
             {profileAction ? (
               <View style={styles.profileAction}>{profileAction}</View>
+            ) : null}
+            {profile.home_city ? (
+              <HomeCityLink city={profile.home_city} />
+            ) : homeCityAction ? (
+              <View style={styles.profileAction}>{homeCityAction}</View>
             ) : null}
           </View>
         </View>

@@ -70,12 +70,11 @@ const MultiSelectInput = ({
 
 const useStyles = makeStyles((t) => ({
   container: {
-    paddingVertical: t.spacing.md,
     width: "100%" as const,
   },
   label: {
     ...t.typography.eyebrow,
-    marginBottom: t.spacing.md,
+    marginBottom: t.spacing.sm,
     color: t.colors.textSecondary,
   },
   optionsWrap: {
