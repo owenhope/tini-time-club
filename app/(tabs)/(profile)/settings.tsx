@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Linking,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,8 @@ import { useProfile } from "@/context/profile-context";
 import { shareInviteViaSheet } from "@/utils/inviteShare";
 import SegmentedControl from "@/components/shared/SegmentedControl";
 import { LEGAL_URLS } from "@/utils/legalUrls";
+import { openSupport, SUPPORT_EMAIL } from "@/utils/support";
+import { appVersionLabel } from "@/utils/appVersionLabel";
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "System" },
@@ -74,8 +77,13 @@ const Settings = () => {
   };
 
   const handleSupportFeedback = () => {
-    const email = "support@hopemediahouse.com";
-    Linking.openURL(`mailto:${email}`);
+    openSupport().catch((error) => {
+      reportError("Error opening support:", error);
+      Alert.alert(
+        "Support",
+        `Email us at ${SUPPORT_EMAIL} and we'll get back to you.`
+      );
+    });
   };
 
   const menuItems = [
@@ -175,6 +183,10 @@ const Settings = () => {
             </View>
           </TouchableOpacity>
         ))}
+
+        <Text style={styles.version} selectable>
+          {appVersionLabel()}
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -222,6 +234,13 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.bodyStrong,
     color: t.colors.postText,
     marginLeft: t.spacing.lg,
+  },
+  // Selectable so members can paste it into a support email.
+  version: {
+    ...t.typography.caption,
+    color: t.colors.textMuted,
+    textAlign: "center" as const,
+    paddingVertical: t.spacing.xl,
   },
   deleteText: {
     color: t.colors.danger,
