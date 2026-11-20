@@ -6,6 +6,7 @@ import { AppState } from "react-native";
 import { LargeSecureStore } from "./sessionStorage";
 import { log } from "./log";
 import { createSessionRetryFetch } from "./sessionRetryFetch";
+import { createTransientRetryFetch } from "./transientRetryFetch";
 
 const expoExtra = Constants.expoConfig?.extra as
   Record<string, unknown> | undefined;
@@ -60,6 +61,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: createSessionRetryFetch({
       anonKey: supabaseAnonKey,
       recoverAccessToken: () => recoverAccessToken(),
+      fetchImpl: createTransientRetryFetch({ supabaseUrl }),
     }),
   },
   auth: {
