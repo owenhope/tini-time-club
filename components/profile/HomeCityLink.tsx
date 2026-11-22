@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getHomeCityCoordinates } from "@/services/homeCityService";
 import { cityLabel, type HomeCity } from "@/utils/homeCity";
@@ -7,7 +8,8 @@ import { makeStyles, useTheme } from "@/theme";
 import { routes } from "@/utils/routes";
 
 /**
- * A member's home city as a link, styled like the favorite-location link.
+ * A member's home city as a labeled link, styled like the favorite-location
+ * link: a "Home City" eyebrow above a pin and the city name.
  * Shows the city name only; VoiceOver gets the full city, region, country.
  * Opens Explore's map framed on that city. Coordinates are looked up on tap
  * because profiles store the city only.
@@ -42,26 +44,45 @@ export default function HomeCityLink({ city }: { city: HomeCity }) {
   };
 
   return (
-    <TouchableOpacity
-      onPress={() => void open()}
-      disabled={opening}
-      style={styles.link}
-      accessibilityRole="link"
-      accessibilityLabel={`Home city, ${label}`}
-      accessibilityHint="Shows this city on the Explore map"
-      accessibilityState={{ busy: opening }}
-    >
-      <Text style={styles.text} numberOfLines={1}>
-        {city.name}
+    <View style={styles.block}>
+      <Text
+        style={styles.label}
+        importantForAccessibility="no"
+        accessibilityElementsHidden
+      >
+        Home City
       </Text>
-      {opening ? (
-        <ActivityIndicator size="small" color={colors.highlight} />
-      ) : null}
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => void open()}
+        disabled={opening}
+        style={styles.link}
+        accessibilityRole="link"
+        accessibilityLabel={`Home city, ${label}`}
+        accessibilityHint="Shows this city on the Explore map"
+        accessibilityState={{ busy: opening }}
+      >
+        <Ionicons name="location-sharp" size={18} color={colors.highlight} />
+        <Text style={styles.text} numberOfLines={1}>
+          {city.name}
+        </Text>
+        {opening ? (
+          <ActivityIndicator size="small" color={colors.highlight} />
+        ) : null}
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const useStyles = makeStyles((t) => ({
+  // The link centres its text in a 32pt touch target, which already spaces
+  // it from the label, matching FavoriteLocationLink.
+  block: {
+    gap: 0,
+  },
+  label: {
+    ...t.typography.eyebrow,
+    color: t.colors.onInk,
+  },
   link: {
     minHeight: 32,
     flexDirection: "row" as const,
