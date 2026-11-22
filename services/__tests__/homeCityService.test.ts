@@ -75,6 +75,7 @@ it("resolves structured city information and excludes street details", async () 
         { longText: "Vancouver", types: ["locality"] },
         {
           longText: "British Columbia",
+          shortText: "BC",
           types: ["administrative_area_level_1"],
         },
         { longText: "Canada", types: ["country"] },
@@ -84,7 +85,7 @@ it("resolves structured city information and excludes street details", async () 
   });
   expect(await selectCity("city-1", "session")).toEqual({
     name: "Vancouver",
-    region: "British Columbia",
+    region: "BC",
     country: "Canada",
     place_id: "city-1",
     source: "manual",

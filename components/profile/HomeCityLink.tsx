@@ -8,6 +8,7 @@ import { routes } from "@/utils/routes";
 
 /**
  * A member's home city as a link, styled like the favorite-location link.
+ * Shows the city name only; VoiceOver gets the full city, region, country.
  * Opens Explore's map framed on that city. Coordinates are looked up on tap
  * because profiles store the city only.
  */
@@ -51,7 +52,7 @@ export default function HomeCityLink({ city }: { city: HomeCity }) {
       accessibilityState={{ busy: opening }}
     >
       <Text style={styles.text} numberOfLines={1}>
-        {label}
+        {city.name}
       </Text>
       {opening ? (
         <ActivityIndicator size="small" color={colors.highlight} />

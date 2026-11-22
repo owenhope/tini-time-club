@@ -17,6 +17,7 @@ export const createCitySession = newSessionToken;
 
 interface AddressComponent {
   longText: string;
+  shortText?: string;
   types: string[];
 }
 function cityFromComponents(
@@ -24,8 +25,12 @@ function cityFromComponents(
   placeId: string | null,
   source: HomeCity["source"]
 ): HomeCity {
-  const part = (type: string) =>
-    components.find((c) => c.types.includes(type))?.longText ?? "";
+  const component = (type: string) =>
+    components.find((c) => c.types.includes(type));
+  const part = (type: string) => component(type)?.longText ?? "";
+  // Region uses the short form ("BC", "CA") to match device-detected cities
+  // and Places' own suggestion labels.
+  const region = component("administrative_area_level_1");
   const name =
     part("locality") ||
     part("postal_town") ||
@@ -35,7 +40,7 @@ function cityFromComponents(
     throw new Error("We couldn't identify a city. Please choose one below.");
   return {
     name,
-    region: part("administrative_area_level_1"),
+    region: region?.shortText || region?.longText || "",
     country,
     place_id: placeId,
     source,
@@ -182,8 +187,9 @@ async function detectCityFromDevice(): Promise<HomeCity> {
     const result = data.results?.[0];
     city = cityFromComponents(
       (result?.address_components ?? []).map(
-        (c: { long_name: string; types: string[] }) => ({
+        (c: { long_name: string; short_name?: string; types: string[] }) => ({
           longText: c.long_name,
+          shortText: c.short_name,
           types: c.types,
         })
       ),
