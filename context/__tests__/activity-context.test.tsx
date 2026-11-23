@@ -120,4 +120,38 @@ describe("ActivityProvider", () => {
       error
     );
   });
+
+  it("does not report an expired JWT and refreshes once the token renews", async () => {
+    await act(async () => {
+      renderer = create(
+        <ActivityProvider>
+          <></>
+        </ActivityProvider>
+      );
+    });
+
+    mockFetchUnseenActivityCount.mockRejectedValueOnce({
+      code: "PGRST301",
+      message: "JWT expired",
+    });
+
+    await act(async () => {
+      appStateListener?.("active");
+    });
+
+    expect(mockReportError).not.toHaveBeenCalled();
+
+    const { supabase } = jest.requireMock("@/utils/supabase");
+    const authCalls = supabase.auth.onAuthStateChange.mock.calls;
+    const authListener = authCalls[authCalls.length - 1][0] as (
+      event: string
+    ) => void;
+    mockFetchUnseenActivityCount.mockResolvedValueOnce(3);
+
+    await act(async () => {
+      authListener("TOKEN_REFRESHED");
+    });
+
+    expect(mockSetActivityBadgeCount).toHaveBeenLastCalledWith(3);
+  });
 });

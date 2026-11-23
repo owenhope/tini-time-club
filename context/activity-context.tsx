@@ -26,6 +26,14 @@ export interface ActivityContextValue {
   markPushOpened: (notificationId: string) => Promise<void>;
 }
 
+function isExpiredJwtError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "PGRST301"
+  );
+}
+
 const ActivityContext = createContext<ActivityContextValue | undefined>(
   undefined
 );
@@ -51,7 +59,9 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       setUnseenCount(nextCount);
       await setActivityBadgeCount(nextCount);
     } catch (error) {
-      if (appStateRef.current === "active") {
+      // An expired access token is expected on resume before supabase-js
+      // renews it; the TOKEN_REFRESHED listener below refreshes the badge.
+      if (appStateRef.current === "active" && !isExpiredJwtError(error)) {
         reportError("Failed to refresh Activity badge:", error);
       }
     }
@@ -126,9 +136,10 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") void clearActivityCache(profileId);
+      if (event === "TOKEN_REFRESHED") void refreshUnseenCount();
     });
     return () => subscription.unsubscribe();
-  }, [profileId]);
+  }, [profileId, refreshUnseenCount]);
 
   return (
     <ActivityContext.Provider
