@@ -82,9 +82,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: siteTitle,
-    description: siteDescription,
-    images: ["/tini-time-share.png"],
+    // Page-specific Open Graph titles and descriptions also populate Twitter.
+    images: [siteShareImage],
   },
 };
 

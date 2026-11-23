@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { siteShareImage } from "@/lib/seo";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
 import PublicShareHeader from "@/components/PublicShareHeader";
 import ShareStoreLinks from "@/components/ShareStoreLinks";
@@ -33,7 +34,7 @@ export async function generateMetadata({
     score == null
       ? "Open this Tini Time Club review."
       : `Taste ${review.taste}/5 · Presentation ${review.presentation}/5 on Tini Time Club.`;
-  const image = `${PUBLIC_ORIGIN}/tini-time-share.png`;
+  const image = siteShareImage.url;
 
   return {
     title,
@@ -52,7 +53,7 @@ export async function generateMetadata({
           url: image,
           width: 1200,
           height: 630,
-          alt: "Tini Time Club logo on the brand splash color",
+          alt: siteShareImage.alt,
         },
       ],
     },

@@ -1,3 +1,4 @@
+import { siteShareImage } from "@/lib/seo";
 import PublicSubmissionForm from "@/components/PublicSubmissionForm";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -12,6 +13,15 @@ export const metadata: Metadata = {
   description:
     "Own or manage a bar or restaurant on Tini Time Club? Get in touch about verification.",
   alternates: { canonical: "https://tinitimeclub.com/business" },
+  openGraph: {
+    siteName: "Tini Time Club",
+    type: "website",
+    url: "https://tinitimeclub.com/business",
+    title: "For businesses | Tini Time Club",
+    description:
+      "Own or manage a bar or restaurant on Tini Time Club? Get in touch about verification.",
+    images: [siteShareImage],
+  },
 };
 
 const ERROR_MESSAGES: Record<string, string> = {

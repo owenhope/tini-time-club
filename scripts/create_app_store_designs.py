@@ -18,8 +18,8 @@ DESIGNS = [
     {
         "slug": "feed",
         "source": "01-feed.png",
-        "headline": "REVIEW",
-        "subhead": "Rate it. Share it. Repeat.",
+        "headline": "DISCOVER",
+        "subhead": "Find your next great Martini",
         "background": "#6B50A9",
         "ink": "#FFFFFF",
         "sub_ink": "#FFFFFF",

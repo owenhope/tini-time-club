@@ -17,13 +17,13 @@ import { LEGAL_URLS } from "@/utils/legalUrls";
 
 const FEATURES = [
   {
-    icon: "glass-cocktail" as const,
-    title: "Rate your Martinis",
+    icon: "map-search-outline" as const,
+    title: "Find your next great Martini",
     palette: "brand" as const,
   },
   {
-    icon: "map-search-outline" as const,
-    title: "Find the Best",
+    icon: "glass-cocktail" as const,
+    title: "Share your finds",
     palette: "secondary" as const,
   },
   {

@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 import { withBotId } from "botid/next/config";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.tinitimeclub.com" }],
+        destination: "https://tinitimeclub.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   turbopack: {
     root: import.meta.dirname,
   },

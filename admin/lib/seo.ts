@@ -24,18 +24,17 @@ export const siteAuthor = {
   },
 };
 
-// Mirror the App Store listing so invite and share previews read the same as
-// the store: its title, and the opening line of its description.
-export const siteTitle = "Tini Time Club, Martini Guide";
+// Shared discovery-first positioning for the website and store listings.
+export const siteTagline = "Find your next great Martini";
+export const siteTitle = "Tini Time Club | Find your next great Martini";
 
-export const siteDescription =
-  "Find your next great martini. Tini Time Club brings together martini reviews, a map of bars and restaurants, and a guide to finding your order.";
+export const siteDescription = `${siteTagline}. Explore nearby bars, compare reviews from the club, and save your favorite spots with the Martini discovery app.`;
 
 export const siteShareImage = {
-  url: "https://tinitimeclub.com/tini-time-share.png",
+  url: "https://tinitimeclub.com/tini-time-discover-share-v2.png",
   width: 1200,
   height: 630,
-  alt: "Tini Time Club logo on the brand splash color",
+  alt: "Find your next great Martini — Tini Time Club app previews on a purple background",
 };
 
 export function createBreadcrumbList(

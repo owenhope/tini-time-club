@@ -12,7 +12,12 @@ import {
 import JsonLd from "@/components/JsonLd";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
-import { createBreadcrumbList, siteAuthor, siteDescription } from "@/lib/seo";
+import {
+  createBreadcrumbList,
+  siteAuthor,
+  siteDescription,
+  siteTagline,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
   alternates: {
@@ -27,7 +32,7 @@ const homeJsonLd = {
   url: "https://tinitimeclub.com/",
   description: siteDescription,
   datePublished: "2026-08-11",
-  dateModified: "2026-11-17",
+  dateModified: "2026-11-23",
   author: siteAuthor,
   publisher: siteAuthor,
   about: {
@@ -108,14 +113,14 @@ export default function PublicHomePage() {
             <div className="relative z-10 flex min-h-[78svh] items-center px-5 py-16 sm:px-8 lg:px-14">
               <div className="max-w-2xl text-white">
                 <p className="inline-flex rounded-[6px] bg-chartreuse px-3 py-2 font-mono text-xs font-black uppercase text-emerald-950 shadow-sm shadow-emerald-950/15">
-                  Sip, score, share, repeat
+                  Tini Time Club
                 </p>
                 <h1 className="mt-5 text-5xl font-black leading-[0.95] sm:text-6xl lg:text-7xl">
-                  Tini Time Club
+                  {siteTagline}
                 </h1>
                 <p className="mt-6 max-w-xl text-xl leading-8 text-white/86">
-                  The Martini review app for remembering every pour, every
-                  place, and every person worth coming back to.
+                  Discover nearby bars, compare Martini reviews from the club,
+                  and save the spots you want to try next.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <AppStoreLink
@@ -391,9 +396,9 @@ export default function PublicHomePage() {
               Feel ready when someone asks where the good Martini is.
             </h2>
             <p className="mt-6 max-w-xl text-lg leading-8 text-white/72">
-              WhatsApp makes conversations feel close. Tini Time Club brings
-              that same immediacy to the recommendations you only trust from
-              people who were actually there.
+              Tini Time Club brings together recommendations from people who
+              were actually there. Follow their finds, compare notes, and choose
+              your next Martini spot.
             </p>
             <a
               href="#download"

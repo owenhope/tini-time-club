@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { siteShareImage } from "@/lib/seo";
 import Link from "next/link";
 import LocationShareCard from "@/components/LocationShareCard";
 import OpenInAppAttempt from "@/components/OpenInAppAttempt";
@@ -28,7 +29,7 @@ export async function generateMetadata({
     location.rating != null && location.total_ratings > 0
       ? `${formatRating(location.rating)} overall from ${reviewLabel(location.total_ratings)}.`
       : `See ${location.name} on Tini Time Club.`;
-  const image = `${PUBLIC_ORIGIN}/tini-time-share.png`;
+  const image = siteShareImage.url;
 
   return {
     title,
@@ -45,7 +46,7 @@ export async function generateMetadata({
           url: image,
           width: 1200,
           height: 630,
-          alt: "Tini Time Club logo on the brand splash color",
+          alt: siteShareImage.alt,
         },
       ],
     },
